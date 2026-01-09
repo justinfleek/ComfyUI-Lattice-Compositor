@@ -204,6 +204,7 @@ export class FrameCache {
   private config: FrameCacheConfig;
   private currentMemory: number = 0;
   private stats = { hits: 0, misses: 0 };
+  private isPreCaching: boolean = false;
 
   // Secondary index: compositionId -> Set of cache keys (for O(1) clearComposition)
   private compositionKeyMap: Map<string, Set<string>> = new Map();

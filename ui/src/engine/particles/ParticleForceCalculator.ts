@@ -111,8 +111,10 @@ export function calculateForceField(
       break;
 
     case "turbulence": {
-      const scale = Number.isFinite(field.noiseScale) ? field.noiseScale : 0.01;
-      const speed = Number.isFinite(field.noiseSpeed) ? field.noiseSpeed : 0.5;
+      const rawScale = field.noiseScale ?? 0.01;
+      const scale = Number.isFinite(rawScale) ? rawScale : 0.01;
+      const rawSpeed = field.noiseSpeed ?? 0.5;
+      const speed = Number.isFinite(rawSpeed) ? rawSpeed : 0.5;
       // Guard against Infinity time causing Math.sin(Infinity) = NaN
       const time = Number.isFinite(simulationTime * speed) ? simulationTime * speed : 0;
 
@@ -135,8 +137,10 @@ export function calculateForceField(
       const speed = Math.sqrt(vx * vx + vy * vy + vz * vz);
       if (speed > 0.001) {
         // Validate drag coefficients to prevent NaN
-        const linearDrag = Number.isFinite(field.linearDrag) ? field.linearDrag : 0.1;
-        const quadDrag = Number.isFinite(field.quadraticDrag) ? field.quadraticDrag : 0.01;
+        const rawLinearDrag = field.linearDrag ?? 0.1;
+        const linearDrag = Number.isFinite(rawLinearDrag) ? rawLinearDrag : 0.1;
+        const rawQuadDrag = field.quadraticDrag ?? 0.01;
+        const quadDrag = Number.isFinite(rawQuadDrag) ? rawQuadDrag : 0.01;
         const dragMag = linearDrag * speed + quadDrag * speed * speed;
         // Drag opposes velocity: F = -c * v_normalized * |v|^n
         // set(-v) then multiply by positive gives force opposing velocity
@@ -163,9 +167,12 @@ export function calculateForceField(
 
     case "lorenz": {
       // Lorenz strange attractor - validate to prevent NaN
-      const sigma = Number.isFinite(field.lorenzSigma) ? field.lorenzSigma : 10;
-      const rho = Number.isFinite(field.lorenzRho) ? field.lorenzRho : 28;
-      const beta = Number.isFinite(field.lorenzBeta) ? field.lorenzBeta : 2.667;
+      const rawSigma = field.lorenzSigma ?? 10;
+      const sigma = Number.isFinite(rawSigma) ? rawSigma : 10;
+      const rawRho = field.lorenzRho ?? 28;
+      const rho = Number.isFinite(rawRho) ? rawRho : 28;
+      const rawBeta = field.lorenzBeta ?? 2.667;
+      const beta = Number.isFinite(rawBeta) ? rawBeta : 2.667;
       force
         .set(sigma * (dy - dx), dx * (rho - dz) - dy, dx * dy - beta * dz)
         .multiplyScalar(strength * 0.01);
@@ -174,8 +181,10 @@ export function calculateForceField(
 
     case "curl": {
       // Curl noise - divergence-free flow field
-      const scale = Number.isFinite(field.noiseScale) ? field.noiseScale : 0.01;
-      const speed = Number.isFinite(field.noiseSpeed) ? field.noiseSpeed : 0.5;
+      const rawScale = field.noiseScale ?? 0.01;
+      const scale = Number.isFinite(rawScale) ? rawScale : 0.01;
+      const rawSpeed = field.noiseSpeed ?? 0.5;
+      const speed = Number.isFinite(rawSpeed) ? rawSpeed : 0.5;
       // Guard against Infinity time causing Math.sin(Infinity) = NaN
       const time = Number.isFinite(simulationTime * speed) ? simulationTime * speed : 0;
 

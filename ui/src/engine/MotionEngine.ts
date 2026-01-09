@@ -461,6 +461,9 @@ export class MotionEngine {
     }
   >();
 
+  /** Track project hash for cache invalidation */
+  private lastProjectHash: string = "";
+
   /**
    * Invalidate the frame cache
    * Call this when project structure changes

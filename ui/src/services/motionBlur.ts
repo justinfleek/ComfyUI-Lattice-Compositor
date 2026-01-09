@@ -106,6 +106,7 @@ export class MotionBlurProcessor {
 
   // Cached canvases for compositing
   private workCanvas: OffscreenCanvas;
+  private workCtx: OffscreenCanvasRenderingContext2D;
   private outputCanvas: OffscreenCanvas;
   private outputCtx: OffscreenCanvasRenderingContext2D;
 

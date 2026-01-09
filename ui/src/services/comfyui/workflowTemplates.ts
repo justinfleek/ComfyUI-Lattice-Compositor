@@ -70,6 +70,11 @@ export interface WorkflowParams {
   ttmTweakIndex?: number;
   ttmTstrongIndex?: number;
 
+  // SCAIL (pose-driven video) specific
+  scailPoseVideo?: string; // Pose video filename or path
+  scailPoseDirectory?: string; // Directory of pose frame images
+  scailReferenceImage?: string; // Reference image (identity/appearance)
+
   // Output settings
   outputFormat?: "mp4" | "webm" | "gif" | "images";
   outputFilename?: string;
@@ -1612,12 +1617,220 @@ export function generateTTMWorkflow(params: WorkflowParams): ComfyUIWorkflow {
 }
 
 // ============================================================================
+// SCAIL Pose-Driven Video Workflow
+// ============================================================================
+
+/**
+ * Generate a SCAIL workflow for pose-driven video generation.
+ * SCAIL uses a reference image (for identity/appearance) and a pose video/sequence
+ * to generate videos with the reference person performing the poses.
+ *
+ * Uses Kijai's ComfyUI-WanVideoWrapper nodes:
+ * - WanVideoAddSCAILReferenceEmbeds: Encodes reference image identity
+ * - WanVideoAddSCAILPoseEmbeds: Encodes pose sequence for motion guidance
+ *
+ * CRITICAL TENSOR FORMAT REQUIREMENTS:
+ * - Pose resolution MUST be EXACTLY HALF of generation resolution
+ *   e.g., 512x512 generation → 256x256 pose
+ *   e.g., 832x480 generation → 416x240 pose
+ * - Pose format: DWPose (OpenPose-compatible keypoint arrays)
+ * - Generation resolution MUST be divisible by 32
+ *
+ * Reference: https://github.com/kijai/ComfyUI-WanVideoWrapper
+ * Reference: https://github.com/kijai/ComfyUI-SCAIL-Pose
+ */
+export function generateSCAILWorkflow(params: WorkflowParams): ComfyUIWorkflow {
+  resetNodeIds();
+  const workflow: ComfyUIWorkflow = {};
+
+  // CRITICAL: Validate that generation resolution is divisible by 32
+  if (params.width % 32 !== 0 || params.height % 32 !== 0) {
+    console.warn(
+      `SCAIL: Generation resolution (${params.width}x${params.height}) should be divisible by 32`,
+    );
+  }
+
+  // Calculate pose resolution (EXACTLY HALF of generation resolution)
+  const poseWidth = Math.floor(params.width / 2);
+  const poseHeight = Math.floor(params.height / 2);
+
+  // Load Wan model
+  const wanLoaderId = nextNodeId();
+  workflow[wanLoaderId] = createNode(
+    "DownloadAndLoadWan2_1Model",
+    {
+      model: "wan2.1_i2v_480p_bf16.safetensors",
+      base_precision: "bf16",
+      quantization: "disabled",
+    },
+    "Load Wan Model",
+  );
+
+  // Load VAE
+  const vaeLoaderId = nextNodeId();
+  workflow[vaeLoaderId] = createNode(
+    "DownloadAndLoadWanVAE",
+    {
+      vae: "wan_2.1_vae.safetensors",
+      precision: "bf16",
+    },
+    "Load Wan VAE",
+  );
+
+  // Load CLIP
+  const clipLoaderId = nextNodeId();
+  workflow[clipLoaderId] = createNode(
+    "DownloadAndLoadWanTextEncoder",
+    {
+      text_encoder: "umt5-xxl-enc-bf16.safetensors",
+      precision: "bf16",
+    },
+    "Load Text Encoder",
+  );
+
+  // Load reference image (identity/appearance source)
+  const referenceImageId = addLoadImage(
+    workflow,
+    params.scailReferenceImage || params.referenceImage || "reference.png",
+    "Reference Image (Identity)",
+  );
+  const resizeRefId = addImageResize(
+    workflow,
+    conn(referenceImageId),
+    params.width,
+    params.height,
+  );
+
+  // Load pose video or pose image sequence
+  let poseInputId: string;
+  if (params.scailPoseDirectory) {
+    // Load pose sequence from directory
+    poseInputId = nextNodeId();
+    workflow[poseInputId] = createNode(
+      "VHS_LoadImages",
+      {
+        directory: params.scailPoseDirectory,
+        image_load_cap: params.frameCount,
+        skip_first_images: 0,
+        select_every_nth: 1,
+      },
+      "Load Pose Sequence",
+    );
+  } else {
+    // Load pose video
+    poseInputId = nextNodeId();
+    workflow[poseInputId] = createNode(
+      "VHS_LoadVideo",
+      {
+        video: params.scailPoseVideo || "pose.mp4",
+        force_rate: params.fps,
+        force_size: "Disabled",
+        frame_load_cap: params.frameCount,
+        skip_first_frames: 0,
+        select_every_nth: 1,
+      },
+      "Load Pose Video",
+    );
+  }
+
+  // CRITICAL: Resize pose to HALF of generation resolution
+  // This is a SCAIL requirement - pose must be exactly half resolution
+  const resizePoseId = addImageResize(
+    workflow,
+    conn(poseInputId),
+    poseWidth,
+    poseHeight,
+  );
+
+  // Encode text prompt
+  const positiveId = nextNodeId();
+  workflow[positiveId] = createNode(
+    "WanTextEncode",
+    {
+      text_encoder: conn(clipLoaderId),
+      prompt: params.prompt || "a person performing the movement",
+      force_offload: true,
+    },
+    "Positive Prompt",
+  );
+
+  // Add SCAIL reference embeddings (encodes identity from reference image)
+  const scailRefEmbedsId = nextNodeId();
+  workflow[scailRefEmbedsId] = createNode(
+    "WanVideoAddSCAILReferenceEmbeds",
+    {
+      wan_model: conn(wanLoaderId),
+      reference_image: conn(resizeRefId),
+      strength: 1.0,
+    },
+    "SCAIL Reference Embeds",
+  );
+
+  // Add SCAIL pose embeddings (encodes motion from pose video)
+  const scailPoseEmbedsId = nextNodeId();
+  workflow[scailPoseEmbedsId] = createNode(
+    "WanVideoAddSCAILPoseEmbeds",
+    {
+      wan_model: conn(scailRefEmbedsId),
+      pose_images: conn(resizePoseId),
+      strength: 1.0,
+    },
+    "SCAIL Pose Embeds",
+  );
+
+  // Generate video with SCAIL conditioning
+  const latentId = nextNodeId();
+  workflow[latentId] = createNode(
+    "WanImageToVideo",
+    {
+      wan_model: conn(scailPoseEmbedsId),
+      positive: conn(positiveId),
+      image: conn(resizeRefId),
+      vae: conn(vaeLoaderId),
+      width: params.width,
+      height: params.height,
+      length: params.frameCount,
+      steps: params.steps || 30,
+      cfg: params.cfgScale || 5,
+      seed: params.seed ?? Math.floor(Math.random() * 2147483647),
+      scheduler: "DPM++ 2M SDE",
+      denoise_strength: params.denoise || 1,
+    },
+    "SCAIL I2V Generation",
+  );
+
+  // Decode video
+  const decodeId = nextNodeId();
+  workflow[decodeId] = createNode(
+    "WanVAEDecode",
+    {
+      vae: conn(vaeLoaderId),
+      samples: conn(latentId),
+      enable_vae_tiling: true,
+      tile_sample_min_height: 240,
+      tile_sample_min_width: 240,
+      tile_overlap_factor_height: 0.2,
+      tile_overlap_factor_width: 0.2,
+    },
+    "VAE Decode",
+  );
+
+  // Output video
+  addVideoOutput(workflow, conn(decodeId), {
+    fps: params.fps,
+    filename: params.outputFilename || "scail_output",
+  });
+
+  return workflow;
+}
+
+// ============================================================================
 // Generic ControlNet Workflow (Canny, Lineart, etc.)
 // ============================================================================
 
 export function generateControlNetWorkflow(
   params: WorkflowParams,
-  controlType: "canny" | "lineart" | "softedge" | "normal" | "seg",
+  controlType: "canny" | "lineart" | "softedge" | "normal" | "seg" | "pose",
 ): ComfyUIWorkflow {
   resetNodeIds();
   const workflow: ComfyUIWorkflow = {};
@@ -1628,6 +1841,7 @@ export function generateControlNetWorkflow(
     softedge: "control_v11p_sd15_softedge.pth",
     normal: "control_v11p_sd15_normalbae.pth",
     seg: "control_v11p_sd15_seg.pth",
+    pose: "control_v11p_sd15_openpose.pth",
   };
 
   // Load checkpoint
@@ -1725,6 +1939,518 @@ export function generateControlNetWorkflow(
 }
 
 // ============================================================================
+// Light-X Relighting Workflow
+// ============================================================================
+
+/**
+ * Generate a Light-X workflow for relighting video generation.
+ * Light-X uses a LoRA to control lighting conditions in generated video.
+ *
+ * Uses Kijai's ComfyUI-WanVideoWrapper nodes:
+ * - WanVideoLoraSelect: Applies Light-X LoRA for relighting control
+ *
+ * Reference: https://github.com/kijai/ComfyUI-WanVideoWrapper
+ */
+export function generateLightXWorkflow(params: WorkflowParams): ComfyUIWorkflow {
+  resetNodeIds();
+  const workflow: ComfyUIWorkflow = {};
+
+  // Load Wan model
+  const wanLoaderId = nextNodeId();
+  workflow[wanLoaderId] = createNode(
+    "DownloadAndLoadWan2_1Model",
+    {
+      model: "wan2.1_i2v_480p_bf16.safetensors",
+      base_precision: "bf16",
+      quantization: "disabled",
+    },
+    "Load Wan Model",
+  );
+
+  // Load VAE
+  const vaeLoaderId = nextNodeId();
+  workflow[vaeLoaderId] = createNode(
+    "DownloadAndLoadWanVAE",
+    {
+      vae: "wan_2.1_vae.safetensors",
+      precision: "bf16",
+    },
+    "Load Wan VAE",
+  );
+
+  // Load CLIP
+  const clipLoaderId = nextNodeId();
+  workflow[clipLoaderId] = createNode(
+    "DownloadAndLoadWanTextEncoder",
+    {
+      text_encoder: "umt5-xxl-enc-bf16.safetensors",
+      precision: "bf16",
+    },
+    "Load Text Encoder",
+  );
+
+  // Apply Light-X LoRA for relighting control
+  const loraId = nextNodeId();
+  workflow[loraId] = createNode(
+    "WanVideoLoraSelect",
+    {
+      wan_model: conn(wanLoaderId),
+      lora: params.loraModel || "light_x_relight.safetensors",
+      strength: params.loraStrength ?? 1.0,
+    },
+    "Apply Light-X LoRA",
+  );
+
+  // Load reference image
+  const imageLoaderId = addLoadImage(
+    workflow,
+    params.referenceImage || "input.png",
+    "Reference Image",
+  );
+  const resizeId = addImageResize(
+    workflow,
+    conn(imageLoaderId),
+    params.width,
+    params.height,
+  );
+
+  // Encode text prompt
+  const positiveId = nextNodeId();
+  workflow[positiveId] = createNode(
+    "WanTextEncode",
+    {
+      text_encoder: conn(clipLoaderId),
+      prompt: params.prompt,
+      force_offload: true,
+    },
+    "Positive Prompt",
+  );
+
+  // Generate video with Light-X conditioning
+  const latentId = nextNodeId();
+  workflow[latentId] = createNode(
+    "WanImageToVideo",
+    {
+      wan_model: conn(loraId),
+      positive: conn(positiveId),
+      image: conn(resizeId),
+      vae: conn(vaeLoaderId),
+      width: params.width,
+      height: params.height,
+      length: params.frameCount,
+      steps: params.steps || 30,
+      cfg: params.cfgScale || 5,
+      seed: params.seed ?? Math.floor(Math.random() * 2147483647),
+      scheduler: "DPM++ 2M SDE",
+      denoise_strength: params.denoise || 1,
+    },
+    "Light-X I2V Generation",
+  );
+
+  // Decode video
+  const decodeId = nextNodeId();
+  workflow[decodeId] = createNode(
+    "WanVAEDecode",
+    {
+      vae: conn(vaeLoaderId),
+      samples: conn(latentId),
+      enable_vae_tiling: true,
+      tile_sample_min_height: 240,
+      tile_sample_min_width: 240,
+      tile_overlap_factor_height: 0.2,
+      tile_overlap_factor_width: 0.2,
+    },
+    "VAE Decode",
+  );
+
+  // Output video
+  addVideoOutput(workflow, conn(decodeId), {
+    fps: params.fps,
+    filename: params.outputFilename || "light_x_output",
+  });
+
+  return workflow;
+}
+
+// ============================================================================
+// Wan-Move Point Trajectory Workflow
+// ============================================================================
+
+/**
+ * Generate a Wan-Move workflow for point trajectory-controlled video.
+ * Wan-Move allows tracking specific points through the video with controlled motion.
+ *
+ * Uses Kijai's ComfyUI-WanVideoWrapper nodes:
+ * - WanVideoAddWanMoveTracks: Adds point trajectory tracking data
+ *
+ * Reference: https://github.com/kijai/ComfyUI-WanVideoWrapper
+ */
+export function generateWanMoveWorkflow(params: WorkflowParams): ComfyUIWorkflow {
+  resetNodeIds();
+  const workflow: ComfyUIWorkflow = {};
+
+  // Load Wan model
+  const wanLoaderId = nextNodeId();
+  workflow[wanLoaderId] = createNode(
+    "DownloadAndLoadWan2_1Model",
+    {
+      model: "wan2.1_i2v_480p_bf16.safetensors",
+      base_precision: "bf16",
+      quantization: "disabled",
+    },
+    "Load Wan Model",
+  );
+
+  // Load VAE
+  const vaeLoaderId = nextNodeId();
+  workflow[vaeLoaderId] = createNode(
+    "DownloadAndLoadWanVAE",
+    {
+      vae: "wan_2.1_vae.safetensors",
+      precision: "bf16",
+    },
+    "Load Wan VAE",
+  );
+
+  // Load CLIP
+  const clipLoaderId = nextNodeId();
+  workflow[clipLoaderId] = createNode(
+    "DownloadAndLoadWanTextEncoder",
+    {
+      text_encoder: "umt5-xxl-enc-bf16.safetensors",
+      precision: "bf16",
+    },
+    "Load Text Encoder",
+  );
+
+  // Load reference image
+  const imageLoaderId = addLoadImage(
+    workflow,
+    params.referenceImage || "input.png",
+    "Reference Image",
+  );
+  const resizeId = addImageResize(
+    workflow,
+    conn(imageLoaderId),
+    params.width,
+    params.height,
+  );
+
+  // Add Wan-Move point trajectory tracking
+  // motionData should contain point tracks: Array<{x: number, y: number}[]>
+  const wanMoveId = nextNodeId();
+  workflow[wanMoveId] = createNode(
+    "WanVideoAddWanMoveTracks",
+    {
+      wan_model: conn(wanLoaderId),
+      tracks: JSON.stringify(params.motionData?.tracks || []),
+      num_frames: params.frameCount,
+      width: params.width,
+      height: params.height,
+    },
+    "Add Wan-Move Tracks",
+  );
+
+  // Encode text prompt
+  const positiveId = nextNodeId();
+  workflow[positiveId] = createNode(
+    "WanTextEncode",
+    {
+      text_encoder: conn(clipLoaderId),
+      prompt: params.prompt,
+      force_offload: true,
+    },
+    "Positive Prompt",
+  );
+
+  // Generate video with Wan-Move conditioning
+  const latentId = nextNodeId();
+  workflow[latentId] = createNode(
+    "WanImageToVideo",
+    {
+      wan_model: conn(wanMoveId),
+      positive: conn(positiveId),
+      image: conn(resizeId),
+      vae: conn(vaeLoaderId),
+      width: params.width,
+      height: params.height,
+      length: params.frameCount,
+      steps: params.steps || 30,
+      cfg: params.cfgScale || 5,
+      seed: params.seed ?? Math.floor(Math.random() * 2147483647),
+      scheduler: "DPM++ 2M SDE",
+      denoise_strength: params.denoise || 1,
+    },
+    "Wan-Move I2V Generation",
+  );
+
+  // Decode video
+  const decodeId = nextNodeId();
+  workflow[decodeId] = createNode(
+    "WanVAEDecode",
+    {
+      vae: conn(vaeLoaderId),
+      samples: conn(latentId),
+      enable_vae_tiling: true,
+      tile_sample_min_height: 240,
+      tile_sample_min_width: 240,
+      tile_overlap_factor_height: 0.2,
+      tile_overlap_factor_width: 0.2,
+    },
+    "VAE Decode",
+  );
+
+  // Output video
+  addVideoOutput(workflow, conn(decodeId), {
+    fps: params.fps,
+    filename: params.outputFilename || "wan_move_output",
+  });
+
+  return workflow;
+}
+
+// ============================================================================
+// ATI (Any Trajectory Instruction) Workflow
+// ============================================================================
+
+/**
+ * Generate an ATI workflow for trajectory-controlled video generation.
+ * ATI allows specifying arbitrary motion trajectories for objects in the video.
+ *
+ * Uses Kijai's ComfyUI-WanVideoWrapper nodes:
+ * - WanVideoATITracks: Adds ATI trajectory data for motion control
+ *
+ * Reference: https://github.com/kijai/ComfyUI-WanVideoWrapper
+ */
+export function generateATIWorkflow(params: WorkflowParams): ComfyUIWorkflow {
+  resetNodeIds();
+  const workflow: ComfyUIWorkflow = {};
+
+  // Load Wan model
+  const wanLoaderId = nextNodeId();
+  workflow[wanLoaderId] = createNode(
+    "DownloadAndLoadWan2_1Model",
+    {
+      model: "wan2.1_i2v_480p_bf16.safetensors",
+      base_precision: "bf16",
+      quantization: "disabled",
+    },
+    "Load Wan Model",
+  );
+
+  // Load VAE
+  const vaeLoaderId = nextNodeId();
+  workflow[vaeLoaderId] = createNode(
+    "DownloadAndLoadWanVAE",
+    {
+      vae: "wan_2.1_vae.safetensors",
+      precision: "bf16",
+    },
+    "Load Wan VAE",
+  );
+
+  // Load CLIP
+  const clipLoaderId = nextNodeId();
+  workflow[clipLoaderId] = createNode(
+    "DownloadAndLoadWanTextEncoder",
+    {
+      text_encoder: "umt5-xxl-enc-bf16.safetensors",
+      precision: "bf16",
+    },
+    "Load Text Encoder",
+  );
+
+  // Load reference image
+  const imageLoaderId = addLoadImage(
+    workflow,
+    params.referenceImage || "input.png",
+    "Reference Image",
+  );
+  const resizeId = addImageResize(
+    workflow,
+    conn(imageLoaderId),
+    params.width,
+    params.height,
+  );
+
+  // Add ATI trajectory tracks
+  // motionData should contain trajectory instructions
+  const atiId = nextNodeId();
+  workflow[atiId] = createNode(
+    "WanVideoATITracks",
+    {
+      wan_model: conn(wanLoaderId),
+      trajectories: JSON.stringify(params.motionData?.trajectories || []),
+      num_frames: params.frameCount,
+      width: params.width,
+      height: params.height,
+    },
+    "Add ATI Trajectories",
+  );
+
+  // Encode text prompt
+  const positiveId = nextNodeId();
+  workflow[positiveId] = createNode(
+    "WanTextEncode",
+    {
+      text_encoder: conn(clipLoaderId),
+      prompt: params.prompt,
+      force_offload: true,
+    },
+    "Positive Prompt",
+  );
+
+  // Generate video with ATI conditioning
+  const latentId = nextNodeId();
+  workflow[latentId] = createNode(
+    "WanImageToVideo",
+    {
+      wan_model: conn(atiId),
+      positive: conn(positiveId),
+      image: conn(resizeId),
+      vae: conn(vaeLoaderId),
+      width: params.width,
+      height: params.height,
+      length: params.frameCount,
+      steps: params.steps || 30,
+      cfg: params.cfgScale || 5,
+      seed: params.seed ?? Math.floor(Math.random() * 2147483647),
+      scheduler: "DPM++ 2M SDE",
+      denoise_strength: params.denoise || 1,
+    },
+    "ATI I2V Generation",
+  );
+
+  // Decode video
+  const decodeId = nextNodeId();
+  workflow[decodeId] = createNode(
+    "WanVAEDecode",
+    {
+      vae: conn(vaeLoaderId),
+      samples: conn(latentId),
+      enable_vae_tiling: true,
+      tile_sample_min_height: 240,
+      tile_sample_min_width: 240,
+      tile_overlap_factor_height: 0.2,
+      tile_overlap_factor_width: 0.2,
+    },
+    "VAE Decode",
+  );
+
+  // Output video
+  addVideoOutput(workflow, conn(decodeId), {
+    fps: params.fps,
+    filename: params.outputFilename || "ati_output",
+  });
+
+  return workflow;
+}
+
+// ============================================================================
+// Camera-ComfyUI 4x4 Matrix Workflow
+// ============================================================================
+
+/**
+ * Generate a camera-comfyUI workflow that uses 4x4 camera transformation matrices.
+ * This format is compatible with camera-comfyUI nodes that expect raw matrix input.
+ *
+ * Reference: https://github.com/camera-comfyui
+ */
+export function generateCameraComfyUIWorkflow(
+  params: WorkflowParams,
+): ComfyUIWorkflow {
+  resetNodeIds();
+  const workflow: ComfyUIWorkflow = {};
+
+  // Load base model
+  const checkpointId = addCheckpointLoader(
+    workflow,
+    params.checkpoint || "svd_xt_1_1.safetensors",
+  );
+
+  // Load reference image
+  const imageLoaderId = addLoadImage(
+    workflow,
+    params.referenceImage || "input.png",
+    "Reference Image",
+  );
+  const resizeId = addImageResize(
+    workflow,
+    conn(imageLoaderId),
+    params.width,
+    params.height,
+  );
+
+  // Load camera matrices from cameraData
+  // Expected format: Array of 4x4 matrices (16 floats each)
+  const cameraMatricesId = nextNodeId();
+  workflow[cameraMatricesId] = createNode(
+    "CameraComfyUI_LoadMatrices",
+    {
+      matrices: JSON.stringify(params.cameraData?.matrices || []),
+      num_frames: params.frameCount,
+    },
+    "Load Camera Matrices",
+  );
+
+  // Apply camera control
+  const applyCameraId = nextNodeId();
+  workflow[applyCameraId] = createNode(
+    "CameraComfyUI_ApplyCamera",
+    {
+      model: conn(checkpointId),
+      camera_matrices: conn(cameraMatricesId),
+      control_strength: 1.0,
+    },
+    "Apply Camera Control",
+  );
+
+  // SVD Encode
+  const encodeId = nextNodeId();
+  workflow[encodeId] = createNode(
+    "SVDEncode",
+    {
+      model: conn(applyCameraId),
+      image: conn(resizeId),
+      vae: conn(checkpointId, 2),
+      width: params.width,
+      height: params.height,
+      video_frames: params.frameCount,
+      motion_bucket_id: 127,
+      fps: params.fps,
+      augmentation_level: 0,
+    },
+    "SVD Encode",
+  );
+
+  // Sample
+  const sampleId = addKSampler(
+    workflow,
+    conn(applyCameraId),
+    conn(encodeId, 1),
+    conn(encodeId, 2),
+    conn(encodeId),
+    {
+      seed: params.seed,
+      steps: params.steps || 25,
+      cfg: params.cfgScale || 2.5,
+      denoise: 1,
+    },
+  );
+
+  // Decode
+  const decodeId = addVAEDecode(workflow, conn(sampleId), conn(checkpointId, 2));
+
+  // Output
+  addVideoOutput(workflow, conn(decodeId), {
+    fps: params.fps,
+    filename: params.outputFilename || "camera_comfyui_output",
+  });
+
+  return workflow;
+}
+
+// ============================================================================
 // Workflow Generator Router
 // ============================================================================
 
@@ -1775,6 +2501,30 @@ export function generateWorkflowForTarget(
     case "ttm-svd":
       // Time-to-Move workflow for multi-layer motion control
       return generateTTMWorkflow(params);
+
+    case "scail":
+      // SCAIL pose-driven video generation
+      return generateSCAILWorkflow(params);
+
+    case "light-x":
+      // Light-X relighting with LoRA
+      return generateLightXWorkflow(params);
+
+    case "wan-move":
+      // Wan-Move point trajectory tracking
+      return generateWanMoveWorkflow(params);
+
+    case "ati":
+      // ATI (Any Trajectory Instruction) motion control
+      return generateATIWorkflow(params);
+
+    case "controlnet-pose":
+      // ControlNet with pose skeleton
+      return generateControlNetWorkflow(params, "pose");
+
+    case "camera-comfyui":
+      // camera-comfyUI 4x4 matrix export
+      return generateCameraComfyUIWorkflow(params);
 
     case "custom-workflow":
       // Return empty workflow for custom - user provides their own

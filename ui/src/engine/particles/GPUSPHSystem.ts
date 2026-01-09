@@ -398,7 +398,13 @@ export class GPUSPHSystem {
     }
 
     // Upload particle data
-    this.device.queue.writeBuffer(this.buffers.particles, 0, particleBuffer);
+    this.device.queue.writeBuffer(
+      this.buffers.particles,
+      0,
+      particleBuffer.buffer,
+      particleBuffer.byteOffset,
+      particleBuffer.byteLength
+    );
 
     // Build spatial hash
     this.buildSpatialHash(particleBuffer, bounds);

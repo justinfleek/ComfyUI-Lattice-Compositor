@@ -53,3 +53,20 @@ ui/e2e/screenshots/
 ui/test-inventory.txt
 ui/test-malicious.lattice.json
 web/
+.aider*
+
+# Hypothesis test cache
+.hypothesis/
+
+# Test coverage artifacts
+coverage.xml
+.coverage
+
+# Backup files
+*.backup
+
+# Test artifacts
+ui/test_particle_count.json
+
+# Deprecated docs folder
+_deprecated/

@@ -67,7 +67,7 @@ NUMERIC_BOUNDS = {
   "height": (1, 16384),
   "duration": (0, 86400),  # Max 24 hours in seconds
   "frameCount": (1, 100000),
-  "opacity": (0, 1),
+  "opacity": (0, 100),  # Frontend uses 0-100 percentage; Canvas converts to 0-1 at render time
   "volume": (0, 10),
   "speed": (-100, 100),
 }

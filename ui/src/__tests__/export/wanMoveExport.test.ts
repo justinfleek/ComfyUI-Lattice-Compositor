@@ -168,11 +168,11 @@ describe("generateDataDrivenFlow", () => {
   it("should generate flow from data array", () => {
     const config: DataDrivenFlowConfig = {
       data: Array(100).fill(0).map(() => Math.random() * 100),
+      mapping: "speed",
+      basePattern: "vortex",
       numFrames: 49,
       width: 1920,
       height: 1080,
-      seed: 12345,
-      layout: "grid",
     };
 
     const trajectory = generateDataDrivenFlow(config);
@@ -181,20 +181,20 @@ describe("generateDataDrivenFlow", () => {
     validateAllFinite(trajectory);
   });
 
-  it("should support different layout modes", () => {
+  it("should support different mapping modes", () => {
     const baseConfig: DataDrivenFlowConfig = {
       data: Array(50).fill(50),
+      mapping: "speed",
+      basePattern: "vortex",
       numFrames: 49,
       width: 1920,
       height: 1080,
-      seed: 12345,
-      layout: "grid",
     };
 
-    const layouts: Array<DataDrivenFlowConfig["layout"]> = ["grid", "radial", "random", "stream"];
+    const mappings: Array<DataDrivenFlowConfig["mapping"]> = ["speed", "direction", "amplitude", "phase", "size"];
 
-    for (const layout of layouts) {
-      const trajectory = generateDataDrivenFlow({ ...baseConfig, layout });
+    for (const mapping of mappings) {
+      const trajectory = generateDataDrivenFlow({ ...baseConfig, mapping });
       validateTrajectoryShape(trajectory);
     }
   });
@@ -202,20 +202,20 @@ describe("generateDataDrivenFlow", () => {
   it("should scale motion by data values", () => {
     const lowDataConfig: DataDrivenFlowConfig = {
       data: Array(20).fill(0), // Low values = less motion
+      mapping: "amplitude",
+      basePattern: "vortex",
       numFrames: 49,
       width: 1920,
       height: 1080,
-      seed: 12345,
-      layout: "grid",
     };
 
     const highDataConfig: DataDrivenFlowConfig = {
       data: Array(20).fill(100), // High values = more motion
+      mapping: "amplitude",
+      basePattern: "vortex",
       numFrames: 49,
       width: 1920,
       height: 1080,
-      seed: 12345,
-      layout: "grid",
     };
 
     const lowTrajectory = generateDataDrivenFlow(lowDataConfig);
@@ -247,7 +247,7 @@ describe("generateSplineFlow", () => {
       49, // numFrames
       1920,
       1080,
-      12345
+      { seed: 12345 }
     );
 
     validateTrajectoryShape(trajectory, 50, 49);
@@ -260,7 +260,7 @@ describe("generateSplineFlow", () => {
       { id: "cp-2", x: 1920, y: 1080, handleIn: null, handleOut: null, type: "corner" as const },
     ];
 
-    const trajectory = generateSplineFlow(controlPoints, 10, 49, 1920, 1080, 12345);
+    const trajectory = generateSplineFlow(controlPoints, 10, 49, 1920, 1080, { seed: 12345 });
 
     validateTrajectoryShape(trajectory);
   });
@@ -272,8 +272,8 @@ describe("generateSplineFlow", () => {
       { id: "cp-3", x: 900, y: 100, handleIn: null, handleOut: null, type: "corner" as const },
     ];
 
-    const result1 = generateSplineFlow(controlPoints, 30, 49, 1920, 1080, 42);
-    const result2 = generateSplineFlow(controlPoints, 30, 49, 1920, 1080, 42);
+    const result1 = generateSplineFlow(controlPoints, 30, 49, 1920, 1080, { seed: 42 });
+    const result2 = generateSplineFlow(controlPoints, 30, 49, 1920, 1080, { seed: 42 });
 
     expect(JSON.stringify(result1)).toBe(JSON.stringify(result2));
   });
@@ -292,7 +292,7 @@ describe("generateForceFieldFlow", () => {
       height: 1080,
       seed: 12345,
       forces: [
-        { x: 960, y: 540, strength: 50, type: "attract" },
+        { x: 960, y: 540, strength: 50, radius: 200 }, // Positive = attractor
       ],
     };
 
@@ -310,7 +310,7 @@ describe("generateForceFieldFlow", () => {
       height: 1080,
       seed: 12345,
       forces: [
-        { x: 960, y: 540, strength: 30, type: "repel" },
+        { x: 960, y: 540, strength: -30, radius: 200 }, // Negative = repulsor
       ],
     };
 
@@ -327,10 +327,10 @@ describe("generateForceFieldFlow", () => {
       height: 1080,
       seed: 12345,
       forces: [
-        { x: 480, y: 540, strength: 40, type: "attract" },
-        { x: 1440, y: 540, strength: 40, type: "attract" },
-        { x: 960, y: 270, strength: 20, type: "repel" },
-        { x: 960, y: 810, strength: 20, type: "repel" },
+        { x: 480, y: 540, strength: 40, radius: 150 },  // Attractor
+        { x: 1440, y: 540, strength: 40, radius: 150 }, // Attractor
+        { x: 960, y: 270, strength: -20, radius: 100 }, // Repulsor
+        { x: 960, y: 810, strength: -20, radius: 100 }, // Repulsor
       ],
     };
 
@@ -339,7 +339,7 @@ describe("generateForceFieldFlow", () => {
     validateTrajectoryShape(trajectory, 75, 49);
   });
 
-  it("should support vortex force type", () => {
+  it("should support quadratic falloff", () => {
     const config: ForceFieldConfig = {
       numPoints: 50,
       numFrames: 49,
@@ -347,7 +347,7 @@ describe("generateForceFieldFlow", () => {
       height: 1080,
       seed: 12345,
       forces: [
-        { x: 960, y: 540, strength: 40, type: "vortex" },
+        { x: 960, y: 540, strength: 40, radius: 300, falloff: "quadratic" },
       ],
     };
 
@@ -365,6 +365,7 @@ describe("generateForceFieldFlow", () => {
 describe("Lorenz Attractor", () => {
   it("should generate valid Lorenz attractor trajectory", () => {
     const config: AttractorConfig = {
+      type: "lorenz",
       numFrames: 49,
       width: 1920,
       height: 1080,
@@ -380,6 +381,7 @@ describe("Lorenz Attractor", () => {
 
   it("should be deterministic with same seed", () => {
     const config: AttractorConfig = {
+      type: "lorenz",
       numFrames: 49,
       width: 1920,
       height: 1080,
@@ -397,6 +399,7 @@ describe("Lorenz Attractor", () => {
 describe("Rössler Attractor", () => {
   it("should generate valid Rössler attractor trajectory", () => {
     const config: AttractorConfig = {
+      type: "rossler",
       numFrames: 49,
       width: 1920,
       height: 1080,
@@ -414,6 +417,7 @@ describe("Rössler Attractor", () => {
 describe("Aizawa Attractor", () => {
   it("should generate valid Aizawa attractor trajectory", () => {
     const config: AttractorConfig = {
+      type: "aizawa",
       numFrames: 49,
       width: 1920,
       height: 1080,
@@ -727,8 +731,8 @@ describe("compositeFlowLayers", () => {
     const layer2 = generateFromPreset("cosmic-spiral", 20, 33, 1920, 1080, 222);
 
     const layers: FlowLayer[] = [
-      { trajectory: layer1, opacity: 1, blend: "normal" },
-      { trajectory: layer2, opacity: 0.5, blend: "add" },
+      { trajectory: layer1, name: "layer1", weight: 1 },
+      { trajectory: layer2, name: "layer2", weight: 0.5 },
     ];
 
     const composite = compositeFlowLayers(layers);
@@ -743,8 +747,8 @@ describe("compositeFlowLayers", () => {
     const layer2 = generateFromPreset("hivemind", 15, 49, 1920, 1080, 222);
 
     const layers: FlowLayer[] = [
-      { trajectory: layer1, opacity: 1, blend: "normal" },
-      { trajectory: layer2, opacity: 1, blend: "normal" },
+      { trajectory: layer1, name: "base", weight: 1 },
+      { trajectory: layer2, name: "overlay", weight: 1 },
     ];
 
     const composite = compositeFlowLayers(layers);
@@ -766,8 +770,8 @@ describe("compositeColoredLayers", () => {
     const colored2 = addColorToTrajectory(traj2, Array(10).fill(75), "plasma");
 
     const layers: FlowLayer[] = [
-      { trajectory: colored1, opacity: 1, blend: "normal" },
-      { trajectory: colored2, opacity: 1, blend: "normal" },
+      { trajectory: colored1, name: "viridis-layer", weight: 1 },
+      { trajectory: colored2, name: "plasma-layer", weight: 1 },
     ];
 
     const composite = compositeColoredLayers(layers);

@@ -175,10 +175,10 @@ export class ParticleSubEmitter {
           // Velocity - combination of inherited and new emission direction
           // Validate all config values
           const overrides = subEmitter.overrides;
-          const speed = Number.isFinite(overrides.initialSpeed) && overrides.initialSpeed >= 0 
-            ? overrides.initialSpeed : 100;
-          const spread = Number.isFinite(overrides.emissionSpread) 
-            ? Math.max(0, Math.min(360, overrides.emissionSpread)) : 180;
+          const rawSpeed = overrides.initialSpeed ?? 100;
+          const speed = (Number.isFinite(rawSpeed) && rawSpeed >= 0) ? rawSpeed : 100;
+          const rawSpread = overrides.emissionSpread ?? 180;
+          const spread = Number.isFinite(rawSpread) ? Math.max(0, Math.min(360, rawSpread)) : 180;
 
           // Random direction within spread cone (spherical for death = explosion)
           const theta = this.rng() * Math.PI * 2;
@@ -198,40 +198,44 @@ export class ParticleSubEmitter {
 
           // Life (validate lifetime)
           particleBuffer[subOffset + 6] = 0; // age
-          const lifetime = Number.isFinite(overrides.lifetime) && overrides.lifetime > 0 
-            ? overrides.lifetime : 30;
+          const rawLifetime = overrides.lifetime ?? 30;
+          const lifetime = (Number.isFinite(rawLifetime) && rawLifetime > 0) ? rawLifetime : 30;
           particleBuffer[subOffset + 7] = lifetime;
 
           // Physical - validate mass and size to prevent division by zero
           // Must check Number.isFinite before using - Math.max(NaN, x) = NaN
-          const safeMass = Number.isFinite(overrides.initialMass) && overrides.initialMass > 0 
-            ? overrides.initialMass : 1;
+          const rawMass = overrides.initialMass ?? 1;
+          const safeMass = (Number.isFinite(rawMass) && rawMass > 0) ? rawMass : 1;
           particleBuffer[subOffset + 8] = safeMass; // mass
-          
-          const safeInitialSize = Number.isFinite(overrides.initialSize) && overrides.initialSize > 0
-            ? overrides.initialSize : 5;
-          const safeInheritSize = Number.isFinite(subEmitter.inheritSize) ? subEmitter.inheritSize : 0;
+
+          const rawInitialSize = overrides.initialSize ?? 5;
+          const safeInitialSize = (Number.isFinite(rawInitialSize) && rawInitialSize > 0) ? rawInitialSize : 5;
+          const rawInheritSize = subEmitter.inheritSize ?? 0;
+          const safeInheritSize = Number.isFinite(rawInheritSize) ? rawInheritSize : 0;
           const rawSize = safeInitialSize * (safeInheritSize > 0 ? parentSize * safeInheritSize : 1);
           particleBuffer[subOffset + 9] = Number.isFinite(rawSize) ? Math.max(rawSize, 0.001) : 5; // size
 
           // Rotation (validate inheritRotation)
-          const inheritRot = Number.isFinite(subEmitter.inheritRotation) ? subEmitter.inheritRotation : 0;
+          const rawInheritRot = subEmitter.inheritRotation ?? 0;
+          const inheritRot = Number.isFinite(rawInheritRot) ? rawInheritRot : 0;
           particleBuffer[subOffset + 10] =
             inheritRot > 0
               ? parentRotation * inheritRot
               : this.rng() * Math.PI * 2;
-          const angVel = Number.isFinite(overrides.initialAngularVelocity) 
-            ? overrides.initialAngularVelocity : 0;
+          const rawAngVel = overrides.initialAngularVelocity ?? 0;
+          const angVel = Number.isFinite(rawAngVel) ? rawAngVel : 0;
           particleBuffer[subOffset + 11] = angVel;
 
           // Color inheritance (validate inheritColor and colorStart)
+          const rawColorStart = overrides.colorStart ?? [1, 1, 1, 1];
           const colorStart: [number, number, number, number] = [
-            Number.isFinite(overrides.colorStart?.[0]) ? overrides.colorStart[0] : 1,
-            Number.isFinite(overrides.colorStart?.[1]) ? overrides.colorStart[1] : 1,
-            Number.isFinite(overrides.colorStart?.[2]) ? overrides.colorStart[2] : 1,
-            Number.isFinite(overrides.colorStart?.[3]) ? overrides.colorStart[3] : 1,
+            Number.isFinite(rawColorStart[0]) ? rawColorStart[0] : 1,
+            Number.isFinite(rawColorStart[1]) ? rawColorStart[1] : 1,
+            Number.isFinite(rawColorStart[2]) ? rawColorStart[2] : 1,
+            Number.isFinite(rawColorStart[3]) ? rawColorStart[3] : 1,
           ];
-          const inheritCol = Number.isFinite(subEmitter.inheritColor) ? subEmitter.inheritColor : 0;
+          const rawInheritCol = subEmitter.inheritColor ?? 0;
+          const inheritCol = Number.isFinite(rawInheritCol) ? rawInheritCol : 0;
           if (inheritCol > 0) {
             particleBuffer[subOffset + 12] =
               parentColor[0] * inheritCol +

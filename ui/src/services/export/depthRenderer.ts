@@ -567,7 +567,7 @@ export function convertDepthToFormat(
  * Accepts DepthRenderResult or converted depth data.
  */
 export function depthToImageData(
-  input: DepthRenderResult | Uint8Array | Uint16Array,
+  input: DepthRenderResult | Uint8Array | Uint16Array | Float32Array,
   width?: number,
   height?: number,
 ): ImageData {
@@ -604,20 +604,29 @@ export function depthToImageData(
     return imageData;
   }
   
-  // Handle Uint8Array/Uint16Array input (legacy API)
-  const depthData = input as Uint8Array | Uint16Array;
+  // Handle Uint8Array/Uint16Array/Float32Array input (legacy API)
+  const depthData = input as Uint8Array | Uint16Array | Float32Array;
   const w = width!;
   const h = height!;
-  
+
   if (!w || !h) {
-    throw new Error('Width and height required when passing Uint8Array/Uint16Array');
+    throw new Error('Width and height required when passing typed array');
   }
-  
+
   const imageData = new ImageData(w, h);
   const is16bit = depthData instanceof Uint16Array;
+  const is32bit = depthData instanceof Float32Array;
 
   for (let i = 0; i < w * h; i++) {
-    const value = is16bit ? Math.floor(depthData[i] / 256) : depthData[i];
+    let value: number;
+    if (is32bit) {
+      // Float32Array: assume 0-1 range, scale to 0-255
+      value = Math.floor(depthData[i] * 255);
+    } else if (is16bit) {
+      value = Math.floor(depthData[i] / 256);
+    } else {
+      value = depthData[i];
+    }
     // Clamp to valid 8-bit range
     const clampedValue = Math.max(0, Math.min(255, value));
 

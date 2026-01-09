@@ -102,7 +102,9 @@ export function interpolateCameraAtFrame(
   }
 
   // Interpolate
-  const t = (frame - prev?.frame) / (next?.frame - prev?.frame);
+  const prevFrame = prev?.frame ?? 0;
+  const nextFrame = next?.frame ?? prevFrame;
+  const t = nextFrame === prevFrame ? 0 : (frame - prevFrame) / (nextFrame - prevFrame);
 
   const prevPos = getPos(prev);
   const nextPos = getPos(next);

@@ -97,7 +97,9 @@ const camera3DArb: fc.Arbitrary<Camera3D> = fc.record({
     saturation: fc.float({ min: 0, max: 1, noNaN: true }),
   }),
   autoOrient: fc.constantFrom<AutoOrientMode>("off", "orient-along-path", "orient-towards-poi"),
-  nearClip: fc.float({ min: 0.1, max: 100, noNaN: true }),
+  // NOTE: nearClip uses fc.double because 0.1 is not exactly representable as 32-bit float
+  // fc.float requires Math.fround(min/max) - double is more appropriate for camera precision
+  nearClip: fc.double({ min: 0.1, max: 100, noNaN: true, noDefaultInfinity: true }),
   farClip: fc.integer({ min: 1000, max: 100000 }).map(n => n),
 });
 

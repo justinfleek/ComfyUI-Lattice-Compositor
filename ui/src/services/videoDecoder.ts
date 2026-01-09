@@ -338,10 +338,8 @@ export class VideoDecoderService {
     }
 
     // Clamp frame number
-    const clampedFrame = Math.max(
-      0,
-      Math.min(frameNumber, this.videoInfo?.frameCount - 1),
-    );
+    const maxFrame = (this.videoInfo?.frameCount ?? 1) - 1;
+    const clampedFrame = Math.max(0, Math.min(frameNumber, maxFrame));
 
     // Check cache first
     const cached = this.frameCache.get(clampedFrame);
@@ -421,8 +419,8 @@ export class VideoDecoderService {
           resolve({
             frameNumber,
             timestamp,
-            width: this.videoInfo?.width,
-            height: this.videoInfo?.height,
+            width: this.videoInfo?.width ?? 0,
+            height: this.videoInfo?.height ?? 0,
             bitmap,
           });
         } catch (error) {
@@ -456,7 +454,8 @@ export class VideoDecoderService {
     }
 
     const start = Math.max(0, startFrame);
-    const end = Math.min(endFrame, this.videoInfo?.frameCount - 1);
+    const maxFrame = (this.videoInfo?.frameCount ?? 1) - 1;
+    const end = Math.min(endFrame, maxFrame);
 
     const promises: Promise<void>[] = [];
 

@@ -706,7 +706,7 @@ describe("exportOverlapAsDepth", () => {
     const result = exportOverlapAsDepth(mesh, deformed, pins, 0, 100, 100, "uint8");
 
     // No overlap pins, so all values should be 0
-    const sum = result.reduce((a, b) => a + b, 0);
+    const sum = Array.from(result).reduce((a: number, b: number) => a + b, 0);
     expect(sum).toBe(0);
   });
 });

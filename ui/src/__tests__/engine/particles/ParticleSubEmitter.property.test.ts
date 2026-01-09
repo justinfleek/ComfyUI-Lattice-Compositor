@@ -61,6 +61,7 @@ function createDefaultSubEmitterConfig(): SubEmitterConfig {
     triggerProbability: 1.0,
     emitCount: 5,
     emitCountVariance: 2,
+    inheritPosition: true,
     inheritVelocity: 0.3,
     inheritSize: 0.5,
     inheritColor: 0.5,
@@ -138,6 +139,7 @@ const arbSubEmitterConfig: fc.Arbitrary<SubEmitterConfig> = fc.record({
     fc.integer({ min: 0, max: 10 }),
     fc.constant(NaN),
   ),
+  inheritPosition: fc.boolean(),
   inheritVelocity: fc.oneof(
     fc.float({ min: Math.fround(0), max: Math.fround(1), noNaN: true }),
     fc.constant(NaN),

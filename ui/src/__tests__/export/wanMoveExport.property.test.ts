@@ -582,17 +582,17 @@ describe("PROPERTY: compositeFlowLayers", () => {
   it("combines multiple trajectories", () => {
     const layer1: FlowLayer = {
       trajectory: createTestTrajectory(3, 10),
-      opacity: 1,
-      blendMode: "normal",
+      name: "layer1",
+      weight: 1,
     };
     const layer2: FlowLayer = {
       trajectory: createTestTrajectory(2, 10),
-      opacity: 1,
-      blendMode: "normal",
+      name: "layer2",
+      weight: 1,
     };
-    
+
     const composite = compositeFlowLayers([layer1, layer2]);
-    
+
     // Should have combined points
     expect(composite.tracks.length).toBe(5); // 3 + 2
     expect(composite.metadata.numPoints).toBe(5);
@@ -601,17 +601,17 @@ describe("PROPERTY: compositeFlowLayers", () => {
   it("preserves frame count from first layer", () => {
     const layer1: FlowLayer = {
       trajectory: createTestTrajectory(3, 10),
-      opacity: 1,
-      blendMode: "normal",
+      name: "layer1",
+      weight: 1,
     };
     const layer2: FlowLayer = {
       trajectory: createTestTrajectory(2, 10),
-      opacity: 1,
-      blendMode: "normal",
+      name: "layer2",
+      weight: 1,
     };
-    
+
     const composite = compositeFlowLayers([layer1, layer2]);
-    
+
     expect(composite.metadata.numFrames).toBe(10);
   });
 
@@ -623,12 +623,12 @@ describe("PROPERTY: compositeFlowLayers", () => {
     const trajectory = createTestTrajectory(5, 10);
     const layer: FlowLayer = {
       trajectory,
-      opacity: 1,
-      blendMode: "normal",
+      name: "solo",
+      weight: 1,
     };
-    
+
     const composite = compositeFlowLayers([layer]);
-    
+
     expect(composite.tracks.length).toBe(5);
     expect(composite.metadata.numPoints).toBe(5);
   });

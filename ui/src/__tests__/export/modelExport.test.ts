@@ -52,14 +52,30 @@ function createTestCamera(overrides: Partial<Camera3D> = {}): Camera3D {
     pointOfInterest: { x: 0, y: 0, z: 0 },
     focalLength: 50,
     filmSize: 36,
+    measureFilmSize: "horizontal",
     zoom: 1,
     angleOfView: 39.6,
     depthOfField: {
       enabled: false,
       focusDistance: 100,
       aperture: 2.8,
+      fStop: 2.8,
       blurLevel: 100,
+      lockToZoom: false,
     },
+    iris: {
+      shape: 7,
+      rotation: 0,
+      roundness: 0,
+      aspectRatio: 1,
+      diffractionFringe: 0,
+    },
+    highlight: {
+      gain: 0,
+      threshold: 1,
+      saturation: 1,
+    },
+    autoOrient: "off",
     nearClip: 1,
     farClip: 10000,
     ...overrides,
@@ -957,7 +973,7 @@ describe("exportWanMoveTrajectories", () => {
 // extractLayerTrajectory Tests (PURE - testable without browser)
 // ============================================================================
 
-import { extractLayerTrajectory } from "@/services/modelExport";
+// extractLayerTrajectory is already imported at the top of this file
 
 describe("extractLayerTrajectory", () => {
   const createTestLayer = (id: string, visible = true, inPoint = 0, outPoint = 100): Layer => ({

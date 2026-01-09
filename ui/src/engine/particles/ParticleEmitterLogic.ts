@@ -50,7 +50,8 @@ export function getEmitterPosition(
     case "circle": {
       const angle = rng() * Math.PI * 2;
       // Validate radius
-      let radius = Number.isFinite(shape.radius) && shape.radius > 0 ? shape.radius : 50;
+      const rawRadius = shape.radius ?? 50;
+      let radius = (Number.isFinite(rawRadius) && rawRadius > 0) ? rawRadius : 50;
       if (!shape.emitFromEdge) {
         radius *= Math.sqrt(rng()); // Uniform distribution in circle
       }
@@ -67,7 +68,8 @@ export function getEmitterPosition(
       const theta = rng() * Math.PI * 2;
       const phi = Math.acos(2 * rng() - 1);
       // Validate radius
-      let radius = Number.isFinite(shape.radius) && shape.radius > 0 ? shape.radius : 50;
+      const rawRadius = shape.radius ?? 50;
+      let radius = (Number.isFinite(rawRadius) && rawRadius > 0) ? rawRadius : 50;
       if (!shape.emitFromEdge) {
         radius *= Math.cbrt(rng()); // Uniform distribution in sphere
       }
@@ -112,8 +114,10 @@ export function getEmitterPosition(
       const angle = rng() * Math.PI * 2;
       const t = rng();
       // Validate cone dimensions
-      const coneRadius = Number.isFinite(shape.coneRadius) && shape.coneRadius > 0 ? shape.coneRadius : 50;
-      const coneLength = Number.isFinite(shape.coneLength) && shape.coneLength > 0 ? shape.coneLength : 100;
+      const rawConeRadius = shape.coneRadius ?? 50;
+      const coneRadius = (Number.isFinite(rawConeRadius) && rawConeRadius > 0) ? rawConeRadius : 50;
+      const rawConeLength = shape.coneLength ?? 100;
+      const coneLength = (Number.isFinite(rawConeLength) && rawConeLength > 0) ? rawConeLength : 100;
       const radius = t * coneRadius;
       const height = t * coneLength;
       return base.add(
@@ -131,7 +135,8 @@ export function getEmitterPosition(
 
       const { width, height, data } = shape.imageData;
       // Validate threshold
-      const threshold = Number.isFinite(shape.emissionThreshold) ? shape.emissionThreshold : 0.1;
+      const rawThreshold = shape.emissionThreshold ?? 0.1;
+      const threshold = Number.isFinite(rawThreshold) ? rawThreshold : 0.1;
 
       // Try up to 100 times to find a valid pixel
       for (let attempt = 0; attempt < 100; attempt++) {
@@ -162,10 +167,11 @@ export function getEmitterPosition(
       const { width, height } = shape.imageData;
       // Validate dimensions
       if (width < 3 || height < 3) return base; // Need at least 3x3 for gradient calc
-      
+
       const depthData = shape.depthData;
       // Validate threshold
-      const threshold = Number.isFinite(shape.emissionThreshold) ? shape.emissionThreshold : 0.05;
+      const rawThreshold = shape.emissionThreshold ?? 0.05;
+      const threshold = Number.isFinite(rawThreshold) ? rawThreshold : 0.05;
 
       // Try up to 100 times to find an edge pixel
       for (let attempt = 0; attempt < 100; attempt++) {

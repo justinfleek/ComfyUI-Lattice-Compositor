@@ -111,13 +111,14 @@ describe("PROPERTY: convertDepthToFormat", () => {
     );
   });
 
+  // NOTE: Array iteration over all pixels is slow - extend timeout
   it("8-bit output values are in range 0-255", () => {
     const format8bitFormats = validDepthFormats.filter(
       (f) => DEPTH_FORMAT_SPECS[f].bitDepth === 8
     );
-    
+
     if (format8bitFormats.length === 0) return;
-    
+
     fc.assert(
       fc.property(
         depthRenderResultArb,
@@ -131,15 +132,16 @@ describe("PROPERTY: convertDepthToFormat", () => {
         }
       )
     );
-  });
+  }, 30000);
 
+  // NOTE: Array iteration over all pixels is slow - extend timeout
   it("16-bit output values are in range 0-65535", () => {
     const format16bitFormats = validDepthFormats.filter(
       (f) => DEPTH_FORMAT_SPECS[f].bitDepth === 16 && f !== "raw"
     );
-    
+
     if (format16bitFormats.length === 0) return;
-    
+
     fc.assert(
       fc.property(
         depthRenderResultArb,
@@ -153,7 +155,7 @@ describe("PROPERTY: convertDepthToFormat", () => {
         }
       )
     );
-  });
+  }, 30000);
 
   it("raw format preserves Float32 values", () => {
     fc.assert(

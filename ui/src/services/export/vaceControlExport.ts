@@ -354,7 +354,8 @@ function renderShape(
   ctx.save();
   ctx.translate(state.position.x, state.position.y);
   ctx.rotate(state.rotation);
-  ctx.globalAlpha = state.opacity;
+  // Opacity is stored as 0-100 in the system, canvas globalAlpha is 0-1
+  ctx.globalAlpha = state.opacity / 100;
 
   ctx.fillStyle = fillColor;
   if (strokeColor && strokeWidth) {

@@ -1056,6 +1056,7 @@ export const ALL_SHADER_EFFECTS: Record<string, ShaderEffectDefinition> = {
 
 export class ShaderEffectProcessor {
   private engine: ReturnType<typeof getGLSLEngine>;
+  private currentEffect: string | null = null;
 
   constructor() {
     this.engine = getGLSLEngine();

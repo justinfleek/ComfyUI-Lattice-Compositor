@@ -99,16 +99,19 @@ export class ParticleTextureSystem {
 
             // Sprite sheet configuration
             if (spriteSheet && (spriteSheet.columns || spriteSheet.rows)) {
-              // Validate cols/rows
-              const cols = Number.isFinite(spriteSheet.columns) && spriteSheet.columns > 0
-                ? Math.floor(spriteSheet.columns)
+              // Validate cols/rows - use ?? first to handle undefined, then validate
+              const rawCols = spriteSheet.columns ?? 1;
+              const cols = (Number.isFinite(rawCols) && rawCols > 0)
+                ? Math.floor(rawCols)
                 : 1;
-              const rows = Number.isFinite(spriteSheet.rows) && spriteSheet.rows > 0
-                ? Math.floor(spriteSheet.rows)
+              const rawRows = spriteSheet.rows ?? 1;
+              const rows = (Number.isFinite(rawRows) && rawRows > 0)
+                ? Math.floor(rawRows)
                 : 1;
               // Validate frameRate
-              const frameRate = Number.isFinite(spriteSheet.frameRate) && spriteSheet.frameRate > 0
-                ? spriteSheet.frameRate
+              const rawFrameRate = spriteSheet.frameRate ?? 10;
+              const frameRate = (Number.isFinite(rawFrameRate) && rawFrameRate > 0)
+                ? rawFrameRate
                 : 10;
 
               this.spriteSheetConfig = {

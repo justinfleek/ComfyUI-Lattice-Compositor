@@ -1230,6 +1230,7 @@ class ClothSimulator {
 
 class ForceFieldProcessor {
   private forceFields: ForceField[] = [];
+  private random: PhysicsRandom;
 
   constructor(seed: number) {
     this.random = new PhysicsRandom(seed);
@@ -1465,6 +1466,9 @@ export class PhysicsEngine {
 
   // Ragdoll registry: tracks ragdoll ID -> bones configuration
   private ragdollRegistry: Map<string, RagdollBone[]> = new Map();
+
+  // Seeded random number generator
+  private random: PhysicsRandom;
 
   constructor(config: Partial<PhysicsSpaceConfig> = {}) {
     this.config = { ...DEFAULT_SPACE_CONFIG, ...config };

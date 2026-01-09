@@ -56,6 +56,11 @@ def normalized_float():
     return st.floats(min_value=0.0, max_value=1.0, allow_nan=False, allow_infinity=False)
 
 
+def percentage():
+    """Percentage value in range [0, 100]. Used for opacity, volume controls, etc."""
+    return st.floats(min_value=0.0, max_value=100.0, allow_nan=False, allow_infinity=False)
+
+
 def angle_degrees():
     """Angle in degrees (-360 to 360)."""
     return st.floats(min_value=-360.0, max_value=360.0, allow_nan=False, allow_infinity=False)
@@ -125,7 +130,7 @@ def transform_2d(draw):
             'x': draw(st.floats(min_value=-10000, max_value=10000, allow_nan=False)),
             'y': draw(st.floats(min_value=-10000, max_value=10000, allow_nan=False)),
         },
-        'opacity': draw(normalized_float()),
+        'opacity': draw(percentage()),  # Frontend uses 0-100; Canvas converts to 0-1 at render
     }
 
 

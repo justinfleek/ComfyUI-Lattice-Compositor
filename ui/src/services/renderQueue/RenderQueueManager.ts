@@ -176,9 +176,10 @@ class RenderQueueDB {
 
   async saveJob(job: RenderJob): Promise<void> {
     if (!this.db) throw new Error("Database not open");
+    const db = this.db;
 
     return new Promise((resolve, reject) => {
-      const transaction = this.db?.transaction([JOBS_STORE], "readwrite");
+      const transaction = db.transaction([JOBS_STORE], "readwrite");
       const store = transaction.objectStore(JOBS_STORE);
       const request = store.put(job);
 
@@ -189,9 +190,10 @@ class RenderQueueDB {
 
   async getJob(jobId: string): Promise<RenderJob | undefined> {
     if (!this.db) throw new Error("Database not open");
+    const db = this.db;
 
     return new Promise((resolve, reject) => {
-      const transaction = this.db?.transaction([JOBS_STORE], "readonly");
+      const transaction = db.transaction([JOBS_STORE], "readonly");
       const store = transaction.objectStore(JOBS_STORE);
       const request = store.get(jobId);
 
@@ -202,9 +204,10 @@ class RenderQueueDB {
 
   async getAllJobs(): Promise<RenderJob[]> {
     if (!this.db) throw new Error("Database not open");
+    const db = this.db;
 
     return new Promise((resolve, reject) => {
-      const transaction = this.db?.transaction([JOBS_STORE], "readonly");
+      const transaction = db.transaction([JOBS_STORE], "readonly");
       const store = transaction.objectStore(JOBS_STORE);
       const request = store.getAll();
 
@@ -215,9 +218,10 @@ class RenderQueueDB {
 
   async deleteJob(jobId: string): Promise<void> {
     if (!this.db) throw new Error("Database not open");
+    const db = this.db;
 
     return new Promise((resolve, reject) => {
-      const transaction = this.db?.transaction(
+      const transaction = db.transaction(
         [JOBS_STORE, FRAMES_STORE],
         "readwrite",
       );
@@ -246,9 +250,10 @@ class RenderQueueDB {
 
   async saveFrame(jobId: string, frame: RenderedFrame): Promise<void> {
     if (!this.db) throw new Error("Database not open");
+    const db = this.db;
 
     return new Promise((resolve, reject) => {
-      const transaction = this.db?.transaction([FRAMES_STORE], "readwrite");
+      const transaction = db.transaction([FRAMES_STORE], "readwrite");
       const store = transaction.objectStore(FRAMES_STORE);
       const request = store.put({ jobId, ...frame });
 
@@ -259,9 +264,10 @@ class RenderQueueDB {
 
   async getFrames(jobId: string): Promise<RenderedFrame[]> {
     if (!this.db) throw new Error("Database not open");
+    const db = this.db;
 
     return new Promise((resolve, reject) => {
-      const transaction = this.db?.transaction([FRAMES_STORE], "readonly");
+      const transaction = db.transaction([FRAMES_STORE], "readonly");
       const store = transaction.objectStore(FRAMES_STORE);
       const index = store.index("jobId");
       const request = index.getAll(IDBKeyRange.only(jobId));
@@ -273,9 +279,10 @@ class RenderQueueDB {
 
   async clearCompletedFrames(jobId: string): Promise<void> {
     if (!this.db) throw new Error("Database not open");
+    const db = this.db;
 
     return new Promise((resolve, reject) => {
-      const transaction = this.db?.transaction([FRAMES_STORE], "readwrite");
+      const transaction = db.transaction([FRAMES_STORE], "readwrite");
       const store = transaction.objectStore(FRAMES_STORE);
       const index = store.index("jobId");
       const cursorRequest = index.openCursor(IDBKeyRange.only(jobId));

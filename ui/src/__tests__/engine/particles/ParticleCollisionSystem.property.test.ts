@@ -51,6 +51,7 @@ const arbBounds = fc.record({
 });
 
 const arbCollisionPlane = fc.record({
+  id: fc.uuid(),
   enabled: fc.boolean(),
   point: fc.record({
     x: safeFloat(-500, 500),
@@ -71,9 +72,11 @@ const arbCollisionConfig: fc.Arbitrary<CollisionConfig> = fc.record({
   bounds: arbBounds,
   boundsBehavior: arbBoundsBehavior,
   bounceDamping: fc.float({ min: 0, max: 1, noNaN: true }),
-  particleCollisions: fc.boolean(),
+  particleCollision: fc.boolean(),
   particleRadius: positiveFloat(20),
   collisionResponse: fc.float({ min: 0, max: 1, noNaN: true }),
+  bounciness: fc.float({ min: 0, max: 1, noNaN: true }),
+  friction: fc.float({ min: 0, max: 1, noNaN: true }),
   planes: fc.array(arbCollisionPlane, { minLength: 0, maxLength: 5 }),
 });
 
@@ -214,7 +217,7 @@ describe("ParticleCollisionSystem boundary collisions", () => {
           });
 
           // Apply collisions
-          system.update(buffer, 1 / 60);
+          system.update(buffer);
 
           // Verify no NaN
           for (let i = 0; i < particles.length; i++) {
@@ -259,9 +262,11 @@ describe("ParticleCollisionSystem boundary collisions", () => {
             bounds,
             boundsBehavior: "clamp",
             bounceDamping: 0.5,
-            particleCollisions: false,
+            particleCollision: false,
             particleRadius: 5,
             collisionResponse: 0.5,
+            bounciness: 0.5,
+            friction: 0.1,
             planes: [],
           };
 
@@ -274,7 +279,7 @@ describe("ParticleCollisionSystem boundary collisions", () => {
           });
 
           // Apply collisions
-          system.update(buffer, 1 / 60);
+          system.update(buffer);
 
           // Verify particles are within bounds
           for (let i = 0; i < particles.length; i++) {
@@ -327,9 +332,11 @@ describe("ParticleCollisionSystem boundary collisions", () => {
             bounds,
             boundsBehavior: "kill",
             bounceDamping: 0.5,
-            particleCollisions: false,
+            particleCollision: false,
             particleRadius: 5,
             collisionResponse: 0.5,
+            bounciness: 0.5,
+            friction: 0.1,
             planes: [],
           };
 
@@ -342,7 +349,7 @@ describe("ParticleCollisionSystem boundary collisions", () => {
           });
 
           // Apply collisions
-          system.update(buffer, 1 / 60);
+          system.update(buffer);
 
           // Verify all particles are killed (age >= lifetime)
           // The kill behavior sets age = lifetime to mark particle as dead
@@ -394,9 +401,11 @@ describe("ParticleCollisionSystem boundary collisions", () => {
             bounds,
             boundsBehavior: "wrap",
             bounceDamping: 0.5,
-            particleCollisions: false,
+            particleCollision: false,
             particleRadius: 5,
             collisionResponse: 0.5,
+            bounciness: 0.5,
+            friction: 0.1,
             planes: [],
           };
 
@@ -409,7 +418,7 @@ describe("ParticleCollisionSystem boundary collisions", () => {
           });
 
           // Apply collisions
-          system.update(buffer, 1 / 60);
+          system.update(buffer);
 
           // Verify particles are within bounds (wrapped)
           for (let i = 0; i < particles.length; i++) {
@@ -444,9 +453,11 @@ describe("ParticleCollisionSystem boundary collisions", () => {
             bounds,
             boundsBehavior: "bounce",
             bounceDamping,
-            particleCollisions: false,
+            particleCollision: false,
             particleRadius: 5,
             collisionResponse: 0.5,
+            bounciness: 0.5,
+            friction: 0.1,
             planes: [],
           };
 
@@ -457,7 +468,7 @@ describe("ParticleCollisionSystem boundary collisions", () => {
           initParticle(buffer, 0, { x: 110, y: 0, z: 0 }, { x: speed, y: 0, z: 0 });
 
           // Apply collisions
-          system.update(buffer, 1 / 60);
+          system.update(buffer);
 
           const pos = getParticlePos(buffer, 0);
           const vel = getParticleVel(buffer, 0);
@@ -494,9 +505,11 @@ describe("ParticleCollisionSystem particle-particle collisions", () => {
             },
             boundsBehavior: "none",
             bounceDamping: 0.8,
-            particleCollisions: true,
+            particleCollision: true,
             particleRadius,
             collisionResponse: response,
+            bounciness: 0.5,
+            friction: 0.1,
             planes: [],
           };
 
@@ -515,7 +528,7 @@ describe("ParticleCollisionSystem particle-particle collisions", () => {
 
           // Apply collisions multiple times
           for (let frame = 0; frame < 10; frame++) {
-            system.update(buffer, 1 / 60);
+            system.update(buffer);
           }
 
           // Verify no NaN
@@ -545,9 +558,11 @@ describe("ParticleCollisionSystem particle-particle collisions", () => {
       },
       boundsBehavior: "none",
       bounceDamping: 0.8,
-      particleCollisions: true,
+      particleCollision: true,
       particleRadius: 10,
       collisionResponse: 1,
+      bounciness: 0.5,
+      friction: 0.1,
       planes: [],
     };
 
@@ -561,7 +576,7 @@ describe("ParticleCollisionSystem particle-particle collisions", () => {
         initParticle(buffer, 1, { x: separation, y: 0, z: 0 }, { x: 0, y: 0, z: 0 });
 
         // Apply collisions
-        system.update(buffer, 1 / 60);
+        system.update(buffer);
 
         const pos0 = getParticlePos(buffer, 0);
         const pos1 = getParticlePos(buffer, 1);
@@ -595,11 +610,14 @@ describe("ParticleCollisionSystem plane collisions", () => {
       },
       boundsBehavior: "none",
       bounceDamping: 0.8,
-      particleCollisions: false,
+      particleCollision: false,
       particleRadius: 5,
       collisionResponse: 0.5,
+      bounciness: 0.5,
+      friction: 0.1,
       planes: [
         {
+          id: "floor-plane",
           enabled: true,
           point: { x: 0, y: 0, z: 0 },
           normal: { x: 0, y: 1, z: 0 }, // Floor at Y=0
@@ -616,7 +634,7 @@ describe("ParticleCollisionSystem plane collisions", () => {
     initParticle(buffer, 0, { x: 0, y: -2, z: 0 }, { x: 0, y: -100, z: 0 });
 
     // Apply collisions
-    system.update(buffer, 1 / 60);
+    system.update(buffer);
 
     const pos = getParticlePos(buffer, 0);
     const vel = getParticleVel(buffer, 0);
@@ -637,11 +655,14 @@ describe("ParticleCollisionSystem plane collisions", () => {
       },
       boundsBehavior: "none",
       bounceDamping: 0.8,
-      particleCollisions: false,
+      particleCollision: false,
       particleRadius: 5,
       collisionResponse: 0.5,
+      bounciness: 0.5,
+      friction: 0.1,
       planes: [
         {
+          id: "zero-normal-plane",
           enabled: true,
           point: { x: 0, y: 0, z: 0 },
           normal: { x: 0, y: 0, z: 0 }, // Zero normal
@@ -670,7 +691,7 @@ describe("ParticleCollisionSystem plane collisions", () => {
           initParticle(buffer, 0, pos, vel);
 
           // Should not throw or produce NaN
-          system.update(buffer, 1 / 60);
+          system.update(buffer);
 
           const newPos = getParticlePos(buffer, 0);
           const newVel = getParticleVel(buffer, 0);
@@ -707,9 +728,11 @@ describe("ParticleCollisionSystem energy conservation", () => {
             },
             boundsBehavior: "bounce",
             bounceDamping: damping,
-            particleCollisions: false,
+            particleCollision: false,
             particleRadius: 5,
             collisionResponse: 0.5,
+            bounciness: 0.5,
+            friction: 0.1,
             planes: [],
           };
 
@@ -723,7 +746,7 @@ describe("ParticleCollisionSystem energy conservation", () => {
           const energyBefore = velBefore.x ** 2 + velBefore.y ** 2 + velBefore.z ** 2;
 
           // Apply collision
-          system.update(buffer, 1 / 60);
+          system.update(buffer);
 
           const velAfter = getParticleVel(buffer, 0);
           const energyAfter = velAfter.x ** 2 + velAfter.y ** 2 + velAfter.z ** 2;

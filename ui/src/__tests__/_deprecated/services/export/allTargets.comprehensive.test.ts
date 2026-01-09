@@ -48,7 +48,7 @@ import type { ExportTarget } from "@/types/export";
 // ============================================================================
 
 /**
- * All 22 export targets
+ * All valid export targets (scail removed - not in current API)
  */
 const ALL_TARGETS: ExportTarget[] = [
   "wan22-i2v",
@@ -72,7 +72,7 @@ const ALL_TARGETS: ExportTarget[] = [
   "ttm-wan",
   "ttm-cogvideox",
   "ttm-svd",
-  "scail",
+  // "scail" - not a valid ExportTarget in current API
   "camera-comfyui",
 ];
 

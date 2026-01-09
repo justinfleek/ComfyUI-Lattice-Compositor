@@ -67,6 +67,10 @@ const arbitraryPose = (): fc.Arbitrary<Pose> =>
 const arbitraryPoses = (maxPeople: number = 5): fc.Arbitrary<Pose[]> =>
   fc.array(arbitraryPose(), { minLength: 1, maxLength: maxPeople });
 
+// Helper to generate hex color strings (#RRGGBB)
+const arbitraryHexColor = (): fc.Arbitrary<string> =>
+  fc.integer({ min: 0, max: 0xFFFFFF }).map(n => `#${n.toString(16).padStart(6, '0')}`);
+
 // Generate pose export config
 const arbitraryPoseExportConfig = (): fc.Arbitrary<PoseExportConfig> =>
   fc.record({
@@ -79,8 +83,8 @@ const arbitraryPoseExportConfig = (): fc.Arbitrary<PoseExportConfig> =>
     showKeypoints: fc.boolean(),
     showBones: fc.boolean(),
     useOpenPoseColors: fc.boolean(),
-    customColor: fc.hexaString({ minLength: 6, maxLength: 6 }).map(s => `#${s}`),
-    backgroundColor: fc.hexaString({ minLength: 6, maxLength: 6 }).map(s => `#${s}`),
+    customColor: arbitraryHexColor(),
+    backgroundColor: arbitraryHexColor(),
     outputFormat: fc.constantFrom('images', 'json', 'both'),
   }).filter(c => c.endFrame > c.startFrame);
 

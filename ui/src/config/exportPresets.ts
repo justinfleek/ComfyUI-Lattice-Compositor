@@ -333,6 +333,21 @@ export const EXPORT_PRESETS: Record<ExportTarget, Partial<ExportConfig>> = {
     cfgScale: 5.0,
   },
 
+  // SCAIL - Pose-driven video generation (reference image + pose video)
+  scail: {
+    width: 832,
+    height: 480,
+    frameCount: 81, // 5 seconds at 16fps (4n+1 pattern)
+    fps: 16,
+    exportDepthMap: false,
+    exportControlImages: false,
+    exportCameraData: false,
+    exportReferenceFrame: true,
+    exportLastFrame: false,
+    steps: 30,
+    cfgScale: 5.0,
+  },
+
   "camera-comfyui": {
     width: 832,
     height: 480,
@@ -988,6 +1003,20 @@ export const EXPORT_TARGET_INFO: Record<
       "TTM_ApplyMotionControlSVD",
       "TTM_TrajectoryFromPoints",
       "SVDEncode",
+    ],
+  },
+
+  scail: {
+    name: "SCAIL Pose-Driven Video",
+    description:
+      "Generate video with pose-driven animation using reference image and pose sequence",
+    requiredInputs: ["reference_image", "pose_video"],
+    optionalInputs: ["prompt", "negative_prompt", "seed"],
+    outputTypes: ["video"],
+    comfyNodes: [
+      "WanVideoAddSCAILReferenceEmbeds",
+      "WanVideoAddSCAILPoseEmbeds",
+      "WanImageToVideo",
     ],
   },
 

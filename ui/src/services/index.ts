@@ -1079,25 +1079,6 @@ export {
 } from "./webgpuRenderer";
 
 // ============================================================================
-// ONION SKINNING
-// ============================================================================
-
-export {
-  calculateOnionSkinFrames,
-  calculateOpacity,
-  compositeOnionSkinFrame,
-  DEFAULT_ONION_SKIN_CONFIG,
-  ONION_SKIN_PRESETS,
-  type OnionSkinConfig,
-  type OnionSkinFrame,
-  OnionSkinningService,
-  type OnionSkinRenderData,
-  type OpacityFalloff,
-  onionSkinning,
-  parseColor,
-} from "./onionSkinning";
-
-// ============================================================================
 // GAUSSIAN SPLATTING (3DGS)
 // ============================================================================
 

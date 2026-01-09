@@ -496,7 +496,13 @@ export class GPUSpringSystem {
     }
 
     // Upload data
-    this.device.queue.writeBuffer(this.buffers.particles, 0, particleBuffer);
+    this.device.queue.writeBuffer(
+      this.buffers.particles,
+      0,
+      particleBuffer.buffer,
+      particleBuffer.byteOffset,
+      particleBuffer.byteLength
+    );
     this.uploadSprings();
     this.uploadPins();
     this.updateParams(safeDt);

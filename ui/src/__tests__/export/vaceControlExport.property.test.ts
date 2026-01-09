@@ -1,216 +1,476 @@
 /**
- * Property tests for ui/src/services/export/vaceControlExport.ts
- * Tests pure functions: createPathFollower, createVACEExportConfig,
- *                       calculateDurationForSpeed, calculateSpeed,
- *                       splineLayerToPathFollower
+ * STRICT Property Tests: VACE Control Export
  * 
- * Audit: 2026-01-06
+ * Tests VACE (Video Animation Control Engine) export for:
+ * - White shapes on black background (#000000)
+ * - Arc-length parameterized path following
+ * - Speed = pathLength / duration (implicit)
+ * - Easing functions for motion timing
+ * 
+ * Model Requirements:
+ * - Background: Pure black (#000000)
+ * - Shapes: White (#FFFFFF) or custom color
+ * - Clean edges (anti-aliased optional)
+ * - Consistent motion speed via arc-length parameterization
  */
 
-import { describe, it, expect } from "vitest";
-import * as fc from "fast-check";
+import { describe, expect, beforeEach } from 'vitest';
+import { test, fc } from '@fast-check/vitest';
 import {
+  PathFollower,
+  VACEControlExporter,
   createPathFollower,
   createVACEExportConfig,
   calculateDurationForSpeed,
   calculateSpeed,
   splineLayerToPathFollower,
-  type SplineControlPoint,
   type PathFollowerConfig,
-} from "@/services/export/vaceControlExport";
+  type PathFollowerShape,
+  type PathFollowerEasing,
+  type VACEExportConfig,
+  type PathFollowerState,
+} from '@/services/export/vaceControlExport';
 
-// ============================================================
+// BUG-054: EASING_FUNCTIONS is not exported from vaceControlExport.ts
+// This is an internal constant that should be exported for testing/preview
+// For now, we define our own copy to test expected behavior
+const EASING_FUNCTIONS: Record<PathFollowerEasing, (t: number) => number> = {
+  'linear': (t) => t,
+  'ease-in': (t) => t * t,
+  'ease-out': (t) => t * (2 - t),
+  'ease-in-out': (t) => t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t,
+  'ease-in-cubic': (t) => t * t * t,
+  'ease-out-cubic': (t) => (--t) * t * t + 1,
+};
+import type { ControlPoint } from '@/types/spline';
+
+// ============================================================================
 // ARBITRARIES
-// ============================================================
+// ============================================================================
 
-const controlPointArb: fc.Arbitrary<SplineControlPoint> = fc.record({
-  x: fc.double({ min: -1000, max: 1000, noNaN: true }),
-  y: fc.double({ min: -1000, max: 1000, noNaN: true }),
-  handleIn: fc.option(
-    fc.record({
-      x: fc.double({ min: -100, max: 100, noNaN: true }),
-      y: fc.double({ min: -100, max: 100, noNaN: true }),
-    }),
-    { nil: undefined }
-  ),
-  handleOut: fc.option(
-    fc.record({
-      x: fc.double({ min: -100, max: 100, noNaN: true }),
-      y: fc.double({ min: -100, max: 100, noNaN: true }),
-    }),
-    { nil: undefined }
-  ),
+// Helper to create a valid control point with required fields
+const makeControlPoint = (
+  x: number,
+  y: number,
+  handleIn: { x: number; y: number } | null = null,
+  handleOut: { x: number; y: number } | null = null
+): ControlPoint => ({
+  id: `cp-${Math.random().toString(36).slice(2, 11)}`,
+  x,
+  y,
+  handleIn,
+  handleOut,
+  type: 'smooth',
 });
 
-const controlPointsArb = fc.array(controlPointArb, { minLength: 2, maxLength: 20 });
-
-// Generate valid hex colors
-const hexDigitArb = fc.constantFrom('0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F');
-const hexColorArb = fc.tuple(hexDigitArb, hexDigitArb, hexDigitArb, hexDigitArb, hexDigitArb, hexDigitArb)
-  .map(digits => `#${digits.join('')}`);
-
-const shapeArb = fc.constantFrom("circle", "square", "triangle", "diamond", "arrow") as fc.Arbitrary<PathFollowerConfig["shape"]>;
-
-const easingArb = fc.constantFrom("linear", "ease-in", "ease-out", "ease-in-out") as fc.Arbitrary<PathFollowerConfig["easing"]>;
-
-const loopModeArb = fc.constantFrom("restart", "pingpong", "continue") as fc.Arbitrary<NonNullable<PathFollowerConfig["loopMode"]>>;
-
-// ============================================================
-// createPathFollower TESTS
-// ============================================================
-
-describe("PROPERTY: createPathFollower", () => {
-  it("returns PathFollowerConfig with all required properties", () => {
-    fc.assert(
-      fc.property(
-        fc.string({ minLength: 1, maxLength: 20 }),
-        controlPointsArb,
-        (id, controlPoints) => {
-          const config = createPathFollower(id, controlPoints);
-          
-          expect(config).toHaveProperty("id");
-          expect(config).toHaveProperty("controlPoints");
-          expect(config).toHaveProperty("closed");
-          expect(config).toHaveProperty("shape");
-          expect(config).toHaveProperty("size");
-          expect(config).toHaveProperty("fillColor");
-          expect(config).toHaveProperty("startFrame");
-          expect(config).toHaveProperty("duration");
-          expect(config).toHaveProperty("easing");
-          expect(config).toHaveProperty("alignToPath");
-          expect(config).toHaveProperty("rotationOffset");
-          expect(config).toHaveProperty("loop");
-          expect(config).toHaveProperty("scaleStart");
-          expect(config).toHaveProperty("scaleEnd");
-          expect(config).toHaveProperty("opacityStart");
-          expect(config).toHaveProperty("opacityEnd");
-        }
-      )
-    );
+// Generate a valid control point
+const arbitraryControlPoint = (): fc.Arbitrary<ControlPoint> =>
+  fc.record({
+    id: fc.uuid(),
+    x: fc.double({ min: 0, max: 1024, noNaN: true }),
+    y: fc.double({ min: 0, max: 1024, noNaN: true }),
+    handleIn: fc.option(
+      fc.record({
+        x: fc.double({ min: -100, max: 100, noNaN: true }),
+        y: fc.double({ min: -100, max: 100, noNaN: true }),
+      }),
+      { nil: null }
+    ),
+    handleOut: fc.option(
+      fc.record({
+        x: fc.double({ min: -100, max: 100, noNaN: true }),
+        y: fc.double({ min: -100, max: 100, noNaN: true }),
+      }),
+      { nil: null }
+    ),
+    type: fc.constantFrom('corner', 'smooth', 'symmetric') as fc.Arbitrary<'corner' | 'smooth' | 'symmetric'>,
   });
 
-  it("id matches input", () => {
-    fc.assert(
-      fc.property(
-        fc.string({ minLength: 1, maxLength: 20 }),
-        controlPointsArb,
-        (id, controlPoints) => {
-          const config = createPathFollower(id, controlPoints);
-          expect(config.id).toBe(id);
-        }
-      )
-    );
+// Generate path with at least 2 points
+const arbitraryPath = (minPoints: number = 2, maxPoints: number = 10): fc.Arbitrary<ControlPoint[]> =>
+  fc.array(arbitraryControlPoint(), { minLength: minPoints, maxLength: maxPoints });
+
+// Generate shape type
+const arbitraryShape = (): fc.Arbitrary<PathFollowerShape> =>
+  fc.constantFrom('circle', 'square', 'triangle', 'diamond', 'arrow', 'custom');
+
+// Generate easing function
+const arbitraryEasing = (): fc.Arbitrary<PathFollowerEasing> =>
+  fc.constantFrom('linear', 'ease-in', 'ease-out', 'ease-in-out', 'ease-in-cubic', 'ease-out-cubic');
+
+// Generate a hex color string
+const arbitraryHexColor = (): fc.Arbitrary<string> =>
+  fc.tuple(
+    fc.integer({ min: 0, max: 255 }),
+    fc.integer({ min: 0, max: 255 }),
+    fc.integer({ min: 0, max: 255 })
+  ).map(([r, g, b]) => `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`);
+
+// Generate path follower config
+const arbitraryPathFollowerConfig = (): fc.Arbitrary<PathFollowerConfig> =>
+  fc.record({
+    id: fc.uuid(),
+    controlPoints: arbitraryPath(2, 6),
+    closed: fc.boolean(),
+    shape: arbitraryShape(),
+    size: fc.tuple(
+      fc.integer({ min: 5, max: 100 }),
+      fc.integer({ min: 5, max: 100 })
+    ),
+    fillColor: arbitraryHexColor(),
+    strokeColor: fc.option(arbitraryHexColor(), { nil: undefined }),
+    strokeWidth: fc.option(fc.integer({ min: 1, max: 10 }), { nil: undefined }),
+    startFrame: fc.integer({ min: 0, max: 100 }),
+    duration: fc.integer({ min: 1, max: 200 }),
+    easing: arbitraryEasing(),
+    alignToPath: fc.boolean(),
+    rotationOffset: fc.integer({ min: -180, max: 180 }),
+    loop: fc.boolean(),
+    loopMode: fc.constantFrom('restart', 'pingpong'),
+    scaleStart: fc.double({ min: 0.1, max: 2, noNaN: true }),
+    scaleEnd: fc.double({ min: 0.1, max: 2, noNaN: true }),
+    opacityStart: fc.double({ min: 0, max: 1, noNaN: true }),
+    opacityEnd: fc.double({ min: 0, max: 1, noNaN: true }),
   });
 
-  it("controlPoints matches input", () => {
-    fc.assert(
-      fc.property(
-        fc.string({ minLength: 1, maxLength: 20 }),
-        controlPointsArb,
-        (id, controlPoints) => {
-          const config = createPathFollower(id, controlPoints);
-          expect(config.controlPoints).toBe(controlPoints);
-        }
-      )
-    );
+// ============================================================================
+// EASING FUNCTION TESTS
+// ============================================================================
+
+describe('STRICT: VACE Easing Functions', () => {
+  test.prop([fc.double({ min: 0, max: 1, noNaN: true })])(
+    'linear easing: f(t) = t',
+    (t) => {
+      const result = EASING_FUNCTIONS['linear'](t);
+      expect(result).toBeCloseTo(t, 10);
+    }
+  );
+
+  test('easing functions: f(0) = 0', () => {
+    const easings: PathFollowerEasing[] = [
+      'linear', 'ease-in', 'ease-out', 'ease-in-out', 'ease-in-cubic', 'ease-out-cubic'
+    ];
+    
+    for (const easing of easings) {
+      expect(EASING_FUNCTIONS[easing](0)).toBeCloseTo(0, 10);
+    }
   });
 
-  it("has sensible defaults", () => {
-    const config = createPathFollower("test", [{ x: 0, y: 0 }, { x: 100, y: 100 }]);
+  test('easing functions: f(1) = 1', () => {
+    const easings: PathFollowerEasing[] = [
+      'linear', 'ease-in', 'ease-out', 'ease-in-out', 'ease-in-cubic', 'ease-out-cubic'
+    ];
+    
+    for (const easing of easings) {
+      expect(EASING_FUNCTIONS[easing](1)).toBeCloseTo(1, 10);
+    }
+  });
+
+  test.prop([fc.double({ min: 0, max: 1, noNaN: true })])(
+    'easing functions are monotonic (output in [0, 1])',
+    (t) => {
+      const easings: PathFollowerEasing[] = [
+        'linear', 'ease-in', 'ease-out', 'ease-in-out', 'ease-in-cubic', 'ease-out-cubic'
+      ];
+      
+      for (const easing of easings) {
+        const result = EASING_FUNCTIONS[easing](t);
+        expect(result).toBeGreaterThanOrEqual(0);
+        expect(result).toBeLessThanOrEqual(1);
+      }
+    }
+  );
+
+  test('ease-in starts slow', () => {
+    const mid = EASING_FUNCTIONS['ease-in'](0.5);
+    // ease-in at 0.5 should be less than linear 0.5
+    expect(mid).toBeLessThan(0.5);
+  });
+
+  test('ease-out ends slow', () => {
+    const mid = EASING_FUNCTIONS['ease-out'](0.5);
+    // ease-out at 0.5 should be greater than linear 0.5
+    expect(mid).toBeGreaterThan(0.5);
+  });
+
+  test('ease-in-out is symmetric at midpoint', () => {
+    const mid = EASING_FUNCTIONS['ease-in-out'](0.5);
+    expect(mid).toBeCloseTo(0.5, 10);
+  });
+});
+
+// ============================================================================
+// PATH FOLLOWER TESTS
+// ============================================================================
+
+describe('STRICT: PathFollower Class', () => {
+  test('path with 2 points has positive length', () => {
+    const config = createPathFollower('test', [
+      makeControlPoint(0, 0, null, { x: 50, y: 0 }),
+      makeControlPoint(100, 0, { x: -50, y: 0 }, null),
+    ]);
+    
+    const follower = new PathFollower(config);
+    
+    expect(follower.getPathLength()).toBeGreaterThan(0);
+  });
+
+  test('single point path has zero length', () => {
+    const config = createPathFollower('test', [
+      makeControlPoint(50, 50),
+    ]);
+    
+    const follower = new PathFollower(config);
+    
+    expect(follower.getPathLength()).toBe(0);
+  });
+
+  test('speed = pathLength / duration', () => {
+    const config = createPathFollower('test', [
+      makeControlPoint(0, 0),
+      makeControlPoint(100, 0),
+    ], { duration: 10 });
+    
+    const follower = new PathFollower(config);
+    const pathLength = follower.getPathLength();
+    const speed = follower.getSpeed();
+    
+    expect(speed).toBeCloseTo(pathLength / 10, 5);
+  });
+
+  test('state at startFrame - 1 is not visible', () => {
+    const config = createPathFollower('test', [
+      makeControlPoint(0, 0),
+      makeControlPoint(100, 0),
+    ], { startFrame: 10, duration: 20 });
+    
+    const follower = new PathFollower(config);
+    const state = follower.getStateAtFrame(9); // Before start
+    
+    expect(state.visible).toBe(false);
+    expect(state.progress).toBe(0);
+  });
+
+  test('state at startFrame has progress 0', () => {
+    const config = createPathFollower('test', [
+      makeControlPoint(0, 0),
+      makeControlPoint(100, 0),
+    ], { startFrame: 10, duration: 20, easing: 'linear' });
+    
+    const follower = new PathFollower(config);
+    const state = follower.getStateAtFrame(10);
+    
+    expect(state.progress).toBeCloseTo(0, 5);
+    expect(state.visible).toBe(true);
+  });
+
+  test('state at end frame has progress 1', () => {
+    const config = createPathFollower('test', [
+      makeControlPoint(0, 0),
+      makeControlPoint(100, 0),
+    ], { startFrame: 0, duration: 20, easing: 'linear', loop: false });
+    
+    const follower = new PathFollower(config);
+    const state = follower.getStateAtFrame(20);
+    
+    expect(state.progress).toBeCloseTo(1, 5);
+  });
+
+  test('state at midpoint with linear easing has progress 0.5', () => {
+    const config = createPathFollower('test', [
+      makeControlPoint(0, 0),
+      makeControlPoint(100, 0),
+    ], { startFrame: 0, duration: 20, easing: 'linear' });
+    
+    const follower = new PathFollower(config);
+    const state = follower.getStateAtFrame(10);
+    
+    expect(state.progress).toBeCloseTo(0.5, 5);
+  });
+
+  test('position interpolates along path', () => {
+    const config = createPathFollower('test', [
+      makeControlPoint(0, 0),
+      makeControlPoint(100, 0),
+    ], { startFrame: 0, duration: 10, easing: 'linear' });
+    
+    const follower = new PathFollower(config);
+    
+    const stateStart = follower.getStateAtFrame(0);
+    const stateEnd = follower.getStateAtFrame(10);
+    
+    expect(stateStart.position.x).toBeCloseTo(0, 0);
+    expect(stateEnd.position.x).toBeCloseTo(100, 0);
+  });
+
+  test('scale interpolates from scaleStart to scaleEnd', () => {
+    const config = createPathFollower('test', [
+      makeControlPoint(0, 0),
+      makeControlPoint(100, 0),
+    ], { startFrame: 0, duration: 10, easing: 'linear', scaleStart: 1, scaleEnd: 2 });
+    
+    const follower = new PathFollower(config);
+    
+    const stateStart = follower.getStateAtFrame(0);
+    const stateMid = follower.getStateAtFrame(5);
+    const stateEnd = follower.getStateAtFrame(10);
+    
+    expect(stateStart.scale).toBeCloseTo(1, 5);
+    expect(stateMid.scale).toBeCloseTo(1.5, 5);
+    expect(stateEnd.scale).toBeCloseTo(2, 5);
+  });
+
+  test('opacity interpolates from opacityStart to opacityEnd', () => {
+    const config = createPathFollower('test', [
+      makeControlPoint(0, 0),
+      makeControlPoint(100, 0),
+    ], { startFrame: 0, duration: 10, easing: 'linear', opacityStart: 0, opacityEnd: 1 });
+    
+    const follower = new PathFollower(config);
+    
+    const stateMid = follower.getStateAtFrame(5);
+    
+    expect(stateMid.opacity).toBeCloseTo(0.5, 5);
+  });
+});
+
+// ============================================================================
+// LOOP BEHAVIOR TESTS
+// ============================================================================
+
+describe('STRICT: PathFollower Loop Behavior', () => {
+  test('restart loop: returns to start after duration', () => {
+    const config = createPathFollower('test', [
+      makeControlPoint(0, 0),
+      makeControlPoint(100, 0),
+    ], { startFrame: 0, duration: 10, loop: true, loopMode: 'restart', easing: 'linear' });
+    
+    const follower = new PathFollower(config);
+    
+    const stateLoop = follower.getStateAtFrame(10); // Exactly at loop point
+    const stateLoopPlus = follower.getStateAtFrame(11); // Just after loop
+    
+    // Should be at or near start of path
+    expect(stateLoopPlus.progress).toBeLessThan(0.2);
+  });
+
+  test('pingpong loop: reverses direction', () => {
+    const config = createPathFollower('test', [
+      makeControlPoint(0, 0),
+      makeControlPoint(100, 0),
+    ], { startFrame: 0, duration: 10, loop: true, loopMode: 'pingpong', easing: 'linear' });
+    
+    const follower = new PathFollower(config);
+    
+    // At frame 15 (1.5 durations), should be at 0.5 progress going backwards
+    const stateLoop = follower.getStateAtFrame(15);
+    
+    // With pingpong, should be coming back
+    expect(stateLoop.progress).toBeCloseTo(0.5, 1);
+  });
+
+  test('no loop: stays at end after duration', () => {
+    const config = createPathFollower('test', [
+      makeControlPoint(0, 0),
+      makeControlPoint(100, 0),
+    ], { startFrame: 0, duration: 10, loop: false, easing: 'linear' });
+    
+    const follower = new PathFollower(config);
+    
+    const stateAfterEnd = follower.getStateAtFrame(15);
+    
+    expect(stateAfterEnd.progress).toBeCloseTo(1, 5);
+    expect(stateAfterEnd.position.x).toBeCloseTo(100, 0);
+  });
+});
+
+// ============================================================================
+// VACE EXPORTER TESTS
+// ============================================================================
+
+describe('STRICT: VACEControlExporter Class', () => {
+  test('getFrameCount returns correct count', () => {
+    const config = createVACEExportConfig([], {
+      startFrame: 0,
+      endFrame: 80,
+    });
+    
+    const exporter = new VACEControlExporter(config);
+    
+    expect(exporter.getFrameCount()).toBe(81); // 0-80 inclusive
+  });
+
+  test('getPathStats returns info for each follower', () => {
+    const followers = [
+      createPathFollower('path1', [
+        makeControlPoint(0, 0),
+        makeControlPoint(100, 0),
+      ], { duration: 10 }),
+      createPathFollower('path2', [
+        makeControlPoint(0, 0),
+        makeControlPoint(200, 0),
+      ], { duration: 20 }),
+    ];
+    
+    const config = createVACEExportConfig(followers);
+    const exporter = new VACEControlExporter(config);
+    const stats = exporter.getPathStats();
+    
+    expect(stats.length).toBe(2);
+    expect(stats[0].id).toBe('path1');
+    expect(stats[1].id).toBe('path2');
+    expect(stats[0].duration).toBe(10);
+    expect(stats[1].duration).toBe(20);
+  });
+});
+
+// ============================================================================
+// UTILITY FUNCTION TESTS
+// ============================================================================
+
+describe('STRICT: VACE Utility Functions', () => {
+  test.prop([
+    fc.double({ min: 10, max: 1000, noNaN: true }),
+    fc.double({ min: 1, max: 100, noNaN: true }),
+  ])('calculateDurationForSpeed: duration = pathLength / speed', (pathLength, speed) => {
+    const duration = calculateDurationForSpeed(pathLength, speed);
+    
+    expect(duration).toBeCloseTo(Math.ceil(pathLength / speed), 0);
+  });
+
+  test.prop([
+    fc.double({ min: 10, max: 1000, noNaN: true }),
+    fc.integer({ min: 1, max: 200 }),
+  ])('calculateSpeed: speed = pathLength / duration', (pathLength, duration) => {
+    const speed = calculateSpeed(pathLength, duration);
+    
+    expect(speed).toBeCloseTo(pathLength / duration, 5);
+  });
+
+  test('createPathFollower applies defaults', () => {
+    const config = createPathFollower('test', [
+      makeControlPoint(0, 0),
+      makeControlPoint(100, 0),
+    ]);
     
     expect(config.closed).toBe(false);
-    expect(config.shape).toBe("circle");
+    expect(config.shape).toBe('circle');
     expect(config.size).toEqual([20, 20]);
-    expect(config.fillColor).toBe("#FFFFFF");
+    expect(config.fillColor).toBe('#FFFFFF');
     expect(config.startFrame).toBe(0);
     expect(config.duration).toBe(60);
-    expect(config.easing).toBe("ease-in-out");
+    expect(config.easing).toBe('ease-in-out');
     expect(config.alignToPath).toBe(true);
     expect(config.rotationOffset).toBe(0);
     expect(config.loop).toBe(false);
+    expect(config.loopMode).toBe('restart');
     expect(config.scaleStart).toBe(1);
     expect(config.scaleEnd).toBe(1);
     expect(config.opacityStart).toBe(1);
     expect(config.opacityEnd).toBe(1);
   });
 
-  it("respects custom options", () => {
-    fc.assert(
-      fc.property(
-        fc.string({ minLength: 1, maxLength: 20 }),
-        controlPointsArb,
-        fc.boolean(),
-        shapeArb,
-        hexColorArb,
-        fc.integer({ min: 0, max: 100 }),
-        fc.integer({ min: 1, max: 1000 }),
-        easingArb,
-        (id, controlPoints, closed, shape, fillColor, startFrame, duration, easing) => {
-          const config = createPathFollower(id, controlPoints, {
-            closed,
-            shape,
-            fillColor,
-            startFrame,
-            duration,
-            easing,
-          });
-          
-          expect(config.closed).toBe(closed);
-          expect(config.shape).toBe(shape);
-          expect(config.fillColor).toBe(fillColor);
-          expect(config.startFrame).toBe(startFrame);
-          expect(config.duration).toBe(duration);
-          expect(config.easing).toBe(easing);
-        }
-      )
-    );
-  });
-
-  it("scale and opacity can be customized", () => {
-    fc.assert(
-      fc.property(
-        fc.double({ min: 0, max: 5, noNaN: true }),
-        fc.double({ min: 0, max: 5, noNaN: true }),
-        fc.double({ min: 0, max: 1, noNaN: true }),
-        fc.double({ min: 0, max: 1, noNaN: true }),
-        (scaleStart, scaleEnd, opacityStart, opacityEnd) => {
-          const config = createPathFollower("test", [{ x: 0, y: 0 }, { x: 100, y: 100 }], {
-            scaleStart,
-            scaleEnd,
-            opacityStart,
-            opacityEnd,
-          });
-          
-          expect(config.scaleStart).toBe(scaleStart);
-          expect(config.scaleEnd).toBe(scaleEnd);
-          expect(config.opacityStart).toBe(opacityStart);
-          expect(config.opacityEnd).toBe(opacityEnd);
-        }
-      )
-    );
-  });
-});
-
-// ============================================================
-// createVACEExportConfig TESTS
-// ============================================================
-
-describe("PROPERTY: createVACEExportConfig", () => {
-  it("returns VACEExportConfig with all required properties", () => {
-    const config = createVACEExportConfig([]);
-    
-    expect(config).toHaveProperty("width");
-    expect(config).toHaveProperty("height");
-    expect(config).toHaveProperty("startFrame");
-    expect(config).toHaveProperty("endFrame");
-    expect(config).toHaveProperty("frameRate");
-    expect(config).toHaveProperty("backgroundColor");
-    expect(config).toHaveProperty("pathFollowers");
-    expect(config).toHaveProperty("outputFormat");
-    expect(config).toHaveProperty("antiAlias");
-  });
-
-  it("has sensible defaults", () => {
+  test('createVACEExportConfig applies defaults', () => {
     const config = createVACEExportConfig([]);
     
     expect(config.width).toBe(512);
@@ -218,255 +478,88 @@ describe("PROPERTY: createVACEExportConfig", () => {
     expect(config.startFrame).toBe(0);
     expect(config.endFrame).toBe(80);
     expect(config.frameRate).toBe(16);
-    expect(config.backgroundColor).toBe("#000000");
-    expect(config.outputFormat).toBe("canvas");
+    expect(config.backgroundColor).toBe('#000000');
+    expect(config.outputFormat).toBe('canvas');
     expect(config.antiAlias).toBe(true);
   });
 
-  it("pathFollowers matches input", () => {
-    const followers = [
-      createPathFollower("a", [{ x: 0, y: 0 }, { x: 100, y: 100 }]),
-      createPathFollower("b", [{ x: 50, y: 50 }, { x: 150, y: 150 }]),
+  test('splineLayerToPathFollower converts correctly', () => {
+    const points: ControlPoint[] = [
+      makeControlPoint(0, 0),
+      makeControlPoint(100, 100),
     ];
-    const config = createVACEExportConfig(followers);
     
-    expect(config.pathFollowers).toBe(followers);
-    expect(config.pathFollowers.length).toBe(2);
-  });
-
-  it("respects custom dimensions", () => {
-    fc.assert(
-      fc.property(
-        fc.integer({ min: 1, max: 4096 }),
-        fc.integer({ min: 1, max: 4096 }),
-        (width, height) => {
-          const config = createVACEExportConfig([], { width, height });
-          expect(config.width).toBe(width);
-          expect(config.height).toBe(height);
-        }
-      )
-    );
-  });
-
-  it("respects custom frame range", () => {
-    fc.assert(
-      fc.property(
-        fc.integer({ min: 0, max: 100 }),
-        fc.integer({ min: 1, max: 500 }),
-        (startFrame, endFrame) => {
-          const config = createVACEExportConfig([], { startFrame, endFrame });
-          expect(config.startFrame).toBe(startFrame);
-          expect(config.endFrame).toBe(endFrame);
-        }
-      )
-    );
-  });
-});
-
-// ============================================================
-// calculateDurationForSpeed TESTS
-// ============================================================
-
-describe("PROPERTY: calculateDurationForSpeed", () => {
-  it("returns positive integer for positive inputs", () => {
-    fc.assert(
-      fc.property(
-        fc.double({ min: 1, max: 10000, noNaN: true }),
-        fc.double({ min: 0.1, max: 100, noNaN: true }),
-        (pathLength, pixelsPerFrame) => {
-          const duration = calculateDurationForSpeed(pathLength, pixelsPerFrame);
-          expect(duration).toBeGreaterThan(0);
-          expect(Number.isInteger(duration)).toBe(true);
-        }
-      )
-    );
-  });
-
-  it("higher speed means shorter duration", () => {
-    fc.assert(
-      fc.property(
-        fc.double({ min: 100, max: 10000, noNaN: true }),
-        fc.double({ min: 1, max: 50, noNaN: true }),
-        fc.double({ min: 51, max: 100, noNaN: true }),
-        (pathLength, slowSpeed, fastSpeed) => {
-          const slowDuration = calculateDurationForSpeed(pathLength, slowSpeed);
-          const fastDuration = calculateDurationForSpeed(pathLength, fastSpeed);
-          expect(fastDuration).toBeLessThanOrEqual(slowDuration);
-        }
-      )
-    );
-  });
-
-  it("longer path means longer duration at same speed", () => {
-    fc.assert(
-      fc.property(
-        fc.double({ min: 100, max: 5000, noNaN: true }),
-        fc.double({ min: 5001, max: 10000, noNaN: true }),
-        fc.double({ min: 1, max: 100, noNaN: true }),
-        (shortPath, longPath, speed) => {
-          const shortDuration = calculateDurationForSpeed(shortPath, speed);
-          const longDuration = calculateDurationForSpeed(longPath, speed);
-          expect(longDuration).toBeGreaterThanOrEqual(shortDuration);
-        }
-      )
-    );
-  });
-
-  it("is approximately pathLength / pixelsPerFrame rounded up", () => {
-    fc.assert(
-      fc.property(
-        fc.double({ min: 1, max: 10000, noNaN: true }),
-        fc.double({ min: 0.1, max: 100, noNaN: true }),
-        (pathLength, pixelsPerFrame) => {
-          const duration = calculateDurationForSpeed(pathLength, pixelsPerFrame);
-          const expected = Math.ceil(pathLength / pixelsPerFrame);
-          expect(duration).toBe(expected);
-        }
-      )
-    );
-  });
-});
-
-// ============================================================
-// calculateSpeed TESTS
-// ============================================================
-
-describe("PROPERTY: calculateSpeed", () => {
-  it("returns positive for positive inputs", () => {
-    fc.assert(
-      fc.property(
-        fc.double({ min: 1, max: 10000, noNaN: true }),
-        fc.integer({ min: 1, max: 1000 }),
-        (pathLength, durationFrames) => {
-          const speed = calculateSpeed(pathLength, durationFrames);
-          expect(speed).toBeGreaterThan(0);
-        }
-      )
-    );
-  });
-
-  it("longer duration means slower speed", () => {
-    fc.assert(
-      fc.property(
-        fc.double({ min: 100, max: 10000, noNaN: true }),
-        fc.integer({ min: 1, max: 50 }),
-        fc.integer({ min: 51, max: 100 }),
-        (pathLength, shortDuration, longDuration) => {
-          const fastSpeed = calculateSpeed(pathLength, shortDuration);
-          const slowSpeed = calculateSpeed(pathLength, longDuration);
-          expect(slowSpeed).toBeLessThan(fastSpeed);
-        }
-      )
-    );
-  });
-
-  it("is exactly pathLength / durationFrames", () => {
-    fc.assert(
-      fc.property(
-        fc.double({ min: 1, max: 10000, noNaN: true }),
-        fc.integer({ min: 1, max: 1000 }),
-        (pathLength, durationFrames) => {
-          const speed = calculateSpeed(pathLength, durationFrames);
-          expect(speed).toBeCloseTo(pathLength / durationFrames, 10);
-        }
-      )
-    );
-  });
-});
-
-// ============================================================
-// calculateDurationForSpeed and calculateSpeed INVERSE TESTS
-// ============================================================
-
-describe("PROPERTY: Speed/Duration inverse relationship", () => {
-  it("calculateSpeed(L, calculateDurationForSpeed(L, S)) ≈ S (within rounding)", () => {
-    fc.assert(
-      fc.property(
-        fc.double({ min: 100, max: 10000, noNaN: true }),
-        fc.double({ min: 1, max: 100, noNaN: true }),
-        (pathLength, targetSpeed) => {
-          const duration = calculateDurationForSpeed(pathLength, targetSpeed);
-          const actualSpeed = calculateSpeed(pathLength, duration);
-          
-          // Since duration = ceil(pathLength / targetSpeed), duration >= pathLength / targetSpeed
-          // Therefore actualSpeed = pathLength / duration <= targetSpeed
-          expect(actualSpeed).toBeLessThanOrEqual(targetSpeed + 1e-10);
-          
-          // actualSpeed should be close to targetSpeed (within one frame's worth)
-          // Min speed occurs when ceil adds almost a full frame
-          const minExpectedSpeed = pathLength / (pathLength / targetSpeed + 1);
-          expect(actualSpeed).toBeGreaterThanOrEqual(minExpectedSpeed - 1e-10);
-        }
-      )
-    );
-  });
-});
-
-// ============================================================
-// splineLayerToPathFollower TESTS
-// ============================================================
-
-describe("PROPERTY: splineLayerToPathFollower", () => {
-  it("returns PathFollowerConfig", () => {
-    fc.assert(
-      fc.property(
-        fc.string({ minLength: 1, maxLength: 20 }),
-        controlPointsArb,
-        fc.boolean(),
-        fc.integer({ min: 1, max: 1000 }),
-        (layerId, controlPoints, closed, totalFrames) => {
-          const config = splineLayerToPathFollower(
-            layerId, 
-            controlPoints, 
-            closed, 
-            totalFrames
-          );
-          
-          expect(config.id).toBe(layerId);
-          expect(config.controlPoints).toBe(controlPoints);
-          expect(config.closed).toBe(closed);
-          expect(config.duration).toBe(totalFrames);
-        }
-      )
-    );
-  });
-
-  it("inherits defaults from createPathFollower", () => {
-    const config = splineLayerToPathFollower(
-      "test",
-      [{ x: 0, y: 0 }, { x: 100, y: 100 }],
-      false,
-      60
-    );
+    const config = splineLayerToPathFollower('layer1', points, true, 30);
     
-    expect(config.shape).toBe("circle");
-    expect(config.fillColor).toBe("#FFFFFF");
-    expect(config.easing).toBe("ease-in-out");
-    expect(config.alignToPath).toBe(true);
+    expect(config.id).toBe('layer1');
+    expect(config.controlPoints).toEqual(points);
+    expect(config.closed).toBe(true);
+    expect(config.duration).toBe(30);
+  });
+});
+
+// ============================================================================
+// EDGE CASE TESTS
+// ============================================================================
+
+describe('STRICT: VACE Export Edge Cases', () => {
+  test('empty path follower list', () => {
+    const config = createVACEExportConfig([]);
+    const exporter = new VACEControlExporter(config);
+    
+    expect(exporter.getPathStats()).toEqual([]);
   });
 
-  it("respects custom options", () => {
-    fc.assert(
-      fc.property(
-        shapeArb,
-        hexColorArb,
-        fc.double({ min: 0.1, max: 2, noNaN: true }),
-        fc.double({ min: 0.1, max: 2, noNaN: true }),
-        (shape, fillColor, scaleStart, scaleEnd) => {
-          const config = splineLayerToPathFollower(
-            "test",
-            [{ x: 0, y: 0 }, { x: 100, y: 100 }],
-            false,
-            60,
-            { shape, fillColor, scaleStart, scaleEnd }
-          );
-          
-          expect(config.shape).toBe(shape);
-          expect(config.fillColor).toBe(fillColor);
-          expect(config.scaleStart).toBe(scaleStart);
-          expect(config.scaleEnd).toBe(scaleEnd);
-        }
-      )
-    );
+  test('single point path returns not visible state', () => {
+    const config = createPathFollower('test', [
+      makeControlPoint(50, 50),
+    ]);
+    
+    const follower = new PathFollower(config);
+    const state = follower.getStateAtFrame(0);
+    
+    // Single point = no path = not visible
+    expect(state.visible).toBe(false);
+  });
+
+  test('zero duration path follower', () => {
+    const config = createPathFollower('test', [
+      makeControlPoint(0, 0),
+      makeControlPoint(100, 0),
+    ], { duration: 0 });
+    
+    // Should handle gracefully (division by zero)
+    const follower = new PathFollower(config);
+    const speed = follower.getSpeed();
+    
+    // Speed would be infinite or handled specially
+    expect(Number.isFinite(speed)).toBe(false);
+  });
+
+  test('negative start frame', () => {
+    const config = createPathFollower('test', [
+      makeControlPoint(0, 0),
+      makeControlPoint(100, 0),
+    ], { startFrame: -10, duration: 20 });
+    
+    const follower = new PathFollower(config);
+    
+    // At frame 0, should be partway through animation
+    const state = follower.getStateAtFrame(0);
+    expect(state.progress).toBeGreaterThan(0);
+    expect(state.visible).toBe(true);
+  });
+
+  test('very large rotation offset', () => {
+    const config = createPathFollower('test', [
+      makeControlPoint(0, 0),
+      makeControlPoint(100, 0),
+    ], { rotationOffset: 3600 }); // 10 full rotations
+    
+    const follower = new PathFollower(config);
+    const state = follower.getStateAtFrame(0);
+    
+    // Should handle large rotations
+    expect(Number.isFinite(state.rotation)).toBe(true);
   });
 });

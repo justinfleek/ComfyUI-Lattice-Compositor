@@ -16,20 +16,37 @@ import {
   splineLayerToPathFollower,
 } from "@/services/export/vaceControlExport";
 
+// Helper to create full SplineControlPoint objects
+function makeControlPoint(x: number, y: number, opts?: {
+  id?: string;
+  handleIn?: { x: number; y: number } | null;
+  handleOut?: { x: number; y: number } | null;
+  type?: "corner" | "smooth" | "symmetric";
+}) {
+  return {
+    id: opts?.id ?? `cp-${x}-${y}`,
+    x,
+    y,
+    handleIn: opts?.handleIn ?? null,
+    handleOut: opts?.handleOut ?? null,
+    type: opts?.type ?? "corner" as const,
+  };
+}
+
 describe("PathFollower", () => {
   describe("Duration of 0 (BUG FIXED)", () => {
     // BUG WAS: vaceControlExport.ts line 287
     // When duration=0, rawProgress = localFrame / 0 = NaN
     // FIX APPLIED: Added guard for duration <= 0 at line ~256
-    
+
     it("should handle duration=0 without crashing", () => {
       const config = createPathFollower("test", [
-        { x: 0, y: 0 },
-        { x: 100, y: 100 },
+        makeControlPoint(0, 0),
+        makeControlPoint(100, 100),
       ], { duration: 0 });
-      
+
       const follower = new PathFollower(config);
-      
+
       // Should not throw after fix
       expect(() => follower.getStateAtFrame(0)).not.toThrow();
       expect(() => follower.getStateAtFrame(10)).not.toThrow();
@@ -37,13 +54,13 @@ describe("PathFollower", () => {
 
     it("should return invisible state when duration=0", () => {
       const config = createPathFollower("test", [
-        { x: 0, y: 0 },
-        { x: 100, y: 100 },
+        makeControlPoint(0, 0),
+        makeControlPoint(100, 100),
       ], { duration: 0 });
-      
+
       const follower = new PathFollower(config);
       const state = follower.getStateAtFrame(0);
-      
+
       // Should return default (invisible) state
       expect(state.visible).toBe(false);
     });
@@ -53,16 +70,16 @@ describe("PathFollower", () => {
     it("should handle empty control points", () => {
       const config = createPathFollower("test", [], { duration: 60 });
       const follower = new PathFollower(config);
-      
+
       const state = follower.getStateAtFrame(30);
       expect(state.visible).toBe(false);
-      expect(state.pathLength || follower.getPathLength()).toBe(0);
+      expect(follower.getPathLength()).toBe(0);
     });
 
     it("should handle single control point", () => {
-      const config = createPathFollower("test", [{ x: 50, y: 50 }], { duration: 60 });
+      const config = createPathFollower("test", [makeControlPoint(50, 50)], { duration: 60 });
       const follower = new PathFollower(config);
-      
+
       const state = follower.getStateAtFrame(30);
       expect(state.visible).toBe(false);
     });
@@ -71,52 +88,52 @@ describe("PathFollower", () => {
   describe("Normal operation", () => {
     it("should calculate path length correctly", () => {
       const config = createPathFollower("test", [
-        { x: 0, y: 0 },
-        { x: 100, y: 0 }, // Straight line
+        makeControlPoint(0, 0),
+        makeControlPoint(100, 0), // Straight line
       ], { duration: 60 });
-      
+
       const follower = new PathFollower(config);
-      
+
       // Should be approximately 100 pixels (straight line)
       expect(follower.getPathLength()).toBeCloseTo(100, 0);
     });
 
     it("should calculate speed correctly", () => {
       const config = createPathFollower("test", [
-        { x: 0, y: 0 },
-        { x: 100, y: 0 },
+        makeControlPoint(0, 0),
+        makeControlPoint(100, 0),
       ], { duration: 50 });
-      
+
       const follower = new PathFollower(config);
-      
+
       // Speed = length / duration = 100 / 50 = 2 px/frame
       expect(follower.getSpeed()).toBeCloseTo(2, 0);
     });
 
     it("should return invisible before animation starts", () => {
       const config = createPathFollower("test", [
-        { x: 0, y: 0 },
-        { x: 100, y: 100 },
+        makeControlPoint(0, 0),
+        makeControlPoint(100, 100),
       ], { startFrame: 10, duration: 60 });
-      
+
       const follower = new PathFollower(config);
-      
+
       const state = follower.getStateAtFrame(5); // Before startFrame
       expect(state.visible).toBe(false);
     });
 
     it("should interpolate position along path", () => {
       const config = createPathFollower("test", [
-        { x: 0, y: 0 },
-        { x: 100, y: 0 },
-      ], { 
-        startFrame: 0, 
+        makeControlPoint(0, 0),
+        makeControlPoint(100, 0),
+      ], {
+        startFrame: 0,
         duration: 100,
         easing: "linear",
       });
-      
+
       const follower = new PathFollower(config);
-      
+
       // At frame 50 (halfway), should be around x=50
       const state = follower.getStateAtFrame(50);
       expect(state.position.x).toBeCloseTo(50, 0);
@@ -126,37 +143,37 @@ describe("PathFollower", () => {
   describe("Loop modes", () => {
     it("should restart loop correctly", () => {
       const config = createPathFollower("test", [
-        { x: 0, y: 0 },
-        { x: 100, y: 0 },
-      ], { 
+        makeControlPoint(0, 0),
+        makeControlPoint(100, 0),
+      ], {
         duration: 10,
         loop: true,
         loopMode: "restart",
         easing: "linear",
       });
-      
+
       const follower = new PathFollower(config);
-      
+
       // Frame 15 should be at same position as frame 5 (15 % 10 = 5)
       const state5 = follower.getStateAtFrame(5);
       const state15 = follower.getStateAtFrame(15);
-      
+
       expect(state15.progress).toBeCloseTo(state5.progress, 2);
     });
 
     it("should pingpong loop correctly", () => {
       const config = createPathFollower("test", [
-        { x: 0, y: 0 },
-        { x: 100, y: 0 },
-      ], { 
+        makeControlPoint(0, 0),
+        makeControlPoint(100, 0),
+      ], {
         duration: 10,
         loop: true,
         loopMode: "pingpong",
         easing: "linear",
       });
-      
+
       const follower = new PathFollower(config);
-      
+
       // Frame 15 should be going backwards (10 - 5 = 5 in reverse)
       const state = follower.getStateAtFrame(15);
       expect(state.progress).toBeCloseTo(0.5, 1);
@@ -236,14 +253,14 @@ describe("splineLayerToPathFollower", () => {
       { id: "cp-1", x: 0, y: 0, handleIn: null, handleOut: null, type: "corner" as const },
       { id: "cp-2", x: 100, y: 100, handleIn: null, handleOut: null, type: "corner" as const },
     ];
-    
+
     const config = splineLayerToPathFollower("layer-3", controlPoints, false, 60, {
       easing: "ease-in-out",
-      loopMode: "ping-pong",
+      loopMode: "pingpong",
     });
-    
+
     expect(config.easing).toBe("ease-in-out");
-    expect(config.loopMode).toBe("ping-pong");
+    expect(config.loopMode).toBe("pingpong");
   });
 
   it("handles empty control points", () => {

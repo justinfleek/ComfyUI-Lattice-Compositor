@@ -189,6 +189,20 @@ export class ParticleSystem {
   }
 
   /**
+   * Set render options (used in deserialization)
+   */
+  setRenderOptions(options: RenderOptions): void {
+    this.renderOptions = options;
+  }
+
+  /**
+   * Get the current render options
+   */
+  getRenderOptions(): RenderOptions {
+    return this.renderOptions;
+  }
+
+  /**
    * Set the spline path provider callback
    * This allows emitters with shape='spline' to query spline positions
    */
@@ -2214,8 +2228,8 @@ export class ParticleSystem {
       modulations: this.modulations,
       frameCount: this.frameCount,
       // Added for complete state restoration
-      turbulenceFields: this.turbulenceFields,
-      subEmitters: this.subEmitters,
+      turbulenceFields: this.getTurbulenceFields(),
+      subEmitters: this.getSubEmitters(),
       renderOptions: this.renderOptions,
       seed: this.rng.getSeed(), // For deterministic replay on load
       noiseTime: this.noiseTime, // For turbulence continuity
@@ -2252,7 +2266,7 @@ export class ParticleSystem {
     // Restore turbulence fields
     if (data.turbulenceFields) {
       for (const field of data.turbulenceFields) {
-        system.addTurbulenceField(field);
+        system.addTurbulence(field);
       }
     }
 

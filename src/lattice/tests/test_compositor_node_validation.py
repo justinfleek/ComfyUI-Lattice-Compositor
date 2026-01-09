@@ -223,8 +223,12 @@ class TestValidateNumericBounds:
         assert len(errors) > 0
 
     def test_opacity_out_of_bounds(self):
-        """Test that out-of-bounds opacity is caught."""
-        data = {"opacity": 1.5}  # Max is 1.0
+        """Test that out-of-bounds opacity is caught.
+
+        Note: Frontend uses 0-100 percentage range for opacity.
+        Canvas globalAlpha (0-1) conversion happens at render time.
+        """
+        data = {"opacity": 150}  # Max is 100 (percentage)
         errors = _validate_numeric_bounds(data)
         assert len(errors) > 0
 

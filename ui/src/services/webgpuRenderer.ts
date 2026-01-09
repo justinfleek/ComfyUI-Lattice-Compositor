@@ -580,6 +580,7 @@ class WebGPURenderer {
   private warpPipeline: GPUComputePipeline | null = null;
   private glowPipeline: GPUComputePipeline | null = null;
   private levelsPipeline: GPUComputePipeline | null = null;
+  private displacementPipeline: GPUComputePipeline | null = null;
 
   // Bind group layouts
   private blurBindGroupLayout: GPUBindGroupLayout | null = null;
@@ -589,6 +590,7 @@ class WebGPURenderer {
   private warpBindGroupLayout: GPUBindGroupLayout | null = null;
   private glowBindGroupLayout: GPUBindGroupLayout | null = null;
   private levelsBindGroupLayout: GPUBindGroupLayout | null = null;
+  private displacementBindGroupLayout: GPUBindGroupLayout | null = null;
 
   /**
    * Initialize WebGPU renderer

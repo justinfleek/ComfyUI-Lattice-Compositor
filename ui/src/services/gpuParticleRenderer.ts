@@ -193,6 +193,7 @@ export class GPUParticleRenderer {
   private readonly material: THREE.ShaderMaterial;
   private readonly points: THREE.Points;
   private readonly config: GPUParticleRendererConfig;
+  private depthTexture: THREE.DepthTexture | null = null;
 
   // Attribute buffers
   private positionAttr: THREE.BufferAttribute;

@@ -7,18 +7,22 @@
 
 import { describe, expect, it } from 'vitest';
 import { test, fc } from '@fast-check/vitest';
-import type { 
-  LatticeProject, 
-  LatticeComposition, 
-  Layer, 
+import type {
+  LatticeProject,
+  Composition,
+  Layer,
+  LayerTransform,
+  LayerMask,
+  LayerStyles,
+} from '@/types/project';
+import type {
   AnimatableProperty,
   Keyframe,
   BezierHandle,
-  LayerTransform,
-  LayerMask,
-  LayerStyle,
   PropertyExpression,
-} from '@/types/project';
+  ControlMode,
+} from '@/types/animation';
+import type { AutoOrientMode } from '@/types/project';
 
 // ============================================================================
 // SERIALIZATION HELPERS
@@ -167,32 +171,74 @@ const bezierHandleArb: fc.Arbitrary<BezierHandle> = fc.record({
  */
 const expressionArb: fc.Arbitrary<PropertyExpression> = fc.oneof(
   fc.record({
-    type: fc.constant('none' as const),
-    enabled: fc.boolean(),
-  }),
-  fc.record({
     type: fc.constant('preset' as const),
     name: fc.string({ minLength: 1, maxLength: 20 }),
     enabled: fc.boolean(),
-    params: fc.dictionary(fc.string({ minLength: 1, maxLength: 10 }), fc.double({ noNaN: true, noDefaultInfinity: true })),
+    params: fc.dictionary(
+      fc.string({ minLength: 1, maxLength: 10 }),
+      fc.oneof(
+        fc.double({ noNaN: true, noDefaultInfinity: true }),
+        fc.string({ maxLength: 20 }),
+        fc.boolean()
+      )
+    ),
   }),
+  fc.record({
+    type: fc.constant('custom' as const),
+    name: fc.string({ minLength: 1, maxLength: 20 }),
+    enabled: fc.boolean(),
+    params: fc.dictionary(
+      fc.string({ minLength: 1, maxLength: 10 }),
+      fc.oneof(
+        fc.double({ noNaN: true, noDefaultInfinity: true }),
+        fc.string({ maxLength: 20 }),
+        fc.boolean()
+      )
+    ),
+  }),
+);
+
+/**
+ * Generate an optional PropertyExpression (for use in AnimatableProperty)
+ */
+const optionalExpressionArb: fc.Arbitrary<PropertyExpression | undefined> = fc.option(expressionArb, { nil: undefined });
+
+/**
+ * Generate a ControlMode
+ */
+const controlModeArb: fc.Arbitrary<ControlMode> = fc.constantFrom('symmetric', 'smooth', 'corner');
+
+/**
+ * Generate a valid InterpolationType
+ */
+const interpolationTypeArb = fc.constantFrom(
+  // BaseInterpolationType
+  'linear', 'bezier', 'hold',
+  // EasingType (common subset for testing)
+  'easeInSine', 'easeOutSine', 'easeInOutSine',
+  'easeInQuad', 'easeOutQuad', 'easeInOutQuad',
+  'easeInCubic', 'easeOutCubic', 'easeInOutCubic',
+  'easeInBounce', 'easeOutBounce', 'easeInOutBounce'
 );
 
 /**
  * Generate a numeric Keyframe
  */
 const numericKeyframeArb: fc.Arbitrary<Keyframe<number>> = fc.record({
+  id: fc.uuid(),
   frame: fc.integer({ min: 0, max: 10000 }),
   value: fc.double({ min: -10000, max: 10000, noNaN: true, noDefaultInfinity: true }),
-  interpolation: fc.constantFrom('linear', 'bezier', 'hold', 'easeIn', 'easeOut', 'easeInOut'),
+  interpolation: interpolationTypeArb,
   inHandle: bezierHandleArb,
   outHandle: bezierHandleArb,
+  controlMode: controlModeArb,
 });
 
 /**
  * Generate a vector Keyframe
  */
 const vectorKeyframeArb: fc.Arbitrary<Keyframe<{ x: number; y: number; z?: number }>> = fc.record({
+  id: fc.uuid(),
   frame: fc.integer({ min: 0, max: 10000 }),
   value: fc.oneof(
     fc.record({
@@ -205,20 +251,23 @@ const vectorKeyframeArb: fc.Arbitrary<Keyframe<{ x: number; y: number; z?: numbe
       z: fc.double({ min: -10000, max: 10000, noNaN: true, noDefaultInfinity: true }),
     }),
   ),
-  interpolation: fc.constantFrom('linear', 'bezier', 'hold'),
+  interpolation: interpolationTypeArb,
   inHandle: bezierHandleArb,
   outHandle: bezierHandleArb,
+  controlMode: controlModeArb,
 });
 
 /**
  * Generate a numeric AnimatableProperty
  */
 const numericPropertyArb: fc.Arbitrary<AnimatableProperty<number>> = fc.record({
+  id: fc.uuid(),
   name: fc.string({ minLength: 1, maxLength: 30 }),
+  type: fc.constant('number' as const),
   value: fc.double({ min: -10000, max: 10000, noNaN: true, noDefaultInfinity: true }),
   animated: fc.boolean(),
   keyframes: fc.array(numericKeyframeArb, { minLength: 0, maxLength: 10 }),
-  expression: expressionArb,
+  expression: optionalExpressionArb,
 });
 
 /**
@@ -226,7 +275,9 @@ const numericPropertyArb: fc.Arbitrary<AnimatableProperty<number>> = fc.record({
  */
 const transformArb: fc.Arbitrary<LayerTransform> = fc.record({
   position: fc.record({
+    id: fc.uuid(),
     name: fc.constant('Position'),
+    type: fc.constant('position' as const),
     value: fc.record({
       x: fc.double({ min: -10000, max: 10000, noNaN: true, noDefaultInfinity: true }),
       y: fc.double({ min: -10000, max: 10000, noNaN: true, noDefaultInfinity: true }),
@@ -234,10 +285,12 @@ const transformArb: fc.Arbitrary<LayerTransform> = fc.record({
     }),
     animated: fc.boolean(),
     keyframes: fc.constant([]),
-    expression: fc.constant({ type: 'none' as const, enabled: false }),
+    expression: optionalExpressionArb,
   }),
-  anchorPoint: fc.record({
-    name: fc.constant('Anchor Point'),
+  origin: fc.record({
+    id: fc.uuid(),
+    name: fc.constant('Origin'),
+    type: fc.constant('position' as const),
     value: fc.record({
       x: fc.double({ min: -10000, max: 10000, noNaN: true, noDefaultInfinity: true }),
       y: fc.double({ min: -10000, max: 10000, noNaN: true, noDefaultInfinity: true }),
@@ -245,10 +298,12 @@ const transformArb: fc.Arbitrary<LayerTransform> = fc.record({
     }),
     animated: fc.boolean(),
     keyframes: fc.constant([]),
-    expression: fc.constant({ type: 'none' as const, enabled: false }),
+    expression: optionalExpressionArb,
   }),
   scale: fc.record({
+    id: fc.uuid(),
     name: fc.constant('Scale'),
+    type: fc.constant('vector3' as const),
     value: fc.record({
       x: fc.double({ min: 0.001, max: 1000, noNaN: true, noDefaultInfinity: true }),
       y: fc.double({ min: 0.001, max: 1000, noNaN: true, noDefaultInfinity: true }),
@@ -256,52 +311,85 @@ const transformArb: fc.Arbitrary<LayerTransform> = fc.record({
     }),
     animated: fc.boolean(),
     keyframes: fc.constant([]),
-    expression: fc.constant({ type: 'none' as const, enabled: false }),
+    expression: optionalExpressionArb,
   }),
   rotation: fc.record({
+    id: fc.uuid(),
     name: fc.constant('Rotation'),
+    type: fc.constant('number' as const),
     value: fc.double({ min: -720, max: 720, noNaN: true, noDefaultInfinity: true }),
     animated: fc.boolean(),
     keyframes: fc.constant([]),
-    expression: fc.constant({ type: 'none' as const, enabled: false }),
+    expression: optionalExpressionArb,
   }),
   opacity: fc.record({
+    id: fc.uuid(),
     name: fc.constant('Opacity'),
+    type: fc.constant('number' as const),
     value: fc.double({ min: 0, max: 100, noNaN: true, noDefaultInfinity: true }),
     animated: fc.boolean(),
     keyframes: fc.constant([]),
-    expression: fc.constant({ type: 'none' as const, enabled: false }),
+    expression: optionalExpressionArb,
   }),
 });
 
 /**
- * Generate a basic Layer
+ * Generate an AutoOrientMode
+ */
+const autoOrientModeArb: fc.Arbitrary<AutoOrientMode> = fc.constantFrom('off', 'toCamera', 'alongPath', 'toPointOfInterest');
+
+/**
+ * Generate a numeric AnimatableProperty for opacity
+ */
+const opacityPropertyArb: fc.Arbitrary<AnimatableProperty<number>> = fc.record({
+  id: fc.uuid(),
+  name: fc.constant('Opacity'),
+  type: fc.constant('number' as const),
+  value: fc.double({ min: 0, max: 100, noNaN: true, noDefaultInfinity: true }),
+  animated: fc.boolean(),
+  keyframes: fc.array(numericKeyframeArb, { minLength: 0, maxLength: 5 }),
+});
+
+/**
+ * Generate a minimal data object for solid layers
+ * For serialization tests, we just need a valid shape
+ */
+const solidDataArb = fc.record({
+  color: fc.tuple(
+    fc.integer({ min: 0, max: 255 }),
+    fc.integer({ min: 0, max: 255 }),
+    fc.integer({ min: 0, max: 255 })
+  ).map(([r, g, b]) => `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`),
+  width: fc.integer({ min: 1, max: 4096 }),
+  height: fc.integer({ min: 1, max: 4096 }),
+});
+
+/**
+ * Generate a basic Layer (solid type for simplicity in serialization tests)
  */
 const layerArb: fc.Arbitrary<Layer> = fc.record({
   id: fc.uuid(),
   name: fc.string({ minLength: 1, maxLength: 50 }),
-  type: fc.constantFrom('solid', 'image', 'video', 'text', 'shape', 'null', 'camera', 'light', 'audio', 'adjustment', 'precomp'),
+  type: fc.constant('solid' as const),
   visible: fc.boolean(),
   locked: fc.boolean(),
-  solo: fc.boolean(),
-  shy: fc.boolean(),
-  inPoint: fc.integer({ min: 0, max: 1000 }),
-  outPoint: fc.integer({ min: 1, max: 10000 }),
-  startTime: fc.integer({ min: -1000, max: 1000 }),
-  timeStretch: fc.double({ min: 0.1, max: 10, noNaN: true, noDefaultInfinity: true }),
-  transform: transformArb,
+  isolate: fc.boolean(),
+  threeD: fc.boolean(),
+  autoOrient: fc.option(autoOrientModeArb, { nil: undefined }),
+  motionBlur: fc.boolean(),
+  startFrame: fc.integer({ min: 0, max: 1000 }),
+  endFrame: fc.integer({ min: 1, max: 10000 }),
+  timeStretch: fc.option(fc.double({ min: 0.1, max: 10, noNaN: true, noDefaultInfinity: true }), { nil: undefined }),
+  parentId: fc.option(fc.uuid(), { nil: null }),
   blendMode: fc.constantFrom('normal', 'multiply', 'screen', 'overlay', 'add'),
-  trackMatte: fc.constant(undefined),
-  parentId: fc.constant(undefined),
+  opacity: opacityPropertyArb,
+  transform: transformArb,
+  // Empty masks for serialization tests - full LayerMask has AnimatableProperty structure
   masks: fc.constant([]),
   effects: fc.constant([]),
-  styles: fc.constant([]),
-  content: fc.constant(undefined),
-  markers: fc.constant([]),
-  motionBlur: fc.boolean(),
-  collapseTransformations: fc.boolean(),
-  autoOrient: fc.boolean(),
-});
+  properties: fc.array(numericPropertyArb, { minLength: 0, maxLength: 5 }),
+  data: solidDataArb,
+}) as fc.Arbitrary<Layer>;
 
 // ============================================================================
 // SERIALIZATION TESTS
@@ -500,25 +588,24 @@ describe('STRICT: Project Serialization', () => {
         created: '2024-01-01T00:00:00Z',
         modified: '2024-01-01T00:00:00Z',
         author: 'Test',
-        description: 'Test project',
       },
-      settings: {
+      composition: {
         width: 1920,
         height: 1080,
-        frameRate: 24,
+        fps: 24,
+        frameCount: 240,
         duration: 10,
         backgroundColor: '#000000',
-        pixelAspectRatio: 1,
-        fieldOrder: 'progressive',
-        preserveNestedFrameRate: false,
+        autoResizeToContent: false,
+        frameBlendingEnabled: false,
       },
-      compositions: [],
-      assets: [],
+      compositions: {},
+      assets: {},
     };
-    
+
     const result = roundtrip(project);
     const comparison = deepEqual(project, result);
-    
+
     expect(comparison.equal).toBe(true);
   });
 
@@ -529,66 +616,76 @@ describe('STRICT: Project Serialization', () => {
       type: 'solid',
       visible: true,
       locked: false,
-      solo: false,
-      shy: false,
-      inPoint: 0,
-      outPoint: 100,
-      startTime: 0,
-      timeStretch: 1,
+      isolate: false,
+      threeD: false,
+      startFrame: 0,
+      endFrame: 100,
+      parentId: null,
+      blendMode: 'normal',
+      opacity: {
+        id: 'opacity-1',
+        name: 'Opacity',
+        type: 'number',
+        value: 100,
+        animated: false,
+        keyframes: [],
+      },
       transform: {
         position: {
+          id: 'position-1',
           name: 'Position',
+          type: 'position',
           value: { x: 960, y: 540, z: 0 },
           animated: false,
           keyframes: [],
-          expression: { type: 'none', enabled: false },
         },
-        anchorPoint: {
-          name: 'Anchor Point',
+        origin: {
+          id: 'origin-1',
+          name: 'Origin',
+          type: 'position',
           value: { x: 0, y: 0, z: 0 },
           animated: false,
           keyframes: [],
-          expression: { type: 'none', enabled: false },
         },
         scale: {
+          id: 'scale-1',
           name: 'Scale',
+          type: 'vector3',
           value: { x: 100, y: 100, z: 100 },
           animated: false,
           keyframes: [],
-          expression: { type: 'none', enabled: false },
         },
         rotation: {
+          id: 'rotation-1',
           name: 'Rotation',
+          type: 'number',
           value: 0,
           animated: false,
           keyframes: [],
-          expression: { type: 'none', enabled: false },
         },
         opacity: {
+          id: 'transform-opacity-1',
           name: 'Opacity',
+          type: 'number',
           value: 100,
           animated: false,
           keyframes: [],
-          expression: { type: 'none', enabled: false },
         },
       },
-      blendMode: 'normal',
       masks: [],
       effects: [],
-      styles: [],
-      markers: [],
+      properties: [],
       motionBlur: false,
-      collapseTransformations: false,
-      autoOrient: false,
-    };
-    
+      data: { color: '#ff0000', width: 1920, height: 1080 },
+    } as Layer;
+
     const result = roundtrip(layer);
     const comparison = deepEqual(layer, result);
-    
+
     if (!comparison.equal) {
       console.log('Layer roundtrip failed:', comparison.diff);
     }
-    
+
     expect(comparison.equal).toBe(true);
   });
 
@@ -683,69 +780,79 @@ describe('STRICT: Serialization Edge Cases', () => {
 describe('STRESS: Large Project Serialization', () => {
 
   it('handles project with many layers', () => {
-    const layers = Array.from({ length: 100 }, (_, i): Layer => ({
+    const layers = Array.from({ length: 100 }, (_, i) => ({
       id: `layer-${i}`,
       name: `Layer ${i}`,
-      type: 'solid',
+      type: 'solid' as const,
       visible: true,
       locked: false,
-      solo: false,
-      shy: false,
-      inPoint: 0,
-      outPoint: 100,
-      startTime: 0,
-      timeStretch: 1,
+      isolate: false,
+      threeD: false,
+      startFrame: 0,
+      endFrame: 100,
+      parentId: null,
+      blendMode: 'normal' as const,
+      opacity: {
+        id: `opacity-${i}`,
+        name: 'Opacity',
+        type: 'number' as const,
+        value: 100,
+        animated: false,
+        keyframes: [],
+      },
       transform: {
         position: {
+          id: `position-${i}`,
           name: 'Position',
+          type: 'position' as const,
           value: { x: i * 10, y: i * 10, z: 0 },
           animated: false,
           keyframes: [],
-          expression: { type: 'none', enabled: false },
         },
-        anchorPoint: {
-          name: 'Anchor Point',
+        origin: {
+          id: `origin-${i}`,
+          name: 'Origin',
+          type: 'position' as const,
           value: { x: 0, y: 0, z: 0 },
           animated: false,
           keyframes: [],
-          expression: { type: 'none', enabled: false },
         },
         scale: {
+          id: `scale-${i}`,
           name: 'Scale',
+          type: 'vector3' as const,
           value: { x: 100, y: 100, z: 100 },
           animated: false,
           keyframes: [],
-          expression: { type: 'none', enabled: false },
         },
         rotation: {
+          id: `rotation-${i}`,
           name: 'Rotation',
+          type: 'number' as const,
           value: i,
           animated: false,
           keyframes: [],
-          expression: { type: 'none', enabled: false },
         },
         opacity: {
+          id: `transform-opacity-${i}`,
           name: 'Opacity',
+          type: 'number' as const,
           value: 100,
           animated: false,
           keyframes: [],
-          expression: { type: 'none', enabled: false },
         },
       },
-      blendMode: 'normal',
       masks: [],
       effects: [],
-      styles: [],
-      markers: [],
+      properties: [],
       motionBlur: false,
-      collapseTransformations: false,
-      autoOrient: false,
-    }));
-    
+      data: { color: '#ff0000', width: 1920, height: 1080 },
+    })) as Layer[];
+
     const result = roundtrip(layers);
-    
+
     expect(result.length).toBe(100);
-    
+
     // Verify first and last
     expect(result[0].id).toBe('layer-0');
     expect(result[99].id).toBe('layer-99');
@@ -754,23 +861,26 @@ describe('STRESS: Large Project Serialization', () => {
 
   it('handles layer with many keyframes', () => {
     const keyframes = Array.from({ length: 1000 }, (_, i): Keyframe<number> => ({
+      id: `kf-${i}`,
       frame: i,
       value: Math.sin(i * 0.1) * 100,
       interpolation: 'linear',
       inHandle: { frame: -5, value: 0, enabled: true },
       outHandle: { frame: 5, value: 0, enabled: true },
+      controlMode: 'smooth',
     }));
-    
+
     const property: AnimatableProperty<number> = {
+      id: 'rotation-prop',
       name: 'Rotation',
+      type: 'number',
       value: 0,
       animated: true,
       keyframes,
-      expression: { type: 'none', enabled: false },
     };
-    
+
     const result = roundtrip(property);
-    
+
     expect(result.keyframes.length).toBe(1000);
     expect(result.keyframes[500].frame).toBe(500);
   });

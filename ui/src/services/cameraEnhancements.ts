@@ -166,6 +166,7 @@ function createMulberry32(seed: number): () => number {
  */
 export class CameraShake {
   private noise2D: ReturnType<typeof createNoise2D>;
+  private noise3D: ReturnType<typeof createNoise3D>;
   private config: CameraShakeConfig;
   private startFrame: number;
   private duration: number;

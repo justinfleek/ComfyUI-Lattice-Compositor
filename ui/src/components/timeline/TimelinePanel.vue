@@ -83,9 +83,6 @@
           </button>
         </div>
 
-        <div class="tool-group">
-          <OnionSkinControls />
-        </div>
       </div>
 
       <div class="header-right">

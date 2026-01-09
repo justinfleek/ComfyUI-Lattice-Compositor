@@ -497,7 +497,7 @@ describe('RNG Determinism', () => {
     const emitter = createDefaultEmitter('test');
     emitter.emissionRate = 30;
     emitter.speedVariance = 50;
-    emitter.positionVariance = 100;
+    emitter.sizeVariance = 10;
     
     system1.addEmitter({ ...emitter });
     system2.addEmitter({ ...emitter });

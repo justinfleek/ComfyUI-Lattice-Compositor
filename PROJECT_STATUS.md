@@ -1,6 +1,6 @@
 # Project Status
 
-> Last Updated: December 2025
+> Last Updated: January 2026
 
 ---
 
@@ -8,12 +8,15 @@
 
 | Metric | Value |
 |--------|-------|
-| **Lines of Code** | 284,712 |
-| **TypeScript Files** | 362 |
+| **Lines of Code** | 291,602 (source) |
+| **TypeScript Files** | 476 |
 | **Vue Components** | 157 |
 | **Service Files** | 181 |
-| **Python Files** | 21 |
-| **Tests Passing** | 392 |
+| **Python Files** | 26 |
+| **Tests Passing** | 4,202 |
+| **Tests Skipped** | 61 (browser-only) |
+| **Bugs Found & Fixed** | 225 |
+| **Audit Coverage** | 12.34% |
 | **Layer Types** | 26 |
 
 ---
@@ -42,9 +45,11 @@
 - NaN/Infinity boundary validation
 
 ### Testing
-- 392 unit tests passing
+- 4,202 tests passing (unit, property, integration)
+- 225 bugs found and fixed through property testing
 - CI/CD pipeline with GitHub Actions
-- E2E test infrastructure (Playwright)
+- E2E test infrastructure (Playwright) - 39 test files
+- Property tests with fast-check (TypeScript) and Hypothesis (Python)
 
 ---
 
@@ -104,6 +109,13 @@
 ---
 
 ## Release History
+
+### January 2026
+- Property testing audit: 225 bugs found and fixed
+- Particle system fully audited (67 files, 29,498 lines)
+- Export system fully audited (16 files)
+- Test count increased from 392 to 4,202
+- Document cleanup and consolidation
 
 ### December 2025
 - Security hardening complete

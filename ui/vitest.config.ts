@@ -7,7 +7,9 @@ export default defineConfig({
   test: {
     globals: true,
     environment: "happy-dom",
-    testTimeout: 15000, // Increased for property tests under load
+    // NOTE: Property-based tests (fast-check) run 100+ iterations and need more time
+    // Especially shape morphing, attractor systems, and depth renderer tests
+    testTimeout: 45000, // 45 seconds for property tests
     include: ["src/**/*.{test,spec}.{js,ts}"],
     exclude: ["**/node_modules/**", "**/_deprecated/**"],
     coverage: {

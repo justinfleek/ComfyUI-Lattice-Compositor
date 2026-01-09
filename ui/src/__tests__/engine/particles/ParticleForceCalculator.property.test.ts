@@ -64,8 +64,9 @@ const arbForceFieldType = fc.constantFrom(...forceFieldTypes);
 
 const arbFalloffType = fc.constantFrom(...falloffTypes);
 
-// Base force field config
-const arbBaseForceField = fc.record({
+// Force field config with all properties (both required and optional)
+const arbForceFieldConfig: fc.Arbitrary<ForceFieldConfig> = fc.record({
+  // Required base properties
   id: fc.uuid(),
   name: fc.string(),
   type: arbForceFieldType,
@@ -75,38 +76,28 @@ const arbBaseForceField = fc.record({
   falloffStart: fc.oneof(positiveFloat(500), fc.constant(0)),
   falloffEnd: fc.oneof(positiveFloat(1000), fc.constant(0)),
   falloffType: arbFalloffType,
-});
-
-// Extended force field config with optional properties
-const arbForceFieldConfig: fc.Arbitrary<ForceFieldConfig> = arbBaseForceField.chain((base) =>
-  fc.record({
-    ...Object.fromEntries(Object.entries(base).map(([k, v]) => [k, fc.constant(v)])),
-    // Vortex-specific
-    vortexAxis: fc.oneof(arbPosition, fc.constant(undefined)),
-    inwardForce: fc.oneof(safeFloat(-100, 100), fc.constant(undefined)),
-    // Turbulence/Curl-specific
-    noiseScale: fc.oneof(positiveFloat(1), fc.constant(undefined), fc.constant(NaN)),
-    noiseSpeed: fc.oneof(positiveFloat(10), fc.constant(undefined), fc.constant(NaN)),
-    // Drag-specific
-    linearDrag: fc.oneof(positiveFloat(1), fc.constant(undefined), fc.constant(NaN)),
-    quadraticDrag: fc.oneof(positiveFloat(0.1), fc.constant(undefined), fc.constant(NaN)),
-    // Wind-specific
-    windDirection: fc.oneof(arbPosition, fc.constant(undefined)),
-    gustStrength: fc.oneof(positiveFloat(100), fc.constant(undefined)),
-    gustFrequency: fc.oneof(positiveFloat(10), fc.constant(undefined)),
-    // Lorenz-specific
-    lorenzSigma: fc.oneof(positiveFloat(20), fc.constant(undefined), fc.constant(NaN)),
-    lorenzRho: fc.oneof(positiveFloat(50), fc.constant(undefined), fc.constant(NaN)),
-    lorenzBeta: fc.oneof(positiveFloat(10), fc.constant(undefined), fc.constant(NaN)),
-    // Magnetic-specific
-    magneticFieldDirection: fc.oneof(arbPosition, fc.constant(undefined)),
-    // Orbit-specific
-    orbitAxis: fc.oneof(arbPosition, fc.constant(undefined)),
-    orbitSpeed: fc.oneof(safeFloat(-100, 100), fc.constant(undefined)),
-    // Path follow - simplified (pathRadius needs number)
-    pathRadius: fc.oneof(positiveFloat(500), fc.constant(undefined)),
-  }) as fc.Arbitrary<ForceFieldConfig>,
-);
+  // Vortex-specific
+  vortexAxis: fc.option(arbPosition, { nil: undefined }),
+  inwardForce: fc.option(safeFloat(-100, 100), { nil: undefined }),
+  // Turbulence/Curl-specific
+  noiseScale: fc.option(positiveFloat(1), { nil: undefined }),
+  noiseSpeed: fc.option(positiveFloat(10), { nil: undefined }),
+  // Drag-specific
+  linearDrag: fc.option(positiveFloat(1), { nil: undefined }),
+  quadraticDrag: fc.option(positiveFloat(0.1), { nil: undefined }),
+  // Wind-specific
+  windDirection: fc.option(arbPosition, { nil: undefined }),
+  gustStrength: fc.option(positiveFloat(100), { nil: undefined }),
+  gustFrequency: fc.option(positiveFloat(10), { nil: undefined }),
+  // Lorenz-specific
+  lorenzSigma: fc.option(positiveFloat(20), { nil: undefined }),
+  lorenzRho: fc.option(positiveFloat(50), { nil: undefined }),
+  lorenzBeta: fc.option(positiveFloat(10), { nil: undefined }),
+  // Orbit-specific
+  orbitSpeed: fc.option(safeFloat(-100, 100), { nil: undefined }),
+  // Path follow
+  pathRadius: fc.option(positiveFloat(500), { nil: undefined }),
+}) as fc.Arbitrary<ForceFieldConfig>;
 
 // ============================================================================
 // TESTS: calculateForceField

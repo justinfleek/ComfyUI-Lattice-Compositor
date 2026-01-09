@@ -89,6 +89,7 @@ export class VideoLayer extends BaseLayer {
   private blendCanvas: HTMLCanvasElement | null = null;
   private blendCtx: CanvasRenderingContext2D | null = null;
   private lastVideoTime: number = -1;
+  private prevFrameTime: number = -1;
 
   constructor(layerData: Layer, resources: ResourceManager) {
     super(layerData);

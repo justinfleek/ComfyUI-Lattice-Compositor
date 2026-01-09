@@ -106,15 +106,27 @@ export class TextLayer extends BaseLayer {
   // Animatable text properties (from layer.properties)
   private fontSizeProp?: AnimatableProperty<number>;
   private trackingProp?: AnimatableProperty<number>;
+  private lineSpacingProp?: AnimatableProperty<number>;
   private fillColorProp?: AnimatableProperty<string>;
   private strokeColorProp?: AnimatableProperty<string>;
   private strokeWidthProp?: AnimatableProperty<number>;
   private pathOffsetProp?: AnimatableProperty<number>;
   private firstMarginProp?: AnimatableProperty<number>;
   private lastMarginProp?: AnimatableProperty<number>;
+  private characterOffsetProp?: AnimatableProperty<number>;
 
   // Per-character animation
   private characterTransforms?: AnimatableProperty<CharacterTransform[]>;
+
+  // Resource management
+  private resources: ResourceManager;
+
+  // Font metrics for accurate character widths
+  private fontMetrics: unknown = null;
+
+  // Path control points for text-on-path
+  private pathControlPoints: ControlPoint[] = [];
+  private pathClosed: boolean = false;
 
   // Path following service
   private textOnPath: TextOnPathService;

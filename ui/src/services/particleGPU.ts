@@ -824,18 +824,15 @@ export class ParticleGPUCompute {
     await this.stagingPropertiesBuffer?.mapAsync(GPUMapMode.READ);
     await this.stagingColorBuffer?.mapAsync(GPUMapMode.READ);
 
-    const positions = new Float32Array(
-      this.stagingPositionBuffer?.getMappedRange().slice(0),
-    );
-    const velocities = new Float32Array(
-      this.stagingVelocityBuffer?.getMappedRange().slice(0),
-    );
-    const properties = new Float32Array(
-      this.stagingPropertiesBuffer?.getMappedRange().slice(0),
-    );
-    const colors = new Float32Array(
-      this.stagingColorBuffer?.getMappedRange().slice(0),
-    );
+    const posRange = this.stagingPositionBuffer?.getMappedRange();
+    const velRange = this.stagingVelocityBuffer?.getMappedRange();
+    const propRange = this.stagingPropertiesBuffer?.getMappedRange();
+    const colorRange = this.stagingColorBuffer?.getMappedRange();
+
+    const positions = posRange ? new Float32Array(posRange.slice(0)) : new Float32Array(0);
+    const velocities = velRange ? new Float32Array(velRange.slice(0)) : new Float32Array(0);
+    const properties = propRange ? new Float32Array(propRange.slice(0)) : new Float32Array(0);
+    const colors = colorRange ? new Float32Array(colorRange.slice(0)) : new Float32Array(0);
 
     this.stagingPositionBuffer?.unmap();
     this.stagingVelocityBuffer?.unmap();

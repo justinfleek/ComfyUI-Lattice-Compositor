@@ -31,6 +31,7 @@ export type ExportTarget =
   | "ttm-wan" // TTM with Wan 2.1 backend
   | "ttm-cogvideox" // TTM with CogVideoX backend
   | "ttm-svd" // TTM with SVD backend
+  | "scail" // SCAIL pose-driven video (reference + pose)
   | "camera-comfyui"; // camera-comfyUI 4x4 matrices
 
 // ============================================================================

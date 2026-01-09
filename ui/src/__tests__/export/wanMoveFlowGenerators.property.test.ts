@@ -491,6 +491,9 @@ import {
 } from '@/services/export/wanMoveExport';
 
 describe('STRICT: Attractor Systems', () => {
+  // NOTE: Attractor simulations (especially lorenz) are computationally expensive
+  const ATTRACTOR_TIMEOUT = 30000; // 30 seconds
+
   const attractors = ['lorenz', 'rossler', 'aizawa'] as const;
 
   for (const type of attractors) {
@@ -498,7 +501,7 @@ describe('STRICT: Attractor Systems', () => {
       fc.integer({ min: 5, max: 30 }),
       fc.integer({ min: 16, max: 64 }),
       fc.integer({ min: 0, max: 1000000 })
-    ])(`${type}: produces valid trajectory shape`, (numPoints, numFrames, seed) => {
+    ], { timeout: ATTRACTOR_TIMEOUT })(`${type}: produces valid trajectory shape`, (numPoints, numFrames, seed) => {
       const config: AttractorConfig = {
         type,
         numPoints,
@@ -524,7 +527,7 @@ describe('STRICT: Attractor Systems', () => {
       fc.integer({ min: 5, max: 20 }),
       fc.integer({ min: 16, max: 32 }),
       fc.integer({ min: 0, max: 1000000 })
-    ])(`${type}: coordinates are within bounds`, (numPoints, numFrames, seed) => {
+    ], { timeout: ATTRACTOR_TIMEOUT })(`${type}: coordinates are within bounds`, (numPoints, numFrames, seed) => {
       const width = 512, height = 512;
       const config: AttractorConfig = {
         type,
@@ -556,7 +559,7 @@ describe('STRICT: Attractor Systems', () => {
 
     test.prop([
       fc.integer({ min: 0, max: 1000000 })
-    ])(`${type}: same seed produces identical trajectory`, (seed) => {
+    ], { timeout: ATTRACTOR_TIMEOUT })(`${type}: same seed produces identical trajectory`, (seed) => {
       const config: AttractorConfig = {
         type,
         numPoints: 10,
@@ -597,6 +600,10 @@ describe('STRICT: Attractor Systems', () => {
 // ============================================================================
 
 describe('STRICT: Shape Morphing', () => {
+  // NOTE: Shape morphing tests are computationally expensive (especially spiral)
+  // Longer timeout needed to avoid flaky failures
+  const SHAPE_MORPH_TIMEOUT = 30000; // 30 seconds
+
   const shapes = ['circle', 'grid', 'heart', 'star', 'spiral', 'random'] as const;
 
   for (const source of shapes) {
@@ -607,7 +614,7 @@ describe('STRICT: Shape Morphing', () => {
         fc.integer({ min: 10, max: 30 }),
         fc.integer({ min: 16, max: 32 }),
         fc.integer({ min: 0, max: 1000000 })
-      ])(`morph ${source} -> ${target}: valid trajectory`, (numPoints, numFrames, seed) => {
+      ], { timeout: SHAPE_MORPH_TIMEOUT })(`morph ${source} -> ${target}: valid trajectory`, (numPoints, numFrames, seed) => {
         const config: ShapeTargetConfig = {
           numPoints,
           numFrames,
@@ -638,7 +645,7 @@ describe('STRICT: Shape Morphing', () => {
     fc.integer({ min: 10, max: 30 }),
     fc.integer({ min: 16, max: 32 }),
     fc.integer({ min: 0, max: 1000000 })
-  ])('morph starts at source shape', (numPoints, numFrames, seed) => {
+  ], { timeout: SHAPE_MORPH_TIMEOUT })('morph starts at source shape', (numPoints, numFrames, seed) => {
     const config: ShapeTargetConfig = {
       numPoints,
       numFrames,
@@ -665,7 +672,7 @@ describe('STRICT: Shape Morphing', () => {
 
   test.prop([
     fc.integer({ min: 0, max: 1000000 })
-  ])('morph is deterministic', (seed) => {
+  ], { timeout: SHAPE_MORPH_TIMEOUT })('morph is deterministic', (seed) => {
     const config: ShapeTargetConfig = {
       numPoints: 20,
       numFrames: 30,

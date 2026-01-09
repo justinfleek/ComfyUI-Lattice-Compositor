@@ -13,6 +13,7 @@ import {
 } from "@/config/exportPresets";
 import { getComfyUIClient } from "@/services/comfyui/comfyuiClient";
 import { exportToComfyUI } from "@/services/export/exportPipeline";
+import { useCompositorStore } from "@/stores/compositorStore";
 import type {
   ControlType,
   DepthMapFormat,
@@ -21,6 +22,9 @@ import type {
   ExportTarget,
 } from "@/types/export";
 import type { Layer } from "@/types/project";
+
+// Access compositor store for composition settings
+const compositorStore = useCompositorStore();
 
 // ============================================================================
 // Props & Emits
@@ -51,13 +55,16 @@ const activeTab = ref<"target" | "output" | "generation" | "comfyui">(
 // Export target
 const selectedTarget = ref<ExportTarget>("wan22-i2v");
 
-// Output settings
-const width = ref(832);
-const height = ref(480);
-const frameCount = ref(81);
-const fps = ref(24);
+// Output settings - initialized from composition in onMounted
+const width = ref(0);
+const height = ref(0);
+const frameCount = ref(0);
+const fps = ref(0);
 const startFrame = ref(0);
-const endFrame = ref(81);
+const endFrame = ref(0);
+
+// Track if user has manually overridden composition settings
+const useCompositionSettings = ref(true);
 
 // Export options
 const exportDepthMap = ref(true);
@@ -93,6 +100,32 @@ const abortController = ref<AbortController | null>(null);
 // ============================================================================
 
 const targetInfo = computed(() => EXPORT_TARGET_INFO[selectedTarget.value]);
+
+// Get recommended settings for selected target
+const targetPreset = computed(() => EXPORT_PRESETS[selectedTarget.value]);
+
+// Check if current settings differ from target recommendations
+const settingsMismatch = computed(() => {
+  const preset = targetPreset.value;
+  if (!preset) return null;
+
+  const mismatches: string[] = [];
+
+  if (preset.width && width.value !== preset.width) {
+    mismatches.push(`Width: ${width.value} (recommended: ${preset.width})`);
+  }
+  if (preset.height && height.value !== preset.height) {
+    mismatches.push(`Height: ${height.value} (recommended: ${preset.height})`);
+  }
+  if (preset.fps && fps.value !== preset.fps) {
+    mismatches.push(`FPS: ${fps.value} (recommended: ${preset.fps})`);
+  }
+  if (preset.frameCount && frameCount.value !== preset.frameCount) {
+    mismatches.push(`Frames: ${frameCount.value} (recommended: ${preset.frameCount})`);
+  }
+
+  return mismatches.length > 0 ? mismatches : null;
+});
 
 const targetCategories = computed(() => ({
   "Wan 2.2": [
@@ -164,17 +197,11 @@ const controlTypes: { value: ControlType; label: string }[] = [
 function selectTarget(target: ExportTarget) {
   selectedTarget.value = target;
 
-  // Apply preset settings
-  const preset = EXPORT_PRESETS[target];
-  if (preset) {
-    width.value = preset.width ?? 832;
-    height.value = preset.height ?? 480;
-    frameCount.value = preset.frameCount ?? 81;
-    fps.value = preset.fps ?? 24;
-    endFrame.value = frameCount.value;
-  }
+  // DON'T override composition settings automatically
+  // Only apply preset if user explicitly requests it via useCompositionSettings toggle
+  // The composition settings are the source of truth for the export dimensions
 
-  // Update export options based on target
+  // Update export options based on target requirements
   const info = EXPORT_TARGET_INFO[target];
   if (info) {
     exportDepthMap.value =
@@ -190,6 +217,34 @@ function selectTarget(target: ExportTarget) {
     exportLastFrame.value = info.requiredInputs.includes("last_frame");
     exportControlImages.value = target.startsWith("controlnet-");
   }
+}
+
+/**
+ * Apply target preset settings (overrides composition settings)
+ * Use when user wants to match model's recommended settings
+ */
+function applyTargetPreset() {
+  const preset = EXPORT_PRESETS[selectedTarget.value];
+  if (preset) {
+    width.value = preset.width ?? width.value;
+    height.value = preset.height ?? height.value;
+    frameCount.value = preset.frameCount ?? frameCount.value;
+    fps.value = preset.fps ?? fps.value;
+    endFrame.value = frameCount.value;
+    useCompositionSettings.value = false;
+  }
+}
+
+/**
+ * Reset to composition settings
+ */
+function resetToCompositionSettings() {
+  width.value = compositorStore.width || 832;
+  height.value = compositorStore.height || 480;
+  frameCount.value = compositorStore.frameCount || 81;
+  fps.value = compositorStore.fps || 24;
+  endFrame.value = frameCount.value;
+  useCompositionSettings.value = true;
 }
 
 async function checkConnection() {
@@ -291,8 +346,13 @@ function close() {
 // ============================================================================
 
 onMounted(() => {
-  // Initialize with current timeline range
-  endFrame.value = Math.min(frameCount.value, props.totalFrames);
+  // Initialize from composition settings - THIS IS THE SOURCE OF TRUTH
+  width.value = compositorStore.width || 832;
+  height.value = compositorStore.height || 480;
+  frameCount.value = compositorStore.frameCount || 81;
+  fps.value = compositorStore.fps || 24;
+  startFrame.value = 0;
+  endFrame.value = frameCount.value;
 
   // Check ComfyUI connection
   checkConnection();

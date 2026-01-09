@@ -479,6 +479,11 @@ export class MaterialSystem {
             this.pmremGenerator?.fromEquirectangular(texture).texture;
           texture.dispose();
 
+          if (!envMap) {
+            reject(new Error("Failed to generate PMREM environment map"));
+            return;
+          }
+
           this.envMap = envMap;
           this.envConfig.enabled = true;
 

@@ -156,7 +156,10 @@ class MatteExporter {
 
     // If include_all mode, return white frame
     if (options.matteMode === "include_all") {
-      return await this.offscreenCanvas?.convertToBlob({ type: "image/png" });
+      if (!this.offscreenCanvas) {
+        throw new Error("Canvas not initialized");
+      }
+      return await this.offscreenCanvas.convertToBlob({ type: "image/png" });
     }
 
     // Set BLACK for exclusion
@@ -203,7 +206,10 @@ class MatteExporter {
     }
 
     // Convert to PNG blob
-    return await this.offscreenCanvas?.convertToBlob({ type: "image/png" });
+    if (!this.offscreenCanvas) {
+      throw new Error("Canvas not initialized");
+    }
+    return await this.offscreenCanvas.convertToBlob({ type: "image/png" });
   }
 
   /**

@@ -123,6 +123,9 @@ export class MeshParticleManager {
   /** Default material for mesh particles */
   private defaultMaterial: THREE.MeshStandardMaterial;
 
+  /** Texture loader for particle textures */
+  private textureLoader: THREE.TextureLoader;
+
   constructor() {
     this.defaultMaterial = new THREE.MeshStandardMaterial({
       color: 0xffffff,
@@ -156,8 +159,8 @@ export class MeshParticleManager {
       name,
       source,
       geometry,
-      boundingBox: geometry.boundingBox?.clone(),
-      boundingSphere: geometry.boundingSphere?.clone(),
+      boundingBox: geometry.boundingBox?.clone() ?? new THREE.Box3(),
+      boundingSphere: geometry.boundingSphere?.clone() ?? new THREE.Sphere(),
       vertexCount: geometry.getAttribute("position")?.count ?? 0,
       faceCount: geometry.index
         ? geometry.index.count / 3
@@ -477,7 +480,7 @@ export class MeshParticleManager {
 
     return {
       mode: "mesh",
-      meshGeometry: meshId,
+      meshGeometry: "custom",
     };
   }
 

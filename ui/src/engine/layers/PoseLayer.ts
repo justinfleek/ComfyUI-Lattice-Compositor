@@ -265,6 +265,9 @@ export class PoseLayer extends BaseLayer {
   private compWidth: number = 512;
   private compHeight: number = 512;
 
+  // Track last rendered frame for optimization
+  private lastRenderedFrame: number = -1;
+
   constructor(layerData: Layer) {
     super(layerData);
 

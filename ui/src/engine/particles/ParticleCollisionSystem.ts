@@ -47,6 +47,10 @@ export interface CollisionConfig {
   particleRadius: number;
   bounciness: number;
   friction: number;
+  /** Collision response strength (0-1) */
+  collisionResponse: number;
+  /** Damping on bounce (0-1) */
+  bounceDamping: number;
   bounds?: {
     min: { x: number; y: number; z: number };
     max: { x: number; y: number; z: number };
@@ -75,7 +79,6 @@ export class ParticleCollisionSystem {
     this.config = {
       enabled: config.enabled ?? true,
       particleCollision: config.particleCollision ?? false,
-      particleCollisions: config.particleCollisions ?? false,
       particleRadius: config.particleRadius ?? 5,
       bounciness: config.bounciness ?? 0.5,
       friction: config.friction ?? 0.1,
