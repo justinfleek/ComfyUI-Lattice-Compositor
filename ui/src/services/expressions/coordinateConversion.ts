@@ -85,7 +85,7 @@ export function orientToPath(
 // COORDINATE CONVERSION FUNCTIONS
 // ============================================================
 
-// Maximum recursion depth for parent traversal (BUG-010: prevent stack overflow)
+// Maximum recursion depth for parent traversal (prevents stack overflow)
 const MAX_PARENT_DEPTH = 50;
 
 /**
@@ -101,7 +101,7 @@ export function toComp(
   layerTransform: LayerTransform,
   depth: number = 0,
 ): number[] {
-  // Guard against circular parent chains (BUG-010)
+  // Guard against circular parent chains
   if (depth > MAX_PARENT_DEPTH) {
     console.warn(
       "[Expressions] Max parent depth exceeded in toComp - possible circular reference",
@@ -117,7 +117,7 @@ export function toComp(
   let y = py - (anchor[1] || 0);
   let z = pz - (anchor[2] || 0);
 
-  // Apply scale (BUG-011: use ?? to preserve intentional 0)
+  // Apply scale (use ?? to preserve intentional 0)
   x *= (scale[0] ?? 100) / 100;
   y *= (scale[1] ?? 100) / 100;
   z *= (scale[2] ?? 100) / 100;
@@ -168,7 +168,7 @@ export function fromComp(
   layerTransform: LayerTransform,
   depth: number = 0,
 ): number[] {
-  // Guard against circular parent chains (BUG-010)
+  // Guard against circular parent chains
   if (depth > MAX_PARENT_DEPTH) {
     console.warn(
       "[Expressions] Max parent depth exceeded in fromComp - possible circular reference",
@@ -210,7 +210,7 @@ export function fromComp(
   let y3 = x2 * Math.sin(rz) + y2 * Math.cos(rz);
   let z3 = z2;
 
-  // Inverse scale (BUG-011: use ?? to preserve intentional 0, || 1 guards div/0)
+  // Inverse scale (use ?? to preserve intentional 0, || 1 guards div/0)
   const sx = (scale[0] ?? 100) / 100;
   const sy = (scale[1] ?? 100) / 100;
   const sz = (scale[2] ?? 100) / 100;

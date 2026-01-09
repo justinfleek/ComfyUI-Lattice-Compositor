@@ -354,7 +354,7 @@ function executeRenameLayer(
   const oldName = layer.name;
   layer.name = name;
 
-  // BUG-043 FIX: Add pushHistory for undo/redo support
+  // Record modification and save to undo history
   store.project.meta.modified = new Date().toISOString();
   store.pushHistory();
 
@@ -441,7 +441,7 @@ function executeSetLayerProperty(
     }
   }
 
-  // BUG-043 FIX: Add pushHistory for undo/redo support
+  // Record modification and save to undo history
   store.project.meta.modified = new Date().toISOString();
   store.pushHistory();
 
@@ -490,7 +490,7 @@ function executeSetLayerTransform(
     changes.push("origin");
   }
 
-  // BUG-043 FIX: Add pushHistory for undo/redo support
+  // Record modification and save to undo history
   store.project.meta.modified = new Date().toISOString();
   store.pushHistory();
 
@@ -642,7 +642,7 @@ function executeScaleKeyframeTiming(
     }
   }
 
-  // BUG-043 FIX: Add pushHistory for undo/redo support
+  // Record modification and save to undo history (only if changes were made)
   if (scaledCount > 0) {
     store.project.meta.modified = new Date().toISOString();
     store.pushHistory();
@@ -683,7 +683,7 @@ function executeSetExpression(
     params: params || {},
   };
 
-  // BUG-043 FIX: Add pushHistory for undo/redo support
+  // Record modification and save to undo history
   store.project.meta.modified = new Date().toISOString();
   store.pushHistory();
 
@@ -712,7 +712,7 @@ function executeRemoveExpression(
 
   property.expression = undefined;
 
-  // BUG-043 FIX: Add pushHistory for undo/redo support
+  // Record modification and save to undo history
   store.project.meta.modified = new Date().toISOString();
   store.pushHistory();
 
@@ -845,18 +845,21 @@ function executeConfigureParticles(
       particleData.systemConfig.gravity = physics.gravity.y || 0;
     }
     if (physics.wind) {
+      // Default to zero if wind components are undefined
+      const windX = physics.wind.x ?? 0;
+      const windY = physics.wind.y ?? 0;
       particleData.systemConfig.windStrength = Math.sqrt(
-        physics.wind.x ** 2 + physics.wind.y ** 2,
+        windX ** 2 + windY ** 2,
       );
       particleData.systemConfig.windDirection =
-        Math.atan2(physics.wind.y, physics.wind.x) * (180 / Math.PI);
+        Math.atan2(windY, windX) * (180 / Math.PI);
     }
     if (physics.turbulence) {
       // Map to system config if applicable
     }
   }
 
-  // BUG-043 FIX: Add pushHistory for undo/redo support
+  // Record modification and save to undo history
   store.project.meta.modified = new Date().toISOString();
   store.pushHistory();
 
@@ -1051,7 +1054,7 @@ function executeAddCameraShake(
     duration: duration ?? compDuration,
   };
 
-  // BUG-043 FIX: Add pushHistory for undo/redo support
+  // Record modification and save to undo history
   store.project.meta.modified = new Date().toISOString();
   store.pushHistory();
 
@@ -1193,7 +1196,7 @@ function executeSetCameraPathFollowing(
     smoothing,
   };
 
-  // BUG-043 FIX: Add pushHistory for undo/redo support
+  // Record modification and save to undo history
   store.project.meta.modified = new Date().toISOString();
   store.pushHistory();
 
@@ -1254,7 +1257,7 @@ function executeSetCameraAutoFocus(
     sampleRadius: 0.1,
   };
 
-  // BUG-043 FIX: Add pushHistory for undo/redo support
+  // Record modification and save to undo history
   store.project.meta.modified = new Date().toISOString();
   store.pushHistory();
 
@@ -1298,7 +1301,7 @@ function executeSetTextContent(
   }
   if (alignment !== undefined) textData.textAlign = alignment;
 
-  // BUG-043 FIX: Add pushHistory for undo/redo support
+  // Record modification and save to undo history
   store.project.meta.modified = new Date().toISOString();
   store.pushHistory();
 
@@ -1330,7 +1333,7 @@ function executeSetTextPath(
     textData.pathOffset = startOffset;
   }
 
-  // BUG-043 FIX: Add pushHistory for undo/redo support
+  // Record modification and save to undo history
   store.project.meta.modified = new Date().toISOString();
   store.pushHistory();
 
@@ -1378,7 +1381,7 @@ function executeSetSplinePoints(
     splineData.closed = closed;
   }
 
-  // BUG-043 FIX: Add pushHistory for undo/redo support
+  // Record modification and save to undo history
   store.project.meta.modified = new Date().toISOString();
   store.pushHistory();
 
@@ -1416,7 +1419,7 @@ function executeSetSpeedMap(
   };
   (layer.data as any).timeRemap = (layer.data as any).speedMap;
 
-  // BUG-043 FIX: Add pushHistory for undo/redo support
+  // Record modification and save to undo history
   store.project.meta.modified = new Date().toISOString();
   store.pushHistory();
 

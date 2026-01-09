@@ -218,7 +218,7 @@ const selectionStore = useSelectionStore();
 const sourceType = ref<"layer" | "canvas" | "file">("layer");
 const uploadedFile = ref<File | null>(null);
 const uploadedFileName = ref<string>("");
-const _fileInput = ref<HTMLInputElement | null>(null);
+const fileInput = ref<HTMLInputElement | null>(null);
 
 // Generation type
 const selectedType = ref<"depth" | "normal" | "segment">("depth");
@@ -236,7 +236,7 @@ const normalOptions = ref({
   strength: 100,
   smoothing: 0,
 });
-const _segmentOptions = ref({
+const segmentOptions = ref({
   autoMask: true,
 });
 
@@ -250,7 +250,7 @@ const statusType = ref<"info" | "success" | "error">("info");
 const previewUrl = ref<string | null>(null);
 
 // Generation types
-const _generationTypes = [
+const generationTypes = [
   {
     id: "depth",
     label: "Depth",
@@ -279,7 +279,7 @@ const selectedLayerName = computed(() => {
   return layer?.name || null;
 });
 
-const _availableModels = computed(() => {
+const availableModels = computed(() => {
   switch (selectedType.value) {
     case "depth":
       return models.value.filter(
@@ -296,7 +296,7 @@ const _availableModels = computed(() => {
   }
 });
 
-const _selectedModelInfo = computed(() => {
+const selectedModelInfo = computed(() => {
   return models.value.find((m) => m.type === selectedModel.value);
 });
 
@@ -306,7 +306,7 @@ const canGenerate = computed(() => {
   return true;
 });
 
-const _generateButtonText = computed(() => {
+const generateButtonText = computed(() => {
   if (isGenerating.value) return "Generating...";
   switch (selectedType.value) {
     case "depth":
@@ -321,7 +321,7 @@ const _generateButtonText = computed(() => {
 });
 
 // Methods
-function _handleFileSelect(event: Event) {
+function handleFileSelect(event: Event) {
   const input = event.target as HTMLInputElement;
   const file = input.files?.[0];
   if (file) {
@@ -341,7 +341,7 @@ async function refreshModels() {
   }
 }
 
-async function _generate() {
+async function generate() {
   if (!canGenerate.value || isGenerating.value) return;
 
   isGenerating.value = true;

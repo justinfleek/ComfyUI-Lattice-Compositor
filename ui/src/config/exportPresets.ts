@@ -190,6 +190,21 @@ export const EXPORT_PRESETS: Record<ExportTarget, Partial<ExportConfig>> = {
     cfgScale: 7.5,
   },
 
+  "controlnet-pose": {
+    width: 1024,
+    height: 1024,
+    frameCount: 1,
+    fps: 24,
+    exportDepthMap: false,
+    exportControlImages: true,
+    exportCameraData: false,
+    exportReferenceFrame: true,
+    exportLastFrame: false,
+    controlType: "pose",
+    steps: 20,
+    cfgScale: 7.5,
+  },
+
   "animatediff-cameractrl": {
     width: 512,
     height: 512,
@@ -338,6 +353,16 @@ export const EXPORT_PRESETS: Record<ExportTarget, Partial<ExportConfig>> = {
 // ============================================================================
 
 export const DEPTH_FORMAT_SPECS: Record<DepthMapFormat, DepthExportOptions> = {
+  // Raw Float32 output for custom processing pipelines
+  raw: {
+    format: "raw",
+    bitDepth: 32, // Special case: raw uses 32-bit floats
+    invert: false,
+    normalize: false,
+    colormap: "grayscale",
+    nearClip: 0.1,
+    farClip: 1000,
+  },
   midas: {
     format: "midas",
     bitDepth: 8,
@@ -364,6 +389,26 @@ export const DEPTH_FORMAT_SPECS: Record<DepthMapFormat, DepthExportOptions> = {
     colormap: "grayscale",
     nearClip: 0.01,
     farClip: 100,
+  },
+  // Depth-Anything V2 model format (16-bit, inverse depth, 0=far 1=near)
+  "depth-anything": {
+    format: "depth-anything",
+    bitDepth: 16,
+    invert: true, // Like MiDaS: near=bright
+    normalize: true,
+    colormap: "grayscale",
+    nearClip: 0.1,
+    farClip: 1000,
+  },
+  // Marigold model format (16-bit affine-invariant depth representation)
+  marigold: {
+    format: "marigold",
+    bitDepth: 16,
+    invert: false,
+    normalize: true, // Affine-invariant normalization
+    colormap: "grayscale",
+    nearClip: 0.1,
+    farClip: 1000,
   },
   normalized: {
     format: "normalized",
@@ -835,6 +880,18 @@ export const EXPORT_TARGET_INFO: Record<
     optionalInputs: ["reference_image", "negative_prompt"],
     outputTypes: ["image"],
     comfyNodes: ["ControlNetLoader", "ControlNetApply", "LineArtPreprocessor"],
+  },
+  "controlnet-pose": {
+    name: "ControlNet Pose",
+    description: "Pose skeleton guided image generation",
+    requiredInputs: ["pose_image", "prompt"],
+    optionalInputs: ["reference_image", "negative_prompt"],
+    outputTypes: ["image"],
+    comfyNodes: [
+      "ControlNetLoader",
+      "ControlNetApply",
+      "OpenposePreprocessor",
+    ],
   },
   "animatediff-cameractrl": {
     name: "AnimateDiff CameraCtrl",

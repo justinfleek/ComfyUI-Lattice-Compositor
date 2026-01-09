@@ -29,7 +29,7 @@ const emit = defineEmits<{
   (e: "expand", expanded: boolean): void;
 }>();
 
-function _toggleExpand() {
+function toggleExpand() {
   emit("expand", !props.expanded);
 }
 </script>

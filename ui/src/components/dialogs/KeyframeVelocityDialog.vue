@@ -187,7 +187,7 @@ const outgoingInfluence = ref(33.33);
 const linkVelocities = ref(false);
 
 // Determine unit based on property type
-const _velocityUnit = computed(() => {
+const velocityUnit = computed(() => {
   const type = props.propertyType?.toLowerCase() || "";
   if (type.includes("rotation") || type.includes("angle")) {
     return "deg/sec";
@@ -226,7 +226,7 @@ watch(
 );
 
 // Generate SVG path for incoming velocity curve
-const _incomingCurvePath = computed(() => {
+const incomingCurvePath = computed(() => {
   const influence = incomingInfluence.value / 100;
   const velocity = Math.min(Math.max(incomingVelocity.value / 100, -1), 1);
 
@@ -242,7 +242,7 @@ const _incomingCurvePath = computed(() => {
 });
 
 // Generate SVG path for outgoing velocity curve
-const _outgoingCurvePath = computed(() => {
+const outgoingCurvePath = computed(() => {
   const influence = outgoingInfluence.value / 100;
   const velocity = Math.min(Math.max(outgoingVelocity.value / 100, -1), 1);
 
@@ -257,7 +257,7 @@ const _outgoingCurvePath = computed(() => {
   return `M ${x1} ${y1} Q ${cpX} ${cpY} ${x2} ${y2}`;
 });
 
-function _confirm() {
+function confirm() {
   emit("confirm", {
     incomingVelocity: incomingVelocity.value,
     outgoingVelocity: outgoingVelocity.value,

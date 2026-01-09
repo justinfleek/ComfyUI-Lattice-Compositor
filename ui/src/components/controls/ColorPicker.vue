@@ -253,7 +253,7 @@ const props = withDefaults(defineProps<Props>(), {
 const emit = defineEmits<(e: "update:modelValue", value: string) => void>();
 
 type ColorMode = "hsv" | "rgb" | "hsl";
-const _modes: ColorMode[] = ["hsv", "rgb", "hsl"];
+const modes: ColorMode[] = ["hsv", "rgb", "hsl"];
 
 const containerRef = ref<HTMLDivElement | null>(null);
 const panelRef = ref<HTMLDivElement | null>(null);
@@ -262,7 +262,7 @@ const hueSliderRef = ref<HTMLDivElement | null>(null);
 const alphaSliderRef = ref<HTMLDivElement | null>(null);
 
 const isOpen = ref(false);
-const _currentMode = ref<ColorMode>("hsv");
+const currentMode = ref<ColorMode>("hsv");
 const alphaValue = ref(1);
 const recentColors = ref<string[]>([]);
 
@@ -271,9 +271,9 @@ const rgb = ref<RGB>([255, 255, 255]);
 const hsv = ref<HSV>([0, 0, 1]);
 const hsl = ref<HSL>([0, 0, 1]);
 
-const _allSwatches = computed(() => props.swatches || STANDARD_SWATCHES);
+const allSwatches = computed(() => props.swatches || STANDARD_SWATCHES);
 
-const _panelStyle = computed(() => {
+const panelStyle = computed(() => {
   if (!containerRef.value || !props.teleport) return {};
 
   const rect = containerRef.value.getBoundingClientRect();
@@ -298,7 +298,7 @@ function emitColor(): void {
   emit("update:modelValue", hex);
 }
 
-function _togglePicker(): void {
+function togglePicker(): void {
   isOpen.value = !isOpen.value;
 }
 
@@ -320,14 +320,14 @@ function addToRecent(color: string): void {
   }
 }
 
-function _selectSwatch(color: string): void {
+function selectSwatch(color: string): void {
   emit("update:modelValue", color);
 }
 
 // SV Square drag
 let isDraggingSV = false;
 
-function _startSVDrag(e: MouseEvent): void {
+function startSVDrag(e: MouseEvent): void {
   isDraggingSV = true;
   updateSV(e);
   document.addEventListener("mousemove", onSVDrag);
@@ -360,7 +360,7 @@ function stopSVDrag(): void {
 // Hue slider drag
 let isDraggingHue = false;
 
-function _startHueDrag(e: MouseEvent): void {
+function startHueDrag(e: MouseEvent): void {
   isDraggingHue = true;
   updateHue(e);
   document.addEventListener("mousemove", onHueDrag);
@@ -396,7 +396,7 @@ function stopHueDrag(): void {
 let draggingSlider: string | null = null;
 let sliderRect: DOMRect | null = null;
 
-function _startSliderDrag(slider: string, e: MouseEvent): void {
+function startSliderDrag(slider: string, e: MouseEvent): void {
   draggingSlider = slider;
   const track = (e.target as HTMLElement).closest(
     ".slider-track",
@@ -467,7 +467,7 @@ function stopSliderDrag(): void {
 // Alpha slider
 let isDraggingAlpha = false;
 
-function _startAlphaDrag(e: MouseEvent): void {
+function startAlphaDrag(e: MouseEvent): void {
   isDraggingAlpha = true;
   updateAlpha(e);
   document.addEventListener("mousemove", onAlphaDrag);
@@ -495,7 +495,7 @@ function stopAlphaDrag(): void {
 }
 
 // Input handlers
-function _onHexInput(e: Event): void {
+function onHexInput(e: Event): void {
   const input = e.target as HTMLInputElement;
   let value = input.value.trim();
 
@@ -508,12 +508,12 @@ function _onHexInput(e: Event): void {
   }
 }
 
-function _onHexBlur(e: FocusEvent): void {
+function onHexBlur(e: FocusEvent): void {
   const input = e.target as HTMLInputElement;
   input.value = props.modelValue;
 }
 
-function _onRgbInput(index: number, e: Event): void {
+function onRgbInput(index: number, e: Event): void {
   const input = e.target as HTMLInputElement;
   const value = Math.max(0, Math.min(255, parseInt(input.value, 10) || 0));
 
@@ -525,7 +525,7 @@ function _onRgbInput(index: number, e: Event): void {
   emitColor();
 }
 
-function _onHslInput(index: number, e: Event): void {
+function onHslInput(index: number, e: Event): void {
   const input = e.target as HTMLInputElement;
   let value = parseFloat(input.value) || 0;
 
@@ -543,7 +543,7 @@ function _onHslInput(index: number, e: Event): void {
   emitColor();
 }
 
-function _onAlphaInput(e: Event): void {
+function onAlphaInput(e: Event): void {
   const input = e.target as HTMLInputElement;
   alphaValue.value =
     Math.max(0, Math.min(100, parseInt(input.value, 10) || 0)) / 100;

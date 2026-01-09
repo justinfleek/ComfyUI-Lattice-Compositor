@@ -147,6 +147,21 @@ export const DEFAULT_AUTOFOCUS: AutoFocusConfig = {
 // ============================================================================
 
 /**
+ * Mulberry32 PRNG - a fast, seeded 32-bit random number generator
+ * Used to provide proper seeding for simplex-noise
+ */
+function createMulberry32(seed: number): () => number {
+  let state = seed >>> 0; // Ensure unsigned 32-bit
+  return function() {
+    state = (state + 0x6D2B79F5) >>> 0;
+    let t = state;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/**
  * Camera shake generator with deterministic noise
  */
 export class CameraShake {
@@ -155,10 +170,13 @@ export class CameraShake {
   private startFrame: number;
   private duration: number;
 
+  // Maximum shake duration to prevent infinite loops (10 hours at 30fps)
+  private static readonly MAX_DURATION = 1_080_000;
+
   constructor(
     config: Partial<CameraShakeConfig> = {},
     startFrame: number = 0,
-    duration: number = Infinity,
+    duration: number = CameraShake.MAX_DURATION,
   ) {
     this.config = {
       ...DEFAULT_SHAKE_CONFIG,
@@ -166,12 +184,14 @@ export class CameraShake {
       ...config,
     };
     this.startFrame = startFrame;
-    this.duration = duration;
+    // Clamp duration to prevent Infinity which can cause issues in calculations
+    this.duration = Math.min(duration, CameraShake.MAX_DURATION);
 
-    // Create seeded noise
-    const seedFn = () => this.config.seed / 100000;
-    this.noise2D = createNoise2D(seedFn);
-    this.noise3D = createNoise3D(seedFn);
+    // Initialize simplex noise with seeded PRNG for deterministic results.
+    // The noise library requires a function that returns different values per call.
+    const prng = createMulberry32(this.config.seed);
+    this.noise2D = createNoise2D(prng);
+    this.noise3D = createNoise3D(prng);
   }
 
   /**

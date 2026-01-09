@@ -126,7 +126,7 @@ export class TextLayer extends BaseLayer {
   private fontLoadingPromise: Promise<void> | null = null;
   private useAccurateMetrics: boolean = false;
 
-  // Text animators (After Effects-style per-character animation)
+  // Text animators (per-character animation)
   private animators: TextAnimator[] = [];
 
   // Note: compositionFps is inherited from BaseLayer (protected)
@@ -1028,7 +1028,7 @@ export class TextLayer extends BaseLayer {
       this.applyCharacterTransforms(frame);
     }
 
-    // Apply text animators (After Effects-style per-character animation)
+    // Apply text animators (per-character animation)
     // This must come after other evaluations so it can modify character positions
     if (this.animators.length > 0) {
       // Enable per-character mode if needed (animators require individual char meshes)
@@ -1086,8 +1086,8 @@ export class TextLayer extends BaseLayer {
       this.setLastMargin(props.lastMargin as number);
     }
 
-    // BUG-094 fix: Apply pathPosition audio modifier
-    // pathPosition is 0-1, pathOffset is 0-100%, so multiply by 100
+    // Apply audio-reactive path position modifier.
+    // pathPosition is 0-1 normalized, pathOffset is 0-100%, so scale by 100.
     const audioMod = this.currentAudioModifiers;
     if (
       audioMod.pathPosition !== undefined &&
@@ -1104,7 +1104,7 @@ export class TextLayer extends BaseLayer {
       this.applyEvaluatedEffects(state.effects);
     }
 
-    // Apply text animators (After Effects-style per-character animation)
+    // Apply text animators (per-character animation)
     // This is critical for kinetic typography - without this, animators won't render!
     if (this.animators.length > 0) {
       // Enable per-character mode if needed (animators require individual char meshes)
@@ -1161,7 +1161,7 @@ export class TextLayer extends BaseLayer {
   }
 
   /**
-   * Apply text animators to per-character meshes (After Effects-style animation)
+   * Apply text animators to per-character meshes (per-character animation)
    *
    * This is the key integration point for the textAnimator service.
    * For each enabled animator, calculates per-character influence and applies

@@ -23,7 +23,7 @@
           <label>FOV</label>
           <ScrubableNumber
             :modelValue="getPropertyValue('FOV') ?? 50"
-            @update:modelValue="v => updateAnimatable('FOV', v, 'animatedFov')"
+            @update:modelValue="(v: number) => updateAnimatable('FOV', v, 'animatedFov')"
             :min="10"
             :max="120"
             unit="°"
@@ -35,7 +35,7 @@
           <label>Focal Length</label>
           <ScrubableNumber
             :modelValue="getPropertyValue('Focal Length') ?? 50"
-            @update:modelValue="v => updateAnimatable('Focal Length', v, 'animatedFocalLength')"
+            @update:modelValue="(v: number) => updateAnimatable('Focal Length', v, 'animatedFocalLength')"
             :min="10"
             :max="300"
             unit="mm"
@@ -64,7 +64,7 @@
           <label>Focus Distance</label>
           <ScrubableNumber
             :modelValue="getPropertyValue('Focus Distance') ?? depthOfField.focusDistance"
-            @update:modelValue="v => updateDOFAnimatable('Focus Distance', v, 'focusDistance')"
+            @update:modelValue="(v: number) => updateDOFAnimatable('Focus Distance', v, 'focusDistance')"
             :min="0"
             :max="10000"
             unit="px"
@@ -76,7 +76,7 @@
           <label>Aperture</label>
           <ScrubableNumber
             :modelValue="getPropertyValue('Aperture') ?? depthOfField.aperture"
-            @update:modelValue="v => updateDOFAnimatable('Aperture', v, 'aperture')"
+            @update:modelValue="(v: number) => updateDOFAnimatable('Aperture', v, 'aperture')"
             :min="0.5"
             :max="32"
             :step="0.1"
@@ -89,7 +89,7 @@
           <label>Blur Level</label>
           <ScrubableNumber
             :modelValue="getPropertyValue('Blur Level') ?? depthOfField.blurLevel"
-            @update:modelValue="v => updateDOFAnimatable('Blur Level', v, 'blurLevel')"
+            @update:modelValue="(v: number) => updateDOFAnimatable('Blur Level', v, 'blurLevel')"
             :min="0"
             :max="100"
             unit="%"
@@ -136,7 +136,7 @@
           <label>Position</label>
           <ScrubableNumber
             :modelValue="getPropertyValue('Path Position') ?? pathFollowing.parameter?.value ?? 0"
-            @update:modelValue="v => updatePathProperty('parameter', v)"
+            @update:modelValue="(v: number) => updatePathProperty('parameter', v)"
             :min="0"
             :max="1"
             :step="0.001"
@@ -149,7 +149,7 @@
           <label>Look Ahead</label>
           <ScrubableNumber
             :modelValue="pathFollowing.lookAhead ?? 0.05"
-            @update:modelValue="v => updatePathConfig('lookAhead', v)"
+            @update:modelValue="(v: number) => updatePathConfig('lookAhead', v)"
             :min="0"
             :max="0.5"
             :step="0.01"
@@ -161,7 +161,7 @@
           <label>Banking</label>
           <ScrubableNumber
             :modelValue="pathFollowing.bankingStrength ?? 0"
-            @update:modelValue="v => updatePathConfig('bankingStrength', v)"
+            @update:modelValue="(v: number) => updatePathConfig('bankingStrength', v)"
             :min="0"
             :max="1"
             :step="0.05"
@@ -172,7 +172,7 @@
           <label>Height Offset</label>
           <ScrubableNumber
             :modelValue="pathFollowing.offsetY ?? 0"
-            @update:modelValue="v => updatePathConfig('offsetY', v)"
+            @update:modelValue="(v: number) => updatePathConfig('offsetY', v)"
             unit="px"
           />
         </div>
@@ -203,7 +203,7 @@
           <label>Speed</label>
           <ScrubableNumber
             :modelValue="pathFollowing.autoAdvanceSpeed ?? 0.01"
-            @update:modelValue="v => updatePathConfig('autoAdvanceSpeed', v)"
+            @update:modelValue="(v: number) => updatePathConfig('autoAdvanceSpeed', v)"
             :min="0.001"
             :max="0.1"
             :step="0.001"
@@ -246,7 +246,7 @@
           <label>Intensity</label>
           <ScrubableNumber
             :modelValue="cameraShake.intensity"
-            @update:modelValue="v => updateShakeConfig('intensity', v)"
+            @update:modelValue="(v: number) => updateShakeConfig('intensity', v)"
             :min="0"
             :max="1"
             :step="0.05"
@@ -258,7 +258,7 @@
           <label>Frequency</label>
           <ScrubableNumber
             :modelValue="cameraShake.frequency"
-            @update:modelValue="v => updateShakeConfig('frequency', v)"
+            @update:modelValue="(v: number) => updateShakeConfig('frequency', v)"
             :min="0.1"
             :max="5"
             :step="0.1"
@@ -269,7 +269,7 @@
           <label>Decay</label>
           <ScrubableNumber
             :modelValue="cameraShake.decay"
-            @update:modelValue="v => updateShakeConfig('decay', v)"
+            @update:modelValue="(v: number) => updateShakeConfig('decay', v)"
             :min="0"
             :max="1"
             :step="0.05"
@@ -281,7 +281,7 @@
           <label>Start Frame</label>
           <ScrubableNumber
             :modelValue="cameraShake.startFrame"
-            @update:modelValue="v => updateShakeConfig('startFrame', v)"
+            @update:modelValue="(v: number) => updateShakeConfig('startFrame', v)"
             :min="0"
             :step="1"
           />
@@ -291,7 +291,7 @@
           <label>Duration</label>
           <ScrubableNumber
             :modelValue="cameraShake.duration"
-            @update:modelValue="v => updateShakeConfig('duration', v)"
+            @update:modelValue="(v: number) => updateShakeConfig('duration', v)"
             :min="1"
             :step="1"
           />
@@ -329,7 +329,7 @@
           <label>Start Distance</label>
           <ScrubableNumber
             :modelValue="rackFocus.startDistance"
-            @update:modelValue="v => updateRackFocusConfig('startDistance', v)"
+            @update:modelValue="(v: number) => updateRackFocusConfig('startDistance', v)"
             :min="0"
             :max="10000"
             unit="px"
@@ -340,7 +340,7 @@
           <label>End Distance</label>
           <ScrubableNumber
             :modelValue="rackFocus.endDistance"
-            @update:modelValue="v => updateRackFocusConfig('endDistance', v)"
+            @update:modelValue="(v: number) => updateRackFocusConfig('endDistance', v)"
             :min="0"
             :max="10000"
             unit="px"
@@ -351,7 +351,7 @@
           <label>Start Frame</label>
           <ScrubableNumber
             :modelValue="rackFocus.startFrame"
-            @update:modelValue="v => updateRackFocusConfig('startFrame', v)"
+            @update:modelValue="(v: number) => updateRackFocusConfig('startFrame', v)"
             :min="0"
             :step="1"
           />
@@ -361,7 +361,7 @@
           <label>Duration</label>
           <ScrubableNumber
             :modelValue="rackFocus.duration"
-            @update:modelValue="v => updateRackFocusConfig('duration', v)"
+            @update:modelValue="(v: number) => updateRackFocusConfig('duration', v)"
             :min="1"
             :step="1"
           />
@@ -386,7 +386,7 @@
           <label>Hold Start</label>
           <ScrubableNumber
             :modelValue="rackFocus.holdStart"
-            @update:modelValue="v => updateRackFocusConfig('holdStart', v)"
+            @update:modelValue="(v: number) => updateRackFocusConfig('holdStart', v)"
             :min="0"
             :step="1"
           />
@@ -396,7 +396,7 @@
           <label>Hold End</label>
           <ScrubableNumber
             :modelValue="rackFocus.holdEnd"
-            @update:modelValue="v => updateRackFocusConfig('holdEnd', v)"
+            @update:modelValue="(v: number) => updateRackFocusConfig('holdEnd', v)"
             :min="0"
             :step="1"
           />
@@ -466,7 +466,7 @@
           <label>Position X</label>
           <ScrubableNumber
             :modelValue="getVec3Value('Position', 'x')"
-            @update:modelValue="v => updateVec3Property('Position', 'x', v, 'animatedPosition')"
+            @update:modelValue="(v: number) => updateVec3Property('Position', 'x', v, 'animatedPosition')"
           />
           <button class="keyframe-btn" :class="{ active: isAnimated('Position') }" @click="toggleVec3Keyframe('Position', 'animatedPosition')">◆</button>
         </div>
@@ -475,7 +475,7 @@
           <label>Position Y</label>
           <ScrubableNumber
             :modelValue="getVec3Value('Position', 'y')"
-            @update:modelValue="v => updateVec3Property('Position', 'y', v, 'animatedPosition')"
+            @update:modelValue="(v: number) => updateVec3Property('Position', 'y', v, 'animatedPosition')"
           />
         </div>
 
@@ -483,7 +483,7 @@
           <label>Position Z</label>
           <ScrubableNumber
             :modelValue="getVec3Value('Position', 'z')"
-            @update:modelValue="v => updateVec3Property('Position', 'z', v, 'animatedPosition')"
+            @update:modelValue="(v: number) => updateVec3Property('Position', 'z', v, 'animatedPosition')"
           />
         </div>
 
@@ -495,7 +495,7 @@
           <label>Target X</label>
           <ScrubableNumber
             :modelValue="getVec3Value('Target', 'x')"
-            @update:modelValue="v => updateVec3Property('Target', 'x', v, 'animatedTarget')"
+            @update:modelValue="(v: number) => updateVec3Property('Target', 'x', v, 'animatedTarget')"
           />
           <button class="keyframe-btn" :class="{ active: isAnimated('Target') }" @click="toggleVec3Keyframe('Target', 'animatedTarget')">◆</button>
         </div>
@@ -504,7 +504,7 @@
           <label>Target Y</label>
           <ScrubableNumber
             :modelValue="getVec3Value('Target', 'y')"
-            @update:modelValue="v => updateVec3Property('Target', 'y', v, 'animatedTarget')"
+            @update:modelValue="(v: number) => updateVec3Property('Target', 'y', v, 'animatedTarget')"
           />
         </div>
 
@@ -512,7 +512,7 @@
           <label>Target Z</label>
           <ScrubableNumber
             :modelValue="getVec3Value('Target', 'z')"
-            @update:modelValue="v => updateVec3Property('Target', 'z', v, 'animatedTarget')"
+            @update:modelValue="(v: number) => updateVec3Property('Target', 'z', v, 'animatedTarget')"
           />
         </div>
       </div>
@@ -568,7 +568,7 @@ const depthOfField = computed<CameraDepthOfField>(() => {
   );
 });
 
-const _dofEnabled = computed(() => depthOfField.value.enabled);
+const dofEnabled = computed(() => depthOfField.value.enabled);
 
 // Path following with defaults
 const pathFollowing = computed<CameraPathFollowing>(() => {
@@ -597,7 +597,7 @@ const pathFollowing = computed<CameraPathFollowing>(() => {
 
 // Get available spline and path layers for path following
 // Camera can follow both visible shape splines (e.g., logo outline) and invisible path guides
-const _splineLayers = computed(() => {
+const splineLayers = computed(() => {
   return store.layers.filter(
     (l) =>
       (l.type === "spline" || l.type === "path") && l.id !== props.layer.id,
@@ -639,7 +639,7 @@ const rackFocus = computed<CameraRackFocusData>(() => {
 });
 
 // Toggle section visibility
-function _toggleSection(section: string) {
+function toggleSection(section: string) {
   const idx = expandedSections.value.indexOf(section);
   if (idx >= 0) {
     expandedSections.value.splice(idx, 1);
@@ -657,47 +657,47 @@ function update(key: keyof CameraLayerData | string, value: any) {
 }
 
 // Toggle DOF
-function _toggleDOF(e: Event) {
+function toggleDOF(e: Event) {
   const checked = (e.target as HTMLInputElement).checked;
   const newDOF = { ...depthOfField.value, enabled: checked };
   update("depthOfField", newDOF);
 }
 
 // Toggle path following
-function _togglePathFollowing(e: Event) {
+function togglePathFollowing(e: Event) {
   const checked = (e.target as HTMLInputElement).checked;
   const newPath = { ...pathFollowing.value, enabled: checked };
   update("pathFollowing", newPath);
 }
 
 // Update path layer
-function _updatePathLayer(e: Event) {
+function updatePathLayer(e: Event) {
   const layerId = (e.target as HTMLSelectElement).value;
   const newPath = { ...pathFollowing.value, pathLayerId: layerId };
   update("pathFollowing", newPath);
 }
 
 // Update path config value
-function _updatePathConfig(key: keyof CameraPathFollowing, value: any) {
+function updatePathConfig(key: keyof CameraPathFollowing, value: any) {
   const newPath = { ...pathFollowing.value, [key]: value };
   update("pathFollowing", newPath);
 }
 
 // Toggle camera shake
-function _toggleCameraShake(e: Event) {
+function toggleCameraShake(e: Event) {
   const checked = (e.target as HTMLInputElement).checked;
   const newShake = { ...cameraShake.value, enabled: checked };
   update("shake", newShake);
 }
 
 // Update shake config value
-function _updateShakeConfig(key: keyof CameraShakeData, value: any) {
+function updateShakeConfig(key: keyof CameraShakeData, value: any) {
   const newShake = { ...cameraShake.value, [key]: value };
   update("shake", newShake);
 }
 
 // Toggle rack focus
-function _toggleRackFocus(e: Event) {
+function toggleRackFocus(e: Event) {
   const checked = (e.target as HTMLInputElement).checked;
   const newRackFocus = { ...rackFocus.value, enabled: checked };
   update("rackFocus", newRackFocus);
@@ -710,13 +710,13 @@ function _toggleRackFocus(e: Event) {
 }
 
 // Update rack focus config value
-function _updateRackFocusConfig(key: keyof CameraRackFocusData, value: any) {
+function updateRackFocusConfig(key: keyof CameraRackFocusData, value: any) {
   const newRackFocus = { ...rackFocus.value, [key]: value };
   update("rackFocus", newRackFocus);
 }
 
 // Apply trajectory preset
-function _applyTrajectory(trajectoryType: TrajectoryType) {
+function applyTrajectory(trajectoryType: TrajectoryType) {
   const comp = store.getActiveComp();
   const compSettings = comp?.settings || {
     width: 1920,
@@ -748,7 +748,7 @@ function _applyTrajectory(trajectoryType: TrajectoryType) {
 }
 
 // Update path parameter (animatable)
-function _updatePathProperty(_key: string, value: number) {
+function updatePathProperty(_key: string, value: number) {
   const param = pathFollowing.value.parameter;
   const newParam = { ...param, value };
   const newPath = { ...pathFollowing.value, parameter: newParam };
@@ -772,19 +772,19 @@ function getProperty(name: string): AnimatableProperty<number> | undefined {
 }
 
 // Get property value
-function _getPropertyValue(name: string): number | undefined {
+function getPropertyValue(name: string): number | undefined {
   const prop = getProperty(name);
   return prop?.value;
 }
 
 // Check if animated
-function _isAnimated(name: string): boolean {
+function isAnimated(name: string): boolean {
   const prop = getProperty(name);
   return prop?.animated ?? false;
 }
 
 // Update animatable property
-function _updateAnimatable(propName: string, value: number, dataKey: string) {
+function updateAnimatable(propName: string, value: number, dataKey: string) {
   // Update in layer.properties (via store)
   const prop = getProperty(propName);
   if (prop) {
@@ -806,7 +806,7 @@ function _updateAnimatable(propName: string, value: number, dataKey: string) {
 }
 
 // Update DOF animatable property
-function _updateDOFAnimatable(
+function updateDOFAnimatable(
   propName: string,
   value: number,
   dofKey: keyof CameraDepthOfField,
@@ -849,7 +849,7 @@ function ensureProperty(propName: string, defaultValue: number, group: string) {
 }
 
 // Toggle keyframe
-function _toggleKeyframe(
+function toggleKeyframe(
   propName: string,
   _dataKey: string,
   defaultValue: number,
@@ -895,7 +895,7 @@ function _toggleKeyframe(
 }
 
 // Toggle path keyframe
-function _togglePathKeyframe(propName: string) {
+function togglePathKeyframe(propName: string) {
   ensureProperty(
     propName,
     pathFollowing.value.parameter?.value ?? 0,
@@ -933,7 +933,7 @@ function _togglePathKeyframe(propName: string) {
 }
 
 // Get Vec3 value
-function _getVec3Value(propName: string, axis: "x" | "y" | "z"): number {
+function getVec3Value(propName: string, axis: "x" | "y" | "z"): number {
   const dataKey =
     propName === "Position" ? "animatedPosition" : "animatedTarget";
   const animProp = (cameraData.value as any)[dataKey] as
@@ -946,7 +946,7 @@ function _getVec3Value(propName: string, axis: "x" | "y" | "z"): number {
 }
 
 // Update Vec3 property
-function _updateVec3Property(
+function updateVec3Property(
   propName: string,
   axis: "x" | "y" | "z",
   value: number,
@@ -974,7 +974,7 @@ function _updateVec3Property(
 }
 
 // Toggle Vec3 keyframe
-function _toggleVec3Keyframe(propName: string, dataKey: string) {
+function toggleVec3Keyframe(propName: string, dataKey: string) {
   let animProp = (cameraData.value as any)[dataKey] as
     | AnimatableProperty<Vec3>
     | undefined;

@@ -1,0 +1,6 @@
+# P1 HIGH: Mask Generation Browser Tests
+# These tests verify mask generation produces valid output
+#
+# Files to test:
+# - maskGenerator.browser.test.ts (11 bugs documented!)
+# - segmentation.browser.test.ts

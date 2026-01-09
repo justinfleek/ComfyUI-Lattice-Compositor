@@ -190,7 +190,7 @@ const store = useCompositorStore();
 // State
 const exportMode = ref<"video" | "sequence">("video");
 const webCodecsSupported = ref(false);
-const _backendAvailable = ref(false); // TODO: Check if ComfyUI backend is available
+const backendAvailable = ref(false); // TODO: Check if ComfyUI backend is available
 const availableCodecs = ref<{ value: string; label: string }[]>([]);
 const selectedCodec = ref<"avc" | "vp9" | "vp8">("avc");
 const selectedQuality = ref<"low" | "medium" | "high" | "lossless">("high");
@@ -211,7 +211,7 @@ const sequenceQuality = ref(95);
 const sequenceResult = ref<FrameSequenceResult | null>(null);
 
 // Computed format info
-const _sequenceFormatInfo = computed(() => getFormatInfo(sequenceFormat.value));
+const sequenceFormatInfo = computed(() => getFormatInfo(sequenceFormat.value));
 
 // Computed
 const activeComp = computed(() => store.getActiveComp());
@@ -219,7 +219,7 @@ const outputWidth = computed(() => activeComp.value?.settings.width || 1024);
 const outputHeight = computed(() => activeComp.value?.settings.height || 1024);
 const frameRate = computed(() => activeComp.value?.settings.fps || 16);
 const totalFrames = computed(() => activeComp.value?.settings.frameCount || 81);
-const _duration = computed(() => {
+const duration = computed(() => {
   const seconds = totalFrames.value / frameRate.value;
   const m = Math.floor(seconds / 60);
   const s = (seconds % 60).toFixed(2);
@@ -230,7 +230,7 @@ const canExport = computed(() => {
   if (exportMode.value === "video") return webCodecsSupported.value;
   return true; // Frame sequence always available (browser formats)
 });
-const _exportStatusText = computed(() => {
+const exportStatusText = computed(() => {
   if (exportComplete.value) return "Export complete!";
   if (isExporting.value) {
     if (exportMode.value === "sequence") return "Rendering frames...";
@@ -264,7 +264,7 @@ onMounted(async () => {
 });
 
 // Methods
-async function _startExport() {
+async function startExport() {
   if (!canExport.value) return;
 
   isExporting.value = true;
@@ -442,7 +442,7 @@ async function captureCurrentFrame(
   return canvas;
 }
 
-function _cancelExport() {
+function cancelExport() {
   isExporting.value = false;
   if (currentEncoder.value) {
     currentEncoder.value.cancel();
@@ -450,14 +450,14 @@ function _cancelExport() {
   }
 }
 
-function _downloadExport() {
+function downloadExport() {
   if (encodedVideo.value) {
     const compName = activeComp.value?.name || "composition";
     downloadVideo(encodedVideo.value, `${compName}-export`);
   }
 }
 
-function _downloadSequence() {
+function downloadSequence() {
   if (!sequenceResult.value || sequenceResult.value.frames.length === 0) return;
 
   // For single frames or small sequences, download individually
@@ -485,7 +485,7 @@ function _downloadSequence() {
   }
 }
 
-function _formatBytes(bytes: number): string {
+function formatBytes(bytes: number): string {
   if (bytes === 0) return "0 B";
   const k = 1024;
   const sizes = ["B", "KB", "MB", "GB"];

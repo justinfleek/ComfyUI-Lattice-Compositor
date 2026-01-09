@@ -2,12 +2,12 @@
   <div class="shape-editor">
     <div class="property-row">
       <label>Size</label>
-      <ScrubableNumber :modelValue="operator.size.value" @update:modelValue="v => updateNumber('size', v)" :min="0" :max="200" unit="px" />
+      <ScrubableNumber :modelValue="operator.size.value" @update:modelValue="(v: number) => updateNumber('size', v)" :min="0" :max="200" unit="px" />
       <KeyframeToggle :property="operator.size" :layerId="layerId" @toggle="toggleKeyframe('size')" />
     </div>
     <div class="property-row">
       <label>Ridges/Segment</label>
-      <ScrubableNumber :modelValue="operator.ridgesPerSegment.value" @update:modelValue="v => updateNumber('ridgesPerSegment', v)" :min="1" :max="20" :step="1" />
+      <ScrubableNumber :modelValue="operator.ridgesPerSegment.value" @update:modelValue="(v: number) => updateNumber('ridgesPerSegment', v)" :min="1" :max="20" :step="1" />
       <KeyframeToggle :property="operator.ridgesPerSegment" :layerId="layerId" @toggle="toggleKeyframe('ridgesPerSegment')" />
     </div>
     <div class="property-row">
@@ -29,18 +29,18 @@ const props = defineProps<{ operator: ZigZagOperator; layerId: string }>();
 const emit = defineEmits(["update"]);
 const store = useCompositorStore();
 
-function _updateNumber(prop: "size" | "ridgesPerSegment", value: number) {
+function updateNumber(prop: "size" | "ridgesPerSegment", value: number) {
   const updated = { ...props.operator };
   updated[prop] = { ...updated[prop], value };
   emit("update", updated);
 }
 
-function _updateMeta(key: string, value: any) {
+function updateMeta(key: string, value: any) {
   const updated = { ...props.operator, [key]: value };
   emit("update", updated);
 }
 
-function _toggleKeyframe(prop: "size" | "ridgesPerSegment") {
+function toggleKeyframe(prop: "size" | "ridgesPerSegment") {
   const updated = { ...props.operator };
   const animProp = updated[prop];
   const frame = store.currentFrame;

@@ -21,12 +21,13 @@ export interface ParticleFrameCache {
   simulationTime: number;
   rngState: number;
   emitterAccumulators: Map<string, number>;
-  particleEmitters: Map<number, string>; // BUG-063 fix: Track which emitter spawned each particle
-  audioSmoothedValues: Map<number, number>; // BUG-064 fix: Audio EMA filter history
+  emitterBurstTimers: Map<string, number>; // Burst interval timers for determinism
+  particleEmitters: Map<number, string>; // Tracks which emitter spawned each particle for sub-emitter filtering
+  audioSmoothedValues: Map<number, number>; // Audio EMA filter history for deterministic playback
   particleInitialValues: Map<
     number,
     { size: number; opacity: number; randomOffset: number }
-  >; // BUG-073/070 fix: Initial values + random offset
+  >; // Initial size/opacity values and random offset for lifetime modulation
 }
 
 export interface CacheStats {
@@ -35,7 +36,21 @@ export interface CacheStats {
   currentFrame: number;
   cacheInterval: number;
   maxCacheSize: number;
+  memoryUsageMB: number;
+  maxMemoryMB: number;
 }
+
+// Memory safety constants
+const PARTICLE_STRIDE = 16; // floats per particle (imported value)
+const BYTES_PER_FLOAT = 4;
+const BYTES_PER_PARTICLE = PARTICLE_STRIDE * BYTES_PER_FLOAT; // 64 bytes
+const MB = 1024 * 1024;
+
+/**
+ * Maximum memory budget for particle cache (in MB)
+ * This prevents browser tab crashes on memory-constrained devices
+ */
+const DEFAULT_MAX_CACHE_MEMORY_MB = 256;
 
 // ============================================================================
 // PARTICLE FRAME CACHE CLASS
@@ -48,14 +63,52 @@ export class ParticleFrameCacheSystem {
   private maxCacheSize: number = 100;
   private currentSimulatedFrame: number = -1;
 
+  /** Number of particles this cache is configured for */
+  private readonly maxParticles: number;
+
+  /** Memory per cached frame in bytes */
+  private readonly bytesPerCache: number;
+
+  /** Maximum memory budget in bytes */
+  private readonly maxMemoryBytes: number;
+
   constructor(
     maxParticles: number,
     cacheInterval: number = 30,
     maxCacheSize: number = 100,
+    maxMemoryMB: number = DEFAULT_MAX_CACHE_MEMORY_MB,
   ) {
-    this.maxParticles = maxParticles;
-    this.cacheInterval = cacheInterval;
-    this.maxCacheSize = maxCacheSize;
+    // Validate maxParticles
+    this.maxParticles = Number.isFinite(maxParticles) && maxParticles > 0
+      ? Math.floor(maxParticles)
+      : 10000;
+    // Validate cacheInterval to prevent modulo by zero
+    this.cacheInterval = Math.max(1, cacheInterval);
+
+    // Calculate memory per cache entry
+    // Each cache stores: Float32Array + freeIndices array + Maps
+    // Float32Array dominates: maxParticles * 64 bytes
+    this.bytesPerCache = maxParticles * BYTES_PER_PARTICLE;
+    this.maxMemoryBytes = maxMemoryMB * MB;
+
+    // Calculate safe maxCacheSize based on memory budget
+    // Ensure at least 10 caches for usable scrubbing
+    const memorySafeCacheSize = Math.max(
+      10,
+      Math.floor(this.maxMemoryBytes / this.bytesPerCache),
+    );
+
+    // Use the smaller of requested size vs memory-safe size
+    this.maxCacheSize = Math.min(maxCacheSize, memorySafeCacheSize);
+
+    // Log if we had to reduce cache size due to memory constraints
+    if (this.maxCacheSize < maxCacheSize) {
+      console.warn(
+        `ParticleFrameCache: Reduced maxCacheSize from ${maxCacheSize} to ${this.maxCacheSize} ` +
+          `due to memory constraints (${maxParticles} particles × ${this.maxCacheSize} caches = ` +
+          `${((this.maxCacheSize * this.bytesPerCache) / MB).toFixed(1)}MB)`,
+      );
+    }
   }
 
   // ============================================================================
@@ -73,13 +126,13 @@ export class ParticleFrameCacheSystem {
     particleCount: number,
     simulationTime: number,
     rngState: number,
-    emitters: Map<string, { accumulator: number }>,
-    particleEmitters: Map<number, string>, // BUG-063 fix: Track which emitter spawned each particle
-    audioSmoothedValues: Map<number, number>, // BUG-064 fix: Audio EMA filter history
+    emitters: Map<string, { accumulator: number; burstTimer?: number }>,
+    particleEmitters: Map<number, string>, // Particle-to-emitter tracking for sub-emitter filtering
+    audioSmoothedValues: Map<number, number>, // Audio EMA filter history for deterministic audio
     particleInitialValues: Map<
       number,
       { size: number; opacity: number; randomOffset: number }
-    >, // BUG-073/070 fix: Initial values + random offset
+    >, // Initial values for lifetime modulation (prevents exponential decay)
   ): void {
     // Don't cache if we've exceeded max size - remove oldest
     if (this.frameCache.size >= this.maxCacheSize) {
@@ -87,10 +140,12 @@ export class ParticleFrameCacheSystem {
       this.frameCache.delete(oldestFrame);
     }
 
-    // Save emitter accumulators
+    // Save emitter accumulators and burst timers
     const emitterAccumulators = new Map<string, number>();
+    const emitterBurstTimers = new Map<string, number>();
     for (const [id, emitter] of emitters) {
       emitterAccumulators.set(id, emitter.accumulator);
+      emitterBurstTimers.set(id, emitter.burstTimer ?? 0);
     }
 
     this.frameCache.set(frame, {
@@ -102,9 +157,10 @@ export class ParticleFrameCacheSystem {
       simulationTime,
       rngState,
       emitterAccumulators,
-      particleEmitters: new Map(particleEmitters), // BUG-063 fix: Deep copy the map
-      audioSmoothedValues: new Map(audioSmoothedValues), // BUG-064 fix: Deep copy the map
-      particleInitialValues: new Map(particleInitialValues), // BUG-073 fix: Deep copy the map
+      emitterBurstTimers,
+      particleEmitters: new Map(particleEmitters), // Deep copy to prevent cache mutation
+      audioSmoothedValues: new Map(audioSmoothedValues), // Deep copy to isolate cached state
+      particleInitialValues: new Map(particleInitialValues), // Deep copy for frame independence
     });
   }
 
@@ -242,6 +298,28 @@ export class ParticleFrameCacheSystem {
       currentFrame: this.currentSimulatedFrame,
       cacheInterval: this.cacheInterval,
       maxCacheSize: this.maxCacheSize,
+      memoryUsageMB: (validCount * this.bytesPerCache) / MB,
+      maxMemoryMB: this.maxMemoryBytes / MB,
     };
+  }
+
+  /**
+   * Get estimated memory usage in bytes
+   */
+  getMemoryUsage(): number {
+    let validCount = 0;
+    for (const cached of this.frameCache.values()) {
+      if (cached.version === this.cacheVersion) {
+        validCount++;
+      }
+    }
+    return validCount * this.bytesPerCache;
+  }
+
+  /**
+   * Get memory budget remaining in bytes
+   */
+  getMemoryRemaining(): number {
+    return this.maxMemoryBytes - this.getMemoryUsage();
   }
 }

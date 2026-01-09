@@ -135,7 +135,7 @@ const dragViewIndex = ref(0);
 const dragButton = ref(0);
 
 // Layout options
-const _layoutOptions = [
+const layoutOptions = [
   { value: "1-view" as ViewLayout, label: "1 View", icon: "□" },
   {
     value: "2-view-horizontal" as ViewLayout,
@@ -151,7 +151,7 @@ const _layoutOptions = [
 ];
 
 // Computed properties
-const _layout = computed(() => viewportState.value.layout);
+const layout = computed(() => viewportState.value.layout);
 const activeViewIndex = computed(() => viewportState.value.activeViewIndex);
 const customViews = computed(() => viewportState.value.customViews);
 
@@ -169,7 +169,7 @@ const activeViews = computed(() => {
   }
 });
 
-function _setCanvasRef(el: HTMLCanvasElement | null, index: number) {
+function setCanvasRef(el: HTMLCanvasElement | null, index: number) {
   canvasRefs.value[index] = el;
   if (el) {
     contexts.value[index] = el.getContext("2d");
@@ -182,7 +182,7 @@ function isCustomView(
   return viewType.startsWith("custom-");
 }
 
-function _getViewDisplayName(viewType: ViewType): string {
+function getViewDisplayName(viewType: ViewType): string {
   const names: Record<ViewType, string> = {
     "active-camera": "Camera",
     "custom-1": "Custom 1",
@@ -198,7 +198,7 @@ function _getViewDisplayName(viewType: ViewType): string {
   return names[viewType];
 }
 
-function _setActiveView(index: number) {
+function setActiveView(index: number) {
   store.updateViewportState({
     activeViewIndex: index,
   });
@@ -212,7 +212,7 @@ function updateViewType(index: number, viewType: ViewType) {
   });
 }
 
-function _setLayout(newLayout: ViewLayout) {
+function setLayout(newLayout: ViewLayout) {
   // Default views for 4-view layout: active-camera, top, front, right
   const defaultFourViews: ViewType[] = [
     "active-camera",
@@ -271,7 +271,7 @@ function resetCustomView(viewType: "custom-1" | "custom-2" | "custom-3") {
 }
 
 // Mouse interaction handlers
-function _onCanvasMouseDown(e: MouseEvent, viewIndex: number) {
+function onCanvasMouseDown(e: MouseEvent, viewIndex: number) {
   isDragging.value = true;
   dragStartPos.value = { x: e.clientX, y: e.clientY };
   dragViewIndex.value = viewIndex;
@@ -332,7 +332,7 @@ function onCanvasMouseUp() {
   document.removeEventListener("mouseup", onCanvasMouseUp);
 }
 
-function _onCanvasWheel(e: WheelEvent, viewIndex: number) {
+function onCanvasWheel(e: WheelEvent, viewIndex: number) {
   e.preventDefault();
 
   const viewType = activeViews.value[viewIndex];

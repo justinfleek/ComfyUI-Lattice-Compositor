@@ -175,7 +175,7 @@ const positionProperty = computed(
 );
 
 // Check if layer has position keyframes
-const _hasPositionKeyframes = computed(() => {
+const hasPositionKeyframes = computed(() => {
   const prop = positionProperty.value;
   if (!prop) return false;
   return prop.animated && prop.keyframes && prop.keyframes.length >= 2;
@@ -198,7 +198,7 @@ const keyframeMarkers = computed(() => {
 });
 
 // Get keyframes with tangent info for display
-const _keyframesWithTangents = computed(() => {
+const keyframesWithTangents = computed(() => {
   const prop = positionProperty.value;
   if (!prop?.keyframes) return [];
 
@@ -246,7 +246,7 @@ const _keyframesWithTangents = computed(() => {
 });
 
 // Generate SVG path data for the motion path
-const _pathData = computed(() => {
+const pathData = computed(() => {
   const markers = keyframeMarkers.value;
   if (markers.length < 2) return "";
 
@@ -273,7 +273,7 @@ const _pathData = computed(() => {
 });
 
 // Current interpolated position
-const _currentPosition = computed(() => {
+const currentPosition = computed(() => {
   const prop = positionProperty.value;
   if (!prop) return null;
 
@@ -289,7 +289,7 @@ const _currentPosition = computed(() => {
 });
 
 // Frame ticks along the path (every 5 frames)
-const _frameTicks = computed(() => {
+const frameTicks = computed(() => {
   const prop = positionProperty.value;
   if (!prop?.keyframes || prop.keyframes.length < 2) return [];
 
@@ -320,7 +320,7 @@ const _frameTicks = computed(() => {
 });
 
 // SVG overlay style (matches viewport transform)
-const _overlayStyle = computed(() => {
+const overlayStyle = computed(() => {
   const tx = props.viewportTransform[4] || 0; // translateX
   const ty = props.viewportTransform[5] || 0; // translateY
 
@@ -338,23 +338,23 @@ const _overlayStyle = computed(() => {
 });
 
 // Generate diamond shape points for keyframe markers
-function _getDiamondPoints(cx: number, cy: number, size: number): string {
+function getDiamondPoints(cx: number, cy: number, size: number): string {
   return `${cx},${cy - size} ${cx + size},${cy} ${cx},${cy + size} ${cx - size},${cy}`;
 }
 
 // Handle keyframe selection
-function _selectKeyframe(event: MouseEvent, keyframeId: string) {
+function selectKeyframe(event: MouseEvent, keyframeId: string) {
   const addToSelection = event.shiftKey || event.ctrlKey || event.metaKey;
   emit("keyframeSelected", keyframeId, addToSelection);
 }
 
 // Double-click to go to keyframe frame
-function _goToKeyframe(frame: number) {
+function goToKeyframe(frame: number) {
   emit("goToFrame", frame);
 }
 
 // Start dragging tangent handle
-function _startDragTangent(
+function startDragTangent(
   event: MouseEvent,
   keyframeId: string,
   type: "in" | "out",
@@ -365,11 +365,11 @@ function _startDragTangent(
 }
 
 // Mouse handlers for tangent dragging
-function _handleMouseDown(_event: MouseEvent) {
+function handleMouseDown(_event: MouseEvent) {
   // Handle is started in startDragTangent
 }
 
-function _handleMouseMove(event: MouseEvent) {
+function handleMouseMove(event: MouseEvent) {
   if (!draggingHandle.value || !dragStart.value) return;
 
   // Calculate delta in canvas coordinates
@@ -387,7 +387,7 @@ function _handleMouseMove(event: MouseEvent) {
   dragStart.value = { x: event.clientX, y: event.clientY };
 }
 
-function _handleMouseUp() {
+function handleMouseUp() {
   draggingHandle.value = null;
   dragStart.value = null;
 }

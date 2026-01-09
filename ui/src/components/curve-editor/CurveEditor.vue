@@ -225,7 +225,7 @@ import { useCompositorStore } from "@/stores/compositorStore";
 import type { AnimatableProperty, Keyframe } from "@/types/project";
 import type { CurveMode, EasingPreset } from "./CurveEditorHeader.vue";
 
-const _emit = defineEmits<(e: "close") => void>();
+const emit = defineEmits<(e: "close") => void>();
 
 const store = useCompositorStore();
 
@@ -301,7 +301,7 @@ const propertyColors: Record<string, string> = {
 };
 
 // Presets list
-const _presetList: EasingPreset[] = [
+const presetList: EasingPreset[] = [
   { key: "linear", label: "Linear", shortLabel: "Lin" },
   { key: "easeIn", label: "Ease In", shortLabel: "In" },
   { key: "easeOut", label: "Ease Out", shortLabel: "Out" },
@@ -348,7 +348,7 @@ const allPropertiesVisible = computed(() => {
 });
 
 // Current frame screen position
-const _currentFrameScreenX = computed(() => {
+const currentFrameScreenX = computed(() => {
   return frameToScreenX(store.currentFrame);
 });
 
@@ -398,7 +398,7 @@ function getKeyframeScreenY(
   return valueToScreenY(value);
 }
 
-function _getKeyframeDisplayValue(
+function getKeyframeDisplayValue(
   selection:
     | { propId: string; index: number; keyframe: Keyframe<any> }
     | undefined,
@@ -413,7 +413,7 @@ function _getKeyframeDisplayValue(
 }
 
 // Handle position helpers - using new absolute frame/value offsets
-function _getOutHandleX(
+function getOutHandleX(
   prop: AnimatableProperty<any>,
   kfIndex: number,
 ): number {
@@ -425,7 +425,7 @@ function _getOutHandleX(
   return frameToScreenX(handleFrame);
 }
 
-function _getOutHandleY(
+function getOutHandleY(
   prop: AnimatableProperty<any>,
   kfIndex: number,
 ): number {
@@ -438,7 +438,7 @@ function _getOutHandleY(
   return valueToScreenY(handleValue);
 }
 
-function _getInHandleX(prop: AnimatableProperty<any>, kfIndex: number): number {
+function getInHandleX(prop: AnimatableProperty<any>, kfIndex: number): number {
   const kf = prop.keyframes[kfIndex];
   if (!kf || !kf.inHandle.enabled) return frameToScreenX(kf.frame);
 
@@ -447,7 +447,7 @@ function _getInHandleX(prop: AnimatableProperty<any>, kfIndex: number): number {
   return frameToScreenX(handleFrame);
 }
 
-function _getInHandleY(prop: AnimatableProperty<any>, kfIndex: number): number {
+function getInHandleY(prop: AnimatableProperty<any>, kfIndex: number): number {
   const kf = prop.keyframes[kfIndex];
   if (!kf || !kf.inHandle.enabled)
     return valueToScreenY(getNumericValue(kf.value));
@@ -470,7 +470,7 @@ function getPropertyColor(propId: string): string {
   return propertyColors[prop.name] ?? propertyColors.default;
 }
 
-function _isKeyframeInView(kf: Keyframe<any>): boolean {
+function isKeyframeInView(kf: Keyframe<any>): boolean {
   return kf.frame >= viewState.frameStart && kf.frame <= viewState.frameEnd;
 }
 
@@ -480,14 +480,14 @@ function isKeyframeSelected(propId: string, index: number): boolean {
   );
 }
 
-function _hasDimension(prop: AnimatableProperty<any>, dim: string): boolean {
+function hasDimension(prop: AnimatableProperty<any>, dim: string): boolean {
   if (!prop.animated || prop.keyframes.length === 0) return false;
   const value = prop.keyframes[0].value;
   return typeof value === "object" && dim in value;
 }
 
 // Property management
-function _toggleProperty(propId: string): void {
+function toggleProperty(propId: string): void {
   const index = selectedPropertyIds.value.indexOf(propId);
   if (index === -1) {
     selectedPropertyIds.value.push(propId);
@@ -496,7 +496,7 @@ function _toggleProperty(propId: string): void {
   }
 }
 
-function _togglePropertyVisibility(propId: string): void {
+function togglePropertyVisibility(propId: string): void {
   const index = visiblePropertyIds.value.indexOf(propId);
   if (index === -1) {
     visiblePropertyIds.value.push(propId);
@@ -506,7 +506,7 @@ function _togglePropertyVisibility(propId: string): void {
   updateViewBounds();
 }
 
-function _toggleAllProperties(): void {
+function toggleAllProperties(): void {
   if (allPropertiesVisible.value) {
     visiblePropertyIds.value = [];
   } else {
@@ -515,7 +515,7 @@ function _toggleAllProperties(): void {
   updateViewBounds();
 }
 
-function _toggleDimension(propId: string, dim: string): void {
+function toggleDimension(propId: string, dim: string): void {
   if (!visibleDimensions.value[propId]) {
     visibleDimensions.value[propId] = [];
   }
@@ -567,7 +567,7 @@ function _toggleAutoSelect(): void {
 }
 
 // Preset handling
-function _isPresetActive(presetKey: string): boolean {
+function isPresetActive(presetKey: string): boolean {
   if (selectedKeyframes.value.length === 0) return false;
 
   const preset = EASING_PRESETS[presetKey as keyof typeof EASING_PRESETS];
@@ -586,7 +586,7 @@ function _isPresetActive(presetKey: string): boolean {
   );
 }
 
-function _applyPreset(presetKey: string): void {
+function applyPreset(presetKey: string): void {
   const preset = EASING_PRESETS[presetKey as keyof typeof EASING_PRESETS];
   if (!preset) return;
 
@@ -672,7 +672,7 @@ function _applyPreset(presetKey: string): void {
 }
 
 // Mouse event handlers
-function _handleMouseDown(event: MouseEvent): void {
+function handleMouseDown(event: MouseEvent): void {
   const rect = canvasRef.value?.getBoundingClientRect();
   if (!rect) return;
 
@@ -692,7 +692,7 @@ function _handleMouseDown(event: MouseEvent): void {
   }
 }
 
-function _handleMouseMove(event: MouseEvent): void {
+function handleMouseMove(event: MouseEvent): void {
   const rect = canvasRef.value?.getBoundingClientRect();
   if (!rect) return;
 
@@ -744,7 +744,7 @@ function _handleMouseMove(event: MouseEvent): void {
   }
 }
 
-function _handleMouseUp(): void {
+function handleMouseUp(): void {
   if (dragTarget.value?.type === "select" && selectionBox.value) {
     selectKeyframesInBox();
   }
@@ -753,7 +753,7 @@ function _handleMouseUp(): void {
   selectionBox.value = null;
 }
 
-function _handleWheel(event: WheelEvent): void {
+function handleWheel(event: WheelEvent): void {
   event.preventDefault();
 
   const rect = canvasRef.value?.getBoundingClientRect();
@@ -808,7 +808,7 @@ function updateHoveredKeyframe(x: number, y: number): void {
   }
 }
 
-function _onKeyframeMouseDown(
+function onKeyframeMouseDown(
   propId: string,
   index: number,
   event: MouseEvent,
@@ -931,7 +931,7 @@ function getPropertyPath(prop: AnimatableProperty<any>): string {
 }
 
 // Handle dragging
-function _startDragHandle(
+function startDragHandle(
   type: "inHandle" | "outHandle",
   propId: string,
   index: number,
@@ -1098,11 +1098,11 @@ function stopDragHandle(): void {
 }
 
 // Context menu
-function _showContextMenu(event: MouseEvent): void {
+function showContextMenu(event: MouseEvent): void {
   contextMenu.value = { x: event.offsetX, y: event.offsetY };
 }
 
-function _addKeyframeAtPosition(): void {
+function addKeyframeAtPosition(): void {
   if (!contextMenu.value) return;
 
   const layer = store.selectedLayer;
@@ -1142,11 +1142,11 @@ function deleteSelectedKeyframes(): void {
   drawGraph();
 }
 
-function _copyKeyframes(): void {
+function copyKeyframes(): void {
   clipboard.value = selectedKeyframes.value.map((sk) => ({ ...sk.keyframe }));
 }
 
-function _pasteKeyframes(): void {
+function pasteKeyframes(): void {
   if (!clipboard.value || visibleProperties.value.length === 0) return;
 
   const layer = store.selectedLayer;
@@ -1200,7 +1200,7 @@ function _pasteKeyframes(): void {
   drawGraph();
 }
 
-function _selectAllKeyframes(): void {
+function selectAllKeyframes(): void {
   selectedKeyframes.value = [];
   for (const prop of visibleProperties.value) {
     for (let i = 0; i < prop.keyframes.length; i++) {
@@ -1213,7 +1213,7 @@ function _selectAllKeyframes(): void {
   }
 }
 
-function _invertSelection(): void {
+function invertSelection(): void {
   const newSelection: typeof selectedKeyframes.value = [];
 
   for (const prop of visibleProperties.value) {
@@ -1232,7 +1232,7 @@ function _invertSelection(): void {
 }
 
 // Keyframe info updates
-function _updateSelectedKeyframeFrame(event: Event): void {
+function updateSelectedKeyframeFrame(event: Event): void {
   const value = parseInt((event.target as HTMLInputElement).value, 10);
   if (selectedKeyframes.value.length > 0 && !Number.isNaN(value)) {
     selectedKeyframes.value[0].keyframe.frame = value;
@@ -1240,7 +1240,7 @@ function _updateSelectedKeyframeFrame(event: Event): void {
   }
 }
 
-function _updateSelectedKeyframeValue(event: Event): void {
+function updateSelectedKeyframeValue(event: Event): void {
   const value = parseFloat((event.target as HTMLInputElement).value);
   if (selectedKeyframes.value.length > 0 && !Number.isNaN(value)) {
     const kf = selectedKeyframes.value[0].keyframe;
@@ -1253,7 +1253,7 @@ function _updateSelectedKeyframeValue(event: Event): void {
   }
 }
 
-function _updateSelectedKeyframeInterpolation(event: Event): void {
+function updateSelectedKeyframeInterpolation(event: Event): void {
   const value = (event.target as HTMLSelectElement).value as
     | "linear"
     | "bezier"
@@ -1265,7 +1265,7 @@ function _updateSelectedKeyframeInterpolation(event: Event): void {
 }
 
 // Time ruler click
-function _onTimeRulerClick(event: MouseEvent): void {
+function onTimeRulerClick(event: MouseEvent): void {
   const rect = timeRulerCanvas.value?.getBoundingClientRect();
   if (!rect) return;
 

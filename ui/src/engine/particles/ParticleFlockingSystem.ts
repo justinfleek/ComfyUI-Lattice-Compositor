@@ -27,7 +27,10 @@ export class ParticleFlockingSystem {
   private spatialHash: SpatialHashGrid | null = null;
 
   constructor(maxParticles: number, config: FlockingConfig) {
-    this.maxParticles = maxParticles;
+    // Validate maxParticles to prevent infinite loop
+    this.maxParticles = Number.isFinite(maxParticles) && maxParticles > 0
+      ? Math.min(Math.floor(maxParticles), 10_000_000)
+      : 10000;
     this.config = config;
   }
 
@@ -71,6 +74,9 @@ export class ParticleFlockingSystem {
    */
   applyFlocking(particleBuffer: Float32Array, dt: number): void {
     if (!this.config.enabled || !this.spatialHash) return;
+    
+    // Validate dt to prevent NaN propagation
+    const safeDt = Number.isFinite(dt) && dt >= 0 ? Math.min(dt, 1.0) : 0.016;
 
     for (let i = 0; i < this.maxParticles; i++) {
       const offset = i * PARTICLE_STRIDE;
@@ -96,10 +102,14 @@ export class ParticleFlockingSystem {
       const speed = Math.sqrt(vx * vx + vy * vy + vz * vz);
 
       // Precompute perception angle cosine threshold (360° means all neighbors visible)
+      // Validate perceptionAngle to prevent NaN
+      const safePerceptionAngle = Number.isFinite(this.config.perceptionAngle) 
+        ? Math.max(0, this.config.perceptionAngle) 
+        : 360;
       const perceptionCos =
-        this.config.perceptionAngle >= 360
+        safePerceptionAngle >= 360
           ? -1.0 // -1 means all angles pass
-          : Math.cos(((this.config.perceptionAngle / 2) * Math.PI) / 180);
+          : Math.cos(((safePerceptionAngle / 2) * Math.PI) / 180);
 
       // Use shared spatial hash for neighbor queries
       for (const j of this.spatialHash.getNeighbors(px, py, pz)) {
@@ -133,14 +143,22 @@ export class ParticleFlockingSystem {
           if (dot < perceptionCos) continue;
         }
 
+        // Validate radius values
+        const safeSepRadius = Number.isFinite(this.config.separationRadius) && this.config.separationRadius > 0
+          ? this.config.separationRadius : 50;
+        const safeAlignRadius = Number.isFinite(this.config.alignmentRadius) && this.config.alignmentRadius > 0
+          ? this.config.alignmentRadius : 100;
+        const safeCohRadius = Number.isFinite(this.config.cohesionRadius) && this.config.cohesionRadius > 0
+          ? this.config.cohesionRadius : 150;
+
         // Separation - steer away from nearby neighbors
-        if (dist < this.config.separationRadius && dist > 0) {
+        if (dist < safeSepRadius && dist > 0) {
           separation.add(new THREE.Vector3(dx, dy, dz).divideScalar(dist));
           separationCount++;
         }
 
         // Alignment - match velocity with neighbors
-        if (dist < this.config.alignmentRadius) {
+        if (dist < safeAlignRadius) {
           alignment.add(
             new THREE.Vector3(
               particleBuffer[jOffset + 3],
@@ -152,52 +170,62 @@ export class ParticleFlockingSystem {
         }
 
         // Cohesion - steer toward center of neighbors
-        if (dist < this.config.cohesionRadius) {
+        if (dist < safeCohRadius) {
           cohesion.add(new THREE.Vector3(jx, jy, jz));
           cohesionCount++;
         }
       }
+
+      // Validate weights and maxForce
+      const safeSepWeight = Number.isFinite(this.config.separationWeight) ? this.config.separationWeight : 1.5;
+      const safeAlignWeight = Number.isFinite(this.config.alignmentWeight) ? this.config.alignmentWeight : 1.0;
+      const safeCohWeight = Number.isFinite(this.config.cohesionWeight) ? this.config.cohesionWeight : 1.0;
+      const safeMaxForce = Number.isFinite(this.config.maxForce) && this.config.maxForce > 0
+        ? this.config.maxForce : 10;
 
       // Apply weighted forces
       if (separationCount > 0) {
         separation
           .divideScalar(separationCount)
           .normalize()
-          .multiplyScalar(this.config.separationWeight);
+          .multiplyScalar(safeSepWeight);
       }
       if (alignmentCount > 0) {
         alignment
           .divideScalar(alignmentCount)
           .normalize()
-          .multiplyScalar(this.config.alignmentWeight);
+          .multiplyScalar(safeAlignWeight);
       }
       if (cohesionCount > 0) {
         cohesion.divideScalar(cohesionCount);
         cohesion
           .sub(new THREE.Vector3(px, py, pz))
           .normalize()
-          .multiplyScalar(this.config.cohesionWeight);
+          .multiplyScalar(safeCohWeight);
       }
 
       // Combine steering forces
       const steering = separation.add(alignment).add(cohesion);
-      if (steering.length() > this.config.maxForce) {
-        steering.normalize().multiplyScalar(this.config.maxForce);
+      if (steering.length() > safeMaxForce) {
+        steering.normalize().multiplyScalar(safeMaxForce);
       }
 
-      // Apply to velocity
-      particleBuffer[offset + 3] += steering.x * dt;
-      particleBuffer[offset + 4] += steering.y * dt;
-      particleBuffer[offset + 5] += steering.z * dt;
+      // Apply to velocity (using validated safeDt)
+      particleBuffer[offset + 3] += steering.x * safeDt;
+      particleBuffer[offset + 4] += steering.y * safeDt;
+      particleBuffer[offset + 5] += steering.z * safeDt;
 
-      // Limit speed
+      // Limit speed (validate maxSpeed to prevent velocity reversal)
+      const safeMaxSpeed = Number.isFinite(this.config.maxSpeed) && this.config.maxSpeed > 0
+        ? this.config.maxSpeed
+        : 100;  // Default max speed
       const newSpeed = Math.sqrt(
         particleBuffer[offset + 3] ** 2 +
           particleBuffer[offset + 4] ** 2 +
           particleBuffer[offset + 5] ** 2,
       );
-      if (newSpeed > this.config.maxSpeed) {
-        const scale = this.config.maxSpeed / newSpeed;
+      if (newSpeed > safeMaxSpeed) {
+        const scale = safeMaxSpeed / newSpeed;
         particleBuffer[offset + 3] *= scale;
         particleBuffer[offset + 4] *= scale;
         particleBuffer[offset + 5] *= scale;

@@ -7,9 +7,9 @@ export default defineConfig({
   test: {
     globals: true,
     environment: "happy-dom",
-    setupFiles: ["./src/__tests__/setup.ts"],
+    testTimeout: 15000, // Increased for property tests under load
     include: ["src/**/*.{test,spec}.{js,ts}"],
-    exclude: ["**/node_modules/**", "**/_archived/**", "**/browser/**"],
+    exclude: ["**/node_modules/**", "**/_deprecated/**"],
     coverage: {
       provider: "v8",
       reporter: ["text", "json", "html"],

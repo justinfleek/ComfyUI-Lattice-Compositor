@@ -106,7 +106,7 @@ export function posterizeTime(
 ): number {
   const { time } = ctx;
 
-  // Guard against invalid framesPerSecond (BUG-007: division by zero)
+  // Guard against invalid framesPerSecond (prevents division by zero)
   if (!Number.isFinite(framesPerSecond) || framesPerSecond <= 0) {
     return time; // Passthrough: return original time unchanged
   }

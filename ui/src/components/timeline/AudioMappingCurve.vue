@@ -50,12 +50,12 @@ const hoverInfo = ref<{
 } | null>(null);
 
 // Computed
-const _playheadPosition = computed(
+const playheadPosition = computed(
   () => (props.currentFrame / props.totalFrames) * 100,
 );
 
 // Methods
-function _handleMouseMove(event: MouseEvent): void {
+function handleMouseMove(event: MouseEvent): void {
   const canvas = canvasRef.value;
   if (!canvas) return;
 
@@ -70,7 +70,7 @@ function _handleMouseMove(event: MouseEvent): void {
   hoverInfo.value = { x, frame, raw, mapped };
 }
 
-function _handleMouseLeave(): void {
+function handleMouseLeave(): void {
   hoverInfo.value = null;
 }
 

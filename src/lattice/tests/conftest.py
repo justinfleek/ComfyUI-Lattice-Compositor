@@ -18,8 +18,11 @@ if str(_src_dir) not in sys.path:
 # This must happen at module level, before test modules import compositor_node
 mock_numpy = MagicMock()
 mock_numpy.array = MagicMock()
-mock_numpy.ndarray = MagicMock()
+mock_numpy.ndarray = type("ndarray", (), {})  # Use actual type, not MagicMock
+mock_numpy.random = MagicMock()
+mock_numpy.random.default_rng = MagicMock()
 sys.modules["numpy"] = mock_numpy
+sys.modules["numpy.random"] = mock_numpy.random
 
 # Mock other heavy dependencies
 for module_name in ["PIL", "PIL.Image", "cv2", "torch", "torchaudio", 

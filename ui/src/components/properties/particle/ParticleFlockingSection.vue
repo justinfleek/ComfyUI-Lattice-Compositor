@@ -150,7 +150,7 @@ const emit = defineEmits<{
   (e: "update", key: keyof FlockingConfig, value: any): void;
 }>();
 
-function _update(key: keyof FlockingConfig, value: any): void {
+function update(key: keyof FlockingConfig, value: any): void {
   emit("update", key, value);
 }
 </script>

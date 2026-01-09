@@ -58,7 +58,7 @@ export interface AudioAnalysis {
   // MFCC: Mel-frequency cepstral coefficients (timbral features)
   mfcc?: number[][]; // [frameIndex][coefficient] - 13 coefficients per frame
   mfccStats?: {
-    // Per-coefficient normalization stats (BUG-076 fix)
+    // Per-coefficient normalization stats
     min: number[]; // Min value per coefficient [13]
     max: number[]; // Max value per coefficient [13]
   };
@@ -83,7 +83,7 @@ export interface ChromaFeatures {
 
 // Audio analysis configuration (matches Yvann-Nodes)
 // Note: hopSize intentionally omitted - analysis is locked to video frame
-// boundaries for deterministic playback (BUG-078)
+// boundaries for deterministic playback
 export interface AudioAnalysisConfig {
   fftSize: number; // 512, 1024, 2048, 4096
   minFrequency: number; // Filter low frequencies (default 20)
@@ -227,7 +227,7 @@ export async function analyzeAudio(
     harmonicEnergy: hpss.harmonicEnergy,
     percussiveEnergy: hpss.percussiveEnergy,
     hpRatio: hpss.hpRatio,
-    // MFCC (BUG-076 fix: include per-coefficient normalization stats)
+    // MFCC with per-coefficient normalization stats
     mfcc: mfccResult.mfcc,
     mfccStats: mfccResult.stats,
   };
@@ -311,8 +311,8 @@ export function extractRMSEnergy(buffer: AudioBuffer, fps: number): number[] {
 // ============================================================================
 
 /**
- * Extract energy in different frequency bands per frame
- * BUG-077 fix: Now uses config.fftSize when provided
+ * Extract energy in different frequency bands per frame.
+ * Uses config.fftSize when provided for consistent analysis.
  */
 export async function extractFrequencyBands(
   buffer: AudioBuffer,
@@ -323,7 +323,7 @@ export async function extractFrequencyBands(
   const frameCount = Math.ceil(duration * fps);
   const sampleRate = buffer.sampleRate;
 
-  // BUG-077 fix: Use config fftSize if provided
+  // Use configured FFT size for spectral analysis resolution
   const fftSize = config?.fftSize ?? DEFAULT_FFT_SIZE;
 
   // Create offline context for analysis
@@ -351,7 +351,7 @@ export async function extractFrequencyBands(
 
   const binFrequency = sampleRate / fftSize;
 
-  // BUG-079 fix: Apply minFrequency/maxFrequency filtering
+  // Apply frequency range filtering for band-limited analysis
   const minFreq = config?.minFrequency ?? 20;
   const maxFreq = config?.maxFrequency ?? 20000;
   const minBin = Math.floor(minFreq / binFrequency);
@@ -979,13 +979,25 @@ function applyEnvelopeFollower(signal: number[], smoothing: number): number[] {
 
 /**
  * Get a specific feature value at a given frame
+ * Returns 0 if analysis is null/undefined (e.g., audio not loaded yet)
+ * Returns 0 if frame is out of bounds (negative or beyond frameCount)
  */
 export function getFeatureAtFrame(
-  analysis: AudioAnalysis,
+  analysis: AudioAnalysis | null | undefined,
   feature: string,
   frame: number,
 ): number {
-  const clampedFrame = Math.max(0, Math.min(frame, analysis.frameCount - 1));
+  // Return zero for missing or invalid analysis data
+  if (!analysis) {
+    return 0;
+  }
+  
+  // Return zero for frames outside audio boundaries (before start or after end)
+  if (frame < 0 || frame >= analysis.frameCount) {
+    return 0;
+  }
+  
+  const clampedFrame = frame; // Frame is now guaranteed to be in bounds
 
   switch (feature) {
     case "amplitude":
@@ -1069,7 +1081,7 @@ export function getFeatureAtFrame(
     case "chromaB":
       return analysis.chromaFeatures?.chroma[clampedFrame]?.[11] ?? 0;
 
-    // BUG-075 fix: HPSS features access
+    // Harmonic-Percussive Source Separation (HPSS) features
     case "harmonicEnergy":
     case "harmonic":
       return analysis.harmonicEnergy?.[clampedFrame] ?? 0;
@@ -1082,7 +1094,7 @@ export function getFeatureAtFrame(
     case "harmonicPercussiveRatio":
       return analysis.hpRatio?.[clampedFrame] ?? 0;
 
-    // BUG-076 fix: MFCC coefficients with per-coefficient min-max normalization
+    // MFCC coefficients with per-coefficient normalization
     // MFCC0 (log energy) has different range than MFCC1-12 (spectral shape)
     case "mfcc0":
       return normalizeMFCCCoeff(analysis, clampedFrame, 0);
@@ -1117,8 +1129,8 @@ export function getFeatureAtFrame(
 }
 
 /**
- * BUG-076 fix: Normalize MFCC coefficient using per-coefficient min-max from analyzed audio
- * Returns 0-1 range suitable for driving visual parameters
+ * Normalize MFCC coefficient using per-coefficient min-max from analyzed audio.
+ * Returns 0-1 range suitable for driving visual parameters.
  */
 function normalizeMFCCCoeff(
   analysis: AudioAnalysis,
@@ -1140,8 +1152,8 @@ function normalizeMFCCCoeff(
 }
 
 /**
- * BUG-074 fix: Get track-level BPM (not per-frame)
- * BPM is computed once per track, use this instead of getFeatureAtFrame
+ * Get track-level BPM (not per-frame).
+ * BPM is computed once per track, use this instead of getFeatureAtFrame.
  */
 export function getBPM(analysis: AudioAnalysis): number {
   return analysis.bpm;
@@ -1368,8 +1380,13 @@ export function generatePeakGraph(
 
 /**
  * Check if a frame is a beat/onset
+ * Returns false if analysis is null/undefined (e.g., audio not loaded yet)
  */
-export function isBeatAtFrame(analysis: AudioAnalysis, frame: number): boolean {
+export function isBeatAtFrame(analysis: AudioAnalysis | null | undefined, frame: number): boolean {
+  // Return false for missing analysis or onset data
+  if (!analysis?.onsets) {
+    return false;
+  }
   return analysis.onsets.includes(frame);
 }
 
@@ -1586,8 +1603,8 @@ export function extractMFCC(
     mfccFrames.push(mfcc);
   }
 
-  // BUG-076 fix: Compute per-coefficient min/max for proper normalization
-  // MFCC0 (log energy) has different range than MFCC1-12 (spectral shape)
+  // Compute per-coefficient min/max statistics for proper MFCC normalization.
+  // MFCC0 (log energy) has different range than MFCC1-12 (spectral shape).
   const stats = {
     min: new Array(numCoeffs).fill(Infinity),
     max: new Array(numCoeffs).fill(-Infinity),
@@ -1679,7 +1696,7 @@ export default {
   detectOnsets,
   detectBPM,
   getFeatureAtFrame,
-  getBPM, // BUG-074 fix: track-level BPM accessor
+  getBPM, // Track-level BPM accessor (constant across frames)
   getSmoothedFeature,
   normalizeFeature,
   applyFeatureCurve,

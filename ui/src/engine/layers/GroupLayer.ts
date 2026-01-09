@@ -2,7 +2,7 @@
  * GroupLayer - Layer Folder/Group
  *
  * A container layer that groups child layers together.
- * Similar to After Effects' precomp but without creating a separate composition.
+ * Similar to precomp functionality but without creating a separate composition.
  *
  * Features:
  * - Collapsed/expanded state in timeline

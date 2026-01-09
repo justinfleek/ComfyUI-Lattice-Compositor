@@ -156,6 +156,18 @@ export interface LatticeProject {
 
   layers: Layer[]; // Layers for main composition (legacy)
   currentFrame: number;
+
+  // Timeline snapping configuration (user preference)
+  snapConfig?: import("@/services/timelineSnap").SnapConfig;
+
+  // Export settings (user preferences for export)
+  exportSettings?: {
+    format: string; // Export format (e.g., 'mp4', 'png', 'webm')
+    codec?: string; // Video codec (e.g., 'h264', 'vp9')
+    quality?: string; // Quality preset (e.g., 'low', 'medium', 'high')
+    resolution?: { width: number; height: number }; // Export resolution
+    frameRate?: number; // Export frame rate
+  };
 }
 
 /**
@@ -278,6 +290,11 @@ export interface CompositionSettings {
 
   // Color management (Phase 6)
   colorSettings?: ColorSettings;
+
+  // Composition-level motion blur settings (applies to all layers unless overridden)
+  motionBlur?: boolean; // Enable motion blur globally
+  shutterAngle?: number; // Shutter angle in degrees (0-720, 180 = standard film)
+  motionBlurSamples?: number; // Samples per frame (2-64, higher = smoother but slower)
 }
 
 // ============================================================
@@ -752,8 +769,8 @@ export function getLayerData<T extends keyof LayerDataMap>(
 }
 
 /**
- * Blend Modes - Full Photoshop/After Effects compatibility
- * Organized by category matching industry standard groupings
+ * Blend Modes - Industry standard compatibility
+ * Organized by category matching professional animation software groupings
  */
 export type BlendMode =
   // Normal
@@ -790,13 +807,16 @@ export type BlendMode =
   | "saturation"
   | "color"
   | "luminosity"
-  // AE-specific
+  // Utility/Advanced modes
   | "stencil-alpha"
   | "stencil-luma"
   | "silhouette-alpha"
   | "silhouette-luma"
   | "alpha-add"
-  | "luminescent-premul";
+  | "luminescent-premul"
+  // Classic blend modes (legacy compatibility)
+  | "classic-color-burn"
+  | "classic-color-dodge";
 
 /**
  * Blend mode categories for UI organization
@@ -951,6 +971,21 @@ export interface AudioLayerData {
 
   /** Audio reactivity - expose audio features for linking */
   exposeFeatures: boolean;
+
+  /** Waveform data (sample amplitudes) */
+  waveform?: number[];
+
+  /** Detected beat frames */
+  beats?: number[];
+
+  /** Detected tempo (BPM) */
+  tempo?: number;
+
+  /** Per-frame amplitude data */
+  amplitudeData?: number[];
+
+  /** Layer-specific markers (for audio cue points) */
+  markers?: Array<{ frame: number; label: string }>;
 }
 
 // ============================================================
@@ -1120,6 +1155,15 @@ export function createDefaultLightLayerData(): LightLayerData {
 // SOLID LAYER DATA - Solid color rectangle
 // ============================================================
 
+/** Motion path configuration for layer position animation */
+export interface MotionPathConfig {
+  enabled: boolean;
+  path: Array<{ x: number; y: number }>; // Inline path points
+  orientToPath?: boolean; // Auto-orient rotation to path tangent
+  keyframes?: Array<{ frame: number; progress: number }>; // Progress keyframes (0-100)
+  speedGraph?: Array<{ frame: number; speed: number }>; // Speed keyframes for variable speed along path
+}
+
 export interface SolidLayerData {
   /** Fill color */
   color: string;
@@ -1141,6 +1185,9 @@ export interface SolidLayerData {
 
   /** Receive shadows from lights */
   receiveShadow?: boolean;
+
+  /** Motion path for position animation along inline path points */
+  motionPath?: MotionPathConfig;
 }
 
 /**
@@ -2090,11 +2137,22 @@ export function normalizeLayerTiming(layer: Layer): Layer {
 
 /**
  * Create a new empty project
+ * @param width - Must be divisible by 8
+ * @param height - Must be divisible by 8
+ * @throws Error if dimensions are not divisible by 8
  */
 export function createEmptyProject(
   width: number,
   height: number,
 ): LatticeProject {
+  // Enforce divisibility by 8 constraint (required for AI video models)
+  if (width % 8 !== 0 || height % 8 !== 0) {
+    throw new Error(
+      `Dimensions must be divisible by 8. Got ${width}x${height}. ` +
+      `Use ${Math.round(width / 8) * 8}x${Math.round(height / 8) * 8} instead.`
+    );
+  }
+  
   const mainCompId = "main";
   const compositionSettings: CompositionSettings = {
     width,

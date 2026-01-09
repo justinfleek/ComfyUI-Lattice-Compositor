@@ -88,8 +88,7 @@ export function evaluateTextAnimatorExpression(
     ctx: ExpressionContext,
   ) => number | number[] | string,
 ): number | number[] | string {
-  // Add text animator variables to context
-  // BUG-017: Use JSON.stringify to properly escape ALL special characters
+  // Add text animator variables to context, using JSON.stringify for proper escaping
   const extendedCode = `
     const textIndex = ${ctx.textIndex};
     const textTotal = ${ctx.textTotal};

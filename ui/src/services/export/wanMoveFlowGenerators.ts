@@ -53,10 +53,18 @@ export function simplexNoise2D(x: number, y: number, seed: number): number {
   const fx = x - ix;
   const fy = y - iy;
 
-  const hash = (x: number, y: number) => {
-    let h = seed + x * 374761393 + y * 668265263;
-    h = (h ^ (h >> 13)) * 1274126177;
-    return h;
+  // Hash function with improved bit mixing to avoid seed collisions
+  const hash = (px: number, py: number) => {
+    // Mix seed into coordinates first
+    let h = seed >>> 0; // Ensure unsigned
+    h = Math.imul(h ^ (h >>> 16), 0x85ebca6b);
+    h = Math.imul(h ^ (h >>> 13), 0xc2b2ae35);
+    h ^= h >>> 16;
+    // Now mix in coordinates
+    h = h + px * 374761393 + py * 668265263;
+    h = Math.imul(h ^ (h >>> 13), 0x5bd1e995);
+    h ^= h >>> 15;
+    return h >>> 0; // Return unsigned for consistent behavior
   };
 
   const grad = (hash: number, dx: number, dy: number) => {

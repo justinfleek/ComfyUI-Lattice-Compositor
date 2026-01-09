@@ -125,7 +125,7 @@
         </div>
 
         <div v-if="stemSectionExpanded" class="section-content">
-          <!-- BUG-089 fix: Dynamic model dropdown from getStemModels() -->
+          <!-- Dynamic model dropdown from getStemModels() -->
           <div class="control-row">
             <label>Model</label>
             <select v-model="selectedModel" class="model-select">
@@ -644,7 +644,7 @@ import { useAudioStore } from "@/stores/audioStore";
 import { useCompositorStore } from "@/stores/compositorStore";
 
 // PhPiano doesn't exist in phosphor-icons, using PhKeyboard as substitute
-const _PhPiano = PhKeyboard;
+const PhPiano = PhKeyboard;
 
 import {
   BEAT_DETECTION_PRESETS,
@@ -665,6 +665,7 @@ import {
 } from "@/services/audio/stemSeparation";
 import {
   getMIDIService,
+  midiNoteToName,
   type MIDIDeviceInfo,
   type MIDIMessage,
 } from "@/services/midi";
@@ -682,7 +683,7 @@ const audioStore = useAudioStore();
 // Stem separation state
 const stemSectionExpanded = ref(false);
 const selectedModel = ref<DemucsModel>("htdemucs");
-const availableModels = ref<StemModel[]>([]); // BUG-089 fix: dynamic model list
+const availableModels = ref<StemModel[]>([]); // Dynamically loaded from backend
 const isSeparating = ref(false);
 const separationProgress = ref(0);
 const separationMessage = ref("");
@@ -693,14 +694,14 @@ const audioFileInput = ref<HTMLInputElement | null>(null);
 const waveformCanvas = ref<HTMLCanvasElement | null>(null);
 
 // Enhanced beat detection state
-const _beatSectionExpanded = ref(false);
+const beatSectionExpanded = ref(false);
 const beatPreset = ref("");
 const beatConfig = ref<EnhancedBeatConfig>({ ...DEFAULT_BEAT_CONFIG });
 const beatGrid = ref<BeatGrid | null>(null);
 const isAnalyzingBeats = ref(false);
 
 // Convert Audio to Keyframes state
-const _convertSectionExpanded = ref(false);
+const convertSectionExpanded = ref(false);
 const convertLayerName = ref("Audio Amplitude");
 const convertAmplitudeScale = ref(100);
 const convertSmoothing = ref(3);
@@ -710,7 +711,7 @@ const convertResult = ref<{ layerName: string; keyframeCount: number } | null>(
 );
 const convertError = ref<string | null>(null);
 
-const _confidenceClass = computed(() => {
+const confidenceClass = computed(() => {
   if (!beatGrid.value) return "";
   const c = beatGrid.value.bpmConfidence;
   if (c >= 0.8) return "high";
@@ -719,7 +720,7 @@ const _confidenceClass = computed(() => {
 });
 
 // MIDI state
-const _midiSectionExpanded = ref(false);
+const midiSectionExpanded = ref(false);
 const midiAvailable = ref(false);
 const midiDevices = ref<MIDIDeviceInfo[]>([]);
 const isRefreshingMIDI = ref(false);
@@ -728,7 +729,7 @@ const recentMIDIMessages = ref<MIDIMessage[]>([]);
 let midiListenerRemove: (() => void) | null = null;
 
 // MIDI File to Keyframes state
-const _midiFileSectionExpanded = ref(false);
+const midiFileSectionExpanded = ref(false);
 const midiFileInput = ref<HTMLInputElement | null>(null);
 const loadedMIDIFile = ref<MIDIParsedFile | null>(null);
 const midiFileName = ref("");
@@ -751,35 +752,35 @@ const midiConvertResult = ref<{
 const midiConvertError = ref<string | null>(null);
 
 // Audio Path Animation state
-const _pathAnimSectionExpanded = ref(false);
+const pathAnimSectionExpanded = ref(false);
 const pathAnimSplineId = ref("");
 const pathAnimTargetId = ref("");
 const pathAnimMode = ref<"amplitude" | "accumulate">("amplitude");
 const pathAnimSensitivity = ref(1.0);
-const _pathAnimSmoothing = ref(0.3);
+const pathAnimSmoothing = ref(0.3);
 const pathAnimFeature = ref<"amplitude" | "bass" | "mid" | "high">("amplitude");
 const isCreatingPathAnim = ref(false);
 const pathAnimResult = ref<string | null>(null);
 const pathAnimError = ref<string | null>(null);
 
 // Audio volume/mute now uses store state
-const _masterVolume = computed({
+const masterVolume = computed({
   get: () => store.audioVolume,
   set: (val: number) => store.setAudioVolume(val),
 });
-const _isMuted = computed({
+const isMuted = computed({
   get: () => store.audioMuted,
   set: (val: boolean) => store.setAudioMuted(val),
 });
 
 const hasAudio = computed(() => !!store.audioBuffer);
-const _audioFileName = computed(() => store.audioFile?.name || "Unknown");
-const _audioSampleRate = computed(() =>
+const audioFileName = computed(() => store.audioFile?.name || "Unknown");
+const audioSampleRate = computed(() =>
   store.audioBuffer
     ? `${(store.audioBuffer.sampleRate / 1000).toFixed(1)} kHz`
     : "",
 );
-const _audioDuration = computed(() => {
+const audioDuration = computed(() => {
   if (!store.audioBuffer) return "0:00";
   const m = Math.floor(store.audioBuffer.duration / 60);
   const s = Math.floor(store.audioBuffer.duration % 60);
@@ -787,14 +788,14 @@ const _audioDuration = computed(() => {
 });
 
 // Active stem for audio reactivity
-const _activeStemName = computed(() => audioStore.activeStemName);
+const activeStemName = computed(() => audioStore.activeStemName);
 
 // Path animator computed properties
-const _splineLayers = computed(() => {
+const splineLayers = computed(() => {
   return store.layers.filter((l) => l.type === "spline" || l.type === "path");
 });
 
-const _animatableLayers = computed(() => {
+const animatableLayers = computed(() => {
   return store.layers.filter(
     (l) =>
       l.type !== "camera" &&
@@ -805,7 +806,7 @@ const _animatableLayers = computed(() => {
 });
 
 // Create path animator function
-async function _createPathAnimator() {
+async function createPathAnimator() {
   if (!pathAnimSplineId.value || !pathAnimTargetId.value) {
     pathAnimError.value = "Please select both a path layer and target layer";
     return;
@@ -926,30 +927,30 @@ async function _createPathAnimator() {
   }
 }
 
-function _useMainAudio() {
+function useMainAudio() {
   audioStore.setActiveStem(null);
   console.log("[Lattice] Switched to main audio for reactivity");
 }
 
-function _loadAudioFile() {
+function loadAudioFile() {
   audioFileInput.value?.click();
 }
 
-async function _handleAudioFileSelected(e: Event) {
+async function handleAudioFileSelected(e: Event) {
   const input = e.target as HTMLInputElement;
   if (input.files?.length) await store.loadAudio(input.files[0]);
   input.value = "";
 }
 
-function _removeAudio() {
+function removeAudio() {
   store.clearAudio();
 }
 
-function _toggleMute() {
+function toggleMute() {
   store.toggleAudioMute();
 }
 
-async function _convertAudioToKeyframes() {
+async function convertAudioToKeyframes() {
   if (!store.audioBuffer) {
     convertError.value = "No audio loaded";
     return;
@@ -1040,7 +1041,7 @@ onMounted(() => {
 // Stem Separation Functions
 // ============================================================================
 
-// BUG-089 fix: Load available models from backend (or defaults)
+// Load available stem separation models from backend (falls back to defaults)
 async function loadStemModels() {
   if (availableModels.value.length > 0) return; // Already loaded
   try {
@@ -1062,7 +1063,7 @@ watch(stemSectionExpanded, (expanded) => {
   }
 });
 
-function _getStemIcon(stemName: string): string {
+function getStemIcon(stemName: string): string {
   const icons: Record<string, string> = {
     vocals: "🎤",
     drums: "🥁",
@@ -1074,7 +1075,7 @@ function _getStemIcon(stemName: string): string {
   return icons[stemName] || "🎵";
 }
 
-async function _separateStem(stem: StemType) {
+async function separateStem(stem: StemType) {
   if (!store.audioFile) return;
 
   isSeparating.value = true;
@@ -1106,7 +1107,7 @@ async function _separateStem(stem: StemType) {
   }
 }
 
-async function _makeKaraoke() {
+async function makeKaraoke() {
   if (!store.audioFile) return;
 
   isSeparating.value = true;
@@ -1142,7 +1143,7 @@ async function _makeKaraoke() {
   }
 }
 
-async function _separateAll() {
+async function separateAll() {
   if (!store.audioFile) return;
 
   isSeparating.value = true;
@@ -1173,7 +1174,7 @@ async function _separateAll() {
   }
 }
 
-function _playStem(stemName: string) {
+function playStem(stemName: string) {
   if (!separatedStems.value?.[stemName]) return;
 
   // Stop current playback
@@ -1189,20 +1190,20 @@ function _playStem(stemName: string) {
   currentStemAudio.value = audio;
 }
 
-function _downloadStemFile(stemName: string) {
+function downloadStemFile(stemName: string) {
   if (!separatedStems.value?.[stemName]) return;
 
   const fileName = `${store.audioFile?.name?.replace(/\.[^.]+$/, "") || "audio"}_${stemName}.wav`;
   downloadStem(separatedStems.value[stemName], fileName);
 }
 
-async function _useStemForReactivity(stemName: string) {
+async function useStemForReactivity(stemName: string) {
   if (!separatedStems.value?.[stemName]) return;
 
   const stemData = separatedStems.value[stemName];
   console.log(`[Lattice] Loading ${stemName} stem for audio reactivity`);
 
-  // BUG-087 fix: Clear previous error before attempting
+  // Clear previous error before attempting load
   separationError.value = null;
 
   try {
@@ -1220,7 +1221,7 @@ async function _useStemForReactivity(stemName: string) {
 
     console.log(`[Lattice] ${stemName} stem now active for audio reactivity`);
   } catch (error) {
-    // BUG-087 fix: Show error in UI, not just console
+    // Display error in UI for user visibility
     const errorMessage =
       error instanceof Error ? error.message : "Unknown error";
     separationError.value = `Failed to load ${stemName} stem: ${errorMessage}`;
@@ -1235,7 +1236,7 @@ async function _useStemForReactivity(stemName: string) {
 // Enhanced Beat Detection Functions
 // ============================================================================
 
-function _applyBeatPreset() {
+function applyBeatPreset() {
   if (beatPreset.value && BEAT_DETECTION_PRESETS[beatPreset.value]) {
     const preset = BEAT_DETECTION_PRESETS[beatPreset.value];
     beatConfig.value = { ...DEFAULT_BEAT_CONFIG, ...preset };
@@ -1246,7 +1247,7 @@ function _applyBeatPreset() {
   }
 }
 
-function _updateBeatConfig() {
+function updateBeatConfig() {
   // Clear preset when manually editing
   beatPreset.value = "";
   // Re-analyze if we already have results
@@ -1284,7 +1285,7 @@ async function analyzeBeats() {
   }
 }
 
-function _snapToBeats() {
+function snapToBeats() {
   if (!beatGrid.value) return;
 
   // Get all beat frames
@@ -1339,7 +1340,7 @@ function _snapToBeats() {
   }
 }
 
-function _markBeatsAsMarkers() {
+function markBeatsAsMarkers() {
   if (!beatGrid.value) return;
 
   // Add markers at downbeats (first beat of each measure)
@@ -1373,7 +1374,7 @@ async function initMIDI() {
   }
 }
 
-async function _refreshMIDIDevices() {
+async function refreshMIDIDevices() {
   isRefreshingMIDI.value = true;
 
   try {
@@ -1419,11 +1420,11 @@ watch(midiMonitorEnabled, (enabled) => {
 // MIDI File to Keyframes Functions
 // ============================================================================
 
-function _loadMIDIFile() {
+function loadMIDIFile() {
   midiFileInput.value?.click();
 }
 
-async function _handleMIDIFileSelected(e: Event) {
+async function handleMIDIFileSelected(e: Event) {
   const input = e.target as HTMLInputElement;
   if (!input.files?.length) return;
 
@@ -1449,14 +1450,14 @@ async function _handleMIDIFileSelected(e: Event) {
   }
 }
 
-function _removeMIDIFile() {
+function removeMIDIFile() {
   loadedMIDIFile.value = null;
   midiFileName.value = "";
   midiConvertResult.value = null;
   midiConvertError.value = null;
 }
 
-const _midiTracks = computed(() => {
+const midiTracks = computed(() => {
   if (!loadedMIDIFile.value) return [];
   return loadedMIDIFile.value.tracks.map((t, i) => ({
     index: i,
@@ -1466,7 +1467,7 @@ const _midiTracks = computed(() => {
   }));
 });
 
-const _midiFileInfo = computed(() => {
+const midiFileInfo = computed(() => {
   if (!loadedMIDIFile.value) return null;
   const totalNotes = loadedMIDIFile.value.tracks.reduce(
     (sum, t) => sum + t.notes.length,
@@ -1488,7 +1489,7 @@ const _midiFileInfo = computed(() => {
   };
 });
 
-async function _convertMIDIToKeyframes() {
+async function convertMIDIToKeyframes() {
   if (!loadedMIDIFile.value) {
     midiConvertError.value = "No MIDI file loaded";
     return;

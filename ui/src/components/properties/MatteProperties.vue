@@ -36,7 +36,7 @@
         <label>Threshold</label>
         <ScrubableNumber
           :modelValue="matteData.threshold"
-          @update:modelValue="v => updateData('threshold', v)"
+          @update:modelValue="(v: number) => updateData('threshold', v)"
           :min="0"
           :max="1"
           :precision="2"
@@ -47,7 +47,7 @@
         <label>Feather</label>
         <ScrubableNumber
           :modelValue="matteData.feather"
-          @update:modelValue="v => updateData('feather', v)"
+          @update:modelValue="(v: number) => updateData('feather', v)"
           :min="0"
           :max="100"
           :precision="1"
@@ -58,7 +58,7 @@
         <label>Expansion</label>
         <ScrubableNumber
           :modelValue="matteData.expansion"
-          @update:modelValue="v => updateData('expansion', v)"
+          @update:modelValue="(v: number) => updateData('expansion', v)"
           :min="-50"
           :max="50"
           :precision="1"
@@ -124,7 +124,7 @@ const store = useCompositorStore();
 const matteData = computed(() => props.layer.data as MatteLayerData);
 
 // Get layers that can be matte sources
-const _sourceLayers = computed(() => {
+const sourceLayers = computed(() => {
   return store.layers.filter(
     (l) =>
       l.id !== props.layer.id &&
@@ -132,7 +132,7 @@ const _sourceLayers = computed(() => {
   );
 });
 
-const _previewModes = [
+const previewModes = [
   { value: "matte", label: "Matte", description: "View matte as grayscale" },
   {
     value: "composite",
@@ -153,7 +153,7 @@ function updateData<K extends keyof MatteLayerData>(
   emit("update", { [key]: value } as Partial<MatteLayerData>);
 }
 
-function _resetToDefaults() {
+function resetToDefaults() {
   emit("update", {
     matteType: "luminance",
     invert: false,
@@ -164,7 +164,7 @@ function _resetToDefaults() {
   });
 }
 
-function _invertMatte() {
+function invertMatte() {
   updateData("invert", !matteData.value.invert);
 }
 </script>

@@ -69,6 +69,27 @@ export function pushHistory(store: ProjectStore): void {
 }
 
 /**
+ * Invalidate particle caches for all particle layers
+ * Called after undo/redo to ensure particles reflect restored config
+ */
+function invalidateParticleCaches(): void {
+  const engine = (window as any).__latticeEngine;
+  if (!engine) return;
+
+  // Get all layers and clear cache for particle layers
+  try {
+    const layers = engine.getLayers?.() || [];
+    for (const layer of layers) {
+      if (layer && typeof layer.clearCache === "function") {
+        layer.clearCache();
+      }
+    }
+  } catch (e) {
+    // Silently fail if engine not fully initialized
+  }
+}
+
+/**
  * Undo - go back one step in history
  */
 export function undo(store: ProjectStore): boolean {
@@ -78,6 +99,10 @@ export function undo(store: ProjectStore): boolean {
   // Use toRaw to deproxy Pinia's reactive wrapper before cloning
   const historyEntry = toRaw(store.historyStack[store.historyIndex]);
   store.project = structuredClone(historyEntry) as LatticeProject;
+
+  // Invalidate particle caches so they reset to restored config
+  invalidateParticleCaches();
+
   return true;
 }
 
@@ -91,6 +116,10 @@ export function redo(store: ProjectStore): boolean {
   // Use toRaw to deproxy Pinia's reactive wrapper before cloning
   const historyEntry = toRaw(store.historyStack[store.historyIndex]);
   store.project = structuredClone(historyEntry) as LatticeProject;
+
+  // Invalidate particle caches so they reset to restored config
+  invalidateParticleCaches();
+
   return true;
 }
 
@@ -128,7 +157,15 @@ export function clearHistory(store: ProjectStore): void {
  * Export project to JSON string
  */
 export function exportProject(store: ProjectStore): string {
-  return JSON.stringify(store.project, null, 2);
+  const project = { ...store.project };
+  
+  // Include snapConfig if available (from CompositorState)
+  // This allows user snapping preferences to be preserved across save/load
+  if ('snapConfig' in store && store.snapConfig) {
+    (project as any).snapConfig = store.snapConfig;
+  }
+  
+  return JSON.stringify(project, null, 2);
 }
 
 /**
@@ -172,7 +209,24 @@ export function importProject(
       return false;
     }
 
-    store.project = project;
+    // Restore snapConfig if present in imported project
+    // This preserves user snapping preferences across save/load
+    if ('snapConfig' in project && project.snapConfig && 'snapConfig' in store) {
+      try {
+        (store as any).snapConfig = project.snapConfig;
+        storeLogger.info("Restored snapConfig from imported project");
+      } catch (snapError) {
+        storeLogger.warn("Failed to restore snapConfig, using defaults:", snapError);
+        // Continue with default snapConfig - not a fatal error
+      }
+    } else if ('snapConfig' in store) {
+      // No snapConfig in imported project - use defaults (backwards compatibility)
+      storeLogger.info("No snapConfig in imported project, using defaults");
+    }
+
+    // Remove snapConfig from project before assigning (it's not part of LatticeProject core)
+    const { snapConfig: _, ...projectWithoutSnapConfig } = project as any;
+    store.project = projectWithoutSnapConfig as LatticeProject;
     pushHistoryFn();
     return true;
   } catch (err) {

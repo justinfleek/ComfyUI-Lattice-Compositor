@@ -118,6 +118,13 @@ export const useSelectionStore = defineStore("selection", {
     },
 
     /**
+     * Toggle layer selection (alias for toggleLayerSelection).
+     */
+    toggleSelection(layerId: string): void {
+      this.toggleLayerSelection(layerId);
+    },
+
+    /**
      * Select layer with keyboard modifiers (Ctrl/Shift+Click behavior)
      *
      * @param layerId The layer to select
@@ -178,6 +185,13 @@ export const useSelectionStore = defineStore("selection", {
     clearLayerSelection(): void {
       this.selectedLayerIds = [];
       this.lastSelectedLayerId = null;
+    },
+
+    /**
+     * Clear layer selection (alias for clearLayerSelection).
+     */
+    clearSelection(): void {
+      this.clearLayerSelection();
     },
 
     /**

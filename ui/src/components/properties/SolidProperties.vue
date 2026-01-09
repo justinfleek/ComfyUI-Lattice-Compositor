@@ -119,7 +119,7 @@ const store = useCompositorStore();
 // Expanded sections
 const expandedSections = reactive(new Set<string>(["color", "shadow"]));
 
-function _toggleSection(section: string) {
+function toggleSection(section: string) {
   if (expandedSections.has(section)) {
     expandedSections.delete(section);
   } else {
@@ -130,7 +130,7 @@ function _toggleSection(section: string) {
 // Get layer data
 const layer = computed(() => store.layers.find((l) => l.id === props.layerId));
 
-const _solidData = computed<SolidLayerData>(() => {
+const solidData = computed<SolidLayerData>(() => {
   const data = layer.value?.data as SolidLayerData | undefined;
   return {
     color: data?.color ?? "#808080",
@@ -143,7 +143,7 @@ const _solidData = computed<SolidLayerData>(() => {
   };
 });
 
-function _updateSolidData<K extends keyof SolidLayerData>(
+function updateSolidData<K extends keyof SolidLayerData>(
   key: K,
   value: SolidLayerData[K],
 ) {

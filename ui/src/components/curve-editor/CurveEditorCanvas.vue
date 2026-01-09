@@ -199,7 +199,7 @@ const store = useCompositorStore();
 // REFS
 // ═══════════════════════════════════════════════════════════════════
 
-const _containerRef = ref<HTMLDivElement | null>(null);
+const containerRef = ref<HTMLDivElement | null>(null);
 const canvasAreaRef = ref<HTMLDivElement | null>(null);
 const canvasRef = ref<HTMLCanvasElement | null>(null);
 
@@ -244,7 +244,7 @@ const selectedKeyframeIds = computed(() => store.selectedKeyframeIds);
 // COMPUTED - Playhead Position
 // ═══════════════════════════════════════════════════════════════════
 
-const _playheadPx = computed(() => frameToPixel(props.currentFrame));
+const playheadPx = computed(() => frameToPixel(props.currentFrame));
 
 // ═══════════════════════════════════════════════════════════════════
 // COMPUTED - Collect All Curves (with Separated Dimensions)
@@ -396,7 +396,7 @@ const valueRange = computed(() => {
 // COMPUTED - Y-Axis Labels & Units
 // ═══════════════════════════════════════════════════════════════════
 
-const _yAxisUnit = computed(() => {
+const yAxisUnit = computed(() => {
   if (props.graphMode === "speed") {
     const hasRotation = visibleCurves.value.some((c) =>
       c.name.includes("Rotation"),
@@ -414,7 +414,7 @@ const _yAxisUnit = computed(() => {
   return "px";
 });
 
-const _yAxisLabels = computed(() => {
+const yAxisLabels = computed(() => {
   const range = valueRange.value;
   const labels: { value: number; percent: number; text: string }[] = [];
   const steps = 5;
@@ -463,11 +463,11 @@ const selectedKeyframeData = computed<SelectedKeyframeInfo | null>(() => {
   return null;
 });
 
-function _formatValueForInput(value: number): string {
+function formatValueForInput(value: number): string {
   return value.toFixed(2);
 }
 
-function _updateSelectedKeyframeFrame(e: Event) {
+function updateSelectedKeyframeFrame(e: Event) {
   const data = selectedKeyframeData.value;
   if (!data) return;
 
@@ -486,7 +486,7 @@ function _updateSelectedKeyframeFrame(e: Event) {
   draw();
 }
 
-function _updateSelectedKeyframeValue(e: Event) {
+function updateSelectedKeyframeValue(e: Event) {
   const data = selectedKeyframeData.value;
   if (!data) return;
 
@@ -749,7 +749,7 @@ function drawSpeedCurve(
 // POSITIONING HELPERS
 // ═══════════════════════════════════════════════════════════════════
 
-function _getKeyframeStyle(_curve: CurveData, kf: Keyframe<any>) {
+function getKeyframeStyle(_curve: CurveData, kf: Keyframe<any>) {
   const value = typeof kf.value === "number" ? kf.value : 0;
   const h = canvasRef.value?.height || 300;
   return {
@@ -758,7 +758,7 @@ function _getKeyframeStyle(_curve: CurveData, kf: Keyframe<any>) {
   };
 }
 
-function _getHandleStyle(
+function getHandleStyle(
   curve: CurveData,
   kf: Keyframe<any>,
   type: "in" | "out",
@@ -778,7 +778,7 @@ function _getHandleStyle(
   };
 }
 
-function _getHandleLineCoords(
+function getHandleLineCoords(
   _curve: CurveData,
   kf: Keyframe<any>,
   type: "in" | "out",
@@ -797,7 +797,7 @@ function _getHandleLineCoords(
   };
 }
 
-function _formatValue(value: any): string {
+function formatValue(value: any): string {
   if (typeof value === "number") return value.toFixed(1);
   if (typeof value === "object") return JSON.stringify(value);
   return String(value);
@@ -806,7 +806,7 @@ function _formatValue(value: any): string {
 /**
  * Check if interpolation type is an easing function (not linear/bezier/hold)
  */
-function _isEasingInterpolation(interpolation: string): boolean {
+function isEasingInterpolation(interpolation: string): boolean {
   return (
     interpolation.startsWith("easeIn") ||
     interpolation.startsWith("easeOut") ||
@@ -818,7 +818,7 @@ function _isEasingInterpolation(interpolation: string): boolean {
 // ZOOM & PAN CONTROLS
 // ═══════════════════════════════════════════════════════════════════
 
-function _handleWheel(event: WheelEvent) {
+function handleWheel(event: WheelEvent) {
   if (event.ctrlKey || event.metaKey) {
     // Zoom
     const zoomFactor = event.deltaY > 0 ? 0.9 : 1.1;
@@ -831,24 +831,24 @@ function _handleWheel(event: WheelEvent) {
   draw();
 }
 
-function _zoomIn() {
+function zoomIn() {
   zoomLevel.value = Math.min(50, zoomLevel.value * 1.2);
   draw();
 }
 
-function _zoomOut() {
+function zoomOut() {
   zoomLevel.value = Math.max(0.5, zoomLevel.value / 1.2);
   draw();
 }
 
-function _fitToView() {
+function fitToView() {
   const w = canvasRef.value?.width || 800;
   zoomLevel.value = w / props.frameCount;
   scrollOffset.value = 0;
   draw();
 }
 
-function _setGraphMode(mode: "value" | "speed") {
+function setGraphMode(mode: "value" | "speed") {
   emit("update:graphMode", mode);
 }
 
@@ -863,7 +863,7 @@ let dragKeyframe: Keyframe<any> | null = null;
 let dragHandleType: "in" | "out" | null = null;
 let dragStartPos = { x: 0, y: 0 };
 
-function _handleMouseDown(event: MouseEvent) {
+function handleMouseDown(event: MouseEvent) {
   if (event.button === 1 || (event.button === 0 && event.shiftKey)) {
     // Middle mouse or shift+left = pan
     isDragging = true;
@@ -875,7 +875,7 @@ function _handleMouseDown(event: MouseEvent) {
   }
 }
 
-function _startKeyframeDrag(
+function startKeyframeDrag(
   curve: CurveData,
   kf: Keyframe<any>,
   event: MouseEvent,
@@ -889,7 +889,7 @@ function _startKeyframeDrag(
   event.preventDefault();
 }
 
-function _startHandleDrag(
+function startHandleDrag(
   curve: CurveData,
   kf: Keyframe<any>,
   handleType: "in" | "out",
@@ -967,7 +967,7 @@ function handleMouseUp() {
   document.removeEventListener("mouseup", handleMouseUp);
 }
 
-function _selectKeyframe(id: string, event: MouseEvent) {
+function selectKeyframe(id: string, event: MouseEvent) {
   emit("selectKeyframe", id, event.shiftKey);
 }
 

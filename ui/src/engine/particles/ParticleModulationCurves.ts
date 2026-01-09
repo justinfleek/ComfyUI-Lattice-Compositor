@@ -56,7 +56,10 @@ export class ParticleModulationCurves {
    */
   constructor(rng: () => number, resolution: number = 256) {
     this.rng = rng;
-    this.resolution = resolution;
+    // Validate resolution
+    this.resolution = Number.isFinite(resolution) && resolution >= 2
+      ? Math.floor(resolution)
+      : 256;
   }
 
   /**
@@ -74,7 +77,7 @@ export class ParticleModulationCurves {
    * Evaluate a modulation curve at time t (0-1)
    * @param curve - The modulation curve to evaluate
    * @param t - Normalized time (0-1) representing particle lifetime progress
-   * @param randomOffset - BUG-070 fix: Per-particle random offset (0-1) for deterministic random curves
+   * @param randomOffset - Per-particle random offset (0-1) for deterministic random curves
    */
   evaluateCurve(
     curve: ModulationCurve | undefined,
@@ -85,10 +88,15 @@ export class ParticleModulationCurves {
 
     switch (curve.type) {
       case "constant":
-        return curve.value;
+        // Validate value
+        return Number.isFinite(curve.value) ? curve.value : 1;
 
-      case "linear":
-        return curve.start + (curve.end - curve.start) * t;
+      case "linear": {
+        // Validate start/end
+        const start = Number.isFinite(curve.start) ? curve.start : 1;
+        const end = Number.isFinite(curve.end) ? curve.end : 1;
+        return start + (end - start) * t;
+      }
 
       case "curve": {
         // Find surrounding keyframes
@@ -107,7 +115,7 @@ export class ParticleModulationCurves {
           }
         }
 
-        // BUG-069 fix: Prevent division by zero when points have same time
+        // Guard against division by zero when adjacent points share same time
         const timeDiff = p1.time - p0.time;
         if (timeDiff === 0) {
           // Return average of the two values at the same time
@@ -132,14 +140,16 @@ export class ParticleModulationCurves {
       }
 
       case "random": {
-        // BUG-070 fix: Use per-particle random offset instead of calling rng() each frame
-        // This ensures deterministic behavior - same particle gets same random value throughout lifetime
+        // Use per-particle random offset for determinism (same particle = same random value)
         const randVal = randomOffset !== undefined ? randomOffset : this.rng();
-        return curve.min + randVal * (curve.max - curve.min);
+        // Validate min/max
+        const min = Number.isFinite(curve.min) ? curve.min : 0;
+        const max = Number.isFinite(curve.max) ? curve.max : 1;
+        return min + randVal * (max - min);
       }
 
       case "randomCurve": {
-        // BUG-070 fix: Pass randomOffset to nested curve evaluations
+        // Pass randomOffset to nested curves for consistent deterministic behavior
         const min = this.evaluateCurve(curve.minCurve, t, randomOffset);
         const max = this.evaluateCurve(curve.maxCurve, t, randomOffset);
         // Use same random offset for interpolation between min/max curves
@@ -191,8 +201,10 @@ export class ParticleModulationCurves {
       { time: 1, color: [1, 1, 1, 1] as [number, number, number, number] },
     ];
     const colorData = new Float32Array(this.resolution * 4);
+    // Guard against division by zero
+    const divisor = Math.max(1, this.resolution - 1);
     for (let i = 0; i < this.resolution; i++) {
-      const t = i / (this.resolution - 1);
+      const t = i / divisor;
       const color = this.sampleColorGradient(colorStops, t);
       colorData[i * 4] = color[0];
       colorData[i * 4 + 1] = color[1];
@@ -226,8 +238,10 @@ export class ParticleModulationCurves {
       return;
     }
 
+    // Guard against division by zero
+    const divisor = Math.max(1, len - 1);
     for (let i = 0; i < len; i++) {
-      const t = i / (len - 1);
+      const t = i / divisor;
       output[i] = this.evaluateCurve(curve, t);
     }
   }
@@ -258,8 +272,10 @@ export class ParticleModulationCurves {
     if (t <= s0.time) return s0.color;
     if (t >= s1.time) return s1.color;
 
-    // Interpolate
-    const localT = (t - s0.time) / (s1.time - s0.time);
+    // Interpolate (guard against same time)
+    const timeDiff = s1.time - s0.time;
+    if (timeDiff === 0) return s0.color;
+    const localT = (t - s0.time) / timeDiff;
     return [
       s0.color[0] + (s1.color[0] - s0.color[0]) * localT,
       s0.color[1] + (s1.color[1] - s0.color[1]) * localT,

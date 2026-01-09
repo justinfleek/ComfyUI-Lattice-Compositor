@@ -62,7 +62,7 @@ watch(
   },
 );
 
-function _confirm() {
+function confirm() {
   if (compName.value.trim()) {
     emit("confirm", compName.value.trim());
     emit("close");

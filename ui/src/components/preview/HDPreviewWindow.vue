@@ -119,7 +119,7 @@ const props = defineProps<{
   engine?: any;
 }>();
 
-const _emit = defineEmits<(e: "close") => void>();
+const emit = defineEmits<(e: "close") => void>();
 
 const store = useCompositorStore();
 const { currentFrame, frameCount, fps, isPlaying } = storeToRefs(store);
@@ -169,11 +169,11 @@ const canvasHeight = computed(() => {
   return Math.round(compHeight.value * Number(previewScale.value));
 });
 
-const _resolutionLabel = computed(() => {
+const resolutionLabel = computed(() => {
   return `${compWidth.value}x${compHeight.value}`;
 });
 
-const _formattedTimecode = computed(() => {
+const formattedTimecode = computed(() => {
   const seconds = currentFrame.value / fps.value;
   const mins = Math.floor(seconds / 60);
   const secs = Math.floor(seconds % 60);
@@ -181,45 +181,45 @@ const _formattedTimecode = computed(() => {
   return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}:${String(frames).padStart(2, "0")}`;
 });
 
-const _containerStyle = computed(() => ({
+const containerStyle = computed(() => ({
   width: isFullscreen.value ? "100vw" : "90vw",
   height: isFullscreen.value ? "100vh" : "90vh",
   maxWidth: isFullscreen.value ? "none" : "1600px",
   maxHeight: isFullscreen.value ? "none" : "900px",
 }));
 
-const _canvasStyle = computed(() => ({
+const canvasStyle = computed(() => ({
   width: `${canvasWidth.value}px`,
   height: `${canvasHeight.value}px`,
 }));
 
 // Methods
-function _togglePlayback() {
+function togglePlayback() {
   store.togglePlayback();
 }
 
-function _goToStart() {
+function goToStart() {
   store.setFrame(0);
 }
 
-function _goToEnd() {
+function goToEnd() {
   store.setFrame(frameCount.value - 1);
 }
 
-function _stepForward() {
+function stepForward() {
   store.setFrame(Math.min(currentFrame.value + 1, frameCount.value - 1));
 }
 
-function _stepBackward() {
+function stepBackward() {
   store.setFrame(Math.max(currentFrame.value - 1, 0));
 }
 
-function _onScrub(e: Event) {
+function onScrub(e: Event) {
   const target = e.target as HTMLInputElement;
   store.setFrame(parseInt(target.value, 10));
 }
 
-function _toggleFullscreen() {
+function toggleFullscreen() {
   if (!document.fullscreenElement) {
     overlayRef.value?.requestFullscreen();
     isFullscreen.value = true;

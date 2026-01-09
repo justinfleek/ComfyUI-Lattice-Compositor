@@ -646,8 +646,7 @@ export class LightLayer extends BaseLayer {
 
     let progress = this.evaluator.evaluate(path.progress, frame);
 
-    // BUG-094 fix: Apply pathPosition audio modifier
-    // pathPosition is 0-1, additive to the path progress
+    // Apply audio-reactive path position modifier (0-1 additive to progress)
     const audioMod = this.currentAudioModifiers;
     if (audioMod.pathPosition !== undefined && audioMod.pathPosition !== 0) {
       progress = Math.max(0, Math.min(1, progress + audioMod.pathPosition));

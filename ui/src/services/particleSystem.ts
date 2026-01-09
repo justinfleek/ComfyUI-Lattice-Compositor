@@ -182,6 +182,13 @@ export class ParticleSystem {
   }
 
   /**
+   * Set noise time for turbulence continuity (used in deserialization)
+   */
+  setNoiseTime(time: number): void {
+    this.noiseTime = Number.isFinite(time) && time >= 0 ? time : 0;
+  }
+
+  /**
    * Set the spline path provider callback
    * This allows emitters with shape='spline' to query spline positions
    */
@@ -649,7 +656,13 @@ export class ParticleSystem {
     _deltaTime: number,
   ): void {
     const totalFrames = sprite.totalFrames;
-    const _lifeRatio = p.age / p.lifetime;
+    // Note: lifeRatio calculation removed - was unused dead code with potential div/0
+
+    // Guard against totalFrames=0 to prevent modulo by zero
+    if (totalFrames <= 0) {
+      p.spriteIndex = 0;
+      return;
+    }
 
     switch (sprite.playMode) {
       case "loop": {
@@ -661,11 +674,16 @@ export class ParticleSystem {
       case "once": {
         // Play through once, stop at last frame
         const framesElapsed = Math.floor((p.age * sprite.frameRate) / 60);
-        p.spriteIndex = Math.min(framesElapsed, totalFrames - 1);
+        p.spriteIndex = Math.min(framesElapsed, Math.max(0, totalFrames - 1));
         break;
       }
       case "pingpong": {
         // Play forward then backward
+        // Guard against single-frame sprites (totalFrames - 1 = 0 would cause div/mod by zero)
+        if (totalFrames <= 1) {
+          p.spriteIndex = 0;
+          break;
+        }
         const framesElapsed = Math.floor((p.age * sprite.frameRate) / 60);
         const cycle = Math.floor(framesElapsed / (totalFrames - 1));
         const frameInCycle = framesElapsed % (totalFrames - 1);
@@ -1770,7 +1788,9 @@ export class ParticleSystem {
   }
 
   private applyModulations(p: Particle): void {
-    const lifeRatio = p.age / p.lifetime;
+    // Guard against lifetime=0 to prevent division by zero
+    const safeLifetime = p.lifetime > 0 ? p.lifetime : 1;
+    const lifeRatio = p.age / safeLifetime;
 
     for (const mod of this.modulations) {
       // Check if modulation applies to this particle's emitter
@@ -1893,11 +1913,15 @@ export class ParticleSystem {
             Math.sin(emitAngle) * totalSpeed +
             deadParticle.vy * sub.inheritVelocity,
           age: 0,
-          lifetime: sub.lifetime * (1 + (this.rng.next() - 0.5) * 0.2),
-          size:
-            sub.size *
-            (1 + ((this.rng.next() - 0.5) * sub.sizeVariance) / sub.size),
-          baseSize: sub.size,
+          // Ensure lifetime is at least 1 to prevent division by zero in applyModulations
+          lifetime: Math.max(1, sub.lifetime * (1 + (this.rng.next() - 0.5) * 0.2)),
+          size: Math.max(
+            1,
+            sub.size > 0
+              ? sub.size * (1 + ((this.rng.next() - 0.5) * sub.sizeVariance) / sub.size)
+              : 1
+          ),
+          baseSize: Math.max(1, sub.size),
           color: [...sub.color, 255] as [number, number, number, number],
           baseColor: [...sub.color, 255] as [number, number, number, number],
           emitterId: sub.id,
@@ -1974,6 +1998,11 @@ export class ParticleSystem {
     return { cellSize, cells };
   }
 
+  /**
+   * Reset particle system to initial state.
+   * DETERMINISM: This resets ALL state including RNG for reproducible simulation.
+   * After reset(), stepping to frame N will produce identical results.
+   */
   reset(): void {
     this.particles = [];
     this.particlePool = []; // Clear pool to free memory
@@ -1985,6 +2014,26 @@ export class ParticleSystem {
     this.nextParticleId = 0;
     this.sequentialEmitT.clear();
     this.currentFrame = 0;
+
+    // Reset RNG for deterministic replay
+    this.rng.reset();
+    // Recreate noise with reset RNG for turbulence
+    this.noise2D = createNoise2D(() => this.rng.next());
+    // Reset noise time for turbulence determinism
+    this.noiseTime = 0;
+  }
+
+  /**
+   * Reset emitter seeds to initial state (legacy method, reset() now does this)
+   * @deprecated Use reset() instead, which now resets RNG automatically
+   */
+  resetEmitterSeeds(): void {
+    // Reset the main RNG to its initial seed
+    this.rng.reset();
+    // Recreate noise with reset RNG for turbulence
+    this.noise2D = createNoise2D(() => this.rng.next());
+    // Reset noise time for turbulence determinism
+    this.noiseTime = 0;
   }
 
   /**
@@ -2022,14 +2071,22 @@ export class ParticleSystem {
       readonly id: number;
       readonly x: number;
       readonly y: number;
+      readonly prevX?: number; // Optional for backwards compatibility
+      readonly prevY?: number;
       readonly vx: number;
       readonly vy: number;
       readonly age: number;
       readonly lifetime: number;
       readonly size: number;
+      readonly baseSize?: number;
       readonly color: readonly [number, number, number, number];
+      readonly baseColor?: readonly [number, number, number, number];
       readonly rotation: number;
+      readonly angularVelocity?: number;
+      readonly spriteIndex?: number;
       readonly emitterId: string;
+      readonly isSubParticle?: boolean;
+      readonly collisionCount?: number;
     }[],
     frameCount: number,
   ): void {
@@ -2040,28 +2097,37 @@ export class ParticleSystem {
     // Track highest ID for next particle generation
     let maxId = 0;
 
-    // Restore each particle
+    // Restore each particle with complete state
     for (const state of particleStates) {
       const particle: Particle = {
         id: state.id,
         x: state.x,
         y: state.y,
-        prevX: state.x, // Previous position set to current (no trail initially)
-        prevY: state.y,
+        // Use saved previous positions for trail rendering, fallback to current
+        prevX: state.prevX ?? state.x,
+        prevY: state.prevY ?? state.y,
         vx: state.vx,
         vy: state.vy,
         age: state.age,
         lifetime: state.lifetime,
         size: state.size,
-        baseSize: state.size, // Base size set to current
+        // Restore original base size for modulation calculations
+        baseSize: state.baseSize ?? state.size,
         color: [...state.color] as [number, number, number, number],
-        baseColor: [...state.color] as [number, number, number, number],
+        // Restore original base color for modulation calculations
+        baseColor: state.baseColor
+          ? [...state.baseColor] as [number, number, number, number]
+          : [...state.color] as [number, number, number, number],
         emitterId: state.emitterId,
-        isSubParticle: false,
+        // Restore sub-particle flag for sub-emitter filtering
+        isSubParticle: state.isSubParticle ?? false,
         rotation: state.rotation,
-        angularVelocity: 0, // Default angular velocity
-        spriteIndex: 0,
-        collisionCount: 0, // Reset collision count on restore
+        // Restore angular velocity for sprite rotation
+        angularVelocity: state.angularVelocity ?? 0,
+        // Restore sprite frame for animation continuity
+        spriteIndex: state.spriteIndex ?? 0,
+        // Restore collision count for physics interactions
+        collisionCount: state.collisionCount ?? 0,
       };
 
       this.particles.push(particle);
@@ -2147,6 +2213,12 @@ export class ParticleSystem {
       vortices: Array.from(this.vortices.values()),
       modulations: this.modulations,
       frameCount: this.frameCount,
+      // Added for complete state restoration
+      turbulenceFields: this.turbulenceFields,
+      subEmitters: this.subEmitters,
+      renderOptions: this.renderOptions,
+      seed: this.rng.getSeed(), // For deterministic replay on load
+      noiseTime: this.noiseTime, // For turbulence continuity
     };
   }
 
@@ -2175,6 +2247,35 @@ export class ParticleSystem {
       for (const mod of data.modulations) {
         system.addModulation(mod);
       }
+    }
+
+    // Restore turbulence fields
+    if (data.turbulenceFields) {
+      for (const field of data.turbulenceFields) {
+        system.addTurbulenceField(field);
+      }
+    }
+
+    // Restore sub-emitters
+    if (data.subEmitters) {
+      for (const sub of data.subEmitters) {
+        system.addSubEmitter(sub);
+      }
+    }
+
+    // Restore render options
+    if (data.renderOptions) {
+      system.setRenderOptions(data.renderOptions);
+    }
+
+    // Restore RNG seed for deterministic continuation
+    if (data.seed !== undefined) {
+      system.setSeed(data.seed);
+    }
+
+    // Restore noise time for turbulence continuity
+    if (data.noiseTime !== undefined) {
+      system.setNoiseTime(data.noiseTime);
     }
 
     return system;

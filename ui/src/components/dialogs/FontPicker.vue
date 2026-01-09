@@ -120,13 +120,13 @@ const searchInputRef = ref<HTMLInputElement | null>(null);
 // State
 const searchQuery = ref("");
 const selectedPreviewFont = ref(props.currentFont);
-const _previewText = ref("The quick brown fox jumps over the lazy dog");
+const previewText = ref("The quick brown fox jumps over the lazy dog");
 const expandedCategories = ref(new Set(["Web Safe"]));
 const fontCategories = ref<FontCategory[]>([]);
 const hasSystemFonts = ref<boolean | null>(null);
 
 // Filter categories based on search
-const _filteredCategories = computed(() => {
+const filteredCategories = computed(() => {
   if (!searchQuery.value.trim()) {
     return fontCategories.value;
   }
@@ -160,7 +160,7 @@ onMounted(async () => {
 });
 
 // Category toggle
-function _toggleCategory(categoryName: string): void {
+function toggleCategory(categoryName: string): void {
   if (expandedCategories.value.has(categoryName)) {
     expandedCategories.value.delete(categoryName);
   } else {
@@ -169,7 +169,7 @@ function _toggleCategory(categoryName: string): void {
 }
 
 // Font selection
-async function _selectFont(fontFamily: string): Promise<void> {
+async function selectFont(fontFamily: string): Promise<void> {
   selectedPreviewFont.value = fontFamily;
 
   // Ensure font is loaded for preview
@@ -177,14 +177,14 @@ async function _selectFont(fontFamily: string): Promise<void> {
 }
 
 // Confirm selection
-function _confirmSelection(): void {
+function confirmSelection(): void {
   if (selectedPreviewFont.value) {
     emit("select", selectedPreviewFont.value);
   }
 }
 
 // Request system fonts
-async function _requestSystemFonts(): Promise<void> {
+async function requestSystemFonts(): Promise<void> {
   const success = await fontService.requestSystemFontAccess();
   if (success) {
     fontCategories.value = fontService.getFontCategories();

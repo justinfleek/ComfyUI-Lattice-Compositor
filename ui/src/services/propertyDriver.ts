@@ -491,7 +491,13 @@ export class PropertyDriverSystem {
         const inMax = transform.inMax ?? 1;
         const outMin = transform.outMin ?? 0;
         const outMax = transform.outMax ?? 1;
-        const normalized = (value - inMin) / (inMax - inMin);
+        // Guard against zero-range input (would cause division by zero)
+        const inRange = inMax - inMin;
+        if (inRange === 0) {
+          // If input range is zero, return midpoint of output range
+          return (outMin + outMax) / 2;
+        }
+        const normalized = (value - inMin) / inRange;
         return outMin + normalized * (outMax - outMin);
       }
 

@@ -170,8 +170,8 @@ const store = useCompositorStore();
 const alignTarget = ref<"composition" | "selection">("composition");
 
 const selectedCount = computed(() => store.selectedLayerIds.length);
-const _canAlign = computed(() => selectedCount.value >= 1);
-const _canDistribute = computed(() => selectedCount.value >= 3);
+const canAlign = computed(() => selectedCount.value >= 1);
+const canDistribute = computed(() => selectedCount.value >= 3);
 
 type AlignDirection =
   | "left"
@@ -182,7 +182,7 @@ type AlignDirection =
   | "bottom";
 type DistributeDirection = "horizontal" | "vertical";
 
-function _alignLayers(direction: AlignDirection) {
+function alignLayers(direction: AlignDirection) {
   const layerIds = store.selectedLayerIds;
   if (layerIds.length === 0) return;
 
@@ -268,7 +268,7 @@ function _alignLayers(direction: AlignDirection) {
   store.project.meta.modified = new Date().toISOString();
 }
 
-function _distributeLayers(direction: DistributeDirection) {
+function distributeLayers(direction: DistributeDirection) {
   const layerIds = store.selectedLayerIds;
   if (layerIds.length < 3) return;
 
@@ -281,14 +281,16 @@ function _distributeLayers(direction: DistributeDirection) {
 
   // Sort layers by position
   const sorted = [...layers].sort((a, b) => {
-    const posA = a.transform.position?.value;
-    const posB = b.transform.position?.value;
+    const posA = a?.transform?.position?.value;
+    const posB = b?.transform?.position?.value;
+    if (!posA || !posB) return 0;
     return direction === "horizontal" ? posA.x - posB.x : posA.y - posB.y;
   });
 
   // Get first and last positions
-  const first = sorted[0].transform.position?.value;
-  const last = sorted[sorted.length - 1].transform.position?.value;
+  const first = sorted[0]?.transform?.position?.value;
+  const last = sorted[sorted.length - 1]?.transform?.position?.value;
+  if (!first || !last) return;
 
   // Calculate spacing
   const totalDistance =

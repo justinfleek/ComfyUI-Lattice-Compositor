@@ -101,13 +101,13 @@ interface ParadeResult {
   blue: WaveformResult;
 }
 
-const _store = useCompositorStore();
+const store = useCompositorStore();
 
 // UI state
 const activeScope = ref<"histogram" | "waveform" | "vectorscope" | "parade">(
   "histogram",
 );
-const _brightness = ref(1.5);
+const brightness = ref(1.5);
 const isAnalyzing = ref(false);
 
 // Scope data

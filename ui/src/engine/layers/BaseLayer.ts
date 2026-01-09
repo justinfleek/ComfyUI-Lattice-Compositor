@@ -112,7 +112,7 @@ export abstract class BaseLayer implements LayerInstance {
   /** Composition FPS for time-based effects (set by LayerManager) */
   protected compositionFps: number = 16;
 
-  /** BUG-090 fix: Current audio modifiers for color adjustments */
+  /** Current audio modifiers for color adjustments */
   protected currentAudioModifiers: import("../MotionEngine").AudioReactiveModifiers =
     {};
 
@@ -588,7 +588,7 @@ export abstract class BaseLayer implements LayerInstance {
     // Get audio modifiers (additive values from audio mappings)
     const audioMod = state.audioModifiers || {};
 
-    // BUG-090 fix: Store audio modifiers for color adjustment processing
+    // Store audio modifiers for color/blur adjustment processing
     this.currentAudioModifiers = audioMod;
 
     // Apply transform (with driven value overrides and audio modifiers if present)
@@ -971,7 +971,7 @@ export abstract class BaseLayer implements LayerInstance {
   }
 
   // ============================================================================
-  // BUG-090/091 FIX: VISUAL MODIFIERS (COLOR + BLUR)
+  // VISUAL MODIFIERS (Color Adjustments + Blur)
   // ============================================================================
 
   /**
@@ -985,7 +985,7 @@ export abstract class BaseLayer implements LayerInstance {
       m.contrast !== undefined ||
       m.hue !== undefined ||
       m.blur !== undefined
-    ); // BUG-091: Include blur
+    ); // Include blur in modifier check
   }
 
   /**
@@ -1002,8 +1002,7 @@ export abstract class BaseLayer implements LayerInstance {
     // Build CSS filter string
     const filters: string[] = [];
 
-    // BUG-090: Color adjustments
-    // Brightness: audio value 0 = normal, -0.5 = 50% darker, +0.5 = 50% brighter
+    // Color adjustments: brightness (0 = normal, ±0.5 = ±50% brightness change)
     if (m.brightness !== undefined && m.brightness !== 0) {
       filters.push(`brightness(${1 + m.brightness})`);
     }
@@ -1023,7 +1022,7 @@ export abstract class BaseLayer implements LayerInstance {
       filters.push(`hue-rotate(${m.hue * 360}deg)`);
     }
 
-    // BUG-091: Blur - audio value 0 = no blur, 1 = 20px blur
+    // Blur: audio value 0 = no blur, 1 = 20px maximum blur
     if (m.blur !== undefined && m.blur !== 0) {
       const blurPx = Math.max(0, m.blur * 20); // Scale 0-1 to 0-20px
       filters.push(`blur(${blurPx}px)`);
@@ -1118,7 +1117,7 @@ export abstract class BaseLayer implements LayerInstance {
   protected processEffects(frame: number): HTMLCanvasElement | null {
     const hasStyles = this.layerStyles?.enabled && this.hasEnabledLayerStyles();
     const hasEffects = this.hasEnabledEffects();
-    const hasColorMods = this.hasColorModifiers(); // BUG-090 fix
+    const hasColorMods = this.hasColorModifiers(); // Check for audio-reactive color/blur
 
     if (!hasStyles && !hasEffects && !hasColorMods) {
       return null;
@@ -1153,7 +1152,7 @@ export abstract class BaseLayer implements LayerInstance {
       }
 
       // STEP 2: Apply effects on styled content
-      // BUG-091/093 fix: Pass audio modifiers to effect processor for glow/glitch/rgbSplit
+      // Pass audio modifiers for glow, glitch, RGB split intensity control
       let processedCanvas = styledCanvas;
       if (hasEffects) {
         const result = processEffectStack(
@@ -1168,7 +1167,7 @@ export abstract class BaseLayer implements LayerInstance {
         processedCanvas = result.canvas;
       }
 
-      // STEP 3: BUG-090 fix - Apply audio-reactive color adjustments
+      // STEP 3: Apply audio-reactive color adjustments
       if (hasColorMods) {
         processedCanvas = this.applyColorAdjustments(processedCanvas);
       }
@@ -1556,7 +1555,7 @@ export abstract class BaseLayer implements LayerInstance {
     const hasEffects = this.hasEnabledEffects();
     const hasMasks = this.hasMasks();
     const hasTrackMatte = this.hasTrackMatte();
-    const hasColorMods = this.hasColorModifiers(); // BUG-090 fix
+    const hasColorMods = this.hasColorModifiers(); // Check for audio-reactive color/blur
 
     // Early exit if nothing to process
     if (!hasEffects && !hasMasks && !hasTrackMatte && !hasColorMods) {

@@ -138,10 +138,10 @@ const emit = defineEmits<{
 const trackPoints = useTrackPoints();
 
 // Get points at current frame
-const _points = computed(() => getPointsAtFrame(props.currentFrame));
+const points = computed(() => getPointsAtFrame(props.currentFrame));
 
 // Get tracks with path data for trails
-const _tracksWithPaths = computed(() => {
+const tracksWithPaths = computed(() => {
   if (!props.showTrails) return [];
 
   const tracks: Array<{ id: string; color: string; pathD: string }> = [];
@@ -175,15 +175,15 @@ const _tracksWithPaths = computed(() => {
 });
 
 // Selection state
-const _isSelecting = ref(false);
-const _selectionStart = ref({ x: 0, y: 0 });
-const _selectionEnd = ref({ x: 0, y: 0 });
+const isSelecting = ref(false);
+const selectionStart = ref({ x: 0, y: 0 });
+const selectionEnd = ref({ x: 0, y: 0 });
 
 // Drag state
 const isDragging = ref(false);
 const dragTrackId = ref<string | null>(null);
 
-function _onPointClick(
+function onPointClick(
   point: { trackId: string; selected: boolean },
   event: MouseEvent,
 ) {
@@ -206,7 +206,7 @@ function _onPointClick(
   );
 }
 
-function _onPointMouseDown(point: { trackId: string }, event: MouseEvent) {
+function onPointMouseDown(point: { trackId: string }, event: MouseEvent) {
   if (!props.editable) return;
 
   isDragging.value = true;

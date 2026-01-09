@@ -55,20 +55,28 @@ export interface ParticleSnapshot {
 }
 
 /**
- * Serializable particle state (subset of Particle)
+ * Serializable particle state (complete Particle state for checkpoint restoration)
  */
 export interface ParticleState {
   readonly id: number;
   readonly x: number;
   readonly y: number;
+  readonly prevX: number; // For trail rendering
+  readonly prevY: number;
   readonly vx: number;
   readonly vy: number;
   readonly age: number;
   readonly lifetime: number;
   readonly size: number;
+  readonly baseSize: number; // Original size before modulations
   readonly color: readonly [number, number, number, number];
+  readonly baseColor: readonly [number, number, number, number]; // Original color
   readonly rotation: number;
+  readonly angularVelocity: number;
+  readonly spriteIndex: number;
   readonly emitterId: string;
+  readonly isSubParticle: boolean;
+  readonly collisionCount: number;
 }
 
 /**
@@ -163,7 +171,10 @@ export class ParticleSimulationController {
     this.config = { ...config };
     this.seed = seed;
     this.rng = new SeededRNG(seed);
-    this.checkpointInterval = checkpointInterval;
+    // Validate checkpointInterval to prevent modulo by zero
+    this.checkpointInterval = Number.isFinite(checkpointInterval) && checkpointInterval > 0
+      ? Math.floor(checkpointInterval)
+      : 30;
     this.checkpoints = new Map();
 
     // Create the underlying particle system with the SAME SEED for determinism
@@ -342,19 +353,32 @@ export class ParticleSimulationController {
       id: p.id,
       x: p.x,
       y: p.y,
+      prevX: p.prevX,
+      prevY: p.prevY,
       vx: p.vx,
       vy: p.vy,
       age: p.age,
       lifetime: p.lifetime,
       size: p.size,
+      baseSize: p.baseSize,
       color: Object.freeze([...p.color]) as readonly [
         number,
         number,
         number,
         number,
       ],
+      baseColor: Object.freeze([...p.baseColor]) as readonly [
+        number,
+        number,
+        number,
+        number,
+      ],
       rotation: p.rotation,
+      angularVelocity: p.angularVelocity,
+      spriteIndex: p.spriteIndex,
       emitterId: p.emitterId,
+      isSubParticle: p.isSubParticle,
+      collisionCount: p.collisionCount,
     });
   }
 

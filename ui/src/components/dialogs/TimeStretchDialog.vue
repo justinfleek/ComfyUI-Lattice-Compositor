@@ -139,7 +139,7 @@ const originalDuration = ref(0);
 const currentStretchFactor = ref(100);
 
 // Speed presets
-const _speedPresets = [
+const speedPresets = [
   { label: "25%", value: 400 }, // Quarter speed
   { label: "50%", value: 200 }, // Half speed
   { label: "100%", value: 100 }, // Normal
@@ -152,11 +152,11 @@ const layer = computed<Layer | undefined>(() => {
   return store.layers.find((l) => l.id === props.layerId);
 });
 
-const _newDuration = computed(() => {
+const newDuration = computed(() => {
   return originalDuration.value * (stretchFactor.value / 100);
 });
 
-const _effectiveSpeed = computed(() => {
+const effectiveSpeed = computed(() => {
   const speed = (100 / stretchFactor.value) * 100;
   return reversePlayback.value ? -speed : speed;
 });
@@ -194,11 +194,11 @@ function initializeFromLayer() {
   }
 }
 
-function _updatePreview() {
+function updatePreview() {
   // Preview calculations are automatic via computed properties
 }
 
-function _reset() {
+function reset() {
   stretchFactor.value = 100;
   reversePlayback.value = false;
   holdInPlace.value = "in-point";
@@ -212,7 +212,7 @@ function apply() {
   if (!layer.value) return;
 
   const speed = (reversePlayback.value ? -1 : 1) * (100 / stretchFactor.value);
-  const _fps = store.fps || 30;
+  const fps = store.fps || 30;
 
   // Calculate new layer bounds based on hold in place
   let newStartFrame = layer.value.startFrame ?? 0;
@@ -255,7 +255,7 @@ function apply() {
   emit("close");
 }
 
-function _formatDuration(seconds: number): string {
+function formatDuration(seconds: number): string {
   const mins = Math.floor(seconds / 60);
   const secs = Math.floor(seconds % 60);
   const frames = Math.floor((seconds % 1) * (store.fps || 30));

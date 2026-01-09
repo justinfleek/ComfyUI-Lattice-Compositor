@@ -244,8 +244,8 @@ export class FrameCache {
   }
 
   /**
-   * Generate a cache key for a frame
-   * BUG-035 FIX: Validate frame to prevent NaN cache key collisions
+   * Generate a cache key for a frame.
+   * Validates frame to prevent NaN cache key collisions.
    */
   private getCacheKey(frame: number, compositionId: string): string {
     // NaN frames would create key "comp:NaN" causing all NaN frames to collide
@@ -344,7 +344,7 @@ export class FrameCache {
       this.remove(frame, compositionId);
     }
 
-    // BUG-038 FIX: Validate imageData dimensions to prevent NaN corrupting memory counter
+    // Validate ImageData dimensions before adding to cache (NaN would corrupt memory tracking)
     const width = imageData.width;
     const height = imageData.height;
     if (
@@ -501,7 +501,7 @@ export class FrameCache {
 
     // Build priority queue
     this.preCacheQueue = [];
-    // BUG-037 FIX: Validate preCacheWindow to prevent infinite loop
+    // Validate preCacheWindow to prevent infinite loop from invalid values
     const rawWindow = this.config.preCacheWindow;
     const window =
       Number.isFinite(rawWindow) && rawWindow > 0

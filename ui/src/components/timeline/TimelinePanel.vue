@@ -238,7 +238,7 @@ import type { Layer } from "@/types/project";
 const workAreaStart = inject<Ref<number | null>>("workAreaStart", ref(null));
 const workAreaEnd = inject<Ref<number | null>>("workAreaEnd", ref(null));
 
-const _emit = defineEmits<{
+const emit = defineEmits<{
   (e: "openCompositionSettings"): void;
   (e: "openPathSuggestion"): void;
 }>();
@@ -261,9 +261,9 @@ let isScrollingTrack = false;
 const viewportWidth = ref(1000); // Default, updated by observer
 const isDragOver = ref(false);
 
-const _filteredLayers = computed(() => store.displayedLayers || []);
+const filteredLayers = computed(() => store.displayedLayers || []);
 // Playhead position as percentage of timeline
-const _playheadPositionPct = computed(
+const playheadPositionPct = computed(
   () => (store.currentFrame / store.frameCount) * 100,
 );
 
@@ -294,17 +294,17 @@ const computedWidthStyle = computed(() => `${timelineWidth.value}px`);
 const hasWorkArea = computed(
   () => workAreaStart.value !== null && workAreaEnd.value !== null,
 );
-const _workAreaLeftPct = computed(() => {
+const workAreaLeftPct = computed(() => {
   if (workAreaStart.value === null) return 0;
   return (workAreaStart.value / store.frameCount) * 100;
 });
-const _workAreaWidthPct = computed(() => {
+const workAreaWidthPct = computed(() => {
   if (workAreaStart.value === null || workAreaEnd.value === null) return 100;
   const start = Math.min(workAreaStart.value, workAreaEnd.value);
   const end = Math.max(workAreaStart.value, workAreaEnd.value);
   return ((end - start) / store.frameCount) * 100;
 });
-const _workAreaStyle = computed(() => {
+const workAreaStyle = computed(() => {
   if (!hasWorkArea.value) return { display: "none" };
   const start = Math.min(workAreaStart.value!, workAreaEnd.value!);
   const end = Math.max(workAreaStart.value!, workAreaEnd.value!);
@@ -314,7 +314,7 @@ const _workAreaStyle = computed(() => {
   };
 });
 
-const _sidebarGridStyle = computed(() => ({
+const sidebarGridStyle = computed(() => ({
   display: "grid",
   gridTemplateColumns: "24px 24px 30px 24px 24px 24px 1fr 70px 70px",
   alignItems: "center",
@@ -324,12 +324,12 @@ const _sidebarGridStyle = computed(() => ({
 }));
 
 // Actions
-function _toggleAddLayerMenu() {
+function toggleAddLayerMenu() {
   showAddLayerMenu.value = !showAddLayerMenu.value;
 }
 
 // Compute position for fixed dropdown menu
-const _addLayerMenuStyle = computed((): CSSProperties => {
+const addLayerMenuStyle = computed((): CSSProperties => {
   if (!showAddLayerMenu.value || !addLayerContainer.value) {
     return {};
   }
@@ -341,7 +341,7 @@ const _addLayerMenuStyle = computed((): CSSProperties => {
   };
 });
 
-function _addLayer(type: string) {
+function addLayer(type: string) {
   let newLayer: Layer | undefined;
 
   if (type === "text") newLayer = store.createTextLayer();
@@ -369,15 +369,15 @@ function _addLayer(type: string) {
   }
 }
 
-function _selectLayer(id: string) {
+function selectLayer(id: string) {
   store.selectLayer(id);
 }
-function _updateLayer(id: string, u: any) {
+function updateLayer(id: string, u: any) {
   store.updateLayer(id, u);
 }
 
 // Handle audio track seek
-function _handleAudioSeek(frame: number) {
+function handleAudioSeek(frame: number) {
   store.setFrame(frame);
   // Also trigger audio scrub for feedback
   audioStore.scrubAudio(frame, store.fps);
@@ -386,17 +386,17 @@ function _handleAudioSeek(frame: number) {
 // ============================================================
 // DRAG & DROP FROM PROJECT PANEL
 // ============================================================
-function _onDragOver(event: DragEvent) {
+function onDragOver(event: DragEvent) {
   if (event.dataTransfer?.types.includes("application/project-item")) {
     isDragOver.value = true;
   }
 }
 
-function _onDragLeave() {
+function onDragLeave() {
   isDragOver.value = false;
 }
 
-function _onDrop(event: DragEvent) {
+function onDrop(event: DragEvent) {
   event.preventDefault();
   event.stopPropagation();
   isDragOver.value = false;
@@ -546,18 +546,18 @@ function _onDrop(event: DragEvent) {
 function deleteSelectedLayers() {
   store.selectedLayerIds.forEach((id) => store.deleteLayer(id));
 }
-function _setFrame(e: Event) {
+function setFrame(e: Event) {
   store.setFrame(parseInt((e.target as HTMLInputElement).value, 10) || 0);
 }
 function togglePlayback() {
   store.togglePlayback();
 }
-function _handleToggleExpand(id: string, val: boolean) {
+function handleToggleExpand(id: string, val: boolean) {
   expandedLayers.value[id] = val;
 }
 
 // Format frame as timecode (HH;MM;SS;FF) SMPTE format
-function _formatTimecode(frame: number): string {
+function formatTimecode(frame: number): string {
   const fps = store.fps;
   const totalSeconds = Math.floor(frame / fps);
   const frames = Math.floor(frame % fps);
@@ -665,8 +665,9 @@ function drawRuler() {
   ctx.stroke();
 }
 
-function _startRulerScrub(e: MouseEvent) {
+function startRulerScrub(e: MouseEvent) {
   const rect = rulerCanvas.value?.getBoundingClientRect();
+  if (!rect) return;
   const _scrollX =
     rulerScrollRef.value?.scrollLeft || trackScrollRef.value?.scrollLeft || 0;
 
@@ -727,7 +728,7 @@ function _startRulerScrub(e: MouseEvent) {
   );
 }
 
-function _startResize(e: MouseEvent) {
+function startResize(e: MouseEvent) {
   const startX = e.clientX;
   const startW = sidebarWidth.value;
   const onMove = (ev: MouseEvent) => {
@@ -742,14 +743,15 @@ function _startResize(e: MouseEvent) {
 }
 
 // Work Area functions
-function _clearWorkArea() {
+function clearWorkArea() {
   workAreaStart.value = null;
   workAreaEnd.value = null;
   playbackStore.clearWorkArea();
 }
 
-function _startWorkAreaDrag(handle: "start" | "end", e: MouseEvent) {
+function startWorkAreaDrag(handle: "start" | "end", e: MouseEvent) {
   const rect = rulerCanvas.value?.getBoundingClientRect();
+  if (!rect) return;
   const _scrollX =
     rulerScrollRef.value?.scrollLeft || trackScrollRef.value?.scrollLeft || 0;
 
@@ -796,7 +798,7 @@ function _startWorkAreaDrag(handle: "start" | "end", e: MouseEvent) {
 }
 
 // Scroll synchronization between sidebar and track area
-function _syncSidebarScroll(e: Event) {
+function syncSidebarScroll(e: Event) {
   if (isScrollingTrack) return;
   isScrollingSidebar = true;
   const target = e.target as HTMLElement;
@@ -809,7 +811,7 @@ function _syncSidebarScroll(e: Event) {
 }
 
 // Handle track scroll - syncs vertical scroll to sidebar and horizontal to ruler
-function _handleTrackScroll(e: Event) {
+function handleTrackScroll(e: Event) {
   const target = e.target as HTMLElement;
 
   // Sync vertical scroll to sidebar
@@ -830,14 +832,14 @@ function _handleTrackScroll(e: Event) {
 }
 
 // Sync ruler horizontal scroll to track area
-function _syncRulerScroll(e: Event) {
+function syncRulerScroll(e: Event) {
   const target = e.target as HTMLElement;
   if (trackScrollRef.value) {
     trackScrollRef.value.scrollLeft = target.scrollLeft;
   }
 }
 
-function _handleKeydown(e: KeyboardEvent) {
+function handleKeydown(e: KeyboardEvent) {
   if (
     e.target instanceof HTMLInputElement ||
     e.target instanceof HTMLTextAreaElement

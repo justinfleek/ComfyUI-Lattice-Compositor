@@ -1,7 +1,7 @@
 /**
  * Layer Style Renderers
  *
- * Photoshop/After Effects-style layer styles:
+ * Industry-standard layer styles:
  * - Drop Shadow, Inner Shadow
  * - Outer Glow, Inner Glow
  * - Bevel and Emboss

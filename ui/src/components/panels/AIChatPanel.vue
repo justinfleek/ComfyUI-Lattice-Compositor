@@ -157,7 +157,7 @@ const messagesContainer = ref<HTMLElement | null>(null);
 const apiConnected = ref(false);
 const apiError = ref(false);
 
-const _examplePrompts = [
+const examplePrompts = [
   "Fade in a title over 1 second",
   "Create floating particles that drift upward",
   "Make the selected layer bounce in from the left",
@@ -168,7 +168,7 @@ const _examplePrompts = [
 // COMPUTED
 // ============================================================================
 
-const _statusText = computed(() => {
+const statusText = computed(() => {
   if (isProcessing.value) return `Processing with ${selectedModel.value}...`;
   if (apiError.value) return "API not configured";
   if (apiConnected.value) return `Ready (${selectedModel.value})`;
@@ -230,23 +230,23 @@ async function sendMessage() {
   }
 }
 
-function _clearHistory() {
+function clearHistory() {
   const agent = getAIAgent();
   agent.clearHistory();
   messages.value = [];
 }
 
-function _useExample(example: string) {
+function useExample(example: string) {
   inputText.value = example;
   sendMessage();
 }
 
-function _formatTime(timestamp: number): string {
+function formatTime(timestamp: number): string {
   const date = new Date(timestamp);
   return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 
-function _formatContent(content: string): string {
+function formatContent(content: string): string {
   // Convert markdown-style formatting to HTML
   const formatted = content
     .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
@@ -257,7 +257,7 @@ function _formatContent(content: string): string {
   return DOMPurify.sanitize(formatted);
 }
 
-function _formatToolName(name: string): string {
+function formatToolName(name: string): string {
   // Convert camelCase to Title Case with spaces
   return name
     .replace(/([A-Z])/g, " $1")
@@ -265,7 +265,7 @@ function _formatToolName(name: string): string {
     .trim();
 }
 
-function _getToolIcon(name: string): string {
+function getToolIcon(name: string): string {
   const icons: Record<string, string> = {
     createLayer: "+",
     deleteLayer: "-",

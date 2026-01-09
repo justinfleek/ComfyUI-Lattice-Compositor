@@ -16,7 +16,7 @@
       <label>Opacity</label>
       <ScrubableNumber
         :modelValue="shape.opacity.value"
-        @update:modelValue="v => updateNumber('opacity', v)"
+        @update:modelValue="(v: number) => updateNumber('opacity', v)"
         :min="0"
         :max="100"
         unit="%"
@@ -27,7 +27,7 @@
       <label>Width</label>
       <ScrubableNumber
         :modelValue="shape.width.value"
-        @update:modelValue="v => updateNumber('width', v)"
+        @update:modelValue="(v: number) => updateNumber('width', v)"
         :min="0"
         :max="500"
         unit="px"
@@ -64,7 +64,7 @@
       <label>Dash Offset</label>
       <ScrubableNumber
         :modelValue="shape.dashOffset.value"
-        @update:modelValue="v => updateNumber('dashOffset', v)"
+        @update:modelValue="(v: number) => updateNumber('dashOffset', v)"
       />
       <KeyframeToggle :property="shape.dashOffset" :layerId="layerId" @toggle="toggleKeyframe('dashOffset')" />
     </div>
@@ -95,7 +95,7 @@
         <label>Start Length</label>
         <ScrubableNumber
           :modelValue="shape.taperStartLength.value"
-          @update:modelValue="v => updateTaper('taperStartLength', v)"
+          @update:modelValue="(v: number) => updateTaper('taperStartLength', v)"
           :min="0"
           :max="100"
           unit="%"
@@ -106,7 +106,7 @@
         <label>Start Width</label>
         <ScrubableNumber
           :modelValue="shape.taperStartWidth.value"
-          @update:modelValue="v => updateTaper('taperStartWidth', v)"
+          @update:modelValue="(v: number) => updateTaper('taperStartWidth', v)"
           :min="0"
           :max="100"
           unit="%"
@@ -117,7 +117,7 @@
         <label>Start Ease</label>
         <ScrubableNumber
           :modelValue="shape.taperStartEase.value"
-          @update:modelValue="v => updateTaper('taperStartEase', v)"
+          @update:modelValue="(v: number) => updateTaper('taperStartEase', v)"
           :min="0"
           :max="100"
           unit="%"
@@ -128,7 +128,7 @@
         <label>End Length</label>
         <ScrubableNumber
           :modelValue="shape.taperEndLength.value"
-          @update:modelValue="v => updateTaper('taperEndLength', v)"
+          @update:modelValue="(v: number) => updateTaper('taperEndLength', v)"
           :min="0"
           :max="100"
           unit="%"
@@ -139,7 +139,7 @@
         <label>End Width</label>
         <ScrubableNumber
           :modelValue="shape.taperEndWidth.value"
-          @update:modelValue="v => updateTaper('taperEndWidth', v)"
+          @update:modelValue="(v: number) => updateTaper('taperEndWidth', v)"
           :min="0"
           :max="100"
           unit="%"
@@ -150,7 +150,7 @@
         <label>End Ease</label>
         <ScrubableNumber
           :modelValue="shape.taperEndEase.value"
-          @update:modelValue="v => updateTaper('taperEndEase', v)"
+          @update:modelValue="(v: number) => updateTaper('taperEndEase', v)"
           :min="0"
           :max="100"
           unit="%"
@@ -173,11 +173,11 @@ const store = useCompositorStore();
 
 const taperExpanded = ref(false);
 
-function _toggleTaper() {
+function toggleTaper() {
   taperExpanded.value = !taperExpanded.value;
 }
 
-const _colorHex = computed(() => {
+const colorHex = computed(() => {
   const c = props.shape.color.value;
   const r = Math.round(c.r).toString(16).padStart(2, "0");
   const g = Math.round(c.g).toString(16).padStart(2, "0");
@@ -185,15 +185,15 @@ const _colorHex = computed(() => {
   return `#${r}${g}${b}`;
 });
 
-const _dashString = computed(() => {
+const dashString = computed(() => {
   return props.shape.dashPattern.value.join(", ");
 });
 
-const _hasDashes = computed(() => {
+const hasDashes = computed(() => {
   return props.shape.dashPattern.value.length > 0;
 });
 
-function _updateColor(e: Event) {
+function updateColor(e: Event) {
   const hex = (e.target as HTMLInputElement).value;
   const r = parseInt(hex.slice(1, 3), 16);
   const g = parseInt(hex.slice(3, 5), 16);
@@ -207,7 +207,7 @@ function _updateColor(e: Event) {
   emit("update", updated);
 }
 
-function _updateNumber(
+function updateNumber(
   prop: "opacity" | "width" | "dashOffset",
   value: number,
 ) {
@@ -216,18 +216,18 @@ function _updateNumber(
   emit("update", updated);
 }
 
-function _updateMeta(key: string, value: any) {
+function updateMeta(key: string, value: any) {
   const updated = { ...props.shape, [key]: value };
   emit("update", updated);
 }
 
-function _updateTaper(prop: string, value: number) {
+function updateTaper(prop: string, value: number) {
   const updated = { ...props.shape };
   (updated as any)[prop] = { ...(updated as any)[prop], value };
   emit("update", updated);
 }
 
-function _updateDashes(e: Event) {
+function updateDashes(e: Event) {
   const input = (e.target as HTMLInputElement).value;
   const values = input.trim()
     ? input
@@ -241,7 +241,7 @@ function _updateDashes(e: Event) {
   emit("update", updated);
 }
 
-function _toggleKeyframe(
+function toggleKeyframe(
   prop:
     | "color"
     | "opacity"

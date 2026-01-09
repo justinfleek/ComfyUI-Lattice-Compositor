@@ -216,7 +216,7 @@ const config = reactive<OnionSkinConfig>({ ...DEFAULT_ONION_SKIN_CONFIG });
 
 // Dropdown position
 // Explicitly typed to satisfy Vue's style binding requirements
-const _dropdownStyle = computed((): CSSProperties => {
+const dropdownStyle = computed((): CSSProperties => {
   if (!containerRef.value) return {};
 
   const rect = containerRef.value.getBoundingClientRect();
@@ -229,7 +229,7 @@ const _dropdownStyle = computed((): CSSProperties => {
 });
 
 // Toggle dropdown
-function _toggleDropdown() {
+function toggleDropdown() {
   showDropdown.value = !showDropdown.value;
 }
 
@@ -249,14 +249,14 @@ function handleClickOutside(e: MouseEvent) {
 }
 
 // Update service config
-function _updateConfig() {
+function updateConfig() {
   onionSkinning.setConfig(config);
   selectedPreset.value = ""; // Clear preset when manually editing
   emit("configChanged", { ...config });
 }
 
 // Apply preset
-function _applyPreset() {
+function applyPreset() {
   if (selectedPreset.value) {
     onionSkinning.applyPreset(selectedPreset.value);
     Object.assign(config, onionSkinning.getConfig());

@@ -215,7 +215,7 @@ const numLayers = ref(4);
 const guidanceScale = ref(3.0);
 const numInferenceSteps = ref(50);
 const seed = ref<number | undefined>(undefined);
-const _showAdvanced = ref(false);
+const showAdvanced = ref(false);
 
 // Organization options
 const groupIntoComp = ref(true); // Group decomposed layers into nested comp
@@ -246,7 +246,7 @@ const statusClass = computed(() => {
   return "not-downloaded";
 });
 
-const _statusIcon = computed(() => {
+const statusIcon = computed(() => {
   switch (statusClass.value) {
     case "ready":
       return "pi pi-check-circle";
@@ -263,7 +263,7 @@ const _statusIcon = computed(() => {
   }
 });
 
-const _statusText = computed(() => {
+const statusText = computed(() => {
   if (!modelStatus.value) return "Checking model status...";
   if (modelStatus.value.error) return `Error: ${modelStatus.value.error}`;
   if (modelStatus.value.loading) return "Loading model...";
@@ -281,7 +281,7 @@ const canDecompose = computed(() => {
 });
 
 // Button text based on state
-const _buttonText = computed(() => {
+const buttonText = computed(() => {
   if (!modelStatus.value) return "Checking...";
   if (isProcessing.value) {
     if (!modelStatus.value.downloaded) return "Downloading...";
@@ -294,11 +294,11 @@ const _buttonText = computed(() => {
 });
 
 // File handling
-function _triggerUpload() {
+function triggerUpload() {
   fileInput.value?.click();
 }
 
-function _handleFileSelect(event: Event) {
+function handleFileSelect(event: Event) {
   const input = event.target as HTMLInputElement;
   const file = input.files?.[0];
   if (file) {
@@ -306,7 +306,7 @@ function _handleFileSelect(event: Event) {
   }
 }
 
-function _handleDrop(event: DragEvent) {
+function handleDrop(event: DragEvent) {
   const file = event.dataTransfer?.files[0];
   if (file?.type.startsWith("image/")) {
     loadImageFile(file);
@@ -437,7 +437,7 @@ async function createLayersFromDecomposition(
 }
 
 // Main decomposition function
-async function _startDecomposition() {
+async function startDecomposition() {
   if (!canDecompose.value || isProcessing.value) return;
 
   isProcessing.value = true;

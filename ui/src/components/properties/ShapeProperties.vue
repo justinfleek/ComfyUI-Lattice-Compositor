@@ -30,7 +30,7 @@
           <label>Opacity</label>
           <ScrubableNumber
             :modelValue="getPropertyValue('Stroke Opacity') ?? shapeData.strokeOpacity ?? 100"
-            @update:modelValue="v => updateAnimatable('Stroke Opacity', v, 'strokeOpacity')"
+            @update:modelValue="(v: number) => updateAnimatable('Stroke Opacity', v, 'strokeOpacity')"
             :min="0"
             :max="100"
             unit="%"
@@ -42,7 +42,7 @@
           <label>Width</label>
           <ScrubableNumber
             :modelValue="getPropertyValue('Stroke Width') ?? shapeData.strokeWidth ?? 2"
-            @update:modelValue="v => updateAnimatable('Stroke Width', v, 'strokeWidth')"
+            @update:modelValue="(v: number) => updateAnimatable('Stroke Width', v, 'strokeWidth')"
             :min="0"
             :max="500"
             unit="px"
@@ -84,7 +84,7 @@
           <label>Dash Offset</label>
           <ScrubableNumber
             :modelValue="getPropertyValue('Dash Offset') ?? getNumericValue(shapeData.strokeDashOffset, 0)"
-            @update:modelValue="v => updateAnimatable('Dash Offset', v, 'strokeDashOffset')"
+            @update:modelValue="(v: number) => updateAnimatable('Dash Offset', v, 'strokeDashOffset')"
           />
           <button class="keyframe-btn" :class="{ active: isAnimated('Dash Offset') }" @click="toggleKeyframe('Dash Offset', 'strokeDashOffset')">◆</button>
         </div>
@@ -121,7 +121,7 @@
           <label>Opacity</label>
           <ScrubableNumber
             :modelValue="getPropertyValue('Fill Opacity') ?? shapeData.fillOpacity ?? 100"
-            @update:modelValue="v => updateAnimatable('Fill Opacity', v, 'fillOpacity')"
+            @update:modelValue="(v: number) => updateAnimatable('Fill Opacity', v, 'fillOpacity')"
             :min="0"
             :max="100"
             unit="%"
@@ -143,7 +143,7 @@
           <label>Start</label>
           <ScrubableNumber
             :modelValue="getPropertyValue('Trim Start') ?? getNumericValue(shapeData.trimStart, 0)"
-            @update:modelValue="v => updateAnimatable('Trim Start', v, 'trimStart')"
+            @update:modelValue="(v: number) => updateAnimatable('Trim Start', v, 'trimStart')"
             :min="0"
             :max="100"
             unit="%"
@@ -155,7 +155,7 @@
           <label>End</label>
           <ScrubableNumber
             :modelValue="getPropertyValue('Trim End') ?? getNumericValue(shapeData.trimEnd, 100)"
-            @update:modelValue="v => updateAnimatable('Trim End', v, 'trimEnd')"
+            @update:modelValue="(v: number) => updateAnimatable('Trim End', v, 'trimEnd')"
             :min="0"
             :max="100"
             unit="%"
@@ -167,7 +167,7 @@
           <label>Offset</label>
           <ScrubableNumber
             :modelValue="getPropertyValue('Trim Offset') ?? getNumericValue(shapeData.trimOffset, 0)"
-            @update:modelValue="v => updateAnimatable('Trim Offset', v, 'trimOffset')"
+            @update:modelValue="(v: number) => updateAnimatable('Trim Offset', v, 'trimOffset')"
             :min="-360"
             :max="360"
             unit="°"
@@ -220,7 +220,7 @@
                 <label>Amount</label>
                 <ScrubableNumber
                   :modelValue="getEffectPropValue(effect, 'amount')"
-                  @update:modelValue="v => updateEffectProp(effect.id, 'amount', v)"
+                  @update:modelValue="(v: number) => updateEffectProp(effect.id, 'amount', v)"
                   :min="-100"
                   :max="100"
                   unit="px"
@@ -243,7 +243,7 @@
                 <label>Size</label>
                 <ScrubableNumber
                   :modelValue="getEffectPropValue(effect, 'size')"
-                  @update:modelValue="v => updateEffectProp(effect.id, 'size', v)"
+                  @update:modelValue="(v: number) => updateEffectProp(effect.id, 'size', v)"
                   :min="0"
                   :max="100"
                   unit="px"
@@ -254,7 +254,7 @@
                 <label>Detail</label>
                 <ScrubableNumber
                   :modelValue="getEffectPropValue(effect, 'detail')"
-                  @update:modelValue="v => updateEffectProp(effect.id, 'detail', v)"
+                  @update:modelValue="(v: number) => updateEffectProp(effect.id, 'detail', v)"
                   :min="1"
                   :max="10"
                   :step="1"
@@ -265,7 +265,7 @@
                 <label>Seed</label>
                 <ScrubableNumber
                   :modelValue="effect.seed ?? 12345"
-                  @update:modelValue="v => updateEffectMeta(effect.id, 'seed', v)"
+                  @update:modelValue="(v: number) => updateEffectMeta(effect.id, 'seed', v)"
                   :min="0"
                   :max="99999"
                   :step="1"
@@ -279,7 +279,7 @@
                 <label>Size</label>
                 <ScrubableNumber
                   :modelValue="getEffectPropValue(effect, 'size')"
-                  @update:modelValue="v => updateEffectProp(effect.id, 'size', v)"
+                  @update:modelValue="(v: number) => updateEffectProp(effect.id, 'size', v)"
                   :min="0"
                   :max="100"
                   unit="px"
@@ -290,7 +290,7 @@
                 <label>Detail</label>
                 <ScrubableNumber
                   :modelValue="getEffectPropValue(effect, 'detail')"
-                  @update:modelValue="v => updateEffectProp(effect.id, 'detail', v)"
+                  @update:modelValue="(v: number) => updateEffectProp(effect.id, 'detail', v)"
                   :min="1"
                   :max="10"
                   :step="1"
@@ -301,7 +301,7 @@
                 <label>Correlation</label>
                 <ScrubableNumber
                   :modelValue="getEffectPropValue(effect, 'correlation')"
-                  @update:modelValue="v => updateEffectProp(effect.id, 'correlation', v)"
+                  @update:modelValue="(v: number) => updateEffectProp(effect.id, 'correlation', v)"
                   :min="0"
                   :max="100"
                   unit="%"
@@ -312,7 +312,7 @@
                 <label>Temp Phase</label>
                 <ScrubableNumber
                   :modelValue="getEffectPropValue(effect, 'temporalPhase')"
-                  @update:modelValue="v => updateEffectProp(effect.id, 'temporalPhase', v)"
+                  @update:modelValue="(v: number) => updateEffectProp(effect.id, 'temporalPhase', v)"
                   :min="0"
                   :max="360"
                   unit="°"
@@ -327,7 +327,7 @@
                 <label>Size</label>
                 <ScrubableNumber
                   :modelValue="getEffectPropValue(effect, 'size')"
-                  @update:modelValue="v => updateEffectProp(effect.id, 'size', v)"
+                  @update:modelValue="(v: number) => updateEffectProp(effect.id, 'size', v)"
                   :min="0"
                   :max="100"
                   unit="px"
@@ -338,7 +338,7 @@
                 <label>Ridges</label>
                 <ScrubableNumber
                   :modelValue="getEffectPropValue(effect, 'ridgesPerSegment')"
-                  @update:modelValue="v => updateEffectProp(effect.id, 'ridgesPerSegment', v)"
+                  @update:modelValue="(v: number) => updateEffectProp(effect.id, 'ridgesPerSegment', v)"
                   :min="1"
                   :max="20"
                   :step="1"
@@ -360,7 +360,7 @@
                 <label>Amplitude</label>
                 <ScrubableNumber
                   :modelValue="getEffectPropValue(effect, 'amplitude')"
-                  @update:modelValue="v => updateEffectProp(effect.id, 'amplitude', v)"
+                  @update:modelValue="(v: number) => updateEffectProp(effect.id, 'amplitude', v)"
                   :min="0"
                   :max="100"
                   unit="px"
@@ -371,7 +371,7 @@
                 <label>Frequency</label>
                 <ScrubableNumber
                   :modelValue="getEffectPropValue(effect, 'frequency')"
-                  @update:modelValue="v => updateEffectProp(effect.id, 'frequency', v)"
+                  @update:modelValue="(v: number) => updateEffectProp(effect.id, 'frequency', v)"
                   :min="0.1"
                   :max="20"
                   :step="0.1"
@@ -382,7 +382,7 @@
                 <label>Phase</label>
                 <ScrubableNumber
                   :modelValue="getEffectPropValue(effect, 'phase')"
-                  @update:modelValue="v => updateEffectProp(effect.id, 'phase', v)"
+                  @update:modelValue="(v: number) => updateEffectProp(effect.id, 'phase', v)"
                   :min="0"
                   :max="360"
                   unit="°"
@@ -507,14 +507,14 @@ const shapeData = computed<SplineData>(() => {
   );
 });
 
-const _hasFill = computed(
+const hasFill = computed(
   () => !!shapeData.value.fill && shapeData.value.fill !== "transparent",
 );
-const _hasStroke = computed(
+const hasStroke = computed(
   () => !!shapeData.value.stroke && (shapeData.value.strokeWidth ?? 0) > 0,
 );
-const _strokeLineCap = computed(() => shapeData.value.strokeLineCap || "round");
-const _strokeLineJoin = computed(
+const strokeLineCap = computed(() => shapeData.value.strokeLineCap || "round");
+const strokeLineJoin = computed(
   () => shapeData.value.strokeLineJoin || "round",
 );
 
@@ -527,14 +527,14 @@ function getDashArray(): number[] {
   return dashArray.value ?? [];
 }
 
-const _hasDashes = computed(() => getDashArray().length > 0);
+const hasDashes = computed(() => getDashArray().length > 0);
 
-const _dashArrayString = computed(() => {
+const dashArrayString = computed(() => {
   return getDashArray().join(", ") || "";
 });
 
 // Toggle section visibility
-function _toggleSection(section: string) {
+function toggleSection(section: string) {
   const idx = expandedSections.value.indexOf(section);
   if (idx >= 0) {
     expandedSections.value.splice(idx, 1);
@@ -544,7 +544,7 @@ function _toggleSection(section: string) {
 }
 
 // Find layers that reference this spline shape as a motion path
-const _attachedLayers = computed(() => {
+const attachedLayers = computed(() => {
   const layerId = props.layer.id;
   const attached: Array<{
     id: string;
@@ -606,7 +606,7 @@ const _attachedLayers = computed(() => {
 });
 
 // Get layer icon for attached elements list
-function _getLayerIcon(type: string): string {
+function getLayerIcon(type: string): string {
   const icons: Record<string, string> = {
     text: "T",
     camera: "🎥",
@@ -616,7 +616,7 @@ function _getLayerIcon(type: string): string {
 }
 
 // Select attached layer
-function _selectLayer(layerId: string) {
+function selectLayer(layerId: string) {
   store.selectLayer(layerId);
 }
 
@@ -629,13 +629,13 @@ function update(key: keyof SplineData | string, value: any) {
 }
 
 // Toggle fill on/off
-function _toggleFill(e: Event) {
+function toggleFill(e: Event) {
   const checked = (e.target as HTMLInputElement).checked;
   update("fill", checked ? "#ffffff" : "");
 }
 
 // Toggle stroke on/off
-function _toggleStroke(e: Event) {
+function toggleStroke(e: Event) {
   const checked = (e.target as HTMLInputElement).checked;
   if (checked) {
     update("stroke", "#ffffff");
@@ -648,7 +648,7 @@ function _toggleStroke(e: Event) {
 }
 
 // Update dash array from string input
-function _updateDashArray(e: Event) {
+function updateDashArray(e: Event) {
   const input = (e.target as HTMLInputElement).value;
   if (!input.trim()) {
     update("strokeDashArray", []);
@@ -669,7 +669,7 @@ function getProperty(name: string): AnimatableProperty<number> | undefined {
 }
 
 // Extract numeric value from number or AnimatableProperty
-function _getNumericValue(
+function getNumericValue(
   value: number | AnimatableProperty<number> | undefined,
   fallback: number,
 ): number {
@@ -680,19 +680,19 @@ function _getNumericValue(
 }
 
 // Get property value (from animated property or direct data)
-function _getPropertyValue(name: string): number | undefined {
+function getPropertyValue(name: string): number | undefined {
   const prop = getProperty(name);
   return prop?.value;
 }
 
 // Check if property is animated (has keyframes)
-function _isAnimated(name: string): boolean {
+function isAnimated(name: string): boolean {
   const prop = getProperty(name);
   return prop?.animated ?? false;
 }
 
 // Update animatable property
-function _updateAnimatable(propName: string, value: number, dataKey: string) {
+function updateAnimatable(propName: string, value: number, dataKey: string) {
   // Update the data value
   update(dataKey, value);
 
@@ -707,7 +707,7 @@ function _updateAnimatable(propName: string, value: number, dataKey: string) {
 }
 
 // Toggle keyframe for a property
-function _toggleKeyframe(propName: string, dataKey: string) {
+function toggleKeyframe(propName: string, dataKey: string) {
   // Ensure property exists in layer.properties
   ensureProperty(propName, dataKey);
 
@@ -785,13 +785,13 @@ function ensureProperty(propName: string, dataKey: string) {
 // PATH EFFECTS
 // ============================================================================
 
-const _pathEffects = computed<SplinePathEffectInstance[]>(() => {
+const pathEffects = computed<SplinePathEffectInstance[]>(() => {
   return (
     (shapeData.value.pathEffects || []) as SplinePathEffectInstance[]
   ).sort((a, b) => a.order - b.order);
 });
 
-function _getEffectDisplayName(type: SplinePathEffectType): string {
+function getEffectDisplayName(type: SplinePathEffectType): string {
   const names: Record<SplinePathEffectType, string> = {
     offsetPath: "Offset Path",
     roughen: "Roughen",
@@ -820,7 +820,7 @@ function createAnimatableProp(
   };
 }
 
-function _addEffect() {
+function addEffect() {
   if (!newEffectType.value) return;
 
   const effects = [...(shapeData.value.pathEffects || [])];
@@ -898,14 +898,14 @@ function _addEffect() {
   newEffectType.value = "";
 }
 
-function _removeEffect(effectId: string) {
+function removeEffect(effectId: string) {
   const effects = (shapeData.value.pathEffects || []).filter(
     (e) => e.id !== effectId,
   );
   update("pathEffects", effects);
 }
 
-function _toggleEffect(effectId: string) {
+function toggleEffect(effectId: string) {
   const effects = [...(shapeData.value.pathEffects || [])];
   const effect = effects.find((e) => e.id === effectId);
   if (effect) {
@@ -914,7 +914,7 @@ function _toggleEffect(effectId: string) {
   }
 }
 
-function _moveEffect(index: number, direction: -1 | 1) {
+function moveEffect(index: number, direction: -1 | 1) {
   const effects = [...(shapeData.value.pathEffects || [])].sort(
     (a, b) => a.order - b.order,
   );
@@ -929,7 +929,7 @@ function _moveEffect(index: number, direction: -1 | 1) {
   update("pathEffects", effects);
 }
 
-function _getEffectPropValue(
+function getEffectPropValue(
   effect: SplinePathEffect,
   propName: string,
 ): number {
@@ -942,7 +942,7 @@ function _getEffectPropValue(
   return prop.value;
 }
 
-function _isEffectPropAnimated(
+function isEffectPropAnimated(
   effect: SplinePathEffect,
   propName: string,
 ): boolean {
@@ -953,7 +953,7 @@ function _isEffectPropAnimated(
   return prop.animated ?? false;
 }
 
-function _updateEffectProp(effectId: string, propName: string, value: number) {
+function updateEffectProp(effectId: string, propName: string, value: number) {
   const effects = [...(shapeData.value.pathEffects || [])];
   const effect = effects.find((e) => e.id === effectId);
   if (!effect) return;
@@ -968,7 +968,7 @@ function _updateEffectProp(effectId: string, propName: string, value: number) {
   update("pathEffects", effects);
 }
 
-function _updateEffectMeta(effectId: string, key: string, value: any) {
+function updateEffectMeta(effectId: string, key: string, value: any) {
   const effects = [...(shapeData.value.pathEffects || [])];
   const effect = effects.find((e) => e.id === effectId);
   if (!effect) return;
@@ -977,7 +977,7 @@ function _updateEffectMeta(effectId: string, key: string, value: any) {
   update("pathEffects", effects);
 }
 
-function _toggleEffectKeyframe(effectId: string, propName: string) {
+function toggleEffectKeyframe(effectId: string, propName: string) {
   const effects = [...(shapeData.value.pathEffects || [])];
   const effect = effects.find((e) => e.id === effectId);
   if (!effect) return;

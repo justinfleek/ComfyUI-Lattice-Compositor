@@ -35,8 +35,10 @@ export interface ParticleRenderContext {
  */
 function getNeighborParticles(p: Particle, grid: SpatialGrid): Particle[] {
   const neighbors: Particle[] = [];
-  const cellX = Math.floor((p.x * 1000) / grid.cellSize);
-  const cellY = Math.floor((p.y * 1000) / grid.cellSize);
+  // Guard against cellSize=0 to prevent division by zero
+  const safeCellSize = grid.cellSize > 0 ? grid.cellSize : 100;
+  const cellX = Math.floor((p.x * 1000) / safeCellSize);
+  const cellY = Math.floor((p.y * 1000) / safeCellSize);
 
   for (let dx = -1; dx <= 1; dx++) {
     for (let dy = -1; dy <= 1; dy++) {
@@ -195,7 +197,8 @@ export function renderParticleWithMotionBlur(
 
   // Calculate blur stretch based on velocity
   const stretchFactor = options.motionBlurStrength * velocityMag * 500;
-  const samples = Math.min(options.motionBlurSamples, 16);
+  // Ensure at least 2 samples to avoid division by zero
+  const samples = Math.max(2, Math.min(options.motionBlurSamples ?? 4, 16));
 
   // Direction of motion
   const dirX = p.vx / velocityMag;
@@ -206,7 +209,7 @@ export function renderParticleWithMotionBlur(
 
   // Render multiple samples along the motion vector
   for (let i = 0; i < samples; i++) {
-    const t = i / (samples - 1); // 0 to 1
+    const t = i / (samples - 1); // 0 to 1 (safe: samples >= 2)
     const sampleOpacity = (1 - t * 0.8) / samples; // Fade towards the back
 
     // Position along the blur streak (from current position to where we were)
@@ -392,7 +395,9 @@ export function renderSprite(
   // Apply opacity based on particle age if enabled
   let alpha = particle.color[3] / 255;
   if (options?.spriteOpacityByAge) {
-    const lifeRatio = particle.age / particle.lifetime;
+    // Guard against lifetime=0 to prevent division by zero
+    const safeLifetime = particle.lifetime > 0 ? particle.lifetime : 1;
+    const lifeRatio = particle.age / safeLifetime;
     // Fade out in the last 20% of life
     if (lifeRatio > 0.8) {
       alpha *= 1 - (lifeRatio - 0.8) / 0.2;
@@ -494,7 +499,9 @@ export function renderConnections(
     return;
   }
 
-  const maxDist = config.maxDistance / 1000; // Normalize to 0-1
+  // Guard against maxDistance=0 to prevent division by zero
+  const safeMaxDistance = config.maxDistance > 0 ? config.maxDistance : 100;
+  const maxDist = safeMaxDistance / 1000; // Normalize to 0-1
   const maxDistSq = maxDist * maxDist;
 
   ctx.lineWidth = config.lineWidth;

@@ -821,7 +821,9 @@ export class PointCloudLayer extends BaseLayer {
       "color",
       new THREE.Float32BufferAttribute(colors, 3),
     );
-    this.material?.uniforms.useUniformColor.value = 0;
+    if (this.material) {
+      this.material.uniforms.useUniformColor.value = 0;
+    }
   }
 
   /**
@@ -858,7 +860,9 @@ export class PointCloudLayer extends BaseLayer {
       "color",
       new THREE.Float32BufferAttribute(colors, 3),
     );
-    this.material?.uniforms.useUniformColor.value = 0;
+    if (this.material) {
+      this.material.uniforms.useUniformColor.value = 0;
+    }
   }
 
   /**
@@ -888,11 +892,15 @@ export class PointCloudLayer extends BaseLayer {
       console.warn(
         "[PointCloudLayer] No normals available for normal coloring",
       );
-      this.material?.uniforms.useUniformColor.value = 1;
-      this.material?.uniforms.uniformColor.value.set("#8080ff");
+      if (this.material) {
+        this.material.uniforms.useUniformColor.value = 1;
+        this.material.uniforms.uniformColor.value.set("#8080ff");
+      }
     }
 
-    this.material?.uniforms.useUniformColor.value = 0;
+    if (this.material) {
+      this.material.uniforms.useUniformColor.value = 0;
+    }
   }
 
   /**
@@ -934,10 +942,14 @@ export class PointCloudLayer extends BaseLayer {
         "color",
         new THREE.Float32BufferAttribute(colors, 3),
       );
-      this.material?.uniforms.useUniformColor.value = 0;
+      if (this.material) {
+        this.material.uniforms.useUniformColor.value = 0;
+      }
     } else {
       console.warn("[PointCloudLayer] No intensity data available");
-      this.material?.uniforms.useUniformColor.value = 1;
+      if (this.material) {
+        this.material.uniforms.useUniformColor.value = 1;
+      }
     }
   }
 
@@ -987,10 +999,14 @@ export class PointCloudLayer extends BaseLayer {
         "color",
         new THREE.Float32BufferAttribute(colors, 3),
       );
-      this.material?.uniforms.useUniformColor.value = 0;
+      if (this.material) {
+        this.material.uniforms.useUniformColor.value = 0;
+      }
     } else {
       console.warn("[PointCloudLayer] No classification data available");
-      this.material?.uniforms.useUniformColor.value = 1;
+      if (this.material) {
+        this.material.uniforms.useUniformColor.value = 1;
+      }
     }
   }
 

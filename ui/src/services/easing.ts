@@ -23,9 +23,18 @@ export const easings = {
   linear: (t: number): number => t,
 
   // Sine easing
-  easeInSine: (t: number): number => 1 - Math.cos((t * PI) / 2),
+  // FIX: Handle boundary conditions explicitly for floating point precision
+  easeInSine: (t: number): number => {
+    if (t === 0) return 0;
+    if (t === 1) return 1;
+    return 1 - Math.cos((t * PI) / 2);
+  },
   easeOutSine: (t: number): number => Math.sin((t * PI) / 2),
-  easeInOutSine: (t: number): number => -(Math.cos(PI * t) - 1) / 2,
+  easeInOutSine: (t: number): number => {
+    if (t === 0) return 0;
+    if (t === 1) return 1;
+    return -(Math.cos(PI * t) - 1) / 2;
+  },
 
   // Quad (power of 2)
   easeInQuad: (t: number): number => t * t,
@@ -70,12 +79,24 @@ export const easings = {
       : (Math.sqrt(1 - (-2 * t + 2) ** 2) + 1) / 2,
 
   // Back (overshoot)
-  easeInBack: (t: number): number => c3 * t * t * t - c1 * t * t,
-  easeOutBack: (t: number): number => 1 + c3 * (t - 1) ** 3 + c1 * (t - 1) ** 2,
-  easeInOutBack: (t: number): number =>
-    t < 0.5
+  // FIX: Handle boundary conditions explicitly for floating point precision
+  easeInBack: (t: number): number => {
+    if (t === 0) return 0;
+    if (t === 1) return 1;
+    return c3 * t * t * t - c1 * t * t;
+  },
+  easeOutBack: (t: number): number => {
+    if (t === 0) return 0;
+    if (t === 1) return 1;
+    return 1 + c3 * (t - 1) ** 3 + c1 * (t - 1) ** 2;
+  },
+  easeInOutBack: (t: number): number => {
+    if (t === 0) return 0;
+    if (t === 1) return 1;
+    return t < 0.5
       ? ((2 * t) ** 2 * ((c2 + 1) * 2 * t - c2)) / 2
-      : ((2 * t - 2) ** 2 * ((c2 + 1) * (t * 2 - 2) + c2) + 2) / 2,
+      : ((2 * t - 2) ** 2 * ((c2 + 1) * (t * 2 - 2) + c2) + 2) / 2;
+  },
 
   // Elastic
   easeInElastic: (t: number): number => {

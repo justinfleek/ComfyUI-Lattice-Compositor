@@ -8,7 +8,7 @@
         <label>Icon Size</label>
         <ScrubableNumber
           :modelValue="controlData.size"
-          @update:modelValue="v => updateData('size', v)"
+          @update:modelValue="(v: number) => updateData('size', v)"
           :min="10"
           :max="200"
           :precision="0"
@@ -94,9 +94,9 @@ const props = defineProps<{
 const emit =
   defineEmits<(e: "update", data: Partial<ControlLayerData>) => void>();
 
-const _controlData = computed(() => props.layer.data as ControlLayerData);
+const controlData = computed(() => props.layer.data as ControlLayerData);
 
-const _colorPresets = [
+const colorPresets = [
   { name: "Yellow", color: "#ffcc00" },
   { name: "Red", color: "#e74c3c" },
   { name: "Orange", color: "#e67e22" },
@@ -108,7 +108,7 @@ const _colorPresets = [
   { name: "White", color: "#ffffff" },
 ];
 
-function _updateData<K extends keyof ControlLayerData>(
+function updateData<K extends keyof ControlLayerData>(
   key: K,
   value: ControlLayerData[K],
 ) {

@@ -187,7 +187,7 @@ const rowMappingMode = ref<"frame" | "time" | "manual">("frame");
 const manualRowOffset = ref(0);
 
 // Get available data assets from project
-const _availableDataAssets = computed(() => {
+const availableDataAssets = computed(() => {
   const assets = store.project?.dataAssets ?? {};
   return Object.entries(assets).map(([name, asset]) => ({
     name,
@@ -219,7 +219,7 @@ const isJSONType = computed(() => {
 });
 
 // CSV headers for column dropdown
-const _csvHeaders = computed(() => {
+const csvHeaders = computed(() => {
   const asset = selectedAssetDetails.value;
   return asset?.headers ?? [];
 });
@@ -256,7 +256,7 @@ const generatedDataExpression = computed(() => {
 });
 
 // Check if property already has an expression
-const _hasExpression = computed(() => {
+const hasExpression = computed(() => {
   return props.currentExpression?.enabled ?? false;
 });
 
@@ -276,7 +276,7 @@ const presetDescriptions: Record<string, string> = {
   repeatOffset: "Loop with continuous offset",
 };
 
-const _presetDescription = computed(() => {
+const presetDescription = computed(() => {
   return presetDescriptions[selectedPreset.value] || "";
 });
 
@@ -346,7 +346,7 @@ watch(
   },
 );
 
-function _apply() {
+function apply() {
   if (!canApply.value) return;
 
   let expression: PropertyExpression;
@@ -391,7 +391,7 @@ function _apply() {
   emit("close");
 }
 
-function _remove() {
+function remove() {
   emit("remove");
   emit("close");
 }

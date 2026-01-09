@@ -144,7 +144,7 @@ export interface EvaluatedLayer {
   /** Audio reactive modifiers (additive values from audio mappings) */
   readonly audioModifiers: AudioReactiveModifiers;
 
-  /** BUG-081 fix: Per-emitter audio reactive modifiers for particle layers */
+  /** Per-emitter audio reactive modifiers for particle layers */
   readonly emitterAudioModifiers?: Readonly<
     Map<string, ParticleAudioReactiveModifiers>
   >;
@@ -441,7 +441,7 @@ export class MotionEngine {
   private frameCache = new FrameStateCache();
 
   /**
-   * BUG-082 fix: Persistent AudioReactiveMapper for temporal state
+   * Persistent AudioReactiveMapper for temporal state.
    * Temporal features (smoothing, release envelopes, beat toggles) require
    * state to persist across frames during sequential playback.
    */
@@ -450,8 +450,8 @@ export class MotionEngine {
   private lastAudioAnalysis: AudioAnalysis | null = null;
 
   /**
-   * BUG-095 fix: Cache AudioPathAnimator instances per layer
-   * Prevents re-parsing SVG path data every frame
+   * Cache AudioPathAnimator instances per layer.
+   * Prevents re-parsing SVG path data every frame.
    */
   private audioPathAnimatorCache = new Map<
     string,
@@ -468,13 +468,13 @@ export class MotionEngine {
   invalidateCache(): void {
     this.frameCache.invalidate();
     this.lastProjectHash = "";
-    // BUG-082 fix: Reset audio reactive state on cache invalidation
+    // Reset audio reactive temporal state on cache invalidation (smoothing, envelopes)
     if (this.audioMapper) {
       this.audioMapper.resetTemporalState();
     }
     this.lastAudioReactiveFrame = -1;
     this.lastAudioAnalysis = null;
-    // BUG-095 fix: Clear audio path animator cache
+    // Clear audio path animator cache on invalidation
     this.audioPathAnimatorCache.clear();
   }
 
@@ -532,9 +532,8 @@ export class MotionEngine {
       }
     }
 
-    // BUG-082 fix: Persist AudioReactiveMapper for temporal features
-    // Temporal state (smoothing, release envelopes, beat toggles) must persist
-    // across sequential frames but reset on non-sequential access (scrubbing).
+    // Persist AudioReactiveMapper for temporal features (smoothing, envelopes, beat toggles).
+    // State persists across sequential frames but resets on non-sequential access (scrubbing).
     let audioMapper: AudioReactiveMapper | null = null;
     if (audioReactive?.analysis && audioReactive.mappings.length > 0) {
       // Create mapper if needed
@@ -596,7 +595,7 @@ export class MotionEngine {
       audioAnalysisForLayers,
     );
 
-    // Evaluate camera (BUG-092 fix: pass audioMapper for fov/dollyZ/shake modifiers)
+    // Evaluate camera with audioMapper for fov/dollyZ/shake modifiers
     const evaluatedCamera = this.evaluateCamera(
       frame,
       composition.layers,
@@ -681,8 +680,7 @@ export class MotionEngine {
         fps,
       );
 
-      // BUG-095 fix: Apply audio path animation if enabled
-      // This animates the layer position along an SVG path based on audio
+      // Apply audio path animation if enabled (layer position follows SVG path based on audio)
       if (
         layer.audioPathAnimation?.enabled &&
         layer.audioPathAnimation.pathData
@@ -789,7 +787,7 @@ export class MotionEngine {
           );
         }
 
-        // BUG-081 fix: Compute per-emitter modifiers for particle layers
+        // Compute per-emitter modifiers for particle layers (allows different audio response per emitter)
         if (layer.type === "particles" && layer.data) {
           const particleData = layer.data as {
             emitters?: Array<{ id: string }>;
@@ -1204,8 +1202,7 @@ export class MotionEngine {
       }
     }
 
-    // BUG-092 fix: Collect audio modifiers BEFORE applying camera effects
-    // This allows audio to modulate fov, dollyZ, and shake intensity
+    // Collect audio modifiers before applying camera effects (allows fov, dollyZ, shake modulation)
     let cameraAudioModifiers: AudioReactiveModifiers = {};
     if (audioMapper) {
       cameraAudioModifiers = collectAudioReactiveModifiers(

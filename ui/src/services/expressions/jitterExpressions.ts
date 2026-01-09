@@ -37,7 +37,7 @@ export function jitter(
   const t = time ?? ctx.time;
   const { value } = ctx;
 
-  // Guard against invalid octaves (BUG-012: infinite loop prevention)
+  // Guard against invalid octaves (prevents infinite loop)
   if (!Number.isFinite(octaves) || octaves < 1) {
     octaves = 1;
   } else if (octaves > 10) {
@@ -63,7 +63,7 @@ export function jitter(
       freq *= 2;
     }
 
-    // Guard against division by zero (BUG-013)
+    // Guard against division by zero
     const denominator = 1 + (octaves - 1) * amplitudeMultiplier;
     if (!Number.isFinite(denominator) || denominator === 0) {
       return result; // Return unnormalized if normalization factor is invalid
@@ -91,12 +91,12 @@ export function temporalJitter(
 ): number | number[] {
   const t = time ?? ctx.time;
 
-  // Guard against invalid frequency (BUG-008: division by zero)
+  // Guard against invalid frequency (prevents division by zero)
   if (!Number.isFinite(frequency) || frequency <= 0) {
     frequency = 5; // Use default frequency
   }
 
-  // Guard against invalid octaves (BUG-012: infinite loop prevention)
+  // Guard against invalid octaves (prevents infinite loop)
   if (!Number.isFinite(octaves) || octaves < 1) {
     octaves = 1;
   } else if (octaves > 10) {

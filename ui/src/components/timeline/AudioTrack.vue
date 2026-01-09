@@ -88,22 +88,22 @@ const canvasRef = ref<HTMLCanvasElement | null>(null);
 const hoverFrame = ref<number | null>(null);
 
 // Computed
-const _playheadPosition = computed(
+const playheadPosition = computed(
   () => (props.currentFrame / props.totalFrames) * 100,
 );
 
-const _hoverPosition = computed(() =>
+const hoverPosition = computed(() =>
   hoverFrame.value !== null ? (hoverFrame.value / props.totalFrames) * 100 : 0,
 );
 
-const _visibleOnsets = computed(() => props.analysis?.onsets ?? []);
+const visibleOnsets = computed(() => props.analysis?.onsets ?? []);
 
-const _visiblePeaks = computed(() => props.peakData?.indices ?? []);
+const visiblePeaks = computed(() => props.peakData?.indices ?? []);
 
-const _fps = computed(() => props.fps);
+const fps = computed(() => props.fps);
 
 // Methods
-function _handleClick(event: MouseEvent): void {
+function handleClick(event: MouseEvent): void {
   if (!containerRef.value) return;
 
   const rect = containerRef.value.getBoundingClientRect();
@@ -114,7 +114,7 @@ function _handleClick(event: MouseEvent): void {
   emit("seek", Math.max(0, Math.min(frame, props.totalFrames - 1)));
 }
 
-function _handleMouseMove(event: MouseEvent): void {
+function handleMouseMove(event: MouseEvent): void {
   if (!containerRef.value) return;
 
   const rect = containerRef.value.getBoundingClientRect();
@@ -123,11 +123,11 @@ function _handleMouseMove(event: MouseEvent): void {
   hoverFrame.value = Math.round(ratio * props.totalFrames);
 }
 
-function _handleMouseLeave(): void {
+function handleMouseLeave(): void {
   hoverFrame.value = null;
 }
 
-function _formatTime(seconds: number): string {
+function formatTime(seconds: number): string {
   const mins = Math.floor(seconds / 60);
   const secs = Math.floor(seconds % 60);
   const ms = Math.floor((seconds % 1) * 100);

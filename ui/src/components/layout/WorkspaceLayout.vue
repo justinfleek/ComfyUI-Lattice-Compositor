@@ -265,10 +265,10 @@ const _playbackStore = usePlaybackStore();
 const _historyStore = useHistoryStore();
 
 // Expression editor composable
-const _expressionEditor = useExpressionEditor();
+const expressionEditor = useExpressionEditor();
 
 // Track points state for camera tracking overlay
-const _trackPointsState = useTrackPoints();
+const trackPointsState = useTrackPoints();
 
 // Tool state - synced with store
 const currentTool = computed({
@@ -316,7 +316,7 @@ const expandedPanels = ref({
 
 // AI section tab
 const aiTab = ref<"chat" | "generate" | "flow" | "decompose">("chat");
-const _viewportTab = ref<"composition" | "layer" | "footage">("composition");
+const viewportTab = ref<"composition" | "layer" | "footage">("composition");
 
 const viewZoom = ref("fit");
 const showCurveEditor = ref(false);
@@ -331,7 +331,7 @@ const showCameraTrackingImportDialog = ref(false);
 const showPreferencesDialog = ref(false);
 const showKeyboardShortcutsModal = ref(false);
 const showHDPreview = ref(false);
-const _showTemplateBuilderDialog = ref(false);
+const showTemplateBuilderDialog = ref(false);
 
 // Vision authoring state
 const pathSuggestions = ref<any[]>([]);
@@ -348,7 +348,7 @@ const threeCanvasRef = computed(
 );
 
 // Engine accessor for panels
-const _canvasEngine = computed(() => centerViewportRef.value?.engine ?? null);
+const canvasEngine = computed(() => centerViewportRef.value?.engine ?? null);
 
 // Asset handlers composable
 const {
@@ -360,13 +360,13 @@ const {
 } = useAssetHandlers({ canvasRef: centerViewportRef });
 
 // Camera state - use computed to get from store, fallback to default
-const _activeCamera = computed<Camera3D>(() => {
+const activeCamera = computed<Camera3D>(() => {
   const cam = store.getActiveCameraAtFrame();
   if (cam) return cam;
   // Fallback to a default camera
   return createDefaultCamera("default", compWidth.value, compHeight.value);
 });
-const _viewportState = ref<ViewportState>(createDefaultViewportState());
+const viewportState = ref<ViewportState>(createDefaultViewportState());
 const viewOptions = ref({
   showGrid: false,
   showRulers: false,
@@ -382,7 +382,7 @@ const viewOptions = ref({
 });
 
 // Grid overlay computed style
-const _gridOverlayStyle = computed(() => {
+const gridOverlayStyle = computed(() => {
   const size = viewOptions.value.gridSize || 100;
   const divisions = viewOptions.value.gridDivisions || 10;
   const minorSize = size / divisions;
@@ -413,8 +413,8 @@ const _gridOverlayStyle = computed(() => {
 });
 
 // Snap indicator state (for visual feedback)
-const _snapIndicatorX = ref<number | null>(null);
-const _snapIndicatorY = ref<number | null>(null);
+const snapIndicatorX = ref<number | null>(null);
+const snapIndicatorY = ref<number | null>(null);
 
 // Composition dimensions
 const compWidth = computed(() => store.project?.composition?.width || 1920);
@@ -627,7 +627,7 @@ function getSnapPoint(
 // Provide getSnapPoint (snap state already provided by keyboard composable)
 provide("getSnapPoint", getSnapPoint);
 
-function _updateCamera(camera: Camera3D) {
+function updateCamera(camera: Camera3D) {
   // Update the camera in the store
   if (store.activeCameraId) {
     store.updateCamera(camera.id, camera);
@@ -664,18 +664,18 @@ function playExportChime() {
   }
 }
 
-function _onExportComplete() {
+function onExportComplete() {
   console.log("[Lattice] Matte export completed");
   playExportChime();
 }
 
-function _onComfyUIExportComplete(result: any) {
+function onComfyUIExportComplete(result: any) {
   console.log("[Lattice] ComfyUI export completed", result);
   showComfyUIExportDialog.value = false;
   playExportChime();
 }
 
-function _onCompositionSettingsConfirm(settings: {
+function onCompositionSettingsConfirm(settings: {
   name: string;
   width: number;
   height: number;
@@ -702,7 +702,7 @@ function _onCompositionSettingsConfirm(settings: {
   showCompositionSettingsDialog.value = false;
 }
 
-function _onPrecomposeConfirm(name: string) {
+function onPrecomposeConfirm(name: string) {
   if (store.selectedLayerIds.length > 0) {
     store.nestSelectedLayers(name);
     showPrecomposeDialog.value = false;
@@ -710,7 +710,7 @@ function _onPrecomposeConfirm(name: string) {
 }
 
 // Camera tracking import handler
-function _onCameraTrackingImported(result: {
+function onCameraTrackingImported(result: {
   cameraLayerId?: string;
   warnings?: string[];
 }) {
@@ -728,7 +728,7 @@ function _onCameraTrackingImported(result: {
 }
 
 // Keyframe interpolation dialog handler
-function _onKeyframeInterpolationConfirm(settings: {
+function onKeyframeInterpolationConfirm(settings: {
   interpolation: BaseInterpolationType;
   easingPreset: string;
   controlMode: ControlMode;
@@ -910,19 +910,19 @@ function generatePathDataFromPoints(
 }
 
 // Path Suggestion handlers
-function _onPathSuggestionClose() {
+function onPathSuggestionClose() {
   showPathSuggestionDialog.value = false;
   // Clear preview when dialog closes
   pathSuggestions.value = [];
   selectedPathIndex.value = null;
 }
 
-function _onPathSuggestionPreview(suggestions: any[]) {
+function onPathSuggestionPreview(suggestions: any[]) {
   pathSuggestions.value = suggestions;
   selectedPathIndex.value = suggestions.length > 0 ? 0 : null;
 }
 
-function _onPathSuggestionAccept(result: { keyframes: any[]; splines: any[] }) {
+function onPathSuggestionAccept(result: { keyframes: any[]; splines: any[] }) {
   console.log("[Lattice] Path suggestion accepted:", result);
 
   // Apply keyframes to the store
@@ -986,7 +986,7 @@ function _onPathSuggestionAccept(result: { keyframes: any[]; splines: any[] }) {
 }
 
 // Get camera keyframes for the active camera
-const _activeCameraKeyframes = computed(() => {
+const activeCameraKeyframes = computed(() => {
   const activeCam = store.getActiveCameraAtFrame();
   if (!activeCam) return [];
   return store.getCameraKeyframes(activeCam.id);
@@ -1041,7 +1041,7 @@ function triggerProjectOpen() {
 /**
  * Handle preferences save
  */
-function _handlePreferencesSave(preferences: any) {
+function handlePreferencesSave(preferences: any) {
   console.log("Preferences saved:", preferences);
   // Apply relevant preferences immediately
   if (preferences.theme) {

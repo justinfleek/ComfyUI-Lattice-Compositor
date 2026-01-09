@@ -49,7 +49,8 @@ export function getEmitterPosition(
 
     case "circle": {
       const angle = rng() * Math.PI * 2;
-      let radius = shape.radius ?? 50;
+      // Validate radius
+      let radius = Number.isFinite(shape.radius) && shape.radius > 0 ? shape.radius : 50;
       if (!shape.emitFromEdge) {
         radius *= Math.sqrt(rng()); // Uniform distribution in circle
       }
@@ -65,7 +66,8 @@ export function getEmitterPosition(
     case "sphere": {
       const theta = rng() * Math.PI * 2;
       const phi = Math.acos(2 * rng() - 1);
-      let radius = shape.radius ?? 50;
+      // Validate radius
+      let radius = Number.isFinite(shape.radius) && shape.radius > 0 ? shape.radius : 50;
       if (!shape.emitFromEdge) {
         radius *= Math.cbrt(rng()); // Uniform distribution in sphere
       }
@@ -80,11 +82,15 @@ export function getEmitterPosition(
 
     case "box": {
       const size = shape.boxSize ?? { x: 100, y: 100, z: 100 };
+      // Validate box dimensions
+      const sx = Number.isFinite(size.x) ? size.x : 100;
+      const sy = Number.isFinite(size.y) ? size.y : 100;
+      const sz = Number.isFinite(size.z) ? size.z : 100;
       return base.add(
         new THREE.Vector3(
-          (rng() - 0.5) * size.x,
-          (rng() - 0.5) * size.y,
-          (rng() - 0.5) * size.z,
+          (rng() - 0.5) * sx,
+          (rng() - 0.5) * sy,
+          (rng() - 0.5) * sz,
         ),
       );
     }
@@ -105,8 +111,11 @@ export function getEmitterPosition(
     case "cone": {
       const angle = rng() * Math.PI * 2;
       const t = rng();
-      const radius = t * (shape.coneRadius ?? 50);
-      const height = t * (shape.coneLength ?? 100);
+      // Validate cone dimensions
+      const coneRadius = Number.isFinite(shape.coneRadius) && shape.coneRadius > 0 ? shape.coneRadius : 50;
+      const coneLength = Number.isFinite(shape.coneLength) && shape.coneLength > 0 ? shape.coneLength : 100;
+      const radius = t * coneRadius;
+      const height = t * coneLength;
       return base.add(
         new THREE.Vector3(
           Math.cos(angle) * radius,
@@ -121,7 +130,8 @@ export function getEmitterPosition(
       if (!shape.imageData) return base;
 
       const { width, height, data } = shape.imageData;
-      const threshold = shape.emissionThreshold ?? 0.1;
+      // Validate threshold
+      const threshold = Number.isFinite(shape.emissionThreshold) ? shape.emissionThreshold : 0.1;
 
       // Try up to 100 times to find a valid pixel
       for (let attempt = 0; attempt < 100; attempt++) {
@@ -150,8 +160,12 @@ export function getEmitterPosition(
       if (!shape.depthData || !shape.imageData) return base;
 
       const { width, height } = shape.imageData;
+      // Validate dimensions
+      if (width < 3 || height < 3) return base; // Need at least 3x3 for gradient calc
+      
       const depthData = shape.depthData;
-      const threshold = shape.emissionThreshold ?? 0.05; // Depth difference threshold
+      // Validate threshold
+      const threshold = Number.isFinite(shape.emissionThreshold) ? shape.emissionThreshold : 0.05;
 
       // Try up to 100 times to find an edge pixel
       for (let attempt = 0; attempt < 100; attempt++) {
@@ -250,8 +264,14 @@ export function getEmissionDirection(
     return baseDir;
   }
 
+  // Validate spread
+  const safeSpread = Number.isFinite(emitter.emissionSpread) ? Math.max(0, emitter.emissionSpread) : 0;
+  if (safeSpread <= 0) {
+    return baseDir;
+  }
+
   // Apply spread (cone distribution)
-  const spreadRad = (emitter.emissionSpread * Math.PI) / 180;
+  const spreadRad = (safeSpread * Math.PI) / 180;
   const theta = rng() * Math.PI * 2;
   const phi = Math.acos(1 - rng() * (1 - Math.cos(spreadRad)));
 
@@ -285,13 +305,16 @@ export function calculateInitialVelocity(
   rng: RNGFunction,
 ): { velocity: THREE.Vector3; direction: THREE.Vector3; speed: number } {
   const direction = getEmissionDirection(emitter, rng);
-  const speed =
-    emitter.initialSpeed + (rng() - 0.5) * 2 * emitter.speedVariance;
+  // Validate speed parameters
+  const safeInitialSpeed = Number.isFinite(emitter.initialSpeed) ? Math.max(0, emitter.initialSpeed) : 100;
+  const safeSpeedVariance = Number.isFinite(emitter.speedVariance) ? Math.max(0, emitter.speedVariance) : 0;
+  const speed = safeInitialSpeed + (rng() - 0.5) * 2 * safeSpeedVariance;
 
-  // Inherit emitter velocity
+  // Inherit emitter velocity (validate inheritance factor)
+  const safeInherit = Number.isFinite(emitter.inheritEmitterVelocity) ? emitter.inheritEmitterVelocity : 0;
   const inheritVel = emitter.velocity
     .clone()
-    .multiplyScalar(emitter.inheritEmitterVelocity);
+    .multiplyScalar(safeInherit);
 
   const velocity = new THREE.Vector3(
     direction.x * speed + inheritVel.x,

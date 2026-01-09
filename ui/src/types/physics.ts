@@ -4,7 +4,7 @@
  *
  * Physics engine based on Verlet integration for soft bodies and
  * impulse-based rigid body dynamics. All simulations are deterministic
- * and support keyframe export for After Effects-style workflows.
+ * and support keyframe export for professional animation workflows.
  */
 
 import type { AnimatableProperty } from "./animation";
@@ -979,7 +979,7 @@ export const DEFAULT_SPACE_CONFIG: PhysicsSpaceConfig = {
   timeStep: 1 / 60,
   velocityIterations: 8,
   positionIterations: 3,
-  gravity: { x: 0, y: 980 }, // Pixels per second squared (like After Effects)
+  gravity: { x: 0, y: 980 }, // Pixels per second squared (industry standard)
   sleepEnabled: true,
   sleepTimeThreshold: 0.5,
   sleepVelocityThreshold: 10,

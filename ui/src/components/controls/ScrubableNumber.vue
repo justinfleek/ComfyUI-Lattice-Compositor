@@ -80,9 +80,9 @@ const scrubStartValue = ref(0);
 const isDragging = ref(false);
 const dragThreshold = 3; // pixels before considering it a drag vs click
 
-const _defaultValue = computed(() => props.default ?? props.modelValue);
-const _showReset = computed(() => props.default !== undefined);
-const _displayUnit = computed(() => props.unit || props.suffix);
+const defaultValue = computed(() => props.default ?? props.modelValue);
+const showReset = computed(() => props.default !== undefined);
+const displayUnit = computed(() => props.unit || props.suffix);
 
 const displayValue = computed(() => {
   if (Number.isInteger(props.modelValue) && props.precision === 0) {
@@ -100,7 +100,7 @@ function round(value: number): number {
   return Math.round(value * factor) / factor;
 }
 
-function _startScrub(e: MouseEvent): void {
+function startScrub(e: MouseEvent): void {
   if (props.disabled) return;
   e.preventDefault();
 
@@ -115,7 +115,7 @@ function _startScrub(e: MouseEvent): void {
 }
 
 // Handle mousedown on input - detect drag vs click
-function _onInputMouseDown(e: MouseEvent): void {
+function onInputMouseDown(e: MouseEvent): void {
   if (props.disabled) return;
 
   // Only trigger on left mouse button
@@ -191,7 +191,7 @@ function stopScrub(): void {
   document.body.style.userSelect = "";
 }
 
-function _onInput(e: Event): void {
+function onInput(e: Event): void {
   const input = e.target as HTMLInputElement;
   const value = parseFloat(input.value);
 
@@ -200,7 +200,7 @@ function _onInput(e: Event): void {
   }
 }
 
-function _onKeyDown(e: KeyboardEvent): void {
+function onKeyDown(e: KeyboardEvent): void {
   if (props.disabled) return;
 
   let delta = 0;
@@ -216,7 +216,7 @@ function _onKeyDown(e: KeyboardEvent): void {
   }
 }
 
-function _onBlur(e: FocusEvent): void {
+function onBlur(e: FocusEvent): void {
   const input = e.target as HTMLInputElement;
   const value = parseFloat(input.value);
 
@@ -226,7 +226,7 @@ function _onBlur(e: FocusEvent): void {
   }
 }
 
-function _reset(): void {
+function reset(): void {
   if (props.default !== undefined) {
     emit("update:modelValue", props.default);
   }

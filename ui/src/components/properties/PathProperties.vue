@@ -32,7 +32,7 @@
           <label>Dash</label>
           <ScrubableNumber
             :modelValue="dashValue"
-            @update:modelValue="v => updateDash(v)"
+            @update:modelValue="(v: number) => updateDash(v)"
             :min="1"
             :max="50"
             unit="px"
@@ -43,7 +43,7 @@
           <label>Gap</label>
           <ScrubableNumber
             :modelValue="gapValue"
-            @update:modelValue="v => updateGap(v)"
+            @update:modelValue="(v: number) => updateGap(v)"
             :min="1"
             :max="50"
             unit="px"
@@ -172,11 +172,11 @@ const pathData = computed<PathLayerData>(() => {
   );
 });
 
-const _dashValue = computed(() => pathData.value.guideDashPattern?.[0] ?? 10);
-const _gapValue = computed(() => pathData.value.guideDashPattern?.[1] ?? 5);
+const dashValue = computed(() => pathData.value.guideDashPattern?.[0] ?? 10);
+const gapValue = computed(() => pathData.value.guideDashPattern?.[1] ?? 5);
 
 // Find layers that reference this path
-const _attachedLayers = computed(() => {
+const attachedLayers = computed(() => {
   const layerId = props.layer.id;
   const attached: Array<{
     id: string;
@@ -238,7 +238,7 @@ const _attachedLayers = computed(() => {
 });
 
 // Toggle section visibility
-function _toggleSection(section: string) {
+function toggleSection(section: string) {
   const idx = expandedSections.value.indexOf(section);
   if (idx >= 0) {
     expandedSections.value.splice(idx, 1);
@@ -256,13 +256,13 @@ function update(key: keyof PathLayerData | string, value: any) {
 }
 
 // Toggle guide visibility
-function _toggleGuide(e: Event) {
+function toggleGuide(e: Event) {
   const checked = (e.target as HTMLInputElement).checked;
   update("showGuide", checked);
 }
 
 // Update dash pattern
-function _updateDash(value: number) {
+function updateDash(value: number) {
   const pattern: [number, number] = [
     value,
     pathData.value.guideDashPattern?.[1] ?? 5,
@@ -270,7 +270,7 @@ function _updateDash(value: number) {
   update("guideDashPattern", pattern);
 }
 
-function _updateGap(value: number) {
+function updateGap(value: number) {
   const pattern: [number, number] = [
     pathData.value.guideDashPattern?.[0] ?? 10,
     value,
@@ -279,7 +279,7 @@ function _updateGap(value: number) {
 }
 
 // Apply guide preset
-function _applyPreset(preset: (typeof guidePresets)[0]) {
+function applyPreset(preset: (typeof guidePresets)[0]) {
   update("guideColor", preset.color);
   if (preset.dash === 0 && preset.gap === 0) {
     update("guideDashPattern", [1, 0]); // Solid line
@@ -288,7 +288,7 @@ function _applyPreset(preset: (typeof guidePresets)[0]) {
   }
 }
 
-function _isPresetActive(preset: (typeof guidePresets)[0]): boolean {
+function isPresetActive(preset: (typeof guidePresets)[0]): boolean {
   const dash = pathData.value.guideDashPattern?.[0] ?? 10;
   const gap = pathData.value.guideDashPattern?.[1] ?? 5;
   if (preset.dash === 0 && preset.gap === 0) {
@@ -298,7 +298,7 @@ function _isPresetActive(preset: (typeof guidePresets)[0]): boolean {
 }
 
 // Get layer icon
-function _getLayerIcon(type: string): string {
+function getLayerIcon(type: string): string {
   const icons: Record<string, string> = {
     text: "T",
     camera: "🎥",
@@ -308,7 +308,7 @@ function _getLayerIcon(type: string): string {
 }
 
 // Select attached layer
-function _selectLayer(layerId: string) {
+function selectLayer(layerId: string) {
   store.selectLayer(layerId);
 }
 </script>

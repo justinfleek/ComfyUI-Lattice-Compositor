@@ -330,9 +330,8 @@ export class ExportPipeline {
     layer: Layer,
     frameIndex: number,
   ): Promise<void> {
-    // CRITICAL FIX: Evaluate layer properties with keyframes, expressions, and data-driven values
-    // Previously this used static .value which ignored all animation
-    // BUG-038 FIX: Pass fps from config to ensure expressions evaluate with correct time
+    // Evaluate layer properties with keyframes, expressions, and data-driven values.
+    // Pass fps from config to ensure time-based expressions evaluate correctly.
     const evaluated = evaluateLayerCached(layer, frameIndex, this.config.fps);
 
     // Skip if layer is not visible at this frame

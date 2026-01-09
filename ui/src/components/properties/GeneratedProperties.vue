@@ -127,7 +127,7 @@ const progressMessage = ref("");
 const generatedData = computed(() => props.layer.data as GeneratedLayerData);
 
 // Get layers that can be sources (images, video, other layers - not this one)
-const _sourceLayers = computed(() => {
+const sourceLayers = computed(() => {
   return store.layers.filter(
     (l) =>
       l.id !== props.layer.id &&
@@ -154,7 +154,7 @@ const availablePreprocessors = computed((): PreprocessorInfo[] => {
 });
 
 // Group preprocessors by category for the dropdown
-const _preprocessorGroups = computed(() => {
+const preprocessorGroups = computed(() => {
   const groups: Record<string, PreprocessorInfo[]> = {};
   for (const p of availablePreprocessors.value) {
     const category = p.category.charAt(0).toUpperCase() + p.category.slice(1);
@@ -167,14 +167,14 @@ const _preprocessorGroups = computed(() => {
 });
 
 // Get the current preprocessor info
-const _currentPreprocessor = computed((): PreprocessorInfo | null => {
+const currentPreprocessor = computed((): PreprocessorInfo | null => {
   const model =
     generatedData.value.model ||
     getDefaultPreprocessor(generatedData.value.generationType || "depth");
   return PREPROCESSOR_REGISTRY[model] || null;
 });
 
-const _statusIcon = computed(() => {
+const statusIcon = computed(() => {
   switch (generatedData.value.status) {
     case "pending":
       return "○";
@@ -189,7 +189,7 @@ const _statusIcon = computed(() => {
   }
 });
 
-const _statusText = computed(() => {
+const statusText = computed(() => {
   switch (generatedData.value.status) {
     case "pending":
       return "Not generated";
@@ -212,12 +212,12 @@ function updateData<K extends keyof GeneratedLayerData>(
 }
 
 // When generation type changes, update to the default preprocessor for that type
-function _onGenerationTypeChange(type: string) {
+function onGenerationTypeChange(type: string) {
   updateData("generationType", type as GeneratedLayerData["generationType"]);
   updateData("model", getDefaultPreprocessor(type));
 }
 
-async function _regenerate() {
+async function regenerate() {
   const sourceLayerId = generatedData.value.sourceLayerId;
   if (!sourceLayerId) {
     emit("update", {
@@ -273,7 +273,7 @@ async function _regenerate() {
   }
 }
 
-function _clearGenerated() {
+function clearGenerated() {
   emit("update", {
     status: "pending",
     generatedAssetId: null,
@@ -282,7 +282,7 @@ function _clearGenerated() {
   });
 }
 
-function _formatTime(isoString: string): string {
+function formatTime(isoString: string): string {
   const date = new Date(isoString);
   return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }

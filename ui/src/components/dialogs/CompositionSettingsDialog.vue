@@ -306,7 +306,7 @@ const emit = defineEmits<{
 const store = useCompositorStore();
 
 // State
-const _activeTab = ref<"basic" | "advanced">("basic");
+const activeTab = ref<"basic" | "advanced">("basic");
 const selectedPreset = ref("custom");
 const selectedDurationPreset = ref<string | number>("custom");
 const lockAspectRatio = ref(false);
@@ -330,7 +330,7 @@ const settings = ref<CompositionDialogSettings>({
 });
 
 // Computed
-const _frameAspectRatio = computed(() => {
+const frameAspectRatio = computed(() => {
   const ratio =
     (settings.value.width / settings.value.height) *
     settings.value.pixelAspectRatio;
@@ -343,23 +343,23 @@ const _frameAspectRatio = computed(() => {
   return `${ratio.toFixed(2)}`;
 });
 
-const _durationSeconds = computed(() => {
+const durationSeconds = computed(() => {
   return settings.value.frameCount / settings.value.fps;
 });
 
 const durationTimecode = ref("00:00:10:00");
 
 // Frame count validation for 4n+1 pattern (Wan/AI models)
-const _isValidFrameCount = computed(() => {
+const isValidFrameCount = computed(() => {
   return isValidWanFrameCount(settings.value.frameCount);
 });
 
-const _nearestValidFrameCount = computed(() => {
+const nearestValidFrameCount = computed(() => {
   const n = Math.round((settings.value.frameCount - 1) / 4);
   return n * 4 + 1;
 });
 
-const _resolutionInfo = computed(() => {
+const resolutionInfo = computed(() => {
   const divisors = { full: 1, half: 2, third: 3, quarter: 4 };
   const d = divisors[settings.value.resolution];
   const w = Math.floor(settings.value.width / d);
@@ -368,7 +368,7 @@ const _resolutionInfo = computed(() => {
   return `${w} x ${h}, ${mb} MB per 8bpc frame`;
 });
 
-const _isAIPreset = computed(() => {
+const isAIPreset = computed(() => {
   const aiPrefixes = ["sd15_", "sdxl_", "wan_", "wan22_", "hunyuan_"];
   return aiPrefixes.some((prefix) => selectedPreset.value.startsWith(prefix));
 });
@@ -395,7 +395,7 @@ const presets: Record<string, Partial<CompositionDialogSettings>> = {
 };
 
 // Methods
-function _applyPreset() {
+function applyPreset() {
   const preset = presets[selectedPreset.value];
   if (preset) {
     if (preset.width) settings.value.width = preset.width;
@@ -409,7 +409,7 @@ function _applyPreset() {
   }
 }
 
-function _applyDurationPreset() {
+function applyDurationPreset() {
   if (selectedDurationPreset.value === "custom") return;
 
   const frameCount = Number(selectedDurationPreset.value);
@@ -434,7 +434,7 @@ function updateDurationPresetSelection() {
   }
 }
 
-function _onDimensionChange(changed: "width" | "height") {
+function onDimensionChange(changed: "width" | "height") {
   // Ensure divisible by 8
   settings.value.width = Math.round(settings.value.width / 8) * 8;
   settings.value.height = Math.round(settings.value.height / 8) * 8;
@@ -454,7 +454,7 @@ function _onDimensionChange(changed: "width" | "height") {
   selectedPreset.value = "custom";
 }
 
-function _parseDuration() {
+function parseDuration() {
   // Parse timecode format HH:MM:SS:FF
   const parts = durationTimecode.value
     .split(":")

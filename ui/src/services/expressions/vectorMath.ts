@@ -152,8 +152,7 @@ export function vectorClamp(
   min: number | number[],
   max: number | number[],
 ): number[] {
-  // BUG-018: Use ?? with Infinity defaults for missing array elements
-  // || 0 was wrong - caused values to be clamped to 0 instead of passing through
+  // Use ±Infinity defaults for missing array elements (pass through unclamped)
   return vec.map((v, i) => {
     const minVal = Array.isArray(min) ? (min[i] ?? -Infinity) : min;
     const maxVal = Array.isArray(max) ? (max[i] ?? Infinity) : max;

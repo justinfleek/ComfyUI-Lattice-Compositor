@@ -40,9 +40,9 @@ export function useExpressionEditor() {
   }
 
   /**
-   * Apply expression to the current property
-   * BUG-042 FIX: Use store action instead of direct mutation for undo/redo support
-   * SECURITY: Validates custom expressions before applying to prevent DoS
+   * Apply expression to the current property.
+   * Uses store action instead of direct mutation for undo/redo support.
+   * SECURITY: Validates custom expressions before applying to prevent DoS.
    */
   async function applyExpression(
     expression: PropertyExpression,
@@ -79,8 +79,8 @@ export function useExpressionEditor() {
   }
 
   /**
-   * Remove expression from the current property
-   * BUG-042 FIX: Use store action instead of direct mutation for undo/redo support
+   * Remove expression from the current property.
+   * Uses store action instead of direct mutation for undo/redo support.
    */
   function removeExpression() {
     if (currentLayerId.value && currentPropertyPath.value) {

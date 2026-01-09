@@ -27,7 +27,7 @@ import type { PathShape } from "@/types/shapes";
 const props = defineProps<{ shape: PathShape; layerId: string }>();
 const emit = defineEmits(["update"]);
 
-function _updateDirection(e: Event) {
+function updateDirection(e: Event) {
   const updated = { ...props.shape };
   updated.direction = parseInt((e.target as HTMLSelectElement).value, 10) as
     | 1

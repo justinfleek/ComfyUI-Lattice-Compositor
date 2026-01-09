@@ -153,17 +153,42 @@ export function createAnimatableProperty<T>(
 
 /**
  * Create a default keyframe
+ * 
+ * BEZIER HANDLE DEFAULTS:
+ * - inHandle: { frame: -5, value: 0, enabled: true }
+ * - outHandle: { frame: 5, value: 0, enabled: true }
+ * 
+ * The ±5 frame offset creates a gentle ease curve by default.
+ * At 30fps: 5 frames = ~0.167 seconds of influence
+ * At 16fps: 5 frames = ~0.313 seconds of influence
+ * 
+ * A value of 0 means flat tangent (no acceleration at the keyframe).
+ * 
+ * These defaults were chosen to provide reasonable ease-in/ease-out
+ * behavior without requiring manual handle adjustment for most animations.
+ * 
+ * @throws Error if frame is NaN or Infinity (prevents silent interpolation failures)
  */
 export function createKeyframe<T>(
   frame: number,
   value: T,
   interpolation: InterpolationType = "linear",
 ): Keyframe<T> {
+  // Validate frame to prevent silent interpolation failures
+  // NaN/Infinity frames cause incorrect animation output without any error
+  if (!Number.isFinite(frame)) {
+    throw new Error(
+      `Invalid keyframe frame: ${frame}. Frame must be a finite number.`,
+    );
+  }
+
   return {
     id: `kf_${frame}_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
     frame,
     value,
     interpolation,
+    // Bezier handles: ±5 frame offset, flat slope (value: 0)
+    // Creates gentle ease-in/ease-out by default
     inHandle: { frame: -5, value: 0, enabled: true },
     outHandle: { frame: 5, value: 0, enabled: true },
     controlMode: "smooth",

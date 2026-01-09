@@ -313,7 +313,7 @@ const store = useCompositorStore();
 
 // Toolbar state
 const smoothTolerance = ref(10);
-const _strokeColor = "#00ff00";
+const strokeColor = "#00ff00";
 
 // ============================================================================
 // LAYER TRANSFORM
@@ -416,13 +416,13 @@ const isClosed = computed(() => {
   return (layer.data as SplineData | PathLayerData)?.closed ?? false;
 });
 
-const _is3DLayer = computed(() => {
+const is3DLayer = computed(() => {
   if (!props.layerId) return false;
   const layer = store.layers.find((l) => l.id === props.layerId);
   return layer?.threeD ?? false;
 });
 
-const _isSplineAnimated = computed(() => {
+const isSplineAnimated = computed(() => {
   if (!props.layerId) return false;
   const layer = store.layers.find((l) => l.id === props.layerId);
   if (!layer || layer.type !== "spline") return false;
@@ -487,9 +487,9 @@ const visibleControlPoints = computed<TransformedControlPoint[]>(() => {
   });
 });
 
-const _hasControlPoints = computed(() => visibleControlPoints.value.length > 0);
+const hasControlPoints = computed(() => visibleControlPoints.value.length > 0);
 
-const _canClosePath = computed(() => {
+const canClosePath = computed(() => {
   return visibleControlPoints.value.length >= 3 && !isClosed.value;
 });
 
@@ -586,7 +586,7 @@ const {
 // COMPONENT-SPECIFIC FUNCTIONS
 // ============================================================================
 
-const _selectedPointDepth = computed(() => {
+const selectedPointDepth = computed(() => {
   if (!selectedPointId.value) return 0;
   const point = visibleControlPoints.value.find(
     (p) => p.id === selectedPointId.value,
@@ -594,7 +594,7 @@ const _selectedPointDepth = computed(() => {
   return point?.depth ?? 0;
 });
 
-function _updateSelectedPointDepth(event: Event) {
+function updateSelectedPointDepth(event: Event) {
   if (!selectedPointId.value || !props.layerId) return;
   const input = event.target as HTMLInputElement;
   const newDepth = Math.max(0, parseFloat(input.value) || 0);
@@ -617,13 +617,13 @@ function adjustSelectedPointDepth(delta: number) {
   emit("pathUpdated");
 }
 
-function _toggleClosePath() {
+function toggleClosePath() {
   if (!props.layerId) return;
   store.updateLayerData(props.layerId, { closed: !isClosed.value });
   emit("pathUpdated");
 }
 
-function _smoothSelectedPoints() {
+function smoothSelectedPoints() {
   if (!props.layerId) return;
 
   if (selectedPointIds.value.length > 0) {
@@ -705,19 +705,19 @@ function smoothSpecificPoints(pointIds: string[]) {
   }
 }
 
-function _simplifySpline() {
+function simplifySpline() {
   if (!props.layerId) return;
   store.simplifySpline(props.layerId, smoothTolerance.value);
   emit("pathUpdated");
 }
 
-function _toggleSplineAnimation() {
+function toggleSplineAnimation() {
   if (!props.layerId) return;
   store.enableSplineAnimation(props.layerId);
   emit("pathUpdated");
 }
 
-function _keyframeSelectedPoints() {
+function keyframeSelectedPoints() {
   if (!props.layerId || selectedPointIds.value.length === 0) return;
   const frame = props.currentFrame;
   for (const pointId of selectedPointIds.value) {
@@ -726,7 +726,7 @@ function _keyframeSelectedPoints() {
   emit("pathUpdated");
 }
 
-function _pointHasKeyframes(pointId: string): boolean {
+function pointHasKeyframes(pointId: string): boolean {
   if (!props.layerId) return false;
   return store.hasSplinePointKeyframes(props.layerId, pointId);
 }
@@ -740,7 +740,7 @@ function getDepthOffset(point: ControlPoint | EvaluatedControlPoint): number {
   return Math.max(-30, Math.min(30, -depth / 16.67));
 }
 
-function _getZHandlePoints(
+function getZHandlePoints(
   point: ControlPoint | EvaluatedControlPoint,
 ): string {
   const x = point.x + 15;

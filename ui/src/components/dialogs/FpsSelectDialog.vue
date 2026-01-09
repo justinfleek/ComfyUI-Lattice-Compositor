@@ -110,12 +110,12 @@ const effectiveFps = computed(() => {
 });
 
 // Frame count preview
-const _frameCountPreview = computed(() => {
+const frameCountPreview = computed(() => {
   if (!effectiveFps.value || !props.videoDuration) return null;
   return Math.ceil(props.videoDuration * effectiveFps.value);
 });
 
-function _onCustomToggle() {
+function onCustomToggle() {
   if (useCustomFps.value) {
     customFpsValue.value = selectedFps.value;
   }

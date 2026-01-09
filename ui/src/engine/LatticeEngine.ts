@@ -814,8 +814,8 @@ export class LatticeEngine {
   }
 
   /**
-   * Set render resolution (for preview quality)
-   * BUG-044 FIX: Implement setResolution for ThreeCanvas resolution dropdown
+   * Set render resolution (for preview quality).
+   * Implements setResolution for ThreeCanvas resolution dropdown.
    *
    * This changes the internal render buffer size without affecting viewport.
    * Used for half/third/quarter resolution preview modes.
@@ -1196,7 +1196,11 @@ export class LatticeEngine {
     visible: boolean;
   } {
     this.ensureBackgroundManager();
-    return this.backgroundManager?.getDepthMapSettings();
+    return this.backgroundManager?.getDepthMapSettings() ?? {
+      colormap: "grayscale",
+      opacity: 1,
+      visible: true,
+    };
   }
 
   /**

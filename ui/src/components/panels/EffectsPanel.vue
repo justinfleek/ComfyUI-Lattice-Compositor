@@ -172,7 +172,7 @@ import {
 const store = useCompositorStore();
 
 // State
-const _activeTab = ref<"effects" | "presets" | "favorites">("effects");
+const activeTab = ref<"effects" | "presets" | "favorites">("effects");
 const searchQuery = ref("");
 const expandedCategories = ref<EffectCategory[]>([
   "blur-sharpen",
@@ -221,7 +221,7 @@ const allEffects = computed(() => {
   }));
 });
 
-const _filteredCategories = computed(() => {
+const filteredCategories = computed(() => {
   const query = searchQuery.value.toLowerCase();
 
   return (
@@ -247,7 +247,7 @@ const _filteredCategories = computed(() => {
     .filter((cat) => cat.effects.length > 0);
 });
 
-const _groupedPresets = computed(() => {
+const groupedPresets = computed(() => {
   const query = searchQuery.value.toLowerCase();
   const groups: Record<string, AnimationPreset[]> = {};
 
@@ -266,12 +266,12 @@ const _groupedPresets = computed(() => {
   }));
 });
 
-const _favoriteEffects = computed(() => {
+const favoriteEffects = computed(() => {
   return allEffects.value.filter((e) => favorites.value.includes(e.key));
 });
 
 // Actions
-function _toggleCategory(category: EffectCategory) {
+function toggleCategory(category: EffectCategory) {
   const index = expandedCategories.value.indexOf(category);
   if (index >= 0) {
     expandedCategories.value.splice(index, 1);
@@ -280,7 +280,7 @@ function _toggleCategory(category: EffectCategory) {
   }
 }
 
-function _togglePresetCategory(category: string) {
+function togglePresetCategory(category: string) {
   const index = expandedPresetCategories.value.indexOf(category);
   if (index >= 0) {
     expandedPresetCategories.value.splice(index, 1);
@@ -289,7 +289,7 @@ function _togglePresetCategory(category: string) {
   }
 }
 
-function _toggleFavorite(effectKey: string) {
+function toggleFavorite(effectKey: string) {
   const index = favorites.value.indexOf(effectKey);
   if (index >= 0) {
     favorites.value.splice(index, 1);
@@ -299,11 +299,11 @@ function _toggleFavorite(effectKey: string) {
   saveFavorites();
 }
 
-function _getCategoryIcon(category: EffectCategory): string {
+function getCategoryIcon(category: EffectCategory): string {
   return EFFECT_CATEGORIES[category]?.icon || "?";
 }
 
-function _applyEffect(effectKey: string) {
+function applyEffect(effectKey: string) {
   const selectedLayer = store.selectedLayer;
   if (!selectedLayer) {
     console.warn("No layer selected to apply effect");
@@ -314,7 +314,7 @@ function _applyEffect(effectKey: string) {
   store.addEffectToLayer(selectedLayer.id, effectKey);
 }
 
-function _applyPreset(preset: AnimationPreset) {
+function applyPreset(preset: AnimationPreset) {
   const selectedLayer = store.selectedLayer;
   if (!selectedLayer) return;
 
@@ -337,11 +337,11 @@ function _applyPreset(preset: AnimationPreset) {
 }
 
 // Drag and drop
-function _onDragStart(effectKey: string, event: DragEvent) {
+function onDragStart(effectKey: string, event: DragEvent) {
   event.dataTransfer?.setData("application/effect", effectKey);
 }
 
-function _onDragPreset(preset: AnimationPreset, event: DragEvent) {
+function onDragPreset(preset: AnimationPreset, event: DragEvent) {
   event.dataTransfer?.setData("application/preset", JSON.stringify(preset));
 }
 </script>

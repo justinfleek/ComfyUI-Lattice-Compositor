@@ -205,7 +205,7 @@ const selectedSuggestion = ref<number | null>(null);
 const showPreview = ref(true);
 
 // Prompt presets
-const _promptPresets: PromptPreset[] = [
+const promptPresets: PromptPreset[] = [
   {
     id: "dolly",
     label: "Dolly",
@@ -223,7 +223,7 @@ const _promptPresets: PromptPreset[] = [
 ];
 
 // Computed
-const _isCloudModel = computed(() => {
+const isCloudModel = computed(() => {
   return ["gpt-4v", "gpt-4o", "claude-vision"].includes(selectedModel.value);
 });
 
@@ -233,7 +233,7 @@ const isLocalModel = computed(() => {
   );
 });
 
-const _selectedProvider = computed(() => {
+const selectedProvider = computed<"openai" | "anthropic">(() => {
   if (selectedModel.value.startsWith("gpt-")) return "openai";
   if (selectedModel.value === "claude-vision") return "anthropic";
   return "openai";
@@ -258,7 +258,7 @@ onMounted(() => {
 });
 
 // Methods
-function _selectPreset(preset: PromptPreset) {
+function selectPreset(preset: PromptPreset) {
   selectedPreset.value = preset.id;
   prompt.value = preset.prompt;
 }
@@ -504,7 +504,7 @@ async function suggestPaths() {
   }
 }
 
-function _acceptSuggestion() {
+function acceptSuggestion() {
   if (selectedSuggestion.value === null) return;
 
   const suggestion = suggestions.value[selectedSuggestion.value];

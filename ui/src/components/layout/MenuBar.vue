@@ -496,13 +496,13 @@ const activeMenu = ref<string | null>(null);
 let closeTimeout: ReturnType<typeof setTimeout> | null = null;
 
 // Computed properties
-const _canUndo = computed(() => historyStore.canUndo);
-const _canRedo = computed(() => historyStore.canRedo);
-const _hasSelection = computed(
+const canUndo = computed(() => historyStore.canUndo);
+const canRedo = computed(() => historyStore.canRedo);
+const hasSelection = computed(
   () => compositorStore.selectedLayerIds.length > 0,
 );
-const _projectName = computed(() => compositorStore.project?.meta?.name || "");
-const _hasUnsavedChanges = computed(() => historyStore.currentIndex > 0);
+const projectName = computed(() => compositorStore.project?.meta?.name || "");
+const hasUnsavedChanges = computed(() => historyStore.currentIndex > 0);
 
 // View state (these should come from a view store in a real implementation)
 const showGrid = ref(false);
@@ -512,7 +512,7 @@ const showSafeZones = ref(false);
 const showTransparency = ref(false);
 const showMotionBlur = ref(false);
 
-function _toggleMenu(menu: string) {
+function toggleMenu(menu: string) {
   if (activeMenu.value === menu) {
     activeMenu.value = null;
   } else {
@@ -520,14 +520,14 @@ function _toggleMenu(menu: string) {
   }
 }
 
-function _openMenu(menu: string) {
+function openMenu(menu: string) {
   if (activeMenu.value !== null) {
     activeMenu.value = menu;
   }
   cancelClose();
 }
 
-function _scheduleClose() {
+function scheduleClose() {
   closeTimeout = setTimeout(() => {
     activeMenu.value = null;
   }, 150);
@@ -540,7 +540,7 @@ function cancelClose() {
   }
 }
 
-function _handleAction(action: string) {
+function handleAction(action: string) {
   activeMenu.value = null;
 
   // Handle view toggles locally

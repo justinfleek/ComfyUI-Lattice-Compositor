@@ -229,13 +229,13 @@ const availableLayers = computed(() => {
 });
 
 // Selected layer info for display
-const _selectedLayerInfo = computed(() => {
+const selectedLayerInfo = computed(() => {
   if (!currentValue.value || props.property.type !== "layer") return null;
   return availableLayers.value.find((l) => l.id === currentValue.value);
 });
 
 // Available fonts
-const _availableFonts = [
+const availableFonts = [
   "Arial",
   "Helvetica",
   "Times New Roman",
@@ -254,7 +254,7 @@ const _availableFonts = [
 ];
 
 // Update property name
-function _updateName() {
+function updateName() {
   if (localName.value !== props.property.name) {
     emit("update", props.property.id, { name: localName.value });
   }
@@ -267,7 +267,7 @@ function updateValue(value: any) {
 }
 
 // Update point value
-function _updatePointValue(axis: "x" | "y", value: number) {
+function updatePointValue(axis: "x" | "y", value: number) {
   if (!props.layer) return;
   const current = currentValue.value || { x: 0, y: 0 };
   const updated = { ...current, [axis]: value };
@@ -275,7 +275,7 @@ function _updatePointValue(axis: "x" | "y", value: number) {
 }
 
 // Color utilities
-function _colorToHex(color: any): string {
+function colorToHex(color: any): string {
   if (!color) return "#ffffff";
   if (typeof color === "string") return color;
 
@@ -286,7 +286,7 @@ function _colorToHex(color: any): string {
   return `#${[r, g, b].map((c) => c.toString(16).padStart(2, "0")).join("")}`;
 }
 
-function _hexToColor(hex: string): {
+function hexToColor(hex: string): {
   r: number;
   g: number;
   b: number;
@@ -304,7 +304,7 @@ function _hexToColor(hex: string): {
 }
 
 // Media utilities
-function _getMediaFilename(url: string): string {
+function getMediaFilename(url: string): string {
   if (!url) return "";
   // Handle data URLs
   if (url.startsWith("data:")) {
@@ -322,11 +322,11 @@ function _getMediaFilename(url: string): string {
 }
 
 // Media selection
-function _selectMedia() {
+function selectMedia() {
   mediaFileInput.value?.click();
 }
 
-async function _handleMediaSelect(event: Event) {
+async function handleMediaSelect(event: Event) {
   const input = event.target as HTMLInputElement;
   const file = input.files?.[0];
   if (!file) return;

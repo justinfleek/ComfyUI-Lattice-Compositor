@@ -176,7 +176,7 @@ const simplifyTolerance = ref(2);
 const applyScope = ref<"selected" | "all">("all");
 
 // Computed
-const _targetLayerName = computed(() => {
+const targetLayerName = computed(() => {
   if (props.layerId) {
     const layer = store.getLayerById(props.layerId);
     return layer?.name || "Unknown";
@@ -230,13 +230,13 @@ const estimatedKeyframeCount = computed(() => {
   return estimated;
 });
 
-const _reductionPercent = computed(() => {
+const reductionPercent = computed(() => {
   if (originalKeyframeCount.value === 0) return 100;
   return (estimatedKeyframeCount.value / originalKeyframeCount.value) * 100;
 });
 
 // Methods
-function _applySmoothing() {
+function applySmoothing() {
   const layerId = props.layerId || store.selectedLayerIds[0];
   if (!layerId) return;
 

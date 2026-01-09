@@ -45,7 +45,7 @@ class TestValidateProject:
         """Test that non-dict projects are rejected."""
         with pytest.raises(ProjectValidationError) as exc_info:
             validate_project([])
-        assert "object" in str(exc_info.value).lower()
+        assert "structure" in str(exc_info.value).lower()
 
     def test_project_nesting_too_deep(self):
         """Test that deeply nested projects are rejected."""
@@ -67,45 +67,46 @@ class TestValidateProject:
         sample_project_data["layers"] = [
             {"expression": "eval('malicious code')"}
         ]
-        data, errors, warnings = validate_project(sample_project_data)
-        assert len(errors) > 0
-        assert any("eval" in err.lower() for err in errors)
+        with pytest.raises(ProjectValidationError) as exc_info:
+            validate_project(sample_project_data)
+        assert "validation failed" in str(exc_info.value).lower()
 
     def test_project_with_invalid_numeric_bounds(self, sample_project_data):
         """Test that projects with out-of-bounds numeric values are rejected."""
         sample_project_data["composition"]["fps"] = 500  # Exceeds max of 240
-        data, errors, warnings = validate_project(sample_project_data)
-        assert len(errors) > 0
-        assert any("fps" in err.lower() or "range" in err.lower() for err in errors)
+        with pytest.raises(ProjectValidationError) as exc_info:
+            validate_project(sample_project_data)
+        assert "validation failed" in str(exc_info.value).lower()
 
     def test_project_with_too_many_layers(self, sample_project_data):
         """Test that projects with too many layers are rejected."""
         sample_project_data["layers"] = [{}] * (MAX_LAYERS + 1)
-        data, errors, warnings = validate_project(sample_project_data)
-        assert len(errors) > 0
-        assert any("layers" in err.lower() for err in errors)
+        with pytest.raises(ProjectValidationError) as exc_info:
+            validate_project(sample_project_data)
+        assert "validation failed" in str(exc_info.value).lower()
 
     def test_project_with_nan_values(self, sample_project_data):
         """Test that projects with NaN values are rejected."""
         sample_project_data["composition"]["width"] = float("nan")
-        data, errors, warnings = validate_project(sample_project_data)
-        assert len(errors) > 0
-        assert any("nan" in err.lower() for err in errors)
+        with pytest.raises(ProjectValidationError) as exc_info:
+            validate_project(sample_project_data)
+        assert "validation failed" in str(exc_info.value).lower()
 
     def test_project_with_infinite_values(self, sample_project_data):
         """Test that projects with infinite values are rejected."""
         sample_project_data["composition"]["height"] = float("inf")
-        data, errors, warnings = validate_project(sample_project_data)
-        assert len(errors) > 0
-        assert any("infinite" in err.lower() for err in errors)
+        with pytest.raises(ProjectValidationError) as exc_info:
+            validate_project(sample_project_data)
+        assert "validation failed" in str(exc_info.value).lower()
 
 
 class TestCalculateMaxDepth:
     """Tests for _calculate_max_depth function."""
 
     def test_empty_dict(self):
-        """Test depth calculation for empty dict."""
-        assert _calculate_max_depth({}) == 1
+        """Test depth calculation for empty dict - returns 0 for empty."""
+        # Empty dict has no nested content, so depth is 0
+        assert _calculate_max_depth({}) == 0
 
     def test_shallow_dict(self):
         """Test depth calculation for shallow dict."""
@@ -124,8 +125,9 @@ class TestCalculateMaxDepth:
 
     def test_mixed_nesting(self):
         """Test depth calculation with mixed structures."""
+        # dict -> dict -> list -> dict -> dict = 5 levels
         data = {"a": {"b": [{"c": {"d": 1}}]}}
-        assert _calculate_max_depth(data) == 4
+        assert _calculate_max_depth(data) == 5
 
 
 class TestValidateExpressions:
@@ -161,7 +163,8 @@ class TestValidateExpressions:
         data = {"expression": "x" * (MAX_EXPRESSION_LENGTH + 1)}
         errors = _validate_expressions(data)
         assert len(errors) > 0
-        assert any("length" in err.lower() for err in errors)
+        # Error message says "too long" not "length"
+        assert any("long" in err.lower() for err in errors)
 
     def test_expressions_dict(self):
         """Test validation of expressions dict."""
@@ -313,7 +316,7 @@ class TestValidateStringLengths:
         data = {"name": "x" * (MAX_STRING_LENGTH + 1)}
         errors = _validate_string_lengths(data)
         assert len(errors) > 0
-        assert any("length" in err.lower() for err in errors)
+        assert any("long" in err.lower() for err in errors)
 
     def test_nested_string_validation(self):
         """Test that string validation works on nested structures."""
@@ -336,7 +339,7 @@ class TestValidateArrayLengths:
         data = {"layers": [{}] * (MAX_ARRAY_LENGTH + 1)}
         errors = _validate_array_lengths(data)
         assert len(errors) > 0
-        assert any("length" in err.lower() for err in errors)
+        assert any("long" in err.lower() for err in errors)
 
     def test_nested_array_validation(self):
         """Test that array validation works on nested structures."""

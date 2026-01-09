@@ -422,7 +422,10 @@ export class ParticleGPUCompute {
 
     this.device = caps.device;
     this.adapter = caps.adapter;
-    this.maxParticles = maxParticles;
+    // Validate maxParticles to prevent buffer allocation errors
+    this.maxParticles = Number.isFinite(maxParticles) && maxParticles > 0
+      ? Math.min(Math.floor(maxParticles), 1_000_000)
+      : 10000;
 
     try {
       // Create compute pipelines
@@ -919,6 +922,7 @@ export class HybridParticleSystem {
   private gpu: ParticleGPUCompute | null = null;
   private useGPU: boolean = false;
   private particleCount: number = 0;
+  private maxParticles: number;
 
   // CPU-side particle data (always maintained for compatibility)
   private positions: Float32Array;
@@ -926,12 +930,16 @@ export class HybridParticleSystem {
   private properties: Float32Array;
   private colors: Float32Array;
 
-  constructor(private maxParticles: number) {
+  constructor(maxParticles: number) {
+    // Validate maxParticles to prevent Float32Array allocation errors
+    this.maxParticles = Number.isFinite(maxParticles) && maxParticles > 0
+      ? Math.min(Math.floor(maxParticles), 1_000_000)
+      : 10000;
     // Allocate CPU arrays
-    this.positions = new Float32Array(maxParticles * 4);
-    this.velocities = new Float32Array(maxParticles * 4);
-    this.properties = new Float32Array(maxParticles * 4);
-    this.colors = new Float32Array(maxParticles * 4);
+    this.positions = new Float32Array(this.maxParticles * 4);
+    this.velocities = new Float32Array(this.maxParticles * 4);
+    this.properties = new Float32Array(this.maxParticles * 4);
+    this.colors = new Float32Array(this.maxParticles * 4);
   }
 
   /**
@@ -1233,6 +1241,83 @@ export class HybridParticleSystem {
     this.gpu = null;
     this.useGPU = false;
   }
+}
+
+// ============================================================================
+// PREFERENCES INTEGRATION
+// ============================================================================
+
+/**
+ * Helper to get particle preferences from store
+ * Import in components that need to check preferences
+ */
+export function getParticlePreferences() {
+  // Dynamic import to avoid circular dependencies
+  // Components should use the store directly via useParticlePreferencesStore()
+  return {
+    shouldUseGPU: async (): Promise<boolean> => {
+      // Check WebGPU availability
+      if (typeof navigator !== "undefined" && "gpu" in navigator) {
+        try {
+          const adapter = await navigator.gpu?.requestAdapter();
+          return !!adapter;
+        } catch {
+          return false;
+        }
+      }
+      return false;
+    },
+
+    shouldUseGPUCompute: async (): Promise<boolean> => {
+      // GPU compute is only for physics, rendering can still use WebGL2
+      const hasGPU = await getParticlePreferences().shouldUseGPU();
+      return hasGPU;
+    },
+  };
+}
+
+/**
+ * Particle system factory - creates the appropriate system based on preferences
+ */
+export async function createParticleSystem(
+  maxParticles: number,
+  options: {
+    forceBackend?: "webgpu" | "webgl2" | "cpu";
+    enableGPUCompute?: boolean;
+  } = {},
+): Promise<{
+  system: HybridParticleSystem;
+  backend: "webgpu" | "webgl2" | "cpu";
+  gpuComputeEnabled: boolean;
+}> {
+  const system = new HybridParticleSystem(maxParticles);
+
+  // Check if we should force a specific backend
+  if (options.forceBackend === "cpu") {
+    return {
+      system,
+      backend: "cpu",
+      gpuComputeEnabled: false,
+    };
+  }
+
+  // Try GPU initialization
+  const gpuEnabled = await system.initialize();
+
+  if (gpuEnabled) {
+    return {
+      system,
+      backend: "webgpu",
+      gpuComputeEnabled: options.enableGPUCompute !== false,
+    };
+  }
+
+  // Fall back to CPU with WebGL2 rendering
+  return {
+    system,
+    backend: "cpu",
+    gpuComputeEnabled: false,
+  };
 }
 
 // ============================================================================

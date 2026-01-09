@@ -66,7 +66,7 @@ const isDragging = ref(false);
 const scrubStartX = ref(0);
 const scrubStartValue = ref(0);
 
-const _fillPercent = computed(() => {
+const fillPercent = computed(() => {
   const range = props.max - props.min;
   if (range === 0) return 0;
   return ((props.modelValue - props.min) / range) * 100;
@@ -88,7 +88,7 @@ function round(value: number): number {
   return Math.round(value * factor) / factor;
 }
 
-function _startScrub(e: MouseEvent): void {
+function startScrub(e: MouseEvent): void {
   if (props.disabled) return;
 
   isScrubbing.value = true;
@@ -125,7 +125,7 @@ function stopScrub(): void {
   document.body.style.userSelect = "";
 }
 
-function _onTrackClick(e: MouseEvent): void {
+function onTrackClick(e: MouseEvent): void {
   if (props.disabled || !trackRef.value) return;
 
   const rect = trackRef.value.getBoundingClientRect();
@@ -135,7 +135,7 @@ function _onTrackClick(e: MouseEvent): void {
   emit("update:modelValue", round(clamp(value)));
 }
 
-function _startThumbDrag(_e: MouseEvent): void {
+function startThumbDrag(_e: MouseEvent): void {
   if (props.disabled) return;
 
   isDragging.value = true;
@@ -164,7 +164,7 @@ function stopThumbDrag(): void {
   document.body.style.userSelect = "";
 }
 
-function _onInput(e: Event): void {
+function onInput(e: Event): void {
   const input = e.target as HTMLInputElement;
   const value = parseFloat(input.value);
 
@@ -173,7 +173,7 @@ function _onInput(e: Event): void {
   }
 }
 
-function _onBlur(e: FocusEvent): void {
+function onBlur(e: FocusEvent): void {
   const input = e.target as HTMLInputElement;
   const value = parseFloat(input.value);
 

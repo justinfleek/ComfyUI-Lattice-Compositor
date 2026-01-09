@@ -4,7 +4,7 @@
       <label>Amount</label>
       <ScrubableNumber
         :modelValue="operator.amount.value"
-        @update:modelValue="v => updateNumber('amount', v)"
+        @update:modelValue="(v: number) => updateNumber('amount', v)"
         :min="-100"
         :max="100"
         unit="%"
@@ -27,13 +27,13 @@ const props = defineProps<{ operator: PuckerBloatOperator; layerId: string }>();
 const emit = defineEmits(["update"]);
 const store = useCompositorStore();
 
-function _updateNumber(prop: "amount", value: number) {
+function updateNumber(prop: "amount", value: number) {
   const updated = { ...props.operator };
   updated[prop] = { ...updated[prop], value };
   emit("update", updated);
 }
 
-function _toggleKeyframe() {
+function toggleKeyframe() {
   const updated = { ...props.operator };
   const animProp = updated.amount;
   const frame = store.currentFrame;

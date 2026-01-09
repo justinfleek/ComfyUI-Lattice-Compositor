@@ -50,8 +50,8 @@ export function initializePropertyDriverSystem(
 }
 
 /**
- * Get evaluated property values for a layer with drivers applied
- * BUG-040/041 FIX: Pass fps and duration from composition settings
+ * Get evaluated property values for a layer with drivers applied.
+ * Passes fps and duration from composition settings.
  */
 export function getEvaluatedLayerProperties(
   store: PropertyDriverStore,

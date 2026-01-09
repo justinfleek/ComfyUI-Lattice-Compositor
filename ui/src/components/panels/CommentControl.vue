@@ -72,7 +72,7 @@ watch(
 );
 
 // Toggle expand/collapse
-function _toggleExpand() {
+function toggleExpand() {
   isExpanded.value = !isExpanded.value;
   if (isExpanded.value) {
     nextTick(() => {
@@ -82,7 +82,7 @@ function _toggleExpand() {
 }
 
 // Update comment text
-function _updateText() {
+function updateText() {
   if (localText.value !== props.comment.text) {
     emit("update", props.comment.id, localText.value);
   }

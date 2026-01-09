@@ -20,6 +20,7 @@ export type ExportTarget =
   | "controlnet-depth" // Depth map for ControlNet
   | "controlnet-canny" // Canny edge for ControlNet
   | "controlnet-lineart" // Line art for ControlNet
+  | "controlnet-pose" // Pose skeleton for ControlNet
   | "animatediff-cameractrl" // AnimateDiff CameraCtrl
   | "custom-workflow" // User's custom workflow
   // New model targets (Dec 2025)
@@ -106,17 +107,20 @@ export interface ExportResult {
 // ============================================================================
 
 export type DepthMapFormat =
+  | "raw" // Raw Float32 depth values (no conversion)
   | "midas" // MiDaS format: 0=far, 255=near (inverted)
   | "zoe" // Zoe format: linear, 0=near, 65535=far (16-bit)
   | "depth-pro" // Depth-Pro format: metric depth in meters
+  | "depth-anything" // Depth-Anything format: similar to MiDaS
+  | "marigold" // Marigold format: affine-invariant depth
   | "normalized"; // Normalized 0-1 range (model-agnostic)
 
 export interface DepthExportOptions {
   format: DepthMapFormat;
-  bitDepth: 8 | 16;
+  bitDepth: 8 | 16 | 32; // 32 for raw Float32 format
   invert: boolean;
   normalize: boolean;
-  colormap: "grayscale" | "viridis" | "magma" | "plasma";
+  colormap: "grayscale" | "viridis" | "magma" | "plasma" | "inferno" | "turbo";
   nearClip: number;
   farClip: number;
 }

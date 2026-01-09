@@ -492,6 +492,60 @@
               />
               <span class="value-display">{{ (emitter.coneRadius || 0.1).toFixed(2) }}</span>
             </div>
+            <!-- Spline Path emission controls -->
+            <div v-if="emitter.shape === 'spline'" class="spline-emission-controls">
+              <div class="property-row">
+                <label title="Select a spline or path layer to emit particles along.">Path Layer</label>
+                <select
+                  :value="emitter.splinePath?.layerId || ''"
+                  @change="updateEmitterSplinePath(emitter.id, 'layerId', ($event.target as HTMLSelectElement).value)"
+                >
+                  <option value="">Select path...</option>
+                  <option 
+                    v-for="layer in availableSplineLayers" 
+                    :key="layer.id" 
+                    :value="layer.id"
+                  >
+                    {{ layer.name }} ({{ layer.type }})
+                  </option>
+                </select>
+              </div>
+              <div class="property-row">
+                <label title="How particles are distributed along the path.">Emit Mode</label>
+                <select
+                  :value="emitter.splinePath?.emitMode || 'random'"
+                  @change="updateEmitterSplinePath(emitter.id, 'emitMode', ($event.target as HTMLSelectElement).value)"
+                >
+                  <option value="random">Random</option>
+                  <option value="uniform">Uniform</option>
+                  <option value="sequential">Sequential</option>
+                  <option value="start">From Start</option>
+                  <option value="end">From End</option>
+                </select>
+              </div>
+              <div class="property-row checkbox-row">
+                <label title="Align particle emission direction with the path tangent.">
+                  <input
+                    type="checkbox"
+                    :checked="emitter.splinePath?.alignToPath ?? true"
+                    @change="updateEmitterSplinePath(emitter.id, 'alignToPath', ($event.target as HTMLInputElement).checked)"
+                  />
+                  Align to Path
+                </label>
+              </div>
+              <div class="property-row">
+                <label title="Perpendicular offset from the path (positive = outward, negative = inward).">Offset</label>
+                <input
+                  type="range"
+                  :value="emitter.splinePath?.offset || 0"
+                  min="-100"
+                  max="100"
+                  step="1"
+                  @input="updateEmitterSplinePath(emitter.id, 'offset', Number(($event.target as HTMLInputElement).value))"
+                />
+                <span class="value-display">{{ emitter.splinePath?.offset || 0 }}px</span>
+              </div>
+            </div>
             <!-- Image/Mask emission controls -->
             <div v-if="emitter.shape === 'image'" class="image-emission-controls">
               <div class="property-row">
@@ -627,6 +681,26 @@
       @update="updateCollision"
     />
 
+    <!-- Collision Planes (Floor/Wall) -->
+    <ParticleCollisionPlanesSection
+      :planes="collisionPlanes"
+      :expanded="expandedSections.has('collisionPlanes')"
+      @toggle="toggleSection('collisionPlanes')"
+      @add-plane="addCollisionPlane"
+      @update-plane="updateCollisionPlane"
+      @remove-plane="removeCollisionPlane"
+    />
+
+    <!-- Particle Groups -->
+    <ParticleGroupsSection
+      :groups="particleGroups"
+      :expanded="expandedSections.has('particleGroups')"
+      @toggle="toggleSection('particleGroups')"
+      @add-group="addParticleGroup"
+      @update-group="updateParticleGroup"
+      @remove-group="removeParticleGroup"
+    />
+
     <!-- Visualization (CC Particle World Style) -->
     <ParticleVisualizationSection
       :visualization="visualization"
@@ -678,6 +752,107 @@
       @update-connection="updateConnection"
     />
 
+    <!-- Level of Detail (LOD) -->
+    <ParticleLODSection
+      :config="lodConfigForSection"
+      :expanded="expandedSections.has('lod')"
+      @toggle="toggleSection('lod')"
+      @update="updateLODConfigFromSection"
+    />
+
+    <!-- Depth of Field (DOF) -->
+    <ParticleDOFSection
+      :config="dofConfigForSection"
+      :expanded="expandedSections.has('dof')"
+      @toggle="toggleSection('dof')"
+      @update="updateDOFConfigFromSection"
+    />
+
+    <!-- Bake / Export Section -->
+    <div class="property-section">
+      <div class="section-header" @click="toggleSection('bake')">
+        <i class="pi" :class="expandedSections.has('bake') ? 'pi-chevron-down' : 'pi-chevron-right'" />
+        <span>Bake &amp; Export</span>
+      </div>
+      <div v-if="expandedSections.has('bake')" class="section-content">
+        <div class="bake-info">
+          <p class="help-text">
+            Bake particle simulation to keyframes or export trajectories for external tools.
+          </p>
+        </div>
+
+        <div class="property-row">
+          <label title="First frame to bake">Start Frame</label>
+          <input
+            type="number"
+            v-model.number="bakeStartFrame"
+            min="0"
+            :max="bakeEndFrame"
+          />
+        </div>
+
+        <div class="property-row">
+          <label title="Last frame to bake">End Frame</label>
+          <input
+            type="number"
+            v-model.number="bakeEndFrame"
+            :min="bakeStartFrame"
+          />
+        </div>
+
+        <div class="property-row">
+          <label title="Maximum particles to track (for performance)">Max Particles</label>
+          <input
+            type="number"
+            v-model.number="bakeMaxParticles"
+            min="1"
+            max="10000"
+          />
+        </div>
+
+        <div class="property-row checkbox-row">
+          <label>
+            <input type="checkbox" v-model="bakeSimplify" />
+            Simplify keyframes (reduce file size)
+          </label>
+        </div>
+
+        <div class="bake-actions">
+          <button
+            class="bake-btn primary"
+            @click="bakeToTrajectories"
+            :disabled="isBaking"
+            title="Export particle paths as JSON for 3D software"
+          >
+            <i class="pi" :class="isBaking ? 'pi-spinner pi-spin' : 'pi-download'" />
+            {{ isBaking ? 'Baking...' : 'Export Trajectories' }}
+          </button>
+
+          <button
+            class="bake-btn"
+            @click="clearAndRebake"
+            :disabled="isBaking"
+            title="Clear cache and re-simulate"
+          >
+            <i class="pi pi-refresh" />
+            Reset Simulation
+          </button>
+        </div>
+
+        <div v-if="isBaking" class="bake-progress">
+          <div class="progress-bar">
+            <div class="progress-fill" :style="{ width: `${bakeProgress}%` }"></div>
+          </div>
+          <span class="progress-text">{{ bakeProgressText }}</span>
+        </div>
+
+        <div v-if="lastBakeResult" class="bake-result">
+          <i class="pi pi-check-circle" />
+          <span>Exported {{ lastBakeResult.totalParticles }} particles over {{ lastBakeResult.totalFrames }} frames</span>
+        </div>
+      </div>
+    </div>
+
     <!-- Particle Count Display -->
     <div class="particle-count">
       <i class="pi pi-circle-fill" />
@@ -692,6 +867,12 @@ import { ParticleGPUCompute } from "@/services/particleGPU";
 import { useCompositorStore } from "@/stores/compositorStore";
 import { usePresetStore } from "@/stores/presetStore";
 import type { ParticlePreset } from "@/types/presets";
+import ParticleLODSection from "./particle/ParticleLODSection.vue";
+import ParticleDOFSection from "./particle/ParticleDOFSection.vue";
+import ParticleCollisionPlanesSection from "./particle/ParticleCollisionPlanesSection.vue";
+import ParticleGroupsSection from "./particle/ParticleGroupsSection.vue";
+import type { CollisionPlane } from "./particle/ParticleCollisionPlanesSection.vue";
+import type { ParticleGroup } from "./particle/ParticleGroupsSection.vue";
 import type {
   AudioBindingConfig,
   CollisionConfig,
@@ -717,19 +898,26 @@ presetStore.initialize();
 const compositorStore = useCompositorStore();
 
 // Computed: Image layers for mask emission
-const _imageLayers = computed(() =>
+const imageLayers = computed(() =>
   compositorStore.layers.filter(
     (l) => l.type === "image" || l.type === "video" || l.type === "solid",
   ),
 );
 
 // Computed: Depth layers for depth edge emission
-const _depthLayers = computed(() =>
+const depthLayers = computed(() =>
   compositorStore.layers.filter(
     (l) =>
       l.type === "image" &&
       (l.name.toLowerCase().includes("depth") ||
         (l.data && "isDepthMap" in l.data && l.data.isDepthMap)),
+  ),
+);
+
+// Computed: Spline and path layers for spline emission
+const availableSplineLayers = computed(() =>
+  compositorStore.layers.filter(
+    (l) => l.type === "spline" || l.type === "path",
   ),
 );
 
@@ -748,10 +936,10 @@ const newPresetDescription = ref("");
 const newPresetTags = ref("");
 
 // Computed preset lists
-const _builtInPresets = computed(() =>
+const builtInPresets = computed(() =>
   presetStore.particlePresets.filter((p) => p.isBuiltIn),
 );
-const _userPresets = computed(() =>
+const userPresets = computed(() =>
   presetStore.particlePresets.filter((p) => !p.isBuiltIn),
 );
 const isBuiltInPreset = computed(() => {
@@ -775,7 +963,7 @@ const emit =
 // UI State - persist expanded sections per layer
 const expandedSectionsMap = ref<Map<string, Set<string>>>(new Map());
 const expandedEmittersMap = ref<Map<string, Set<string>>>(new Map());
-const _forceTab = ref<"wells" | "vortices">("wells");
+const forceTab = ref<"wells" | "vortices">("wells");
 
 // Get/set expanded sections for current layer
 const expandedSections = computed({
@@ -945,7 +1133,45 @@ const connections = computed(
     },
 );
 const audioBindings = computed(() => layerData.value.audioBindings || []);
-const _particleCount = computed(() => props.particleCount);
+const particleCount = computed(() => props.particleCount);
+
+// LOD config with defaults
+const lodConfig = computed(() =>
+  layerData.value.lodConfig || {
+    enabled: false,
+    distances: [100, 300, 600],
+    sizeMultipliers: [1.0, 0.5, 0.25],
+  },
+);
+
+// DOF config with defaults
+const dofConfig = computed(() =>
+  layerData.value.dofConfig || {
+    enabled: false,
+    focusDistance: 500,
+    focusRange: 200,
+    blurAmount: 0.5,
+  },
+);
+
+// Collision planes with defaults
+const collisionPlanes = computed((): CollisionPlane[] =>
+  layerData.value.collisionPlanes || [],
+);
+
+// Particle groups with defaults
+const particleGroups = computed((): ParticleGroup[] =>
+  layerData.value.particleGroups || [
+    {
+      id: "default",
+      name: "Default",
+      enabled: true,
+      color: [1, 1, 1, 1] as [number, number, number, number],
+      collisionMask: 0b11111111,
+      connectionMask: 0b11111111,
+    },
+  ],
+);
 
 // Visualization settings (CC Particle World style)
 const visualization = computed(
@@ -959,8 +1185,66 @@ const visualization = computed(
     },
 );
 
+// Adapter for LOD section component (transforms internal format to component's expected format)
+import type { LODConfig } from "./particle/ParticleLODSection.vue";
+import type { DOFConfig } from "./particle/ParticleDOFSection.vue";
+
+const lodConfigForSection = computed<LODConfig>(() => ({
+  enabled: lodConfig.value.enabled,
+  nearDistance: lodConfig.value.distances[0] ?? 100,
+  midDistance: lodConfig.value.distances[1] ?? 300,
+  farDistance: lodConfig.value.distances[2] ?? 600,
+  nearSizeMultiplier: lodConfig.value.sizeMultipliers[0] ?? 1.0,
+  midSizeMultiplier: lodConfig.value.sizeMultipliers[1] ?? 0.5,
+  farSizeMultiplier: lodConfig.value.sizeMultipliers[2] ?? 0.25,
+}));
+
+const dofConfigForSection = computed<DOFConfig>(() => ({
+  enabled: dofConfig.value.enabled,
+  focusDistance: dofConfig.value.focusDistance,
+  focusRange: dofConfig.value.focusRange,
+  maxBlur: dofConfig.value.blurAmount,
+}));
+
+function updateLODConfigFromSection(key: keyof LODConfig, value: number | boolean): void {
+  const distances = [...lodConfig.value.distances];
+  const sizeMultipliers = [...lodConfig.value.sizeMultipliers];
+  let enabled = lodConfig.value.enabled;
+
+  if (key === "enabled") {
+    enabled = value as boolean;
+  } else if (key === "nearDistance") {
+    distances[0] = value as number;
+  } else if (key === "midDistance") {
+    distances[1] = value as number;
+  } else if (key === "farDistance") {
+    distances[2] = value as number;
+  } else if (key === "nearSizeMultiplier") {
+    sizeMultipliers[0] = value as number;
+  } else if (key === "midSizeMultiplier") {
+    sizeMultipliers[1] = value as number;
+  } else if (key === "farSizeMultiplier") {
+    sizeMultipliers[2] = value as number;
+  }
+  emit("update", { lodConfig: { enabled, distances, sizeMultipliers } });
+}
+
+function updateDOFConfigFromSection(key: keyof DOFConfig, value: number | boolean): void {
+  const updated = { ...dofConfig.value };
+  if (key === "enabled") {
+    updated.enabled = value as boolean;
+  } else if (key === "focusDistance") {
+    updated.focusDistance = value as number;
+  } else if (key === "focusRange") {
+    updated.focusRange = value as number;
+  } else if (key === "maxBlur") {
+    updated.blurAmount = value as number;
+  }
+  emit("update", { dofConfig: updated });
+}
+
 // Section toggle - using new Set to trigger reactivity
-function _toggleSection(section: string): void {
+function toggleSection(section: string): void {
   const current = expandedSections.value;
   const newSet = new Set(current);
   if (newSet.has(section)) {
@@ -971,7 +1255,7 @@ function _toggleSection(section: string): void {
   expandedSections.value = newSet;
 }
 
-function _toggleEmitter(id: string): void {
+function toggleEmitter(id: string): void {
   const current = expandedEmitters.value;
   const newSet = new Set(current);
   if (newSet.has(id)) {
@@ -983,7 +1267,7 @@ function _toggleEmitter(id: string): void {
 }
 
 // Preset functions
-function _applySelectedPreset(): void {
+function applySelectedPreset(): void {
   if (!selectedPresetId.value) return;
 
   const preset = presetStore.getPreset(selectedPresetId.value) as
@@ -1115,7 +1399,7 @@ function createDefaultEmitter(): ParticleEmitterConfig {
   };
 }
 
-function _saveCurrentAsPreset(): void {
+function saveCurrentAsPreset(): void {
   if (!newPresetName.value.trim()) return;
 
   const tags = newPresetTags.value
@@ -1154,7 +1438,7 @@ function _saveCurrentAsPreset(): void {
   newPresetTags.value = "";
 }
 
-function _deleteSelectedPreset(): void {
+function deleteSelectedPreset(): void {
   if (!selectedPresetId.value || isBuiltInPreset.value) return;
 
   if (confirm("Delete this preset?")) {
@@ -1164,7 +1448,7 @@ function _deleteSelectedPreset(): void {
 }
 
 // Update functions
-function _updateSystemConfig(
+function updateSystemConfig(
   key: keyof ParticleSystemLayerConfig,
   value: any,
 ): void {
@@ -1184,12 +1468,42 @@ function updateEmitter(
   emit("update", { emitters: updated });
 }
 
-function _updateEmitterColor(id: string, hex: string): void {
+function updateEmitterColor(id: string, hex: string): void {
   const rgb = hexToRgb(hex);
   updateEmitter(id, "color", rgb);
 }
 
-function _addEmitter(): void {
+// Update spline path emission settings
+function updateEmitterSplinePath(
+  emitterId: string,
+  key: string,
+  value: any,
+): void {
+  const emitter = emitters.value.find((e) => e.id === emitterId);
+  if (!emitter) return;
+
+  // Create or update the splinePath object
+  const currentSplinePath = emitter.splinePath || {
+    layerId: "",
+    emitMode: "random" as const,
+    parameter: 0,
+    alignToPath: true,
+    offset: 0,
+    bidirectional: false,
+  };
+
+  const updatedSplinePath = {
+    ...currentSplinePath,
+    [key]: value,
+  };
+
+  const updated = emitters.value.map((e) =>
+    e.id === emitterId ? { ...e, splinePath: updatedSplinePath } : e,
+  );
+  emit("update", { emitters: updated });
+}
+
+function addEmitter(): void {
   const newEmitter: ParticleEmitterConfig = {
     id: `emitter_${Date.now()}`,
     name: `Emitter ${emitters.value.length + 1}`,
@@ -1241,11 +1555,11 @@ function _addEmitter(): void {
   expandedEmitters.value.add(newEmitter.id);
 }
 
-function _removeEmitter(id: string): void {
+function removeEmitter(id: string): void {
   emit("update", { emitters: emitters.value.filter((e) => e.id !== id) });
 }
 
-function _updateGravityWell(
+function updateGravityWell(
   id: string,
   key: keyof GravityWellConfig,
   value: any,
@@ -1256,7 +1570,7 @@ function _updateGravityWell(
   emit("update", { gravityWells: updated });
 }
 
-function _addGravityWell(): void {
+function addGravityWell(): void {
   const newWell: GravityWellConfig = {
     id: `well_${Date.now()}`,
     name: `Gravity Well ${gravityWells.value.length + 1}`,
@@ -1270,20 +1584,20 @@ function _addGravityWell(): void {
   emit("update", { gravityWells: [...gravityWells.value, newWell] });
 }
 
-function _removeGravityWell(id: string): void {
+function removeGravityWell(id: string): void {
   emit("update", {
     gravityWells: gravityWells.value.filter((w) => w.id !== id),
   });
 }
 
-function _updateVortex(id: string, key: keyof VortexConfig, value: any): void {
+function updateVortex(id: string, key: keyof VortexConfig, value: any): void {
   const updated = vortices.value.map((v) =>
     v.id === id ? { ...v, [key]: value } : v,
   );
   emit("update", { vortices: updated });
 }
 
-function _addVortex(): void {
+function addVortex(): void {
   const newVortex: VortexConfig = {
     id: `vortex_${Date.now()}`,
     name: `Vortex ${vortices.value.length + 1}`,
@@ -1298,11 +1612,11 @@ function _addVortex(): void {
   emit("update", { vortices: [...vortices.value, newVortex] });
 }
 
-function _removeVortex(id: string): void {
+function removeVortex(id: string): void {
   emit("update", { vortices: vortices.value.filter((v) => v.id !== id) });
 }
 
-function _updateModulation(
+function updateModulation(
   id: string,
   key: keyof ParticleModulationConfig,
   value: any,
@@ -1313,7 +1627,7 @@ function _updateModulation(
   emit("update", { modulations: updated });
 }
 
-function _addModulation(): void {
+function addModulation(): void {
   const newMod: ParticleModulationConfig = {
     id: `mod_${Date.now()}`,
     emitterId: "*",
@@ -1325,11 +1639,11 @@ function _addModulation(): void {
   emit("update", { modulations: [...modulations.value, newMod] });
 }
 
-function _removeModulation(id: string): void {
+function removeModulation(id: string): void {
   emit("update", { modulations: modulations.value.filter((m) => m.id !== id) });
 }
 
-function _updateRenderOption(
+function updateRenderOption(
   key: keyof ParticleRenderOptions,
   value: any,
 ): void {
@@ -1339,7 +1653,7 @@ function _updateRenderOption(
 }
 
 // Connection functions
-function _updateConnection(
+function updateConnection(
   key: keyof ConnectionRenderConfig,
   value: any,
 ): void {
@@ -1352,7 +1666,7 @@ function _updateConnection(
 }
 
 // Turbulence functions
-function _updateTurbulence(
+function updateTurbulence(
   id: string,
   key: keyof TurbulenceFieldConfig,
   value: any,
@@ -1363,7 +1677,7 @@ function _updateTurbulence(
   emit("update", { turbulenceFields: updated });
 }
 
-function _addTurbulence(): void {
+function addTurbulence(): void {
   const newTurb: TurbulenceFieldConfig = {
     id: `turb_${Date.now()}`,
     enabled: true,
@@ -1374,21 +1688,21 @@ function _addTurbulence(): void {
   emit("update", { turbulenceFields: [...turbulenceFields.value, newTurb] });
 }
 
-function _removeTurbulence(id: string): void {
+function removeTurbulence(id: string): void {
   emit("update", {
     turbulenceFields: turbulenceFields.value.filter((t) => t.id !== id),
   });
 }
 
 // Flocking functions
-function _updateFlocking(key: keyof FlockingConfig, value: any): void {
+function updateFlocking(key: keyof FlockingConfig, value: any): void {
   emit("update", {
     flocking: { ...flocking.value, [key]: value },
   });
 }
 
 // Collision functions
-function _updateCollision(key: keyof CollisionConfig, value: any): void {
+function updateCollision(key: keyof CollisionConfig, value: any): void {
   emit("update", {
     collision: { ...collision.value, [key]: value },
   });
@@ -1403,7 +1717,7 @@ interface VisualizationConfig {
   gridDepth: number;
 }
 
-function _updateVisualization(
+function updateVisualization(
   key: keyof VisualizationConfig,
   value: any,
 ): void {
@@ -1413,7 +1727,7 @@ function _updateVisualization(
 }
 
 // Audio binding functions
-function _addAudioBinding(): void {
+function addAudioBinding(): void {
   const newBinding: AudioBindingConfig = {
     id: `audio_${Date.now()}`,
     enabled: true,
@@ -1434,7 +1748,7 @@ function _addAudioBinding(): void {
   emit("update", { audioBindings: [...audioBindings.value, newBinding] });
 }
 
-function _updateAudioBinding(
+function updateAudioBinding(
   id: string,
   key: keyof AudioBindingConfig,
   value: any,
@@ -1445,7 +1759,7 @@ function _updateAudioBinding(
   emit("update", { audioBindings: updated });
 }
 
-function _removeAudioBinding(id: string): void {
+function removeAudioBinding(id: string): void {
   emit("update", {
     audioBindings: audioBindings.value.filter((b) => b.id !== id),
   });
@@ -1463,12 +1777,12 @@ function updateSubEmitter(
   emit("update", { subEmitters: updated });
 }
 
-function _updateSubEmitterColor(id: string, hex: string): void {
+function updateSubEmitterColor(id: string, hex: string): void {
   const rgb = hexToRgb(hex);
   updateSubEmitter(id, "color", rgb);
 }
 
-function _addSubEmitter(): void {
+function addSubEmitter(): void {
   const newSub: SubEmitterConfig = {
     id: `sub_${Date.now()}`,
     parentEmitterId: "*",
@@ -1486,12 +1800,159 @@ function _addSubEmitter(): void {
   emit("update", { subEmitters: [...subEmitters.value, newSub] });
 }
 
-function _removeSubEmitter(id: string): void {
+function removeSubEmitter(id: string): void {
   emit("update", { subEmitters: subEmitters.value.filter((s) => s.id !== id) });
 }
 
+// LOD functions
+function updateLODConfig(key: string, value: boolean | number[]): void {
+  const updated = { ...lodConfig.value };
+  if (key === "enabled") {
+    updated.enabled = value as boolean;
+  } else if (key === "distances") {
+    updated.distances = value as number[];
+  } else if (key === "sizeMultipliers") {
+    updated.sizeMultipliers = value as number[];
+  }
+  emit("update", { lodConfig: updated });
+}
+
+// DOF functions
+function updateDOFConfig(key: string, value: boolean | number): void {
+  const updated = { ...dofConfig.value };
+  if (key === "enabled") {
+    updated.enabled = value as boolean;
+  } else if (key === "focusDistance") {
+    updated.focusDistance = value as number;
+  } else if (key === "focusRange") {
+    updated.focusRange = value as number;
+  } else if (key === "blurAmount") {
+    updated.blurAmount = value as number;
+  }
+  emit("update", { dofConfig: updated });
+}
+
+// Collision Planes functions
+function addCollisionPlane(type: string): void {
+  const id = `plane_${Date.now()}`;
+  let plane: CollisionPlane;
+
+  switch (type) {
+    case "floor":
+      plane = {
+        id,
+        name: "Floor",
+        enabled: true,
+        point: { x: 0, y: 0, z: 0 },
+        normal: { x: 0, y: 1, z: 0 },
+        bounciness: 0.5,
+        friction: 0.3,
+      };
+      break;
+    case "ceiling":
+      plane = {
+        id,
+        name: "Ceiling",
+        enabled: true,
+        point: { x: 0, y: 500, z: 0 },
+        normal: { x: 0, y: -1, z: 0 },
+        bounciness: 0.5,
+        friction: 0.3,
+      };
+      break;
+    case "wall-left":
+      plane = {
+        id,
+        name: "Left Wall",
+        enabled: true,
+        point: { x: -500, y: 0, z: 0 },
+        normal: { x: 1, y: 0, z: 0 },
+        bounciness: 0.5,
+        friction: 0.3,
+      };
+      break;
+    case "wall-right":
+      plane = {
+        id,
+        name: "Right Wall",
+        enabled: true,
+        point: { x: 500, y: 0, z: 0 },
+        normal: { x: -1, y: 0, z: 0 },
+        bounciness: 0.5,
+        friction: 0.3,
+      };
+      break;
+    default:
+      plane = {
+        id,
+        name: "Plane",
+        enabled: true,
+        point: { x: 0, y: 0, z: 0 },
+        normal: { x: 0, y: 1, z: 0 },
+        bounciness: 0.5,
+        friction: 0.3,
+      };
+  }
+
+  emit("update", { collisionPlanes: [...collisionPlanes.value, plane] });
+}
+
+function updateCollisionPlane(
+  id: string,
+  key: string,
+  value: boolean | number | { x: number; y: number; z: number },
+): void {
+  const updated = collisionPlanes.value.map((p) =>
+    p.id === id ? { ...p, [key]: value } : p,
+  );
+  emit("update", { collisionPlanes: updated });
+}
+
+function removeCollisionPlane(id: string): void {
+  emit("update", {
+    collisionPlanes: collisionPlanes.value.filter((p) => p.id !== id),
+  });
+}
+
+// Particle Groups functions
+function addParticleGroup(): void {
+  const id = `group_${Date.now()}`;
+  const groupIndex = particleGroups.value.length;
+
+  const newGroup: ParticleGroup = {
+    id,
+    name: `Group ${groupIndex + 1}`,
+    enabled: true,
+    color: [Math.random(), Math.random(), Math.random(), 1] as [number, number, number, number],
+    collisionMask: 0b11111111, // Collide with all by default
+    connectionMask: 0b11111111, // Connect with all by default
+  };
+
+  emit("update", { particleGroups: [...particleGroups.value, newGroup] });
+}
+
+function updateParticleGroup(
+  id: string,
+  key: string,
+  value: string | number | boolean | [number, number, number, number],
+): void {
+  const updated = particleGroups.value.map((g) =>
+    g.id === id ? { ...g, [key]: value } : g,
+  );
+  emit("update", { particleGroups: updated });
+}
+
+function removeParticleGroup(id: string): void {
+  // Cannot remove the default group
+  if (id === "default") return;
+
+  emit("update", {
+    particleGroups: particleGroups.value.filter((g) => g.id !== id),
+  });
+}
+
 // Color utilities
-function _rgbToHex(rgb: [number, number, number]): string {
+function rgbToHex(rgb: [number, number, number]): string {
   return `#${rgb.map((c) => c.toString(16).padStart(2, "0")).join("")}`;
 }
 
@@ -1504,6 +1965,146 @@ function hexToRgb(hex: string): [number, number, number] {
         parseInt(result[3], 16),
       ]
     : [255, 255, 255];
+}
+
+// ============================================================================
+// BAKE TO KEYFRAMES / TRAJECTORY EXPORT
+// ============================================================================
+
+import {
+  exportTrajectoriesToJSON,
+  type ParticleBakeResult,
+} from "@/stores/actions/particleLayerActions";
+
+// Bake state
+const bakeStartFrame = ref(0);
+const bakeEndFrame = ref(80);
+const bakeMaxParticles = ref(1000);
+const bakeSimplify = ref(true);
+const isBaking = ref(false);
+const bakeProgress = ref(0);
+const bakeProgressText = ref("");
+const lastBakeResult = ref<ParticleBakeResult | null>(null);
+
+/**
+ * Export particle trajectories as JSON
+ * This captures all particle paths over the frame range
+ */
+async function bakeToTrajectories(): Promise<void> {
+  if (isBaking.value) return;
+
+  isBaking.value = true;
+  bakeProgress.value = 0;
+  bakeProgressText.value = "Starting...";
+  lastBakeResult.value = null;
+
+  try {
+    // Get the particle layer instance from the engine
+    const engine = (window as any).__latticeEngine;
+    if (!engine) {
+      throw new Error("Engine not available");
+    }
+
+    const particleLayer = engine.getLayer(props.layer.id);
+    if (!particleLayer || !("exportTrajectories" in particleLayer)) {
+      throw new Error("Particle layer not found or doesn't support export");
+    }
+
+    // Export trajectories
+    const trajectoryData = await particleLayer.exportTrajectories(
+      bakeStartFrame.value,
+      bakeEndFrame.value,
+      (frame: number, total: number) => {
+        bakeProgress.value = Math.round((frame / total) * 100);
+        bakeProgressText.value = `Processing frame ${frame} / ${total}`;
+      },
+    );
+
+    // Convert to baked trajectories format
+    const particleLifetimes = new Map<number, { birth: number; death: number; keyframes: any[] }>();
+
+    // Process each frame's particles
+    for (const [frame, particles] of trajectoryData) {
+      for (const p of particles) {
+        if (!particleLifetimes.has(p.id)) {
+          particleLifetimes.set(p.id, {
+            birth: frame,
+            death: frame,
+            keyframes: [],
+          });
+        }
+
+        const lifetime = particleLifetimes.get(p.id)!;
+        lifetime.death = frame;
+        lifetime.keyframes.push({
+          frame,
+          x: p.x,
+          y: p.y,
+          z: p.z,
+          size: p.size,
+          opacity: p.opacity,
+          rotation: p.rotation,
+          r: p.r,
+          g: p.g,
+          b: p.b,
+        });
+      }
+    }
+
+    // Convert to result format
+    const trajectories = Array.from(particleLifetimes.entries())
+      .slice(0, bakeMaxParticles.value)
+      .map(([id, data]) => ({
+        particleId: id,
+        emitterId: "default",
+        birthFrame: data.birth,
+        deathFrame: data.death,
+        keyframes: data.keyframes,
+      }));
+
+    const result: ParticleBakeResult = {
+      layerId: props.layer.id,
+      trajectories,
+      totalFrames: bakeEndFrame.value - bakeStartFrame.value + 1,
+      totalParticles: trajectories.length,
+      exportFormat: "trajectories",
+    };
+
+    lastBakeResult.value = result;
+
+    // Export as JSON file
+    const json = exportTrajectoriesToJSON(result);
+    const blob = new Blob([json], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `particle_trajectories_${props.layer.name || "layer"}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+
+    bakeProgressText.value = "Export complete!";
+  } catch (error) {
+    console.error("Bake failed:", error);
+    bakeProgressText.value = `Error: ${error instanceof Error ? error.message : "Unknown error"}`;
+  } finally {
+    isBaking.value = false;
+  }
+}
+
+/**
+ * Clear cache and reset simulation
+ */
+function clearAndRebake(): void {
+  const engine = (window as any).__latticeEngine;
+  if (!engine) return;
+
+  const particleLayer = engine.getLayer(props.layer.id);
+  if (particleLayer && "clearCache" in particleLayer) {
+    (particleLayer as any).clearCache();
+  }
+
+  lastBakeResult.value = null;
+  bakeProgressText.value = "Cache cleared";
 }
 </script>
 
@@ -1982,5 +2583,101 @@ function hexToRgb(hex: string): [number, number, number] {
 .gpu-status.unavailable {
   background: rgba(136, 136, 136, 0.2);
   color: #888;
+}
+
+/* Bake & Export Section */
+.bake-info {
+  margin-bottom: 12px;
+}
+
+.help-text {
+  font-size: 11px;
+  color: #888;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.bake-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.bake-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border: 1px solid #444;
+  border-radius: 4px;
+  background: #333;
+  color: #ccc;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.bake-btn:hover:not(:disabled) {
+  background: #3a3a3a;
+  border-color: #555;
+}
+
+.bake-btn.primary {
+  background: #2d5a8a;
+  border-color: #3d7ab8;
+  color: #fff;
+}
+
+.bake-btn.primary:hover:not(:disabled) {
+  background: #3d7ab8;
+}
+
+.bake-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.bake-progress {
+  margin-top: 12px;
+}
+
+.progress-bar {
+  height: 6px;
+  background: #333;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #4a90d9, #6ab0ff);
+  transition: width 0.2s;
+}
+
+.progress-text {
+  display: block;
+  margin-top: 4px;
+  font-size: 11px;
+  color: #888;
+  text-align: center;
+}
+
+.bake-result {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 8px;
+  background: rgba(76, 175, 80, 0.1);
+  border: 1px solid rgba(76, 175, 80, 0.3);
+  border-radius: 4px;
+  color: #4caf50;
+  font-size: 11px;
+}
+
+.bake-result i {
+  font-size: 14px;
 }
 </style>

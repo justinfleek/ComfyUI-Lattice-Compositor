@@ -239,7 +239,7 @@ defineEmits<{
   (e: "updateVortex", id: string, key: keyof VortexConfig, value: any): void;
 }>();
 
-const _activeTab = ref<"wells" | "vortices">("wells");
+const activeTab = ref<"wells" | "vortices">("wells");
 </script>
 
 <style scoped>

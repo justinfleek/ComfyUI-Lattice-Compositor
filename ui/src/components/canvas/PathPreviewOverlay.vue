@@ -275,9 +275,9 @@ const props = withDefaults(
   },
 );
 
-const _emit = defineEmits<(e: "select", index: number) => void>();
+const emit = defineEmits<(e: "select", index: number) => void>();
 
-const _overlayRef = ref<HTMLElement | null>(null);
+const overlayRef = ref<HTMLElement | null>(null);
 const animatedPosition = ref<{ x: number; y: number } | null>(null);
 let animationFrame = 0;
 let animationId: number | null = null;
@@ -293,25 +293,29 @@ const pathColors = [
 ];
 
 // Computed
-const _overlayStyle = computed(() => ({
+const overlayStyle = computed(() => ({
   width: `${props.width}px`,
   height: `${props.height}px`,
 }));
 
-const _cameraSuggestions = computed<CameraSuggestion[]>(() => {
+const cameraSuggestions = computed<CameraSuggestion[]>(() => {
   return props.suggestions
     .filter((s) => s.type === "camera" && s.points && s.points.length >= 2)
-    .map((s) => ({
-      type: s.description?.split(" ")[0] || "Camera",
-      startX: s.points?.[0].x,
-      startY: s.points?.[0].y,
-      endX: s.points?.[s.points?.length - 1].x,
-      endY: s.points?.[s.points?.length - 1].y,
-    }));
+    .map((s) => {
+      const firstPoint = s.points![0];
+      const lastPoint = s.points![s.points!.length - 1];
+      return {
+        type: s.description?.split(" ")[0] || "Camera",
+        startX: firstPoint.x,
+        startY: firstPoint.y,
+        endX: lastPoint.x,
+        endY: lastPoint.y,
+      };
+    });
 });
 
 // Methods
-function _getPathColor(index: number, opacity: number): string {
+function getPathColor(index: number, opacity: number): string {
   const baseColor = pathColors[index % pathColors.length];
   if (opacity === 1) return baseColor;
 

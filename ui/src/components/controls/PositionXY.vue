@@ -91,7 +91,7 @@ const linked = ref(props.linked);
 const previousX = ref(props.x);
 const previousY = ref(props.y);
 
-const _hasZ = computed(() => props.z !== undefined);
+const hasZ = computed(() => props.z !== undefined);
 
 const displayX = computed(() => round(props.x));
 const displayY = computed(() => round(props.y));
@@ -106,12 +106,12 @@ function clamp(value: number): number {
   return Math.max(props.min, Math.min(props.max, value));
 }
 
-function _toggleLink(): void {
+function toggleLink(): void {
   linked.value = !linked.value;
   emit("update:linked", linked.value);
 }
 
-function _onXInput(e: Event): void {
+function onXInput(e: Event): void {
   const input = e.target as HTMLInputElement;
   const value = parseFloat(input.value);
 
@@ -129,7 +129,7 @@ function _onXInput(e: Event): void {
   }
 }
 
-function _onYInput(e: Event): void {
+function onYInput(e: Event): void {
   const input = e.target as HTMLInputElement;
   const value = parseFloat(input.value);
 
@@ -147,7 +147,7 @@ function _onYInput(e: Event): void {
   }
 }
 
-function _onZInput(e: Event): void {
+function onZInput(e: Event): void {
   const input = e.target as HTMLInputElement;
   const value = parseFloat(input.value);
 
@@ -156,7 +156,7 @@ function _onZInput(e: Event): void {
   }
 }
 
-function _onBlur(e: FocusEvent, axis: "x" | "y" | "z"): void {
+function onBlur(e: FocusEvent, axis: "x" | "y" | "z"): void {
   const input = e.target as HTMLInputElement;
   const value = parseFloat(input.value);
 

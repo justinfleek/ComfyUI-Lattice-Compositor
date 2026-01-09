@@ -4,7 +4,7 @@
       <label>Amount</label>
       <ScrubableNumber
         :modelValue="operator.amount.value"
-        @update:modelValue="v => updateNumber('amount', v)"
+        @update:modelValue="(v: number) => updateNumber('amount', v)"
         :min="-100"
         :max="100"
         unit="px"
@@ -23,7 +23,7 @@
       <label>Miter Limit</label>
       <ScrubableNumber
         :modelValue="operator.miterLimit.value"
-        @update:modelValue="v => updateNumber('miterLimit', v)"
+        @update:modelValue="(v: number) => updateNumber('miterLimit', v)"
         :min="1"
         :max="100"
       />
@@ -33,7 +33,7 @@
       <label>Copies</label>
       <ScrubableNumber
         :modelValue="operator.copies.value"
-        @update:modelValue="v => updateNumber('copies', v)"
+        @update:modelValue="(v: number) => updateNumber('copies', v)"
         :min="1"
         :max="20"
         :step="1"
@@ -44,7 +44,7 @@
       <label>Copy Offset</label>
       <ScrubableNumber
         :modelValue="operator.copyOffset.value"
-        @update:modelValue="v => updateNumber('copyOffset', v)"
+        @update:modelValue="(v: number) => updateNumber('copyOffset', v)"
         unit="px"
       />
       <KeyframeToggle :property="operator.copyOffset" :layerId="layerId" @toggle="toggleKeyframe('copyOffset')" />
@@ -61,7 +61,7 @@ const props = defineProps<{ operator: OffsetPathsOperator; layerId: string }>();
 const emit = defineEmits(["update"]);
 const store = useCompositorStore();
 
-function _updateNumber(
+function updateNumber(
   prop: "amount" | "miterLimit" | "copies" | "copyOffset",
   value: number,
 ) {
@@ -70,12 +70,12 @@ function _updateNumber(
   emit("update", updated);
 }
 
-function _updateJoin(join: OffsetJoin) {
+function updateJoin(join: OffsetJoin) {
   const updated = { ...props.operator, lineJoin: join };
   emit("update", updated);
 }
 
-function _toggleKeyframe(
+function toggleKeyframe(
   prop: "amount" | "miterLimit" | "copies" | "copyOffset",
 ) {
   const updated = { ...props.operator };

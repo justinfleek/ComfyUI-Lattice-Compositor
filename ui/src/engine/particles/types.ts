@@ -10,6 +10,8 @@
  * - Soft shadows and ambient occlusion
  */
 
+import type * as THREE from "three";
+
 // ============================================================================
 // Constants
 // ============================================================================
@@ -19,6 +21,39 @@
  * Total: 16 floats = 64 bytes (cache-line aligned)
  */
 export const PARTICLE_STRIDE = 16;
+
+/**
+ * Maximum number of particle groups
+ * Groups allow particles to be organized for selective interactions
+ */
+export const MAX_PARTICLE_GROUPS = 32;
+
+// ============================================================================
+// Particle Groups
+// ============================================================================
+
+/**
+ * Particle group configuration
+ * Groups allow organizing particles for selective collisions/connections
+ */
+export interface ParticleGroupConfig {
+  /** Unique group identifier */
+  id: string;
+  /** Human-readable group name */
+  name: string;
+  /** Group index (0-31, used for bitmask operations) */
+  index: number;
+  /** Group color for visualization */
+  color?: [number, number, number];
+  /** Whether this group participates in collisions */
+  enableCollision?: boolean;
+  /** Which other groups this group can collide with (bitmask) */
+  collisionMask?: number;
+  /** Whether this group participates in connections */
+  enableConnections?: boolean;
+  /** Which other groups this group can connect with (bitmask) */
+  connectionMask?: number;
+}
 
 // ============================================================================
 // Core Particle Data (GPU-side, tightly packed for performance)
@@ -162,6 +197,10 @@ export interface EmitterConfig {
 
   // Sub-emitter reference
   subEmitterId?: string;
+
+  // Particle group assignment (for selective collisions/connections)
+  groupId?: string;  // Group ID that spawned particles belong to
+  groupIndex?: number;  // Group index (0-31) for bitmask operations
 }
 
 // ============================================================================
@@ -442,7 +481,16 @@ export interface RenderConfig {
   trailFadeMode: "none" | "alpha" | "width" | "both";
 
   // Mesh rendering
-  meshGeometry?: string; // Built-in or custom
+  /** 
+   * Mesh geometry type for 3D particle rendering
+   * 'billboard' = standard 2D sprite (default)
+   * 'cube', 'sphere', 'cylinder', etc. = built-in 3D shapes
+   * 'custom' = use customMeshGeometry
+   */
+  meshGeometry: 'billboard' | 'cube' | 'sphere' | 'cylinder' | 'cone' | 'torus' | 'octahedron' | 'icosahedron' | 'custom';
+  
+  /** Custom geometry (when meshGeometry === 'custom') */
+  customMeshGeometry?: THREE.BufferGeometry;
 
   // Textures
   texture: ParticleTextureConfig;
@@ -460,6 +508,12 @@ export interface RenderConfig {
   lodEnabled: boolean;
   lodDistances: number[];
   lodSizeMultipliers: number[];
+
+  // Depth of Field
+  dofEnabled?: boolean;
+  dofFocusDistance?: number;  // Distance from camera to focus plane
+  dofFocusRange?: number;     // Range around focus distance that's in focus
+  dofMaxBlur?: number;        // Maximum blur amount (0-1, affects alpha)
 }
 
 // ============================================================================
@@ -528,7 +582,7 @@ export type AudioFeature =
   | "rms"
   | "spectralCentroid"
   | "onsets"
-  | "peaks" // BUG-083 fix: Add peaks for isPeakAtFrame() support
+  | "peaks" // Peak detection feature for isPeakAtFrame()
   // Frequency bands
   | "sub"
   | "bass"
@@ -650,6 +704,9 @@ export interface GPUParticleSystemConfig {
 
   // Seeds for reproducibility
   randomSeed?: number;
+
+  // Particle groups (for selective interactions)
+  groups?: ParticleGroupConfig[];
 }
 
 // ============================================================================

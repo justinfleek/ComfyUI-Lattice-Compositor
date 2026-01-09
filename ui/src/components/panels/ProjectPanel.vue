@@ -232,7 +232,7 @@ const selectionStore = useSelectionStore();
 const fileInputRef = ref<HTMLInputElement | null>(null);
 
 // State
-const _showSearch = ref(false);
+const showSearch = ref(false);
 const showNewMenu = ref(false);
 const showDecomposeDialog = ref(false);
 const showVectorizeDialog = ref(false);
@@ -246,7 +246,7 @@ const expandedFolders = ref<string[]>(["compositions", "footage"]);
 const customFolders = ref<Folder[]>([]);
 
 // Check if selected layer is a spline layer
-const _hasSelectedSplineLayer = computed(() => {
+const hasSelectedSplineLayer = computed(() => {
   const selectedLayerIds = selectionStore.selectedLayerIds;
   if (selectedLayerIds.length === 0) return false;
 
@@ -325,7 +325,7 @@ const folders = computed<Folder[]>(() => {
 const items = ref<ProjectItem[]>([]);
 
 // Computed
-const _filteredFolders = computed(() => {
+const filteredFolders = computed(() => {
   if (!searchQuery.value) return folders.value;
 
   const query = searchQuery.value.toLowerCase();
@@ -342,7 +342,7 @@ const _filteredFolders = computed(() => {
     );
 });
 
-const _filteredRootItems = computed(() => {
+const filteredRootItems = computed(() => {
   if (!searchQuery.value) return items.value;
 
   const query = searchQuery.value.toLowerCase();
@@ -350,7 +350,7 @@ const _filteredRootItems = computed(() => {
 });
 
 // Preview data for the selected item
-const _selectedPreview = computed(() => {
+const selectedPreview = computed(() => {
   if (!selectedItem.value) return null;
 
   // Find the item
@@ -423,7 +423,7 @@ const _selectedPreview = computed(() => {
   return null;
 });
 
-const _selectedItemDetails = computed(() => {
+const selectedItemDetails = computed(() => {
   if (!selectedItem.value) return null;
 
   // Find in folders
@@ -459,11 +459,11 @@ function toggleFolder(folderId: string) {
   }
 }
 
-function _selectItem(itemId: string) {
+function selectItem(itemId: string) {
   selectedItem.value = itemId;
 }
 
-function _openItem(item: ProjectItem) {
+function openItem(item: ProjectItem) {
   if (item.type === "composition") {
     // Switch to composition (opens in timeline and viewer)
     store.switchComposition(item.id);
@@ -511,12 +511,12 @@ function _openItem(item: ProjectItem) {
   }
 }
 
-function _createNewComposition() {
+function createNewComposition() {
   showNewMenu.value = false;
   emit("openCompositionSettings");
 }
 
-function _createNewFolder() {
+function createNewFolder() {
   showNewMenu.value = false;
   const folderNumber = customFolders.value.length + 1;
   const newFolder: Folder = {
@@ -530,57 +530,57 @@ function _createNewFolder() {
   console.log("[ProjectPanel] Created folder:", newFolder.name);
 }
 
-function _createNewSolid() {
+function createNewSolid() {
   showNewMenu.value = false;
   const layer = store.createLayer("solid", "Solid");
   console.log("[ProjectPanel] Created solid layer:", layer.id);
 }
 
-function _createNewText() {
+function createNewText() {
   showNewMenu.value = false;
   const layer = store.createTextLayer("Text");
   console.log("[ProjectPanel] Created text layer:", layer.id);
 }
 
-function _createNewControl() {
+function createNewControl() {
   showNewMenu.value = false;
   const layer = store.createLayer("control", "Control");
   console.log("[ProjectPanel] Created control layer:", layer.id);
 }
 
-function _createNewSpline() {
+function createNewSpline() {
   showNewMenu.value = false;
   const layer = store.createSplineLayer();
   console.log("[ProjectPanel] Created spline layer:", layer.id);
 }
 
-function _createNewModel() {
+function createNewModel() {
   showNewMenu.value = false;
   const layer = store.createLayer("model", "3D Model");
   console.log("[ProjectPanel] Created model layer:", layer.id);
 }
 
-function _createNewPointCloud() {
+function createNewPointCloud() {
   showNewMenu.value = false;
   const layer = store.createLayer("pointcloud", "Point Cloud");
   console.log("[ProjectPanel] Created point cloud layer:", layer.id);
 }
 
-function _openDecomposeDialog() {
+function openDecomposeDialog() {
   showNewMenu.value = false;
   showDecomposeDialog.value = true;
 }
 
-function _openVectorizeDialog() {
+function openVectorizeDialog() {
   showNewMenu.value = false;
   showVectorizeDialog.value = true;
 }
 
-function _onDecomposed(layers: DecomposedLayer[]) {
+function onDecomposed(layers: DecomposedLayer[]) {
   console.log("[ProjectPanel] Image decomposed into", layers.length, "layers");
 }
 
-function _onVectorized(layerIds: string[]) {
+function onVectorized(layerIds: string[]) {
   console.log("[ProjectPanel] Created", layerIds.length, "vectorized layers");
 }
 
@@ -588,7 +588,7 @@ function _onVectorized(layerIds: string[]) {
 // FPS MISMATCH HANDLERS
 // ============================================================
 
-async function _handleFpsMismatchMatch() {
+async function handleFpsMismatchMatch() {
   if (!pendingFpsMismatch.value) return;
 
   const result = pendingFpsMismatch.value;
@@ -624,7 +624,7 @@ async function _handleFpsMismatchMatch() {
   pendingFpsMismatch.value = null;
 }
 
-function _handleFpsMismatchConform() {
+function handleFpsMismatchConform() {
   if (!pendingFpsMismatch.value) return;
 
   const result = pendingFpsMismatch.value;
@@ -659,7 +659,7 @@ function _handleFpsMismatchConform() {
   pendingFpsMismatch.value = null;
 }
 
-function _handleFpsMismatchCancel() {
+function handleFpsMismatchCancel() {
   if (!pendingFpsMismatch.value) return;
 
   console.log("[ProjectPanel] FPS mismatch: User cancelled");
@@ -676,7 +676,7 @@ function _handleFpsMismatchCancel() {
 // FPS SELECT HANDLERS (for unknown fps)
 // ============================================================
 
-async function _handleFpsSelected(fps: number) {
+async function handleFpsSelected(fps: number) {
   if (!pendingFpsUnknown.value) return;
 
   const pending = pendingFpsUnknown.value;
@@ -732,7 +732,7 @@ async function _handleFpsSelected(fps: number) {
   }
 }
 
-function _handleFpsSelectCancel() {
+function handleFpsSelectCancel() {
   if (!pendingFpsUnknown.value) return;
 
   console.log("[ProjectPanel] FPS select: User cancelled");
@@ -745,7 +745,7 @@ function _handleFpsSelectCancel() {
   pendingFpsUnknown.value = null;
 }
 
-function _cleanupUnusedAssets() {
+function cleanupUnusedAssets() {
   showNewMenu.value = false;
   const result = store.removeUnusedAssets();
   if (result.removed > 0) {
@@ -772,7 +772,7 @@ function getSelectedSplineLayer() {
   return layer?.type === "spline" ? layer : null;
 }
 
-function _exportSelectedLayerSVG() {
+function exportSelectedLayerSVG() {
   const layer = getSelectedSplineLayer();
   if (!layer) {
     console.warn("[ProjectPanel] No spline layer selected");
@@ -795,7 +795,7 @@ function _exportSelectedLayerSVG() {
   }
 }
 
-function _exportCompositionSVG() {
+function exportCompositionSVG() {
   const comp = store.activeComposition;
   if (!comp) {
     console.warn("[ProjectPanel] No active composition");
@@ -837,7 +837,7 @@ function downloadSVG(svgContent: string, filename: string) {
   URL.revokeObjectURL(url);
 }
 
-function _exportSelectedLayerSVGDownload() {
+function exportSelectedLayerSVGDownload() {
   const layer = getSelectedSplineLayer();
   if (!layer) {
     console.warn("[ProjectPanel] No spline layer selected");
@@ -854,7 +854,7 @@ function _exportSelectedLayerSVGDownload() {
   }
 }
 
-function _exportCompositionSVGDownload() {
+function exportCompositionSVGDownload() {
   const comp = store.activeComposition;
   if (!comp) {
     console.warn("[ProjectPanel] No active composition");
@@ -878,11 +878,11 @@ function _exportCompositionSVGDownload() {
   }
 }
 
-function _triggerFileImport() {
+function triggerFileImport() {
   fileInputRef.value?.click();
 }
 
-async function _handleFileImport(event: Event) {
+async function handleFileImport(event: Event) {
   const input = event.target as HTMLInputElement;
   const files = input.files;
   if (!files || files.length === 0) return;
@@ -1083,7 +1083,7 @@ function getFileType(file: File): ProjectItem["type"] {
   return "footage";
 }
 
-function _getItemIcon(type: ProjectItem["type"]): string {
+function getItemIcon(type: ProjectItem["type"]): string {
   const icons: Record<ProjectItem["type"], string> = {
     composition: "▶",
     footage: "▧",
@@ -1124,7 +1124,7 @@ function getItemInfo(item: ProjectItem): string {
   return "";
 }
 
-function _onDragStart(item: ProjectItem, event: DragEvent) {
+function onDragStart(item: ProjectItem, event: DragEvent) {
   event.dataTransfer?.setData("application/project-item", JSON.stringify(item));
 }
 </script>

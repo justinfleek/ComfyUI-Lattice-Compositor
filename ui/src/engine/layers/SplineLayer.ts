@@ -1567,7 +1567,7 @@ export class SplineLayer extends BaseLayer {
     if (props.controlPoints !== undefined) {
       let points = props.controlPoints as EvaluatedControlPoint[];
 
-      // BUG-094 fix: Apply audio-reactive control point modifiers
+      // Apply audio-reactive modifiers to control point positions
       points = this.applySplineAudioModifiers(points);
 
       const pointsHash = this.computePointsHash(points);
@@ -1576,8 +1576,8 @@ export class SplineLayer extends BaseLayer {
         this.lastPointsHash = pointsHash;
       }
     } else {
-      // BUG-094 fix: Even without props['controlPoints'], check if we need to
-      // apply audio modifiers to the current spline control points
+      // Check if audio modifiers need to be applied to current control points
+      // even when control points weren't explicitly set this frame
       if (this.hasSplineAudioModifiers()) {
         const currentPoints = this.getEvaluatedControlPoints(state.frame);
         const modifiedPoints = this.applySplineAudioModifiers(currentPoints);
@@ -1600,7 +1600,7 @@ export class SplineLayer extends BaseLayer {
   }
 
   /**
-   * BUG-094 fix: Check if any spline control point audio modifiers are active
+   * Check if any spline control point audio modifiers are active.
    */
   private hasSplineAudioModifiers(): boolean {
     const audioMod = this.currentAudioModifiers;
@@ -1616,8 +1616,8 @@ export class SplineLayer extends BaseLayer {
   }
 
   /**
-   * BUG-094 fix: Apply audio-reactive modifiers to spline control points
-   * Modifiers are additive to base control point values
+   * Apply audio-reactive modifiers to spline control points.
+   * Modifiers are additive to base control point values.
    * @param points - Input control points
    * @returns Modified control points with audio modifiers applied
    */

@@ -1321,8 +1321,8 @@ export const useCompositorStore = defineStore("compositor", {
     },
 
     /**
-     * Get interpolated value for any animatable property at current frame
-     * BUG-040/041 FIX: Pass fps and duration from composition settings
+     * Get interpolated value for any animatable property at current frame.
+     * Passes fps and duration from composition settings.
      */
     getInterpolatedValue<T>(property: AnimatableProperty<T>): T {
       const comp = this.getActiveComp();
@@ -2487,7 +2487,7 @@ export const useCompositorStore = defineStore("compositor", {
       for (const driver of this.propertyDrivers)
         this.propertyDriverSystem.addDriver(driver);
     },
-    // BUG-040/041 FIX: Pass fps and duration from composition settings
+    // Evaluates property at frame, using composition's fps and duration for expressions
     getPropertyValueAtFrame(
       layerId: string,
       propertyPath: PropertyPath,

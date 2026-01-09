@@ -250,38 +250,38 @@ const layerStyles = computed(() => selectedLayer.value?.layerStyles);
 
 const stylesEnabled = computed(() => layerStyles.value?.enabled ?? false);
 
-const _hasStyles = computed(() => !!layerStyles.value);
+const hasStyles = computed(() => !!layerStyles.value);
 
-const _canPaste = computed(() => hasStylesInClipboard());
+const canPaste = computed(() => hasStylesInClipboard());
 
-const _presetNames = computed(() => getStylePresetNames());
+const presetNames = computed(() => getStylePresetNames());
 
 // Individual style enabled states
-const _dropShadowEnabled = computed(
+const dropShadowEnabled = computed(
   () => layerStyles.value?.dropShadow?.enabled ?? false,
 );
-const _innerShadowEnabled = computed(
+const innerShadowEnabled = computed(
   () => layerStyles.value?.innerShadow?.enabled ?? false,
 );
-const _outerGlowEnabled = computed(
+const outerGlowEnabled = computed(
   () => layerStyles.value?.outerGlow?.enabled ?? false,
 );
-const _innerGlowEnabled = computed(
+const innerGlowEnabled = computed(
   () => layerStyles.value?.innerGlow?.enabled ?? false,
 );
-const _bevelEmbossEnabled = computed(
+const bevelEmbossEnabled = computed(
   () => layerStyles.value?.bevelEmboss?.enabled ?? false,
 );
-const _satinEnabled = computed(
+const satinEnabled = computed(
   () => layerStyles.value?.satin?.enabled ?? false,
 );
-const _colorOverlayEnabled = computed(
+const colorOverlayEnabled = computed(
   () => layerStyles.value?.colorOverlay?.enabled ?? false,
 );
-const _gradientOverlayEnabled = computed(
+const gradientOverlayEnabled = computed(
   () => layerStyles.value?.gradientOverlay?.enabled ?? false,
 );
-const _strokeEnabled = computed(
+const strokeEnabled = computed(
   () => layerStyles.value?.stroke?.enabled ?? false,
 );
 const blendingOptionsEnabled = computed(
@@ -289,12 +289,12 @@ const blendingOptionsEnabled = computed(
 );
 
 // Actions
-function _toggleStyles() {
+function toggleStyles() {
   if (!selectedLayer.value) return;
   setLayerStylesEnabled(store, selectedLayer.value.id, !stylesEnabled.value);
 }
 
-function _toggleStyle(styleType: keyof LayerStyles, enabled: boolean) {
+function toggleStyle(styleType: keyof LayerStyles, enabled: boolean) {
   if (!selectedLayer.value) return;
   setStyleEnabled(store, selectedLayer.value.id, styleType, enabled);
 
@@ -304,7 +304,7 @@ function _toggleStyle(styleType: keyof LayerStyles, enabled: boolean) {
   }
 }
 
-function _toggleBlendingOptions() {
+function toggleBlendingOptions() {
   if (!selectedLayer.value) return;
   setStyleEnabled(
     store,
@@ -314,22 +314,22 @@ function _toggleBlendingOptions() {
   );
 }
 
-function _copyStyles() {
+function copyStyles() {
   if (!selectedLayer.value) return;
   copyLayerStyles(store, selectedLayer.value.id);
 }
 
-function _pasteStyles() {
+function pasteStyles() {
   if (!selectedLayer.value) return;
   pasteLayerStyles(store, selectedLayer.value.id);
 }
 
-function _clearStyles() {
+function clearStyles() {
   if (!selectedLayer.value) return;
   clearLayerStyles(store, selectedLayer.value.id);
 }
 
-function _applyPreset(event: Event) {
+function applyPreset(event: Event) {
   const select = event.target as HTMLSelectElement;
   const preset = select.value;
   if (!preset || !selectedLayer.value) return;
@@ -338,7 +338,7 @@ function _applyPreset(event: Event) {
   select.value = "";
 }
 
-function _formatPresetName(name: string): string {
+function formatPresetName(name: string): string {
   return name
     .split("-")
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
@@ -346,12 +346,13 @@ function _formatPresetName(name: string): string {
 }
 
 // Style update handlers
-function _updateDropShadow(updates: any) {
+function updateDropShadow(updates: any) {
   if (!selectedLayer.value) return;
+  const layerId = selectedLayer.value.id;
   Object.entries(updates).forEach(([key, value]) => {
     updateStyleProperty(
       store,
-      selectedLayer.value?.id,
+      layerId,
       "dropShadow",
       key as any,
       value,
@@ -359,12 +360,13 @@ function _updateDropShadow(updates: any) {
   });
 }
 
-function _updateInnerShadow(updates: any) {
+function updateInnerShadow(updates: any) {
   if (!selectedLayer.value) return;
+  const layerId = selectedLayer.value.id;
   Object.entries(updates).forEach(([key, value]) => {
     updateStyleProperty(
       store,
-      selectedLayer.value?.id,
+      layerId,
       "innerShadow",
       key as any,
       value,
@@ -372,12 +374,13 @@ function _updateInnerShadow(updates: any) {
   });
 }
 
-function _updateOuterGlow(updates: any) {
+function updateOuterGlow(updates: any) {
   if (!selectedLayer.value) return;
+  const layerId = selectedLayer.value.id;
   Object.entries(updates).forEach(([key, value]) => {
     updateStyleProperty(
       store,
-      selectedLayer.value?.id,
+      layerId,
       "outerGlow",
       key as any,
       value,
@@ -385,12 +388,13 @@ function _updateOuterGlow(updates: any) {
   });
 }
 
-function _updateInnerGlow(updates: any) {
+function updateInnerGlow(updates: any) {
   if (!selectedLayer.value) return;
+  const layerId = selectedLayer.value.id;
   Object.entries(updates).forEach(([key, value]) => {
     updateStyleProperty(
       store,
-      selectedLayer.value?.id,
+      layerId,
       "innerGlow",
       key as any,
       value,
@@ -398,12 +402,13 @@ function _updateInnerGlow(updates: any) {
   });
 }
 
-function _updateBevelEmboss(updates: any) {
+function updateBevelEmboss(updates: any) {
   if (!selectedLayer.value) return;
+  const layerId = selectedLayer.value.id;
   Object.entries(updates).forEach(([key, value]) => {
     updateStyleProperty(
       store,
-      selectedLayer.value?.id,
+      layerId,
       "bevelEmboss",
       key as any,
       value,
@@ -411,12 +416,13 @@ function _updateBevelEmboss(updates: any) {
   });
 }
 
-function _updateSatin(updates: any) {
+function updateSatin(updates: any) {
   if (!selectedLayer.value) return;
+  const layerId = selectedLayer.value.id;
   Object.entries(updates).forEach(([key, value]) => {
     updateStyleProperty(
       store,
-      selectedLayer.value?.id,
+      layerId,
       "satin",
       key as any,
       value,
@@ -424,12 +430,13 @@ function _updateSatin(updates: any) {
   });
 }
 
-function _updateColorOverlay(updates: any) {
+function updateColorOverlay(updates: any) {
   if (!selectedLayer.value) return;
+  const layerId = selectedLayer.value.id;
   Object.entries(updates).forEach(([key, value]) => {
     updateStyleProperty(
       store,
-      selectedLayer.value?.id,
+      layerId,
       "colorOverlay",
       key as any,
       value,
@@ -437,12 +444,13 @@ function _updateColorOverlay(updates: any) {
   });
 }
 
-function _updateGradientOverlay(updates: any) {
+function updateGradientOverlay(updates: any) {
   if (!selectedLayer.value) return;
+  const layerId = selectedLayer.value.id;
   Object.entries(updates).forEach(([key, value]) => {
     updateStyleProperty(
       store,
-      selectedLayer.value?.id,
+      layerId,
       "gradientOverlay",
       key as any,
       value,
@@ -450,12 +458,13 @@ function _updateGradientOverlay(updates: any) {
   });
 }
 
-function _updateStroke(updates: any) {
+function updateStroke(updates: any) {
   if (!selectedLayer.value) return;
+  const layerId = selectedLayer.value.id;
   Object.entries(updates).forEach(([key, value]) => {
     updateStyleProperty(
       store,
-      selectedLayer.value?.id,
+      layerId,
       "stroke",
       key as any,
       value,
@@ -463,12 +472,13 @@ function _updateStroke(updates: any) {
   });
 }
 
-function _updateBlendingOptions(updates: any) {
+function updateBlendingOptions(updates: any) {
   if (!selectedLayer.value) return;
+  const layerId = selectedLayer.value.id;
   Object.entries(updates).forEach(([key, value]) => {
     updateStyleProperty(
       store,
-      selectedLayer.value?.id,
+      layerId,
       "blendingOptions",
       key as any,
       value,

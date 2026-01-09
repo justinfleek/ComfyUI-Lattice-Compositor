@@ -33,19 +33,19 @@ import type { ShapeGroup, ShapeTransform } from "@/types/shapes";
 const props = defineProps<{ group: ShapeGroup; layerId: string }>();
 const emit = defineEmits(["update"]);
 
-function _updateName(e: Event) {
+function updateName(e: Event) {
   const updated = { ...props.group };
   updated.name = (e.target as HTMLInputElement).value;
   emit("update", updated);
 }
 
-function _updateBlendMode(e: Event) {
+function updateBlendMode(e: Event) {
   const updated = { ...props.group };
   updated.blendMode = (e.target as HTMLSelectElement).value;
   emit("update", updated);
 }
 
-function _updateTransform(transform: ShapeTransform) {
+function updateTransform(transform: ShapeTransform) {
   const updated = { ...props.group, transform };
   emit("update", updated);
 }

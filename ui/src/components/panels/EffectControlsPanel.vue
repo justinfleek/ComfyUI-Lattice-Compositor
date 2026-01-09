@@ -90,13 +90,13 @@
                   <div class="control-group">
                     <AngleDial
                       :modelValue="param.value"
-                      @update:modelValue="(v) => updateParam(effect.id, String(key), v)"
+                      @update:modelValue="(v: number) => updateParam(effect.id, String(key), v)"
                       :size="32"
                       :showValue="false"
                     />
                     <ScrubableNumber
                       :modelValue="param.value"
-                      @update:modelValue="(v) => updateParam(effect.id, String(key), v)"
+                      @update:modelValue="(v: number) => updateParam(effect.id, String(key), v)"
                       unit="°"
                     />
                   </div>
@@ -108,7 +108,7 @@
                     <SliderInput
                       v-if="hasRange(effect.effectKey, String(key))"
                       :modelValue="param.value"
-                      @update:modelValue="(v) => updateParam(effect.id, String(key), v)"
+                      @update:modelValue="(v: number) => updateParam(effect.id, String(key), v)"
                       :min="getParamDef(effect.effectKey, String(key))?.min ?? 0"
                       :max="getParamDef(effect.effectKey, String(key))?.max ?? 100"
                       :step="getParamDef(effect.effectKey, String(key))?.step ?? 1"
@@ -116,7 +116,7 @@
                     />
                     <ScrubableNumber
                       :modelValue="param.value"
-                      @update:modelValue="(v) => updateParam(effect.id, String(key), v)"
+                      @update:modelValue="(v: number) => updateParam(effect.id, String(key), v)"
                       :step="getParamDef(effect.effectKey, String(key))?.step ?? 0.1"
                     />
                   </div>
@@ -126,12 +126,12 @@
                   <div class="control-group point-group">
                     <ScrubableNumber
                       :modelValue="param.value.x"
-                      @update:modelValue="(v) => updatePoint(effect.id, String(key), 'x', v)"
+                      @update:modelValue="(v: number) => updatePoint(effect.id, String(key), 'x', v)"
                       label="X"
                     />
                     <ScrubableNumber
                       :modelValue="param.value.y"
-                      @update:modelValue="(v) => updatePoint(effect.id, String(key), 'y', v)"
+                      @update:modelValue="(v: number) => updatePoint(effect.id, String(key), 'y', v)"
                       label="Y"
                     />
                   </div>
@@ -140,7 +140,7 @@
                 <template v-else-if="param.type === 'color'">
                   <ColorPicker
                     :modelValue="formatColor(param.value)"
-                    @update:modelValue="(v) => updateColor(effect.id, String(key), v)"
+                    @update:modelValue="(v: string) => updateColor(effect.id, String(key), v)"
                     :alpha="true"
                   />
                 </template>
@@ -210,11 +210,11 @@ const dragOverEffectId = ref<string | null>(null);
 const draggedIndex = ref<number | null>(null);
 
 const layer = computed(() => store.selectedLayer);
-const _categories = EFFECT_CATEGORIES;
+const categories = EFFECT_CATEGORIES;
 
 // --- Helpers ---
 
-function _getEffectsByCategory(cat: string) {
+function getEffectsByCategory(cat: string) {
   return Object.entries(EFFECT_DEFINITIONS)
     .filter(([_, def]) => def.category === cat)
     .map(([key, def]) => ({ key, ...def }));
@@ -233,39 +233,39 @@ function formatParamKey(name: string) {
     .replace(/^_|_$/g, "");
 }
 
-function _hasRange(effectKey: string, paramKey: string) {
+function hasRange(effectKey: string, paramKey: string) {
   const def = getParamDef(effectKey, paramKey);
   return def && (def.min !== undefined || def.max !== undefined);
 }
 
-function _isCheckbox(effectKey: string, paramKey: string) {
+function isCheckbox(effectKey: string, paramKey: string) {
   const def = getParamDef(effectKey, paramKey);
   return def?.type === "checkbox";
 }
 
-function _isAngleParam(effectKey: string, paramKey: string) {
+function isAngleParam(effectKey: string, paramKey: string) {
   const def = getParamDef(effectKey, paramKey);
   return def?.type === "angle";
 }
 
-function _isLayerParam(effectKey: string, paramKey: string) {
+function isLayerParam(effectKey: string, paramKey: string) {
   const def = getParamDef(effectKey, paramKey);
   return def?.type === "layer";
 }
 
-function _getAvailableLayers() {
+function getAvailableLayers() {
   const comp = store.getActiveComp();
   if (!comp) return [];
   // Return all layers except the currently selected one (can't use self as displacement map)
   return comp.layers.filter((l) => l.id !== layer.value?.id);
 }
 
-function _getParamOptions(effectKey: string, paramKey: string) {
+function getParamOptions(effectKey: string, paramKey: string) {
   const def = getParamDef(effectKey, paramKey);
   return def?.options || [];
 }
 
-function _getLayerIcon(type: string) {
+function getLayerIcon(type: string) {
   const icons: Record<string, string> = {
     solid: "■",
     text: "T",
@@ -281,31 +281,31 @@ function _getLayerIcon(type: string) {
 
 // --- Actions ---
 
-function _addEffect(key: string) {
+function addEffect(key: string) {
   if (layer.value) {
     store.addEffectToLayer(layer.value.id, key);
     showAddMenu.value = false;
   }
 }
 
-function _removeEffect(effect: any) {
+function removeEffect(effect: any) {
   if (layer.value) store.removeEffectFromLayer(layer.value.id, effect.id);
 }
 
-function _toggleEffect(effect: any) {
+function toggleEffect(effect: any) {
   if (layer.value) store.toggleEffect(layer.value.id, effect.id);
 }
 
-function _toggleExpand(effect: any) {
+function toggleExpand(effect: any) {
   effect.expanded = !effect.expanded;
 }
 
-function _updateParam(effectId: string, paramKey: string, value: any) {
+function updateParam(effectId: string, paramKey: string, value: any) {
   if (layer.value)
     store.updateEffectParameter(layer.value.id, effectId, paramKey, value);
 }
 
-function _updatePoint(
+function updatePoint(
   effectId: string,
   paramKey: string,
   axis: "x" | "y",
@@ -321,12 +321,12 @@ function _updatePoint(
 }
 
 // Color handling: Store uses RGBA object {r,g,b,a}, Picker uses Hex string
-function _formatColor(val: any) {
+function formatColor(val: any) {
   if (typeof val === "string") return val;
   return rgbaToHex(val.r, val.g, val.b, val.a ?? 1);
 }
 
-function _updateColor(effectId: string, paramKey: string, hex: string) {
+function updateColor(effectId: string, paramKey: string, hex: string) {
   const rgba = hexToRgba(hex);
   if (rgba && layer.value) {
     const val = { r: rgba[0], g: rgba[1], b: rgba[2], a: rgba[3] };
@@ -334,7 +334,7 @@ function _updateColor(effectId: string, paramKey: string, hex: string) {
   }
 }
 
-function _toggleParamAnim(effectId: string, paramKey: string) {
+function toggleParamAnim(effectId: string, paramKey: string) {
   if (!layer.value) return;
   const effect = layer.value.effects.find((e: any) => e.id === effectId);
   const param = effect?.parameters[paramKey];
@@ -350,29 +350,29 @@ function _toggleParamAnim(effectId: string, paramKey: string) {
 
 // --- Drag & Drop ---
 
-function _onDragStart(event: DragEvent, index: number) {
+function onDragStart(event: DragEvent, index: number) {
   draggedIndex.value = index;
   event.dataTransfer?.setData("application/effect-reorder", String(index));
   event.dataTransfer!.effectAllowed = "move";
 }
 
-function _onDragEnd() {
+function onDragEnd() {
   draggedIndex.value = null;
   dragOverEffectId.value = null;
 }
 
-function _onDragOver(event: DragEvent, effectId: string) {
+function onDragOver(event: DragEvent, effectId: string) {
   const data = event.dataTransfer?.types.includes("application/effect-reorder");
   if (data) {
     dragOverEffectId.value = effectId;
   }
 }
 
-function _onDragLeave() {
+function onDragLeave() {
   dragOverEffectId.value = null;
 }
 
-function _onDrop(event: DragEvent, targetIndex: number) {
+function onDrop(event: DragEvent, targetIndex: number) {
   dragOverEffectId.value = null;
   const fromIndexStr = event.dataTransfer?.getData(
     "application/effect-reorder",

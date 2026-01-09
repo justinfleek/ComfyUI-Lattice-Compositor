@@ -17,6 +17,19 @@ export {
   GPUParticleSystem,
 } from "./GPUParticleSystem";
 
+// Group system
+export { ParticleGroupSystem } from "./ParticleGroupSystem";
+
+// Spring/Soft Body system
+export { ParticleSpringSystem } from "./ParticleSpringSystem";
+export { GPUSpringSystem } from "./GPUSpringSystem";
+export type { Spring, SpringConstraint, SpringSystemConfig } from "./ParticleSpringSystem";
+
+// SPH Fluid system
+export { ParticleSPHSystem } from "./ParticleSPHSystem";
+export { GPUSPHSystem } from "./GPUSPHSystem";
+export type { SPHConfig } from "./ParticleSPHSystem";
+
 // Type exports
 export type {
   AudioBinding,
@@ -52,4 +65,7 @@ export type {
   SubEmitterConfig,
   // Sub-emitter types
   SubEmitterTrigger,
+  // Group types
+  ParticleGroupConfig,
+  MAX_PARTICLE_GROUPS,
 } from "./types";

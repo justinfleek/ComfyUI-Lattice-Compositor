@@ -103,7 +103,7 @@
               </select>
             </div>
 
-            <!-- BUG-081 fix: Target Layer Selection -->
+            <!-- Target Layer Selection -->
             <div class="property-row">
               <label>Layer</label>
               <select v-model="mapping.targetLayerId" @change="onTargetLayerChange(mapping)">
@@ -114,7 +114,7 @@
               </select>
             </div>
 
-            <!-- BUG-081 fix: Target Emitter Selection (only for particle layers) -->
+            <!-- Target Emitter Selection (only for particle layers) -->
             <div class="property-row" v-if="isParticleLayer(mapping.targetLayerId)">
               <label>Emitter</label>
               <select v-model="mapping.targetEmitterId">
@@ -314,6 +314,8 @@ import {
   getAllFeatures,
   getFeaturesByCategory,
   getTargetsByCategory,
+  getFeatureDisplayName,
+  getTargetDisplayName,
 } from "@/services/audioReactiveMapping";
 import { useCompositorStore } from "@/stores/compositorStore";
 
@@ -341,15 +343,15 @@ const visualizerFeature = ref<AudioFeature>("amplitude");
 const visualizerCanvas = ref<HTMLCanvasElement | null>(null);
 
 // Computed
-const _allFeatures = computed(() => getAllFeatures());
-const _featuresByCategory = computed(() => getFeaturesByCategory());
-const _targetsByCategory = computed(() => getTargetsByCategory());
+const allFeatures = computed(() => getAllFeatures());
+const featuresByCategory = computed(() => getFeaturesByCategory());
+const targetsByCategory = computed(() => getTargetsByCategory());
 
-const _playheadPosition = computed(
+const playheadPosition = computed(
   () => (store.currentFrame / store.frameCount) * 100,
 );
 
-const _currentFeatureValue = computed(() => {
+const currentFeatureValue = computed(() => {
   if (!store.audioAnalysis) return 0;
   return getFeatureAtFrame(
     store.audioAnalysis,
@@ -358,16 +360,16 @@ const _currentFeatureValue = computed(() => {
   );
 });
 
-// BUG-081 fix: Layer and emitter selection helpers for targetEmitterId UI
-const _allLayers = computed(() => store.layers);
+// Layer and emitter selection helpers for per-emitter audio targeting UI
+const allLayers = computed(() => store.layers);
 
-function _isParticleLayer(layerId: string | undefined): boolean {
+function isParticleLayer(layerId: string | undefined): boolean {
   if (!layerId) return false;
   const layer = store.layers.find((l) => l.id === layerId);
   return layer?.type === "particles";
 }
 
-function _getEmittersForLayer(
+function getEmittersForLayer(
   layerId: string | undefined,
 ): Array<{ id: string; name: string }> {
   if (!layerId) return [];
@@ -378,13 +380,13 @@ function _getEmittersForLayer(
   return data?.emitters || [];
 }
 
-function _onTargetLayerChange(mapping: AudioMapping): void {
+function onTargetLayerChange(mapping: AudioMapping): void {
   // Clear targetEmitterId when layer changes (emitter may not exist in new layer)
   mapping.targetEmitterId = undefined;
 }
 
 // Methods
-function _toggleSection(section: string): void {
+function toggleSection(section: string): void {
   if (expandedSections.value.has(section)) {
     expandedSections.value.delete(section);
   } else {
@@ -392,7 +394,7 @@ function _toggleSection(section: string): void {
   }
 }
 
-function _toggleMappingExpanded(id: string): void {
+function toggleMappingExpanded(id: string): void {
   if (expandedMappings.value.has(id)) {
     expandedMappings.value.delete(id);
   } else {
@@ -400,7 +402,7 @@ function _toggleMappingExpanded(id: string): void {
   }
 }
 
-function _detectPeaks(): void {
+function detectPeaks(): void {
   if (!store.audioAnalysis) return;
 
   const weights = store.audioAnalysis.amplitudeEnvelope;
@@ -410,7 +412,7 @@ function _detectPeaks(): void {
   store.setPeakData(peakData.value);
 }
 
-function _addMapping(): void {
+function addMapping(): void {
   const mapping = createDefaultAudioMapping();
   mappings.value.push(mapping);
   expandedMappings.value.add(mapping.id);
@@ -419,7 +421,7 @@ function _addMapping(): void {
   store.addAudioMapping(mapping);
 }
 
-function _removeMapping(id: string): void {
+function removeMapping(id: string): void {
   const index = mappings.value.findIndex((m) => m.id === id);
   if (index >= 0) {
     mappings.value.splice(index, 1);

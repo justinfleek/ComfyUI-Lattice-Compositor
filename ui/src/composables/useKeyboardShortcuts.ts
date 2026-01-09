@@ -1190,7 +1190,7 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
         togglePlay();
         break;
 
-      // Property solo shortcuts (AE-style)
+      // Property solo shortcuts
       case "p":
         if (hasSelectedLayer && !e.ctrlKey && !e.metaKey) {
           e.preventDefault();

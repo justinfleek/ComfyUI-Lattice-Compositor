@@ -30,6 +30,7 @@ import type {
   Keyframe,
 } from "@/types/project";
 import type { BezierPath } from "@/types/shapes";
+import { validateFps } from "@/utils/fpsUtils";
 import { renderLogger } from "@/utils/logger";
 import { createFootageAccessor } from "./dataImport";
 import { easings, getEasing } from "./easing";
@@ -314,18 +315,21 @@ function applyPropertyExpression<T>(
   const expr = property.expression;
   if (!expr || !expr.enabled) return value;
 
-  // Build expression context
-  const time = frame / fps;
-  const velocity = calculateVelocity(property, frame, fps);
+  // Validate fps to prevent division by zero in time calculations
+  const safeFps = validateFps(fps, 16);
 
-  // BUG-041 FIX: Use actual composition duration if provided, otherwise default to 81/fps (4n+1 pattern)
-  const duration = compDuration ?? 81 / fps;
-  const frameCount = Math.round(duration * fps);
+  // Build expression context
+  const time = frame / safeFps;
+  const velocity = calculateVelocity(property, frame, safeFps);
+
+  // Use composition duration if provided, otherwise default to 81 frames (4n+1 pattern for smooth looping)
+  const duration = compDuration ?? 81 / safeFps;
+  const frameCount = Math.round(duration * safeFps);
 
   const ctx: ExpressionContext = {
     time,
     frame,
-    fps,
+    fps: safeFps,
     duration,
     layerId,
     layerIndex: 0,
@@ -589,20 +593,66 @@ function interpolateValue<T>(v1: T, v2: T, t: number): T {
 }
 
 /**
+ * Normalize a hex color to 6-digit format
+ * Handles: #rgb → #rrggbb, #rgba → #rrggbbaa, #rrggbb → #rrggbb, #rrggbbaa → #rrggbbaa
+ */
+function normalizeHexColor(hex: string): string {
+  if (!hex || !hex.startsWith("#")) return "#000000";
+  const h = hex.slice(1);
+
+  // 3 char: #rgb → #rrggbb
+  if (h.length === 3) {
+    return `#${h[0]}${h[0]}${h[1]}${h[1]}${h[2]}${h[2]}`;
+  }
+  // 4 char: #rgba → #rrggbbaa
+  if (h.length === 4) {
+    return `#${h[0]}${h[0]}${h[1]}${h[1]}${h[2]}${h[2]}${h[3]}${h[3]}`;
+  }
+  // Already 6 or 8 chars, return as-is
+  if (h.length === 6 || h.length === 8) {
+    return hex;
+  }
+  // Invalid format - return black
+  return "#000000";
+}
+
+/**
+ * Parse a hex color component, returning 0 for invalid input
+ */
+function parseHexComponent(hex: string, start: number, end: number): number {
+  const val = parseInt(hex.slice(start, end), 16);
+  return Number.isNaN(val) ? 0 : Math.max(0, Math.min(255, val));
+}
+
+/**
  * Interpolate between two hex colors
+ * Supports: #rgb, #rrggbb, #rgba, #rrggbbaa
+ * Invalid colors are treated as black (#000000)
  */
 function interpolateColor(c1: string, c2: string, t: number): string {
-  const r1 = parseInt(c1.slice(1, 3), 16);
-  const g1 = parseInt(c1.slice(3, 5), 16);
-  const b1 = parseInt(c1.slice(5, 7), 16);
+  // Normalize both colors
+  const n1 = normalizeHexColor(c1);
+  const n2 = normalizeHexColor(c2);
 
-  const r2 = parseInt(c2.slice(1, 3), 16);
-  const g2 = parseInt(c2.slice(3, 5), 16);
-  const b2 = parseInt(c2.slice(5, 7), 16);
+  const r1 = parseHexComponent(n1, 1, 3);
+  const g1 = parseHexComponent(n1, 3, 5);
+  const b1 = parseHexComponent(n1, 5, 7);
+  const a1 = n1.length === 9 ? parseHexComponent(n1, 7, 9) : 255;
+
+  const r2 = parseHexComponent(n2, 1, 3);
+  const g2 = parseHexComponent(n2, 3, 5);
+  const b2 = parseHexComponent(n2, 5, 7);
+  const a2 = n2.length === 9 ? parseHexComponent(n2, 7, 9) : 255;
 
   const r = Math.round(r1 + (r2 - r1) * t);
   const g = Math.round(g1 + (g2 - g1) * t);
   const b = Math.round(b1 + (b2 - b1) * t);
+
+  // Only include alpha if either input had alpha
+  if (n1.length === 9 || n2.length === 9) {
+    const a = Math.round(a1 + (a2 - a1) * t);
+    return `#${r.toString(16).padStart(2, "0")}${g.toString(16).padStart(2, "0")}${b.toString(16).padStart(2, "0")}${a.toString(16).padStart(2, "0")}`;
+  }
 
   return `#${r.toString(16).padStart(2, "0")}${g.toString(16).padStart(2, "0")}${b.toString(16).padStart(2, "0")}`;
 }

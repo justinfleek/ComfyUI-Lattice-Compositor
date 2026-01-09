@@ -724,10 +724,10 @@ export function compareStates(
 
     // Check effects
     const beforeEffects = beforeLayer.effects?.length || 0;
-    const afterEffects = afterLayer.effects?.length || 0;
-    if (beforeEffects !== afterEffects) {
+    const afterLayerEffects = afterLayer.effects?.length || 0;
+    if (beforeEffects !== afterLayerEffects) {
       changes.push(
-        `Layer "${afterLayer.name}": effects ${beforeEffects} → ${afterEffects}`,
+        `Layer "${afterLayer.name}": effects ${beforeEffects} → ${afterLayerEffects}`,
       );
     }
   }

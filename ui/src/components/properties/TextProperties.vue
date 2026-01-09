@@ -35,7 +35,7 @@
 
       <div class="row">
          <label>Size</label>
-         <ScrubableNumber :modelValue="getPropertyValue('Font Size') || textData.fontSize" @update:modelValue="v => updateAnimatable('Font Size', v)" unit="pt" />
+         <ScrubableNumber :modelValue="getPropertyValue('Font Size') || textData.fontSize" @update:modelValue="(v: number) => updateAnimatable('Font Size', v)" unit="pt" />
       </div>
 
       <div class="row color-row">
@@ -51,7 +51,7 @@
 
       <div class="row">
          <label>Stroke Width</label>
-         <ScrubableNumber :modelValue="getPropertyValue('Stroke Width') || textData.strokeWidth || 0" @update:modelValue="v => updateAnimatable('Stroke Width', v)" :min="0" :max="50" unit="px" />
+         <ScrubableNumber :modelValue="getPropertyValue('Stroke Width') || textData.strokeWidth || 0" @update:modelValue="(v: number) => updateAnimatable('Stroke Width', v)" :min="0" :max="50" unit="px" />
       </div>
 
       <div class="row">
@@ -70,31 +70,31 @@
       <div class="row">
          <label>Position</label>
          <div class="vec2">
-            <ScrubableNumber :modelValue="transform.position.value.x" @update:modelValue="v => updateTransform('position', 'x', v)" unit="px" />
-            <ScrubableNumber :modelValue="transform.position.value.y" @update:modelValue="v => updateTransform('position', 'y', v)" unit="px" />
+            <ScrubableNumber :modelValue="transform.position.value.x" @update:modelValue="(v: number) => updateTransform('position', 'x', v)" unit="px" />
+            <ScrubableNumber :modelValue="transform.position.value.y" @update:modelValue="(v: number) => updateTransform('position', 'y', v)" unit="px" />
          </div>
       </div>
       <div class="row">
          <label>Origin</label>
          <div class="vec2">
-            <ScrubableNumber :modelValue="transform.anchorPoint.value.x" @update:modelValue="v => updateTransform('anchorPoint', 'x', v)" unit="px" />
-            <ScrubableNumber :modelValue="transform.anchorPoint.value.y" @update:modelValue="v => updateTransform('anchorPoint', 'y', v)" unit="px" />
+            <ScrubableNumber :modelValue="transform.anchorPoint.value.x" @update:modelValue="(v: number) => updateTransform('anchorPoint', 'x', v)" unit="px" />
+            <ScrubableNumber :modelValue="transform.anchorPoint.value.y" @update:modelValue="(v: number) => updateTransform('anchorPoint', 'y', v)" unit="px" />
          </div>
       </div>
       <div class="row">
          <label>Scale</label>
          <div class="vec2">
-            <ScrubableNumber :modelValue="transform.scale.value.x" @update:modelValue="v => updateTransform('scale', 'x', v)" unit="%" />
-            <ScrubableNumber :modelValue="transform.scale.value.y" @update:modelValue="v => updateTransform('scale', 'y', v)" unit="%" />
+            <ScrubableNumber :modelValue="transform.scale.value.x" @update:modelValue="(v: number) => updateTransform('scale', 'x', v)" unit="%" />
+            <ScrubableNumber :modelValue="transform.scale.value.y" @update:modelValue="(v: number) => updateTransform('scale', 'y', v)" unit="%" />
          </div>
       </div>
       <div class="row">
          <label>Rotation</label>
-         <ScrubableNumber :modelValue="transform.rotation.value" @update:modelValue="v => updateTransform('rotation', null, v)" unit="°" />
+         <ScrubableNumber :modelValue="transform.rotation.value" @update:modelValue="(v: number) => updateTransform('rotation', null, v)" unit="°" />
       </div>
       <div class="row">
          <label>Opacity</label>
-         <ScrubableNumber :modelValue="layer.opacity?.value ?? 100" @update:modelValue="v => updateOpacity(v)" :min="0" :max="100" unit="%" />
+         <ScrubableNumber :modelValue="layer.opacity?.value ?? 100" @update:modelValue="(v: number) => updateOpacity(v)" :min="0" :max="100" unit="%" />
       </div>
     </div>
 
@@ -113,7 +113,7 @@
             <label>Path Offset %</label>
             <ScrubableNumber
               :modelValue="getPropertyValue('Path Offset') ?? textData.pathOffset ?? 0"
-              @update:modelValue="v => updateAnimatable('Path Offset', v)"
+              @update:modelValue="(v: number) => updateAnimatable('Path Offset', v)"
               :min="-100"
               :max="200"
               :precision="1"
@@ -130,7 +130,7 @@
             <label>First Margin</label>
             <ScrubableNumber
               :modelValue="getPropertyValue('First Margin') ?? textData.pathFirstMargin ?? 0"
-              @update:modelValue="v => updateAnimatable('First Margin', v)"
+              @update:modelValue="(v: number) => updateAnimatable('First Margin', v)"
               :min="0"
             />
          </div>
@@ -139,7 +139,7 @@
             <label>Last Margin</label>
             <ScrubableNumber
               :modelValue="getPropertyValue('Last Margin') ?? textData.pathLastMargin ?? 0"
-              @update:modelValue="v => updateAnimatable('Last Margin', v)"
+              @update:modelValue="(v: number) => updateAnimatable('Last Margin', v)"
               :min="0"
             />
          </div>
@@ -171,19 +171,19 @@
        <div class="section-title">Advanced</div>
        <div class="row">
           <label>Tracking</label>
-          <ScrubableNumber :modelValue="getPropertyValue('Tracking') || textData.tracking || 0" @update:modelValue="v => updateAnimatable('Tracking', v)" />
+          <ScrubableNumber :modelValue="getPropertyValue('Tracking') || textData.tracking || 0" @update:modelValue="(v: number) => updateAnimatable('Tracking', v)" />
        </div>
        <div class="row">
           <label>Line Spacing</label>
-          <ScrubableNumber :modelValue="getPropertyValue('Line Spacing') || textData.lineSpacing || 0" @update:modelValue="v => updateAnimatable('Line Spacing', v)" />
+          <ScrubableNumber :modelValue="getPropertyValue('Line Spacing') || textData.lineSpacing || 0" @update:modelValue="(v: number) => updateAnimatable('Line Spacing', v)" />
        </div>
        <div class="row">
           <label>Baseline</label>
-          <ScrubableNumber :modelValue="getPropertyValue('Baseline Shift') || textData.baselineShift || 0" @update:modelValue="v => updateAnimatable('Baseline Shift', v)" />
+          <ScrubableNumber :modelValue="getPropertyValue('Baseline Shift') || textData.baselineShift || 0" @update:modelValue="(v: number) => updateAnimatable('Baseline Shift', v)" />
        </div>
        <div class="row">
           <label>Char Offset</label>
-          <ScrubableNumber :modelValue="getPropertyValue('Character Offset') || textData.characterOffset || 0" @update:modelValue="v => updateAnimatable('Character Offset', v)" :precision="0" />
+          <ScrubableNumber :modelValue="getPropertyValue('Character Offset') || textData.characterOffset || 0" @update:modelValue="(v: number) => updateAnimatable('Character Offset', v)" :precision="0" />
        </div>
        <div class="row text-formatting-row">
           <label>Case</label>
@@ -243,15 +243,15 @@
       <div class="section-title">Paragraph</div>
       <div class="row">
          <label>First Line Indent</label>
-         <ScrubableNumber :modelValue="textData.firstLineIndent || 0" @update:modelValue="v => updateData('firstLineIndent', v)" :min="-500" :max="500" />
+         <ScrubableNumber :modelValue="textData.firstLineIndent || 0" @update:modelValue="(v: number) => updateData('firstLineIndent', v)" :min="-500" :max="500" />
       </div>
       <div class="row">
          <label>Space Before</label>
-         <ScrubableNumber :modelValue="textData.spaceBefore || 0" @update:modelValue="v => updateData('spaceBefore', v)" :min="0" :max="500" />
+         <ScrubableNumber :modelValue="textData.spaceBefore || 0" @update:modelValue="(v: number) => updateData('spaceBefore', v)" :min="0" :max="500" />
       </div>
       <div class="row">
          <label>Space After</label>
-         <ScrubableNumber :modelValue="textData.spaceAfter || 0" @update:modelValue="v => updateData('spaceAfter', v)" :min="0" :max="500" />
+         <ScrubableNumber :modelValue="textData.spaceAfter || 0" @update:modelValue="(v: number) => updateData('spaceAfter', v)" :min="0" :max="500" />
       </div>
     </div>
 
@@ -325,7 +325,7 @@
               <label>Start %</label>
               <ScrubableNumber
                 :modelValue="animator.rangeSelector.start.value"
-                @update:modelValue="v => updateRangeSelector(animator.id, 'start', v)"
+                @update:modelValue="(v: number) => updateRangeSelector(animator.id, 'start', v)"
                 :min="0"
                 :max="100"
                 :precision="1"
@@ -336,7 +336,7 @@
               <label>End %</label>
               <ScrubableNumber
                 :modelValue="animator.rangeSelector.end.value"
-                @update:modelValue="v => updateRangeSelector(animator.id, 'end', v)"
+                @update:modelValue="(v: number) => updateRangeSelector(animator.id, 'end', v)"
                 :min="0"
                 :max="100"
                 :precision="1"
@@ -347,7 +347,7 @@
               <label>Offset %</label>
               <ScrubableNumber
                 :modelValue="animator.rangeSelector.offset.value"
-                @update:modelValue="v => updateRangeSelector(animator.id, 'offset', v)"
+                @update:modelValue="(v: number) => updateRangeSelector(animator.id, 'offset', v)"
                 :min="-100"
                 :max="100"
                 :precision="1"
@@ -402,7 +402,7 @@
               <label>Amount %</label>
               <ScrubableNumber
                 :modelValue="animator.rangeSelector.amount ?? 100"
-                @update:modelValue="v => updateRangeSelector(animator.id, 'amount', v)"
+                @update:modelValue="(v: number) => updateRangeSelector(animator.id, 'amount', v)"
                 :min="0"
                 :max="100"
                 :precision="0"
@@ -413,7 +413,7 @@
               <label>Smoothness %</label>
               <ScrubableNumber
                 :modelValue="animator.rangeSelector.smoothness ?? 100"
-                @update:modelValue="v => updateRangeSelector(animator.id, 'smoothness', v)"
+                @update:modelValue="(v: number) => updateRangeSelector(animator.id, 'smoothness', v)"
                 :min="0"
                 :max="100"
                 :precision="0"
@@ -424,7 +424,7 @@
               <label>Ease High %</label>
               <ScrubableNumber
                 :modelValue="animator.rangeSelector.ease?.high ?? 100"
-                @update:modelValue="v => updateRangeSelector(animator.id, 'ease', { ...animator.rangeSelector.ease, high: v })"
+                @update:modelValue="(v: number) => updateRangeSelector(animator.id, 'ease', { ...animator.rangeSelector.ease, high: v })"
                 :min="0"
                 :max="100"
                 :precision="0"
@@ -435,7 +435,7 @@
               <label>Ease Low %</label>
               <ScrubableNumber
                 :modelValue="animator.rangeSelector.ease?.low ?? 0"
-                @update:modelValue="v => updateRangeSelector(animator.id, 'ease', { ...animator.rangeSelector.ease, low: v })"
+                @update:modelValue="(v: number) => updateRangeSelector(animator.id, 'ease', { ...animator.rangeSelector.ease, low: v })"
                 :min="0"
                 :max="100"
                 :precision="0"
@@ -477,7 +477,7 @@
                 <label>Max Amount %</label>
                 <ScrubableNumber
                   :modelValue="animator.wigglySelector.maxAmount ?? 100"
-                  @update:modelValue="v => updateWigglySelector(animator.id, 'maxAmount', v)"
+                  @update:modelValue="(v: number) => updateWigglySelector(animator.id, 'maxAmount', v)"
                   :min="0"
                   :max="200"
                   :precision="0"
@@ -488,7 +488,7 @@
                 <label>Min Amount %</label>
                 <ScrubableNumber
                   :modelValue="animator.wigglySelector.minAmount ?? 0"
-                  @update:modelValue="v => updateWigglySelector(animator.id, 'minAmount', v)"
+                  @update:modelValue="(v: number) => updateWigglySelector(animator.id, 'minAmount', v)"
                   :min="0"
                   :max="200"
                   :precision="0"
@@ -499,7 +499,7 @@
                 <label>Wiggles/Sec</label>
                 <ScrubableNumber
                   :modelValue="animator.wigglySelector.wigglesPerSecond ?? 2"
-                  @update:modelValue="v => updateWigglySelector(animator.id, 'wigglesPerSecond', v)"
+                  @update:modelValue="(v: number) => updateWigglySelector(animator.id, 'wigglesPerSecond', v)"
                   :min="0.1"
                   :max="20"
                   :precision="1"
@@ -510,7 +510,7 @@
                 <label>Correlation %</label>
                 <ScrubableNumber
                   :modelValue="animator.wigglySelector.correlation ?? 50"
-                  @update:modelValue="v => updateWigglySelector(animator.id, 'correlation', v)"
+                  @update:modelValue="(v: number) => updateWigglySelector(animator.id, 'correlation', v)"
                   :min="0"
                   :max="100"
                   :precision="0"
@@ -545,7 +545,7 @@
                 <label>Random Seed</label>
                 <ScrubableNumber
                   :modelValue="animator.wigglySelector.randomSeed ?? 12345"
-                  @update:modelValue="v => updateWigglySelector(animator.id, 'randomSeed', Math.floor(v))"
+                  @update:modelValue="(v: number) => updateWigglySelector(animator.id, 'randomSeed', Math.floor(v))"
                   :min="0"
                   :max="99999"
                   :precision="0"
@@ -650,11 +650,11 @@
                 <div class="vec2">
                   <ScrubableNumber
                     :modelValue="getAnimatorPropertyValue(animator, 'position')?.x ?? 0"
-                    @update:modelValue="v => updateAnimatorProperty(animator.id, 'position', { ...getAnimatorPropertyValue(animator, 'position'), x: v })"
+                    @update:modelValue="(v: number) => updateAnimatorProperty(animator.id, 'position', { ...getAnimatorPropertyValue(animator, 'position'), x: v })"
                   />
                   <ScrubableNumber
                     :modelValue="getAnimatorPropertyValue(animator, 'position')?.y ?? 0"
-                    @update:modelValue="v => updateAnimatorProperty(animator.id, 'position', { ...getAnimatorPropertyValue(animator, 'position'), y: v })"
+                    @update:modelValue="(v: number) => updateAnimatorProperty(animator.id, 'position', { ...getAnimatorPropertyValue(animator, 'position'), y: v })"
                   />
                 </div>
               </template>
@@ -674,11 +674,11 @@
                 <div class="vec2">
                   <ScrubableNumber
                     :modelValue="getAnimatorPropertyValue(animator, 'scale')?.x ?? 100"
-                    @update:modelValue="v => updateAnimatorProperty(animator.id, 'scale', { ...getAnimatorPropertyValue(animator, 'scale'), x: v })"
+                    @update:modelValue="(v: number) => updateAnimatorProperty(animator.id, 'scale', { ...getAnimatorPropertyValue(animator, 'scale'), x: v })"
                   />
                   <ScrubableNumber
                     :modelValue="getAnimatorPropertyValue(animator, 'scale')?.y ?? 100"
-                    @update:modelValue="v => updateAnimatorProperty(animator.id, 'scale', { ...getAnimatorPropertyValue(animator, 'scale'), y: v })"
+                    @update:modelValue="(v: number) => updateAnimatorProperty(animator.id, 'scale', { ...getAnimatorPropertyValue(animator, 'scale'), y: v })"
                   />
                 </div>
               </template>
@@ -697,7 +697,7 @@
               <template v-if="hasAnimatorProperty(animator, 'rotation')">
                 <ScrubableNumber
                   :modelValue="getAnimatorPropertyValue(animator, 'rotation') ?? 0"
-                  @update:modelValue="v => updateAnimatorProperty(animator.id, 'rotation', v)"
+                  @update:modelValue="(v: number) => updateAnimatorProperty(animator.id, 'rotation', v)"
                   :min="-360"
                   :max="360"
                 />
@@ -717,7 +717,7 @@
               <template v-if="hasAnimatorProperty(animator, 'opacity')">
                 <ScrubableNumber
                   :modelValue="getAnimatorPropertyValue(animator, 'opacity') ?? 100"
-                  @update:modelValue="v => updateAnimatorProperty(animator.id, 'opacity', v)"
+                  @update:modelValue="(v: number) => updateAnimatorProperty(animator.id, 'opacity', v)"
                   :min="0"
                   :max="100"
                 />
@@ -738,13 +738,13 @@
                 <div class="vec2">
                   <ScrubableNumber
                     :modelValue="getAnimatorPropertyValue(animator, 'blur')?.x ?? 0"
-                    @update:modelValue="v => updateAnimatorProperty(animator.id, 'blur', { ...getAnimatorPropertyValue(animator, 'blur'), x: v })"
+                    @update:modelValue="(v: number) => updateAnimatorProperty(animator.id, 'blur', { ...getAnimatorPropertyValue(animator, 'blur'), x: v })"
                     :min="0"
                     :max="100"
                   />
                   <ScrubableNumber
                     :modelValue="getAnimatorPropertyValue(animator, 'blur')?.y ?? 0"
-                    @update:modelValue="v => updateAnimatorProperty(animator.id, 'blur', { ...getAnimatorPropertyValue(animator, 'blur'), y: v })"
+                    @update:modelValue="(v: number) => updateAnimatorProperty(animator.id, 'blur', { ...getAnimatorPropertyValue(animator, 'blur'), y: v })"
                     :min="0"
                     :max="100"
                   />
@@ -765,7 +765,7 @@
               <template v-if="hasAnimatorProperty(animator, 'tracking')">
                 <ScrubableNumber
                   :modelValue="getAnimatorPropertyValue(animator, 'tracking') ?? 0"
-                  @update:modelValue="v => updateAnimatorProperty(animator.id, 'tracking', v)"
+                  @update:modelValue="(v: number) => updateAnimatorProperty(animator.id, 'tracking', v)"
                   :min="-200"
                   :max="200"
                 />
@@ -850,8 +850,8 @@ const loadingFonts = ref(false);
 
 // Text Animator state
 const expandedAnimators = ref<Set<string>>(new Set());
-const _selectedPreset = ref<TextAnimatorPresetType | "">("");
-const _animatorPresets = TEXT_ANIMATOR_PRESET_LIST;
+const selectedPreset = ref<TextAnimatorPresetType | "">("");
+const animatorPresets = TEXT_ANIMATOR_PRESET_LIST;
 
 onMounted(async () => {
   await fontService.initialize();
@@ -860,7 +860,7 @@ onMounted(async () => {
 });
 
 // Request system font access (requires user interaction)
-async function _requestFontAccess() {
+async function requestFontAccess() {
   loadingFonts.value = true;
   try {
     const success = await fontService.requestSystemFontAccess();
@@ -877,7 +877,7 @@ const textData = computed(() => props.layer.data);
 const transform = computed(() => props.layer.transform);
 // Include both visible spline layers AND invisible path layers as potential text paths
 // Users can put text on a logo shape (spline) or an invisible motion guide (path)
-const _splineLayers = computed(() =>
+const splineLayers = computed(() =>
   store.layers.filter((l) => l.type === "spline" || l.type === "path"),
 );
 const animators = computed<TextAnimator[]>(
@@ -885,7 +885,7 @@ const animators = computed<TextAnimator[]>(
 );
 
 // Text Animator functions
-function _toggleAnimatorExpanded(animatorId: string) {
+function toggleAnimatorExpanded(animatorId: string) {
   if (expandedAnimators.value.has(animatorId)) {
     expandedAnimators.value.delete(animatorId);
   } else {
@@ -893,7 +893,7 @@ function _toggleAnimatorExpanded(animatorId: string) {
   }
 }
 
-function _addAnimator(presetType?: TextAnimatorPresetType) {
+function addAnimator(presetType?: TextAnimatorPresetType) {
   const newAnimator = presetType
     ? applyTextAnimatorPreset(presetType, 45)
     : createTextAnimator(`Animator ${animators.value.length + 1}`);
@@ -904,14 +904,14 @@ function _addAnimator(presetType?: TextAnimatorPresetType) {
   emit("update");
 }
 
-function _removeAnimator(animatorId: string) {
+function removeAnimator(animatorId: string) {
   const currentAnimators = animators.value.filter((a) => a.id !== animatorId);
   store.updateLayerData(props.layer.id, { animators: currentAnimators });
   expandedAnimators.value.delete(animatorId);
   emit("update");
 }
 
-function _duplicateAnimator(animatorId: string) {
+function duplicateAnimator(animatorId: string) {
   const source = animators.value.find((a) => a.id === animatorId);
   if (!source) return;
 
@@ -925,7 +925,7 @@ function _duplicateAnimator(animatorId: string) {
   emit("update");
 }
 
-function _toggleAnimatorEnabled(animatorId: string) {
+function toggleAnimatorEnabled(animatorId: string) {
   const animator = animators.value.find((a) => a.id === animatorId);
   if (!animator) return;
 
@@ -936,7 +936,7 @@ function _toggleAnimatorEnabled(animatorId: string) {
   emit("update");
 }
 
-function _updateAnimatorName(animatorId: string, name: string) {
+function updateAnimatorName(animatorId: string, name: string) {
   const currentAnimators = animators.value.map((a) =>
     a.id === animatorId ? { ...a, name } : a,
   );
@@ -944,7 +944,7 @@ function _updateAnimatorName(animatorId: string, name: string) {
   emit("update");
 }
 
-function _updateRangeSelector(
+function updateRangeSelector(
   animatorId: string,
   key: keyof TextRangeSelector,
   value: any,
@@ -973,7 +973,7 @@ function _updateRangeSelector(
   emit("update");
 }
 
-function _updateAnimatorProperty(
+function updateAnimatorProperty(
   animatorId: string,
   propKey: string,
   value: any,
@@ -1013,14 +1013,14 @@ function _updateAnimatorProperty(
   emit("update");
 }
 
-function _getAnimatorPropertyValue(
+function getAnimatorPropertyValue(
   animator: TextAnimator,
   propKey: string,
 ): any {
   return animator.properties[propKey]?.value;
 }
 
-function _hasAnimatorProperty(
+function hasAnimatorProperty(
   animator: TextAnimator,
   propKey: string,
 ): boolean {
@@ -1028,7 +1028,7 @@ function _hasAnimatorProperty(
 }
 
 // Wiggly Selector functions
-function _toggleWigglySelector(animatorId: string) {
+function toggleWigglySelector(animatorId: string) {
   const currentAnimators = animators.value.map((a) => {
     if (a.id !== animatorId) return a;
     const updated = { ...a };
@@ -1047,7 +1047,7 @@ function _toggleWigglySelector(animatorId: string) {
   emit("update");
 }
 
-function _updateWigglySelector(
+function updateWigglySelector(
   animatorId: string,
   key: keyof TextWigglySelector,
   value: any,
@@ -1066,7 +1066,7 @@ function _updateWigglySelector(
 }
 
 // Expression Selector functions
-function _toggleExpressionSelector(animatorId: string) {
+function toggleExpressionSelector(animatorId: string) {
   const currentAnimators = animators.value.map((a) => {
     if (a.id !== animatorId) return a;
     const updated = { ...a };
@@ -1120,7 +1120,7 @@ async function updateExpressionSelector(
   emit("update");
 }
 
-function _applyExpressionPreset(animatorId: string, presetKey: string) {
+function applyExpressionPreset(animatorId: string, presetKey: string) {
   const expression =
     EXPRESSION_PRESETS[presetKey as keyof typeof EXPRESSION_PRESETS];
   if (expression) {
@@ -1129,7 +1129,7 @@ function _applyExpressionPreset(animatorId: string, presetKey: string) {
 }
 
 // Expression presets list for dropdown
-const _expressionPresetList = Object.entries(EXPRESSION_PRESETS).map(
+const expressionPresetList = Object.entries(EXPRESSION_PRESETS).map(
   ([key, value]) => ({
     key,
     label: key
@@ -1143,12 +1143,12 @@ function getProperty(name: string) {
   return props.layer.properties?.find((p: any) => p.name === name);
 }
 
-function _getPropertyValue(name: string) {
+function getPropertyValue(name: string) {
   const p = getProperty(name);
   return p ? p.value : null;
 }
 
-function _updateText(val: string) {
+function updateText(val: string) {
   // Use store action to update text property
   store.setPropertyValue(props.layer.id, "Source Text", val);
   // Also update the layer data directly for immediate render
@@ -1173,7 +1173,7 @@ function updateData(key: string, val: any) {
   emit("update");
 }
 
-function _updateAnimatable(name: string, val: number) {
+function updateAnimatable(name: string, val: number) {
   // Use store action to update property value
   store.setPropertyValue(props.layer.id, name, val);
 
@@ -1195,12 +1195,12 @@ function _updateAnimatable(name: string, val: number) {
   emit("update");
 }
 
-function _isPropertyAnimated(name: string): boolean {
+function isPropertyAnimated(name: string): boolean {
   const prop = getProperty(name);
   return prop?.animated ?? false;
 }
 
-function _toggleKeyframe(name: string) {
+function toggleKeyframe(name: string) {
   const prop = getProperty(name);
   if (!prop) return;
 
@@ -1222,7 +1222,7 @@ function _toggleKeyframe(name: string) {
   emit("update");
 }
 
-function _updateTransform(propName: string, axis: string | null, val: number) {
+function updateTransform(propName: string, axis: string | null, val: number) {
   const prop = transform.value[propName];
   let newValue: any;
   if (axis) {
@@ -1235,35 +1235,35 @@ function _updateTransform(propName: string, axis: string | null, val: number) {
   emit("update");
 }
 
-function _updateOpacity(val: number) {
+function updateOpacity(val: number) {
   // Use store action to update opacity
   store.setPropertyValue(props.layer.id, "opacity", val);
   emit("update");
 }
 
-function _toggleBold() {
+function toggleBold() {
   updateData(
     "fontWeight",
     textData.value.fontWeight === "bold" ? "400" : "bold",
   );
 }
-function _toggleItalic() {
+function toggleItalic() {
   updateData(
     "fontStyle",
     textData.value.fontStyle === "italic" ? "normal" : "italic",
   );
 }
 
-function _toggleCase(caseType: "uppercase" | "smallcaps" | "normal") {
+function toggleCase(caseType: "uppercase" | "smallcaps" | "normal") {
   updateData("textCase", caseType);
 }
 
-function _toggleVerticalAlign(align: "super" | "sub" | "baseline") {
+function toggleVerticalAlign(align: "super" | "sub" | "baseline") {
   updateData("verticalAlign", align);
 }
 
 // Handle font change - ensure Google fonts are loaded
-async function _handleFontChange(family: string) {
+async function handleFontChange(family: string) {
   // Ensure the font is loaded before applying
   await fontService.ensureFont(family);
   updateData("fontFamily", family);

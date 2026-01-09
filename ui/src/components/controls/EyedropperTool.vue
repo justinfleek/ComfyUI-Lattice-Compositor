@@ -48,7 +48,7 @@ const emit =
 const isActive = ref(false);
 const sampledColor = ref<SampledColor | null>(null);
 
-const _sampledColorHex = computed(() => {
+const sampledColorHex = computed(() => {
   if (!sampledColor.value) return "#000";
   const { r, g, b } = sampledColor.value;
   return `rgb(${r}, ${g}, ${b})`;
@@ -102,7 +102,7 @@ onUnmounted(() => {
   document.body.style.cursor = "";
 });
 
-function _toggleEyedropper() {
+function toggleEyedropper() {
   isActive.value = !isActive.value;
 
   if (isActive.value) {
@@ -144,13 +144,13 @@ function samplePixel(
   return null;
 }
 
-function _applyCorrection() {
+function applyCorrection() {
   if (correction.value) {
     emit("apply", correction.value);
   }
 }
 
-function _clearSample() {
+function clearSample() {
   sampledColor.value = null;
 }
 </script>

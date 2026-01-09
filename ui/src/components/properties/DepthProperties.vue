@@ -50,7 +50,7 @@
           <label>Min Depth</label>
           <ScrubableNumber
             :modelValue="depthData.minDepth"
-            @update:modelValue="v => updateData('minDepth', v)"
+            @update:modelValue="(v: number) => updateData('minDepth', v)"
             :min="0"
             :max="1"
             :precision="3"
@@ -61,7 +61,7 @@
           <label>Max Depth</label>
           <ScrubableNumber
             :modelValue="depthData.maxDepth"
-            @update:modelValue="v => updateData('maxDepth', v)"
+            @update:modelValue="(v: number) => updateData('maxDepth', v)"
             :min="0"
             :max="1"
             :precision="3"
@@ -78,7 +78,7 @@
         <label>Levels</label>
         <ScrubableNumber
           :modelValue="depthData.contourLevels"
-          @update:modelValue="v => updateData('contourLevels', v)"
+          @update:modelValue="(v: number) => updateData('contourLevels', v)"
           :min="2"
           :max="50"
           :precision="0"
@@ -89,7 +89,7 @@
         <label>Line Width</label>
         <ScrubableNumber
           :modelValue="depthData.contourWidth"
-          @update:modelValue="v => updateData('contourWidth', v)"
+          @update:modelValue="(v: number) => updateData('contourWidth', v)"
           :min="0.1"
           :max="5"
           :precision="1"
@@ -114,7 +114,7 @@
         <label>Displacement</label>
         <ScrubableNumber
           :modelValue="getAnimatableValue(depthData.meshDisplacement)"
-          @update:modelValue="v => updateAnimatable('meshDisplacement', v)"
+          @update:modelValue="(v: number) => updateAnimatable('meshDisplacement', v)"
           :min="0"
           :max="500"
           :precision="1"
@@ -131,7 +131,7 @@
         <label>Resolution</label>
         <ScrubableNumber
           :modelValue="depthData.meshResolution"
-          @update:modelValue="v => updateData('meshResolution', v)"
+          @update:modelValue="(v: number) => updateData('meshResolution', v)"
           :min="8"
           :max="256"
           :precision="0"
@@ -168,27 +168,27 @@ const store = useCompositorStore();
 
 const depthData = computed(() => props.layer.data as DepthLayerData);
 
-function _updateData<K extends keyof DepthLayerData>(
+function updateData<K extends keyof DepthLayerData>(
   key: K,
   value: DepthLayerData[K],
 ) {
   emit("update", { [key]: value } as Partial<DepthLayerData>);
 }
 
-function _getAnimatableValue(
+function getAnimatableValue(
   prop: AnimatableProperty<number> | undefined,
 ): number {
   return prop?.value ?? 0;
 }
 
-function _isAnimated(propName: string): boolean {
+function isAnimated(propName: string): boolean {
   const prop = depthData.value[propName as keyof DepthLayerData] as
     | AnimatableProperty<number>
     | undefined;
   return prop?.animated ?? false;
 }
 
-function _updateAnimatable(propName: string, value: number) {
+function updateAnimatable(propName: string, value: number) {
   const prop = depthData.value[
     propName as keyof DepthLayerData
   ] as AnimatableProperty<number>;
@@ -199,7 +199,7 @@ function _updateAnimatable(propName: string, value: number) {
   }
 }
 
-function _toggleKeyframe(propName: string) {
+function toggleKeyframe(propName: string) {
   const prop = depthData.value[
     propName as keyof DepthLayerData
   ] as AnimatableProperty<number>;

@@ -50,7 +50,7 @@
         <label>Light X</label>
         <ScrubableNumber
           :modelValue="normalData.lightDirection.x"
-          @update:modelValue="v => updateLightDirection('x', v)"
+          @update:modelValue="(v: number) => updateLightDirection('x', v)"
           :min="-1"
           :max="1"
           :precision="2"
@@ -61,7 +61,7 @@
         <label>Light Y</label>
         <ScrubableNumber
           :modelValue="normalData.lightDirection.y"
-          @update:modelValue="v => updateLightDirection('y', v)"
+          @update:modelValue="(v: number) => updateLightDirection('y', v)"
           :min="-1"
           :max="1"
           :precision="2"
@@ -72,7 +72,7 @@
         <label>Light Z</label>
         <ScrubableNumber
           :modelValue="normalData.lightDirection.z"
-          @update:modelValue="v => updateLightDirection('z', v)"
+          @update:modelValue="(v: number) => updateLightDirection('z', v)"
           :min="-1"
           :max="1"
           :precision="2"
@@ -83,7 +83,7 @@
         <label>Intensity</label>
         <ScrubableNumber
           :modelValue="normalData.lightIntensity"
-          @update:modelValue="v => updateData('lightIntensity', v)"
+          @update:modelValue="(v: number) => updateData('lightIntensity', v)"
           :min="0"
           :max="3"
           :precision="2"
@@ -94,7 +94,7 @@
         <label>Ambient</label>
         <ScrubableNumber
           :modelValue="normalData.ambientIntensity"
-          @update:modelValue="v => updateData('ambientIntensity', v)"
+          @update:modelValue="(v: number) => updateData('ambientIntensity', v)"
           :min="0"
           :max="1"
           :precision="2"
@@ -128,14 +128,14 @@ const emit =
 
 const normalData = computed(() => props.layer.data as NormalLayerData);
 
-function _updateData<K extends keyof NormalLayerData>(
+function updateData<K extends keyof NormalLayerData>(
   key: K,
   value: NormalLayerData[K],
 ) {
   emit("update", { [key]: value } as Partial<NormalLayerData>);
 }
 
-function _updateLightDirection(axis: "x" | "y" | "z", value: number) {
+function updateLightDirection(axis: "x" | "y" | "z", value: number) {
   emit("update", {
     lightDirection: {
       ...normalData.value.lightDirection,

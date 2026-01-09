@@ -19,7 +19,7 @@ import { evaluateInSES } from "./sesEvaluator";
 import type { Expression, ExpressionContext } from "./types";
 
 /**
- * SECURITY NOTE (BUG-006 - UPGRADED 2025-12-28):
+ * SECURITY NOTE (upgraded 2025-12-28):
  *
  * This expression evaluator now uses SES (Secure ECMAScript) for sandboxing
  * when available. SES provides stronger security guarantees than the previous
@@ -38,7 +38,6 @@ import type { Expression, ExpressionContext } from "./types";
  *   await initializeSES();
  *
  * @see AUDIT/SECURITY_ARCHITECTURE.md for full security analysis
- * @see AUDIT/EVIDENCE/BUG-006.md for vulnerability details
  */
 
 // ============================================================
@@ -229,7 +228,7 @@ export const mathExpressions = {
 
 /**
  * Ease function for expressions (count-up animations)
- * Compatible with After Effects ease()
+ * Compatible with industry-standard ease() function
  */
 export function expressionEase(
   t: number,
@@ -419,7 +418,6 @@ export function evaluateCustomExpression(
 // =============================================================================
 //
 // The previous Proxy+with sandbox was REMOVED because it was bypassable.
-// See AUDIT/EVIDENCE/BUG-006.md for details on the vulnerabilities.
 //
 // Known bypasses of Proxy+with sandbox:
 //   [].constructor.constructor('return this')()

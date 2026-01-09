@@ -174,7 +174,10 @@ vec3 curlNoise(vec3 p) {
   float n5 = snoise(p + dx) - snoise(p - dx);
   float n6 = snoise(p + dy) - snoise(p - dy);
 
-  return normalize(vec3(n1 - n2, n3 - n4, n5 - n6));
+  vec3 curl = vec3(n1 - n2, n3 - n4, n5 - n6);
+  float len = length(curl);
+  // Guard against normalizing zero vector (produces NaN)
+  return len > 0.0001 ? curl / len : vec3(0.0, 1.0, 0.0);
 }
 
 // FBM (Fractal Brownian Motion) for multi-octave noise
@@ -198,7 +201,10 @@ float fbm(vec3 p, int octaves, float lacunarity, float gain) {
 // ============================================================================
 
 vec3 calculateGravityForce(int index, vec3 pos, vec3 vel, float mass) {
-  vec3 direction = normalize(u_forceFieldParams[index].xyz);
+  vec3 dir = u_forceFieldParams[index].xyz;
+  float len = length(dir);
+  // Guard against normalizing zero vector
+  vec3 direction = len > 0.0001 ? dir / len : vec3(0.0, -1.0, 0.0);
   return direction * u_forceFieldStrengths[index];
 }
 
@@ -213,12 +219,15 @@ vec3 calculatePointForce(int index, vec3 pos, vec3 vel, float mass) {
   int falloffType = int(u_forceFieldParams[index].z);
 
   float falloff = 1.0;
-  if (dist > falloffStart) {
+  // Guard against division by zero when falloffEnd == falloffStart
+  if (dist > falloffStart && falloffEnd > falloffStart) {
     float t = clamp((dist - falloffStart) / (falloffEnd - falloffStart), 0.0, 1.0);
     if (falloffType == 1) falloff = 1.0 - t;                    // Linear
     else if (falloffType == 2) falloff = 1.0 - t * t;           // Quadratic
     else if (falloffType == 3) falloff = exp(-t * 3.0);         // Exponential
     else if (falloffType == 4) falloff = smoothstep(1.0, 0.0, t); // Smoothstep
+  } else if (dist > falloffEnd) {
+    falloff = 0.0; // Beyond falloff range
   }
 
   vec3 direction = toField / dist;
@@ -227,7 +236,10 @@ vec3 calculatePointForce(int index, vec3 pos, vec3 vel, float mass) {
 
 vec3 calculateVortexForce(int index, vec3 pos, vec3 vel, float mass) {
   vec3 toField = pos - u_forceFieldPositions[index];
-  vec3 axis = normalize(u_forceFieldParams[index].xyz);
+  vec3 axisRaw = u_forceFieldParams[index].xyz;
+  float axisLen = length(axisRaw);
+  // Guard against normalizing zero vector - default to Y-up
+  vec3 axis = axisLen > 0.0001 ? axisRaw / axisLen : vec3(0.0, 1.0, 0.0);
   float inwardForce = u_forceFieldParams[index].w;
 
   // Project position onto plane perpendicular to axis
@@ -288,7 +300,10 @@ vec3 calculateDragForce(int index, vec3 pos, vec3 vel, float mass) {
 }
 
 vec3 calculateWindForce(int index, vec3 pos, vec3 vel, float mass) {
-  vec3 windDir = normalize(u_forceFieldParams[index].xyz);
+  vec3 windRaw = u_forceFieldParams[index].xyz;
+  float windLen = length(windRaw);
+  // Guard against normalizing zero vector - default to X direction
+  vec3 windDir = windLen > 0.0001 ? windRaw / windLen : vec3(1.0, 0.0, 0.0);
   float gustStrength = u_forceFieldParams[index].w;
   float gustFreq = u_forceFieldParams2[index].x;
 
@@ -346,21 +361,31 @@ vec3 handleBounds(vec3 pos, vec3 vel, out vec3 newVel, out bool killed) {
     }
   }
   else if (u_boundsBehavior == 1) {
-    // Bounce
+    // Bounce with overshoot clamping
     for (int i = 0; i < 3; i++) {
       if (pos[i] < u_boundsMin[i]) {
         newPos[i] = u_boundsMin[i] + (u_boundsMin[i] - pos[i]);
         newVel[i] = -vel[i] * u_bounceDamping;
+        // Clamp to prevent overshoot to opposite side
+        if (newPos[i] > u_boundsMax[i]) newPos[i] = u_boundsMax[i];
       }
       else if (pos[i] > u_boundsMax[i]) {
         newPos[i] = u_boundsMax[i] - (pos[i] - u_boundsMax[i]);
         newVel[i] = -vel[i] * u_bounceDamping;
+        // Clamp to prevent overshoot to opposite side
+        if (newPos[i] < u_boundsMin[i]) newPos[i] = u_boundsMin[i];
       }
     }
   }
   else if (u_boundsBehavior == 2) {
-    // Wrap
-    newPos = mod(pos - u_boundsMin, u_boundsMax - u_boundsMin) + u_boundsMin;
+    // Wrap - guard against zero-dimension bounds (mod by zero is undefined)
+    vec3 range = u_boundsMax - u_boundsMin;
+    vec3 safeRange = vec3(
+      max(range.x, 1.0),
+      max(range.y, 1.0),
+      max(range.z, 1.0)
+    );
+    newPos = mod(pos - u_boundsMin, safeRange) + u_boundsMin;
   }
   else if (u_boundsBehavior == 3) {
     // Clamp
@@ -444,7 +469,9 @@ void main() {
   // Apply air resistance (velocity-squared drag)
   float speed = length(vel);
   if (speed > 0.001) {
-    float airDrag = u_airResistance * speed * speed * u_deltaTime / mass;
+    // Use safeMass to prevent division by zero (consistent with line 442)
+    float safeMass = max(mass, 0.1);
+    float airDrag = u_airResistance * speed * speed * u_deltaTime / safeMass;
     vel -= normalize(vel) * min(airDrag, speed);
   }
 

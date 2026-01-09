@@ -183,7 +183,7 @@ const selectedMaskVertices = computed<MaskVertex[]>(() => {
 });
 
 // Get the selected vertex
-const _selectedVertex = computed<MaskVertex | null>(() => {
+const selectedVertex = computed<MaskVertex | null>(() => {
   if (selectedVertexIndex.value === null) return null;
   return selectedMaskVertices.value[selectedVertexIndex.value] ?? null;
 });
@@ -196,7 +196,7 @@ function getMaskPathValue(mask: LayerMask): MaskPath | null {
 }
 
 // Generate SVG path data from mask vertices
-function _getMaskPathData(mask: LayerMask): string {
+function getMaskPathData(mask: LayerMask): string {
   const path = getMaskPathValue(mask);
   if (!path || !path.vertices || path.vertices.length < 2) return "";
 
@@ -236,7 +236,7 @@ function _getMaskPathData(mask: LayerMask): string {
 }
 
 // Check if vertex is a corner (no tangents)
-function _isCornerVertex(vertex: MaskVertex): boolean {
+function isCornerVertex(vertex: MaskVertex): boolean {
   return (
     !vertex.inTangentX &&
     !vertex.inTangentY &&
@@ -273,7 +273,7 @@ function selectMask(maskId: string) {
 }
 
 // Handle mouse events
-function _handleMouseDown(event: MouseEvent) {
+function handleMouseDown(event: MouseEvent) {
   if (!props.isMaskPenMode || !props.layerId) return;
 
   const pos = getMousePos(event);
@@ -299,7 +299,7 @@ function _handleMouseDown(event: MouseEvent) {
   }
 }
 
-function _handleMouseMove(event: MouseEvent) {
+function handleMouseMove(event: MouseEvent) {
   const pos = getMousePos(event);
 
   // Update preview point
@@ -355,11 +355,11 @@ function _handleMouseMove(event: MouseEvent) {
   }
 }
 
-function _handleMouseUp() {
+function handleMouseUp() {
   dragTarget.value = null;
 }
 
-function _startDragVertex(index: number, event: MouseEvent) {
+function startDragVertex(index: number, event: MouseEvent) {
   selectedVertexIndex.value = index;
   emit("vertexSelected", selectedMaskId.value!, index);
 
@@ -373,7 +373,7 @@ function _startDragVertex(index: number, event: MouseEvent) {
   }
 }
 
-function _startDragHandle(handleType: "in" | "out", event: MouseEvent) {
+function startDragHandle(handleType: "in" | "out", event: MouseEvent) {
   const pos = getMousePos(event);
   dragTarget.value = {
     type: handleType === "in" ? "handleIn" : "handleOut",

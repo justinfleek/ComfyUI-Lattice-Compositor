@@ -63,6 +63,7 @@
 import { computed } from "vue";
 import type {
   GradientOverlayStyle,
+  GradientOverlayType,
   GradientOverlayUpdate,
 } from "@/types/layerStyles";
 import type { BlendMode } from "@/types/project";
@@ -71,10 +72,10 @@ const props = defineProps<{
   style: GradientOverlayStyle;
 }>();
 
-const _emit =
+const emit =
   defineEmits<(e: "update", updates: GradientOverlayUpdate) => void>();
 
-const _blendModes: BlendMode[] = [
+const blendModes: BlendMode[] = [
   "normal",
   "multiply",
   "screen",
@@ -87,14 +88,14 @@ const _blendModes: BlendMode[] = [
   "soft-light",
 ];
 
-function _formatMode(mode: string): string {
+function formatMode(mode: string): string {
   return mode
     .split("-")
     .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
     .join(" ");
 }
 
-const _gradientCSS = computed(() => {
+const gradientCSS = computed(() => {
   const grad = props.style.gradient.value;
   if (!grad || !grad.stops) {
     return "linear-gradient(90deg, #000, #fff)";

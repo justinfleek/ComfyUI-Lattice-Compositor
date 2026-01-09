@@ -137,7 +137,7 @@ const layerData = computed<ShapeLayerData>(() => {
   return data;
 });
 
-function _toggleSection(section: string) {
+function toggleSection(section: string) {
   const idx = expandedSections.value.indexOf(section);
   if (idx >= 0) {
     expandedSections.value.splice(idx, 1);
@@ -146,14 +146,14 @@ function _toggleSection(section: string) {
   }
 }
 
-function _updateData() {
+function updateData() {
   store.updateLayer(props.layer.id, {
     data: { ...layerData.value },
   });
   emit("update");
 }
 
-function _addContent() {
+function addContent() {
   if (!newContentType.value) return;
 
   const contents = [...(layerData.value.contents || [])];
@@ -237,7 +237,7 @@ function _addContent() {
   newContentType.value = "";
 }
 
-function _updateContentItem(index: number, updatedItem: ShapeContent) {
+function updateContentItem(index: number, updatedItem: ShapeContent) {
   const contents = [...(layerData.value.contents || [])];
   contents[index] = updatedItem;
 
@@ -247,7 +247,7 @@ function _updateContentItem(index: number, updatedItem: ShapeContent) {
   emit("update");
 }
 
-function _deleteContentItem(index: number) {
+function deleteContentItem(index: number) {
   const contents = [...(layerData.value.contents || [])];
   contents.splice(index, 1);
 
@@ -257,7 +257,7 @@ function _deleteContentItem(index: number) {
   emit("update");
 }
 
-function _moveContentItem(index: number, direction: -1 | 1) {
+function moveContentItem(index: number, direction: -1 | 1) {
   const contents = [...(layerData.value.contents || [])];
   const newIndex = index + direction;
   if (newIndex < 0 || newIndex >= contents.length) return;

@@ -139,9 +139,31 @@
 
 <script setup lang="ts">
 import { ref } from "vue";
-import type { ShapeContent } from "@/types/shapes";
+import type {
+  ShapeContent,
+  RectangleShape,
+  EllipseShape,
+  PolygonShape,
+  StarShape,
+  PathShape,
+  FillShape,
+  StrokeShape,
+  GradientFillShape,
+  GradientStrokeShape,
+  TrimPathsOperator,
+  RepeaterOperator,
+  OffsetPathsOperator,
+  PuckerBloatOperator,
+  WigglePathsOperator,
+  ZigZagOperator,
+  TwistOperator,
+  RoundedCornersOperator,
+  MergePathsOperator,
+  ShapeGroup,
+  ShapeTransform,
+} from "@/types/shapes";
 
-const _props = defineProps<{
+const props = defineProps<{
   item: ShapeContent;
   index: number;
   depth: number;
@@ -150,9 +172,9 @@ const _props = defineProps<{
 
 const emit = defineEmits(["update", "delete", "move-up", "move-down"]);
 
-const _isExpanded = ref(false);
+const isExpanded = ref(false);
 
-function _getItemIcon(type: string): string {
+function getItemIcon(type: string): string {
   const icons: Record<string, string> = {
     // Generators
     rectangle: "▭",
@@ -182,7 +204,7 @@ function _getItemIcon(type: string): string {
   return icons[type] || "•";
 }
 
-function _emitUpdate(updated: ShapeContent) {
+function emitUpdate(updated: ShapeContent) {
   emit("update", updated);
 }
 </script>

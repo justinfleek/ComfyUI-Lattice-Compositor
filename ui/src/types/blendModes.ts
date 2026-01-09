@@ -1,12 +1,12 @@
 // ============================================================
-// BLEND MODES - Full Photoshop/After Effects compatibility
+// BLEND MODES - Industry standard compatibility
 // ============================================================
 // Extracted from project.ts for better modularity
 // ============================================================
 
 /**
- * Blend Modes - Full Photoshop/After Effects compatibility
- * Organized by category matching industry standard groupings
+ * Blend Modes - Industry standard compatibility
+ * Organized by category matching professional animation software groupings
  */
 export type BlendMode =
   // Normal
@@ -43,13 +43,16 @@ export type BlendMode =
   | "saturation"
   | "color"
   | "luminosity"
-  // AE-specific
+  // Utility/Advanced modes
   | "stencil-alpha"
   | "stencil-luma"
   | "silhouette-alpha"
   | "silhouette-luma"
   | "alpha-add"
-  | "luminescent-premul";
+  | "luminescent-premul"
+  // Classic blend modes (legacy compatibility)
+  | "classic-color-burn"
+  | "classic-color-dodge";
 
 /**
  * Blend mode categories for UI organization

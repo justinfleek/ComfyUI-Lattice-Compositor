@@ -34,19 +34,19 @@
             <div class="xyz-inputs">
               <ScrubableNumber
                 :modelValue="camera.position.x"
-                @update:modelValue="v => updatePosition('x', v)"
+                @update:modelValue="(v: number) => updatePosition('x', v)"
                 label="X"
                 :precision="1"
               />
               <ScrubableNumber
                 :modelValue="camera.position.y"
-                @update:modelValue="v => updatePosition('y', v)"
+                @update:modelValue="(v: number) => updatePosition('y', v)"
                 label="Y"
                 :precision="1"
               />
               <ScrubableNumber
                 :modelValue="camera.position.z"
-                @update:modelValue="v => updatePosition('z', v)"
+                @update:modelValue="(v: number) => updatePosition('z', v)"
                 label="Z"
                 :precision="1"
               />
@@ -59,19 +59,19 @@
             <div class="xyz-inputs">
               <ScrubableNumber
                 :modelValue="camera.pointOfInterest.x"
-                @update:modelValue="v => updatePOI('x', v)"
+                @update:modelValue="(v: number) => updatePOI('x', v)"
                 label="X"
                 :precision="1"
               />
               <ScrubableNumber
                 :modelValue="camera.pointOfInterest.y"
-                @update:modelValue="v => updatePOI('y', v)"
+                @update:modelValue="(v: number) => updatePOI('y', v)"
                 label="Y"
                 :precision="1"
               />
               <ScrubableNumber
                 :modelValue="camera.pointOfInterest.z"
-                @update:modelValue="v => updatePOI('z', v)"
+                @update:modelValue="(v: number) => updatePOI('z', v)"
                 label="Z"
                 :precision="1"
               />
@@ -84,21 +84,21 @@
             <div class="xyz-inputs">
               <ScrubableNumber
                 :modelValue="camera.orientation.x"
-                @update:modelValue="v => updateOrientation('x', v)"
+                @update:modelValue="(v: number) => updateOrientation('x', v)"
                 label="X"
                 unit="°"
                 :precision="1"
               />
               <ScrubableNumber
                 :modelValue="camera.orientation.y"
-                @update:modelValue="v => updateOrientation('y', v)"
+                @update:modelValue="(v: number) => updateOrientation('y', v)"
                 label="Y"
                 unit="°"
                 :precision="1"
               />
               <ScrubableNumber
                 :modelValue="camera.orientation.z"
-                @update:modelValue="v => updateOrientation('z', v)"
+                @update:modelValue="(v: number) => updateOrientation('z', v)"
                 label="Z"
                 unit="°"
                 :precision="1"
@@ -111,7 +111,7 @@
             <label>X Rotation</label>
             <ScrubableNumber
               :modelValue="camera.xRotation"
-              @update:modelValue="v => updateProperty('xRotation', v)"
+              @update:modelValue="(v: number) => updateProperty('xRotation', v)"
               unit="°"
               :precision="1"
             />
@@ -120,7 +120,7 @@
             <label>Y Rotation</label>
             <ScrubableNumber
               :modelValue="camera.yRotation"
-              @update:modelValue="v => updateProperty('yRotation', v)"
+              @update:modelValue="(v: number) => updateProperty('yRotation', v)"
               unit="°"
               :precision="1"
             />
@@ -129,7 +129,7 @@
             <label>Z Rotation</label>
             <ScrubableNumber
               :modelValue="camera.zRotation"
-              @update:modelValue="v => updateProperty('zRotation', v)"
+              @update:modelValue="(v: number) => updateProperty('zRotation', v)"
               unit="°"
               :precision="1"
             />
@@ -184,7 +184,7 @@
             <label>Film Size</label>
             <ScrubableNumber
               :modelValue="camera.filmSize"
-              @update:modelValue="v => updateProperty('filmSize', v)"
+              @update:modelValue="(v: number) => updateProperty('filmSize', v)"
               :min="1"
               :max="100"
               unit="mm"
@@ -229,7 +229,7 @@
               <label>Focus Distance</label>
               <ScrubableNumber
                 :modelValue="camera.depthOfField.focusDistance"
-                @update:modelValue="v => updateDOF('focusDistance', v)"
+                @update:modelValue="(v: number) => updateDOF('focusDistance', v)"
                 :min="1"
                 unit="px"
                 :precision="0"
@@ -240,7 +240,7 @@
               <label>f-Stop</label>
               <ScrubableNumber
                 :modelValue="camera.depthOfField.fStop"
-                @update:modelValue="v => updateDOF('fStop', v)"
+                @update:modelValue="(v: number) => updateDOF('fStop', v)"
                 :min="0.1"
                 :max="64"
                 :precision="1"
@@ -251,7 +251,7 @@
               <label>Blur Level</label>
               <SliderInput
                 :modelValue="camera.depthOfField.blurLevel"
-                @update:modelValue="v => updateDOF('blurLevel', v)"
+                @update:modelValue="(v: number) => updateDOF('blurLevel', v)"
                 :min="0"
                 :max="1"
                 :step="0.01"
@@ -283,7 +283,7 @@
             <label>Shape ({{ Math.round(camera.iris.shape) }}-gon)</label>
             <SliderInput
               :modelValue="camera.iris.shape"
-              @update:modelValue="v => updateIris('shape', v)"
+              @update:modelValue="(v: number) => updateIris('shape', v)"
               :min="3"
               :max="10"
               :step="1"
@@ -294,7 +294,7 @@
             <label>Rotation</label>
             <AngleDial
               :modelValue="camera.iris.rotation"
-              @update:modelValue="v => updateIris('rotation', v)"
+              @update:modelValue="(v: number) => updateIris('rotation', v)"
               :size="48"
             />
           </div>
@@ -303,7 +303,7 @@
             <label>Roundness</label>
             <SliderInput
               :modelValue="camera.iris.roundness"
-              @update:modelValue="v => updateIris('roundness', v)"
+              @update:modelValue="(v: number) => updateIris('roundness', v)"
               :min="0"
               :max="1"
               :step="0.01"
@@ -314,7 +314,7 @@
             <label>Aspect Ratio</label>
             <SliderInput
               :modelValue="camera.iris.aspectRatio"
-              @update:modelValue="v => updateIris('aspectRatio', v)"
+              @update:modelValue="(v: number) => updateIris('aspectRatio', v)"
               :min="0.5"
               :max="2"
               :step="0.01"
@@ -325,7 +325,7 @@
             <label>Diffraction Fringe</label>
             <SliderInput
               :modelValue="camera.iris.diffractionFringe"
-              @update:modelValue="v => updateIris('diffractionFringe', v)"
+              @update:modelValue="(v: number) => updateIris('diffractionFringe', v)"
               :min="0"
               :max="1"
               :step="0.01"
@@ -345,7 +345,7 @@
             <label>Gain</label>
             <SliderInput
               :modelValue="camera.highlight.gain"
-              @update:modelValue="v => updateHighlight('gain', v)"
+              @update:modelValue="(v: number) => updateHighlight('gain', v)"
               :min="0"
               :max="1"
               :step="0.01"
@@ -356,7 +356,7 @@
             <label>Threshold</label>
             <SliderInput
               :modelValue="camera.highlight.threshold"
-              @update:modelValue="v => updateHighlight('threshold', v)"
+              @update:modelValue="(v: number) => updateHighlight('threshold', v)"
               :min="0"
               :max="1"
               :step="0.01"
@@ -367,7 +367,7 @@
             <label>Saturation</label>
             <SliderInput
               :modelValue="camera.highlight.saturation"
-              @update:modelValue="v => updateHighlight('saturation', v)"
+              @update:modelValue="(v: number) => updateHighlight('saturation', v)"
               :min="0"
               :max="1"
               :step="0.01"
@@ -407,7 +407,7 @@
             <label>Near Clip</label>
             <ScrubableNumber
               :modelValue="camera.nearClip"
-              @update:modelValue="v => updateProperty('nearClip', v)"
+              @update:modelValue="(v: number) => updateProperty('nearClip', v)"
               :min="0.1"
               :precision="1"
             />
@@ -417,7 +417,7 @@
             <label>Far Clip</label>
             <ScrubableNumber
               :modelValue="camera.farClip"
-              @update:modelValue="v => updateProperty('farClip', v)"
+              @update:modelValue="(v: number) => updateProperty('farClip', v)"
               :min="100"
               :precision="0"
             />
@@ -454,7 +454,7 @@
             <label>Duration (frames)</label>
             <ScrubableNumber
               :modelValue="trajectoryConfig.duration"
-              @update:modelValue="v => trajectoryConfig.duration = v"
+              @update:modelValue="(v: number) => trajectoryConfig.duration = v"
               :min="1"
               :max="600"
               :precision="0"
@@ -466,7 +466,7 @@
             <label>Amplitude</label>
             <SliderInput
               :modelValue="Math.abs(trajectoryConfig.amplitude)"
-              @update:modelValue="v => trajectoryConfig.amplitude = v * Math.sign(trajectoryConfig.amplitude || 1)"
+              @update:modelValue="(v: number) => trajectoryConfig.amplitude = v * Math.sign(trajectoryConfig.amplitude || 1)"
               :min="0.1"
               :max="2"
               :step="0.1"
@@ -478,7 +478,7 @@
             <label>Loops</label>
             <ScrubableNumber
               :modelValue="trajectoryConfig.loops"
-              @update:modelValue="v => trajectoryConfig.loops = v"
+              @update:modelValue="(v: number) => trajectoryConfig.loops = v"
               :min="0.25"
               :max="5"
               :precision="2"
@@ -524,7 +524,7 @@
               <label>Sensitivity</label>
               <SliderInput
                 :modelValue="trajectoryConfig.audioSensitivity ?? 1"
-                @update:modelValue="v => trajectoryConfig.audioSensitivity = v"
+                @update:modelValue="(v: number) => trajectoryConfig.audioSensitivity = v"
                 :min="0.1"
                 :max="3"
                 :step="0.1"
@@ -577,7 +577,7 @@
             <label>Intensity</label>
             <SliderInput
               :modelValue="shakeConfig.intensity"
-              @update:modelValue="v => shakeConfig.intensity = v"
+              @update:modelValue="(v: number) => shakeConfig.intensity = v"
               :min="0"
               :max="1"
               :step="0.05"
@@ -589,7 +589,7 @@
             <label>Frequency</label>
             <SliderInput
               :modelValue="shakeConfig.frequency"
-              @update:modelValue="v => shakeConfig.frequency = v"
+              @update:modelValue="(v: number) => shakeConfig.frequency = v"
               :min="0.1"
               :max="5"
               :step="0.1"
@@ -601,7 +601,7 @@
             <label>Duration (frames)</label>
             <ScrubableNumber
               :modelValue="shakeDuration"
-              @update:modelValue="v => shakeDuration = v"
+              @update:modelValue="(v: number) => shakeDuration = v"
               :min="1"
               :max="600"
               :precision="0"
@@ -623,7 +623,7 @@
             <label>Rotation Scale</label>
             <SliderInput
               :modelValue="shakeConfig.rotationScale"
-              @update:modelValue="v => shakeConfig.rotationScale = v"
+              @update:modelValue="(v: number) => shakeConfig.rotationScale = v"
               :min="0"
               :max="2"
               :step="0.1"
@@ -635,7 +635,7 @@
             <label>Decay</label>
             <SliderInput
               :modelValue="shakeConfig.decay"
-              @update:modelValue="v => shakeConfig.decay = v"
+              @update:modelValue="(v: number) => shakeConfig.decay = v"
               :min="0"
               :max="1"
               :step="0.05"
@@ -647,7 +647,7 @@
             <label>Seed</label>
             <ScrubableNumber
               :modelValue="shakeConfig.seed"
-              @update:modelValue="v => shakeConfig.seed = v"
+              @update:modelValue="(v: number) => shakeConfig.seed = v"
               :min="0"
               :max="99999"
               :precision="0"
@@ -694,7 +694,8 @@ import {
 } from "@/services/cameraTrajectory";
 import { useCompositorStore } from "@/stores/compositorStore";
 import { focalLengthToFOV, fovToFocalLength } from "../../services/math3d";
-import type { CAMERA_PRESETS, Camera3D } from "../../types/camera";
+import { CAMERA_PRESETS } from "../../types/camera";
+import type { AutoOrientMode, Camera3D, CameraType, MeasureFilmSize } from "../../types/camera";
 
 // Store connection
 const store = useCompositorStore();
@@ -732,22 +733,22 @@ const trajectoryConfig = reactive<TrajectoryConfig>({
 const shakeConfig = reactive<CameraShakeConfig>({
   ...DEFAULT_SHAKE_CONFIG,
 });
-const _shakeEnabled = ref(false);
+const shakeEnabled = ref(false);
 const shakeDuration = ref(81); // Default composition length
 let activeCameraShake: CameraShake | null = null;
 
 // Get trajectory types grouped by category
-const _trajectoryTypesByCategory = computed(() =>
+const trajectoryTypesByCategory = computed(() =>
   getTrajectoryTypesByCategory(),
 );
 
 // Get description for current trajectory type
-const _trajectoryDescription = computed(() =>
+const trajectoryDescription = computed(() =>
   getTrajectoryDescription(trajectoryConfig.type),
 );
 
 // Check if current trajectory is orbital (shows loops control)
-const _isOrbitalTrajectory = computed(() => {
+const isOrbitalTrajectory = computed(() => {
   const orbitalTypes: TrajectoryType[] = [
     "orbit",
     "orbit_reverse",
@@ -760,7 +761,7 @@ const _isOrbitalTrajectory = computed(() => {
 });
 
 // Format trajectory name for display
-function _formatTrajectoryName(type: TrajectoryType): string {
+function formatTrajectoryName(type: TrajectoryType): string {
   return type
     .split("_")
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
@@ -771,7 +772,7 @@ function _formatTrajectoryName(type: TrajectoryType): string {
 const previewAnimationId = ref<number | null>(null);
 
 // Preview the trajectory motion
-function _previewTrajectory() {
+function previewTrajectory() {
   if (!camera.value) return;
 
   // Cancel any existing preview
@@ -800,10 +801,12 @@ function _previewTrajectory() {
     const { position, target } = getTrajectoryPosition(config, t);
 
     // Update camera position live
-    store.updateCamera(camera.value?.id, {
-      position,
-      pointOfInterest: target,
-    });
+    if (camera.value?.id) {
+      store.updateCamera(camera.value.id, {
+        position,
+        pointOfInterest: target,
+      });
+    }
 
     if (t < 1) {
       previewAnimationId.value = requestAnimationFrame(animate);
@@ -816,7 +819,7 @@ function _previewTrajectory() {
 }
 
 // Apply trajectory as keyframes
-function _applyTrajectory() {
+function applyTrajectory() {
   if (!camera.value) return;
 
   // Calculate base distance from current camera setup
@@ -874,12 +877,12 @@ function _applyTrajectory() {
 // CAMERA SHAKE
 // ============================================================================
 
-function _applyShakePreset(preset: CameraShakeConfig["type"]) {
+function applyShakePreset(preset: CameraShakeConfig["type"]) {
   const presetConfig = SHAKE_PRESETS[preset];
   Object.assign(shakeConfig, presetConfig, { type: preset });
 }
 
-function _previewShake() {
+function previewShake() {
   if (!camera.value) return;
 
   // Create shake instance
@@ -905,26 +908,30 @@ function _previewShake() {
     if (elapsed < duration && activeCameraShake) {
       const offset = activeCameraShake.getOffset(frame);
 
-      store.updateCamera(camera.value?.id, {
-        position: {
-          x: originalPosition.x + offset.position.x,
-          y: originalPosition.y + offset.position.y,
-          z: originalPosition.z + offset.position.z,
-        },
-        orientation: {
-          x: originalOrientation.x + offset.rotation.x,
-          y: originalOrientation.y + offset.rotation.y,
-          z: originalOrientation.z + offset.rotation.z,
-        },
-      });
+      if (camera.value?.id) {
+        store.updateCamera(camera.value.id, {
+          position: {
+            x: originalPosition.x + offset.position.x,
+            y: originalPosition.y + offset.position.y,
+            z: originalPosition.z + offset.position.z,
+          },
+          orientation: {
+            x: originalOrientation.x + offset.rotation.x,
+            y: originalOrientation.y + offset.rotation.y,
+            z: originalOrientation.z + offset.rotation.z,
+          },
+        });
+      }
 
       requestAnimationFrame(animate);
     } else {
       // Restore original position
-      store.updateCamera(camera.value?.id, {
-        position: originalPosition,
-        orientation: originalOrientation,
-      });
+      if (camera.value?.id) {
+        store.updateCamera(camera.value.id, {
+          position: originalPosition,
+          orientation: originalOrientation,
+        });
+      }
       activeCameraShake = null;
     }
   }
@@ -932,7 +939,7 @@ function _previewShake() {
   requestAnimationFrame(animate);
 }
 
-function _applyShakeKeyframes() {
+function applyShakeKeyframes() {
   if (!camera.value) return;
 
   // Create shake instance
@@ -957,55 +964,59 @@ function _applyShakeKeyframes() {
   console.log(`Applied ${shakenKeyframes.length} camera shake keyframes`);
 }
 
-function _toggleSection(section: keyof typeof expandedSections) {
+function toggleSection(section: keyof typeof expandedSections) {
   expandedSections[section] = !expandedSections[section];
 }
 
-function _updateProperty<K extends keyof Camera3D>(key: K, value: Camera3D[K]) {
+function updateProperty<K extends keyof Camera3D>(key: K, value: Camera3D[K]) {
   if (!camera.value) return;
   store.updateCamera(camera.value.id, { [key]: value });
 }
 
-function _updatePosition(axis: "x" | "y" | "z", value: number) {
+function updatePosition(axis: "x" | "y" | "z", value: number) {
   if (!camera.value) return;
   store.updateCamera(camera.value.id, {
     position: { ...camera.value.position, [axis]: value },
   });
 }
 
-function _updatePOI(axis: "x" | "y" | "z", value: number) {
+function updatePOI(axis: "x" | "y" | "z", value: number) {
   if (!camera.value) return;
   store.updateCamera(camera.value.id, {
     pointOfInterest: { ...camera.value.pointOfInterest, [axis]: value },
   });
 }
 
-function _updateOrientation(axis: "x" | "y" | "z", value: number) {
+function updateOrientation(axis: "x" | "y" | "z", value: number) {
   if (!camera.value) return;
   store.updateCamera(camera.value.id, {
     orientation: { ...camera.value.orientation, [axis]: value },
   });
 }
 
-function _updateFocalLength(value: number) {
+function updateFocalLength(value: number) {
   if (!camera.value) return;
-  const angleOfView = focalLengthToFOV(value, camera.value.filmSize);
+  // Convert focal length to FOV: focalLengthToFOV returns radians, store as degrees
+  const angleOfViewRadians = focalLengthToFOV(value, camera.value.filmSize);
+  const angleOfView = angleOfViewRadians * (180 / Math.PI);
   store.updateCamera(camera.value.id, {
     focalLength: value,
     angleOfView,
   });
 }
 
-function _updateAngleOfView(value: number) {
+function updateAngleOfView(value: number) {
   if (!camera.value) return;
-  const focalLength = fovToFocalLength(value, camera.value.filmSize);
+  // Convert FOV from degrees (UI) to radians (math functions)
+  const valueRadians = value * (Math.PI / 180);
+  const focalLength = fovToFocalLength(valueRadians, camera.value.filmSize);
   store.updateCamera(camera.value.id, {
     angleOfView: value,
     focalLength,
   });
 }
 
-function _updateDOF<K extends keyof Camera3D["depthOfField"]>(
+function updateDOF<K extends keyof Camera3D["depthOfField"]>(
   key: K,
   value: Camera3D["depthOfField"][K],
 ) {
@@ -1015,7 +1026,7 @@ function _updateDOF<K extends keyof Camera3D["depthOfField"]>(
   });
 }
 
-function _updateIris<K extends keyof Camera3D["iris"]>(
+function updateIris<K extends keyof Camera3D["iris"]>(
   key: K,
   value: Camera3D["iris"][K],
 ) {
@@ -1025,7 +1036,7 @@ function _updateIris<K extends keyof Camera3D["iris"]>(
   });
 }
 
-function _updateHighlight<K extends keyof Camera3D["highlight"]>(
+function updateHighlight<K extends keyof Camera3D["highlight"]>(
   key: K,
   value: Camera3D["highlight"][K],
 ) {
@@ -1035,7 +1046,7 @@ function _updateHighlight<K extends keyof Camera3D["highlight"]>(
   });
 }
 
-function _applyPreset(preset: (typeof CAMERA_PRESETS)[number]) {
+function applyPreset(preset: (typeof CAMERA_PRESETS)[number]) {
   if (!camera.value) return;
   store.updateCamera(camera.value.id, {
     focalLength: preset.focalLength,
@@ -1044,7 +1055,7 @@ function _applyPreset(preset: (typeof CAMERA_PRESETS)[number]) {
   });
 }
 
-function _createCamera() {
+function createCamera() {
   store.createCameraLayer();
 }
 </script>

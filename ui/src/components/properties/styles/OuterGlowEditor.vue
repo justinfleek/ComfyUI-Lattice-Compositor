@@ -67,6 +67,7 @@
 
 <script setup lang="ts">
 import type {
+  GlowTechnique,
   OuterGlowStyle,
   OuterGlowUpdate,
   RGBA,
@@ -77,9 +78,9 @@ defineProps<{
   style: OuterGlowStyle;
 }>();
 
-const _emit = defineEmits<(e: "update", updates: OuterGlowUpdate) => void>();
+const emit = defineEmits<(e: "update", updates: OuterGlowUpdate) => void>();
 
-const _blendModes: BlendMode[] = [
+const blendModes: BlendMode[] = [
   "normal",
   "screen",
   "lighten",
@@ -88,21 +89,21 @@ const _blendModes: BlendMode[] = [
   "overlay",
 ];
 
-function _formatMode(mode: string): string {
+function formatMode(mode: string): string {
   return mode
     .split("-")
     .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
     .join(" ");
 }
 
-function _rgbaToHex(color: RGBA): string {
+function rgbaToHex(color: RGBA): string {
   const r = Math.round(color.r).toString(16).padStart(2, "0");
   const g = Math.round(color.g).toString(16).padStart(2, "0");
   const b = Math.round(color.b).toString(16).padStart(2, "0");
   return `#${r}${g}${b}`;
 }
 
-function _hexToRgba(hex: string): RGBA {
+function hexToRgba(hex: string): RGBA {
   const r = parseInt(hex.slice(1, 3), 16);
   const g = parseInt(hex.slice(3, 5), 16);
   const b = parseInt(hex.slice(5, 7), 16);

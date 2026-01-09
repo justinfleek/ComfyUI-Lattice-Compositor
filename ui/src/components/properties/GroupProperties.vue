@@ -100,16 +100,16 @@ const emit =
 
 const store = useCompositorStore();
 
-const _groupData = computed(() => props.layer.data as GroupLayerData);
+const groupData = computed(() => props.layer.data as GroupLayerData);
 
 // Find child layers (layers that have this group as parent)
 const childLayers = computed(() => {
   return store.layers.filter((l) => l.parentId === props.layer.id);
 });
 
-const _childCount = computed(() => childLayers.value.length);
+const childCount = computed(() => childLayers.value.length);
 
-const _colorPresets = [
+const colorPresets = [
   { name: "Red", color: "#e74c3c" },
   { name: "Orange", color: "#e67e22" },
   { name: "Yellow", color: "#f1c40f" },
@@ -121,18 +121,18 @@ const _colorPresets = [
   { name: "Gray", color: "#888888" },
 ];
 
-function _updateData<K extends keyof GroupLayerData>(
+function updateData<K extends keyof GroupLayerData>(
   key: K,
   value: GroupLayerData[K],
 ) {
   emit("update", { [key]: value } as Partial<GroupLayerData>);
 }
 
-function _selectLayer(layerId: string) {
+function selectLayer(layerId: string) {
   store.selectLayer(layerId);
 }
 
-function _getLayerIcon(type: LayerType): string {
+function getLayerIcon(type: LayerType): string {
   const icons: Record<string, string> = {
     image: "🖼",
     video: "🎬",

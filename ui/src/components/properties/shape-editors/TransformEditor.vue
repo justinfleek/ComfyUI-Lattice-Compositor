@@ -3,45 +3,45 @@
     <div class="property-row">
       <label>Anchor</label>
       <div class="xy-inputs">
-        <ScrubableNumber :modelValue="transform.anchorPoint.value.x" @update:modelValue="v => updatePoint('anchorPoint', 'x', v)" unit="px" />
-        <ScrubableNumber :modelValue="transform.anchorPoint.value.y" @update:modelValue="v => updatePoint('anchorPoint', 'y', v)" unit="px" />
+        <ScrubableNumber :modelValue="transform.anchorPoint.value.x" @update:modelValue="(v: number) => updatePoint('anchorPoint', 'x', v)" unit="px" />
+        <ScrubableNumber :modelValue="transform.anchorPoint.value.y" @update:modelValue="(v: number) => updatePoint('anchorPoint', 'y', v)" unit="px" />
       </div>
       <KeyframeToggle :property="transform.anchorPoint" :layerId="layerId" @toggle="toggleKeyframe('anchorPoint')" />
     </div>
     <div class="property-row">
       <label>Position</label>
       <div class="xy-inputs">
-        <ScrubableNumber :modelValue="transform.position.value.x" @update:modelValue="v => updatePoint('position', 'x', v)" unit="px" />
-        <ScrubableNumber :modelValue="transform.position.value.y" @update:modelValue="v => updatePoint('position', 'y', v)" unit="px" />
+        <ScrubableNumber :modelValue="transform.position.value.x" @update:modelValue="(v: number) => updatePoint('position', 'x', v)" unit="px" />
+        <ScrubableNumber :modelValue="transform.position.value.y" @update:modelValue="(v: number) => updatePoint('position', 'y', v)" unit="px" />
       </div>
       <KeyframeToggle :property="transform.position" :layerId="layerId" @toggle="toggleKeyframe('position')" />
     </div>
     <div class="property-row">
       <label>Scale</label>
       <div class="xy-inputs">
-        <ScrubableNumber :modelValue="transform.scale.value.x" @update:modelValue="v => updatePoint('scale', 'x', v)" :min="0" :max="500" unit="%" />
-        <ScrubableNumber :modelValue="transform.scale.value.y" @update:modelValue="v => updatePoint('scale', 'y', v)" :min="0" :max="500" unit="%" />
+        <ScrubableNumber :modelValue="transform.scale.value.x" @update:modelValue="(v: number) => updatePoint('scale', 'x', v)" :min="0" :max="500" unit="%" />
+        <ScrubableNumber :modelValue="transform.scale.value.y" @update:modelValue="(v: number) => updatePoint('scale', 'y', v)" :min="0" :max="500" unit="%" />
       </div>
       <KeyframeToggle :property="transform.scale" :layerId="layerId" @toggle="toggleKeyframe('scale')" />
     </div>
     <div class="property-row">
       <label>Rotation</label>
-      <ScrubableNumber :modelValue="transform.rotation.value" @update:modelValue="v => updateNumber('rotation', v)" unit="°" />
+      <ScrubableNumber :modelValue="transform.rotation.value" @update:modelValue="(v: number) => updateNumber('rotation', v)" unit="°" />
       <KeyframeToggle :property="transform.rotation" :layerId="layerId" @toggle="toggleKeyframe('rotation')" />
     </div>
     <div class="property-row">
       <label>Skew</label>
-      <ScrubableNumber :modelValue="transform.skew.value" @update:modelValue="v => updateNumber('skew', v)" :min="-90" :max="90" unit="°" />
+      <ScrubableNumber :modelValue="transform.skew.value" @update:modelValue="(v: number) => updateNumber('skew', v)" :min="-90" :max="90" unit="°" />
       <KeyframeToggle :property="transform.skew" :layerId="layerId" @toggle="toggleKeyframe('skew')" />
     </div>
     <div class="property-row">
       <label>Skew Axis</label>
-      <ScrubableNumber :modelValue="transform.skewAxis.value" @update:modelValue="v => updateNumber('skewAxis', v)" :min="-180" :max="180" unit="°" />
+      <ScrubableNumber :modelValue="transform.skewAxis.value" @update:modelValue="(v: number) => updateNumber('skewAxis', v)" :min="-180" :max="180" unit="°" />
       <KeyframeToggle :property="transform.skewAxis" :layerId="layerId" @toggle="toggleKeyframe('skewAxis')" />
     </div>
     <div class="property-row">
       <label>Opacity</label>
-      <ScrubableNumber :modelValue="transform.opacity.value" @update:modelValue="v => updateNumber('opacity', v)" :min="0" :max="100" unit="%" />
+      <ScrubableNumber :modelValue="transform.opacity.value" @update:modelValue="(v: number) => updateNumber('opacity', v)" :min="0" :max="100" unit="%" />
       <KeyframeToggle :property="transform.opacity" :layerId="layerId" @toggle="toggleKeyframe('opacity')" />
     </div>
   </div>
@@ -56,7 +56,7 @@ const props = defineProps<{ transform: ShapeTransform; layerId: string }>();
 const emit = defineEmits(["update"]);
 const store = useCompositorStore();
 
-function _updatePoint(
+function updatePoint(
   prop: "anchorPoint" | "position" | "scale",
   axis: "x" | "y",
   value: number,
@@ -69,7 +69,7 @@ function _updatePoint(
   emit("update", updated);
 }
 
-function _updateNumber(
+function updateNumber(
   prop: "rotation" | "skew" | "skewAxis" | "opacity",
   value: number,
 ) {
@@ -78,7 +78,7 @@ function _updateNumber(
   emit("update", updated);
 }
 
-function _toggleKeyframe(
+function toggleKeyframe(
   prop:
     | "anchorPoint"
     | "position"

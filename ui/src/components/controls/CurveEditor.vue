@@ -146,7 +146,7 @@ interface Preset {
   cp2y: number;
 }
 
-const _presets: Preset[] = [
+const presets: Preset[] = [
   { name: "Linear", label: "Lin", cp1x: 0, cp1y: 0, cp2x: 1, cp2y: 1 },
   { name: "Ease In", label: "In", cp1x: 0.42, cp1y: 0, cp2x: 1, cp2y: 1 },
   { name: "Ease Out", label: "Out", cp1x: 0, cp1y: 0, cp2x: 0.58, cp2y: 1 },
@@ -185,14 +185,14 @@ function toNormalized(
 const cp1Screen = computed(() => toScreen(props.cp1x, props.cp1y));
 const cp2Screen = computed(() => toScreen(props.cp2x, props.cp2y));
 
-const _curvePath = computed(() => {
+const curvePath = computed(() => {
   const start = toScreen(0, 0);
   const end = toScreen(1, 1);
 
   return `M ${start.x} ${start.y} C ${cp1Screen.value.x} ${cp1Screen.value.y}, ${cp2Screen.value.x} ${cp2Screen.value.y}, ${end.x} ${end.y}`;
 });
 
-function _isActivePreset(preset: Preset): boolean {
+function isActivePreset(preset: Preset): boolean {
   const tolerance = 0.01;
   return (
     Math.abs(props.cp1x - preset.cp1x) < tolerance &&
@@ -202,14 +202,14 @@ function _isActivePreset(preset: Preset): boolean {
   );
 }
 
-function _applyPreset(preset: Preset): void {
+function applyPreset(preset: Preset): void {
   emit("update:cp1x", preset.cp1x);
   emit("update:cp1y", preset.cp1y);
   emit("update:cp2x", preset.cp2x);
   emit("update:cp2y", preset.cp2y);
 }
 
-function _startDrag(point: 1 | 2, e: MouseEvent): void {
+function startDrag(point: 1 | 2, e: MouseEvent): void {
   draggingPoint.value = point;
   document.addEventListener("mousemove", onDrag);
   document.addEventListener("mouseup", stopDrag);
@@ -246,7 +246,7 @@ function stopDrag(): void {
   document.removeEventListener("mouseup", stopDrag);
 }
 
-function _onSvgMouseDown(_e: MouseEvent): void {
+function onSvgMouseDown(_e: MouseEvent): void {
   // Click on empty area - do nothing for now
 }
 </script>

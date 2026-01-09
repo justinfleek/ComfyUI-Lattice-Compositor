@@ -43,7 +43,7 @@
               <span class="label z-label">Z</span>
               <ScrubableNumber
                 :modelValue="property.value?.z ?? 0"
-                @update:modelValue="v => updateValByIndex('z', v)"
+                @update:modelValue="(v: number) => updateValByIndex('z', v)"
               />
             </div>
           </template>
@@ -103,11 +103,11 @@
           <template v-else-if="typeof property.value === 'object'">
             <div class="vec-item">
               <span class="label x-label">X</span>
-              <ScrubableNumber :modelValue="property.value.x" @update:modelValue="v => updateValByIndex('x', v)" />
+              <ScrubableNumber :modelValue="property.value.x" @update:modelValue="(v: number) => updateValByIndex('x', v)" />
             </div>
             <div class="vec-item">
               <span class="label y-label">Y</span>
-              <ScrubableNumber :modelValue="property.value.y" @update:modelValue="v => updateValByIndex('y', v)" />
+              <ScrubableNumber :modelValue="property.value.y" @update:modelValue="(v: number) => updateValByIndex('y', v)" />
             </div>
           </template>
 
@@ -192,18 +192,18 @@ import { getShapeForEasing, KEYFRAME_SHAPES } from "@/styles/keyframe-shapes";
 import type { Keyframe } from "@/types/project";
 
 // Get keyframe shape path for a given interpolation type
-function _getKeyframeShapePath(interpolation: string = "linear"): string {
+function getKeyframeShapePath(interpolation: string = "linear"): string {
   const shapeKey = getShapeForEasing(interpolation);
   return KEYFRAME_SHAPES[shapeKey]?.path || KEYFRAME_SHAPES.diamond.path;
 }
 
-function _getKeyframeShapeViewBox(interpolation: string = "linear"): string {
+function getKeyframeShapeViewBox(interpolation: string = "linear"): string {
   const shapeKey = getShapeForEasing(interpolation);
   const shape = KEYFRAME_SHAPES[shapeKey] || KEYFRAME_SHAPES.diamond;
   return `0 0 ${shape.width} ${shape.height}`;
 }
 
-function _isStrokeShape(interpolation: string = "linear"): boolean {
+function isStrokeShape(interpolation: string = "linear"): boolean {
   const shapeKey = getShapeForEasing(interpolation);
   return KEYFRAME_SHAPES[shapeKey]?.stroke || false;
 }
@@ -217,7 +217,7 @@ const props = defineProps([
   "pixelsPerFrame",
   "gridStyle",
 ]);
-const _emit = defineEmits(["selectKeyframe", "deleteKeyframe", "moveKeyframe"]);
+const emit = defineEmits(["selectKeyframe", "deleteKeyframe", "moveKeyframe"]);
 const store = useCompositorStore();
 
 const selectedKeyframeIds = ref<Set<string>>(new Set());
@@ -241,7 +241,7 @@ const contextMenu = ref<{
   keyframe: null,
 });
 
-const _contextMenuStyle = computed(() => ({
+const contextMenuStyle = computed(() => ({
   left: `${contextMenu.value.x}px`,
   top: `${contextMenu.value.y}px`,
 }));
@@ -259,24 +259,24 @@ const trackContextMenu = ref<{
   frame: 0,
 });
 
-const _trackContextMenuStyle = computed(() => ({
+const trackContextMenuStyle = computed(() => ({
   left: `${trackContextMenu.value.x}px`,
   top: `${trackContextMenu.value.y}px`,
 }));
 
 // Check if this is a position property (for "Insert on Path" option)
-const _isPositionProperty = computed(
+const isPositionProperty = computed(
   () =>
     props.propertyPath?.includes("position") ||
     props.name?.toLowerCase().includes("position"),
 );
 
 // Check if there are multiple keyframes (needed for path interpolation)
-const _hasMultipleKeyframes = computed(
+const hasMultipleKeyframes = computed(
   () => (props.property?.keyframes?.length || 0) >= 2,
 );
 
-const _selectionBoxStyle = computed(() => {
+const selectionBoxStyle = computed(() => {
   const left = Math.min(boxStartX.value, boxCurrentX.value);
   const width = Math.abs(boxCurrentX.value - boxStartX.value);
   return {
@@ -285,10 +285,10 @@ const _selectionBoxStyle = computed(() => {
   };
 });
 
-const _hasKeyframeAtCurrent = computed(() =>
+const hasKeyframeAtCurrent = computed(() =>
   props.property.keyframes?.some((k: any) => k.frame === store.currentFrame),
 );
-const _isSelected = computed(
+const isSelected = computed(
   () => store.selectedPropertyPath === props.propertyPath,
 );
 
@@ -298,16 +298,16 @@ const sortedKeyframes = computed(() => {
   return [...kfs].sort((a: any, b: any) => a.frame - b.frame);
 });
 
-const _hasPrevKeyframe = computed(() => {
+const hasPrevKeyframe = computed(() => {
   return sortedKeyframes.value.some((kf: any) => kf.frame < store.currentFrame);
 });
 
-const _hasNextKeyframe = computed(() => {
+const hasNextKeyframe = computed(() => {
   return sortedKeyframes.value.some((kf: any) => kf.frame > store.currentFrame);
 });
 
 // Keyframe navigator functions
-function _goToPrevKeyframe() {
+function goToPrevKeyframe() {
   const prevKfs = sortedKeyframes.value.filter(
     (kf: any) => kf.frame < store.currentFrame,
   );
@@ -317,7 +317,7 @@ function _goToPrevKeyframe() {
   }
 }
 
-function _goToNextKeyframe() {
+function goToNextKeyframe() {
   const nextKf = sortedKeyframes.value.find(
     (kf: any) => kf.frame > store.currentFrame,
   );
@@ -326,17 +326,17 @@ function _goToNextKeyframe() {
   }
 }
 
-function _toggleAnim() {
+function toggleAnim() {
   store.setPropertyAnimated(
     props.layerId,
     props.propertyPath,
     !props.property.animated,
   );
 }
-function _addKeyframeAtCurrent() {
+function addKeyframeAtCurrent() {
   store.addKeyframe(props.layerId, props.propertyPath, props.property.value);
 }
-function _updateValDirect(v: any) {
+function updateValDirect(v: any) {
   // Handle data.* properties differently - they're stored directly on layer.data
   if (props.propertyPath.startsWith("data.")) {
     const dataKey = props.propertyPath.replace("data.", "");
@@ -345,21 +345,21 @@ function _updateValDirect(v: any) {
     store.setPropertyValue(props.layerId, props.propertyPath, v);
   }
 }
-function _updateValByIndex(axis: string, v: number) {
+function updateValByIndex(axis: string, v: number) {
   const newVal = { ...props.property.value, [axis]: v };
   store.setPropertyValue(props.layerId, props.propertyPath, newVal);
 }
-function _selectProp() {
+function selectProp() {
   store.selectProperty(props.propertyPath);
 }
 
 // Format dropdown option label (capitalize first letter)
-function _formatOptionLabel(opt: string): string {
+function formatOptionLabel(opt: string): string {
   return opt.charAt(0).toUpperCase() + opt.slice(1);
 }
 
 // Get tooltip for dropdown based on property name
-function _getDropdownTitle(): string {
+function getDropdownTitle(): string {
   switch (props.name) {
     case "Line Cap":
       return "Butt: flat end, Round: rounded end, Square: extends end";
@@ -371,7 +371,7 @@ function _getDropdownTitle(): string {
 }
 
 // Get tooltip for string input based on property name
-function _getStringTitle(): string {
+function getStringTitle(): string {
   switch (props.name) {
     case "Dashes":
       return "Dash pattern: comma-separated values (e.g., 10, 5 for 10px dash, 5px gap)";
@@ -381,7 +381,7 @@ function _getStringTitle(): string {
 }
 
 // Handle mouse down on track - start box selection or navigate
-function _handleTrackMouseDown(e: MouseEvent) {
+function handleTrackMouseDown(e: MouseEvent) {
   const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
   const x = e.clientX - rect.left;
 
@@ -435,7 +435,7 @@ function _handleTrackMouseDown(e: MouseEvent) {
 }
 
 // Keyframe selection and dragging
-function _startKeyframeDrag(e: MouseEvent, kf: Keyframe<any>) {
+function startKeyframeDrag(e: MouseEvent, kf: Keyframe<any>) {
   // Toggle selection with Shift, otherwise single select
   if (e.shiftKey) {
     if (selectedKeyframeIds.value.has(kf.id)) {
@@ -550,13 +550,13 @@ function _startKeyframeDrag(e: MouseEvent, kf: Keyframe<any>) {
 }
 
 // Delete keyframe
-function _deleteKeyframe(kfId: string) {
+function deleteKeyframe(kfId: string) {
   store.removeKeyframe(props.layerId, props.propertyPath, kfId);
   selectedKeyframeIds.value.delete(kfId);
 }
 
 // Context menu functions
-function _showContextMenu(e: MouseEvent, kf: Keyframe<any>) {
+function showContextMenu(e: MouseEvent, kf: Keyframe<any>) {
   // Select the keyframe if not already selected
   if (!selectedKeyframeIds.value.has(kf.id)) {
     selectedKeyframeIds.value.clear();
@@ -585,7 +585,7 @@ function hideTrackContextMenu() {
 }
 
 // Show context menu on empty track area (right-click)
-function _showTrackContextMenu(e: MouseEvent) {
+function showTrackContextMenu(e: MouseEvent) {
   // Don't show if clicking on a keyframe (that has its own context menu)
   const target = e.target as HTMLElement;
   if (target.closest(".keyframe")) return;
@@ -609,7 +609,7 @@ function _showTrackContextMenu(e: MouseEvent) {
 }
 
 // Add a keyframe at the clicked frame with interpolated value
-function _addKeyframeAtFrame() {
+function addKeyframeAtFrame() {
   const frame = trackContextMenu.value.frame;
   const currentValue = props.property?.value ?? 0;
   store.addKeyframe(props.layerId, props.propertyPath, currentValue, frame);
@@ -617,7 +617,7 @@ function _addKeyframeAtFrame() {
 }
 
 // Insert keyframe by interpolating the position motion path
-function _insertKeyframeOnPath() {
+function insertKeyframeOnPath() {
   const frame = trackContextMenu.value.frame;
   const newKfId = store.insertKeyframeOnPath(props.layerId, frame);
   if (newKfId) {
@@ -627,12 +627,12 @@ function _insertKeyframeOnPath() {
 }
 
 // Navigate to the clicked frame
-function _goToClickedFrame() {
+function goToClickedFrame() {
   store.setFrame(trackContextMenu.value.frame);
   hideTrackContextMenu();
 }
 
-function _setInterpolation(type: "linear" | "bezier" | "hold") {
+function setInterpolation(type: "linear" | "bezier" | "hold") {
   // Apply to all selected keyframes
   for (const kfId of selectedKeyframeIds.value) {
     store.setKeyframeInterpolation(
@@ -645,14 +645,14 @@ function _setInterpolation(type: "linear" | "bezier" | "hold") {
   hideContextMenu();
 }
 
-function _goToKeyframe() {
+function goToKeyframe() {
   if (contextMenu.value.keyframe) {
     store.setFrame(contextMenu.value.keyframe.frame);
   }
   hideContextMenu();
 }
 
-function _deleteSelectedKeyframes() {
+function deleteSelectedKeyframes() {
   for (const kfId of selectedKeyframeIds.value) {
     store.removeKeyframe(props.layerId, props.propertyPath, kfId);
   }

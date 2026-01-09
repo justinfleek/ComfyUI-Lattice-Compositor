@@ -264,6 +264,11 @@ export function evaluateMotionComponent(
       return motion.startValue + (motion.endValue - motion.startValue) * easedT;
 
     case "exponential": {
+      // Exponential interpolation requires non-zero start value (ratio-based).
+      // Fall back to linear interpolation when startValue is zero.
+      if (motion.startValue === 0) {
+        return motion.endValue * easedT;
+      }
       const ratio = motion.endValue / motion.startValue;
       return motion.startValue * ratio ** easedT;
     }

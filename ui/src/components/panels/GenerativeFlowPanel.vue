@@ -172,7 +172,7 @@ import {
 } from "@/services/export/wanMoveExport";
 import { useCompositorStore } from "@/stores/compositorStore";
 
-const _store = useCompositorStore();
+const store = useCompositorStore();
 
 // State
 const selectedPreset = ref<string>("neural-flow");
@@ -182,9 +182,9 @@ const numFrames = ref(81); // 5 seconds @ 16fps
 const width = ref(832);
 const height = ref(480);
 const seed = ref(42);
-const _useDataDriven = ref(false);
+const useDataDriven = ref(false);
 const selectedDataAsset = ref("");
-const _dataMapping = ref<"speed" | "amplitude" | "phase" | "direction">(
+const dataMapping = ref<"speed" | "amplitude" | "phase" | "direction">(
   "speed",
 );
 const isGenerating = ref(false);
@@ -195,22 +195,22 @@ const previewCanvas = ref<HTMLCanvasElement | null>(null);
 
 // Computed
 const dataAssets = computed(() => getAllDataAssets());
-const _hasDataAssets = computed(() => dataAssets.value.length > 0);
+const hasDataAssets = computed(() => dataAssets.value.length > 0);
 
 // Methods
-function _formatPresetName(name: string): string {
+function formatPresetName(name: string): string {
   return name
     .split("-")
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
     .join(" ");
 }
 
-function _setResolution(w: number, h: number) {
+function setResolution(w: number, h: number) {
   width.value = w;
   height.value = h;
 }
 
-function _randomizeSeed() {
+function randomizeSeed() {
   seed.value = Math.floor(Math.random() * 1000000);
 }
 
@@ -258,7 +258,7 @@ function generateTrajectory(): WanMoveTrajectory {
   }
 }
 
-async function _generatePreview() {
+async function generatePreview() {
   isGenerating.value = true;
   statusMessage.value = "";
 
@@ -329,7 +329,7 @@ function drawPreview() {
   ctx.fillText(`${tracks.length} pts × ${metadata.numFrames} frames`, 5, 12);
 }
 
-function _exportJSON() {
+function exportJSON() {
   if (!generatedTrajectory.value) return;
 
   const json = exportAsJSON(generatedTrajectory.value);
@@ -339,7 +339,7 @@ function _exportJSON() {
   statusType.value = "success";
 }
 
-function _exportForWanMove() {
+function exportForWanMove() {
   if (!generatedTrajectory.value) return;
 
   const npyData = exportAsNPYData(generatedTrajectory.value);

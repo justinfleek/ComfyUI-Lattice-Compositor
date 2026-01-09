@@ -1,0 +1,7 @@
+# P1 HIGH: Media Codec Browser Tests
+# These tests verify video/audio encoding/decoding
+#
+# Files to test:
+# - videoDecoder.browser.test.ts
+# - videoEncoder.browser.test.ts
+# - audio.browser.test.ts

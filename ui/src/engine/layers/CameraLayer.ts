@@ -60,6 +60,7 @@ export class CameraLayer extends BaseLayer {
 
   // Callbacks to store
   private cameraGetter?: CameraGetter;
+  private cameraUpdater?: CameraUpdater;
   private cameraAtFrameGetter?: CameraAtFrameGetter;
 
   // Track current frame for interpolation
@@ -85,6 +86,12 @@ export class CameraLayer extends BaseLayer {
 
   // Spline provider for path following
   private splineProvider: CameraSplineProvider | null = null;
+
+  // Auto-advance parameter for path following
+  private autoAdvanceT: number = 0;
+
+  // Wireframe visibility
+  private wireframeVisible: boolean = true;
 
   constructor(layerData: Layer) {
     super(layerData);

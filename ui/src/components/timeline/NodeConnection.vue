@@ -76,33 +76,33 @@ const props = defineProps<{
   height: number;
 }>();
 
-const _themeStore = useThemeStore();
+const themeStore = useThemeStore();
 
-const _viewBox = computed(() => `0 0 ${props.width} ${props.height}`);
+const viewBox = computed(() => `0 0 ${props.width} ${props.height}`);
 
 // Theme-aware colors
-const _gradientStart = computed(() => "var(--lattice-accent, #8B5CF6)");
-const _gradientEnd = computed(() => "var(--lattice-accent-secondary, #EC4899)");
-const _parameterColor = computed(() => "var(--lattice-info, #3B82F6)");
-const _modifierColor = computed(() => "var(--lattice-warning, #F59E0B)");
+const gradientStart = computed(() => "var(--lattice-accent, #8B5CF6)");
+const gradientEnd = computed(() => "var(--lattice-accent-secondary, #EC4899)");
+const parameterColor = computed(() => "var(--lattice-info, #3B82F6)");
+const modifierColor = computed(() => "var(--lattice-warning, #F59E0B)");
 
 // Categorize connections by type
-const _visualConnections = computed(() =>
+const visualConnections = computed(() =>
   props.connections.filter((c) => c.type === "visual"),
 );
 
-const _parameterConnections = computed(() =>
+const parameterConnections = computed(() =>
   props.connections.filter((c) => c.type === "parameter"),
 );
 
-const _modifierConnections = computed(() =>
+const modifierConnections = computed(() =>
   props.connections.filter((c) => c.type === "modifier"),
 );
 
 /**
  * Generate a smooth bezier curve path between two points
  */
-function _generateBezierPath(
+function generateBezierPath(
   start: ConnectionPoint,
   end: ConnectionPoint,
 ): string {

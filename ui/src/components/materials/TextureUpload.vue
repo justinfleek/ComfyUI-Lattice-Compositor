@@ -127,24 +127,24 @@ const mapLabels: Record<TextureMapType, string> = {
   specular: "Specular",
 };
 
-const _mapLabel = computed(() => mapLabels[props.mapType] || props.mapType);
-const _hasTexture = computed(() => !!previewUrl.value || !!props.textureUrl);
+const mapLabel = computed(() => mapLabels[props.mapType] || props.mapType);
+const hasTexture = computed(() => !!previewUrl.value || !!props.textureUrl);
 
-const _acceptedFormats = "image/png,image/jpeg,image/webp,image/exr";
+const acceptedFormats = "image/png,image/jpeg,image/webp,image/exr";
 
-function _openFilePicker() {
+function openFilePicker() {
   fileInput.value?.click();
 }
 
-function _onDragOver(_e: DragEvent) {
+function onDragOver(_e: DragEvent) {
   isDragging.value = true;
 }
 
-function _onDragLeave(_e: DragEvent) {
+function onDragLeave(_e: DragEvent) {
   isDragging.value = false;
 }
 
-function _onDrop(e: DragEvent) {
+function onDrop(e: DragEvent) {
   isDragging.value = false;
   const files = e.dataTransfer?.files;
   if (files && files.length > 0) {
@@ -152,7 +152,7 @@ function _onDrop(e: DragEvent) {
   }
 }
 
-function _onFileSelected(e: Event) {
+function onFileSelected(e: Event) {
   const input = e.target as HTMLInputElement;
   if (input.files && input.files.length > 0) {
     handleFile(input.files[0]);
@@ -184,7 +184,7 @@ function handleFile(file: File) {
   reader.readAsDataURL(file);
 }
 
-function _removeTexture() {
+function removeTexture() {
   previewUrl.value = "";
   textureSize.value = "";
   if (fileInput.value) {

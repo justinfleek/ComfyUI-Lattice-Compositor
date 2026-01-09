@@ -198,8 +198,8 @@ export function computeProjectionMatrix(
   nearClip: number = 0.1,
   farClip: number = 1000,
 ): number[][] {
-  const fov = focalLengthToFOV(cam.focalLength, 36); // 36mm film
-  const fovRad = (fov * Math.PI) / 180;
+  // focalLengthToFOV returns radians - do NOT convert again!
+  const fovRad = focalLengthToFOV(cam.focalLength, 36); // 36mm film, returns radians
   const tanHalfFov = Math.tan(fovRad / 2);
 
   const f = 1 / tanHalfFov;

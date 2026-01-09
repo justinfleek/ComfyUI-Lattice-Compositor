@@ -5,7 +5,12 @@
  */
 
 import { computed, onMounted, ref, watch } from "vue";
-import { EXPORT_PRESETS, EXPORT_TARGET_INFO } from "@/config/exportPresets";
+import {
+  EXPORT_PRESETS,
+  EXPORT_TARGET_INFO,
+  RESOLUTION_PRESETS,
+  FRAME_COUNT_PRESETS,
+} from "@/config/exportPresets";
 import { getComfyUIClient } from "@/services/comfyui/comfyuiClient";
 import { exportToComfyUI } from "@/services/export/exportPipeline";
 import type {
@@ -39,7 +44,7 @@ const emit = defineEmits<{
 // State
 // ============================================================================
 
-const _activeTab = ref<"target" | "output" | "generation" | "comfyui">(
+const activeTab = ref<"target" | "output" | "generation" | "comfyui">(
   "target",
 );
 
@@ -87,9 +92,9 @@ const abortController = ref<AbortController | null>(null);
 // Computed
 // ============================================================================
 
-const _targetInfo = computed(() => EXPORT_TARGET_INFO[selectedTarget.value]);
+const targetInfo = computed(() => EXPORT_TARGET_INFO[selectedTarget.value]);
 
-const _targetCategories = computed(() => ({
+const targetCategories = computed(() => ({
   "Wan 2.2": [
     "wan22-i2v",
     "wan22-t2v",
@@ -109,7 +114,7 @@ const _targetCategories = computed(() => ({
   Custom: ["custom-workflow"] as ExportTarget[],
 }));
 
-const _targetDisplayName = computed(() => {
+const targetDisplayName = computed(() => {
   const names: Record<ExportTarget, string> = {
     "wan22-i2v": "Image to Video",
     "wan22-t2v": "Text to Video",
@@ -137,14 +142,14 @@ const _targetDisplayName = computed(() => {
   return names;
 });
 
-const _depthFormats: { value: DepthMapFormat; label: string }[] = [
+const depthFormats: { value: DepthMapFormat; label: string }[] = [
   { value: "midas", label: "MiDaS (8-bit inverted)" },
   { value: "zoe", label: "Zoe (16-bit linear)" },
   { value: "depth-pro", label: "Depth-Pro (metric)" },
   { value: "normalized", label: "Normalized (0-1)" },
 ];
 
-const _controlTypes: { value: ControlType; label: string }[] = [
+const controlTypes: { value: ControlType; label: string }[] = [
   { value: "depth", label: "Depth" },
   { value: "canny", label: "Canny Edge" },
   { value: "lineart", label: "Line Art" },
@@ -199,21 +204,21 @@ async function checkConnection() {
   }
 }
 
-function _applyResolutionPreset(preset: { width: number; height: number }) {
+function applyResolutionPreset(preset: { width: number; height: number }) {
   width.value = preset.width;
   height.value = preset.height;
 }
 
-function _applyFrameCountPreset(count: number) {
+function applyFrameCountPreset(count: number) {
   frameCount.value = count;
   endFrame.value = Math.min(endFrame.value, count);
 }
 
-function _randomizeSeed() {
+function randomizeSeed() {
   seed.value = Math.floor(Math.random() * 2147483647);
 }
 
-async function _startExport() {
+async function startExport() {
   isExporting.value = true;
   exportError.value = null;
   abortController.value = new AbortController();
@@ -274,7 +279,7 @@ function cancelExport() {
   }
 }
 
-function _close() {
+function close() {
   if (isExporting.value) {
     cancelExport();
   }
@@ -534,7 +539,7 @@ watch(selectedTarget, () => {
             <div class="input-row seed-row">
               <ScrubableNumber
                 :modelValue="seed ?? 0"
-                @update:modelValue="v => seed = v"
+                @update:modelValue="(v: number) => seed = v"
                 label="Seed"
                 :min="0"
                 :max="2147483647"

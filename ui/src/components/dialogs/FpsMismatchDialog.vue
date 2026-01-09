@@ -88,7 +88,7 @@ const emit = defineEmits<{
 }>();
 
 // Calculate what duration would be after conforming (time-stretch)
-const _conformedDuration = computed(() => {
+const conformedDuration = computed(() => {
   // If video is 30fps and comp is 16fps, video plays slower
   // stretchFactor = compositionFps / importedFps
   const stretchFactor = props.compositionFps / props.importedFps;

@@ -22,7 +22,7 @@ import {
 interface FrameBufferEntry {
   imageData: ImageData;
   frame: number;
-  storedAtFrame: number; // BUG-065 fix: Use frame number instead of wall-clock time for determinism
+  storedAtFrame: number; // Frame-based timestamp for deterministic playback
 }
 
 /**
@@ -45,8 +45,8 @@ class TimeEffectFrameBuffer {
   }
 
   /**
-   * Store a frame in the buffer
-   * BUG-065 fix: Uses frame number for timestamp instead of Date.now() for determinism
+   * Store a frame in the buffer.
+   * Uses frame number for timestamp instead of Date.now() for determinism.
    */
   store(frame: number, canvas: HTMLCanvasElement): void {
     const ctx = canvas.getContext("2d");
@@ -61,7 +61,7 @@ class TimeEffectFrameBuffer {
     this.buffer.push({
       imageData,
       frame,
-      storedAtFrame: frame, // BUG-065 fix: Frame-based timestamp
+      storedAtFrame: frame, // Frame-based timestamp for determinism
     });
 
     // Trim to max size (keep most recent)
@@ -135,8 +135,8 @@ class TimeEffectFrameBuffer {
   }
 
   /**
-   * Remove old entries based on frame distance
-   * BUG-065 fix: Uses frame-based cleanup instead of wall-clock time for determinism
+   * Remove old entries based on frame distance.
+   * Uses frame-based cleanup instead of wall-clock time for determinism.
    */
   cleanup(currentFrame: number): void {
     // Keep frames within maxFrames distance of current frame
@@ -645,7 +645,7 @@ export function clearAllFrozenFrames(): void {
 }
 
 /**
- * BUG-065 fix: Clear all time effect temporal state on timeline seek
+ * Clear all time effect temporal state on timeline seek.
  *
  * This function MUST be called when the timeline seeks to ensure deterministic
  * playback. Time effects (Echo, Posterize Time, Time Displacement, Freeze Frame)
@@ -1041,6 +1041,6 @@ export default {
   clearAllFrameBuffers,
   clearAllFrozenFrames,
   clearFrozenFrame,
-  clearTimeEffectStateOnSeek, // BUG-065 fix: Unified clear for timeline seek
+  clearTimeEffectStateOnSeek, // Clears all temporal state on timeline seek
   getFrameBuffer,
 };

@@ -5,7 +5,7 @@
  * This is the core of RyanOnTheInside's "Flex Features" system.
  */
 
-// BUG-083 fix: Import AudioFeature from canonical source instead of duplicating
+// Import AudioFeature from canonical source (particles/types defines all features)
 import type { AudioFeature } from "@/engine/particles/types";
 import type { AudioAnalysis, PeakData } from "./audioFeatures";
 import { getFeatureAtFrame, isPeakAtFrame } from "./audioFeatures";
@@ -166,8 +166,8 @@ export class AudioReactiveMapper {
   }
 
   /**
-   * Add or update a mapping
-   * BUG-082 fix: Only initializes temporal state for NEW mappings.
+   * Add or update a mapping.
+   * Only initializes temporal state for NEW mappings.
    * Existing mappings preserve their temporal state (smoothing, release, toggles).
    */
   addMapping(mapping: AudioMapping): void {
@@ -194,7 +194,7 @@ export class AudioReactiveMapper {
   /**
    * Reset all temporal state (smoothing, release envelopes, beat toggles)
    * Call this when seeking non-sequentially to ensure determinism.
-   * BUG-082 fix: Temporal state must be reset on frame jumps.
+   * Temporal state must be reset on frame jumps.
    */
   resetTemporalState(): void {
     // Reset all smoothed values to 0
@@ -245,8 +245,8 @@ export class AudioReactiveMapper {
   }
 
   /**
-   * Get mappings for a specific emitter
-   * BUG-081 fix: Implements targetEmitterId filtering
+   * Get mappings for a specific emitter.
+   * Implements targetEmitterId filtering.
    */
   getMappingsForEmitter(emitterId: string): AudioMapping[] {
     return Array.from(this.mappings.values()).filter(
@@ -255,8 +255,8 @@ export class AudioReactiveMapper {
   }
 
   /**
-   * Get mappings for a specific layer and emitter combination
-   * BUG-081 fix: Combined layer + emitter filtering for particle systems
+   * Get mappings for a specific layer and emitter combination.
+   * Combined layer + emitter filtering for particle systems.
    */
   getMappingsForLayerEmitter(
     layerId: string,
@@ -419,8 +419,8 @@ export class AudioReactiveMapper {
   }
 
   /**
-   * Get mapped values for a specific layer at a frame
-   * BUG-081 fix: Excludes emitter-specific mappings (those go to emitters, not layers)
+   * Get mapped values for a specific layer at a frame.
+   * Excludes emitter-specific mappings (those go to emitters, not layers).
    */
   getValuesForLayerAtFrame(
     layerId: string,
@@ -431,7 +431,7 @@ export class AudioReactiveMapper {
     for (const mapping of this.mappings.values()) {
       if (!mapping.enabled) continue;
       if (mapping.targetLayerId && mapping.targetLayerId !== layerId) continue;
-      // BUG-081 fix: Skip emitter-specific mappings - they should only apply to specific emitters
+      // Skip emitter-specific mappings - they're collected separately via collectParticleAudioReactiveModifiers
       if (mapping.targetEmitterId) continue;
 
       const value = this.getValueAtFrame(mapping.id, frame);
@@ -448,8 +448,8 @@ export class AudioReactiveMapper {
   }
 
   /**
-   * Get mapped values for a specific emitter at a frame
-   * BUG-081 fix: Implements targetEmitterId filtering for particle systems
+   * Get mapped values for a specific emitter at a frame.
+   * Implements targetEmitterId filtering for particle systems.
    */
   getValuesForEmitterAtFrame(
     emitterId: string,
@@ -476,8 +476,8 @@ export class AudioReactiveMapper {
   }
 
   /**
-   * Get mapped values for a specific layer and emitter at a frame
-   * BUG-081 fix: Combined filtering for particle systems with multiple emitters
+   * Get mapped values for a specific layer and emitter at a frame.
+   * Combined filtering for particle systems with multiple emitters.
    */
   getValuesForLayerEmitterAtFrame(
     layerId: string,
@@ -994,6 +994,7 @@ export interface AudioReactiveModifiers {
   blur?: number; // 0-100 radius
   glowIntensity?: number; // 0-10
   glowRadius?: number; // 0-100
+  glowThreshold?: number; // 0-1 (maps to luminance cutoff)
   edgeGlowIntensity?: number;
   glitchAmount?: number; // 0-10
   rgbSplitAmount?: number; // 0-50
@@ -1006,17 +1007,17 @@ export interface AudioReactiveModifiers {
   dollyZ?: number; // Additive Z position
   shake?: number; // 0-1 shake intensity
 
-  // BUG-094 fix: Depthflow layer modifiers
+  // Depthflow layer modifiers
   depthflowZoom?: number; // Additive zoom
   depthflowOffsetX?: number; // Additive offset X
   depthflowOffsetY?: number; // Additive offset Y
   depthflowRotation?: number; // Additive rotation
   depthflowDepthScale?: number; // Additive depth scale
 
-  // BUG-094 fix: Path animation modifier
+  // Path animation modifier
   pathPosition?: number; // 0-1 position along path
 
-  // BUG-094 fix: Spline control point modifiers (dynamic)
+  // Spline control point modifiers (dynamic key format)
   // Key format: splineControlPoint_{index}_{x|y|depth}
   [key: `splineControlPoint_${number}_${"x" | "y" | "depth"}`]:
     | number
@@ -1024,8 +1025,8 @@ export interface AudioReactiveModifiers {
 }
 
 /**
- * Particle-specific audio reactive modifiers
- * BUG-081 fix: Separate interface for particle emitter modifiers
+ * Particle-specific audio reactive modifiers.
+ * Separate interface for particle emitter modifiers.
  */
 export interface ParticleAudioReactiveModifiers {
   emissionRate?: number;
@@ -1037,8 +1038,8 @@ export interface ParticleAudioReactiveModifiers {
 }
 
 /**
- * Collect particle-specific audio-reactive modifiers for a layer+emitter at a frame
- * BUG-081 fix: Uses targetEmitterId filtering for emitter-specific mappings
+ * Collect particle-specific audio-reactive modifiers for a layer+emitter at a frame.
+ * Uses targetEmitterId filtering for emitter-specific mappings.
  */
 export function collectParticleAudioReactiveModifiers(
   mapper: AudioReactiveMapper,
@@ -1108,13 +1109,13 @@ export function collectAudioReactiveModifiers(
     "camera.fov": "fov",
     "camera.dollyZ": "dollyZ",
     "camera.shake": "shake",
-    // BUG-094 fix: Depthflow targets
+    // Depthflow layer targets
     "depthflow.zoom": "depthflowZoom",
     "depthflow.offsetX": "depthflowOffsetX",
     "depthflow.offsetY": "depthflowOffsetY",
     "depthflow.rotation": "depthflowRotation",
     "depthflow.depthScale": "depthflowDepthScale",
-    // BUG-094 fix: Path target
+    // Path position target (0-1 along path)
     "path.position": "pathPosition",
   };
 
@@ -1124,8 +1125,7 @@ export function collectAudioReactiveModifiers(
       modifiers[modifierKey] = value;
     }
 
-    // BUG-094 fix: Handle spline control point targets dynamically
-    // Format: spline.controlPoint.{index}.{x|y|depth}
+    // Handle spline control point targets with format: spline.controlPoint.{index}.{x|y|depth}
     const splineMatch = target.match(
       /^spline\.controlPoint\.(\d+)\.(x|y|depth)$/,
     );
@@ -1339,7 +1339,7 @@ export default {
   getAllTargets,
   getTargetsByCategory,
   collectAudioReactiveModifiers,
-  collectParticleAudioReactiveModifiers, // BUG-081 fix: Emitter-specific modifiers
+  collectParticleAudioReactiveModifiers, // Collects emitter-specific modifiers for particle systems
   applyAudioReactivePreset,
   AUDIO_REACTIVE_PRESETS,
 };

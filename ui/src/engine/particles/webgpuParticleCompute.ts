@@ -218,7 +218,13 @@ fn curlNoise(p: vec3f, scale: f32) -> vec3f {
   let y = (p_z1 - p_z0) - (p_x1 - p_x0);
   let z = (p_x1 - p_x0) - (p_y1 - p_y0);
 
-  return normalize(vec3f(x, y, z)) * 0.5;
+  // Guard against normalizing zero vector
+  let curl = vec3f(x, y, z);
+  let len = length(curl);
+  if len < 0.0001 {
+    return vec3f(0.0);
+  }
+  return curl / len * 0.5;
 }
 
 // Calculate force from a single force field
@@ -232,18 +238,25 @@ fn calculateForce(particle: Particle, field: ForceField) -> vec3f {
     case 1u: { // Point attractor/repeller
       let toField = field.position - particle.position;
       let dist = length(toField);
-      if dist > 0.001 && dist < field.radius {
-        let falloff = 1.0 - pow(dist / field.radius, field.falloff);
+      // Guard against radius=0
+      let safeRadius = max(field.radius, 0.001);
+      if dist > 0.001 && dist < safeRadius {
+        let falloff = 1.0 - pow(dist / safeRadius, max(field.falloff, 0.001));
         force = normalize(toField) * field.strength * falloff;
       }
     }
     case 2u: { // Vortex
       let toField = field.position - particle.position;
       let dist = length(toField.xy);
-      if dist > 0.001 && dist < field.radius {
-        let falloff = 1.0 - pow(dist / field.radius, field.falloff);
+      // Guard against radius=0
+      let safeRadius = max(field.radius, 0.001);
+      if dist > 0.001 && dist < safeRadius {
+        let falloff = 1.0 - pow(dist / safeRadius, max(field.falloff, 0.001));
         let tangent = vec3f(-toField.y, toField.x, 0.0);
-        force = normalize(tangent) * field.strength * falloff;
+        let tangentLen = length(tangent);
+        if tangentLen > 0.001 {
+          force = tangent / tangentLen * field.strength * falloff;
+        }
       }
     }
     case 3u: { // Turbulence (curl noise)
@@ -295,8 +308,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3u) {
   // Update rotation
   p.rotation += p.rotationSpeed * params.deltaTime;
 
-  // Update life
-  p.life -= params.deltaTime / p.lifetime;
+  // Update life (guard against lifetime=0)
+  let safeLifetime = max(p.lifetime, 0.001);
+  p.life -= params.deltaTime / safeLifetime;
 
   // Boundary handling (wrap/bounce/kill based on config)
   if p.position.x < params.boundsMin.x || p.position.x > params.boundsMax.x ||
@@ -333,10 +347,12 @@ struct CellCount {
 @group(0) @binding(5) var<uniform> particleCount: u32;
 
 fn positionToCell(pos: vec3f) -> vec3u {
+  // Guard against cellSize=0
+  let safeCellSize = max(cellSize, 0.001);
   return vec3u(
-    u32(max(0.0, pos.x / cellSize)),
-    u32(max(0.0, pos.y / cellSize)),
-    u32(max(0.0, pos.z / cellSize))
+    u32(max(0.0, pos.x / safeCellSize)),
+    u32(max(0.0, pos.y / safeCellSize)),
+    u32(max(0.0, pos.z / safeCellSize))
   );
 }
 
@@ -400,7 +416,16 @@ export class WebGPUParticleCompute {
       throw new Error("WebGPU device not available");
     }
     this.device = device;
-    this.config = config;
+    // Validate config
+    this.config = {
+      maxParticles: Number.isFinite(config.maxParticles) && config.maxParticles > 0
+        ? Math.floor(config.maxParticles)
+        : 10000,
+      bounds: config.bounds,
+      damping: Number.isFinite(config.damping) ? Math.max(0, Math.min(1, config.damping)) : 0.99,
+      noiseScale: Number.isFinite(config.noiseScale) ? Math.max(0, config.noiseScale) : 1,
+      noiseSpeed: Number.isFinite(config.noiseSpeed) ? Math.max(0, config.noiseSpeed) : 1,
+    };
   }
 
   /**
@@ -468,14 +493,24 @@ export class WebGPUParticleCompute {
   ): void {
     if (!this.paramsBuffer) return;
 
+    // Validate inputs
+    const safeDeltaTime = Number.isFinite(deltaTime) && deltaTime >= 0 ? deltaTime : 0;
+    const safeTime = Number.isFinite(time) ? time : 0;
+    const safeParticleCount = Number.isFinite(particleCount) && particleCount >= 0
+      ? Math.floor(particleCount)
+      : 0;
+    const safeForceFieldCount = Number.isFinite(forceFieldCount) && forceFieldCount >= 0
+      ? Math.min(Math.floor(forceFieldCount), 16)
+      : 0;
+
     const paramsBuffer = new ArrayBuffer(64);
     const paramsF32 = new Float32Array(paramsBuffer);
     const paramsU32 = new Uint32Array(paramsBuffer);
 
-    paramsF32[0] = deltaTime;
-    paramsF32[1] = time;
-    paramsU32[2] = particleCount;
-    paramsU32[3] = forceFieldCount;
+    paramsF32[0] = safeDeltaTime;
+    paramsF32[1] = safeTime;
+    paramsU32[2] = safeParticleCount;
+    paramsU32[3] = safeForceFieldCount;
     paramsF32[4] = this.config.bounds.min[0];
     paramsF32[5] = this.config.bounds.min[1];
     paramsF32[6] = this.config.bounds.min[2];
@@ -560,6 +595,12 @@ export class WebGPUParticleCompute {
       return;
     }
 
+    // Validate particleCount
+    const safeParticleCount = Number.isFinite(particleCount) && particleCount > 0
+      ? Math.floor(particleCount)
+      : 0;
+    if (safeParticleCount === 0) return;
+
     const inputBuffer =
       this.pingPong === 0 ? this.particleBufferA : this.particleBufferB;
     const outputBuffer =
@@ -584,7 +625,7 @@ export class WebGPUParticleCompute {
     passEncoder.setBindGroup(0, bindGroup);
 
     // Dispatch workgroups (256 threads per group)
-    const workgroupCount = Math.ceil(particleCount / 256);
+    const workgroupCount = Math.ceil(safeParticleCount / 256);
     passEncoder.dispatchWorkgroups(workgroupCount);
 
     passEncoder.end();

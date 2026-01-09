@@ -115,8 +115,116 @@ export interface ParticleLayerData {
   flocking?: FlockingConfig;
   collision?: CollisionConfig;
   audioBindings?: AudioBindingConfig[];
+
+  // Time remapping support (like VideoLayer)
+  speedMapEnabled?: boolean;
+  speedMap?: import("./animation").AnimatableProperty<number>;
+
   // CC Particle World style visualization
   visualization?: ParticleVisualizationConfig;
+
+  // Particle groups for selective interactions
+  groups?: ParticleGroupConfig[];
+
+  // Spring system for cloth/soft body simulation
+  springConfig?: SpringSystemConfig;
+
+  // SPH fluid simulation
+  sphConfig?: SPHFluidConfig;
+
+  // LOD (Level of Detail) config
+  lodConfig?: ParticleLODConfig;
+
+  // DOF (Depth of Field) config for particles
+  dofConfig?: ParticleDOFConfig;
+
+  // Custom collision planes
+  collisionPlanes?: CollisionPlaneConfig[];
+
+  // Particle groups (renamed from 'groups' for clarity)
+  particleGroups?: ParticleGroupConfig[];
+}
+
+// ============================================================
+// LOD (LEVEL OF DETAIL) CONFIGURATION
+// ============================================================
+
+export interface ParticleLODConfig {
+  enabled: boolean;
+  distances: number[]; // [near, mid, far] e.g. [100, 300, 600]
+  sizeMultipliers: number[]; // [near, mid, far] e.g. [1.0, 0.5, 0.25]
+}
+
+// ============================================================
+// DOF (DEPTH OF FIELD) CONFIGURATION FOR PARTICLES
+// ============================================================
+
+export interface ParticleDOFConfig {
+  enabled: boolean;
+  focusDistance: number;
+  focusRange: number;
+  blurAmount: number; // matches component usage (not maxBlur)
+}
+
+// ============================================================
+// PARTICLE GROUP CONFIGURATION
+// ============================================================
+
+export interface ParticleGroupConfig {
+  id: string;
+  name: string;
+  enabled: boolean;
+  color: [number, number, number, number]; // RGBA tint
+  collisionMask: number; // Bitmask for which groups this collides with
+  connectionMask: number; // Bitmask for which groups this connects to
+}
+
+// ============================================================
+// SPRING SYSTEM CONFIGURATION (Cloth, Soft Body, Ropes)
+// ============================================================
+
+export interface SpringSystemConfig {
+  enabled: boolean;
+  useVerlet: boolean; // Verlet integration (more stable) vs Euler
+  solverIterations: number; // 1-16, more = stiffer but slower
+  globalStiffness: number; // 0.001-10000
+  globalDamping: number; // 0-1000
+  enableBreaking: boolean; // Allow springs to break under tension
+  gravity: { x: number; y: number; z: number };
+  // Pre-built structures
+  structures?: SpringStructure[];
+}
+
+export interface SpringStructure {
+  id: string;
+  type: "cloth" | "rope" | "softbody" | "custom";
+  // Cloth-specific
+  width?: number; // Particles in X
+  height?: number; // Particles in Y
+  // Rope-specific
+  length?: number; // Number of particles
+  // Common
+  startParticle: number;
+  pinnedParticles: number[]; // Indices of fixed particles
+  stiffness: number;
+  damping: number;
+  breakThreshold: number; // 0 = unbreakable
+}
+
+// ============================================================
+// SPH FLUID SIMULATION CONFIGURATION
+// ============================================================
+
+export interface SPHFluidConfig {
+  enabled: boolean;
+  preset: "water" | "honey" | "lava" | "gas" | "custom";
+  smoothingRadius: number; // h, affects neighbor search
+  restDensity: number; // ρ₀, fluid rest density
+  gasConstant: number; // k, pressure stiffness
+  viscosity: number; // μ, how "thick" the fluid is
+  surfaceTension: number; // σ, surface cohesion
+  gravity: { x: number; y: number; z: number };
+  boundaryDamping: number; // Energy loss at boundaries
 }
 
 // CC Particle World style visualization helpers
@@ -192,6 +300,22 @@ export interface CollisionConfig {
   // Optional ceiling
   ceilingEnabled?: boolean;
   ceilingY?: number; // Normalized Y position (0=top), default 0.0
+
+  // Custom collision planes (walls, floors at any angle)
+  planes?: CollisionPlaneConfig[];
+}
+
+// Individual collision plane (for walls, floors at any angle)
+export interface CollisionPlaneConfig {
+  id: string;
+  name?: string;
+  enabled: boolean;
+  // Plane definition (point + normal)
+  point: { x: number; y: number; z: number }; // A point on the plane
+  normal: { x: number; y: number; z: number }; // Plane normal (outward direction)
+  // Physics properties
+  bounciness: number; // 0-1
+  friction: number; // 0-1
 }
 
 export interface ConnectionRenderConfig {
@@ -470,6 +594,27 @@ export interface ParticleRenderOptions {
   spriteAnimate?: boolean; // Animate through frames
   spriteFrameRate?: number; // Frames per second
   spriteRandomStart?: boolean; // Start at random frame
+
+  // LOD (Level of Detail) settings - for performance optimization
+  lodEnabled?: boolean;
+  lodDistances?: number[]; // Distance thresholds [near, mid, far]
+  lodSizeMultipliers?: number[]; // Size multipliers at each level
+
+  // Depth of Field settings - for cinematic depth blur
+  dofEnabled?: boolean;
+  dofFocusDistance?: number; // Distance from camera to focus plane
+  dofFocusRange?: number; // Range around focus distance that's in focus
+  dofMaxBlur?: number; // Maximum blur amount (0-1)
+
+  // Shadow settings
+  shadowsEnabled?: boolean;
+  castShadows?: boolean;
+  receiveShadows?: boolean;
+  shadowSoftness?: number;
+
+  // 3D mesh particles
+  meshMode?: "billboard" | "mesh";
+  meshGeometry?: "cube" | "sphere" | "cylinder" | "cone" | "torus" | "custom";
 }
 
 // ============================================================

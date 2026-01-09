@@ -561,6 +561,11 @@ function multiplyMat4Local(a: Mat4, b: Mat4): Mat4 {
 
 /**
  * Project 3D point to 2D screen coordinates
+ * 
+ * Uses clip space → NDC → screen space pipeline:
+ * 1. viewProjection transforms point to clip space
+ * 2. Perspective divide (x/w, y/w, z/w) gives NDC in [-1, 1]
+ * 3. NDC mapped to screen pixels
  */
 export function projectToScreen(
   point: Vec3,
@@ -568,24 +573,30 @@ export function projectToScreen(
   screenWidth: number,
   screenHeight: number,
 ): { x: number; y: number; z: number; visible: boolean } {
-  const transformed = transformPoint(viewProjection, point);
   const vp = viewProjection.elements;
 
-  // Check if point is behind camera
-  const w = point.x * vp[3] + point.y * vp[7] + point.z * vp[11] + vp[15];
+  // Calculate clip-space w for behind-camera check BEFORE perspective divide
+  const clipW = point.x * vp[3] + point.y * vp[7] + point.z * vp[11] + vp[15];
 
-  if (w <= 0) {
-    return { x: 0, y: 0, z: transformed.z, visible: false };
+  // Point is behind camera if w <= 0
+  if (clipW <= 0) {
+    return { x: 0, y: 0, z: 0, visible: false };
   }
 
-  // Normalize by w and convert to screen space
-  const x = ((transformed.x / w) * 0.5 + 0.5) * screenWidth;
-  const y = ((-transformed.y / w) * 0.5 + 0.5) * screenHeight;
+  // transformPoint already does perspective divide (returns NDC)
+  // NDC range is [-1, 1] for x, y, z
+  const ndc = transformPoint(viewProjection, point);
+
+  // Convert NDC to screen space
+  // NDC x: -1 = left edge, +1 = right edge
+  // NDC y: -1 = bottom, +1 = top (flip for screen coords where y=0 is top)
+  const x = (ndc.x * 0.5 + 0.5) * screenWidth;
+  const y = (-ndc.y * 0.5 + 0.5) * screenHeight;
 
   return {
     x,
     y,
-    z: transformed.z / w,
+    z: ndc.z,  // NDC depth for sorting
     visible: true,
   };
 }

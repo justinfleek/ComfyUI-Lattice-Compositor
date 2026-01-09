@@ -34,6 +34,7 @@ import type {
   SubEmitterConfig as GPUSubEmitterConfig,
 } from "../particles/types";
 import { BaseLayer } from "./BaseLayer";
+import { PropertyEvaluator } from "@/services/animation/PropertyEvaluator";
 
 export class ParticleLayer extends BaseLayer {
   /** The GPU particle system instance */
@@ -63,7 +64,7 @@ export class ParticleLayer extends BaseLayer {
   /** Base force field values for audio reactivity (prevents compounding) */
   private baseForceFieldValues: Map<string, { strength: number }> = new Map();
 
-  /** BUG-081 fix: Per-emitter audio modifiers from MotionEngine */
+  /** Per-emitter audio modifiers from MotionEngine */
   private currentEmitterAudioModifiers:
     | Map<
         string,
@@ -77,6 +78,15 @@ export class ParticleLayer extends BaseLayer {
     updateTimeMs: 0,
     renderTimeMs: 0,
   };
+
+  /** Particle layer data (for time remapping support) */
+  private particleData: import("@/types/particles").ParticleLayerData | null = null;
+
+  /** Property evaluator for speed map */
+  private particleEvaluator = new PropertyEvaluator(16);
+
+  /** Last evaluated frame (for determinism) */
+  private lastEvaluatedFrame: number = -1;
 
   // ============================================================================
   // EMITTER GIZMO VISUALIZATION
@@ -112,8 +122,14 @@ export class ParticleLayer extends BaseLayer {
   /** Whether particle axis is visible */
   private showParticleAxis: boolean = false;
 
+  /** Spline provider for path-based emission */
+  private splineProvider: import("../particles/ParticleEmitterLogic").SplineProvider | null = null;
+
   constructor(layerData: Layer) {
     super(layerData);
+
+    // Store particle data for time remapping support
+    this.particleData = layerData.data as import("@/types/particles").ParticleLayerData | null;
 
     // Generate deterministic seed from layer ID
     // DETERMINISM: Same layer ID always produces same seed
@@ -589,6 +605,7 @@ export class ParticleLayer extends BaseLayer {
       // Connections - wire UI settings to GPU config
       if (data.renderOptions.connections?.enabled) {
         // Store connection config for initialization after GPU setup
+        // Note: ConnectionRenderConfig.color is already in 0-1 RGB range (per type definition)
         this.pendingConnectionConfig = {
           enabled: true,
           maxDistance: data.renderOptions.connections.maxDistance ?? 100,
@@ -596,13 +613,7 @@ export class ParticleLayer extends BaseLayer {
           lineWidth: data.renderOptions.connections.lineWidth ?? 1,
           lineOpacity: data.renderOptions.connections.lineOpacity ?? 0.5,
           fadeByDistance: data.renderOptions.connections.fadeByDistance ?? true,
-          color: data.renderOptions.connections.color
-            ? [
-                data.renderOptions.connections.color[0] / 255,
-                data.renderOptions.connections.color[1] / 255,
-                data.renderOptions.connections.color[2] / 255,
-              ]
-            : undefined,
+          color: data.renderOptions.connections.color,
         };
       }
 
@@ -628,6 +639,48 @@ export class ParticleLayer extends BaseLayer {
           frameRate: data.renderOptions.spriteFrameRate ?? 10,
           randomStart: data.renderOptions.spriteRandomStart ?? false,
         };
+      }
+
+      // LOD (Level of Detail) settings
+      if (data.renderOptions.lodEnabled !== undefined) {
+        config.render.lodEnabled = data.renderOptions.lodEnabled;
+      }
+      if (data.renderOptions.lodDistances) {
+        config.render.lodDistances = data.renderOptions.lodDistances;
+      }
+      if (data.renderOptions.lodSizeMultipliers) {
+        config.render.lodSizeMultipliers = data.renderOptions.lodSizeMultipliers;
+      }
+
+      // Depth of Field settings
+      if (data.renderOptions.dofEnabled !== undefined) {
+        config.render.dofEnabled = data.renderOptions.dofEnabled;
+      }
+      if (data.renderOptions.dofFocusDistance !== undefined) {
+        config.render.dofFocusDistance = data.renderOptions.dofFocusDistance;
+      }
+      if (data.renderOptions.dofFocusRange !== undefined) {
+        config.render.dofFocusRange = data.renderOptions.dofFocusRange;
+      }
+      if (data.renderOptions.dofMaxBlur !== undefined) {
+        config.render.dofMaxBlur = data.renderOptions.dofMaxBlur;
+      }
+
+      // Shadow settings - store for initialization
+      if (data.renderOptions.shadowsEnabled !== undefined) {
+        this.pendingShadowConfig = {
+          enabled: data.renderOptions.shadowsEnabled,
+          castShadows: data.renderOptions.castShadows ?? true,
+          receiveShadows: data.renderOptions.receiveShadows ?? true,
+          shadowSoftness: data.renderOptions.shadowSoftness ?? 1.0,
+        };
+      }
+
+      // 3D mesh mode
+      if (data.renderOptions.meshMode !== undefined) {
+        config.render.meshGeometry = data.renderOptions.meshMode === "mesh"
+          ? (data.renderOptions.meshGeometry ?? "sphere")
+          : "billboard";
       }
     }
 
@@ -671,6 +724,13 @@ export class ParticleLayer extends BaseLayer {
       max: { x: number; y: number; z: number };
     };
     boundsBehavior: "none" | "kill" | "bounce" | "wrap" | "clamp" | "stick";
+  } | null = null;
+
+  private pendingShadowConfig: {
+    enabled: boolean;
+    castShadows: boolean;
+    receiveShadows: boolean;
+    shadowSoftness: number;
   } | null = null;
 
   /**
@@ -738,6 +798,21 @@ export class ParticleLayer extends BaseLayer {
       this.pendingCollisionConfig = null;
     }
 
+    // Initialize shadow settings
+    if (this.pendingShadowConfig?.enabled) {
+      this.particleSystem.updateShadowConfig({
+        castShadows: this.pendingShadowConfig.castShadows,
+        receiveShadows: this.pendingShadowConfig.receiveShadows,
+        shadowSoftness: this.pendingShadowConfig.shadowSoftness,
+      });
+      this.pendingShadowConfig = null;
+    }
+
+    // Wire up spline provider for spline-based emission
+    if (this.splineProvider) {
+      this.particleSystem.setSplineProvider(this.splineProvider);
+    }
+
     // Create emitter and force field gizmos for visualization
     this.createGizmos();
 
@@ -758,7 +833,7 @@ export class ParticleLayer extends BaseLayer {
       this.baseEmitterValues.set(emitter.id, {
         initialSpeed: emitter.initialSpeed,
         initialSize: emitter.initialSize,
-        emissionRate: emitter.emissionRate, // BUG-081 fix: Store base emission rate
+        emissionRate: emitter.emissionRate, // Store base rate before audio modulation
       });
     }
 
@@ -811,6 +886,33 @@ export class ParticleLayer extends BaseLayer {
     if (!this.initialized) {
       this.initializeWithRenderer(renderer);
     }
+  }
+
+  /**
+   * Set the spline provider for spline-based particle emission
+   * This allows emitters with shape='spline' to emit particles along spline paths
+   * @param provider - Function that queries spline positions
+   */
+  setSplineProvider(provider: import("../particles/ParticleEmitterLogic").SplineProvider | null): void {
+    this.splineProvider = provider;
+    this.particleSystem.setSplineProvider(provider);
+  }
+
+  /**
+   * Update shadow maps from scene lights
+   * Call this when the layer is added to a scene with shadow-casting lights
+   */
+  updateShadowsFromScene(scene: THREE.Scene): void {
+    // Find first shadow-casting light in scene
+    scene.traverse((obj) => {
+      if (obj instanceof THREE.DirectionalLight ||
+          obj instanceof THREE.SpotLight ||
+          obj instanceof THREE.PointLight) {
+        if (obj.castShadow && obj.shadow?.map?.texture) {
+          this.particleSystem.updateShadowFromLight(obj);
+        }
+      }
+    });
   }
 
   /**
@@ -1030,17 +1132,97 @@ export class ParticleLayer extends BaseLayer {
   }
 
   // ============================================================================
+  // BAKE TO KEYFRAMES / TRAJECTORY EXPORT
+  // ============================================================================
+
+  /**
+   * Export particle trajectories for a frame range
+   * Returns per-frame particle states that can be baked to keyframes
+   *
+   * @param startFrame - Start frame (default: 0)
+   * @param endFrame - End frame (default: composition length)
+   * @param onProgress - Progress callback (frame, total)
+   * @returns Map of frame number to particle array
+   */
+  async exportTrajectories(
+    startFrame: number = 0,
+    endFrame: number = 80,
+    onProgress?: (frame: number, total: number) => void,
+  ): Promise<Map<number, import("../particles/GPUParticleSystem").ExportedParticle[]>> {
+    return this.particleSystem.exportTrajectories(
+      startFrame,
+      endFrame,
+      this.fps,
+      onProgress,
+    );
+  }
+
+  /**
+   * Get current active particles (for single-frame export)
+   */
+  getActiveParticles(): import("../particles/GPUParticleSystem").ExportedParticle[] {
+    return this.particleSystem.getActiveParticles();
+  }
+
+  // ============================================================================
   // ABSTRACT IMPLEMENTATIONS
   // ============================================================================
 
+  /**
+   * Calculate time-remapped frame for particle simulation
+   * Supports speed map (time remapping) like VideoLayer
+   */
+  private calculateRemappedFrame(compositionFrame: number): number {
+    // If speed map is enabled, use that
+    if (this.particleData?.speedMapEnabled && this.particleData.speedMap?.animated) {
+      const remappedTime = this.particleEvaluator.evaluate(
+        this.particleData.speedMap,
+        compositionFrame,
+      );
+      // Validate remapped time (NaN would break simulation)
+      const validTime = Number.isFinite(remappedTime) ? remappedTime : 0;
+      // Convert time to frame (speed map is in seconds)
+      return Math.floor(validTime * this.fps);
+    }
+
+    // Get layer's timeStretch if available (100 = normal, 200 = half speed, -100 = reversed)
+    const rawTimeStretch = this.layerData.timeStretch ?? 100;
+    const timeStretch = Number.isFinite(rawTimeStretch) ? rawTimeStretch : 100;
+    const isReversed = timeStretch < 0;
+
+    // Calculate effective speed: 100% stretch = 1x, 200% = 0.5x, 50% = 2x
+    const stretchFactor = timeStretch !== 0 ? 100 / Math.abs(timeStretch) : 0;
+
+    // Calculate frame relative to layer start
+    const layerStartFrame = this.layerData.startFrame ?? 0;
+    const relativeFrame = compositionFrame - layerStartFrame;
+
+    // Apply time stretch
+    let simulationFrame = Math.floor(relativeFrame * stretchFactor);
+
+    // Handle reversed playback
+    if (isReversed && this.particleData?.systemConfig) {
+      // For reversed particles, simulate to max then play backwards
+      // This requires a different approach - simulate fully then index backwards
+      const maxFrames = this.particleData.systemConfig.maxParticles > 0 ? 300 : 0; // Reasonable max
+      simulationFrame = Math.max(0, maxFrames - simulationFrame);
+    }
+
+    // Final validation - NaN frame would break simulation
+    return Number.isFinite(simulationFrame) && simulationFrame >= 0 ? simulationFrame : 0;
+  }
+
   protected onEvaluateFrame(frame: number): void {
+    // Calculate remapped frame for time remapping support
+    const simulationFrame = this.calculateRemappedFrame(frame);
+
     // DETERMINISM: Use frame caching system for scrub-safe particle evaluation
     // The simulateToFrame method handles:
     // - Sequential playback (single step)
     // - Forward scrubbing (continue from current)
     // - Backward/random scrubbing (restore from nearest cache or reset)
     // - Automatic caching every N frames
-    const stepsPerformed = this.particleSystem.simulateToFrame(frame, this.fps);
+    const stepsPerformed = this.particleSystem.simulateToFrame(simulationFrame, this.fps);
 
     this.lastEvaluatedFrame = frame;
 
@@ -1057,7 +1239,7 @@ export class ParticleLayer extends BaseLayer {
     if (stepsPerformed > 10) {
       const cacheStats = this.particleSystem.getCacheStats();
       console.debug(
-        `ParticleLayer: Simulated ${stepsPerformed} frames to reach frame ${frame}. ` +
+        `ParticleLayer: Simulated ${stepsPerformed} frames to reach frame ${simulationFrame}. ` +
           `Cache: ${cacheStats.cachedFrames} frames cached`,
       );
     }
@@ -1070,7 +1252,7 @@ export class ParticleLayer extends BaseLayer {
     // The evaluated state includes the frame number for deterministic simulation
     const frame = state.frame ?? 0;
 
-    // BUG-081 fix: Store per-emitter audio modifiers before evaluation
+    // Store per-emitter audio modifiers for targeted emission rate control
     this.currentEmitterAudioModifiers = state.emitterAudioModifiers as
       | Map<
           string,
@@ -1078,8 +1260,8 @@ export class ParticleLayer extends BaseLayer {
         >
       | undefined;
 
-    // BUG-081 fix: Apply emission rate modifiers BEFORE simulation
-    // Emission happens inside step(), so we must modify emitter.emissionRate BEFORE calling simulateToFrame
+    // Apply audio-reactive emission rate modifiers before simulation.
+    // Must happen before step() since emission occurs during simulation.
     this.applyEmissionRateModifiers();
 
     // Step the particle simulation (deterministic replay if needed)
@@ -1098,8 +1280,8 @@ export class ParticleLayer extends BaseLayer {
   }
 
   /**
-   * Apply emission rate modifiers BEFORE simulation step
-   * BUG-081 fix: Emission rate must be set before step() because emitParticles() uses it during step
+   * Apply emission rate modifiers BEFORE simulation step.
+   * Emission rate must be set before step() because emitParticles() uses it during step.
    */
   private applyEmissionRateModifiers(): void {
     const layerEmissionRate = this.getAudioReactiveValue(
@@ -1111,7 +1293,7 @@ export class ParticleLayer extends BaseLayer {
       const baseValues = this.baseEmitterValues.get(emitter.id);
       if (!baseValues) continue;
 
-      // BUG-081 fix: Get emitter-specific emission rate if available
+      // Get emitter-specific audio modifiers (may have different emission rate multiplier)
       const emitterMods = this.currentEmitterAudioModifiers?.get(emitter.id);
       const emissionRateMod = emitterMods?.emissionRate ?? layerEmissionRate;
 
@@ -1130,8 +1312,8 @@ export class ParticleLayer extends BaseLayer {
   }
 
   /**
-   * Apply audio-reactive values to particle system emitters and force fields
-   * BUG-081 fix: Now uses per-emitter audio modifiers when targetEmitterId is specified
+   * Apply audio-reactive values to particle system emitters and force fields.
+   * Uses per-emitter audio modifiers when targetEmitterId is specified.
    * NOTE: Emission rate is handled separately in applyEmissionRateModifiers() BEFORE simulation
    */
   private applyAudioReactivity(): void {
@@ -1150,7 +1332,7 @@ export class ParticleLayer extends BaseLayer {
       const baseValues = this.baseEmitterValues.get(emitter.id);
       if (!baseValues) continue;
 
-      // BUG-081 fix: Get emitter-specific modifiers if available
+      // Get emitter-specific modifiers (allows different audio response per emitter)
       const emitterMods = this.currentEmitterAudioModifiers?.get(emitter.id);
 
       // Use emitter-specific values if available, otherwise fall back to layer-level
@@ -1202,6 +1384,9 @@ export class ParticleLayer extends BaseLayer {
     const data = properties.data as ParticleLayerData | undefined;
 
     if (data) {
+      // Update particle data for time remapping support
+      this.particleData = data as import("@/types/particles").ParticleLayerData;
+
       // Remove old mesh from group
       const oldMesh = this.particleSystem.getMesh();
       if (oldMesh) {
@@ -1768,6 +1953,12 @@ export class ParticleLayer extends BaseLayer {
     gridSize: number = 100,
     depth: number = 500,
   ): void {
+    // Validate gridSize to prevent infinite loop
+    const safeGridSize = Number.isFinite(gridSize) && gridSize > 0 ? gridSize : 100;
+    const safeDepth = Number.isFinite(depth) && depth > 0 ? depth : 500;
+    const safeCompWidth = Number.isFinite(compWidth) && compWidth > 0 ? compWidth : 1920;
+    const safeCompHeight = Number.isFinite(compHeight) && compHeight > 0 ? compHeight : 1080;
+    
     // Dispose existing
     if (this.particleGrid) {
       this.group.remove(this.particleGrid);
@@ -1789,11 +1980,11 @@ export class ParticleLayer extends BaseLayer {
       depthTest: false,
     });
 
-    const halfWidth = compWidth / 2;
-    const halfHeight = compHeight / 2;
+    const halfWidth = safeCompWidth / 2;
+    const halfHeight = safeCompHeight / 2;
 
     // Horizontal grid lines (XZ plane at Y = halfHeight, i.e., bottom of comp)
-    for (let z = 0; z <= depth; z += gridSize) {
+    for (let z = 0; z <= safeDepth; z += safeGridSize) {
       const points = [
         new THREE.Vector3(-halfWidth, halfHeight, -z),
         new THREE.Vector3(halfWidth, halfHeight, -z),
@@ -1804,12 +1995,12 @@ export class ParticleLayer extends BaseLayer {
     }
 
     // Vertical grid lines (going into Z depth)
-    const xCount = Math.ceil(compWidth / gridSize);
+    const xCount = Math.ceil(safeCompWidth / safeGridSize);
     for (let i = 0; i <= xCount; i++) {
-      const x = -halfWidth + i * gridSize;
+      const x = -halfWidth + i * safeGridSize;
       const points = [
         new THREE.Vector3(x, halfHeight, 0),
-        new THREE.Vector3(x, halfHeight, -depth),
+        new THREE.Vector3(x, halfHeight, -safeDepth),
       ];
       const geometry = new THREE.BufferGeometry().setFromPoints(points);
       const line = new THREE.Line(geometry, material.clone());
@@ -1817,7 +2008,7 @@ export class ParticleLayer extends BaseLayer {
     }
 
     // Side grid lines (YZ plane at X = -halfWidth)
-    for (let z = 0; z <= depth; z += gridSize) {
+    for (let z = 0; z <= safeDepth; z += safeGridSize) {
       const points = [
         new THREE.Vector3(-halfWidth, -halfHeight, -z),
         new THREE.Vector3(-halfWidth, halfHeight, -z),

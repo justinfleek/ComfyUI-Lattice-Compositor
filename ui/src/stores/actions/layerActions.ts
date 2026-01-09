@@ -361,7 +361,7 @@ export function deleteLayer(
 
   layers.splice(index, 1);
 
-  // BUG-037 FIX: Clean up all stale references to deleted layer
+  // Clean up references to deleted layer (parent links, track targets, masks)
   for (const layer of layers) {
     // Clear parent reference
     if (layer.parentId === layerId) {
@@ -1677,7 +1677,7 @@ export interface SequenceLayersOptions {
 
 /**
  * Sequence selected layers - arrange them one after another.
- * Similar to After Effects "Keyframe Assistant > Sequence Layers"
+ * Similar to professional animation software "Keyframe Assistant > Sequence Layers"
  *
  * @param store - The layer store
  * @param layerIds - Array of layer IDs to sequence (in order)

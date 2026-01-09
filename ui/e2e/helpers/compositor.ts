@@ -1,5 +1,73 @@
 import { expect, type Page } from "@playwright/test";
 
+/**
+ * Opens the Lattice Compositor in ComfyUI
+ */
+export async function openCompositor(page: Page): Promise<void> {
+  await page.goto("http://localhost:8188");
+  await page.waitForLoadState("networkidle");
+  
+  // Click on the Lattice Compositor menu item
+  await page.click('[data-testid="lattice-compositor-menu"]');
+  await page.waitForSelector('[data-testid="compositor-panel"]');
+}
+
+/**
+ * Creates a test composition with specified settings
+ */
+export async function createTestComposition(
+  page: Page,
+  options: {
+    width?: number;
+    height?: number;
+    frames?: number;
+    fps?: number;
+    name?: string;
+  } = {}
+): Promise<void> {
+  const { width = 512, height = 512, frames = 30, fps = 24, name = "Test Comp" } = options;
+
+  await page.keyboard.press("Control+n");
+  await page.waitForSelector('[data-testid="comp-settings-dialog"]');
+  
+  await page.fill('[data-testid="comp-name"]', name);
+  await page.fill('[data-testid="comp-width"]', String(width));
+  await page.fill('[data-testid="comp-height"]', String(height));
+  await page.fill('[data-testid="comp-fps"]', String(fps));
+  await page.fill('[data-testid="comp-duration"]', String(frames / fps));
+  
+  await page.click('[data-testid="comp-create-btn"]');
+  await page.waitForSelector('[data-testid="composition-panel"]');
+}
+
+/**
+ * Adds a test layer to the composition
+ */
+export async function addTestLayer(
+  page: Page,
+  type: "solid" | "shape" | "text" = "solid",
+  options: { name?: string; color?: string } = {}
+): Promise<void> {
+  const { name = "Test Layer", color = "#FF0000" } = options;
+
+  if (type === "solid") {
+    await page.keyboard.press("Control+y");
+    await page.waitForSelector('[data-testid="solid-dialog"]');
+    await page.fill('[data-testid="solid-name"]', name);
+    await page.fill('[data-testid="solid-color"]', color);
+    await page.click('[data-testid="solid-create-btn"]');
+  } else if (type === "shape") {
+    await page.click('[data-testid="layer-menu"]');
+    await page.click("text=New");
+    await page.click("text=Shape Layer");
+  } else if (type === "text") {
+    await page.keyboard.press("t");
+    await page.click('[data-testid="composition-panel"]');
+    await page.keyboard.type(name);
+    await page.keyboard.press("Escape");
+  }
+}
+
 export class CompositorHelper {
   constructor(private page: Page) {}
 

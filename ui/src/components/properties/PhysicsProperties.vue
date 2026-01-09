@@ -551,35 +551,35 @@ function saveLayerPhysics() {
 }
 
 // Handlers
-function _togglePhysics() {
+function togglePhysics() {
   saveLayerPhysics();
 }
 
-function _onPhysicsTypeChange() {
+function onPhysicsTypeChange() {
   saveLayerPhysics();
 }
 
-function _updateRigidBody() {
+function updateRigidBody() {
   saveLayerPhysics();
 }
 
-function _updateCloth() {
+function updateCloth() {
   saveLayerPhysics();
 }
 
-function _updateRagdoll() {
+function updateRagdoll() {
   saveLayerPhysics();
 }
 
-function _updateCollision() {
+function updateCollision() {
   saveLayerPhysics();
 }
 
-function _updateWorld() {
+function updateWorld() {
   saveLayerPhysics();
 }
 
-function _applyMaterialPreset() {
+function applyMaterialPreset() {
   if (materialPreset.value !== "custom") {
     const preset =
       MATERIAL_PRESETS[materialPreset.value as keyof typeof MATERIAL_PRESETS];
@@ -591,12 +591,12 @@ function _applyMaterialPreset() {
   }
 }
 
-function _toggleCollisionMask(group: number) {
+function toggleCollisionMask(group: number) {
   collision.value.mask ^= 1 << (group - 1);
   saveLayerPhysics();
 }
 
-async function _bakeToKeyframes() {
+async function bakeToKeyframes() {
   try {
     await bakePhysicsToKeyframes(store, props.layerId, {
       startFrame: bakeSettings.value.startFrame,
@@ -610,7 +610,7 @@ async function _bakeToKeyframes() {
   }
 }
 
-function _resetSimulation() {
+function resetSimulation() {
   try {
     resetPhysicsSimulation(store);
     // Refresh layer data after reset

@@ -140,7 +140,7 @@ import { useCompositorStore } from "@/stores/compositorStore";
 import type { Camera3D } from "@/types/camera";
 
 const store = useCompositorStore();
-const _selectedLayerId = computed(() => store.selectedLayerIds[0] || "");
+const selectedLayerId = computed(() => store.selectedLayerIds[0] || "");
 
 export type AITab = "chat" | "generate" | "flow" | "decompose";
 
@@ -171,7 +171,7 @@ const emit = defineEmits<{
   updateCamera: [camera: Camera3D];
 }>();
 
-function _updatePanel(panel: keyof ExpandedPanels, expanded: boolean) {
+function updatePanel(panel: keyof ExpandedPanels, expanded: boolean) {
   emit("update:expandedPanels", {
     ...props.expandedPanels,
     [panel]: expanded,

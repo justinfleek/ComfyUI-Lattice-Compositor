@@ -181,7 +181,7 @@ const config = computed(
   () => assetConfigs[props.assetType] || assetConfigs.image,
 );
 
-const _acceptedFormats = computed(() => {
+const acceptedFormats = computed(() => {
   // Use accept prop if provided
   if (props.accept) {
     return props.accept;
@@ -208,32 +208,32 @@ const acceptedFormatsDisplay = computed(() => {
   return config.value.formats.join(", ");
 });
 
-const _placeholderIcon = computed(() => config.value.icon);
-const _hint = computed(() => config.value.hint);
+const placeholderIcon = computed(() => config.value.icon);
+const hint = computed(() => config.value.hint);
 
-const _label = computed(
+const label = computed(
   () => props.buttonText || props.label || `Upload ${props.assetType}`,
 );
 
-const _assetTypeIcon = computed(() => {
+const assetTypeIcon = computed(() => {
   return config.value.icon;
 });
 
 // Methods
-function _openFilePicker() {
+function openFilePicker() {
   if (hasAsset.value) return;
   fileInput.value?.click();
 }
 
-function _onDragOver() {
+function onDragOver() {
   isDragging.value = true;
 }
 
-function _onDragLeave() {
+function onDragLeave() {
   isDragging.value = false;
 }
 
-function _onDrop(e: DragEvent) {
+function onDrop(e: DragEvent) {
   isDragging.value = false;
   const files = e.dataTransfer?.files;
   if (files && files.length > 0) {
@@ -245,7 +245,7 @@ function _onDrop(e: DragEvent) {
   }
 }
 
-function _onFileSelected(e: Event) {
+function onFileSelected(e: Event) {
   const input = e.target as HTMLInputElement;
   if (input.files && input.files.length > 0) {
     if (props.multiple) {
@@ -402,7 +402,7 @@ function formatFileSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-function _removeAsset() {
+function removeAsset() {
   hasAsset.value = false;
   assetName.value = "";
   assetMeta.value = "";

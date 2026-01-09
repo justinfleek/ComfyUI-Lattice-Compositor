@@ -1,7 +1,7 @@
 /**
  * Text Animator Service
  *
- * Provides After Effects-style text animation with:
+ * Provides professional text animation with:
  * - Range selectors (character, word, line based)
  * - Wiggly selectors (randomization)
  * - Expression selectors (programmatic control)

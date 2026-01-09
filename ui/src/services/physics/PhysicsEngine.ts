@@ -160,10 +160,13 @@ class RigidBodySimulator {
   }
 
   addBody(bodyConfig: RigidBodyConfig): void {
+    // Calculate inverse mass for physics simulation.
+    // Static/dead bodies have infinite mass (inverseMass = 0).
+    // Dynamic bodies with mass=0 default to mass=1 to prevent division by zero.
     const inverseMass =
       bodyConfig.type === "static" || bodyConfig.type === "dead"
         ? 0
-        : 1 / bodyConfig.mass;
+        : 1 / (bodyConfig.mass || 1);
 
     // Calculate moment of inertia if not provided
     let moment = bodyConfig.moment;

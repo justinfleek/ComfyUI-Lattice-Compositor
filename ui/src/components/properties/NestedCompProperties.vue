@@ -159,7 +159,7 @@ const compInfo = computed(() => {
 });
 
 // Speed map computed properties (with backwards compatibility)
-const _speedMapEnabled = computed(() => {
+const speedMapEnabled = computed(() => {
   return (
     nestedCompData.value.speedMapEnabled ??
     nestedCompData.value.timeRemapEnabled ??
@@ -171,14 +171,14 @@ const speedMapProperty = computed(() => {
   return nestedCompData.value.speedMap ?? nestedCompData.value.timeRemap;
 });
 
-const _speedMapValue = computed(() => {
+const speedMapValue = computed(() => {
   const prop = speedMapProperty.value;
   if (!prop) return 0;
   return prop.value;
 });
 
 // Format duration as MM:SS.ms
-function _formatDuration(seconds: number | undefined): string {
+function formatDuration(seconds: number | undefined): string {
   if (seconds === undefined) return "0:00";
   const mins = Math.floor(seconds / 60);
   const secs = (seconds % 60).toFixed(2);
@@ -186,14 +186,14 @@ function _formatDuration(seconds: number | undefined): string {
 }
 
 // Enter the nested comp composition
-function _enterNestedComp() {
+function enterNestedComp() {
   if (nestedCompData.value.compositionId) {
     store.enterNestedComp(nestedCompData.value.compositionId);
   }
 }
 
 // Speed map functions (with backwards compatibility)
-function _toggleSpeedMap(e: Event) {
+function toggleSpeedMap(e: Event) {
   const enabled = (e.target as HTMLInputElement).checked;
   const updates: Partial<NestedCompData> = {
     speedMapEnabled: enabled,
@@ -211,7 +211,7 @@ function _toggleSpeedMap(e: Event) {
   emit("update", updates);
 }
 
-function _updateSpeedMap(value: number) {
+function updateSpeedMap(value: number) {
   const prop = speedMapProperty.value;
   if (prop) {
     const speedMap: AnimatableProperty<number> = {
@@ -227,7 +227,7 @@ function _updateSpeedMap(value: number) {
 }
 
 // Frame rate override
-function _toggleFrameRateOverride(e: Event) {
+function toggleFrameRateOverride(e: Event) {
   const enabled = (e.target as HTMLInputElement).checked;
   const updates: Partial<NestedCompData> = {
     overrideFrameRate: enabled,
@@ -237,13 +237,13 @@ function _toggleFrameRateOverride(e: Event) {
   emit("update", updates);
 }
 
-function _updateFrameRate(value: number) {
+function updateFrameRate(value: number) {
   store.updateLayerData(props.layer.id, { frameRate: value });
   emit("update", { frameRate: value });
 }
 
 // Flatten transform
-function _updateFlattenTransform(e: Event) {
+function updateFlattenTransform(e: Event) {
   const enabled = (e.target as HTMLInputElement).checked;
   store.updateLayerData(props.layer.id, { flattenTransform: enabled });
   // Also update the layer-level flag
@@ -252,12 +252,12 @@ function _updateFlattenTransform(e: Event) {
 }
 
 // Keyframe event handlers
-function _onKeyframeChange() {
+function onKeyframeChange() {
   // Keyframe was added or removed - trigger update
   emit("update", {});
 }
 
-function _onAnimationToggled(animated: boolean) {
+function onAnimationToggled(animated: boolean) {
   // Animation was enabled or disabled
   console.log("[NestedCompProperties] Animation toggled:", animated);
   emit("update", {});

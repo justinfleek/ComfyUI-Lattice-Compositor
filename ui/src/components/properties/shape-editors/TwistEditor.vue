@@ -2,14 +2,14 @@
   <div class="shape-editor">
     <div class="property-row">
       <label>Angle</label>
-      <ScrubableNumber :modelValue="operator.angle.value" @update:modelValue="v => updateNumber('angle', v)" :min="-720" :max="720" unit="°" />
+      <ScrubableNumber :modelValue="operator.angle.value" @update:modelValue="(v: number) => updateNumber('angle', v)" :min="-720" :max="720" unit="°" />
       <KeyframeToggle :property="operator.angle" :layerId="layerId" @toggle="toggleKeyframe('angle')" />
     </div>
     <div class="property-row">
       <label>Center</label>
       <div class="xy-inputs">
-        <ScrubableNumber :modelValue="operator.center.value.x" @update:modelValue="v => updatePoint('center', 'x', v)" unit="px" />
-        <ScrubableNumber :modelValue="operator.center.value.y" @update:modelValue="v => updatePoint('center', 'y', v)" unit="px" />
+        <ScrubableNumber :modelValue="operator.center.value.x" @update:modelValue="(v: number) => updatePoint('center', 'x', v)" unit="px" />
+        <ScrubableNumber :modelValue="operator.center.value.y" @update:modelValue="(v: number) => updatePoint('center', 'y', v)" unit="px" />
       </div>
       <KeyframeToggle :property="operator.center" :layerId="layerId" @toggle="toggleKeyframe('center')" />
     </div>
@@ -25,13 +25,13 @@ const props = defineProps<{ operator: TwistOperator; layerId: string }>();
 const emit = defineEmits(["update"]);
 const store = useCompositorStore();
 
-function _updateNumber(prop: "angle", value: number) {
+function updateNumber(prop: "angle", value: number) {
   const updated = { ...props.operator };
   updated[prop] = { ...updated[prop], value };
   emit("update", updated);
 }
 
-function _updatePoint(prop: "center", axis: "x" | "y", value: number) {
+function updatePoint(prop: "center", axis: "x" | "y", value: number) {
   const updated = { ...props.operator };
   updated[prop] = {
     ...updated[prop],
@@ -40,7 +40,7 @@ function _updatePoint(prop: "center", axis: "x" | "y", value: number) {
   emit("update", updated);
 }
 
-function _toggleKeyframe(prop: "angle" | "center") {
+function toggleKeyframe(prop: "angle" | "center") {
   const updated = { ...props.operator };
   const animProp = updated[prop];
   const frame = store.currentFrame;

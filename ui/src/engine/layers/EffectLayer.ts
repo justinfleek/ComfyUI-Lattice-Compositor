@@ -60,6 +60,11 @@ export class EffectLayer extends BaseLayer {
 
   // Canvas for effect processing
   private effectCanvas: HTMLCanvasElement | null = null;
+  private effectCtx: CanvasRenderingContext2D | null = null;
+
+  // Composition dimensions
+  private compWidth: number = 1920;
+  private compHeight: number = 1080;
 
   // Layer IDs that this effect layer affects
   private affectedLayerIds: string[] = [];

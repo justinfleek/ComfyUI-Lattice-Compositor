@@ -232,14 +232,14 @@ defineExpose({
 });
 
 // View option toggles
-function _toggleRulers() {
+function toggleRulers() {
   emit("update:viewOptions", {
     ...props.viewOptions,
     showRulers: !props.viewOptions.showRulers,
   });
 }
 
-function _toggleGrid() {
+function toggleGrid() {
   emit("update:viewOptions", {
     ...props.viewOptions,
     showGrid: !props.viewOptions.showGrid,
@@ -247,7 +247,7 @@ function _toggleGrid() {
 }
 
 // Guide style helper
-function _getGuideStyle(guide: Guide) {
+function getGuideStyle(guide: Guide) {
   if (guide.orientation === "horizontal") {
     return { top: `${guide.position}px`, left: 0, right: 0 };
   }
@@ -255,27 +255,27 @@ function _getGuideStyle(guide: Guide) {
 }
 
 // Delegate guide events to parent
-function _startGuideDrag(guide: Guide, event: MouseEvent) {
+function startGuideDrag(guide: Guide, event: MouseEvent) {
   emit("startGuideDrag", guide, event);
 }
 
-function _showGuideContextMenu(guide: Guide, event: MouseEvent) {
+function showGuideContextMenu(guide: Guide, event: MouseEvent) {
   emit("showGuideContextMenu", guide, event);
 }
 
-function _removeGuide(id: string) {
+function removeGuide(id: string) {
   emit("removeGuide", id);
 }
 
-function _deleteGuideFromMenu() {
+function deleteGuideFromMenu() {
   emit("deleteGuideFromMenu");
 }
 
-function _clearAllGuides() {
+function clearAllGuides() {
   emit("clearAllGuides");
 }
 
-function _createGuideFromRuler(
+function createGuideFromRuler(
   orientation: "horizontal" | "vertical",
   event: MouseEvent,
 ) {

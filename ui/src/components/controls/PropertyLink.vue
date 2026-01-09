@@ -106,14 +106,14 @@ const dragStart = ref({ x: 0, y: 0 });
 const dragEnd = ref({ x: 0, y: 0 });
 const currentDropTarget = ref<DropTarget | null>(null);
 
-const _hasLink = computed(() => !!props.linkedTo);
+const hasLink = computed(() => !!props.linkedTo);
 
-const _linkTargetName = computed(() => {
+const linkTargetName = computed(() => {
   if (!props.linkedTo) return "";
   return `${props.linkedTo.layerId}.${props.linkedTo.property}`;
 });
 
-const _lineStyle = computed(() => ({
+const lineStyle = computed(() => ({
   position: "fixed" as const,
   top: 0,
   left: 0,
@@ -123,7 +123,7 @@ const _lineStyle = computed(() => ({
   zIndex: 10000,
 }));
 
-const _dropTargetStyle = computed(() => {
+const dropTargetStyle = computed(() => {
   if (!currentDropTarget.value) return {};
   const rect = currentDropTarget.value.rect;
   return {
@@ -190,7 +190,7 @@ function findTargetAtPosition(
 
 let dropTargets: DropTarget[] = [];
 
-function _startDrag(e: MouseEvent | TouchEvent) {
+function startDrag(e: MouseEvent | TouchEvent) {
   e.preventDefault();
   e.stopPropagation();
 
@@ -264,7 +264,7 @@ function endDrag(e: MouseEvent | TouchEvent) {
   window.removeEventListener("touchend", endDrag);
 }
 
-function _clearLink() {
+function clearLink() {
   emit("unlink");
 }
 

@@ -67,13 +67,30 @@ export interface EvaluatedControlPoint {
 // SPLINE DATA
 // ============================================================
 
+/** Gradient stop for stroke gradients */
+export interface SplineGradientStop {
+  position: number; // 0-1
+  color: { r: number; g: number; b: number; a: number }; // RGBA color
+}
+
+/** Gradient definition for stroke gradients */
+export interface SplineStrokeGradient {
+  type: "linear" | "radial";
+  stops: SplineGradientStop[];
+  followPath?: boolean; // Gradient follows the stroke path (for linear gradients)
+  spread?: number; // Gradient spread along path (0-100%, default 100)
+  offsetKeyframes?: Array<{ frame: number; value: number }>; // Animated gradient offset along path
+}
+
 export interface SplineData {
   pathData: string; // SVG path commands (M, C, Q, L, Z)
   controlPoints: ControlPoint[];
   closed: boolean;
 
   // Stroke properties
-  stroke: string; // Stroke color hex
+  strokeType?: "solid" | "gradient"; // Stroke type (default: "solid" when stroke is set)
+  stroke: string; // Stroke color hex (used when strokeType is "solid" or undefined)
+  strokeGradient?: SplineStrokeGradient; // Gradient definition (used when strokeType is "gradient")
   strokeWidth: number; // Stroke width in pixels
   strokeOpacity?: number; // Stroke opacity 0-100 (default 100)
   strokeLineCap?: "butt" | "round" | "square"; // Line cap style
@@ -108,6 +125,15 @@ export interface SplineData {
 
   /** @deprecated Use warpPins instead */
   puppetPins?: import("./meshWarp").WarpPin[];
+
+  /** Audio-reactive animation configuration */
+  audioReactive?: {
+    enabled: boolean;
+    sourceLayerId: string; // ID of audio layer to react to
+    property: string; // Property to animate (e.g., 'scale', 'opacity')
+    multiplier: number; // Amplitude multiplier
+    smoothing: number; // Frames of smoothing
+  };
 }
 
 // ============================================================

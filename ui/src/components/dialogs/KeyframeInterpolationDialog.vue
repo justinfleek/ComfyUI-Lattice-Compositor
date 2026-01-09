@@ -146,7 +146,7 @@ watch(
 );
 
 // Generate SVG path for curve preview
-const _curvePath = computed(() => {
+const curvePath = computed(() => {
   if (interpolationType.value !== "bezier") {
     return "M 0 100 L 100 0";
   }
@@ -164,7 +164,7 @@ const _curvePath = computed(() => {
   return points.join(" ");
 });
 
-function _confirm() {
+function confirm() {
   emit("confirm", {
     interpolation: interpolationType.value,
     easingPreset: easingPreset.value,

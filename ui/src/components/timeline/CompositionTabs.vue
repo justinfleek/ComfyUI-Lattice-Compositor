@@ -105,7 +105,7 @@ const emit = defineEmits<{
 const store = useCompositorStore();
 
 // Computed from store
-const _breadcrumbPath = computed(() => store.breadcrumbPath);
+const breadcrumbPath = computed(() => store.breadcrumbPath);
 
 // State
 const editingId = ref<string | null>(null);
@@ -125,29 +125,29 @@ const contextMenu = ref<{
 });
 
 // Computed
-const _openCompositions = computed(() => store.openCompositions);
+const openCompositions = computed(() => store.openCompositions);
 const activeCompositionId = computed(() => store.activeCompositionId);
 const mainCompositionId = computed(() => store.project.mainCompositionId);
 
 // Methods
-function _switchToComposition(compId: string) {
+function switchToComposition(compId: string) {
   store.switchComposition(compId);
 }
 
-function _closeTab(compId: string) {
+function closeTab(compId: string) {
   store.closeCompositionTab(compId);
 }
 
 // Breadcrumb navigation
-function _navigateToBreadcrumb(idx: number) {
+function navigateToBreadcrumb(idx: number) {
   store.navigateToBreadcrumb(idx);
 }
 
-function _navigateBack() {
+function navigateBack() {
   store.navigateBack();
 }
 
-function _formatCompInfo(comp: Composition): string {
+function formatCompInfo(comp: Composition): string {
   const s = comp.settings;
   return `${s.width}x${s.height} ${s.fps}fps`;
 }
@@ -161,7 +161,7 @@ function startRename(comp: Composition) {
   });
 }
 
-function _finishRename() {
+function finishRename() {
   if (editingId.value && editingName.value.trim()) {
     store.renameComposition(editingId.value, editingName.value.trim());
   }
@@ -169,12 +169,12 @@ function _finishRename() {
   editingName.value = "";
 }
 
-function _cancelRename() {
+function cancelRename() {
   editingId.value = null;
   editingName.value = "";
 }
 
-function _showContextMenu(event: MouseEvent, comp: Composition) {
+function showContextMenu(event: MouseEvent, comp: Composition) {
   contextMenu.value = {
     visible: true,
     x: event.clientX,
@@ -188,7 +188,7 @@ function hideContextMenu() {
   contextMenu.value.comp = null;
 }
 
-function _openCompSettings() {
+function openCompSettings() {
   // Switch to the composition first if not active
   if (
     contextMenu.value.comp &&
@@ -200,14 +200,14 @@ function _openCompSettings() {
   hideContextMenu();
 }
 
-function _renameFromMenu() {
+function renameFromMenu() {
   if (contextMenu.value.comp) {
     startRename(contextMenu.value.comp);
   }
   hideContextMenu();
 }
 
-function _duplicateComposition() {
+function duplicateComposition() {
   if (contextMenu.value.comp) {
     const original = contextMenu.value.comp;
     const newComp = store.createComposition(
@@ -250,14 +250,14 @@ function _duplicateComposition() {
   hideContextMenu();
 }
 
-function _openInNewTab() {
+function openInNewTab() {
   if (contextMenu.value.comp) {
     store.switchComposition(contextMenu.value.comp.id);
   }
   hideContextMenu();
 }
 
-function _setAsMainComp() {
+function setAsMainComp() {
   if (contextMenu.value.comp) {
     store.project.mainCompositionId = contextMenu.value.comp.id;
     console.log(
@@ -268,7 +268,7 @@ function _setAsMainComp() {
   hideContextMenu();
 }
 
-function _deleteComposition() {
+function deleteComposition() {
   if (
     contextMenu.value.comp &&
     contextMenu.value.comp.id !== mainCompositionId.value

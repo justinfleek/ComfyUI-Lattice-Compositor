@@ -325,12 +325,12 @@ const emit = defineEmits<{
   (e: "updateConnection", key: keyof ConnectionRenderConfig, value: any): void;
 }>();
 
-function _update(key: keyof ParticleRenderOptions, value: any): void {
+function update(key: keyof ParticleRenderOptions, value: any): void {
   emit("update", key, value);
 }
 
 // Color conversion helpers (engine uses 0-1 range)
-function _rgbToHex(rgb: [number, number, number]): string {
+function rgbToHex(rgb: [number, number, number]): string {
   const r = Math.round(rgb[0] * 255)
     .toString(16)
     .padStart(2, "0");
@@ -343,7 +343,7 @@ function _rgbToHex(rgb: [number, number, number]): string {
   return `#${r}${g}${b}`;
 }
 
-function _hexToRgb(hex: string): [number, number, number] {
+function hexToRgb(hex: string): [number, number, number] {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
   return result
     ? [

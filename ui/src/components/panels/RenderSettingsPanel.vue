@@ -1,7 +1,7 @@
 <!--
   @component RenderSettingsPanel
   @description Configures render settings for a composition or render queue job.
-  Separated from Output Module for clear workflow (like After Effects).
+  Separated from Output Module for clear workflow separation.
 
   Settings include:
   - Resolution (full, half, third, quarter, custom)
@@ -291,7 +291,7 @@ function emitUpdate() {
   emit("update:settings", { ...localSettings.value });
 }
 
-function _handleResolutionChange() {
+function handleResolutionChange() {
   // Set default custom size when switching to custom
   if (localSettings.value.resolution === "custom") {
     if (!localSettings.value.customWidth) localSettings.value.customWidth = 832;

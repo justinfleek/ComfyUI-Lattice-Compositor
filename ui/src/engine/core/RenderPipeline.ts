@@ -97,6 +97,7 @@ export class RenderPipeline {
 
   // Frame capture
   private readonly captureCanvas: OffscreenCanvas;
+  private readonly captureCtx: OffscreenCanvasRenderingContext2D;
 
   // Depth capture material
   private readonly depthMaterial: THREE.ShaderMaterial;

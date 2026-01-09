@@ -62,7 +62,7 @@ export class AudioPathAnimator {
   private releaseState: number = 0; // For amplitude mode release tracking
 
   /**
-   * BUG-095 performance fix: Cache accumulated state at regular intervals
+   * Cache accumulated state at regular intervals.
    * For accumulate mode, store position/direction every N frames to avoid O(n²)
    * When evaluating frame 1050, find checkpoint at 1000 and accumulate from there
    */
@@ -599,10 +599,8 @@ export class AudioPathAnimator {
       position = Math.max(0, Math.min(1, finalValue * this.config.sensitivity));
       smoothedValue = audioValue;
     } else {
-      // Accumulate mode: sum audio values from frame 0 to current frame
-      // BUG-095 performance fix: Use cached checkpoints to avoid O(n²)
-      // Instead of iterating 0 to frame every time, find nearest checkpoint and iterate from there
-
+      // Accumulate mode: sum audio values from frame 0 to current frame.
+      // Uses cached checkpoints to avoid O(n²) complexity on long timelines.
       // Find nearest cached checkpoint at or before current frame
       let startFrame = 0;
       position = 0;

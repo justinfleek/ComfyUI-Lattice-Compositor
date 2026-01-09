@@ -331,6 +331,11 @@
               </div>
             </div>
 
+            <!-- Particles Tab -->
+            <div v-if="activeTab === 'particles'" class="tab-content">
+              <ParticlePreferencesPanel />
+            </div>
+
             <!-- Export Tab -->
             <div v-if="activeTab === 'export'" class="tab-content">
               <h3>Export Defaults</h3>
@@ -581,6 +586,7 @@
 
 <script setup lang="ts">
 import { onMounted, onUnmounted, reactive, ref, watch } from "vue";
+import ParticlePreferencesPanel from "../preferences/ParticlePreferencesPanel.vue";
 
 interface CustomColors {
   accent: string;
@@ -658,16 +664,17 @@ const emit = defineEmits<{
   (e: "save", preferences: Preferences): void;
 }>();
 
-const _tabs = [
+const tabs = [
   { id: "general", label: "General", icon: "⚙️" },
   { id: "appearance", label: "Appearance", icon: "🎨" },
   { id: "performance", label: "Performance", icon: "⚡" },
+  { id: "particles", label: "Particles", icon: "✨" },
   { id: "export", label: "Export", icon: "📤" },
   { id: "shortcuts", label: "Shortcuts", icon: "⌨️" },
   { id: "ai", label: "AI", icon: "🤖" },
 ];
 
-const _themes = [
+const themes = [
   { id: "violet", name: "Violet", color: "#8B5CF6" },
   { id: "ocean", name: "Ocean", color: "#06B6D4" },
   { id: "sunset", name: "Rose", color: "#FB7185" },
@@ -819,11 +826,11 @@ function savePreferences() {
   }
 }
 
-function _resetToDefaults() {
+function resetToDefaults() {
   Object.assign(preferences, defaultPreferences);
 }
 
-function _selectTheme(themeId: string) {
+function selectTheme(themeId: string) {
   preferences.theme = themeId;
   const preset = themeColorPresets[themeId];
   if (preset) {
@@ -832,7 +839,7 @@ function _selectTheme(themeId: string) {
   }
 }
 
-function _resetCustomColors() {
+function resetCustomColors() {
   const preset =
     themeColorPresets[preferences.theme] || themeColorPresets.violet;
   Object.assign(preferences.customColors, preset);
@@ -908,7 +915,7 @@ function darkenColor(hex: string, percent: number): string {
   return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, "0")}`;
 }
 
-function _clearCache() {
+function clearCache() {
   // Clear caches (would call into cache services)
   console.log("Clearing caches...");
   alert("All caches have been cleared.");

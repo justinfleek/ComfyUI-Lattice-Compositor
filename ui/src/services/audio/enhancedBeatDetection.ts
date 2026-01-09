@@ -157,7 +157,7 @@ export function createEnhancedBeatGrid(
     cfg.timeSignature,
   );
 
-  // BUG-080 fix: Filter out low-confidence beats
+  // Filter out low-confidence beats to reduce false positives
   beats = beats.filter((b) => b.confidence >= cfg.minConfidence);
 
   // Sort by frame

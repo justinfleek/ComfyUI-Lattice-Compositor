@@ -30,13 +30,13 @@ import { type ToastType, useToastStore } from "@/stores/toastStore";
 
 const toastStore = useToastStore();
 
-const _toasts = computed(() => toastStore.toasts);
+const toasts = computed(() => toastStore.toasts);
 
-function _dismiss(id: string): void {
+function dismiss(id: string): void {
   toastStore.removeToast(id);
 }
 
-function _getIcon(type: ToastType): string {
+function getIcon(type: ToastType): string {
   switch (type) {
     case "success":
       return "✓";

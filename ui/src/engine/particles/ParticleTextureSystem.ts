@@ -99,14 +99,23 @@ export class ParticleTextureSystem {
 
             // Sprite sheet configuration
             if (spriteSheet && (spriteSheet.columns || spriteSheet.rows)) {
-              const cols = spriteSheet.columns ?? 1;
-              const rows = spriteSheet.rows ?? 1;
+              // Validate cols/rows
+              const cols = Number.isFinite(spriteSheet.columns) && spriteSheet.columns > 0
+                ? Math.floor(spriteSheet.columns)
+                : 1;
+              const rows = Number.isFinite(spriteSheet.rows) && spriteSheet.rows > 0
+                ? Math.floor(spriteSheet.rows)
+                : 1;
+              // Validate frameRate
+              const frameRate = Number.isFinite(spriteSheet.frameRate) && spriteSheet.frameRate > 0
+                ? spriteSheet.frameRate
+                : 10;
 
               this.spriteSheetConfig = {
                 columns: cols,
                 rows: rows,
                 animate: spriteSheet.animate ?? false,
-                frameRate: spriteSheet.frameRate ?? 10,
+                frameRate: frameRate,
                 randomStart: spriteSheet.randomStart ?? false,
               };
 
@@ -115,9 +124,8 @@ export class ParticleTextureSystem {
               this.material.uniforms.animateSprite.value = spriteSheet.animate
                 ? 1
                 : 0;
-              this.material.uniforms.spriteFrameRate.value =
-                spriteSheet.frameRate ?? 10;
-              // BUG-068 fix: Enable randomStartFrame uniform when configured
+              this.material.uniforms.spriteFrameRate.value = frameRate;
+              // Enable per-particle random start frame for sprite sheet variation
               this.material.uniforms.randomStartFrame.value =
                 spriteSheet.randomStart ? 1 : 0;
             }
@@ -155,9 +163,8 @@ export class ParticleTextureSystem {
   // ============================================================================
 
   /**
-   * Set procedural shape (no texture)
-   * BUG-067 fix: All 9 shapes now supported
-   * @param shape 0=none, 1=circle, 2=ring, 3=square, 4=star, 5=noise, 6=line, 7=triangle, 8=shadedSphere, 9=fadedSphere
+   * Set procedural shape (no texture).
+   * Supports all 9 shapes: 0=none, 1=circle, 2=ring, 3=square, 4=star, 5=noise, 6=line, 7=triangle, 8=shadedSphere, 9=fadedSphere
    */
   setProceduralShape(
     shape:
@@ -227,14 +234,15 @@ export class ParticleTextureSystem {
 
     this.material.uniforms.motionBlurEnabled.value = config.enabled ? 1 : 0;
 
-    if (config.strength !== undefined) {
-      this.material.uniforms.motionBlurStrength.value = config.strength;
+    // Validate motion blur values
+    if (config.strength !== undefined && Number.isFinite(config.strength)) {
+      this.material.uniforms.motionBlurStrength.value = Math.max(0, config.strength);
     }
-    if (config.minStretch !== undefined) {
-      this.material.uniforms.minStretch.value = config.minStretch;
+    if (config.minStretch !== undefined && Number.isFinite(config.minStretch)) {
+      this.material.uniforms.minStretch.value = Math.max(0, config.minStretch);
     }
-    if (config.maxStretch !== undefined) {
-      this.material.uniforms.maxStretch.value = config.maxStretch;
+    if (config.maxStretch !== undefined && Number.isFinite(config.maxStretch)) {
+      this.material.uniforms.maxStretch.value = Math.max(0, config.maxStretch);
     }
 
     // Update config
@@ -263,13 +271,17 @@ export class ParticleTextureSystem {
 
     if (!config.enabled || !this.instancedGeometry) return;
 
+    // Validate glow config
+    const safeRadius = Number.isFinite(config.radius) && config.radius > 0 ? config.radius : 10;
+    const safeIntensity = Number.isFinite(config.intensity) && config.intensity >= 0 ? config.intensity : 0.5;
+    
     // Create glow material with custom shaders
     this.glowMaterial = new THREE.ShaderMaterial({
       vertexShader: PARTICLE_GLOW_VERTEX_SHADER,
       fragmentShader: PARTICLE_GLOW_FRAGMENT_SHADER,
       uniforms: {
-        glowRadius: { value: config.radius / 10 }, // Normalize to 0-1 range
-        glowIntensity: { value: config.intensity },
+        glowRadius: { value: safeRadius / 10 }, // Normalize to 0-1 range
+        glowIntensity: { value: safeIntensity },
       },
       transparent: true,
       depthWrite: false,
@@ -303,13 +315,16 @@ export class ParticleTextureSystem {
     }
 
     if (this.glowMaterial) {
-      if (config.radius !== undefined) {
-        this.glowMaterial.uniforms.glowRadius.value = config.radius / 10;
-        this.glowConfig.radius = config.radius;
+      // Validate glow values
+      if (config.radius !== undefined && Number.isFinite(config.radius)) {
+        const safeRadius = Math.max(0, config.radius);
+        this.glowMaterial.uniforms.glowRadius.value = safeRadius / 10;
+        this.glowConfig.radius = safeRadius;
       }
-      if (config.intensity !== undefined) {
-        this.glowMaterial.uniforms.glowIntensity.value = config.intensity;
-        this.glowConfig.intensity = config.intensity;
+      if (config.intensity !== undefined && Number.isFinite(config.intensity)) {
+        const safeIntensity = Math.max(0, config.intensity);
+        this.glowMaterial.uniforms.glowIntensity.value = safeIntensity;
+        this.glowConfig.intensity = safeIntensity;
       }
     }
   }

@@ -306,7 +306,7 @@ const position = computed(() => {
     : { x: 0, y: 0, z: 0 };
 });
 
-const _rotation = computed(() => {
+const rotation = computed(() => {
   // 3D models use rotationX/Y/Z properties
   const transform = layer.value?.transform;
   if (!transform) return { x: 0, y: 0, z: 0 };
@@ -327,7 +327,7 @@ const scale = computed(() => {
 
 // Material
 const selectedMaterialId = ref<string>("");
-const _materials = computed(() => assetStore.materialList);
+const materials = computed(() => assetStore.materialList);
 
 // Display options
 const uniformScale = ref(true);
@@ -365,17 +365,17 @@ watch(
 );
 
 // Methods
-function _toggleSection(section: keyof typeof sections) {
+function toggleSection(section: keyof typeof sections) {
   sections[section] = !sections[section];
 }
 
-function _updatePosition(axis: "x" | "y" | "z", value: number) {
+function updatePosition(axis: "x" | "y" | "z", value: number) {
   const current = { ...position.value };
   current[axis] = value;
   store.updateLayerTransform(props.layerId, { position: current });
 }
 
-function _updateRotation(axis: "x" | "y" | "z", value: number) {
+function updateRotation(axis: "x" | "y" | "z", value: number) {
   // 3D models use rotationX/Y/Z properties, not the single 'rotation' property
   const targetLayer = layer.value;
   if (!targetLayer?.transform) return;
@@ -392,7 +392,7 @@ function _updateRotation(axis: "x" | "y" | "z", value: number) {
   }
 }
 
-function _updateScale(axis: "x" | "y" | "z", value: number) {
+function updateScale(axis: "x" | "y" | "z", value: number) {
   if (uniformScale.value) {
     store.updateLayerTransform(props.layerId, {
       scale: { x: value, y: value, z: value },
@@ -404,38 +404,38 @@ function _updateScale(axis: "x" | "y" | "z", value: number) {
   }
 }
 
-function _toggleUniformScale() {
+function toggleUniformScale() {
   uniformScale.value = !uniformScale.value;
 }
 
-function _assignMaterial() {
+function assignMaterial() {
   store.updateLayerData(props.layerId, {
     materialId: selectedMaterialId.value || null,
   });
 }
 
-function _openMaterialEditor() {
+function openMaterialEditor() {
   emit("open-material-editor");
 }
 
-function _toggleWireframe() {
+function toggleWireframe() {
   showWireframe.value = !showWireframe.value;
   store.updateLayerData(props.layerId, { wireframe: showWireframe.value });
 }
 
-function _toggleBoundingBox() {
+function toggleBoundingBox() {
   showBoundingBox.value = !showBoundingBox.value;
   store.updateLayerData(props.layerId, {
     showBoundingBox: showBoundingBox.value,
   });
 }
 
-function _toggleCastShadows() {
+function toggleCastShadows() {
   castShadows.value = !castShadows.value;
   store.updateLayerData(props.layerId, { castShadows: castShadows.value });
 }
 
-function _toggleReceiveShadows() {
+function toggleReceiveShadows() {
   receiveShadows.value = !receiveShadows.value;
   store.updateLayerData(props.layerId, {
     receiveShadows: receiveShadows.value,
@@ -443,31 +443,31 @@ function _toggleReceiveShadows() {
 }
 
 // Point cloud methods
-function _updatePointSize(value: number) {
+function updatePointSize(value: number) {
   pointSize.value = value;
   store.updateLayerData(props.layerId, { pointSize: value });
 }
 
-function _updatePointColor(value: string) {
+function updatePointColor(value: string) {
   pointColor.value = value;
   store.updateLayerData(props.layerId, { pointColor: value });
 }
 
-function _toggleVertexColors() {
+function toggleVertexColors() {
   useVertexColors.value = !useVertexColors.value;
   store.updateLayerData(props.layerId, {
     useVertexColors: useVertexColors.value,
   });
 }
 
-function _toggleSizeAttenuation() {
+function toggleSizeAttenuation() {
   sizeAttenuation.value = !sizeAttenuation.value;
   store.updateLayerData(props.layerId, {
     sizeAttenuation: sizeAttenuation.value,
   });
 }
 
-function _formatNumber(num: number): string {
+function formatNumber(num: number): string {
   return num.toLocaleString();
 }
 </script>

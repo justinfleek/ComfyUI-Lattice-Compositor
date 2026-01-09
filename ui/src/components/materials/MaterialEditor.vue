@@ -114,7 +114,7 @@
           <TextureUpload
             mapType="albedo"
             :textureUrl="material.maps?.albedo"
-            @upload="(file, dataUrl) => uploadTexture('albedo', file, dataUrl)"
+            @upload="(file: File, dataUrl: string) => uploadTexture('albedo', file, dataUrl)"
             @remove="removeTexture('albedo')"
           />
 
@@ -123,7 +123,7 @@
             :textureUrl="material.maps?.normal"
             :normalScale="material.normalScale"
             :showSettings="!!material.maps?.normal"
-            @upload="(file, dataUrl) => uploadTexture('normal', file, dataUrl)"
+            @upload="(file: File, dataUrl: string) => uploadTexture('normal', file, dataUrl)"
             @remove="removeTexture('normal')"
             @update:normalScale="updateMaterial('normalScale', $event)"
           />
@@ -131,42 +131,42 @@
           <TextureUpload
             mapType="roughness"
             :textureUrl="material.maps?.roughness"
-            @upload="(file, dataUrl) => uploadTexture('roughness', file, dataUrl)"
+            @upload="(file: File, dataUrl: string) => uploadTexture('roughness', file, dataUrl)"
             @remove="removeTexture('roughness')"
           />
 
           <TextureUpload
             mapType="metalness"
             :textureUrl="material.maps?.metalness"
-            @upload="(file, dataUrl) => uploadTexture('metalness', file, dataUrl)"
+            @upload="(file: File, dataUrl: string) => uploadTexture('metalness', file, dataUrl)"
             @remove="removeTexture('metalness')"
           />
 
           <TextureUpload
             mapType="ao"
             :textureUrl="material.maps?.ao"
-            @upload="(file, dataUrl) => uploadTexture('ao', file, dataUrl)"
+            @upload="(file: File, dataUrl: string) => uploadTexture('ao', file, dataUrl)"
             @remove="removeTexture('ao')"
           />
 
           <TextureUpload
             mapType="emissive"
             :textureUrl="material.maps?.emissive"
-            @upload="(file, dataUrl) => uploadTexture('emissive', file, dataUrl)"
+            @upload="(file: File, dataUrl: string) => uploadTexture('emissive', file, dataUrl)"
             @remove="removeTexture('emissive')"
           />
 
           <TextureUpload
             mapType="height"
             :textureUrl="material.maps?.height"
-            @upload="(file, dataUrl) => uploadTexture('height', file, dataUrl)"
+            @upload="(file: File, dataUrl: string) => uploadTexture('height', file, dataUrl)"
             @remove="removeTexture('height')"
           />
 
           <TextureUpload
             mapType="opacity"
             :textureUrl="material.maps?.opacity"
-            @upload="(file, dataUrl) => uploadTexture('opacity', file, dataUrl)"
+            @upload="(file: File, dataUrl: string) => uploadTexture('opacity', file, dataUrl)"
             @remove="removeTexture('opacity')"
           />
         </div>
@@ -397,7 +397,7 @@ const sections = reactive({
 });
 
 // Computed
-const _hasAnyTexture = computed(() => {
+const hasAnyTexture = computed(() => {
   return Object.values(material.maps).some((url) => !!url);
 });
 
@@ -423,11 +423,11 @@ watch(
 );
 
 // Methods
-function _toggleSection(section: keyof typeof sections) {
+function toggleSection(section: keyof typeof sections) {
   sections[section] = !sections[section];
 }
 
-function _updateMaterial<K extends keyof MaterialConfig>(
+function updateMaterial<K extends keyof MaterialConfig>(
   key: K,
   value: MaterialConfig[K],
 ) {
@@ -436,23 +436,23 @@ function _updateMaterial<K extends keyof MaterialConfig>(
   emitUpdate();
 }
 
-function _updateTextureRepeat(axis: "x" | "y", value: number) {
+function updateTextureRepeat(axis: "x" | "y", value: number) {
   material.textureRepeat[axis] = value;
   emitUpdate();
 }
 
-function _uploadTexture(mapType: TextureMapType, file: File, dataUrl: string) {
+function uploadTexture(mapType: TextureMapType, file: File, dataUrl: string) {
   material.maps[mapType] = dataUrl;
   emitUpdate();
   emit("texture-upload", mapType, file);
 }
 
-function _removeTexture(mapType: TextureMapType) {
+function removeTexture(mapType: TextureMapType) {
   delete material.maps[mapType];
   emitUpdate();
 }
 
-function _applyPreset() {
+function applyPreset() {
   if (!selectedPreset.value) return;
 
   const preset = presets.find((p) => p.id === selectedPreset.value);
@@ -462,13 +462,13 @@ function _applyPreset() {
   }
 }
 
-function _resetMaterial() {
+function resetMaterial() {
   Object.assign(material, defaultMaterial);
   selectedPreset.value = "";
   emitUpdate();
 }
 
-function _saveMaterial() {
+function saveMaterial() {
   const name = prompt("Enter preset name:");
   if (name) {
     emit("save-preset", name, { ...material });

@@ -2,7 +2,7 @@
   <div class="shape-editor">
     <div class="property-row">
       <label>Radius</label>
-      <ScrubableNumber :modelValue="operator.radius.value" @update:modelValue="v => updateNumber('radius', v)" :min="0" :max="500" unit="px" />
+      <ScrubableNumber :modelValue="operator.radius.value" @update:modelValue="(v: number) => updateNumber('radius', v)" :min="0" :max="500" unit="px" />
       <KeyframeToggle :property="operator.radius" :layerId="layerId" @toggle="toggleKeyframe" />
     </div>
   </div>
@@ -20,13 +20,13 @@ const props = defineProps<{
 const emit = defineEmits(["update"]);
 const store = useCompositorStore();
 
-function _updateNumber(prop: "radius", value: number) {
+function updateNumber(prop: "radius", value: number) {
   const updated = { ...props.operator };
   updated[prop] = { ...updated[prop], value };
   emit("update", updated);
 }
 
-function _toggleKeyframe() {
+function toggleKeyframe() {
   const updated = { ...props.operator };
   const animProp = updated.radius;
   const frame = store.currentFrame;

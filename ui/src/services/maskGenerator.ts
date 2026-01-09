@@ -655,6 +655,13 @@ export function generateMask(options: MaskGeneratorOptions): Uint8Array {
     mask = shrinkTo(mask, A_hi);
   }
 
+  // Convert from internal 0/1 mask to binary 0/255 for ML pipeline compatibility
+  for (let i = 0; i < mask.length; i++) {
+    if (mask[i]) {
+      mask[i] = 255;
+    }
+  }
+
   return mask;
 }
 

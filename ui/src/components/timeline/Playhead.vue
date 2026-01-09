@@ -25,7 +25,7 @@ const emit = defineEmits<(e: "scrub", frame: number) => void>();
 const store = useCompositorStore();
 
 // Calculate position based on current frame
-const _position = computed(() => {
+const position = computed(() => {
   const frameCount = store.frameCount;
   const progress = store.currentFrame / (frameCount - 1);
   return props.trackOffset + progress * props.trackWidth;
@@ -34,7 +34,7 @@ const _position = computed(() => {
 // Drag state
 const isDragging = ref(false);
 
-function _startDrag(event: MouseEvent) {
+function startDrag(event: MouseEvent) {
   isDragging.value = true;
   document.addEventListener("mousemove", handleDrag);
   document.addEventListener("mouseup", stopDrag);

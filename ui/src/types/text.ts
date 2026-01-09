@@ -70,7 +70,7 @@ export interface TextData {
   spaceBefore?: number; // Pixels before paragraph
   spaceAfter?: number; // Pixels after paragraph
 
-  // Text Animators (After Effects-style per-character animation)
+  // Text Animators (per-character animation)
   animators?: TextAnimator[];
 }
 

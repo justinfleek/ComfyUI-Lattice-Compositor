@@ -118,7 +118,7 @@ const props = defineProps<{
 }>();
 
 const store = useCompositorStore();
-const _expanded = ref(true);
+const expanded = ref(true);
 const showAddMenu = ref(false);
 
 const newDriver = ref({
@@ -128,11 +128,11 @@ const newDriver = ref({
   threshold: 0,
 });
 
-const _drivers = computed(() => {
+const drivers = computed(() => {
   return store.getDriversForLayer(props.layerId);
 });
 
-function _formatProperty(prop?: PropertyPath | string): string {
+function formatProperty(prop?: PropertyPath | string): string {
   if (!prop) return "?";
   const names: Record<string, string> = {
     "transform.position.x": "Pos X",
@@ -149,13 +149,13 @@ function _formatProperty(prop?: PropertyPath | string): string {
   return names[prop] || prop;
 }
 
-function _getSourceLayerName(layerId?: string): string {
+function getSourceLayerName(layerId?: string): string {
   if (!layerId) return "?";
   const layer = store.layers.find((l) => l.id === layerId);
   return layer?.name || layerId.slice(0, 8);
 }
 
-function _formatTransform(t: DriverTransform): string {
+function formatTransform(t: DriverTransform): string {
   switch (t.type) {
     case "scale":
       return `Scale: ${t.factor}`;
@@ -172,15 +172,15 @@ function _formatTransform(t: DriverTransform): string {
   }
 }
 
-function _toggleDriver(driverId: string) {
+function toggleDriver(driverId: string) {
   store.togglePropertyDriver(driverId);
 }
 
-function _removeDriver(driverId: string) {
+function removeDriver(driverId: string) {
   store.removePropertyDriver(driverId);
 }
 
-function _createAudioDriver() {
+function createAudioDriver() {
   store.createAudioPropertyDriver(
     props.layerId,
     newDriver.value.targetProperty,

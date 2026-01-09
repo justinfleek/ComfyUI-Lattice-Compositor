@@ -239,7 +239,7 @@ import {
 import { useCompositorStore } from "@/stores/compositorStore";
 import type { ControlPoint, Layer } from "@/types/project";
 
-const _props = defineProps<{
+const props = defineProps<{
   visible: boolean;
 }>();
 
@@ -255,7 +255,7 @@ const vectorizeService = getVectorizeService();
 const sourceType = ref<"layer" | "upload">("layer");
 const selectedLayerId = ref("");
 const uploadedImage = ref<string | null>(null);
-const _fileInput = ref<HTMLInputElement | null>(null);
+const fileInput = ref<HTMLInputElement | null>(null);
 
 // Preview
 const previewUrl = ref<string | null>(null);
@@ -282,11 +282,11 @@ const progressMessage = ref("");
 
 // Result
 const result = ref<VectorizeResult | null>(null);
-const _showSvgPreview = ref(false);
+const showSvgPreview = ref(false);
 const errorMessage = ref("");
 
 // Available layers (image layers only)
-const _availableLayers = computed(() => {
+const availableLayers = computed(() => {
   return store.layers.filter(
     (l: Layer) =>
       l.type === "image" || l.type === "video" || l.type === "solid",
@@ -294,7 +294,7 @@ const _availableLayers = computed(() => {
 });
 
 // Can vectorize?
-const _canVectorize = computed(() => {
+const canVectorize = computed(() => {
   if (sourceType.value === "layer") {
     return !!selectedLayerId.value;
   }
@@ -302,7 +302,7 @@ const _canVectorize = computed(() => {
 });
 
 // Sanitized SVG for preview using DOMPurify with SVG-specific config
-const _sanitizedSvg = computed(() => {
+const sanitizedSvg = computed(() => {
   if (!result.value?.svg) return "";
   return DOMPurify.sanitize(result.value.svg, {
     USE_PROFILES: { svg: true, svgFilters: true },
@@ -360,7 +360,7 @@ async function loadLayerPreview() {
 }
 
 // Handle file upload
-function _onFileSelect(event: Event) {
+function onFileSelect(event: Event) {
   const input = event.target as HTMLInputElement;
   const file = input.files?.[0];
   if (!file) return;
@@ -382,7 +382,7 @@ function _onFileSelect(event: Event) {
 }
 
 // Start vectorization
-async function _startVectorize() {
+async function startVectorize() {
   errorMessage.value = "";
   result.value = null;
   isProcessing.value = true;
@@ -443,7 +443,7 @@ async function _startVectorize() {
 }
 
 // Create layers from result
-function _createLayers() {
+function createLayers() {
   if (!result.value) return;
 
   const createdLayerIds: string[] = [];

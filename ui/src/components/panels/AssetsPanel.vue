@@ -346,10 +346,10 @@ import { useCompositorStore } from "@/stores/compositorStore";
 import type { AssetType } from "@/types/assets";
 
 const assetStore = useAssetStore();
-const _compositorStore = useCompositorStore();
+const compositorStore = useCompositorStore();
 
 // Tab configuration
-const _tabs = [
+const tabs = [
   { id: "materials", label: "Materials", icon: "◉", tooltip: "PBR Materials" },
   { id: "svg", label: "SVG", icon: "✎", tooltip: "SVG Logos & Shapes" },
   { id: "meshes", label: "Meshes", icon: "◇", tooltip: "Mesh Particles" },
@@ -360,7 +360,7 @@ const _tabs = [
 const activeTab = ref("materials");
 
 // Material presets
-const _materialPresets = [
+const materialPresets = [
   "chrome",
   "gold",
   "silver",
@@ -378,15 +378,15 @@ const selectedPreset = ref("");
 
 // Computed lists
 const materials = computed(() => assetStore.materialList);
-const _svgDocuments = computed(() => assetStore.svgDocumentList);
-const _meshParticles = computed(() => assetStore.meshParticleList);
-const _spriteSheets = computed(() => assetStore.spriteSheetList);
-const _environment = computed(() => assetStore.environment);
+const svgDocuments = computed(() => assetStore.svgDocumentList);
+const meshParticles = computed(() => assetStore.meshParticleList);
+const spriteSheets = computed(() => assetStore.spriteSheetList);
+const environment = computed(() => assetStore.environment);
 
 // Selected items
-const _selectedMaterial = computed(() => assetStore.selectedMaterial);
-const _selectedSvg = computed(() => assetStore.selectedSvgDocument);
-const _selectedMesh = computed(() => assetStore.selectedMeshParticle);
+const selectedMaterial = computed(() => assetStore.selectedMaterial);
+const selectedSvg = computed(() => assetStore.selectedSvgDocument);
+const selectedMesh = computed(() => assetStore.selectedMeshParticle);
 
 // Primitive selection
 const selectedPrimitive = ref("");
@@ -418,32 +418,32 @@ const hasBlockingErrors = ref(false);
 // MATERIALS
 // ========================================================================
 
-function _createMaterial() {
+function createMaterial() {
   assetStore.createEmptyMaterial("New Material");
 }
 
-function _createFromPreset() {
+function createFromPreset() {
   if (selectedPreset.value) {
     assetStore.createMaterialFromPreset(selectedPreset.value);
     selectedPreset.value = "";
   }
 }
 
-function _selectMaterial(id: string) {
+function selectMaterial(id: string) {
   assetStore.selectedMaterialId = id;
 }
 
-function _deleteMaterial(id: string) {
+function deleteMaterial(id: string) {
   assetStore.deleteMaterial(id);
 }
 
-function _onMaterialUpdate(updates: Partial<PBRMaterialConfig>) {
+function onMaterialUpdate(updates: Partial<PBRMaterialConfig>) {
   if (assetStore.selectedMaterialId) {
     assetStore.updateMaterial(assetStore.selectedMaterialId, updates);
   }
 }
 
-function _onTextureUpload(textureType: string, file: File) {
+function onTextureUpload(textureType: string, file: File) {
   if (assetStore.selectedMaterialId) {
     assetStore.setMaterialTexture(
       assetStore.selectedMaterialId,
@@ -453,7 +453,7 @@ function _onTextureUpload(textureType: string, file: File) {
   }
 }
 
-function _getMaterialPreviewStyle(mat: (typeof materials.value)[0]) {
+function getMaterialPreviewStyle(mat: (typeof materials.value)[0]) {
   return {
     backgroundColor: mat.config.color || "#808080",
     backgroundImage: mat.config.maps?.albedo
@@ -467,19 +467,19 @@ function _getMaterialPreviewStyle(mat: (typeof materials.value)[0]) {
 // SVG
 // ========================================================================
 
-async function _onSvgUpload(file: File) {
+async function onSvgUpload(file: File) {
   await assetStore.importSvgFromFile(file);
 }
 
-function _selectSvg(id: string) {
+function selectSvg(id: string) {
   assetStore.selectedSvgId = id;
 }
 
-function _deleteSvg(id: string) {
+function deleteSvg(id: string) {
   assetStore.deleteSvgDocument(id);
 }
 
-function _updatePathDepth(pathIndex: number, event: Event) {
+function updatePathDepth(pathIndex: number, event: Event) {
   if (!assetStore.selectedSvgId) return;
   const value = parseFloat((event.target as HTMLInputElement).value) || 0;
   assetStore.updateSvgLayerConfig(assetStore.selectedSvgId, pathIndex, {
@@ -487,7 +487,7 @@ function _updatePathDepth(pathIndex: number, event: Event) {
   });
 }
 
-function _updatePathExtrusion(pathIndex: number, event: Event) {
+function updatePathExtrusion(pathIndex: number, event: Event) {
   if (!assetStore.selectedSvgId) return;
   const value = parseFloat((event.target as HTMLInputElement).value) || 2;
   assetStore.updateSvgLayerConfig(assetStore.selectedSvgId, pathIndex, {
@@ -495,12 +495,12 @@ function _updatePathExtrusion(pathIndex: number, event: Event) {
   });
 }
 
-function _createLayersFromSvg(svgId: string) {
+function createLayersFromSvg(svgId: string) {
   // Emit event for parent to handle layer creation
   emit("create-layers-from-svg", svgId);
 }
 
-function _registerSvgAsMesh(svgId: string) {
+function registerSvgAsMesh(svgId: string) {
   const svg = assetStore.svgDocuments.get(svgId);
   if (!svg) return;
 
@@ -517,22 +517,22 @@ function _registerSvgAsMesh(svgId: string) {
 // MESH PARTICLES
 // ========================================================================
 
-function _addPrimitiveMesh() {
+function addPrimitiveMesh() {
   if (selectedPrimitive.value) {
     assetStore.registerPrimitiveMesh(selectedPrimitive.value as any);
     selectedPrimitive.value = "";
   }
 }
 
-function _selectMesh(id: string) {
+function selectMesh(id: string) {
   assetStore.selectedMeshParticleId = id;
 }
 
-function _deleteMesh(id: string) {
+function deleteMesh(id: string) {
   assetStore.deleteMeshParticle(id);
 }
 
-function _useAsEmitterShape() {
+function useAsEmitterShape() {
   if (assetStore.selectedMeshParticleId) {
     emit("use-mesh-as-emitter", assetStore.selectedMeshParticleId);
   }
@@ -542,7 +542,7 @@ function _useAsEmitterShape() {
 // SPRITE SHEETS
 // ========================================================================
 
-async function _onSpriteFileSelect(file: File) {
+async function onSpriteFileSelect(file: File) {
   pendingSpriteFile.value = file;
 
   // Create preview URL
@@ -688,11 +688,11 @@ function cancelSpriteImport() {
   spriteFrameRate.value = 24;
 }
 
-function _selectSprite(id: string) {
+function selectSprite(id: string) {
   assetStore.selectedSpriteSheetId = id;
 }
 
-function _deleteSprite(id: string) {
+function deleteSprite(id: string) {
   assetStore.deleteSpriteSheet(id);
 }
 
@@ -700,17 +700,17 @@ function _deleteSprite(id: string) {
 // ENVIRONMENT
 // ========================================================================
 
-function _onEnvironmentUpdate(settings: any) {
+function onEnvironmentUpdate(settings: any) {
   assetStore.updateEnvironment(settings);
   emit("environment-update", settings);
 }
 
-async function _onEnvironmentLoad(file: File) {
+async function onEnvironmentLoad(file: File) {
   await assetStore.loadEnvironment(file);
   emit("environment-load", assetStore.environment);
 }
 
-function _onEnvironmentClear() {
+function onEnvironmentClear() {
   assetStore.clearEnvironment();
   emit("environment-clear");
 }

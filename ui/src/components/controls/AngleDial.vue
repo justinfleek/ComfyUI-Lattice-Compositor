@@ -59,7 +59,7 @@ function normalizeAngle(angle: number): number {
   return ((angle % 360) + 360) % 360;
 }
 
-function _startDrag(e: MouseEvent): void {
+function startDrag(e: MouseEvent): void {
   if (props.disabled) return;
 
   isDragging.value = true;
@@ -106,7 +106,7 @@ function stopDrag(): void {
   document.body.style.userSelect = "";
 }
 
-function _onInput(e: Event): void {
+function onInput(e: Event): void {
   const input = e.target as HTMLInputElement;
   const value = parseFloat(input.value);
 
@@ -115,7 +115,7 @@ function _onInput(e: Event): void {
   }
 }
 
-function _onBlur(e: FocusEvent): void {
+function onBlur(e: FocusEvent): void {
   const input = e.target as HTMLInputElement;
   const value = parseFloat(input.value);
 

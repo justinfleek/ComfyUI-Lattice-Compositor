@@ -214,32 +214,32 @@ const recordedMotion = ref<RecordedMotion | null>(null);
 let recorder: MotionRecorder | null = null;
 
 // Computed
-const _targetLayerName = computed(() => {
+const targetLayerName = computed(() => {
   const layers = store.selectedLayerIds;
   if (layers.length === 0) return null;
   const layer = store.getLayerById(layers[0]);
   return layer?.name || "Unknown Layer";
 });
 
-const _statusText = computed(() => {
+const statusText = computed(() => {
   if (isRecording.value) return "Recording...";
   if (recordedMotion.value) return "Motion recorded";
   return "Ready to record";
 });
 
-const _motionDuration = computed(() => {
+const motionDuration = computed(() => {
   if (!recordedMotion.value || recordedMotion.value.samples.length < 2)
     return 0;
   const samples = recordedMotion.value.samples;
   return samples[samples.length - 1].time - samples[0].time;
 });
 
-const _pathLength = computed(() => {
+const pathLength = computed(() => {
   if (!recordedMotion.value) return 0;
   return getMotionPathLength(recordedMotion.value);
 });
 
-const _avgSpeed = computed(() => {
+const avgSpeed = computed(() => {
   if (!recordedMotion.value) return 0;
   return getMotionAverageSpeed(recordedMotion.value);
 });
@@ -267,7 +267,7 @@ const previewPoints = computed(() => {
   }));
 });
 
-const _previewPath = computed(() => {
+const previewPath = computed(() => {
   const points = previewPoints.value;
   if (points.length < 2) return "";
 
@@ -279,12 +279,12 @@ const _previewPath = computed(() => {
 });
 
 // Methods
-function _formatDuration(ms: number): string {
+function formatDuration(ms: number): string {
   const seconds = ms / 1000;
   return `${seconds.toFixed(2)}s`;
 }
 
-function _startRecording() {
+function startRecording() {
   const layerId = store.selectedLayerIds[0];
   if (!layerId) return;
 
@@ -322,7 +322,7 @@ function initRecording(x: number, y: number) {
   }
 }
 
-function _applyMotion() {
+function applyMotion() {
   if (!recordedMotion.value || recordedMotion.value.samples.length < 2) return;
 
   const layerId = store.selectedLayerIds[0];

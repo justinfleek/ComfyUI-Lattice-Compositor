@@ -287,7 +287,7 @@ const props = defineProps<{
   gpuTier: string;
 }>();
 
-const _emit = defineEmits<{
+const emit = defineEmits<{
   (e: "update:currentTool", tool: string): void;
   (e: "import"): void;
   (e: "showPreview"): void;
@@ -301,7 +301,7 @@ const _playbackStore = usePlaybackStore();
 const themeStore = useThemeStore();
 
 // Shape tool state
-const _isShapeTool = computed(() =>
+const isShapeTool = computed(() =>
   ["rectangle", "ellipse", "polygon", "star"].includes(props.currentTool),
 );
 const shapeFromCenter = ref(false);
@@ -329,28 +329,28 @@ watch(
 );
 
 // Segment state from store
-const _segmentMode = computed(() => store.segmentMode);
-const _segmentPendingMask = computed(() => store.segmentPendingMask);
-const _segmentIsLoading = computed(() => store.segmentIsLoading);
+const segmentMode = computed(() => store.segmentMode);
+const segmentPendingMask = computed(() => store.segmentPendingMask);
+const segmentIsLoading = computed(() => store.segmentIsLoading);
 
-function _setSegmentMode(mode: "point" | "box") {
+function setSegmentMode(mode: "point" | "box") {
   store.setSegmentMode(mode);
 }
 
-function _confirmSegmentMask() {
+function confirmSegmentMask() {
   store.confirmSegmentMask();
 }
 
-function _clearSegmentMask() {
+function clearSegmentMask() {
   store.clearSegmentPendingMask();
 }
 
 // Theme selector
 const showThemeSelector = ref(false);
-const _currentTheme = computed(() => themeStore.currentTheme);
-const _themeGradient = computed(() => themeStore.themeGradient);
+const currentTheme = computed(() => themeStore.currentTheme);
+const themeGradient = computed(() => themeStore.themeGradient);
 
-const _themes: Array<{ name: ThemeName; label: string; gradient: string }> = [
+const themes: Array<{ name: ThemeName; label: string; gradient: string }> = [
   {
     name: "violet",
     label: "Violet",
@@ -383,7 +383,7 @@ const _themes: Array<{ name: ThemeName; label: string; gradient: string }> = [
   },
 ];
 
-function _selectTheme(theme: ThemeName) {
+function selectTheme(theme: ThemeName) {
   themeStore.setTheme(theme);
   showThemeSelector.value = false;
 }
@@ -405,7 +405,7 @@ onUnmounted(() => {
 });
 
 // Timecode
-const _formattedTimecode = computed(() => {
+const formattedTimecode = computed(() => {
   const frame = store.currentFrame;
   const fps = store.activeComposition?.settings.fps || 16;
   const seconds = Math.floor(frame / fps);
@@ -416,39 +416,39 @@ const _formattedTimecode = computed(() => {
 });
 
 // Playback controls
-function _goToStart() {
+function goToStart() {
   store.setFrame(0);
 }
 
-function _goToEnd() {
+function goToEnd() {
   const frameCount = store.activeComposition?.settings.frameCount || 81;
   store.setFrame(frameCount - 1);
 }
 
-function _stepBackward() {
+function stepBackward() {
   const newFrame = Math.max(0, store.currentFrame - 1);
   store.setFrame(newFrame);
 }
 
-function _stepForward() {
+function stepForward() {
   const frameCount = store.activeComposition?.settings.frameCount || 81;
   const newFrame = Math.min(frameCount - 1, store.currentFrame + 1);
   store.setFrame(newFrame);
 }
 
-function _togglePlay() {
+function togglePlay() {
   store.togglePlayback();
 }
 
 // Undo/Redo
-const _canUndo = computed(() => store.canUndo);
-const _canRedo = computed(() => store.canRedo);
+const canUndo = computed(() => store.canUndo);
+const canRedo = computed(() => store.canRedo);
 
-function _undo() {
+function undo() {
   store.undo();
 }
 
-function _redo() {
+function redo() {
   store.redo();
 }
 </script>

@@ -27,9 +27,9 @@ import { type ThemeName, useThemeStore } from "@/stores/themeStore";
 
 const themeStore = useThemeStore();
 
-const _currentTheme = computed(() => themeStore.currentTheme);
+const currentTheme = computed(() => themeStore.currentTheme);
 
-const _themes: Array<{ name: ThemeName; label: string; gradient: string }> = [
+const themes: Array<{ name: ThemeName; label: string; gradient: string }> = [
   {
     name: "violet",
     label: "Violet",
@@ -62,7 +62,7 @@ const _themes: Array<{ name: ThemeName; label: string; gradient: string }> = [
   },
 ];
 
-function _setTheme(theme: ThemeName) {
+function setTheme(theme: ThemeName) {
   themeStore.setTheme(theme);
 }
 </script>

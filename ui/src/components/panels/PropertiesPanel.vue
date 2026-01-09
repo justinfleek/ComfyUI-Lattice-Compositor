@@ -6,7 +6,7 @@
     </div>
 
     <div class="panel-content" v-if="selectedLayer">
-      <!-- Layer Transform Section (AE-style) -->
+      <!-- Layer Transform Section -->
       <div class="property-section">
         <div class="section-header" @click="toggleSection('transform')">
           <span class="expand-icon">{{ expandedSections.includes('transform') ? '▼' : '►' }}</span>
@@ -56,7 +56,7 @@
               :layerId="selectedLayer.id"
               property="transform.position.x"
               :linkedTo="getDriverForProperty('transform.position.x')"
-              @link="(target) => onPropertyLink('transform.position.x', target)"
+              @link="(target: any) => onPropertyLink('transform.position.x', target)"
               @unlink="() => onPropertyUnlink('transform.position.x')"
             />
             <label>Position</label>
@@ -319,7 +319,7 @@
             <div class="value-group">
               <ScrubableNumber
                 :modelValue="audioPathAnimation.sensitivity"
-                @update:modelValue="(v) => updateAudioPathConfig('sensitivity', v)"
+                @update:modelValue="(v: number) => updateAudioPathConfig('sensitivity', v)"
                 :min="0.1"
                 :max="5"
                 :precision="2"
@@ -333,7 +333,7 @@
             <div class="value-group">
               <ScrubableNumber
                 :modelValue="audioPathAnimation.smoothing"
-                @update:modelValue="(v) => updateAudioPathConfig('smoothing', v)"
+                @update:modelValue="(v: number) => updateAudioPathConfig('smoothing', v)"
                 :min="0"
                 :max="1"
                 :precision="2"
@@ -347,7 +347,7 @@
             <div class="value-group">
               <ScrubableNumber
                 :modelValue="audioPathAnimation.release"
-                @update:modelValue="(v) => updateAudioPathConfig('release', v)"
+                @update:modelValue="(v: number) => updateAudioPathConfig('release', v)"
                 :min="0"
                 :max="1"
                 :precision="2"
@@ -361,7 +361,7 @@
             <div class="value-group">
               <ScrubableNumber
                 :modelValue="audioPathAnimation.amplitudeCurve"
-                @update:modelValue="(v) => updateAudioPathConfig('amplitudeCurve', v)"
+                @update:modelValue="(v: number) => updateAudioPathConfig('amplitudeCurve', v)"
                 :min="0.5"
                 :max="3"
                 :precision="2"
@@ -386,7 +386,7 @@
             <div class="value-group">
               <ScrubableNumber
                 :modelValue="audioPathAnimation.beatThreshold"
-                @update:modelValue="(v) => updateAudioPathConfig('beatThreshold', v)"
+                @update:modelValue="(v: number) => updateAudioPathConfig('beatThreshold', v)"
                 :min="0.01"
                 :max="0.5"
                 :precision="3"
@@ -411,7 +411,7 @@
             <div class="value-group">
               <ScrubableNumber
                 :modelValue="audioPathAnimation.rotationOffset"
-                @update:modelValue="(v) => updateAudioPathConfig('rotationOffset', v)"
+                @update:modelValue="(v: number) => updateAudioPathConfig('rotationOffset', v)"
                 suffix="°"
               />
             </div>
@@ -521,7 +521,7 @@ const blendMode = ref("normal");
 const keyframes = ref<string[]>([]);
 
 // Blend modes
-const _blendModes = [
+const blendModes = [
   { label: "Normal", value: "normal" },
   { label: "Multiply", value: "multiply" },
   { label: "Screen", value: "screen" },
@@ -545,7 +545,7 @@ const _blendModes = [
 const selectedLayer = computed(() => store.selectedLayer);
 
 // Property solo visibility - determines which properties are shown based on P/S/R/T/A/U shortcuts
-const _showAnchor = computed(() => {
+const showAnchor = computed(() => {
   const solo = soloedProperty.value;
   if (!solo) return true;
   if (solo === "anchor") return true;
@@ -556,7 +556,7 @@ const _showAnchor = computed(() => {
   return false;
 });
 
-const _showPosition = computed(() => {
+const showPosition = computed(() => {
   const solo = soloedProperty.value;
   if (!solo) return true;
   if (solo === "position") return true;
@@ -566,7 +566,7 @@ const _showPosition = computed(() => {
   return false;
 });
 
-const _showScale = computed(() => {
+const showScale = computed(() => {
   const solo = soloedProperty.value;
   if (!solo) return true;
   if (solo === "scale") return true;
@@ -576,7 +576,7 @@ const _showScale = computed(() => {
   return false;
 });
 
-const _showRotation = computed(() => {
+const showRotation = computed(() => {
   const solo = soloedProperty.value;
   if (!solo) return true;
   if (solo === "rotation") return true;
@@ -594,7 +594,7 @@ const _showRotation = computed(() => {
   return false;
 });
 
-const _showOpacity = computed(() => {
+const showOpacity = computed(() => {
   const solo = soloedProperty.value;
   if (!solo) return true;
   if (solo === "opacity") return true;
@@ -605,10 +605,10 @@ const _showOpacity = computed(() => {
 });
 
 // Show indicator when in solo mode
-const _soloModeActive = computed(() => soloedProperty.value !== null);
+const soloModeActive = computed(() => soloedProperty.value !== null);
 
 // Get layers that can be parents (exclude self and children to prevent cycles)
-const _availableParents = computed(() => {
+const availableParents = computed(() => {
   if (!selectedLayer.value) return [];
 
   const selfId = selectedLayer.value.id;
@@ -630,7 +630,7 @@ const _availableParents = computed(() => {
   );
 });
 
-const _layerPropertiesComponent = computed<Component | null>(() => {
+const layerPropertiesComponent = computed<Component | null>(() => {
   if (!selectedLayer.value) return null;
 
   switch (selectedLayer.value.type) {
@@ -800,7 +800,7 @@ watch(
 );
 
 // Methods
-function _toggleSection(section: string) {
+function toggleSection(section: string) {
   const index = expandedSections.value.indexOf(section);
   if (index >= 0) {
     expandedSections.value.splice(index, 1);
@@ -809,7 +809,7 @@ function _toggleSection(section: string) {
   }
 }
 
-function _updateLayerName() {
+function updateLayerName() {
   if (selectedLayer.value && layerName.value) {
     selectedLayer.value.name = layerName.value;
   }
@@ -857,7 +857,7 @@ function updateTransform() {
   onLayerUpdate();
 }
 
-function _updateBlendMode() {
+function updateBlendMode() {
   if (selectedLayer.value) {
     store.updateLayer(selectedLayer.value.id, {
       blendMode: blendMode.value as BlendMode,
@@ -865,7 +865,7 @@ function _updateBlendMode() {
   }
 }
 
-function _toggle3D(event: Event) {
+function toggle3D(event: Event) {
   if (!selectedLayer.value) return;
   const threeD = (event.target as HTMLInputElement).checked;
   store.updateLayer(selectedLayer.value.id, { threeD });
@@ -909,7 +909,7 @@ function _toggle3D(event: Event) {
 // AUDIO PATH ANIMATION METHODS
 // ============================================================
 
-function _updateAudioPathEnabled(event: Event) {
+function updateAudioPathEnabled(event: Event) {
   if (!selectedLayer.value) return;
   const enabled = (event.target as HTMLInputElement).checked;
   audioPathAnimation.value.enabled = enabled;
@@ -935,7 +935,7 @@ function _updateAudioPathEnabled(event: Event) {
   onLayerUpdate();
 }
 
-function _updateAudioPathData(event: Event) {
+function updateAudioPathData(event: Event) {
   if (!selectedLayer.value?.audioPathAnimation) return;
   const pathData = (event.target as HTMLTextAreaElement).value;
   audioPathAnimation.value.pathData = pathData;
@@ -943,7 +943,7 @@ function _updateAudioPathData(event: Event) {
   onLayerUpdate();
 }
 
-function _updateAudioPathMode(event: Event) {
+function updateAudioPathMode(event: Event) {
   if (!selectedLayer.value?.audioPathAnimation) return;
   const mode = (event.target as HTMLSelectElement).value as
     | "amplitude"
@@ -953,7 +953,7 @@ function _updateAudioPathMode(event: Event) {
   onLayerUpdate();
 }
 
-function _updateAudioPathConfig(
+function updateAudioPathConfig(
   key: keyof typeof audioPathAnimation.value,
   value: number | boolean,
 ) {
@@ -963,11 +963,11 @@ function _updateAudioPathConfig(
   onLayerUpdate();
 }
 
-function _hasKeyframe(property: string): boolean {
+function hasKeyframe(property: string): boolean {
   return keyframes.value.includes(property);
 }
 
-function _toggleKeyframe(property: string) {
+function toggleKeyframe(property: string) {
   const index = keyframes.value.indexOf(property);
   if (index >= 0) {
     keyframes.value.splice(index, 1);
@@ -990,7 +990,7 @@ function onLayerUpdate(dataUpdates?: Record<string, any>) {
   }
 }
 
-function _updateParent(event: Event) {
+function updateParent(event: Event) {
   if (!selectedLayer.value) return;
   const parentId = (event.target as HTMLSelectElement).value || null;
   store.setLayerParent(selectedLayer.value.id, parentId);
@@ -1003,7 +1003,7 @@ function _updateParent(event: Event) {
 /**
  * Get the driver linked to a property, if any
  */
-function _getDriverForProperty(
+function getDriverForProperty(
   property: PropertyPath,
 ): { layerId: string; property: PropertyPath } | null {
   if (!selectedLayer.value) return null;
@@ -1025,7 +1025,7 @@ function _getDriverForProperty(
 /**
  * Handle property link event
  */
-function _onPropertyLink(
+function onPropertyLink(
   targetProperty: PropertyPath,
   source: { layerId: string; property: PropertyPath },
 ) {
@@ -1048,7 +1048,7 @@ function _onPropertyLink(
 /**
  * Handle property unlink event
  */
-function _onPropertyUnlink(targetProperty: PropertyPath) {
+function onPropertyUnlink(targetProperty: PropertyPath) {
   if (!selectedLayer.value) return;
 
   // Find and remove the driver
@@ -1069,7 +1069,7 @@ function _onPropertyUnlink(targetProperty: PropertyPath) {
  * Format rotation value in AE style: 0x+0°
  * e.g., 450 degrees = 1x+90°
  */
-function _formatRotation(degrees: number): string {
+function formatRotation(degrees: number): string {
   const revolutions = Math.floor(Math.abs(degrees) / 360);
   const remainder = Math.abs(degrees) % 360;
   const sign = degrees < 0 ? "-" : "";
@@ -1079,7 +1079,7 @@ function _formatRotation(degrees: number): string {
 /**
  * Reset all transform values to defaults
  */
-function _resetTransform() {
+function resetTransform() {
   if (!selectedLayer.value) return;
 
   const comp = store.getActiveComp();
@@ -1113,7 +1113,7 @@ function _resetTransform() {
 /**
  * Check if a property has a driver
  */
-function _hasDriver(property: PropertyPath): boolean {
+function hasDriver(property: PropertyPath): boolean {
   if (!selectedLayer.value) return false;
   const drivers = store.getDriversForLayer(selectedLayer.value.id);
   return drivers.some((d) => d.targetProperty === property && d.enabled);

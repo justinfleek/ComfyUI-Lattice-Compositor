@@ -249,7 +249,7 @@ const emit = defineEmits<(e: "update", data: Partial<PoseLayerData>) => void>();
 const store = useCompositorStore();
 
 // COCO 18 keypoint names
-const _keypointNames = [
+const keypointNames = [
   "Nose",
   "Neck",
   "R.Shoulder",
@@ -271,14 +271,14 @@ const _keypointNames = [
 ];
 
 // Typed array validates pose formats at compile time
-const _poseFormats: PoseFormat[] = ["coco18", "body25", "custom"];
+const poseFormats: PoseFormat[] = ["coco18", "body25", "custom"];
 
 // Expanded sections
 const expandedSections = reactive(
   new Set<string>(["skeleton", "display", "colors"]),
 );
 
-function _toggleSection(section: string) {
+function toggleSection(section: string) {
   if (expandedSections.has(section)) {
     expandedSections.delete(section);
   } else {
@@ -309,7 +309,7 @@ const poseData = computed(() => {
 });
 
 // Selected keypoint for editing
-const _selectedKeypoint = computed(() => {
+const selectedKeypoint = computed(() => {
   const poseIdx = poseData.value.selectedPose ?? 0;
   const kpIdx = poseData.value.selectedKeypoint ?? -1;
   if (kpIdx < 0) return null;
@@ -318,7 +318,7 @@ const _selectedKeypoint = computed(() => {
 });
 
 // Update pose layer data
-function _updatePoseData<K extends keyof PoseLayerData>(
+function updatePoseData<K extends keyof PoseLayerData>(
   key: K,
   value: PoseLayerData[K],
 ) {
@@ -333,12 +333,12 @@ const poseFormatLabels: Record<PoseFormat, string> = {
   custom: "Custom",
 };
 
-function _formatPoseFormat(fmt: PoseFormat): string {
+function formatPoseFormat(fmt: PoseFormat): string {
   return poseFormatLabels[fmt];
 }
 
 // Update selected keypoint position
-function _updateKeypointPosition(
+function updateKeypointPosition(
   axis: "x" | "y" | "confidence",
   value: number,
 ) {
@@ -358,7 +358,7 @@ function _updateKeypointPosition(
 }
 
 // Add a new pose (copy of current)
-function _addPose() {
+function addPose() {
   const poses = [...(poseData.value.poses || [])];
   const currentPose = poses[poseData.value.selectedPose ?? 0];
   if (currentPose) {
@@ -376,7 +376,7 @@ function _addPose() {
 }
 
 // Remove selected pose
-function _removePose() {
+function removePose() {
   const poses = [...(poseData.value.poses || [])];
   if (poses.length <= 1) return;
 
@@ -389,7 +389,7 @@ function _removePose() {
 }
 
 // Export to OpenPose JSON
-async function _exportOpenPoseJSON() {
+async function exportOpenPoseJSON() {
   try {
     const { exportToOpenPoseJSON } = await import(
       "@/services/export/poseExport"
@@ -417,7 +417,7 @@ async function _exportOpenPoseJSON() {
 }
 
 // Export ControlNet image
-async function _exportControlNetImage() {
+async function exportControlNetImage() {
   try {
     const { exportPoseForControlNet } = await import(
       "@/services/export/poseExport"

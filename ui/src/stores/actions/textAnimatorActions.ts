@@ -28,6 +28,7 @@ import type {
   TextData,
 } from "@/types/project";
 import type { TextAnimator, TextAnimatorProperties } from "@/types/text";
+import { hexToRgba, rgbToHex } from "@/utils/colorUtils";
 
 // ============================================================================
 // STORE INTERFACE
@@ -54,6 +55,8 @@ export interface CharacterTransform {
   scale: { x: number; y: number };
   opacity: number;
   tracking: number;
+  fillColor?: { r: number; g: number; b: number; a: number };
+  strokeWidth?: number;
 }
 
 export interface AddTextAnimatorConfig {
@@ -91,6 +94,42 @@ export interface WigglySelectorConfig {
 // ============================================================================
 // HELPER FUNCTIONS
 // ============================================================================
+
+/**
+ * Convert RGBA object {r, g, b, a} to hex string
+ */
+function rgbaObjectToHex(rgba: { r: number; g: number; b: number; a?: number }): string {
+  const r = Math.max(0, Math.min(255, Math.round(rgba.r)));
+  const g = Math.max(0, Math.min(255, Math.round(rgba.g)));
+  const b = Math.max(0, Math.min(255, Math.round(rgba.b)));
+  return rgbToHex(r, g, b); // Use rgbToHex (no alpha in hex for fillColor)
+}
+
+/**
+ * Convert hex string to RGBA object {r, g, b, a}
+ */
+function hexToRgbaObject(hex: string): { r: number; g: number; b: number; a: number } {
+  const rgba = hexToRgba(hex);
+  if (rgba) {
+    return { r: rgba[0], g: rgba[1], b: rgba[2], a: Math.round(rgba[3] * 255) };
+  }
+  // Default to black if invalid
+  return { r: 0, g: 0, b: 0, a: 255 };
+}
+
+/**
+ * Check if value is an RGBA color object
+ */
+function isRgbaObject(value: any): value is { r: number; g: number; b: number; a?: number } {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    typeof value.r === "number" &&
+    typeof value.g === "number" &&
+    typeof value.b === "number" &&
+    (value.a === undefined || typeof value.a === "number")
+  );
+}
 
 /**
  * Get a text layer by ID and validate it's a text layer
@@ -600,6 +639,37 @@ export function getCharacterTransforms(
         const trackingVal = getAnimatableValue(props.tracking, frame);
         transforms[i].tracking += trackingVal * influence;
       }
+
+      // Apply fillColor (with keyframe interpolation)
+      if (props.fillColor) {
+        const fillColorHex = getAnimatableValue(props.fillColor, frame) as string;
+        const fillColorRgba = hexToRgbaObject(fillColorHex);
+        
+        // Initialize fillColor if not present
+        if (transforms[i].fillColor === undefined) {
+          transforms[i].fillColor = { r: 0, g: 0, b: 0, a: 255 };
+        }
+        
+        // Apply color offset with influence (additive)
+        // TypeScript now knows fillColor is defined after the check above
+        const fillColor = transforms[i].fillColor!;
+        fillColor.r += (fillColorRgba.r - 0) * influence;
+        fillColor.g += (fillColorRgba.g - 0) * influence;
+        fillColor.b += (fillColorRgba.b - 0) * influence;
+        // Alpha is typically not additive, but we'll apply it proportionally
+        fillColor.a = Math.round(255 - (255 - fillColorRgba.a) * influence);
+      }
+
+      // Apply strokeWidth (with keyframe interpolation)
+      if (props.strokeWidth !== undefined) {
+        const strokeWidthVal = getAnimatableValue(props.strokeWidth, frame) as number;
+        
+        // Initialize strokeWidth if not present
+        const currentStrokeWidth = transforms[i].strokeWidth ?? 0;
+        
+        // Apply stroke width offset with influence (additive)
+        transforms[i].strokeWidth = currentStrokeWidth + (strokeWidthVal - 0) * influence;
+      }
     }
   }
 
@@ -608,6 +678,15 @@ export function getCharacterTransforms(
     t.opacity = Math.max(0, Math.min(100, t.opacity));
     t.scale.x = Math.max(0, t.scale.x);
     t.scale.y = Math.max(0, t.scale.y);
+    if (t.fillColor !== undefined) {
+      t.fillColor.r = Math.max(0, Math.min(255, Math.round(t.fillColor.r)));
+      t.fillColor.g = Math.max(0, Math.min(255, Math.round(t.fillColor.g)));
+      t.fillColor.b = Math.max(0, Math.min(255, Math.round(t.fillColor.b)));
+      t.fillColor.a = Math.max(0, Math.min(255, Math.round(t.fillColor.a)));
+    }
+    if (t.strokeWidth !== undefined) {
+      t.strokeWidth = Math.max(0, t.strokeWidth);
+    }
   }
 
   return transforms;
@@ -716,24 +795,34 @@ export function setAnimatorPropertyValue(
 
   store.pushHistory();
 
-  // Create property if doesn't exist
-  const valueType =
-    typeof value === "object"
-      ? "position"
-      : typeof value === "number"
-        ? "number"
-        : "color";
   const propName = String(propertyName);
+  
+  // Handle RGBA color objects - convert to hex string for storage
+  let normalizedValue = value;
+  let valueType: "number" | "position" | "color" | "enum" | "vector3" = "number";
+  
+  if (isRgbaObject(value)) {
+    // Convert RGBA object to hex string
+    normalizedValue = rgbaObjectToHex(value);
+    valueType = "color";
+  } else if (typeof value === "object" && value !== null && "x" in value && "y" in value) {
+    // Position/scale object
+    valueType = "position";
+  } else if (typeof value === "number") {
+    valueType = "number";
+  } else if (typeof value === "string") {
+    valueType = "color";
+  }
 
   const props = animator.properties as Record<string, any>;
   if (!props[propName]) {
     props[propName] = createAnimatableProperty(
       propName,
-      value,
-      valueType as any,
+      normalizedValue,
+      valueType,
     );
   } else {
-    props[propName].value = value;
+    props[propName].value = normalizedValue;
   }
 
   store.project.meta.modified = new Date().toISOString();

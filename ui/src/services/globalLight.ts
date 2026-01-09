@@ -5,7 +5,7 @@
  * When styles have useGlobalLight=true, they share this angle/altitude
  *
  * This provides a unified light source direction across all styled layers
- * in a composition, matching Photoshop/After Effects behavior.
+ * in a composition, matching industry-standard behavior.
  */
 
 import type { GlobalLightSettings } from "@/types/layerStyles";

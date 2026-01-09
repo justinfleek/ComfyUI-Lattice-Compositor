@@ -48,10 +48,12 @@ export function calculateForceField(
 
   let falloff = 1;
   if (dist > field.falloffStart) {
-    const t = Math.min(
-      (dist - field.falloffStart) / (field.falloffEnd - field.falloffStart),
-      1,
-    );
+    // Guard against division by zero when falloffEnd equals falloffStart
+    const falloffRange = field.falloffEnd - field.falloffStart;
+    const t =
+      falloffRange > 0
+        ? Math.min((dist - field.falloffStart) / falloffRange, 1)
+        : 1; // If no range, full falloff
     switch (field.falloffType) {
       case "linear":
         falloff = 1 - t;
@@ -68,7 +70,9 @@ export function calculateForceField(
     }
   }
 
-  const strength = field.strength * falloff;
+  // Validate strength to prevent NaN/Infinity propagation
+  const rawStrength = field.strength * falloff;
+  const strength = Number.isFinite(rawStrength) ? rawStrength : 0;
 
   switch (field.type) {
     case "gravity":
@@ -82,7 +86,9 @@ export function calculateForceField(
     case "point":
       if (dist > 0.001) {
         const dir = new THREE.Vector3(-dx, -dy, -dz).normalize();
-        force.copy(dir).multiplyScalar(strength / mass);
+        // Guard against zero/negative mass to prevent Infinity/NaN
+        const safeMass = Math.max(mass, 0.001);
+        force.copy(dir).multiplyScalar(strength / safeMass);
       }
       break;
 
@@ -105,9 +111,10 @@ export function calculateForceField(
       break;
 
     case "turbulence": {
-      const scale = field.noiseScale ?? 0.01;
-      const speed = field.noiseSpeed ?? 0.5;
-      const time = simulationTime * speed;
+      const scale = Number.isFinite(field.noiseScale) ? field.noiseScale : 0.01;
+      const speed = Number.isFinite(field.noiseSpeed) ? field.noiseSpeed : 0.5;
+      // Guard against Infinity time causing Math.sin(Infinity) = NaN
+      const time = Number.isFinite(simulationTime * speed) ? simulationTime * speed : 0;
 
       // Simple 3D noise approximation
       const nx =
@@ -127,13 +134,16 @@ export function calculateForceField(
     case "drag": {
       const speed = Math.sqrt(vx * vx + vy * vy + vz * vz);
       if (speed > 0.001) {
-        const dragMag =
-          (field.linearDrag ?? 0.1) * speed +
-          (field.quadraticDrag ?? 0.01) * speed * speed;
+        // Validate drag coefficients to prevent NaN
+        const linearDrag = Number.isFinite(field.linearDrag) ? field.linearDrag : 0.1;
+        const quadDrag = Number.isFinite(field.quadraticDrag) ? field.quadraticDrag : 0.01;
+        const dragMag = linearDrag * speed + quadDrag * speed * speed;
+        // Drag opposes velocity: F = -c * v_normalized * |v|^n
+        // set(-v) then multiply by positive gives force opposing velocity
         force
           .set(-vx, -vy, -vz)
           .normalize()
-          .multiplyScalar(-dragMag * strength);
+          .multiplyScalar(dragMag * strength); // Removed double-negative
       }
       break;
     }
@@ -152,10 +162,10 @@ export function calculateForceField(
     }
 
     case "lorenz": {
-      // Lorenz strange attractor
-      const sigma = field.lorenzSigma ?? 10;
-      const rho = field.lorenzRho ?? 28;
-      const beta = field.lorenzBeta ?? 2.667;
+      // Lorenz strange attractor - validate to prevent NaN
+      const sigma = Number.isFinite(field.lorenzSigma) ? field.lorenzSigma : 10;
+      const rho = Number.isFinite(field.lorenzRho) ? field.lorenzRho : 28;
+      const beta = Number.isFinite(field.lorenzBeta) ? field.lorenzBeta : 2.667;
       force
         .set(sigma * (dy - dx), dx * (rho - dz) - dy, dx * dy - beta * dz)
         .multiplyScalar(strength * 0.01);
@@ -164,9 +174,10 @@ export function calculateForceField(
 
     case "curl": {
       // Curl noise - divergence-free flow field
-      const scale = field.noiseScale ?? 0.01;
-      const speed = field.noiseSpeed ?? 0.5;
-      const time = simulationTime * speed;
+      const scale = Number.isFinite(field.noiseScale) ? field.noiseScale : 0.01;
+      const speed = Number.isFinite(field.noiseSpeed) ? field.noiseSpeed : 0.5;
+      // Guard against Infinity time causing Math.sin(Infinity) = NaN
+      const time = Number.isFinite(simulationTime * speed) ? simulationTime * speed : 0;
 
       // Compute curl of noise field (approximation)
       const eps = 0.01;

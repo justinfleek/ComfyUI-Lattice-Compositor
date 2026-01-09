@@ -16,7 +16,7 @@
       <label>Opacity</label>
       <ScrubableNumber
         :modelValue="shape.opacity.value"
-        @update:modelValue="v => updateNumber('opacity', v)"
+        @update:modelValue="(v: number) => updateNumber('opacity', v)"
         :min="0"
         :max="100"
         unit="%"
@@ -60,7 +60,7 @@ const props = defineProps<{ shape: FillShape; layerId: string }>();
 const emit = defineEmits(["update"]);
 const store = useCompositorStore();
 
-const _colorHex = computed(() => {
+const colorHex = computed(() => {
   const c = props.shape.color.value;
   const r = Math.round(c.r).toString(16).padStart(2, "0");
   const g = Math.round(c.g).toString(16).padStart(2, "0");
@@ -68,7 +68,7 @@ const _colorHex = computed(() => {
   return `#${r}${g}${b}`;
 });
 
-function _updateColor(e: Event) {
+function updateColor(e: Event) {
   const hex = (e.target as HTMLInputElement).value;
   const r = parseInt(hex.slice(1, 3), 16);
   const g = parseInt(hex.slice(3, 5), 16);
@@ -82,13 +82,13 @@ function _updateColor(e: Event) {
   emit("update", updated);
 }
 
-function _updateNumber(prop: "opacity", value: number) {
+function updateNumber(prop: "opacity", value: number) {
   const updated = { ...props.shape };
   updated[prop] = { ...updated[prop], value };
   emit("update", updated);
 }
 
-function _updateFillRule(e: Event) {
+function updateFillRule(e: Event) {
   const updated = { ...props.shape };
   updated.fillRule = (e.target as HTMLSelectElement).value as
     | "nonzero"
@@ -96,13 +96,13 @@ function _updateFillRule(e: Event) {
   emit("update", updated);
 }
 
-function _updateBlendMode(e: Event) {
+function updateBlendMode(e: Event) {
   const updated = { ...props.shape };
   updated.blendMode = (e.target as HTMLSelectElement).value;
   emit("update", updated);
 }
 
-function _toggleKeyframe(prop: "color" | "opacity") {
+function toggleKeyframe(prop: "color" | "opacity") {
   const updated = { ...props.shape };
   const animProp = updated[prop];
   const frame = store.currentFrame;

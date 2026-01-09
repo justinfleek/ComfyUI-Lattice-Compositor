@@ -350,8 +350,8 @@ function applyMotionAwareFeather(
   return canvas;
 }
 
-// Cache for previous frame paths (for motion calculation)
-// BUG-066: This cache must be cleared on timeline seek for deterministic results
+// Cache for previous frame paths (for motion calculation).
+// Must be cleared on timeline seek for deterministic playback.
 const previousPathCache = new Map<string, { frame: number; path: MaskPath }>();
 
 /**
@@ -376,7 +376,7 @@ function cachePath(maskId: string, frame: number, path: MaskPath): void {
 }
 
 /**
- * BUG-066 fix: Clear mask path cache on timeline seek
+ * Clear mask path cache on timeline seek.
  *
  * This function MUST be called when the timeline seeks to ensure deterministic
  * motion-aware feathering. The previousPathCache stores previous frame mask paths
@@ -703,5 +703,5 @@ export default {
   combineMasks,
   applyTrackMatte,
   applyMasksToLayer,
-  clearMaskPathCacheOnSeek, // BUG-066 fix: Clear on timeline seek
+  clearMaskPathCacheOnSeek, // Clear path cache on timeline seek for determinism
 };

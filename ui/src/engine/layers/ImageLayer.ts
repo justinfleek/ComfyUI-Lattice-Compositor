@@ -35,6 +35,9 @@ export class ImageLayer extends BaseLayer {
   private targetWidth: number | null = null;
   private targetHeight: number | null = null;
 
+  /** Current texture (may be processed by effects) */
+  private texture: THREE.Texture | null = null;
+
   /** Original (unprocessed) texture for effects source */
   private originalTexture: THREE.Texture | null = null;
 

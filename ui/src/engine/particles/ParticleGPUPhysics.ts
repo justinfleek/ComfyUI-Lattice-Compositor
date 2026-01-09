@@ -97,8 +97,13 @@ export class ParticleGPUPhysics {
   private currentBuffer: "A" | "B" = "A";
 
   constructor(config: GPUPhysicsConfig) {
+    // Validate maxParticles to prevent WebGL errors
+    const safeMaxParticles = Number.isFinite(config.maxParticles) && config.maxParticles > 0
+      ? Math.min(Math.floor(config.maxParticles), 10_000_000)  // Cap at 10M
+      : 10000;  // Sensible default
+    
     this.config = {
-      maxParticles: config.maxParticles,
+      maxParticles: safeMaxParticles,
       bounds: config.bounds ?? {
         min: [-10000, -10000, -10000],
         max: [10000, 10000, 10000],
@@ -397,9 +402,12 @@ export class ParticleGPUPhysics {
     freeIndices: number[],
     onDeath: DeathCallback,
   ): { currentBuffer: "A" | "B"; particleCount: number } {
+    // Validate dt to prevent NaN/Infinity propagation to GPU
+    const safeDt = Number.isFinite(dt) && dt >= 0 ? Math.min(dt, 1.0) : 0.016;  // Cap at 1s, default 60fps
+    
     if (this.useWebGPU && this.webgpuCompute) {
       return this.updateWebGPU(
-        dt,
+        safeDt,
         state,
         particleBufferA,
         particleBufferB,
@@ -409,7 +417,7 @@ export class ParticleGPUPhysics {
       );
     } else if (this.useGPUPhysics && this.transformFeedbackProgram) {
       return this.updateTransformFeedback(
-        dt,
+        safeDt,
         state,
         forceFields,
         freeIndices,
@@ -450,13 +458,23 @@ export class ParticleGPUPhysics {
       direction: [number, number, number];
     }> = [];
 
+    // Helper to sanitize values for WebGPU
+    const safe = (val: number | undefined, fallback: number): number => {
+      if (val === undefined) return fallback;
+      return Number.isFinite(val) ? val : fallback;
+    };
+
     for (const field of forceFields.values()) {
       if (!field.enabled) continue;
       forceFieldData.push({
         type: getForceFieldTypeIndex(field.type),
-        position: [field.position.x, field.position.y, field.position.z],
-        strength: field.strength,
-        radius: field.falloffEnd,
+        position: [
+          safe(field.position.x, 0),
+          safe(field.position.y, 0),
+          safe(field.position.z, 0),
+        ],
+        strength: safe(field.strength, 0),
+        radius: safe(field.falloffEnd, 100),
         falloff:
           field.falloffType === "linear"
             ? 1
@@ -464,18 +482,18 @@ export class ParticleGPUPhysics {
               ? 2
               : 0,
         direction: [
-          field.direction?.x ??
-            field.vortexAxis?.x ??
-            field.windDirection?.x ??
+          safe(
+            field.direction?.x ?? field.vortexAxis?.x ?? field.windDirection?.x,
             0,
-          field.direction?.y ??
-            field.vortexAxis?.y ??
-            field.windDirection?.y ??
+          ),
+          safe(
+            field.direction?.y ?? field.vortexAxis?.y ?? field.windDirection?.y,
             0,
-          field.direction?.z ??
-            field.vortexAxis?.z ??
-            field.windDirection?.z ??
+          ),
+          safe(
+            field.direction?.z ?? field.vortexAxis?.z ?? field.windDirection?.z,
             0,
+          ),
         ],
       });
     }
@@ -484,10 +502,11 @@ export class ParticleGPUPhysics {
     this.webgpuCompute.uploadParticles(buffer);
     this.webgpuCompute.uploadForceFields(forceFieldData);
 
-    // Update simulation parameters
+    // Update simulation parameters (validate simulationTime)
+    const safeSimTime = Number.isFinite(state.simulationTime) ? state.simulationTime : 0;
     this.webgpuCompute.updateParams(
       dt,
-      state.simulationTime,
+      safeSimTime,
       this.config.maxParticles,
       forceFieldData.length,
     );
@@ -572,7 +591,9 @@ export class ParticleGPUPhysics {
     );
 
     gl.uniform1f(dtLoc, dt);
-    gl.uniform1f(timeLoc, state.simulationTime);
+    // Validate simulationTime
+    const safeSimTime = Number.isFinite(state.simulationTime) ? state.simulationTime : 0;
+    gl.uniform1f(timeLoc, safeSimTime);
     gl.uniform1i(ffCountLoc, Math.min(forceFields.size, MAX_FORCE_FIELDS));
 
     // Bind force field texture
@@ -652,50 +673,58 @@ export class ParticleGPUPhysics {
 
       const baseOffset = fieldIndex * 16;
 
+      // Helper to sanitize position values
+      const safePos = (val: number): number => Number.isFinite(val) ? val : 0;
+      const safePositive = (val: number, fallback: number): number => 
+        Number.isFinite(val) && val >= 0 ? val : fallback;
+
       // Row 0: position.xyz, type
-      this.forceFieldBuffer[baseOffset + 0] = field.position.x;
-      this.forceFieldBuffer[baseOffset + 1] = field.position.y;
-      this.forceFieldBuffer[baseOffset + 2] = field.position.z;
+      this.forceFieldBuffer[baseOffset + 0] = safePos(field.position.x);
+      this.forceFieldBuffer[baseOffset + 1] = safePos(field.position.y);
+      this.forceFieldBuffer[baseOffset + 2] = safePos(field.position.z);
       this.forceFieldBuffer[baseOffset + 3] = getForceFieldTypeIndex(
         field.type,
       );
 
       // Row 1: strength, falloffStart, falloffEnd, falloffType
-      this.forceFieldBuffer[baseOffset + 4] = field.strength;
-      this.forceFieldBuffer[baseOffset + 5] = field.falloffStart;
-      this.forceFieldBuffer[baseOffset + 6] = field.falloffEnd;
+      this.forceFieldBuffer[baseOffset + 4] = Number.isFinite(field.strength) ? field.strength : 0;
+      this.forceFieldBuffer[baseOffset + 5] = safePositive(field.falloffStart, 0);
+      this.forceFieldBuffer[baseOffset + 6] = safePositive(field.falloffEnd, 100);
       this.forceFieldBuffer[baseOffset + 7] = getFalloffTypeIndex(
         field.falloffType,
       );
 
+      // Helper to sanitize float values for GPU
+      const safeFloat = (val: number | undefined, fallback: number): number => {
+        if (val === undefined) return fallback;
+        return Number.isFinite(val) ? val : fallback;
+      };
+
       // Row 2: direction/axis.xyz, extra param
       if (field.type === "lorenz") {
-        this.forceFieldBuffer[baseOffset + 8] = field.lorenzSigma ?? 10.0;
-        this.forceFieldBuffer[baseOffset + 9] = field.lorenzRho ?? 28.0;
-        this.forceFieldBuffer[baseOffset + 10] = field.lorenzBeta ?? 2.666667;
+        this.forceFieldBuffer[baseOffset + 8] = safeFloat(field.lorenzSigma, 10.0);
+        this.forceFieldBuffer[baseOffset + 9] = safeFloat(field.lorenzRho, 28.0);
+        this.forceFieldBuffer[baseOffset + 10] = safeFloat(field.lorenzBeta, 2.666667);
         this.forceFieldBuffer[baseOffset + 11] = 0;
       } else if (field.type === "orbit" || field.type === "path") {
-        this.forceFieldBuffer[baseOffset + 8] = field.vortexAxis?.x ?? 0;
-        this.forceFieldBuffer[baseOffset + 9] = field.vortexAxis?.y ?? 1;
-        this.forceFieldBuffer[baseOffset + 10] = field.vortexAxis?.z ?? 0;
-        this.forceFieldBuffer[baseOffset + 11] = field.pathRadius ?? 100;
+        this.forceFieldBuffer[baseOffset + 8] = safeFloat(field.vortexAxis?.x, 0);
+        this.forceFieldBuffer[baseOffset + 9] = safeFloat(field.vortexAxis?.y, 1);
+        this.forceFieldBuffer[baseOffset + 10] = safeFloat(field.vortexAxis?.z, 0);
+        this.forceFieldBuffer[baseOffset + 11] = safeFloat(field.pathRadius, 100);
       } else {
-        this.forceFieldBuffer[baseOffset + 8] =
-          field.direction?.x ??
-          field.vortexAxis?.x ??
-          field.windDirection?.x ??
-          0;
-        this.forceFieldBuffer[baseOffset + 9] =
-          field.direction?.y ??
-          field.vortexAxis?.y ??
-          field.windDirection?.y ??
-          0;
-        this.forceFieldBuffer[baseOffset + 10] =
-          field.direction?.z ??
-          field.vortexAxis?.z ??
-          field.windDirection?.z ??
-          0;
-        this.forceFieldBuffer[baseOffset + 11] = field.inwardForce ?? 0;
+        this.forceFieldBuffer[baseOffset + 8] = safeFloat(
+          field.direction?.x ?? field.vortexAxis?.x ?? field.windDirection?.x,
+          0,
+        );
+        this.forceFieldBuffer[baseOffset + 9] = safeFloat(
+          field.direction?.y ?? field.vortexAxis?.y ?? field.windDirection?.y,
+          0,
+        );
+        this.forceFieldBuffer[baseOffset + 10] = safeFloat(
+          field.direction?.z ?? field.vortexAxis?.z ?? field.windDirection?.z,
+          0,
+        );
+        this.forceFieldBuffer[baseOffset + 11] = safeFloat(field.inwardForce, 0);
       }
 
       // Row 3: extra params
@@ -705,10 +734,14 @@ export class ParticleGPUPhysics {
         this.forceFieldBuffer[baseOffset + 14] = 0;
         this.forceFieldBuffer[baseOffset + 15] = 0;
       } else {
-        this.forceFieldBuffer[baseOffset + 12] =
-          field.noiseScale ?? field.linearDrag ?? field.gustStrength ?? 0;
-        this.forceFieldBuffer[baseOffset + 13] =
-          field.noiseSpeed ?? field.quadraticDrag ?? field.gustFrequency ?? 0;
+        this.forceFieldBuffer[baseOffset + 12] = safeFloat(
+          field.noiseScale ?? field.linearDrag ?? field.gustStrength,
+          0,
+        );
+        this.forceFieldBuffer[baseOffset + 13] = safeFloat(
+          field.noiseSpeed ?? field.quadraticDrag ?? field.gustFrequency,
+          0,
+        );
         this.forceFieldBuffer[baseOffset + 14] = 0;
         this.forceFieldBuffer[baseOffset + 15] = 0;
       }

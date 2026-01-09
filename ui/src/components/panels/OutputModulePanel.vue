@@ -1,7 +1,7 @@
 <!--
   @component OutputModulePanel
   @description Configures output settings for rendered content.
-  Separated from Render Settings for clear workflow (like After Effects).
+  Separated from Render Settings for clear workflow separation.
 
   Settings include:
   - Format (PNG sequence, JPEG sequence, MP4, WebM)
@@ -281,17 +281,17 @@ function getDefaultSettings(): OutputModuleSettings {
 }
 
 // Computed properties for conditional UI
-const _showQualitySlider = computed(() =>
+const showQualitySlider = computed(() =>
   ["jpeg-sequence", "webp-sequence", "mp4", "webm"].includes(
     localSettings.value.format,
   ),
 );
 
-const _isVideoFormat = computed(() =>
+const isVideoFormat = computed(() =>
   ["mp4", "webm"].includes(localSettings.value.format),
 );
 
-const _isSequenceFormat = computed(() =>
+const isSequenceFormat = computed(() =>
   ["png-sequence", "jpeg-sequence", "webp-sequence"].includes(
     localSettings.value.format,
   ),
@@ -304,7 +304,7 @@ const supportsAlpha = computed(() =>
 );
 
 // Output preview
-const _outputPreview = computed(() => {
+const outputPreview = computed(() => {
   const compName = props.compositionName || "Composition";
   const ext = getExtension(localSettings.value.format);
   let name = "";
@@ -363,7 +363,7 @@ function emitUpdate() {
   emit("update:settings", { ...localSettings.value });
 }
 
-function _handleFormatChange() {
+function handleFormatChange() {
   // Adjust settings when format changes
   if (!supportsAlpha.value) {
     localSettings.value.alpha = "none";

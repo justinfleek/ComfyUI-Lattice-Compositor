@@ -4,7 +4,7 @@
  * Implements all 30+ blend modes based on:
  * - Open Raster spec (https://www.freedesktop.org/wiki/Specifications/OpenRaster/)
  * - Paint.NET blend mode implementations
- * - Photoshop/After Effects blend modes
+ * - Industry-standard blend modes
  *
  * Acknowledgement: Inspired by Jovi/Amorano's BlendModes Python library
  * https://github.com/Amorano/BlendModes
@@ -604,7 +604,7 @@ export function blendImages(
           break;
         }
 
-        // Stencil/Silhouette modes (AE-specific)
+        // Stencil/Silhouette modes (utility/advanced)
         case "stencil-alpha":
           resultR = baseR;
           resultG = baseG;
@@ -917,6 +917,8 @@ export function getBlendModeDisplayName(mode: BlendMode): string {
     "silhouette-luma": "Silhouette Luma",
     "alpha-add": "Alpha Add",
     "luminescent-premul": "Luminescent Premul",
+    "classic-color-burn": "Classic Color Burn",
+    "classic-color-dodge": "Classic Color Dodge",
   };
 
   return names[mode] || mode;

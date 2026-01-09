@@ -33,7 +33,7 @@ watch(
   },
 );
 
-function _toggle() {
+function toggle() {
   isExpanded.value = !isExpanded.value;
   emit("toggle", isExpanded.value);
 }

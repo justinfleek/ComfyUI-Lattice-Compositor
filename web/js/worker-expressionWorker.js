@@ -4,7 +4,7 @@ let harden = null;
 async function initSES() {
   if (sesReady) return true;
   try {
-    await import("./assets/index-DIa_xRYn.js");
+    await import('./assets/index-DIa_xRYn.js');
     const g = globalThis;
     if (!g.lockdown) {
       return false;
@@ -15,7 +15,7 @@ async function initSES() {
       stackFiltering: "verbose",
       overrideTaming: "severe",
       localeTaming: "unsafe",
-      domainTaming: "unsafe",
+      domainTaming: "unsafe"
     });
     Compartment = g.Compartment;
     harden = g.harden;
@@ -45,7 +45,7 @@ const safeMath = {
   sqrt: Math.sqrt,
   tan: Math.tan,
   PI: Math.PI,
-  E: Math.E,
+  E: Math.E
 };
 function createSeededRandom(frame) {
   return (seed) => {
@@ -85,14 +85,10 @@ async function evaluate(req) {
       require: void 0,
       process: void 0,
       Deno: void 0,
-      Bun: void 0,
+      Bun: void 0
     };
     for (const [key, value] of Object.entries(req.context)) {
-      if (
-        typeof value === "number" ||
-        typeof value === "string" ||
-        typeof value === "boolean"
-      ) {
+      if (typeof value === "number" || typeof value === "string" || typeof value === "boolean") {
         globals[key] = value;
       }
     }
@@ -106,7 +102,7 @@ async function evaluate(req) {
     return {
       id: req.id,
       success: false,
-      error: e instanceof Error ? e.message : String(e),
+      error: e instanceof Error ? e.message : String(e)
     };
   }
 }

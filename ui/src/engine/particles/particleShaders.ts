@@ -108,7 +108,10 @@ vec3 calculateForce(int fieldIndex, vec3 pos, vec3 vel, float mass) {
     }
   }
   else if (fieldType == 5) {
-    vec3 windDir = normalize(row2.xyz);
+    // Guard against normalizing zero vector
+    vec3 windDirRaw = row2.xyz;
+    float windLen = length(windDirRaw);
+    vec3 windDir = windLen > 0.0001 ? windDirRaw / windLen : vec3(1.0, 0.0, 0.0);
     float gustStrength = row3.x;
     float gustFreq = row3.y;
     float gust = sin(u_time * gustFreq) * gustStrength;
@@ -148,7 +151,10 @@ vec3 calculateForce(int fieldIndex, vec3 pos, vec3 vel, float mass) {
   }
   // Type 8: Magnetic Field (cross product with velocity)
   else if (fieldType == 8) {
-    vec3 fieldDir = normalize(row2.xyz);
+    // Guard against normalizing zero vector
+    vec3 fieldDirRaw = row2.xyz;
+    float fieldLen = length(fieldDirRaw);
+    vec3 fieldDir = fieldLen > 0.0001 ? fieldDirRaw / fieldLen : vec3(0.0, 1.0, 0.0);
     float charge = row3.x; // Particle "charge"
     // Lorentz force: F = q * (v × B)
     force = cross(vel, fieldDir) * charge * effectiveStrength;
@@ -156,7 +162,10 @@ vec3 calculateForce(int fieldIndex, vec3 pos, vec3 vel, float mass) {
   // Type 9: Orbit (centripetal force for circular motion)
   else if (fieldType == 9) {
     float orbitRadius = row2.w;
-    vec3 axis = normalize(row2.xyz);
+    // Guard against normalizing zero vector
+    vec3 axisRaw = row2.xyz;
+    float axisLen = length(axisRaw);
+    vec3 axis = axisLen > 0.0001 ? axisRaw / axisLen : vec3(0.0, 1.0, 0.0);
     // Project position onto plane perpendicular to axis
     float distAlongAxis = dot(toField, axis);
     vec3 radialVec = -toField + axis * distAlongAxis;
@@ -255,7 +264,7 @@ void main() { fragColor = vec4(0.0); }
  */
 export const PARTICLE_VERTEX_SHADER = `
 precision highp float;
-attribute vec2 position;
+attribute vec3 position;  // 3D for mesh mode, 2D+0 for billboard mode
 attribute vec2 uv;
 attribute vec3 i_position;
 attribute vec3 i_velocity;
@@ -271,9 +280,40 @@ uniform int motionBlurEnabled;
 uniform float motionBlurStrength;
 uniform float minStretch;
 uniform float maxStretch;
+// LOD uniforms
+uniform int lodEnabled;
+uniform vec3 lodDistances;  // [near, mid, far] distances
+uniform vec3 lodSizeMultipliers;  // [near, mid, far] size multipliers
+// 3D mesh mode
+uniform int meshMode3D;  // 0 = billboard, 1 = 3D mesh
+// DoF uniforms
+uniform int dofEnabled;
+uniform float dofFocusDistance;
+uniform float dofFocusRange;
+uniform float dofMaxBlur;
 varying vec2 vUv;
 varying vec4 vColor;
 varying float vLifeRatio;
+varying float vDepth;  // Distance from camera for DoF
+
+// Calculate LOD size multiplier based on camera distance
+float getLODMultiplier(float dist) {
+  if (lodEnabled == 0) return 1.0;
+  
+  if (dist < lodDistances.x) {
+    return lodSizeMultipliers.x;  // Near: full detail
+  } else if (dist < lodDistances.y) {
+    // Interpolate between near and mid
+    float t = (dist - lodDistances.x) / (lodDistances.y - lodDistances.x);
+    return mix(lodSizeMultipliers.x, lodSizeMultipliers.y, t);
+  } else if (dist < lodDistances.z) {
+    // Interpolate between mid and far
+    float t = (dist - lodDistances.y) / (lodDistances.z - lodDistances.y);
+    return mix(lodSizeMultipliers.y, lodSizeMultipliers.z, t);
+  } else {
+    return lodSizeMultipliers.z;  // Far: minimum detail
+  }
+}
 
 void main() {
   if (i_life.y <= 0.0 || i_life.x >= i_life.y) {
@@ -281,7 +321,12 @@ void main() {
     return;
   }
 
-  float size = i_physical.y;
+  // Calculate distance to camera for LOD
+  float distToCamera = length(i_position - cameraPosition);
+  float lodMult = getLODMultiplier(distToCamera);
+  
+  // Apply LOD multiplier to size
+  float size = i_physical.y * lodMult;
   float rotation = i_rotation.x;
   float lifeRatio = i_life.x / i_life.y;
 
@@ -290,56 +335,80 @@ void main() {
   vec3 cameraUp = vec3(modelViewMatrix[0][1], modelViewMatrix[1][1], modelViewMatrix[2][1]);
   vec3 cameraForward = vec3(modelViewMatrix[0][2], modelViewMatrix[1][2], modelViewMatrix[2][2]);
 
-  vec2 offsetPos = position;
+  vec3 vertexPos;
 
-  // Motion blur: stretch billboard along velocity direction
-  if (motionBlurEnabled == 1) {
-    float speed = length(i_velocity);
-    if (speed > 0.01) {
-      // Project velocity onto camera plane
-      vec3 velNorm = normalize(i_velocity);
-      float velRight = dot(velNorm, cameraRight);
-      float velUp = dot(velNorm, cameraUp);
-      vec2 velDir2D = normalize(vec2(velRight, velUp));
-
-      // Calculate stretch factor based on speed
-      float stretch = clamp(speed * motionBlurStrength, minStretch, maxStretch);
-
-      // Rotate and stretch the quad along velocity direction
-      float angle = atan(velDir2D.y, velDir2D.x);
-      float cosA = cos(angle);
-      float sinA = sin(angle);
-
-      // Apply rotation to align with velocity, then stretch in X
-      vec2 rotated = vec2(
-        position.x * cosA - position.y * sinA,
-        position.x * sinA + position.y * cosA
-      );
-      offsetPos = vec2(rotated.x * stretch, rotated.y);
-
-      // Rotate back to world space
-      offsetPos = vec2(
-        offsetPos.x * cosA + offsetPos.y * sinA,
-        -offsetPos.x * sinA + offsetPos.y * cosA
-      );
-    }
-  }
-
-  // Apply per-particle rotation (if no motion blur or in addition to)
-  if (motionBlurEnabled == 0) {
+  if (meshMode3D == 1) {
+    // 3D MESH MODE: position is 3D, apply rotation and scale
+    vec3 meshPos = vec3(position.x, position.y, position.z);
+    
+    // Apply rotation around Y axis (heading)
     float cosR = cos(rotation);
     float sinR = sin(rotation);
-    offsetPos = vec2(
-      offsetPos.x * cosR - offsetPos.y * sinR,
-      offsetPos.x * sinR + offsetPos.y * cosR
+    vec3 rotatedPos = vec3(
+      meshPos.x * cosR - meshPos.z * sinR,
+      meshPos.y,
+      meshPos.x * sinR + meshPos.z * cosR
     );
-  }
+    
+    // Apply scale
+    vertexPos = i_position + rotatedPos * size;
+  } else {
+    // BILLBOARD MODE: position is 2D, face camera
+    vec2 offsetPos = vec2(position.x, position.y);
 
-  vec3 vertexPos = i_position + cameraRight * offsetPos.x * size + cameraUp * offsetPos.y * size;
+    // Motion blur: stretch billboard along velocity direction
+    if (motionBlurEnabled == 1) {
+      float speed = length(i_velocity);
+      if (speed > 0.01) {
+        // Project velocity onto camera plane
+        vec3 velNorm = normalize(i_velocity);
+        float velRight = dot(velNorm, cameraRight);
+        float velUp = dot(velNorm, cameraUp);
+        // Guard against normalizing zero 2D vector (velocity parallel to camera)
+        float velDir2DLen = length(vec2(velRight, velUp));
+        vec2 velDir2D = velDir2DLen > 0.0001 ? vec2(velRight, velUp) / velDir2DLen : vec2(1.0, 0.0);
+
+        // Calculate stretch factor based on speed
+        float stretch = clamp(speed * motionBlurStrength, minStretch, maxStretch);
+
+        // Rotate and stretch the quad along velocity direction
+        float angle = atan(velDir2D.y, velDir2D.x);
+        float cosA = cos(angle);
+        float sinA = sin(angle);
+
+        // Apply rotation to align with velocity, then stretch in X
+        vec2 rotated = vec2(
+          offsetPos.x * cosA - offsetPos.y * sinA,
+          offsetPos.x * sinA + offsetPos.y * cosA
+        );
+        offsetPos = vec2(rotated.x * stretch, rotated.y);
+
+        // Rotate back to world space
+        offsetPos = vec2(
+          offsetPos.x * cosA + offsetPos.y * sinA,
+          -offsetPos.x * sinA + offsetPos.y * cosA
+        );
+      }
+    }
+
+    // Apply per-particle rotation (if no motion blur or in addition to)
+    if (motionBlurEnabled == 0) {
+      float cosR = cos(rotation);
+      float sinR = sin(rotation);
+      offsetPos = vec2(
+        offsetPos.x * cosR - offsetPos.y * sinR,
+        offsetPos.x * sinR + offsetPos.y * cosR
+      );
+    }
+
+    vertexPos = i_position + cameraRight * offsetPos.x * size + cameraUp * offsetPos.y * size;
+  }
   gl_Position = projectionMatrix * modelViewMatrix * vec4(vertexPos, 1.0);
   vUv = uv;
   vColor = i_color;
   vLifeRatio = lifeRatio;
+  // Compute depth from camera for DoF
+  vDepth = distToCamera;
 }
 `;
 
@@ -355,22 +424,27 @@ precision highp float;
 varying vec2 vUv;
 varying vec4 vColor;
 varying float vLifeRatio;
+varying float vDepth;  // Distance from camera for DoF
 uniform sampler2D diffuseMap;
 uniform int hasDiffuseMap;
 uniform int proceduralShape;
+// DoF uniforms
+uniform int dofEnabled;
+uniform float dofFocusDistance;
+uniform float dofFocusRange;
+uniform float dofMaxBlur;
 // Sprite sheet uniforms
 uniform vec2 spriteSheetSize;  // columns, rows
 uniform int spriteFrameCount;
 uniform int animateSprite;
 uniform float spriteFrameRate;
 uniform float time;
-uniform int randomStartFrame;  // BUG-068 fix: Per-particle random start frame
-// BUG-072 fix: Color over lifetime texture
+uniform int randomStartFrame;  // Per-particle random start frame for texture animation variety
+// Color over lifetime gradient texture
 uniform sampler2D colorOverLifetime;
 uniform int hasColorOverLifetime;
 
-// Procedural shape generation
-// BUG-067 fix: All 9 shapes now implemented
+// Procedural shape generation (supports all 9 particle shapes)
 // 0 = none, 1 = circle, 2 = ring, 3 = square, 4 = star, 5 = noise, 6 = line, 7 = triangle, 8 = shadedSphere, 9 = fadedSphere
 float proceduralAlpha(vec2 uv, int shape) {
   vec2 centered = uv * 2.0 - 1.0;
@@ -473,7 +547,7 @@ void main() {
     if (spriteFrameCount > 1) {
       int frame;
 
-      // BUG-068 fix: Calculate per-particle random offset when randomStartFrame enabled
+      // Calculate per-particle random offset for sprite sheet variety
       int frameOffset = 0;
       if (randomStartFrame == 1) {
         // Use particle color as seed for deterministic per-particle offset
@@ -501,13 +575,26 @@ void main() {
 
   vec4 finalColor = texColor * vColor;
 
-  // BUG-072 fix: Apply color over lifetime modulation
+  // Apply color over lifetime gradient modulation
   if (hasColorOverLifetime == 1) {
     // Sample the 1D gradient texture at the particle's life ratio
     vec4 lifetimeColor = texture2D(colorOverLifetime, vec2(vLifeRatio, 0.5));
     // Multiply the color channels, preserving texture alpha
     finalColor.rgb *= lifetimeColor.rgb;
     finalColor.a *= lifetimeColor.a;
+  }
+
+  // Apply Depth of Field effect
+  if (dofEnabled == 1) {
+    // Calculate distance from focus plane
+    float focusDist = abs(vDepth - dofFocusDistance);
+    // Calculate blur factor (0 = in focus, 1 = max blur)
+    float blurFactor = smoothstep(0.0, dofFocusRange, focusDist);
+    // Apply blur by reducing alpha (simulating circle of confusion)
+    finalColor.a *= mix(1.0, 1.0 - dofMaxBlur, blurFactor);
+    // Optionally desaturate out-of-focus particles slightly
+    float gray = dot(finalColor.rgb, vec3(0.299, 0.587, 0.114));
+    finalColor.rgb = mix(finalColor.rgb, vec3(gray), blurFactor * 0.2);
   }
 
   if (finalColor.a < 0.01) discard;

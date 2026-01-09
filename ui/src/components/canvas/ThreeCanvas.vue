@@ -86,7 +86,7 @@
       />
     </div>
 
-    <!-- Viewer Controls (AE-style bottom bar) -->
+    <!-- Viewer Controls (bottom bar) -->
     <div class="viewer-controls">
       <select v-model="zoomLevel" class="zoom-dropdown" @change="onZoomSelect">
         <option value="fit">Fit</option>
@@ -265,7 +265,7 @@ const selection = useSelectionStore();
 // Refs
 const containerRef = ref<HTMLDivElement | null>(null);
 const canvasRef = ref<HTMLCanvasElement | null>(null);
-const _splineEditorRef = ref<InstanceType<typeof SplineEditor> | null>(null);
+const splineEditorRef = ref<InstanceType<typeof SplineEditor> | null>(null);
 
 // Engine instance (shallowRef for performance - don't make Three.js objects reactive)
 const engine = shallowRef<LatticeEngine | null>(null);
@@ -276,8 +276,8 @@ const zoom = ref(1);
 const canvasWidth = ref(800);
 const canvasHeight = ref(600);
 // Composition dimensions (in composition units, not pixels)
-const _compositionWidth = computed(() => store.width || 832);
-const _compositionHeight = computed(() => store.height || 480);
+const compositionWidth = computed(() => store.width || 832);
+const compositionHeight = computed(() => store.height || 480);
 const showDepthOverlay = ref(false);
 const depthColormap = ref<"viridis" | "plasma" | "grayscale">("viridis");
 const depthOpacity = ref(50);
@@ -303,7 +303,7 @@ const resolution = ref<"full" | "half" | "third" | "quarter" | "custom">(
 );
 
 // Computed zoom display percentage
-const _zoomDisplayPercent = computed(() => Math.round(zoom.value * 100));
+const zoomDisplayPercent = computed(() => Math.round(zoom.value * 100));
 
 // Transform mode for transform controls
 const transformMode = ref<"translate" | "rotate" | "scale">("translate");
@@ -311,7 +311,7 @@ const transformMode = ref<"translate" | "rotate" | "scale">("translate");
 // Composition guide toggles (showSafeFrameGuides, showResolutionGuides come from useViewportGuides)
 const showGrid = ref(false);
 const showOutsideOverlay = ref(false); // Disabled by default until fixed
-const _showMotionPath = ref(true); // Motion path visualization enabled by default
+const showMotionPath = ref(true); // Motion path visualization enabled by default
 
 // Segmentation composable
 const {
@@ -477,15 +477,15 @@ const {
 });
 
 // Computed styles for segmentation overlays (use composable methods)
-const _maskOverlayStyle = computed(() =>
+const maskOverlayStyle = computed(() =>
   getMaskOverlayStyle(viewportTransform.value),
 );
-const _segmentBoxStyle = computed(() =>
+const segmentBoxStyle = computed(() =>
   getSegmentBoxStyle(viewportTransform.value),
 );
 
 // Shape preview style (bounds and path come from composable)
-const _shapePreviewStyle = computed(() => {
+const shapePreviewStyle = computed(() => {
   const bounds = shapePreviewBounds.value;
   if (!bounds) return {};
 
@@ -508,23 +508,23 @@ const _shapePreviewStyle = computed(() => {
 // Safe frame and resolution guides are provided by useViewportGuides composable
 
 // Computed
-const _hasDepthMap = computed(() => store.depthMap !== null);
+const hasDepthMap = computed(() => store.depthMap !== null);
 const isPenMode = computed(() => store.currentTool === "pen");
 
 // Drag and drop state
 const isDragOver = ref(false);
 
-function _onDragOver(event: DragEvent) {
+function onDragOver(event: DragEvent) {
   if (event.dataTransfer?.types.includes("application/project-item")) {
     isDragOver.value = true;
   }
 }
 
-function _onDragLeave() {
+function onDragLeave() {
   isDragOver.value = false;
 }
 
-function _onDrop(event: DragEvent) {
+function onDrop(event: DragEvent) {
   isDragOver.value = false;
 
   const data = event.dataTransfer?.getData("application/project-item");
@@ -607,7 +607,7 @@ const activeSplineLayerId = computed(() => {
   return null;
 });
 
-const _viewportTransformArray = computed(() => viewportTransform.value);
+const viewportTransformArray = computed(() => viewportTransform.value);
 
 // Initialize Three.js engine
 onMounted(async () => {
@@ -668,7 +668,10 @@ onMounted(async () => {
         }
 
         // Render the composition to a texture using the engine's nested comp system
-        return engine.value?.renderCompositionToTexture(
+        if (!engine.value) {
+          return null;
+        }
+        return engine.value.renderCompositionToTexture(
           compositionId,
           comp.layers,
           {
@@ -1517,18 +1520,18 @@ function setRenderMode(mode: "color" | "depth" | "normal") {
 }
 
 // Spline editor handlers
-function _onPointAdded(_point: ControlPoint) {
+function onPointAdded(_point: ControlPoint) {
   if (!activeSplineLayerId.value) {
     const newLayer = store.createLayer("spline");
     store.selectLayer(newLayer.id);
   }
 }
 
-function _onPathUpdated() {
+function onPathUpdated() {
   syncLayersToEngine();
 }
 
-function _togglePenMode() {
+function togglePenMode() {
   if (store.currentTool === "pen") {
     store.setTool("select");
   } else {
@@ -1537,7 +1540,7 @@ function _togglePenMode() {
 }
 
 // Motion path event handlers
-function _onMotionPathKeyframeSelected(
+function onMotionPathKeyframeSelected(
   keyframeId: string,
   addToSelection: boolean,
 ) {
@@ -1549,12 +1552,12 @@ function _onMotionPathKeyframeSelected(
   }
 }
 
-function _onMotionPathGoToFrame(frame: number) {
+function onMotionPathGoToFrame(frame: number) {
   // Go to the keyframe's frame
   store.setFrame(frame);
 }
 
-function _onMotionPathTangentUpdated(
+function onMotionPathTangentUpdated(
   keyframeId: string,
   tangentType: "in" | "out",
   delta: { x: number; y: number },
@@ -1675,7 +1678,7 @@ function setZoom(newZoom: number) {
 /**
  * Handle zoom dropdown selection
  */
-function _onZoomSelect() {
+function onZoomSelect() {
   if (zoomLevel.value === "fit") {
     fitToView();
   } else {
@@ -1692,7 +1695,7 @@ function _onZoomSelect() {
 /**
  * Handle resolution dropdown change
  */
-function _onResolutionChange() {
+function onResolutionChange() {
   if (!engine.value) return;
 
   const comp = store.getActiveComp();
@@ -2117,7 +2120,7 @@ defineExpose({
   white-space: nowrap;
 }
 
-/* Viewer Controls (AE-style bottom bar) - positioned bottom-left */
+/* Viewer Controls (bottom bar) - positioned bottom-left */
 .viewer-controls {
   position: absolute;
   bottom: 12px;

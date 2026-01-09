@@ -4,7 +4,7 @@
       <label>Copies</label>
       <ScrubableNumber
         :modelValue="operator.copies.value"
-        @update:modelValue="v => updateNumber('copies', v)"
+        @update:modelValue="(v: number) => updateNumber('copies', v)"
         :min="1"
         :max="100"
         :step="1"
@@ -15,7 +15,7 @@
       <label>Offset</label>
       <ScrubableNumber
         :modelValue="operator.offset.value"
-        @update:modelValue="v => updateNumber('offset', v)"
+        @update:modelValue="(v: number) => updateNumber('offset', v)"
         :min="-10"
         :max="10"
         :step="0.1"
@@ -37,12 +37,12 @@
       <div class="xy-inputs">
         <ScrubableNumber
           :modelValue="operator.transform.position.value.x"
-          @update:modelValue="v => updateTransformPoint('position', 'x', v)"
+          @update:modelValue="(v: number) => updateTransformPoint('position', 'x', v)"
           unit="px"
         />
         <ScrubableNumber
           :modelValue="operator.transform.position.value.y"
-          @update:modelValue="v => updateTransformPoint('position', 'y', v)"
+          @update:modelValue="(v: number) => updateTransformPoint('position', 'y', v)"
           unit="px"
         />
       </div>
@@ -53,14 +53,14 @@
       <div class="xy-inputs">
         <ScrubableNumber
           :modelValue="operator.transform.scale.value.x"
-          @update:modelValue="v => updateTransformPoint('scale', 'x', v)"
+          @update:modelValue="(v: number) => updateTransformPoint('scale', 'x', v)"
           :min="0"
           :max="500"
           unit="%"
         />
         <ScrubableNumber
           :modelValue="operator.transform.scale.value.y"
-          @update:modelValue="v => updateTransformPoint('scale', 'y', v)"
+          @update:modelValue="(v: number) => updateTransformPoint('scale', 'y', v)"
           :min="0"
           :max="500"
           unit="%"
@@ -72,7 +72,7 @@
       <label>Rotation</label>
       <ScrubableNumber
         :modelValue="operator.transform.rotation.value"
-        @update:modelValue="v => updateTransformNumber('rotation', v)"
+        @update:modelValue="(v: number) => updateTransformNumber('rotation', v)"
         unit="°"
       />
       <KeyframeToggle :property="operator.transform.rotation" :layerId="layerId" @toggle="toggleTransformKeyframe('rotation')" />
@@ -81,7 +81,7 @@
       <label>Start Opacity</label>
       <ScrubableNumber
         :modelValue="operator.transform.startOpacity.value"
-        @update:modelValue="v => updateTransformNumber('startOpacity', v)"
+        @update:modelValue="(v: number) => updateTransformNumber('startOpacity', v)"
         :min="0"
         :max="100"
         unit="%"
@@ -92,7 +92,7 @@
       <label>End Opacity</label>
       <ScrubableNumber
         :modelValue="operator.transform.endOpacity.value"
-        @update:modelValue="v => updateTransformNumber('endOpacity', v)"
+        @update:modelValue="(v: number) => updateTransformNumber('endOpacity', v)"
         :min="0"
         :max="100"
         unit="%"
@@ -111,20 +111,20 @@ const props = defineProps<{ operator: RepeaterOperator; layerId: string }>();
 const emit = defineEmits(["update"]);
 const store = useCompositorStore();
 
-function _updateNumber(prop: "copies" | "offset", value: number) {
+function updateNumber(prop: "copies" | "offset", value: number) {
   const updated = { ...props.operator };
   updated[prop] = { ...updated[prop], value };
   emit("update", updated);
 }
 
-function _updateComposite(e: Event) {
+function updateComposite(e: Event) {
   const updated = { ...props.operator };
   updated.composite = (e.target as HTMLSelectElement)
     .value as RepeaterComposite;
   emit("update", updated);
 }
 
-function _updateTransformPoint(
+function updateTransformPoint(
   prop: "position" | "scale" | "anchorPoint",
   axis: "x" | "y",
   value: number,
@@ -138,7 +138,7 @@ function _updateTransformPoint(
   emit("update", updated);
 }
 
-function _updateTransformNumber(
+function updateTransformNumber(
   prop: "rotation" | "startOpacity" | "endOpacity",
   value: number,
 ) {
@@ -148,7 +148,7 @@ function _updateTransformNumber(
   emit("update", updated);
 }
 
-function _toggleKeyframe(prop: "copies" | "offset") {
+function toggleKeyframe(prop: "copies" | "offset") {
   const updated = { ...props.operator };
   const animProp = updated[prop];
   const frame = store.currentFrame;
@@ -167,7 +167,7 @@ function _toggleKeyframe(prop: "copies" | "offset") {
   emit("update", updated);
 }
 
-function _toggleTransformKeyframe(
+function toggleTransformKeyframe(
   prop:
     | "position"
     | "scale"

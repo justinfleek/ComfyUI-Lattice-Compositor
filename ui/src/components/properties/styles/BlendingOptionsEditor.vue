@@ -59,7 +59,7 @@ defineProps<{
   options: StyleBlendingOptions;
 }>();
 
-const _emit =
+const emit =
   defineEmits<(e: "update", updates: StyleBlendingOptionsUpdate) => void>();
 </script>
 

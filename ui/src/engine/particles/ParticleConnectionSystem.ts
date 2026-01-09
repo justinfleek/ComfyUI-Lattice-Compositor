@@ -26,7 +26,10 @@ export class ParticleConnectionSystem {
   private config: ConnectionConfig;
 
   constructor(maxParticles: number, config: ConnectionConfig) {
-    this.maxParticles = maxParticles;
+    // Validate maxParticles to prevent infinite loop
+    this.maxParticles = Number.isFinite(maxParticles) && maxParticles > 0
+      ? Math.min(Math.floor(maxParticles), 1_000_000)  // Cap lower for connections (memory intensive)
+      : 10000;
     this.config = config;
   }
 
@@ -38,8 +41,14 @@ export class ParticleConnectionSystem {
    * Initialize connection rendering resources
    */
   initialize(): void {
+    // Validate maxConnections - cap to prevent memory exhaustion
+    const safeMaxConnections = Number.isFinite(this.config.maxConnections) && this.config.maxConnections > 0
+      ? Math.min(Math.floor(this.config.maxConnections), 50)  // Cap at 50 connections per particle
+      : 10;
+    
     // Estimate max connections (each particle can connect to maxConnections neighbors)
-    const maxLines = this.maxParticles * this.config.maxConnections;
+    // Cap total lines to prevent memory exhaustion (50K particles × 50 connections = 2.5M lines max)
+    const maxLines = Math.min(this.maxParticles * safeMaxConnections, 5_000_000);
     const maxVertices = maxLines * 2;
 
     this.connectionGeometry = new THREE.BufferGeometry();
@@ -95,7 +104,11 @@ export class ParticleConnectionSystem {
       "color",
     ) as THREE.BufferAttribute;
 
-    const maxDistSq = this.config.maxDistance * this.config.maxDistance;
+    // Validate maxDistance
+    const safeMaxDistance = Number.isFinite(this.config.maxDistance) && this.config.maxDistance > 0
+      ? this.config.maxDistance
+      : 100;
+    const maxDistSq = safeMaxDistance * safeMaxDistance;
     let vertexIndex = 0;
 
     // Build a list of active particle positions
@@ -129,7 +142,8 @@ export class ParticleConnectionSystem {
     }
 
     // Build spatial hash grid for O(n) neighbor queries instead of O(n^2)
-    const cellSize = this.config.maxDistance;
+    // Use safeMaxDistance for cellSize
+    const cellSize = safeMaxDistance;
     const grid = new Map<string, typeof activeParticles>();
     for (const p of activeParticles) {
       const cellX = Math.floor(p.x / cellSize);
@@ -177,11 +191,14 @@ export class ParticleConnectionSystem {
               const distSq = ddx * ddx + ddy * ddy + ddz * ddz;
 
               if (distSq < maxDistSq) {
-                // Calculate opacity based on distance
-                let opacity = this.config.lineOpacity;
+                // Calculate opacity based on distance (validate lineOpacity)
+                const safeLineOpacity = Number.isFinite(this.config.lineOpacity) 
+                  ? Math.max(0, Math.min(1, this.config.lineOpacity))
+                  : 0.5;
+                let opacity = safeLineOpacity;
                 if (this.config.fadeByDistance) {
                   const dist = Math.sqrt(distSq);
-                  opacity *= 1 - dist / this.config.maxDistance;
+                  opacity *= 1 - dist / safeMaxDistance;  // Use safeMaxDistance
                 }
 
                 // Blend colors from both particles

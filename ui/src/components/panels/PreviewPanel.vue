@@ -193,14 +193,14 @@ const adaptiveQuality = ref(true);
 const cacheStats = ref<Map<string, { cachedFrames: number }>>(new Map());
 
 // Computed
-const _formattedTime = computed(() => {
+const formattedTime = computed(() => {
   const seconds = currentFrame.value / fps.value;
   const minutes = Math.floor(seconds / 60);
   const secs = (seconds % 60).toFixed(2);
   return `${minutes}:${secs.padStart(5, "0")}`;
 });
 
-const _cacheProgressText = computed(() => {
+const cacheProgressText = computed(() => {
   if (!isCaching.value) return "";
   return `${currentCachingFrame.value} / ${totalFramesToCache.value}`;
 });
@@ -210,33 +210,33 @@ const particleLayers = computed(() => {
 });
 
 // Methods
-function _togglePlayback() {
+function togglePlayback() {
   store.togglePlayback();
 }
 
-function _goToStart() {
+function goToStart() {
   store.setFrame(renderRangeStart.value);
 }
 
-function _goToEnd() {
+function goToEnd() {
   store.setFrame(renderRangeEnd.value - 1);
 }
 
-function _stepForward() {
+function stepForward() {
   const next = Math.min(currentFrame.value + 1, frameCount.value - 1);
   store.setFrame(next);
 }
 
-function _stepBackward() {
+function stepBackward() {
   const prev = Math.max(currentFrame.value - 1, 0);
   store.setFrame(prev);
 }
 
-function _getCacheCount(layerId: string): number {
+function getCacheCount(layerId: string): number {
   return cacheStats.value.get(layerId)?.cachedFrames ?? 0;
 }
 
-async function _cacheRenderRange() {
+async function cacheRenderRange() {
   if (isCaching.value) return;
 
   const particleLayerObjects = getParticleLayerObjects();
@@ -271,7 +271,7 @@ async function _cacheRenderRange() {
   }
 }
 
-function _clearAllCaches() {
+function clearAllCaches() {
   const particleLayerObjects = getParticleLayerObjects();
   for (const layer of particleLayerObjects) {
     layer.clearCache();

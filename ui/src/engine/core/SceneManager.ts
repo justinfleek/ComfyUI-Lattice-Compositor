@@ -588,8 +588,15 @@ export class SceneManager {
     texture.dispose();
 
     // Store and apply
-    this.setEnvironmentMapTexture(envMap);
-    resolve(envMap);
+    if (envMap) {
+      this.setEnvironmentMapTexture(envMap);
+      resolve(envMap);
+    } else {
+      this.setEnvironmentMapTexture(null);
+      // If PMREM generation failed, reject or use original texture
+      // For now, we'll reject by throwing an error
+      throw new Error("Failed to generate PMREM environment map");
+    }
   }
 
   /**

@@ -1134,7 +1134,7 @@ export function applyRovingToPosition(
       // Update keyframe frames in place
       result.keyframes.forEach((newKf, index) => {
         if (positionProp.keyframes?.[index]) {
-          positionProp.keyframes?.[index].frame = newKf.frame;
+          positionProp.keyframes[index].frame = newKf.frame;
         }
       });
 

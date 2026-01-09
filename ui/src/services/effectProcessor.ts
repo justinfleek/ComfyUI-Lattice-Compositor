@@ -21,7 +21,7 @@ import { interpolateProperty } from "./interpolation";
 
 // ============================================================================
 // AUDIO MODIFIER APPLICATION
-// BUG-091/093 fix: Apply audio-reactive modifiers to effect parameters
+// Audio-reactive modifiers for effect parameters (glow intensity, glitch amount, etc.)
 // ============================================================================
 
 /**
@@ -33,28 +33,38 @@ function applyAudioModifiersToEffect(
   params: EvaluatedEffectParams,
   audioModifiers: AudioReactiveModifiers,
 ): void {
-  // Glow effect (BUG-091)
+  // Glow effect - apply audio-reactive intensity, radius, and threshold modifiers
+  // glow_intensity (0-500%), glow_radius (0-200px), glow_threshold (0-100 luminance cutoff)
   if (effectKey === "glow" || effectKey === "cinematic-bloom") {
     if (
       audioModifiers.glowIntensity !== undefined &&
       audioModifiers.glowIntensity !== 0
     ) {
-      // Add audio modifier to existing intensity (multiplicative)
-      const baseIntensity = params.intensity ?? 1;
-      params.intensity = baseIntensity * (1 + audioModifiers.glowIntensity);
+      // Multiplicative intensity modifier
+      const baseIntensity = params.glow_intensity ?? 100;
+      params.glow_intensity = baseIntensity * (1 + audioModifiers.glowIntensity);
     }
     if (
       audioModifiers.glowRadius !== undefined &&
       audioModifiers.glowRadius !== 0
     ) {
-      // Add audio modifier to existing radius (additive)
-      const baseRadius = params.radius ?? params.size ?? 20;
-      params.radius = baseRadius + audioModifiers.glowRadius * 50; // Scale 0-1 to 0-50px
-      params.size = params.radius; // Some effects use 'size' instead of 'radius'
+      // Additive radius modifier (controls blur spread)
+      const baseRadius = params.glow_radius ?? 25;
+      params.glow_radius = baseRadius + audioModifiers.glowRadius * 50;
+    }
+    if (
+      audioModifiers.glowThreshold !== undefined &&
+      audioModifiers.glowThreshold !== 0
+    ) {
+      // Additive threshold modifier (controls luminance cutoff for what glows)
+      // Lower threshold = more pixels glow, higher = only brightest pixels glow
+      const baseThreshold = params.glow_threshold ?? 50;
+      params.glow_threshold = baseThreshold + audioModifiers.glowThreshold * 50;
     }
   }
 
-  // Edge glow / outline effect (BUG-093)
+  // Edge glow / outline effect - apply audio-reactive edge intensity
+  // Parameter name matches effect renderer: edge_glow_intensity (0-100)
   if (effectKey === "edge-glow" || effectKey === "outline") {
     if (
       audioModifiers.edgeGlowIntensity !== undefined &&
@@ -66,27 +76,31 @@ function applyAudioModifiersToEffect(
     }
   }
 
-  // Glitch effect (BUG-093)
+  // Glitch effect - apply audio-reactive distortion amount
+  // Parameter name matches effect renderer: glitch_amount (0-100)
   if (effectKey === "glitch" || effectKey === "digital-glitch") {
     if (
       audioModifiers.glitchAmount !== undefined &&
       audioModifiers.glitchAmount !== 0
     ) {
-      const baseAmount = params.amount ?? params.intensity ?? 0.5;
-      params.amount = baseAmount + audioModifiers.glitchAmount * 2; // Scale 0-1 to 0-2
-      params.intensity = params.amount;
+      const baseAmount = params.glitch_amount ?? 5;
+      params.glitch_amount = baseAmount + audioModifiers.glitchAmount * 10;
     }
   }
 
-  // RGB Split / Chromatic Aberration (BUG-093)
+  // RGB Split / Chromatic Aberration - apply audio-reactive channel separation
+  // Uses per-channel offsets: red_offset_x, blue_offset_x (pixels)
   if (effectKey === "rgb-split" || effectKey === "chromatic-aberration") {
     if (
       audioModifiers.rgbSplitAmount !== undefined &&
       audioModifiers.rgbSplitAmount !== 0
     ) {
-      const baseAmount = params.amount ?? params.offset ?? 5;
-      params.amount = baseAmount + audioModifiers.rgbSplitAmount * 30; // Scale 0-1 to 0-30px
-      params.offset = params.amount;
+      // Symmetric split: red channel shifts right, blue channel shifts left
+      const baseRedOffset = params.red_offset_x ?? 5;
+      const baseBlueOffset = params.blue_offset_x ?? -5;
+      const splitDelta = audioModifiers.rgbSplitAmount * 30;
+      params.red_offset_x = baseRedOffset + splitDelta;
+      params.blue_offset_x = baseBlueOffset - splitDelta;
     }
   }
 }
@@ -478,7 +492,7 @@ const ADDITIVE_EFFECTS = new Set(["glow", "cinematic-bloom"]);
  * @param quality - Quality hint ('draft' for fast preview, 'high' for full quality)
  * @param context - Optional context for time-based effects (frame, fps, layerId)
  * @param fps - Composition fps (used when context not provided, defaults to 16)
- * @param audioModifiers - Optional audio-reactive modifiers (BUG-091/093 fix)
+ * @param audioModifiers - Optional audio-reactive modifiers for dynamic effect parameters
  * @returns Processed canvas with all effects applied
  */
 export function processEffectStack(
@@ -518,17 +532,19 @@ export function processEffectStack(
 
     const renderer = effectRenderers.get(effect.effectKey);
     if (!renderer) {
-      renderLogger.warn(
-        `No renderer registered for effect: ${effect.effectKey}`,
+      // Throw descriptive error for missing effect renderers (fail loud, not silent)
+      const error = new Error(
+        `EFFECT RENDERER NOT FOUND: "${effect.effectKey}" (effect: "${effect.name}", id: ${effect.id}). ` +
+        `Available renderers: [${Array.from(effectRenderers.keys()).join(', ')}]`
       );
-      continue;
+      renderLogger.error(error.message);
+      throw error;
     }
 
     // Evaluate parameters at current frame
     const params = evaluateEffectParameters(effect, frame);
 
-    // BUG-091/093 fix: Apply audio-reactive modifiers to effect parameters
-    // This allows audio to modulate glow intensity, glitch amount, etc.
+    // Apply audio-reactive modifiers to effect parameters (glow intensity, glitch amount, etc.)
     if (audioModifiers) {
       applyAudioModifiersToEffect(effect.effectKey, params, audioModifiers);
     }
@@ -560,12 +576,17 @@ export function processEffectStack(
       params._effectInstance = effect;
     }
 
-    // Apply the effect
+    // Apply the effect - NO silent failures
     try {
       current = renderer(current, params);
     } catch (error) {
-      renderLogger.error(`Error applying effect ${effect.name}:`, error);
-      // Continue with current state on error
+      // Wrap and propagate renderer errors with context (fail loud, not silent)
+      const wrappedError = new Error(
+        `EFFECT EXECUTION FAILED: "${effect.effectKey}" (effect: "${effect.name}", id: ${effect.id}). ` +
+        `Original error: ${error instanceof Error ? error.message : String(error)}`
+      );
+      renderLogger.error(wrappedError.message, error);
+      throw wrappedError;
     }
   }
 
@@ -596,7 +617,7 @@ export interface GPUProcessingOptions {
  * @param context - Optional context for time-based effects
  * @param options - GPU processing options
  * @param fps - Composition fps (used when context not provided, defaults to 16)
- * @param audioModifiers - Optional audio-reactive modifiers (BUG-091/093 fix)
+ * @param audioModifiers - Optional audio-reactive modifiers for dynamic effect parameters
  * @returns Promise resolving to processed canvas
  */
 export async function processEffectStackAsync(
@@ -671,7 +692,7 @@ export async function processEffectStackAsync(
     // Evaluate parameters at current frame
     const params = evaluateEffectParameters(effect, frame);
 
-    // BUG-091/093 fix: Apply audio-reactive modifiers to effect parameters
+    // Apply audio-reactive modifiers to effect parameters
     if (audioModifiers) {
       applyAudioModifiersToEffect(effect.effectKey, params, audioModifiers);
     }
@@ -734,11 +755,22 @@ export async function processEffectStackAsync(
             current = renderer(current, params);
             cpuEffectsProcessed++;
           } catch (cpuError) {
-            renderLogger.error(
-              `CPU fallback also failed for ${effect.name}:`,
-              cpuError,
+            // Propagate renderer errors with context
+            const wrappedError = new Error(
+              `EFFECT CPU FALLBACK FAILED: "${effect.effectKey}" (effect: "${effect.name}"). ` +
+              `GPU failed, then CPU failed. Original: ${cpuError instanceof Error ? cpuError.message : String(cpuError)}`
             );
+            renderLogger.error(wrappedError.message, cpuError);
+            throw wrappedError;
           }
+        } else {
+          // Throw for missing effect renderers
+          const error = new Error(
+            `EFFECT RENDERER NOT FOUND: "${effect.effectKey}" (effect: "${effect.name}", id: ${effect.id}). ` +
+            `GPU processing failed and no CPU fallback available.`
+          );
+          renderLogger.error(error.message);
+          throw error;
         }
       }
     } else {
@@ -749,12 +781,22 @@ export async function processEffectStackAsync(
           current = renderer(current, params);
           cpuEffectsProcessed++;
         } catch (error) {
-          renderLogger.error(`Error applying effect ${effect.name}:`, error);
+          // Propagate errors with context
+          const wrappedError = new Error(
+            `EFFECT EXECUTION FAILED: "${effect.effectKey}" (effect: "${effect.name}"). ` +
+            `Original: ${error instanceof Error ? error.message : String(error)}`
+          );
+          renderLogger.error(wrappedError.message, error);
+          throw wrappedError;
         }
       } else {
-        renderLogger.warn(
-          `No renderer registered for effect: ${effect.effectKey}`,
+        // Throw for unregistered effects
+        const error = new Error(
+          `EFFECT RENDERER NOT FOUND: "${effect.effectKey}" (effect: "${effect.name}", id: ${effect.id}). ` +
+          `Available renderers: [${Array.from(effectRenderers.keys()).join(', ')}]`
         );
+        renderLogger.error(error.message);
+        throw error;
       }
     }
   }

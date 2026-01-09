@@ -225,3 +225,82 @@ export function removeParticleEmitter(
   data.emitters = data.emitters.filter((e) => e.id !== emitterId);
   store.project.meta.modified = new Date().toISOString();
 }
+
+// ============================================================================
+// BAKE TO KEYFRAMES / TRAJECTORY EXPORT
+// ============================================================================
+
+/**
+ * Baked particle trajectory for export
+ */
+export interface BakedParticleTrajectory {
+  particleId: number;
+  emitterId: string;
+  birthFrame: number;
+  deathFrame: number;
+  keyframes: Array<{
+    frame: number;
+    x: number;
+    y: number;
+    z: number;
+    size: number;
+    opacity: number;
+    rotation: number;
+    r: number;
+    g: number;
+    b: number;
+  }>;
+}
+
+/**
+ * Options for baking particles
+ */
+export interface ParticleBakeOptions {
+  startFrame?: number;
+  endFrame?: number;
+  maxParticles?: number; // Limit number of particles to bake (for performance)
+  sampleInterval?: number; // Sample every N frames (1 = every frame)
+  includeVelocity?: boolean;
+  simplifyKeyframes?: boolean;
+}
+
+/**
+ * Result of particle baking
+ */
+export interface ParticleBakeResult {
+  layerId: string;
+  trajectories: BakedParticleTrajectory[];
+  totalFrames: number;
+  totalParticles: number;
+  exportFormat: "trajectories" | "shapeLayers";
+}
+
+/**
+ * Convert trajectory data to JSON for external tools
+ */
+export function exportTrajectoriesToJSON(result: ParticleBakeResult): string {
+  return JSON.stringify(
+    {
+      version: "1.0",
+      layerId: result.layerId,
+      totalFrames: result.totalFrames,
+      totalParticles: result.totalParticles,
+      trajectories: result.trajectories.map((t) => ({
+        id: t.particleId,
+        emitter: t.emitterId,
+        birth: t.birthFrame,
+        death: t.deathFrame,
+        path: t.keyframes.map((k) => ({
+          f: k.frame,
+          p: [k.x, k.y, k.z],
+          s: k.size,
+          o: k.opacity,
+          r: k.rotation,
+          c: [k.r, k.g, k.b],
+        })),
+      })),
+    },
+    null,
+    2,
+  );
+}

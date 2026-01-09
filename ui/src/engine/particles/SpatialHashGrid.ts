@@ -39,8 +39,14 @@ export class SpatialHashGrid {
   private particleCells: Map<number, string> = new Map(); // particle index -> cell key
 
   constructor(config: SpatialHashConfig) {
-    this.maxParticles = config.maxParticles;
-    this.cellSize = config.cellSize;
+    // Validate maxParticles to prevent infinite loop
+    this.maxParticles = Number.isFinite(config.maxParticles) && config.maxParticles > 0
+      ? Math.min(Math.floor(config.maxParticles), 10_000_000)
+      : 10000;
+    // Validate cellSize to prevent division by zero (NaN check required - Math.max(1, NaN) = NaN)
+    this.cellSize = Number.isFinite(config.cellSize) && config.cellSize > 0
+      ? config.cellSize
+      : 1;
   }
 
   // ============================================================================
@@ -67,6 +73,11 @@ export class SpatialHashGrid {
       const px = particleBuffer[offset + 0];
       const py = particleBuffer[offset + 1];
       const pz = particleBuffer[offset + 2];
+
+      // Skip particles with invalid positions (NaN/Infinity)
+      if (!Number.isFinite(px) || !Number.isFinite(py) || !Number.isFinite(pz)) {
+        continue;
+      }
 
       const cellX = Math.floor(px / this.cellSize);
       const cellY = Math.floor(py / this.cellSize);
@@ -100,6 +111,11 @@ export class SpatialHashGrid {
    * @returns Iterator over neighbor particle indices
    */
   *getNeighbors(px: number, py: number, pz: number): Generator<number> {
+    // Guard against NaN/Infinity positions causing infinite loops
+    if (!Number.isFinite(px) || !Number.isFinite(py) || !Number.isFinite(pz)) {
+      return;
+    }
+
     const cellX = Math.floor(px / this.cellSize);
     const cellY = Math.floor(py / this.cellSize);
     const cellZ = Math.floor(pz / this.cellSize);
@@ -184,7 +200,8 @@ export class SpatialHashGrid {
    * Update cell size (requires rebuild)
    */
   setCellSize(size: number): void {
-    this.cellSize = Math.max(1, size);
+    // NaN check required - Math.max(1, NaN) = NaN
+    this.cellSize = Number.isFinite(size) && size > 0 ? size : 1;
   }
 
   /**

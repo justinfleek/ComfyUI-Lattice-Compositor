@@ -104,40 +104,45 @@ export class ParticleAudioReactive {
       // smoothing = 0 means no smoothing (instant response)
       // smoothing = 1 means maximum smoothing (very slow response)
       const previousSmoothed = this.smoothedAudioValues.get(i) ?? featureValue;
-      const alpha = 1 - (binding.smoothing || 0); // Convert smoothing to alpha
+      // Validate smoothing
+      const safeSmoothing = Number.isFinite(binding.smoothing) ? Math.max(0, Math.min(1, binding.smoothing)) : 0;
+      const alpha = 1 - safeSmoothing; // Convert smoothing to alpha
       const smoothed = alpha * featureValue + (1 - alpha) * previousSmoothed;
       this.smoothedAudioValues.set(i, smoothed);
 
+      // Validate min/max separately to handle NaN
+      const safeMin = Number.isFinite(binding.min) ? binding.min : 0;
+      const safeMax = Number.isFinite(binding.max) ? binding.max : 1;
+      const bindingRange = safeMax - safeMin;
+      const safeRange = bindingRange !== 0 ? bindingRange : 1;
       // Map to output range
       const t = Math.max(
         0,
-        Math.min(1, (smoothed - binding.min) / (binding.max - binding.min)),
+        Math.min(1, (smoothed - safeMin) / safeRange),
       );
-      let output =
-        binding.outputMin + t * (binding.outputMax - binding.outputMin);
+      // Validate output range
+      const safeOutputMin = Number.isFinite(binding.outputMin) ? binding.outputMin : 0;
+      const safeOutputMax = Number.isFinite(binding.outputMax) ? binding.outputMax : 1;
+      let output = safeOutputMin + t * (safeOutputMax - safeOutputMin);
 
-      // Apply curve
+      // Apply curve (using validated output range)
       if (binding.curve === "exponential") {
-        output =
-          binding.outputMin + t ** 2 * (binding.outputMax - binding.outputMin);
+        output = safeOutputMin + t ** 2 * (safeOutputMax - safeOutputMin);
       } else if (binding.curve === "logarithmic") {
-        output =
-          binding.outputMin +
-          Math.sqrt(t) * (binding.outputMax - binding.outputMin);
+        output = safeOutputMin + Math.sqrt(t) * (safeOutputMax - safeOutputMin);
       } else if (binding.curve === "step") {
         // Step curve: snap to discrete steps
         const steps = Math.max(2, binding.stepCount ?? 5);
         const steppedT = Math.floor(t * steps) / steps;
-        output =
-          binding.outputMin +
-          steppedT * (binding.outputMax - binding.outputMin);
+        output = safeOutputMin + steppedT * (safeOutputMax - safeOutputMin);
       }
 
       // Check trigger mode
       const triggerMode = binding.triggerMode ?? "continuous";
       if (triggerMode === "onThreshold") {
         // Only apply when smoothed value exceeds threshold
-        const threshold = binding.threshold ?? 0.5;
+        const rawThreshold = binding.threshold;
+        const threshold = (typeof rawThreshold === 'number' && Number.isFinite(rawThreshold)) ? rawThreshold : 0.5;
         if (t < threshold) continue;
       } else if (triggerMode === "onBeat") {
         // Only apply when beat/onset is detected
@@ -178,8 +183,15 @@ export class ParticleAudioReactive {
         binding.parameter === parameter
       ) {
         const featureValue = this.audioFeatures.get(binding.feature) ?? 0;
-        const t = (featureValue - binding.min) / (binding.max - binding.min);
-        return binding.outputMin + t * (binding.outputMax - binding.outputMin);
+        // Validate min/max separately to handle NaN
+        const safeMin = Number.isFinite(binding.min) ? binding.min : 0;
+        const safeMax = Number.isFinite(binding.max) ? binding.max : 1;
+        const range = safeMax - safeMin;
+        const safeRange = range !== 0 ? range : 1;
+        const t = Math.max(0, Math.min(1, (featureValue - safeMin) / safeRange));
+        const safeOutputMin = Number.isFinite(binding.outputMin) ? binding.outputMin : 0;
+        const safeOutputMax = Number.isFinite(binding.outputMax) ? binding.outputMax : 1;
+        return safeOutputMin + t * (safeOutputMax - safeOutputMin);
       }
     }
     return undefined;
@@ -197,14 +209,14 @@ export class ParticleAudioReactive {
   }
 
   /**
-   * Get smoothed audio values for cache save (BUG-064 fix)
+   * Get smoothed audio values for cache save.
    */
   getSmoothedAudioValues(): Map<number, number> {
     return new Map(this.smoothedAudioValues);
   }
 
   /**
-   * Set smoothed audio values from cache restore (BUG-064 fix)
+   * Set smoothed audio values from cache restore.
    */
   setSmoothedAudioValues(values: Map<number, number>): void {
     this.smoothedAudioValues = new Map(values);

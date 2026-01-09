@@ -18,7 +18,7 @@ import type { SourceRect, TextSourceInfo } from "./types";
  * This is crucial for responsive templates where background elements
  * need to resize based on text content.
  *
- * In After Effects: sourceRectAtTime(t, includeExtents)
+ * Industry-standard: sourceRectAtTime(t, includeExtents)
  *
  * @param layerData - The layer's type-specific data (e.g., TextLayerData)
  * @param layerType - Type of the layer
@@ -161,7 +161,7 @@ function getMediaSourceRect(data: any): SourceRect {
 
 /**
  * Get text layer content as an expression-accessible object
- * Mimics After Effects' text.sourceText
+ * Mimics industry-standard text.sourceText
  */
 export function textSource(layerData: any): TextSourceInfo {
   return {

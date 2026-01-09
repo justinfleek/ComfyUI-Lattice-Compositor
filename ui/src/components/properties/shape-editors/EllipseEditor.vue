@@ -5,12 +5,12 @@
       <div class="xy-inputs">
         <ScrubableNumber
           :modelValue="shape.position.value.x"
-          @update:modelValue="v => updatePoint('position', 'x', v)"
+          @update:modelValue="(v: number) => updatePoint('position', 'x', v)"
           unit="px"
         />
         <ScrubableNumber
           :modelValue="shape.position.value.y"
-          @update:modelValue="v => updatePoint('position', 'y', v)"
+          @update:modelValue="(v: number) => updatePoint('position', 'y', v)"
           unit="px"
         />
       </div>
@@ -21,13 +21,13 @@
       <div class="xy-inputs">
         <ScrubableNumber
           :modelValue="shape.size.value.x"
-          @update:modelValue="v => updatePoint('size', 'x', v)"
+          @update:modelValue="(v: number) => updatePoint('size', 'x', v)"
           :min="0"
           unit="px"
         />
         <ScrubableNumber
           :modelValue="shape.size.value.y"
-          @update:modelValue="v => updatePoint('size', 'y', v)"
+          @update:modelValue="(v: number) => updatePoint('size', 'y', v)"
           :min="0"
           unit="px"
         />
@@ -53,7 +53,7 @@ const props = defineProps<{ shape: EllipseShape; layerId: string }>();
 const emit = defineEmits(["update"]);
 const store = useCompositorStore();
 
-function _updatePoint(
+function updatePoint(
   prop: "position" | "size",
   axis: "x" | "y",
   value: number,
@@ -66,7 +66,7 @@ function _updatePoint(
   emit("update", updated);
 }
 
-function _updateDirection(e: Event) {
+function updateDirection(e: Event) {
   const updated = { ...props.shape };
   updated.direction = parseInt((e.target as HTMLSelectElement).value, 10) as
     | 1
@@ -74,7 +74,7 @@ function _updateDirection(e: Event) {
   emit("update", updated);
 }
 
-function _toggleKeyframe(prop: "position" | "size") {
+function toggleKeyframe(prop: "position" | "size") {
   const updated = { ...props.shape };
   const animProp = updated[prop];
   const frame = store.currentFrame;

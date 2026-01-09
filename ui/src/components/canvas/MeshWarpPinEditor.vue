@@ -211,7 +211,7 @@ const selectedPin = computed(() => {
   return pins.value.find((p) => p.id === selectedPinId.value) ?? null;
 });
 
-const _selectedPinRadius = computed({
+const selectedPinRadius = computed({
   get: () => selectedPin.value?.radius ?? 50,
   set: (value: number) => {
     if (selectedPin.value && props.layerId) {
@@ -220,7 +220,7 @@ const _selectedPinRadius = computed({
   },
 });
 
-const _selectedPinStiffness = computed({
+const selectedPinStiffness = computed({
   get: () => selectedPin.value?.stiffness ?? 0,
   set: (value: number) => {
     if (selectedPin.value && props.layerId) {
@@ -229,7 +229,7 @@ const _selectedPinStiffness = computed({
   },
 });
 
-const _activeToolTip = computed(() => {
+const activeToolTip = computed(() => {
   switch (pinTool.value) {
     case "position":
       return "Click to add position pin, drag to move";
@@ -244,7 +244,7 @@ const _activeToolTip = computed(() => {
   }
 });
 
-const _overlayStyle = computed(() => ({
+const overlayStyle = computed(() => ({
   position: "absolute" as const,
   top: "0",
   left: "0",
@@ -254,7 +254,7 @@ const _overlayStyle = computed(() => ({
 }));
 
 // Methods
-function _getPinColor(type: WarpPinType): string {
+function getPinColor(type: WarpPinType): string {
   switch (type) {
     case "position":
       return "#4bcde0";
@@ -271,7 +271,7 @@ function setPinTool(tool: WarpPinType | "delete") {
   pinTool.value = tool;
 }
 
-function _handleMouseDown(event: MouseEvent) {
+function handleMouseDown(event: MouseEvent) {
   if (!props.layerId || !props.isActive) return;
 
   const rect = (event.target as SVGElement).getBoundingClientRect();
@@ -304,7 +304,7 @@ function _handleMouseDown(event: MouseEvent) {
   }
 }
 
-function _handleMouseMove(event: MouseEvent) {
+function handleMouseMove(event: MouseEvent) {
   if (!draggingPinId.value || !props.layerId) return;
 
   const rect = (event.target as SVGElement).getBoundingClientRect();
@@ -316,7 +316,7 @@ function _handleMouseMove(event: MouseEvent) {
   emit("pin-moved", draggingPinId.value, x, y);
 }
 
-function _handleMouseUp() {
+function handleMouseUp() {
   draggingPinId.value = null;
   dragStartPos.value = null;
 }

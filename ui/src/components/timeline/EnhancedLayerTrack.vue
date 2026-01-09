@@ -85,14 +85,14 @@
 
       <div v-if="isExpanded" class="children-container">
         <div v-for="(groupProps, groupName) in groupedProperties" :key="groupName" class="property-group">
-          <div class="group-header sidebar-row" :style="gridStyle" @mousedown.stop="toggleGroup(groupName)">
-             <div class="arrow-col"><span class="arrow">{{ expandedGroups.includes(groupName) ? '▼' : '▶' }}</span></div>
+          <div class="group-header sidebar-row" :style="gridStyle" @mousedown.stop="toggleGroup(String(groupName))">
+             <div class="arrow-col"><span class="arrow">{{ expandedGroups.includes(String(groupName)) ? '▼' : '▶' }}</span></div>
              <div class="group-label">
                {{ groupName }}
-               <span v-if="groupName === 'Transform'" class="reset-link" @click.stop="resetTransform">Reset</span>
+               <span v-if="String(groupName) === 'Transform'" class="reset-link" @click.stop="resetTransform">Reset</span>
              </div>
           </div>
-          <div v-if="expandedGroups.includes(groupName)">
+          <div v-if="expandedGroups.includes(String(groupName))">
              <PropertyTrack v-for="prop in groupProps" :key="prop.path"
                :layerId="layer.id" :propertyPath="prop.path" :name="prop.name" :property="prop.property"
                layoutMode="sidebar" :gridStyle="gridStyle" :pixelsPerFrame="pixelsPerFrame"
@@ -120,7 +120,7 @@
       <div v-if="isExpanded" class="children-container">
         <div v-for="(groupProps, groupName) in groupedProperties" :key="groupName" class="property-group">
            <div class="group-header track-bg"></div>
-           <div v-if="expandedGroups.includes(groupName)">
+           <div v-if="expandedGroups.includes(String(groupName))">
               <PropertyTrack v-for="prop in groupProps" :key="prop.path"
                :layerId="layer.id" :propertyPath="prop.path" :name="prop.name" :property="prop.property"
                layoutMode="track" :pixelsPerFrame="pixelsPerFrame"
@@ -232,27 +232,27 @@ const isSelected = computed(() =>
 // Drag reorder state
 const isDragTarget = ref(false);
 
-function _onDragStart(event: DragEvent) {
+function onDragStart(event: DragEvent) {
   event.dataTransfer?.setData("application/layer-reorder", props.layer.id);
   event.dataTransfer!.effectAllowed = "move";
 }
 
-function _onDragEnd() {
+function onDragEnd() {
   isDragTarget.value = false;
 }
 
-function _onDragOver(event: DragEvent) {
+function onDragOver(event: DragEvent) {
   const data = event.dataTransfer?.types.includes("application/layer-reorder");
   if (data) {
     isDragTarget.value = true;
   }
 }
 
-function _onDragLeave() {
+function onDragLeave() {
   isDragTarget.value = false;
 }
 
-function _onDrop(event: DragEvent) {
+function onDrop(event: DragEvent) {
   isDragTarget.value = false;
 
   // Check for Alt+drag asset replacement
@@ -304,11 +304,11 @@ function _onDrop(event: DragEvent) {
 }
 
 // Only video and audio layers have audio capability
-const _hasAudioCapability = computed(() =>
+const hasAudioCapability = computed(() =>
   ["video", "audio", "nestedComp"].includes(props.layer.type),
 );
 // Check if layer is a text layer (for Convert to Splines feature)
-const _isTextLayer = computed(() => props.layer.type === "text");
+const isTextLayer = computed(() => props.layer.type === "text");
 const expandedGroups = ref<string[]>([
   "Transform",
   "Text",
@@ -333,7 +333,7 @@ const colorPickerX = ref(0);
 const colorPickerY = ref(0);
 
 // Layer label colors
-const _labelColors = [
+const labelColors = [
   "#999999", // None (gray)
   "#e24b4b", // Red
   "#f5c343", // Yellow
@@ -352,12 +352,12 @@ const _labelColors = [
   "#90c8e0", // Pale Blue
 ];
 
-const _availableParents = computed(
+const availableParents = computed(
   () => props.allLayers?.filter((l: any) => l.id !== props.layer.id) || [],
 );
 
 // Grouping Logic
-const _groupedProperties = computed(() => {
+const groupedProperties = computed(() => {
   const groups: Record<string, any[]> = {};
   const t = props.layer.transform;
   const transformProps: any[] = [];
@@ -566,7 +566,7 @@ const _groupedProperties = computed(() => {
   return groups;
 });
 
-const _barStyle = computed(() => {
+const barStyle = computed(() => {
   const frameCount = props.frameCount || 81;
   const inPoint = props.layer.inPoint ?? 0;
   const outPoint = props.layer.outPoint ?? frameCount - 1;
@@ -582,18 +582,18 @@ const _barStyle = computed(() => {
   };
 });
 
-function _selectLayer() {
+function selectLayer() {
   emit("select", props.layer.id);
 }
-function _toggleExpand() {
+function toggleExpand() {
   emit("toggleExpand", props.layer.id, !isExpanded.value);
 }
-function _toggleGroup(g: string) {
+function toggleGroup(g: string) {
   if (expandedGroups.value.includes(g))
     expandedGroups.value = expandedGroups.value.filter((x) => x !== g);
   else expandedGroups.value.push(g);
 }
-function _getLayerIcon(t: string) {
+function getLayerIcon(t: string) {
   return (
     {
       text: "T",
@@ -607,7 +607,7 @@ function _getLayerIcon(t: string) {
 }
 
 // Double-click: enter nested comp or start rename
-function _handleDoubleClick() {
+function handleDoubleClick() {
   if (props.layer.type === "nestedComp" && props.layer.data?.compositionId) {
     // Enter the nested composition
     store.enterNestedComp(props.layer.data.compositionId);
@@ -622,16 +622,16 @@ function startRename() {
   renameVal.value = props.layer.name;
   nextTick(() => renameInput.value?.focus());
 }
-function _saveRename() {
+function saveRename() {
   emit("updateLayer", props.layer.id, { name: renameVal.value });
   isRenaming.value = false;
 }
-function _setParent(e: Event) {
+function setParent(e: Event) {
   emit("updateLayer", props.layer.id, {
     parentId: (e.target as HTMLSelectElement).value || null,
   });
 }
-function _setBlendMode(e: Event) {
+function setBlendMode(e: Event) {
   emit("updateLayer", props.layer.id, {
     blendMode: (e.target as HTMLSelectElement).value,
   });
@@ -691,7 +691,7 @@ function snapToNearest(value: number, targets: number[]): number {
   return minDist <= SNAP_TOLERANCE ? nearest : value;
 }
 
-function _startDrag(e: MouseEvent) {
+function startDrag(e: MouseEvent) {
   isDragging.value = true;
   dragStartX.value = e.clientX;
   dragStartInPoint.value = props.layer.inPoint ?? 0;
@@ -700,7 +700,7 @@ function _startDrag(e: MouseEvent) {
   document.addEventListener("mouseup", stopDrag);
 }
 
-function _startResizeLeft(e: MouseEvent) {
+function startResizeLeft(e: MouseEvent) {
   isResizingLeft.value = true;
   dragStartX.value = e.clientX;
   dragStartInPoint.value = props.layer.inPoint ?? 0;
@@ -708,7 +708,7 @@ function _startResizeLeft(e: MouseEvent) {
   document.addEventListener("mouseup", stopDrag);
 }
 
-function _startResizeRight(e: MouseEvent) {
+function startResizeRight(e: MouseEvent) {
   isResizingRight.value = true;
   dragStartX.value = e.clientX;
   dragStartOutPoint.value = props.layer.outPoint ?? props.frameCount - 1;
@@ -807,61 +807,61 @@ function stopDrag() {
   document.removeEventListener("mousemove", onResizeRight);
   document.removeEventListener("mouseup", stopDrag);
 }
-function _toggleVis() {
+function toggleVis() {
   emit("updateLayer", props.layer.id, { visible: !props.layer.visible });
 }
-function _toggleLock() {
+function toggleLock() {
   emit("updateLayer", props.layer.id, { locked: !props.layer.locked });
 }
-function _toggleAudio() {
+function toggleAudio() {
   emit("updateLayer", props.layer.id, {
     audioEnabled: props.layer.audioEnabled === false,
   });
 }
-function _toggleIsolate() {
+function toggleIsolate() {
   emit("updateLayer", props.layer.id, { isolate: !props.layer.isolate });
 }
-function _toggleMinimized() {
+function toggleMinimized() {
   emit("updateLayer", props.layer.id, { minimized: !props.layer.minimized });
 }
-function _toggleFlattenTransform() {
+function toggleFlattenTransform() {
   emit("updateLayer", props.layer.id, {
     flattenTransform: !props.layer.flattenTransform,
   });
 }
-function _toggleQuality() {
+function toggleQuality() {
   emit("updateLayer", props.layer.id, {
     quality: props.layer.quality === "best" ? "draft" : "best",
   });
 }
-function _toggleEffects() {
+function toggleEffects() {
   emit("updateLayer", props.layer.id, {
     effectsEnabled: props.layer.effectsEnabled === false,
   });
 }
-function _toggleFrameBlend() {
+function toggleFrameBlend() {
   emit("updateLayer", props.layer.id, {
     frameBlending: !props.layer.frameBlending,
   });
 }
-function _toggleMotionBlur() {
+function toggleMotionBlur() {
   emit("updateLayer", props.layer.id, { motionBlur: !props.layer.motionBlur });
 }
-function _toggleEffectLayer() {
+function toggleEffectLayer() {
   const currentState = props.layer.effectLayer || props.layer.adjustmentLayer;
   emit("updateLayer", props.layer.id, {
     effectLayer: !currentState,
     adjustmentLayer: !currentState,
   });
 }
-function _toggleColorPicker(e: MouseEvent) {
+function toggleColorPicker(e: MouseEvent) {
   const rect = (e.target as HTMLElement).getBoundingClientRect();
   colorPickerX.value = rect.left;
   colorPickerY.value = rect.bottom + 4;
   showColorPicker.value = !showColorPicker.value;
 }
 
-function _setLabelColor(color: string) {
+function setLabelColor(color: string) {
   emit("updateLayer", props.layer.id, { labelColor: color });
   showColorPicker.value = false;
 }
@@ -871,7 +871,7 @@ function closeColorPicker() {
 }
 
 // Reset transform to default values
-function _resetTransform() {
+function resetTransform() {
   const comp = store.getActiveComp();
   if (!comp) return;
 
@@ -915,7 +915,7 @@ function _resetTransform() {
 }
 
 // Context menu functions
-function _showContextMenu(e: MouseEvent) {
+function showContextMenu(e: MouseEvent) {
   contextMenuX.value = e.clientX;
   contextMenuY.value = e.clientY;
   contextMenuVisible.value = true;
@@ -929,12 +929,12 @@ function hideContextMenu() {
   contextMenuVisible.value = false;
 }
 
-function _duplicateLayer() {
+function duplicateLayer() {
   store.duplicateLayer(props.layer.id);
   hideContextMenu();
 }
 
-function _renameFromMenu() {
+function renameFromMenu() {
   hideContextMenu();
   nextTick(() => {
     isRenaming.value = true;
@@ -943,28 +943,28 @@ function _renameFromMenu() {
   });
 }
 
-function _toggleLayerVisibility() {
+function toggleLayerVisibility() {
   emit("updateLayer", props.layer.id, { visible: !props.layer.visible });
   hideContextMenu();
 }
 
-function _toggleLayerLock() {
+function toggleLayerLock() {
   emit("updateLayer", props.layer.id, { locked: !props.layer.locked });
   hideContextMenu();
 }
 
-function _toggleLayer3D() {
+function toggleLayer3D() {
   store.toggleLayer3D(props.layer.id);
   hideContextMenu();
 }
 
-function _nestLayer() {
+function nestLayer() {
   store.selectLayer(props.layer.id);
   store.nestSelectedLayers(`${props.layer.name} Nested`);
   hideContextMenu();
 }
 
-async function _convertToSplines() {
+async function convertToSplines() {
   hideContextMenu();
   if (props.layer.type !== "text") return;
 
@@ -986,7 +986,7 @@ async function _convertToSplines() {
   }
 }
 
-function _deleteLayer() {
+function deleteLayer() {
   store.deleteLayer(props.layer.id);
   hideContextMenu();
 }
@@ -1061,8 +1061,7 @@ function renderWaveformToCanvas() {
   const outPoint =
     props.layer.outPoint ?? props.layer.endFrame ?? frameCount - 1;
 
-  // BUG-097 fix: visibleStart/visibleEnd should match layer timing since canvas
-  // represents the layer bar, not the full timeline viewport
+  // visibleStart/visibleEnd match layer timing (canvas shows layer bar, not full timeline)
   renderTimelineWaveform(canvas, waveformData.value, {
     layerId: props.layer.id,
     audioId: audioAssetId.value!,

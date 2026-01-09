@@ -350,13 +350,13 @@ import type {
 } from "@/types/templateBuilder";
 
 // Props and emits for dialog mode
-const _props = defineProps<{
+const props = defineProps<{
   visible: boolean;
 }>();
 
 const emit = defineEmits<(e: "close") => void>();
 
-function _close() {
+function close() {
   emit("close");
 }
 
@@ -392,13 +392,13 @@ const dragOverIndex = ref<number>(-1);
 const dragOverGroupId = ref<string | null>(null);
 
 // Computed
-const _compositions = computed(() => Object.values(store.project.compositions));
+const compositions = computed(() => Object.values(store.project.compositions));
 
 const activeComposition = computed(() => store.activeComposition);
 
 const activeCompLayers = computed(() => activeComposition.value?.layers || []);
 
-const _hasTemplate = computed(() => {
+const hasTemplate = computed(() => {
   return activeComposition.value?.templateConfig !== undefined;
 });
 
@@ -406,7 +406,7 @@ const templateConfig = computed(() => {
   return activeComposition.value?.templateConfig;
 });
 
-const _templateName = computed({
+const templateName = computed({
   get: () => templateConfig.value?.name || "",
   set: (value: string) => {
     if (templateConfig.value) {
@@ -422,12 +422,12 @@ const organizedProperties = computed(() => {
   return getOrganizedProperties(templateConfig.value);
 });
 
-const _exposableProperties = computed(() => {
+const exposableProperties = computed(() => {
   if (!selectedLayerForPicker.value) return [];
   return getExposableProperties(selectedLayerForPicker.value);
 });
 
-const _filteredTemplates = computed(() => {
+const filteredTemplates = computed(() => {
   if (!searchQuery.value) return savedTemplates.value;
   const query = searchQuery.value.toLowerCase();
   return savedTemplates.value.filter(
@@ -439,7 +439,7 @@ const _filteredTemplates = computed(() => {
 });
 
 // Methods
-function _setMasterComposition() {
+function setMasterComposition() {
   if (!selectedMasterCompId.value) return;
 
   const comp = store.project.compositions[selectedMasterCompId.value];
@@ -449,39 +449,39 @@ function _setMasterComposition() {
   store.pushHistory();
 }
 
-function _clearMasterComposition() {
+function clearMasterComposition() {
   if (!activeComposition.value) return;
 
   clearTemplate(activeComposition.value);
   store.pushHistory();
 }
 
-function _updateTemplateName() {
+function updateTemplateName() {
   if (templateConfig.value) {
     templateConfig.value.modified = new Date().toISOString();
     store.pushHistory();
   }
 }
 
-function _toggleAddMenu() {
+function toggleAddMenu() {
   showAddMenu.value = !showAddMenu.value;
 }
 
-function _addGroup() {
+function addGroup() {
   if (!templateConfig.value) return;
   addPropertyGroup(templateConfig.value, "New Group");
   showAddMenu.value = false;
   store.pushHistory();
 }
 
-function _addCommentItem() {
+function addCommentItem() {
   if (!templateConfig.value) return;
   addComment(templateConfig.value, "Enter instructions here...");
   showAddMenu.value = false;
   store.pushHistory();
 }
 
-function _showLayerProperties(layer: Layer) {
+function showLayerProperties(layer: Layer) {
   selectedLayerForPicker.value = layer;
   showPropertyPicker.value = true;
   showAddMenu.value = false;
@@ -492,7 +492,7 @@ function closePropertyPicker() {
   selectedLayerForPicker.value = null;
 }
 
-function _addPropertyFromPicker(prop: {
+function addPropertyFromPicker(prop: {
   path: string;
   name: string;
   type: any;
@@ -511,23 +511,23 @@ function _addPropertyFromPicker(prop: {
   store.pushHistory();
 }
 
-function _selectProperty(item: ExposedProperty | TemplateComment) {
+function selectProperty(item: ExposedProperty | TemplateComment) {
   selectedPropertyId.value = item.id;
 }
 
-function _removeProperty(propertyId: string) {
+function removeProperty(propertyId: string) {
   if (!templateConfig.value) return;
   removeExposedProperty(templateConfig.value, propertyId);
   store.pushHistory();
 }
 
-function _removeCommentItem(commentId: string) {
+function removeCommentItem(commentId: string) {
   if (!templateConfig.value) return;
   removeCommentFn(templateConfig.value, commentId);
   store.pushHistory();
 }
 
-function _toggleGroup(groupId: string) {
+function toggleGroup(groupId: string) {
   if (!templateConfig.value) return;
   const group = templateConfig.value.groups.find((g) => g.id === groupId);
   if (group) {
@@ -535,19 +535,19 @@ function _toggleGroup(groupId: string) {
   }
 }
 
-function _updateGroupName(_group: PropertyGroup) {
+function updateGroupName(group: PropertyGroup) {
   if (!templateConfig.value) return;
   templateConfig.value.modified = new Date().toISOString();
   store.pushHistory();
 }
 
-function _removeGroup(groupId: string) {
+function removeGroup(groupId: string) {
   if (!templateConfig.value) return;
   removePropertyGroup(templateConfig.value, groupId);
   store.pushHistory();
 }
 
-function _handlePropertyUpdate(
+function handlePropertyUpdate(
   propertyId: string,
   updates: Partial<ExposedProperty>,
 ) {
@@ -562,17 +562,17 @@ function _handlePropertyUpdate(
   }
 }
 
-function _handleCommentUpdate(commentId: string, text: string) {
+function handleCommentUpdate(commentId: string, text: string) {
   if (!templateConfig.value) return;
   updateCommentFn(templateConfig.value, commentId, text);
   store.pushHistory();
 }
 
-function _getLayerById(layerId: string): Layer | undefined {
+function getLayerById(layerId: string): Layer | undefined {
   return activeCompLayers.value.find((l) => l.id === layerId);
 }
 
-function _isExposedProperty(
+function isExposedProperty(
   item: ExposedProperty | TemplateComment,
 ): item is ExposedProperty {
   return checkIsExposedProperty(item);
@@ -582,7 +582,7 @@ function _isExposedProperty(
 // DRAG AND DROP
 // ===========================================
 
-function _handleDragStart(
+function handleDragStart(
   event: DragEvent,
   item: ExposedProperty | TemplateComment,
   _index: number,
@@ -595,7 +595,7 @@ function _handleDragStart(
   event.dataTransfer!.effectAllowed = "move";
 }
 
-function _handleGroupDragStart(event: DragEvent, group: PropertyGroup) {
+function handleGroupDragStart(event: DragEvent, group: PropertyGroup) {
   draggedGroup.value = group;
   draggedItem.value = null;
   event.dataTransfer?.setData("text/plain", group.id);
@@ -610,16 +610,16 @@ function handleDragEnd() {
   dragOverGroupId.value = null;
 }
 
-function _handleDragOver(event: DragEvent) {
+function handleDragOver(event: DragEvent) {
   event.preventDefault();
 }
 
-function _setDragOver(index: number, groupId: string | null) {
+function setDragOver(index: number, groupId: string | null) {
   dragOverIndex.value = index;
   dragOverGroupId.value = groupId;
 }
 
-function _handleDrop(event: DragEvent) {
+function handleDrop(event: DragEvent) {
   event.preventDefault();
 
   if (!templateConfig.value) return;
@@ -652,7 +652,7 @@ function _handleDrop(event: DragEvent) {
   handleDragEnd();
 }
 
-function _handleDropToGroup(event: DragEvent, groupId: string) {
+function handleDropToGroup(event: DragEvent, groupId: string) {
   event.preventDefault();
   event.stopPropagation();
 
@@ -669,11 +669,11 @@ function _handleDropToGroup(event: DragEvent, groupId: string) {
 // TEMPLATE OPERATIONS
 // ===========================================
 
-function _selectTemplate(template: SavedTemplate) {
+function selectTemplate(template: SavedTemplate) {
   selectedTemplateId.value = template.id;
 }
 
-function _applySelectedTemplate() {
+function applySelectedTemplate() {
   const template = savedTemplates.value.find(
     (t) => t.id === selectedTemplateId.value,
   );
@@ -755,11 +755,11 @@ function setNestedProperty(obj: any, path: string, value: any) {
   }
 }
 
-function _importTemplate() {
+function importTemplate() {
   fileInput.value?.click();
 }
 
-async function _handleFileImport(event: Event) {
+async function handleFileImport(event: Event) {
   const input = event.target as HTMLInputElement;
   const file = input.files?.[0];
   if (!file) return;
@@ -828,7 +828,7 @@ async function _handleFileImport(event: Event) {
 // POSTER FRAME CAPTURE
 // ===========================================
 
-async function _capturePosterFrame() {
+async function capturePosterFrame() {
   if (!captureFrame) {
     console.warn("[TemplateBuilder] Frame capture not available");
     return;
@@ -870,7 +870,7 @@ async function _capturePosterFrame() {
 // TEMPLATE EXPORT
 // ===========================================
 
-async function _exportTemplate() {
+async function exportTemplate() {
   if (!activeComposition.value || !templateConfig.value) return;
 
   isExporting.value = true;

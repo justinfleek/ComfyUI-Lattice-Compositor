@@ -251,12 +251,12 @@ const assetInfo = computed<AssetReference | null>(() => {
   return store.assets[assetId] || null;
 });
 
-const _audioLevel = computed<AnimatableProperty<number> | undefined>(() => {
+const audioLevel = computed<AnimatableProperty<number> | undefined>(() => {
   return props.layer.audio?.level;
 });
 
 // Speed map computed properties (with backwards compatibility)
-const _speedMapEnabled = computed(() => {
+const speedMapEnabled = computed(() => {
   return (
     videoData.value.speedMapEnabled ?? videoData.value.timeRemapEnabled ?? false
   );
@@ -266,13 +266,13 @@ const speedMapProperty = computed(() => {
   return videoData.value.speedMap ?? videoData.value.timeRemap;
 });
 
-const _speedMapValue = computed(() => {
+const speedMapValue = computed(() => {
   const prop = speedMapProperty.value;
   if (!prop) return 0;
   return prop.value;
 });
 
-function _formatDuration(seconds: number | undefined): string {
+function formatDuration(seconds: number | undefined): string {
   if (!seconds) return "0:00";
   const mins = Math.floor(seconds / 60);
   const secs = Math.floor(seconds % 60);
@@ -280,34 +280,34 @@ function _formatDuration(seconds: number | undefined): string {
   return `${mins}:${secs.toString().padStart(2, "0")}:${frames.toString().padStart(2, "0")}`;
 }
 
-function _updateSpeed(val: number) {
+function updateSpeed(val: number) {
   store.updateVideoLayerData(props.layer.id, { speed: val });
   emit("update");
 }
 
-function _updateStartTime(val: number) {
+function updateStartTime(val: number) {
   store.updateVideoLayerData(props.layer.id, { startTime: val });
   emit("update");
 }
 
-function _updateEndTime(val: number) {
+function updateEndTime(val: number) {
   store.updateVideoLayerData(props.layer.id, { endTime: val });
   emit("update");
 }
 
-function _updateLoop(e: Event) {
+function updateLoop(e: Event) {
   const target = e.target as HTMLInputElement;
   store.updateVideoLayerData(props.layer.id, { loop: target.checked });
   emit("update");
 }
 
-function _updatePingPong(e: Event) {
+function updatePingPong(e: Event) {
   const target = e.target as HTMLInputElement;
   store.updateVideoLayerData(props.layer.id, { pingPong: target.checked });
   emit("update");
 }
 
-function _toggleSpeedMap(e: Event) {
+function toggleSpeedMap(e: Event) {
   const target = e.target as HTMLInputElement;
   store.updateVideoLayerData(props.layer.id, {
     speedMapEnabled: target.checked,
@@ -316,7 +316,7 @@ function _toggleSpeedMap(e: Event) {
   emit("update");
 }
 
-function _updateSpeedMap(val: number) {
+function updateSpeedMap(val: number) {
   // Use store method to ensure history tracking
   const data = props.layer.data as VideoData;
   const updates: Partial<VideoData> = {};
@@ -333,7 +333,7 @@ function _updateSpeedMap(val: number) {
   emit("update");
 }
 
-function _updateFrameBlending(e: Event) {
+function updateFrameBlending(e: Event) {
   const target = e.target as HTMLSelectElement;
   store.updateVideoLayerData(props.layer.id, {
     frameBlending: target.value as VideoData["frameBlending"],
@@ -342,7 +342,7 @@ function _updateFrameBlending(e: Event) {
 }
 
 // Timewarp computed properties
-const _timewarpEnabled = computed(() => {
+const timewarpEnabled = computed(() => {
   return videoData.value.timewarpEnabled ?? false;
 });
 
@@ -350,13 +350,13 @@ const timewarpSpeedProperty = computed(() => {
   return videoData.value.timewarpSpeed;
 });
 
-const _timewarpSpeedValue = computed(() => {
+const timewarpSpeedValue = computed(() => {
   const prop = timewarpSpeedProperty.value;
   if (!prop) return 100;
   return prop.value;
 });
 
-function _toggleTimewarp(e: Event) {
+function toggleTimewarp(e: Event) {
   const target = e.target as HTMLInputElement;
   const updates: Partial<VideoData> = {
     timewarpEnabled: target.checked,
@@ -379,7 +379,7 @@ function _toggleTimewarp(e: Event) {
   emit("update");
 }
 
-function _updateTimewarpSpeed(val: number) {
+function updateTimewarpSpeed(val: number) {
   // Use store method to ensure history tracking
   const data = props.layer.data as VideoData;
   if (data.timewarpSpeed) {
@@ -390,7 +390,7 @@ function _updateTimewarpSpeed(val: number) {
   emit("update");
 }
 
-function _updateTimewarpMethod(e: Event) {
+function updateTimewarpMethod(e: Event) {
   const target = e.target as HTMLSelectElement;
   store.updateVideoLayerData(props.layer.id, {
     timewarpMethod: target.value as
@@ -401,7 +401,7 @@ function _updateTimewarpMethod(e: Event) {
   emit("update");
 }
 
-function _applyTimewarpPreset(
+function applyTimewarpPreset(
   preset: "slow-fast" | "fast-slow" | "impact" | "rewind",
 ) {
   // Import the preset creator
@@ -427,18 +427,18 @@ function _applyTimewarpPreset(
   });
 }
 
-function _updateAudioEnabled(e: Event) {
+function updateAudioEnabled(e: Event) {
   const target = e.target as HTMLInputElement;
   store.updateVideoLayerData(props.layer.id, { audioEnabled: target.checked });
   emit("update");
 }
 
-function _updateAudioLevel(val: number) {
+function updateAudioLevel(val: number) {
   store.updateVideoLayerData(props.layer.id, { audioLevel: val });
   emit("update");
 }
 
-function _updateLevel(val: number) {
+function updateLevel(val: number) {
   // Use store method to ensure history tracking
   if (props.layer.audio?.level) {
     store.updateLayer(props.layer.id, {
@@ -452,12 +452,12 @@ function _updateLevel(val: number) {
 }
 
 // Keyframe event handlers
-function _onKeyframeChange() {
+function onKeyframeChange() {
   // Keyframe was added or removed - trigger update
   emit("update");
 }
 
-function _onAnimationToggled(animated: boolean) {
+function onAnimationToggled(animated: boolean) {
   // Animation was enabled or disabled
   console.log("[VideoProperties] Animation toggled:", animated);
   emit("update");

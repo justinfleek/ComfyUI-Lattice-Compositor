@@ -246,19 +246,19 @@ const result = ref<DecompositionResult | null>(null);
 const errorMessage = ref<string | null>(null);
 
 // Computed
-const _modelStatusClass = computed(() => {
+const modelStatusClass = computed(() => {
   if (modelStatus.value.loaded) return "loaded";
   if (modelStatus.value.downloaded) return "ready";
   return "not-ready";
 });
 
-const _modelStatusText = computed(() => {
+const modelStatusText = computed(() => {
   if (modelStatus.value.loaded) return "Loaded";
   if (modelStatus.value.downloaded) return "Ready";
   return "Not Downloaded";
 });
 
-const _canDecompose = computed(() => {
+const canDecompose = computed(() => {
   return (
     modelStatus.value.downloaded && previewUrl.value && !isDecomposing.value
   );
@@ -274,7 +274,7 @@ async function checkStatus() {
   }
 }
 
-async function _startDownload() {
+async function startDownload() {
   isDownloading.value = true;
   downloadProgress.value = 0;
   downloadStage.value = "Starting...";
@@ -295,12 +295,12 @@ async function _startDownload() {
   }
 }
 
-function _triggerFileSelect() {
+function triggerFileSelect() {
   if (!modelStatus.value.downloaded) return;
   fileInput.value?.click();
 }
 
-function _handleFileSelect(event: Event) {
+function handleFileSelect(event: Event) {
   const input = event.target as HTMLInputElement;
   const file = input.files?.[0];
   if (file) {
@@ -311,7 +311,7 @@ function _handleFileSelect(event: Event) {
   }
 }
 
-function _handleDrop(event: DragEvent) {
+function handleDrop(event: DragEvent) {
   if (!modelStatus.value.downloaded) return;
   const file = event.dataTransfer?.files?.[0];
   if (file?.type.startsWith("image/")) {
@@ -322,7 +322,7 @@ function _handleDrop(event: DragEvent) {
   }
 }
 
-function _clearImage() {
+function clearImage() {
   if (previewUrl.value) {
     URL.revokeObjectURL(previewUrl.value);
   }
@@ -331,7 +331,7 @@ function _clearImage() {
   result.value = null;
 }
 
-async function _startDecomposition() {
+async function startDecomposition() {
   if (!previewUrl.value || !selectedFile.value) return;
 
   isDecomposing.value = true;
@@ -387,11 +387,11 @@ function fileToDataUrl(file: File): Promise<string> {
   });
 }
 
-function _selectLayer(layerId: string) {
+function selectLayer(layerId: string) {
   store.selectLayer(layerId, false);
 }
 
-function _getLayerZ(layer: any): number {
+function getLayerZ(layer: any): number {
   return (
     layer.transform?.position?.value?.z ||
     layer.transform?.position?.defaultValue?.z ||

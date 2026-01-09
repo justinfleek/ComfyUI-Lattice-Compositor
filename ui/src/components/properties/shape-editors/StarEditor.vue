@@ -5,12 +5,12 @@
       <div class="xy-inputs">
         <ScrubableNumber
           :modelValue="shape.position.value.x"
-          @update:modelValue="v => updatePoint('position', 'x', v)"
+          @update:modelValue="(v: number) => updatePoint('position', 'x', v)"
           unit="px"
         />
         <ScrubableNumber
           :modelValue="shape.position.value.y"
-          @update:modelValue="v => updatePoint('position', 'y', v)"
+          @update:modelValue="(v: number) => updatePoint('position', 'y', v)"
           unit="px"
         />
       </div>
@@ -20,7 +20,7 @@
       <label>Points</label>
       <ScrubableNumber
         :modelValue="shape.points.value"
-        @update:modelValue="v => updateNumber('points', v)"
+        @update:modelValue="(v: number) => updateNumber('points', v)"
         :min="3"
         :max="100"
         :step="1"
@@ -31,7 +31,7 @@
       <label>Outer Radius</label>
       <ScrubableNumber
         :modelValue="shape.outerRadius.value"
-        @update:modelValue="v => updateNumber('outerRadius', v)"
+        @update:modelValue="(v: number) => updateNumber('outerRadius', v)"
         :min="0"
         unit="px"
       />
@@ -41,7 +41,7 @@
       <label>Inner Radius</label>
       <ScrubableNumber
         :modelValue="shape.innerRadius.value"
-        @update:modelValue="v => updateNumber('innerRadius', v)"
+        @update:modelValue="(v: number) => updateNumber('innerRadius', v)"
         :min="0"
         unit="px"
       />
@@ -51,7 +51,7 @@
       <label>Outer Round</label>
       <ScrubableNumber
         :modelValue="shape.outerRoundness.value"
-        @update:modelValue="v => updateNumber('outerRoundness', v)"
+        @update:modelValue="(v: number) => updateNumber('outerRoundness', v)"
         :min="0"
         :max="100"
         unit="%"
@@ -62,7 +62,7 @@
       <label>Inner Round</label>
       <ScrubableNumber
         :modelValue="shape.innerRoundness.value"
-        @update:modelValue="v => updateNumber('innerRoundness', v)"
+        @update:modelValue="(v: number) => updateNumber('innerRoundness', v)"
         :min="0"
         :max="100"
         unit="%"
@@ -73,7 +73,7 @@
       <label>Rotation</label>
       <ScrubableNumber
         :modelValue="shape.rotation.value"
-        @update:modelValue="v => updateNumber('rotation', v)"
+        @update:modelValue="(v: number) => updateNumber('rotation', v)"
         unit="°"
       />
       <KeyframeToggle :property="shape.rotation" :layerId="layerId" @toggle="toggleKeyframe('rotation')" />
@@ -97,7 +97,7 @@ const props = defineProps<{ shape: StarShape; layerId: string }>();
 const emit = defineEmits(["update"]);
 const store = useCompositorStore();
 
-function _updatePoint(prop: "position", axis: "x" | "y", value: number) {
+function updatePoint(prop: "position", axis: "x" | "y", value: number) {
   const updated = { ...props.shape };
   updated[prop] = {
     ...updated[prop],
@@ -106,7 +106,7 @@ function _updatePoint(prop: "position", axis: "x" | "y", value: number) {
   emit("update", updated);
 }
 
-function _updateNumber(
+function updateNumber(
   prop:
     | "points"
     | "outerRadius"
@@ -121,7 +121,7 @@ function _updateNumber(
   emit("update", updated);
 }
 
-function _updateDirection(e: Event) {
+function updateDirection(e: Event) {
   const updated = { ...props.shape };
   updated.direction = parseInt((e.target as HTMLSelectElement).value, 10) as
     | 1
@@ -129,7 +129,7 @@ function _updateDirection(e: Event) {
   emit("update", updated);
 }
 
-function _toggleKeyframe(
+function toggleKeyframe(
   prop:
     | "position"
     | "points"

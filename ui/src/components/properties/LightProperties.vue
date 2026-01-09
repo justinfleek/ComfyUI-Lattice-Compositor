@@ -21,7 +21,7 @@
           <label>Color</label>
           <ColorPicker
             :modelValue="lightData.color"
-            @update:modelValue="(v) => update('color', v)"
+            @update:modelValue="(v: string) => update('color', v)"
           />
         </div>
 
@@ -30,7 +30,7 @@
           <div class="control-row">
             <SliderInput
               :modelValue="lightData.intensity"
-              @update:modelValue="(v) => update('intensity', v)"
+              @update:modelValue="(v: number) => update('intensity', v)"
               :min="0"
               :max="500"
               :step="1"
@@ -45,12 +45,12 @@
             <div class="control-row">
               <AngleDial
                 :modelValue="lightData.coneAngle ?? 90"
-                @update:modelValue="(v) => update('coneAngle', v)"
+                @update:modelValue="(v: number) => update('coneAngle', v)"
                 :size="32"
               />
               <ScrubableNumber
                 :modelValue="lightData.coneAngle ?? 90"
-                @update:modelValue="(v) => update('coneAngle', v)"
+                @update:modelValue="(v: number) => update('coneAngle', v)"
                 unit="°"
               />
             </div>
@@ -60,7 +60,7 @@
             <label>Cone Feather</label>
             <SliderInput
               :modelValue="lightData.coneFeather ?? 50"
-              @update:modelValue="(v) => update('coneFeather', v)"
+              @update:modelValue="(v: number) => update('coneFeather', v)"
               :min="0"
               :max="100"
               unit="%"
@@ -85,7 +85,7 @@
           <label>Radius</label>
           <ScrubableNumber
             :modelValue="lightData.radius"
-            @update:modelValue="(v) => update('radius', v)"
+            @update:modelValue="(v: number) => update('radius', v)"
             :min="0"
             unit="px"
           />
@@ -95,7 +95,7 @@
           <label>Falloff Distance</label>
           <ScrubableNumber
             :modelValue="lightData.falloffDistance ?? 500"
-            @update:modelValue="(v) => update('falloffDistance', v)"
+            @update:modelValue="(v: number) => update('falloffDistance', v)"
             :min="0"
             unit="px"
           />
@@ -117,7 +117,7 @@
             <label>Shadow Darkness</label>
             <SliderInput
               :modelValue="lightData.shadowDarkness ?? 100"
-              @update:modelValue="(v) => update('shadowDarkness', v)"
+              @update:modelValue="(v: number) => update('shadowDarkness', v)"
               :min="0"
               :max="100"
               unit="%"
@@ -128,7 +128,7 @@
             <label>Shadow Diffusion</label>
             <ScrubableNumber
               :modelValue="lightData.shadowDiffusion ?? 0"
-              @update:modelValue="(v) => update('shadowDiffusion', v)"
+              @update:modelValue="(v: number) => update('shadowDiffusion', v)"
               :min="0"
               unit="px"
             />
@@ -184,7 +184,7 @@ const lightData = computed<LightData>(() => {
   );
 });
 
-function _update(key: keyof LightData, value: any) {
+function update(key: keyof LightData, value: any) {
   store.updateLayer(props.layer.id, {
     data: {
       ...lightData.value,

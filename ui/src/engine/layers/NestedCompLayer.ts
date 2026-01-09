@@ -78,6 +78,9 @@ export class NestedCompLayer extends BaseLayer {
   // Parent composition FPS for frame rate conversion
   private parentFPS: number = 16;
 
+  // Collapsed state (for flatten transform)
+  private isCollapsed: boolean = false;
+
   constructor(layerData: Layer) {
     super(layerData);
 

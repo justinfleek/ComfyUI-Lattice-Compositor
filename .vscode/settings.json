@@ -54,5 +54,12 @@
   "python.analysis.autoImportCompletions": true,
   "python.analysis.typeCheckingMode": "basic",
   "python.analysis.diagnosticMode": "workspace",
-  "python.analysis.stubPath": "${workspaceFolder}/src"
+  "python.analysis.stubPath": "${workspaceFolder}/src",
+  "cursorpyright.analysis.autoImportCompletions": true,
+  "cursorpyright.analysis.diagnosticMode": "workspace",
+  "cursorpyright.analysis.extraPaths": [
+    "${workspaceFolder}/src"
+  ],
+  "cursorpyright.analysis.stubPath": "${workspaceFolder}/src",
+  "cursorpyright.analysis.typeCheckingMode": "basic"
 }

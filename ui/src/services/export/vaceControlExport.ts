@@ -257,6 +257,11 @@ export class PathFollower {
       return defaultState;
     }
 
+    // Guard against division by zero
+    if (duration <= 0) {
+      return defaultState;
+    }
+
     // Calculate local frame within animation
     let localFrame = frame - startFrame;
 

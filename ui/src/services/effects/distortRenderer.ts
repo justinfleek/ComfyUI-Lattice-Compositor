@@ -162,7 +162,7 @@ class SimplexNoise {
  * Safely extract a numeric value, returning default if NaN/undefined/null
  * Optionally clamps to min/max bounds
  *
- * BUG-025/026/027/028 FIX: NaN values bypass Math.max/min clamps
+ * Note: NaN values bypass Math.max/min clamps - validate inputs.
  */
 function safeNum(
   val: unknown,
@@ -201,7 +201,7 @@ export function transformRenderer(
   input: EffectStackResult,
   params: EvaluatedEffectParams,
 ): EffectStackResult {
-  // BUG-025 FIX: Validate all numeric params to prevent NaN propagation
+  // Validate numeric params to prevent NaN propagation through transform chain
   const anchorPoint = params.anchor_point ?? { x: 0.5, y: 0.5 };
   const position = params.position ?? { x: 0.5, y: 0.5 };
 
@@ -268,7 +268,7 @@ export function warpRenderer(
   params: EvaluatedEffectParams,
 ): EffectStackResult {
   const warpStyle = params.warp_style ?? "arc";
-  // BUG-026 FIX: Validate numeric params to prevent NaN bypass of === 0 check
+  // Validate numeric params to prevent NaN bypassing zero-checks
   const bend = safeNum(params.bend, 0, -100, 100) / 100;
   const hDistort = safeNum(params.horizontal_distortion, 0, -100, 100) / 100;
   const vDistort = safeNum(params.vertical_distortion, 0, -100, 100) / 100;
@@ -592,7 +592,7 @@ export function displacementMapRenderer(
     "stretch") as MapBehavior;
   const useHorizontal = params.use_for_horizontal ?? "red";
   const useVertical = params.use_for_vertical ?? "green";
-  // BUG-027 FIX: Validate numeric params to prevent NaN propagation
+  // Validate displacement limits to prevent NaN in pixel offset calculations
   const maxHorizontal = safeNum(params.max_horizontal, 0, -4000, 4000);
   const maxVertical = safeNum(params.max_vertical, 0, -4000, 4000);
   const wrapMode = params.edge_behavior ?? "off";
@@ -824,7 +824,7 @@ export function turbulentDisplaceRenderer(
 ): EffectStackResult {
   const displacementType = (params.displacement ??
     "turbulent") as TurbulentDisplaceType;
-  // BUG-027 FIX: Validate all numeric params to prevent NaN propagation
+  // Validate turbulence params to prevent NaN in noise calculations
   const amount = safeNum(params.amount, 50, 0, 1000);
   const size = safeNum(params.size, 100, 1, 1000);
   // Complexity must be integer 1-10, NaN would bypass Math.max/min
@@ -1138,7 +1138,7 @@ export function rippleDistortRenderer(
   input: EffectStackResult,
   params: EvaluatedEffectParams,
 ): EffectStackResult {
-  // BUG-028 FIX: Validate all numeric params to prevent NaN propagation
+  // Validate center and radius params to prevent NaN in polar calculations
   const centerRaw = params.center ?? { x: 0.5, y: 0.5 };
   const center = {
     x: safeNum(centerRaw.x, 0.5, 0, 1),

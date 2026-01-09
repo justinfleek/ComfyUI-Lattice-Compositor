@@ -101,8 +101,7 @@ const NOTE_NAMES = [
   "B",
 ];
 
-// BUG-099/100 fix: Simple deterministic hash for IDs
-// Uses djb2 algorithm - fast and has good distribution
+// Deterministic hash for stable ID generation (djb2 algorithm)
 function simpleHash(str: string): string {
   let hash = 5381;
   for (let i = 0; i < str.length; i++) {
@@ -195,8 +194,8 @@ export async function parseMIDIFile(
     numerator: number;
     denominator: number;
   }> = [{ time: 0, numerator: 4, denominator: 4 }];
-  // BUG-098 fix: Track tempo changes by tick position for accurate timing
-  // Don't initialize with default - we'll add it after parsing if no tick 0 tempo exists
+  // Track tempo changes by tick position for accurate MIDI-to-seconds conversion.
+  // Initialized empty - default tempo added after parsing if no tick 0 tempo exists.
   const tempoChangesByTick: Array<{ tick: number; bpm: number }> = [];
 
   for (let t = 0; t < numTracks; t++) {
@@ -254,7 +253,7 @@ export async function parseMIDIFile(
 }
 
 /**
- * BUG-098 fix: Convert ticks to seconds accounting for tempo changes
+ * Convert ticks to seconds accounting for tempo changes.
  * Tempo changes occur at specific tick positions, so we need to calculate
  * cumulative time by summing durations at each tempo.
  */
@@ -306,7 +305,7 @@ function parseTrack(
   startOffset: number,
   ticksPerBeat: number,
   globalTempos: Array<{ time: number; bpm: number }>,
-  // BUG-098 fix: Track tempo changes by tick position for accurate timing
+  // Tempo changes indexed by tick for precise timing calculations
   tempoChangesByTick: Array<{ tick: number; bpm: number }>,
 ): {
   track: MIDITrack;
@@ -356,7 +355,7 @@ function parseTrack(
   let currentTick = 0;
   let runningStatus = 0;
 
-  // BUG-098 fix: Helper to convert ticks to seconds using tempo map
+  // Convert MIDI ticks to seconds accounting for tempo changes
   const ticksToSeconds = (ticks: number): number => {
     return ticksToSecondsWithTempoMap(ticks, ticksPerBeat, tempoChangesByTick);
   };
@@ -480,7 +479,7 @@ function parseTrack(
           (view.getUint8(offset + 1) << 8) |
           view.getUint8(offset + 2);
         const bpm = 60000000 / microsecondsPerBeat;
-        // BUG-098 fix: Record tempo change by tick position for accurate timing
+        // Record tempo change at this tick position for timing calculations
         localTempoChanges.push({ tick: currentTick, bpm });
         tempoChangesByTick.push({ tick: currentTick, bpm });
         tempos.push({ time: ticksToSeconds(currentTick), bpm });
@@ -552,7 +551,7 @@ function readString(view: DataView, offset: number, length: number): string {
  * Convert MIDI notes to keyframes
  * @param midiFile - Parsed MIDI file data
  * @param config - Conversion configuration
- * @param idPrefix - BUG-100 fix: Unique prefix for keyframe IDs (default: hash of config)
+ * @param idPrefix - Unique prefix for keyframe IDs (default: hash of config)
  */
 export function midiNotesToKeyframes(
   midiFile: MIDIParsedFile,
@@ -562,7 +561,7 @@ export function midiNotesToKeyframes(
   const keyframes: Keyframe<number>[] = [];
   const fps = config.fps;
 
-  // BUG-100 fix: Generate unique prefix from config if not provided
+  // Generate deterministic ID prefix from config hash if not provided
   const prefix =
     idPrefix ||
     simpleHash(
@@ -689,7 +688,7 @@ export function midiNotesToKeyframes(
  * Convert MIDI Control Changes to keyframes
  * @param midiFile - Parsed MIDI file data
  * @param config - Conversion configuration
- * @param idPrefix - BUG-100 fix: Unique prefix for keyframe IDs (default: hash of config)
+ * @param idPrefix - Unique prefix for keyframe IDs (default: hash of config)
  */
 export function midiCCToKeyframes(
   midiFile: MIDIParsedFile,
@@ -703,7 +702,7 @@ export function midiCCToKeyframes(
   const keyframes: Keyframe<number>[] = [];
   const fps = config.fps;
 
-  // BUG-100 fix: Generate unique prefix from config if not provided
+  // Generate deterministic ID prefix from config hash if not provided
   const prefix =
     idPrefix ||
     simpleHash(
@@ -763,7 +762,7 @@ export function createMIDIAnimatableProperty(
   midiFile: MIDIParsedFile,
   config: MIDIToKeyframeConfig,
 ): AnimatableProperty<number> {
-  // BUG-099 fix: Generate deterministic ID from name and config (no Date.now() or Math.random())
+  // Generate deterministic property ID from name and config for reproducibility
   const idHash = simpleHash(
     JSON.stringify({
       name,

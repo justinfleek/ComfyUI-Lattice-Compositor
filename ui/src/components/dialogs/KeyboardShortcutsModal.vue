@@ -68,7 +68,7 @@ const props = defineProps<{
   show: boolean;
 }>();
 
-const _emit = defineEmits<(e: "close") => void>();
+const emit = defineEmits<(e: "close") => void>();
 
 const searchQuery = ref("");
 const searchInput = ref<HTMLInputElement | null>(null);
@@ -223,7 +223,7 @@ const allCategories: Category[] = [
   },
 ];
 
-function _parseKeys(keyString: string): string[] {
+function parseKeys(keyString: string): string[] {
   return keyString.split("+").map((key) => {
     // Format special keys
     const keyMap: Record<string, string> = {
@@ -241,7 +241,7 @@ function _parseKeys(keyString: string): string[] {
   });
 }
 
-const _filteredCategories = computed(() => {
+const filteredCategories = computed(() => {
   if (!searchQuery.value.trim()) {
     return allCategories;
   }

@@ -49,7 +49,10 @@ export class ParticleTrailSystem {
     config: TrailConfig,
     blendingConfig: TrailBlendingConfig,
   ) {
-    this.maxParticles = maxParticles;
+    // Validate maxParticles to prevent infinite loop/memory exhaustion
+    this.maxParticles = Number.isFinite(maxParticles) && maxParticles > 0
+      ? Math.min(Math.floor(maxParticles), 1_000_000)  // Cap lower for trails (memory intensive)
+      : 10000;
     this.config = config;
     this.blendingConfig = blendingConfig;
   }
@@ -62,10 +65,11 @@ export class ParticleTrailSystem {
    * Initialize trail rendering resources
    */
   initialize(): void {
-    const trailLength = Math.min(
-      this.config.trailLength,
-      this.TRAIL_POSITIONS_PER_PARTICLE,
-    );
+    // Validate trailLength
+    const rawTrailLength = Number.isFinite(this.config.trailLength) && this.config.trailLength > 0
+      ? this.config.trailLength
+      : 8;  // Default trail length
+    const trailLength = Math.min(rawTrailLength, this.TRAIL_POSITIONS_PER_PARTICLE);
     if (trailLength <= 0) return;
 
     const maxTrailVertices = this.maxParticles * trailLength * 2; // 2 vertices per segment
@@ -122,10 +126,11 @@ export class ParticleTrailSystem {
   update(particleBuffer: Float32Array): void {
     if (!this.trailBuffer || !this.trailGeometry) return;
 
-    const trailLength = Math.min(
-      this.config.trailLength,
-      this.TRAIL_POSITIONS_PER_PARTICLE,
-    );
+    // Validate trailLength (same validation as initialize)
+    const rawTrailLength = Number.isFinite(this.config.trailLength) && this.config.trailLength > 0
+      ? this.config.trailLength
+      : 8;
+    const trailLength = Math.min(rawTrailLength, this.TRAIL_POSITIONS_PER_PARTICLE);
     if (trailLength <= 0) return;
 
     const posAttr = this.trailGeometry.getAttribute(
@@ -205,7 +210,10 @@ export class ParticleTrailSystem {
 
         if (fadeMode === "alpha" || fadeMode === "both") {
           // Interpolate from 1.0 (start) to trailWidthEnd (end)
-          const endAlpha = this.config.trailWidthEnd;
+          // Validate trailWidthEnd
+          const endAlpha = Number.isFinite(this.config.trailWidthEnd) 
+            ? Math.max(0, Math.min(1, this.config.trailWidthEnd))  // Clamp to [0, 1]
+            : 0;  // Default: full fade
           alpha1 *= 1 - t1Ratio * (1 - endAlpha);
           alpha2 *= 1 - t2Ratio * (1 - endAlpha);
         }

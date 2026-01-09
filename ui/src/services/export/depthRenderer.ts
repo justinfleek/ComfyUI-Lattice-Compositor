@@ -43,12 +43,22 @@ export function renderDepthFrame(
 ): DepthRenderResult {
   const { width, height, nearClip, farClip, camera, layers, frame } = options;
 
+  // Use Float32 precision for clip values to match depth buffer storage.
+  // This ensures consistent min/max reporting without precision drift.
+  const f32NearClip = Math.fround(nearClip);
+  const f32FarClip = Math.fround(farClip);
+  
+  // For the depth buffer fill, we use the Float32 value
+  // The returned minDepth/maxDepth will also be Float32 consistent
+
   // Create depth buffer
   const depthBuffer = new Float32Array(width * height);
-  depthBuffer.fill(farClip); // Initialize to far clip
+  depthBuffer.fill(f32FarClip); // Initialize to far clip (Float32 precision)
 
-  let minDepth = farClip;
-  let maxDepth = nearClip;
+  // Initialize min/max to opposite extremes so any real depth value updates them.
+  // Handles empty scenes gracefully by keeping these values until validated below.
+  let minDepth = Infinity;
+  let maxDepth = -Infinity;
 
   // Sort layers by Z depth (front to back from camera's perspective)
   const sortedLayers = [...layers]
@@ -74,7 +84,8 @@ export function renderDepthFrame(
     // Calculate depth value for this layer considering camera
     const cameraZ = camera.position.z;
     const relativeDepth = Math.abs(layerDepth - cameraZ);
-    const clampedDepth = Math.max(nearClip, Math.min(farClip, relativeDepth));
+    // Clamp to clip range with Float32 precision for buffer consistency
+    const clampedDepth = Math.fround(Math.max(f32NearClip, Math.min(f32FarClip, relativeDepth)));
 
     // Update min/max tracking
     minDepth = Math.min(minDepth, clampedDepth);
@@ -92,6 +103,18 @@ export function renderDepthFrame(
         nearClip,
         farClip,
       );
+    } else if (layer.type === "particles") {
+      // Particle layers - render each particle as a depth point
+      fillDepthFromParticles(
+        depthBuffer,
+        layer,
+        width,
+        height,
+        camera,
+        frame,
+        nearClip,
+        farClip,
+      );
     } else {
       // Solid layers get uniform depth
       fillUniformDepth(
@@ -103,6 +126,19 @@ export function renderDepthFrame(
         height,
       );
     }
+  }
+
+  // Handle empty scene: if no layers updated min/max, default to farClip
+  if (!Number.isFinite(minDepth) || !Number.isFinite(maxDepth)) {
+    minDepth = f32FarClip;
+    maxDepth = f32FarClip;
+  }
+  
+  // Ensure invariant: minDepth <= maxDepth
+  if (minDepth > maxDepth) {
+    const temp = minDepth;
+    minDepth = maxDepth;
+    maxDepth = temp;
   }
 
   return {
@@ -141,6 +177,7 @@ function getLayerDepth(layer: Layer, frame: number): number {
 
 /**
  * Get layer opacity at frame
+ * BUG FIX: Use nullish coalescing (??) instead of || to handle 0 opacity correctly
  */
 function getLayerOpacity(layer: Layer, frame: number): number {
   if (
@@ -148,11 +185,13 @@ function getLayerOpacity(layer: Layer, frame: number): number {
     "keyframes" in layer.opacity &&
     layer.opacity.keyframes?.length > 0
   ) {
-    return (interpolateValue(layer.opacity.keyframes, frame) || 100) / 100;
+    const interpolated = interpolateValue(layer.opacity.keyframes, frame);
+    return (interpolated ?? 100) / 100;
   }
 
   if (layer.opacity && "value" in layer.opacity) {
-    return (layer.opacity.value || 100) / 100;
+    // BUG FIX: 0 is a valid opacity value, don't treat it as falsy
+    return (layer.opacity.value ?? 100) / 100;
   }
 
   return 1;
@@ -303,6 +342,81 @@ function fillDepthFromDepthflow(
 /**
  * Fill depth buffer with uniform depth value
  */
+/**
+ * Fill depth buffer from particle layer
+ * Each particle contributes to depth based on its position and size
+ */
+function fillDepthFromParticles(
+  depthBuffer: Float32Array,
+  layer: Layer,
+  screenWidth: number,
+  screenHeight: number,
+  camera: Camera3D,
+  frame: number,
+  nearClip: number,
+  farClip: number,
+): void {
+  // Access the engine's particle layer to get active particles
+  const engine = (window as any).__latticeEngine;
+  if (!engine) return;
+
+  // Get the particle layer from the engine
+  const particleLayer = engine.getLayerById?.(layer.id);
+  if (!particleLayer || typeof particleLayer.getActiveParticles !== "function") {
+    return;
+  }
+
+  // Get active particles at current frame
+  const particles = particleLayer.getActiveParticles();
+  if (!particles || particles.length === 0) return;
+
+  const cameraZ = camera.position.z;
+  const f32NearClip = Math.fround(nearClip);
+  const f32FarClip = Math.fround(farClip);
+
+  // Render each particle as a circular depth splat
+  for (const p of particles) {
+    // Validate particle position
+    if (!Number.isFinite(p.x) || !Number.isFinite(p.y) || !Number.isFinite(p.z)) {
+      continue;
+    }
+
+    // Calculate particle depth relative to camera
+    const relativeDepth = Math.abs(p.z - cameraZ);
+    const clampedDepth = Math.fround(
+      Math.max(f32NearClip, Math.min(f32FarClip, relativeDepth))
+    );
+
+    // Particle screen position (assuming normalized 0-1 coords mapped to screen)
+    const screenX = Math.floor(p.x);
+    const screenY = Math.floor(p.y);
+
+    // Particle radius in pixels (half of size)
+    const radius = Math.max(1, Math.floor((p.size ?? 10) / 2));
+
+    // Render circular splat
+    for (let dy = -radius; dy <= radius; dy++) {
+      for (let dx = -radius; dx <= radius; dx++) {
+        // Circle check
+        if (dx * dx + dy * dy > radius * radius) continue;
+
+        const px = screenX + dx;
+        const py = screenY + dy;
+
+        // Bounds check
+        if (px < 0 || px >= screenWidth || py < 0 || py >= screenHeight) continue;
+
+        const idx = py * screenWidth + px;
+
+        // Depth test - closer wins (particle opacity assumed > 0.5)
+        if (clampedDepth < depthBuffer[idx]) {
+          depthBuffer[idx] = clampedDepth;
+        }
+      }
+    }
+  }
+}
+
 function fillUniformDepth(
   depthBuffer: Float32Array,
   bounds: { x: number; y: number; width: number; height: number },
@@ -376,16 +490,32 @@ function interpolateValue(
 // ============================================================================
 
 /**
- * Convert depth buffer to export format
+ * Convert depth buffer to export format.
+ * Returns Float32Array for 'raw' format.
  */
 export function convertDepthToFormat(
   result: DepthRenderResult,
   format: DepthMapFormat,
-): Uint8Array | Uint16Array {
+): Float32Array | Uint8Array | Uint16Array {
   const spec = DEPTH_FORMAT_SPECS[format];
+  
+  // Validate format exists in spec table
+  if (!spec) {
+    throw new Error(`Unknown depth format: ${format}. Valid formats: ${Object.keys(DEPTH_FORMAT_SPECS).join(', ')}`);
+  }
+  
   const { depthBuffer, width, height, minDepth, maxDepth } = result;
-
   const pixelCount = width * height;
+
+  // Raw format: return Float32Array copy directly without conversion
+  if (format === 'raw' || spec.bitDepth === 32) {
+    // Return a copy of the depth buffer
+    return new Float32Array(depthBuffer);
+  }
+
+  // Guard against division by zero when all depths are identical
+  const depthRange = maxDepth - minDepth;
+  const safeRange = depthRange > 0 ? depthRange : 1;
 
   if (spec.bitDepth === 16) {
     const output = new Uint16Array(pixelCount);
@@ -395,11 +525,14 @@ export function convertDepthToFormat(
 
       if (spec.normalize) {
         // Normalize to 0-1 range
-        normalized = (depthBuffer[i] - minDepth) / (maxDepth - minDepth);
+        normalized = (depthBuffer[i] - minDepth) / safeRange;
       } else {
         // Keep metric value, scale to 16-bit
         normalized = depthBuffer[i] / spec.farClip;
       }
+
+      // Clamp before inversion to prevent out-of-range values
+      normalized = Math.max(0, Math.min(1, normalized));
 
       if (spec.invert) {
         normalized = 1 - normalized;
@@ -413,7 +546,10 @@ export function convertDepthToFormat(
     const output = new Uint8Array(pixelCount);
 
     for (let i = 0; i < pixelCount; i++) {
-      let normalized = (depthBuffer[i] - minDepth) / (maxDepth - minDepth);
+      let normalized = (depthBuffer[i] - minDepth) / safeRange;
+
+      // Clamp before inversion to prevent out-of-range values
+      normalized = Math.max(0, Math.min(1, normalized));
 
       if (spec.invert) {
         normalized = 1 - normalized;
@@ -427,23 +563,69 @@ export function convertDepthToFormat(
 }
 
 /**
- * Create PNG image data from depth buffer
+ * Create PNG image data from depth buffer.
+ * Accepts DepthRenderResult or converted depth data.
  */
 export function depthToImageData(
-  depthData: Uint8Array | Uint16Array,
-  width: number,
-  height: number,
+  input: DepthRenderResult | Uint8Array | Uint16Array,
+  width?: number,
+  height?: number,
 ): ImageData {
-  const imageData = new ImageData(width, height);
+  // Handle DepthRenderResult input
+  if ('depthBuffer' in input) {
+    const result = input as DepthRenderResult;
+    const { depthBuffer, minDepth, maxDepth } = result;
+    const w = result.width;
+    const h = result.height;
+    
+    // Validate buffer size matches dimensions
+    if (depthBuffer.length !== w * h) {
+      throw new Error(`Depth buffer size ${depthBuffer.length} doesn't match ${w}x${h}`);
+    }
+    
+    const imageData = new ImageData(w, h);
+    const depthRange = maxDepth - minDepth;
+    const safeRange = depthRange > 0 ? depthRange : 1;
+
+    for (let i = 0; i < w * h; i++) {
+      // Normalize Float32 to 0-255
+      const normalized = (depthBuffer[i] - minDepth) / safeRange;
+      // Clamp to 8-bit range [0, 255]
+      const value = Math.max(0, Math.min(255, Math.round(normalized * 255)));
+
+      const pixelIdx = i * 4;
+      imageData.data[pixelIdx] = value; // R
+      imageData.data[pixelIdx + 1] = value; // G
+      imageData.data[pixelIdx + 2] = value; // B
+      // Alpha always opaque for depth maps
+      imageData.data[pixelIdx + 3] = 255;
+    }
+
+    return imageData;
+  }
+  
+  // Handle Uint8Array/Uint16Array input (legacy API)
+  const depthData = input as Uint8Array | Uint16Array;
+  const w = width!;
+  const h = height!;
+  
+  if (!w || !h) {
+    throw new Error('Width and height required when passing Uint8Array/Uint16Array');
+  }
+  
+  const imageData = new ImageData(w, h);
   const is16bit = depthData instanceof Uint16Array;
 
-  for (let i = 0; i < width * height; i++) {
+  for (let i = 0; i < w * h; i++) {
     const value = is16bit ? Math.floor(depthData[i] / 256) : depthData[i];
+    // Clamp to valid 8-bit range
+    const clampedValue = Math.max(0, Math.min(255, value));
 
     const pixelIdx = i * 4;
-    imageData.data[pixelIdx] = value; // R
-    imageData.data[pixelIdx + 1] = value; // G
-    imageData.data[pixelIdx + 2] = value; // B
+    imageData.data[pixelIdx] = clampedValue; // R
+    imageData.data[pixelIdx + 1] = clampedValue; // G
+    imageData.data[pixelIdx + 2] = clampedValue; // B
+    // Depth maps must be fully opaque for correct downstream processing
     imageData.data[pixelIdx + 3] = 255; // A
   }
 
@@ -451,21 +633,59 @@ export function depthToImageData(
 }
 
 /**
- * Apply colormap to depth data for visualization
+ * Apply colormap to depth data for visualization.
+ * Accepts DepthRenderResult or converted depth data.
+ * Supports viridis, plasma, magma, inferno, and turbo colormaps.
  */
 export function applyColormap(
-  depthData: Uint8Array | Uint16Array,
-  width: number,
-  height: number,
-  colormap: "grayscale" | "viridis" | "magma" | "plasma",
+  input: DepthRenderResult | Uint8Array | Uint16Array,
+  colormapOrWidth: "grayscale" | "viridis" | "magma" | "plasma" | "inferno" | "turbo" | number,
+  height?: number,
+  colormap?: "grayscale" | "viridis" | "magma" | "plasma" | "inferno" | "turbo",
 ): ImageData {
-  const imageData = new ImageData(width, height);
+  // Handle DepthRenderResult input (new API)
+  if ('depthBuffer' in input) {
+    const result = input as DepthRenderResult;
+    const { depthBuffer, width: w, height: h, minDepth, maxDepth } = result;
+    const cmap = colormapOrWidth as "grayscale" | "viridis" | "magma" | "plasma" | "inferno" | "turbo";
+    
+    const imageData = new ImageData(w, h);
+    const depthRange = maxDepth - minDepth;
+    const safeRange = depthRange > 0 ? depthRange : 1;
+
+    for (let i = 0; i < w * h; i++) {
+      // AI models (MiDaS, Depth-Anything) expect near=bright, far=dark
+      // Invert normalized value: 0=far (dark), 1=near (bright)
+      const normalized = 1 - Math.max(0, Math.min(1, (depthBuffer[i] - minDepth) / safeRange));
+      const [r, g, b] = getColormapColor(normalized, cmap);
+
+      const pixelIdx = i * 4;
+      imageData.data[pixelIdx] = r;
+      imageData.data[pixelIdx + 1] = g;
+      imageData.data[pixelIdx + 2] = b;
+      imageData.data[pixelIdx + 3] = 255;
+    }
+
+    return imageData;
+  }
+  
+  // Handle legacy API: (Uint8Array | Uint16Array, width, height, colormap)
+  const depthData = input as Uint8Array | Uint16Array;
+  const w = colormapOrWidth as number;
+  const h = height!;
+  const cmap = colormap!;
+  
+  if (!w || !h || !cmap) {
+    throw new Error('Width, height, and colormap required when passing Uint8Array/Uint16Array');
+  }
+  
+  const imageData = new ImageData(w, h);
   const is16bit = depthData instanceof Uint16Array;
   const maxValue = is16bit ? 65535 : 255;
 
-  for (let i = 0; i < width * height; i++) {
+  for (let i = 0; i < w * h; i++) {
     const normalized = depthData[i] / maxValue;
-    const [r, g, b] = getColormapColor(normalized, colormap);
+    const [r, g, b] = getColormapColor(normalized, cmap);
 
     const pixelIdx = i * 4;
     imageData.data[pixelIdx] = r;
@@ -478,7 +698,8 @@ export function applyColormap(
 }
 
 /**
- * Get color from colormap
+ * Get color from colormap.
+ * Supports viridis, plasma, magma, inferno, and turbo colormaps.
  */
 function getColormapColor(
   t: number,
@@ -494,6 +715,11 @@ function getColormapColor(
       return magmaColormap(t);
     case "plasma":
       return plasmaColormap(t);
+    case "inferno":
+      return infernoColormap(t);
+    case "turbo":
+      return turboColormap(t);
+    case "grayscale":
     default: {
       const v = Math.round(t * 255);
       return [v, v, v];
@@ -570,6 +796,68 @@ function plasmaColormap(t: number): [number, number, number] {
     [248, 148, 65],
     [253, 195, 40],
     [240, 249, 33],
+  ];
+
+  const idx = t * (colors.length - 1);
+  const i = Math.floor(idx);
+  const f = idx - i;
+
+  if (i >= colors.length - 1)
+    return colors[colors.length - 1] as [number, number, number];
+
+  return [
+    Math.round(colors[i][0] + (colors[i + 1][0] - colors[i][0]) * f),
+    Math.round(colors[i][1] + (colors[i + 1][1] - colors[i][1]) * f),
+    Math.round(colors[i][2] + (colors[i + 1][2] - colors[i][2]) * f),
+  ];
+}
+
+// Inferno colormap - perceptually uniform, good for depth visualization
+function infernoColormap(t: number): [number, number, number] {
+  const colors = [
+    [0, 0, 4],
+    [22, 11, 57],
+    [66, 10, 104],
+    [106, 23, 110],
+    [147, 38, 103],
+    [188, 55, 84],
+    [221, 81, 58],
+    [243, 118, 27],
+    [252, 165, 10],
+    [246, 215, 70],
+    [252, 255, 164],
+  ];
+
+  const idx = t * (colors.length - 1);
+  const i = Math.floor(idx);
+  const f = idx - i;
+
+  if (i >= colors.length - 1)
+    return colors[colors.length - 1] as [number, number, number];
+
+  return [
+    Math.round(colors[i][0] + (colors[i + 1][0] - colors[i][0]) * f),
+    Math.round(colors[i][1] + (colors[i + 1][1] - colors[i][1]) * f),
+    Math.round(colors[i][2] + (colors[i + 1][2] - colors[i][2]) * f),
+  ];
+}
+
+// Turbo colormap - Google's rainbow alternative with better perceptual uniformity
+function turboColormap(t: number): [number, number, number] {
+  const colors = [
+    [48, 18, 59],
+    [70, 68, 172],
+    [62, 121, 229],
+    [38, 170, 225],
+    [31, 212, 182],
+    [76, 237, 123],
+    [149, 249, 67],
+    [212, 241, 31],
+    [253, 207, 37],
+    [252, 150, 38],
+    [239, 85, 33],
+    [205, 33, 28],
+    [122, 4, 3],
   ];
 
   const idx = t * (colors.length - 1);

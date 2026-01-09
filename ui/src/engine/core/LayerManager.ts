@@ -104,6 +104,9 @@ export class LayerManager {
   // Matte canvas cache - stores rendered canvases for layers used as matte sources
   private matteCanvases: Map<string, HTMLCanvasElement> = new Map();
 
+  // Current frame number - updated during evaluateFrame() for particle spline queries
+  private currentFrame: number = 0;
+
   // Ordered layer list for render order (respects track matte dependencies)
   private renderOrder: string[] = [];
 
@@ -343,13 +346,15 @@ export class LayerManager {
       cameraLayer.setSplineProvider(this.createSplineProvider());
     }
 
-    // Particle layer: provide renderer and FPS
+    // Particle layer: provide renderer, FPS, and spline provider
     if (layer.type === "particles") {
       const particleLayer = layer as ParticleLayer;
       if (this.rendererRef) {
         particleLayer.setRenderer(this.rendererRef);
       }
       particleLayer.setFPS(this.compositionFPS);
+      // Wire up spline provider for spline-based emission
+      particleLayer.setSplineProvider(this.createSplineProviderForParticles());
     }
 
     // Video layer: provide FPS
@@ -590,7 +595,9 @@ export class LayerManager {
     evaluatedLayers: readonly EvaluatedLayer[],
     frame?: number,
   ): void {
-    const currentFrame = frame ?? 0;
+    const frameNum = frame ?? 0;
+    // Store current frame for particle spline queries
+    this.currentFrame = frameNum;
 
     // First, apply state to spline and path layers so they evaluate their control points
     // This ensures animated paths are ready before text layers query them
@@ -606,7 +613,7 @@ export class LayerManager {
 
     // Process track mattes - collect matte canvases and distribute to target layers
     // This must happen before applying state to layers that use track mattes
-    this.processTrackMattes(currentFrame);
+    this.processTrackMattes(frameNum);
 
     // Apply evaluated state to remaining layers
     for (const evalLayer of evaluatedLayers) {
@@ -616,8 +623,41 @@ export class LayerManager {
       }
     }
 
+    // Update particle shadows from scene lights
+    this.updateParticleShadows();
+
     // Re-sort by Z after evaluation (positions may have changed)
     this.scene.sortByZ();
+  }
+
+  /**
+   * Update shadow information for all particle layers from scene lights
+   * This should be called after lights have been updated
+   */
+  private updateParticleShadows(): void {
+    // Find all light layers that cast shadows
+    const shadowLights: THREE.Light[] = [];
+    for (const layer of this.layers.values()) {
+      if (layer.type === "light") {
+        const lightLayer = layer as LightLayer;
+        const light = lightLayer.getLight?.();
+        if (light && light.castShadow && light.shadow?.map?.texture) {
+          shadowLights.push(light);
+        }
+      }
+    }
+
+    // If no shadow lights, nothing to do
+    if (shadowLights.length === 0) return;
+
+    // Update all particle layers with shadow information
+    for (const layer of this.layers.values()) {
+      if (layer.type === "particles") {
+        const particleLayer = layer as ParticleLayer;
+        // Pass the Three.js scene for shadow map lookups
+        particleLayer.updateShadowsFromScene(this.scene.scene);
+      }
+    }
   }
 
   /**
@@ -634,6 +674,9 @@ export class LayerManager {
     frame: number,
     audioReactiveGetter?: LayerAudioReactiveGetter | null,
   ): void {
+    // Store current frame for particle spline queries
+    this.currentFrame = frame;
+
     // First, update text-on-path connections
     this.updateTextPathConnections(frame);
 
@@ -781,6 +824,29 @@ export class LayerManager {
       frame: number,
     ): SplineQueryResult | null => {
       return this.querySplinePath(layerId, t, frame);
+    };
+  }
+
+  /**
+   * Create a spline provider adapted for the particle system
+   * The particle system's SplineProvider has a simpler signature: (splineId, t) => {x, y, z}
+   * This adapter captures the current frame from the layer manager state
+   */
+  createSplineProviderForParticles(): import("../particles/ParticleEmitterLogic").SplineProvider {
+    return (
+      splineId: string,
+      t: number,
+    ): { x: number; y: number; z?: number } | null => {
+      // Use the current frame from the layer manager
+      // Note: This is evaluated at particle spawn time, so the frame is accurate
+      const result = this.querySplinePath(splineId, t, this.currentFrame);
+      if (!result) return null;
+      
+      return {
+        x: result.point.x,
+        y: result.point.y,
+        z: result.point.z,
+      };
     };
   }
 

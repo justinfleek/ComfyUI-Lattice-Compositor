@@ -115,7 +115,7 @@ export interface ExpressionValidationResult {
 // ============================================================
 
 /**
- * Source rectangle interface matching After Effects
+ * Source rectangle interface matching industry standards
  */
 export interface SourceRect {
   top: number; // Y position of top edge

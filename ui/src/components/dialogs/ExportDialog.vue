@@ -191,7 +191,7 @@ const isCollecting = ref(false);
 const collectProgress = ref(0);
 
 // Collect project as ZIP
-async function _collectProject() {
+async function collectProject() {
   if (isCollecting.value || !store.project) return;
 
   isCollecting.value = true;
@@ -250,7 +250,7 @@ const exportWidth = computed(() => customWidth.value);
 const exportHeight = computed(() => customHeight.value);
 
 // Select a preset
-function _selectPreset(preset: {
+function selectPreset(preset: {
   label: string;
   width: number;
   height: number;
@@ -262,7 +262,7 @@ function _selectPreset(preset: {
 }
 
 // Validate custom dimensions
-function _validateCustomDimensions(): void {
+function validateCustomDimensions(): void {
   const validation = matteExporter.validateDimensions(
     customWidth.value,
     customHeight.value,
@@ -307,7 +307,7 @@ async function generatePreview(): Promise<void> {
 }
 
 // Start export
-async function _startExport(): Promise<void> {
+async function startExport(): Promise<void> {
   if (isExporting.value || !store.hasProject) return;
 
   isExporting.value = true;

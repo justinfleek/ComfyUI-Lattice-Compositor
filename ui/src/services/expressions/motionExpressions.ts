@@ -22,6 +22,61 @@ export interface MotionExpressionContext {
 }
 
 // ============================================================================
+// HELPERS
+// ============================================================================
+
+/**
+ * Convert value to array format for consistent processing.
+ * Handles both array [x, y, z] and object {x, y, z} formats.
+ * Prevents crashes with object-style vectors by normalizing to arrays.
+ */
+function toArray(value: number | number[] | { x: number; y: number; z?: number }): number[] {
+  if (typeof value === 'number') {
+    return [value];
+  }
+  if (Array.isArray(value)) {
+    return value;
+  }
+  // Object format {x, y} or {x, y, z}
+  if (typeof value === 'object' && value !== null && 'x' in value && 'y' in value) {
+    const arr = [value.x, value.y];
+    if ('z' in value && value.z !== undefined) {
+      arr.push(value.z);
+    }
+    return arr;
+  }
+  // Fallback: return as single-element array or empty
+  return [0];
+}
+
+/**
+ * Convert array back to original format based on original value structure
+ */
+function fromArray(
+  arr: number[],
+  originalValue: number | number[] | { x: number; y: number; z?: number }
+): number | number[] | { x: number; y: number; z?: number } {
+  if (typeof originalValue === 'number') {
+    return arr[0] ?? 0;
+  }
+  if (Array.isArray(originalValue)) {
+    return arr;
+  }
+  // Object format
+  if (typeof originalValue === 'object' && originalValue !== null && 'x' in originalValue) {
+    const result: { x: number; y: number; z?: number } = {
+      x: arr[0] ?? 0,
+      y: arr[1] ?? 0,
+    };
+    if ('z' in originalValue && originalValue.z !== undefined) {
+      result.z = arr[2] ?? 0;
+    }
+    return result;
+  }
+  return arr;
+}
+
+// ============================================================================
 // MOTION EXPRESSIONS
 // ============================================================================
 
@@ -63,28 +118,21 @@ export function inertia(
 
   if (t <= 0) return value;
 
-  // Calculate velocity at keyframe
-  const vel = typeof velocity === "number" ? velocity : velocity[0];
-  const val = typeof value === "number" ? value : value[0];
+  // Convert to arrays for consistent processing
+  const valueArr = toArray(value);
+  const velocityArr = toArray(velocity);
 
-  const oscillation =
-    (vel * safeAmplitude * Math.sin(safeFrequency * t * 2 * Math.PI)) /
-    Math.exp(safeDecay * t);
-
-  if (typeof value === "number") {
-    return val + oscillation;
-  }
-  // For arrays, apply to all components
-  return (value as number[]).map((v, i) => {
-    const componentVel = (velocity as number[])[i] || 0;
-    return (
-      v +
-      (componentVel *
-        safeAmplitude *
-        Math.sin(safeFrequency * t * 2 * Math.PI)) /
-        Math.exp(safeDecay * t)
-    );
+  // Apply oscillation to each component
+  const resultArr = valueArr.map((v, i) => {
+    const componentVel = velocityArr[i] || 0;
+    const oscillation =
+      (componentVel * safeAmplitude * Math.sin(safeFrequency * t * 2 * Math.PI)) /
+      Math.exp(safeDecay * t);
+    return v + oscillation;
   });
+
+  // Convert back to original format
+  return fromArray(resultArr, value) as number | number[];
 }
 
 /**
@@ -147,13 +195,11 @@ export function bounce(
   const bounceT = bounceTime / (bounceDuration * 2);
   const bounceOffset = bounceHeight * 4 * bounceT * (1 - bounceT);
 
-  if (typeof value === "number") {
-    return value - bounceOffset * (1 - safeElasticity);
-  }
-
-  return (value as number[]).map(
-    (v) => v - bounceOffset * (1 - safeElasticity),
-  );
+  // Convert to arrays for consistent processing
+  const valueArr = toArray(value);
+  const resultArr = valueArr.map((v) => v - bounceOffset * (1 - safeElasticity));
+  
+  return fromArray(resultArr, value) as number | number[];
 }
 
 /**
@@ -195,9 +241,9 @@ export function elastic(
   const decay = 2 ** (-10 * t);
   const oscillation = decay * Math.sin(((t - s) * (2 * Math.PI)) / safePeriod);
 
-  if (typeof value === "number") {
-    return value + safeAmplitude * oscillation;
-  }
-
-  return (value as number[]).map((v) => v + safeAmplitude * oscillation);
+  // Convert to arrays for consistent processing
+  const valueArr = toArray(value);
+  const resultArr = valueArr.map((v) => v + safeAmplitude * oscillation);
+  
+  return fromArray(resultArr, value) as number | number[];
 }

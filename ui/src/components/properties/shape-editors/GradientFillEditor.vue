@@ -12,7 +12,7 @@
       <label>Opacity</label>
       <ScrubableNumber
         :modelValue="shape.opacity.value"
-        @update:modelValue="v => updateNumber('opacity', v)"
+        @update:modelValue="(v: number) => updateNumber('opacity', v)"
         :min="0"
         :max="100"
         unit="%"
@@ -53,7 +53,7 @@
         />
         <ScrubableNumber
           :modelValue="stop.position * 100"
-          @update:modelValue="v => updateStopPosition(index, v / 100)"
+          @update:modelValue="(v: number) => updateStopPosition(index, v / 100)"
           :min="0"
           :max="100"
           unit="%"
@@ -70,14 +70,14 @@
       <div class="xy-inputs">
         <ScrubableNumber
           :modelValue="shape.gradient.value.startPoint.x * 100"
-          @update:modelValue="v => updateStartPoint('x', v / 100)"
+          @update:modelValue="(v: number) => updateStartPoint('x', v / 100)"
           :min="0"
           :max="100"
           unit="%"
         />
         <ScrubableNumber
           :modelValue="shape.gradient.value.startPoint.y * 100"
-          @update:modelValue="v => updateStartPoint('y', v / 100)"
+          @update:modelValue="(v: number) => updateStartPoint('y', v / 100)"
           :min="0"
           :max="100"
           unit="%"
@@ -89,14 +89,14 @@
       <div class="xy-inputs">
         <ScrubableNumber
           :modelValue="shape.gradient.value.endPoint.x * 100"
-          @update:modelValue="v => updateEndPoint('x', v / 100)"
+          @update:modelValue="(v: number) => updateEndPoint('x', v / 100)"
           :min="0"
           :max="100"
           unit="%"
         />
         <ScrubableNumber
           :modelValue="shape.gradient.value.endPoint.y * 100"
-          @update:modelValue="v => updateEndPoint('y', v / 100)"
+          @update:modelValue="(v: number) => updateEndPoint('y', v / 100)"
           :min="0"
           :max="100"
           unit="%"
@@ -141,7 +141,7 @@ const emit = defineEmits(["update"]);
 const store = useCompositorStore();
 
 // Gradient preview CSS
-const _gradientPreviewStyle = computed(() => {
+const gradientPreviewStyle = computed(() => {
   const g = props.shape.gradient.value;
   const stops = g.stops
     .map(
@@ -165,7 +165,7 @@ const _gradientPreviewStyle = computed(() => {
   }
 });
 
-function _colorToHex(color: ShapeColor): string {
+function colorToHex(color: ShapeColor): string {
   const r = Math.round(color.r).toString(16).padStart(2, "0");
   const g = Math.round(color.g).toString(16).padStart(2, "0");
   const b = Math.round(color.b).toString(16).padStart(2, "0");
@@ -179,7 +179,7 @@ function hexToColor(hex: string): ShapeColor {
   return { r, g, b, a: 1 };
 }
 
-function _updateGradientType(e: Event) {
+function updateGradientType(e: Event) {
   const updated = { ...props.shape };
   updated.gradient = {
     ...updated.gradient,
@@ -191,13 +191,13 @@ function _updateGradientType(e: Event) {
   emit("update", updated);
 }
 
-function _updateNumber(prop: "opacity", value: number) {
+function updateNumber(prop: "opacity", value: number) {
   const updated = { ...props.shape };
   updated[prop] = { ...updated[prop], value };
   emit("update", updated);
 }
 
-function _toggleKeyframe(prop: "opacity") {
+function toggleKeyframe(prop: "opacity") {
   const updated = { ...props.shape };
   const animProp = updated[prop];
   const frame = store.currentFrame;
@@ -211,19 +211,19 @@ function _toggleKeyframe(prop: "opacity") {
   emit("update", updated);
 }
 
-function _updateFillRule(e: Event) {
+function updateFillRule(e: Event) {
   const updated = { ...props.shape };
   updated.fillRule = (e.target as HTMLSelectElement).value as FillRule;
   emit("update", updated);
 }
 
-function _updateBlendMode(e: Event) {
+function updateBlendMode(e: Event) {
   const updated = { ...props.shape };
   updated.blendMode = (e.target as HTMLSelectElement).value;
   emit("update", updated);
 }
 
-function _updateStopColor(index: number, hex: string) {
+function updateStopColor(index: number, hex: string) {
   const updated = { ...props.shape };
   const stops = [...updated.gradient.value.stops];
   stops[index] = { ...stops[index], color: hexToColor(hex) };
@@ -234,7 +234,7 @@ function _updateStopColor(index: number, hex: string) {
   emit("update", updated);
 }
 
-function _updateStopPosition(index: number, position: number) {
+function updateStopPosition(index: number, position: number) {
   const updated = { ...props.shape };
   const stops = [...updated.gradient.value.stops];
   stops[index] = { ...stops[index], position };
@@ -245,7 +245,7 @@ function _updateStopPosition(index: number, position: number) {
   emit("update", updated);
 }
 
-function _addStop() {
+function addStop() {
   const updated = { ...props.shape };
   const stops = [...updated.gradient.value.stops];
   stops.push({ position: 0.5, color: { r: 128, g: 128, b: 128, a: 1 } });
@@ -257,7 +257,7 @@ function _addStop() {
   emit("update", updated);
 }
 
-function _removeStop(index: number) {
+function removeStop(index: number) {
   if (props.shape.gradient.value.stops.length <= 2) return;
   const updated = { ...props.shape };
   const stops = [...updated.gradient.value.stops];
@@ -269,7 +269,7 @@ function _removeStop(index: number) {
   emit("update", updated);
 }
 
-function _updateStartPoint(axis: "x" | "y", value: number) {
+function updateStartPoint(axis: "x" | "y", value: number) {
   const updated = { ...props.shape };
   updated.gradient = {
     ...updated.gradient,
@@ -281,7 +281,7 @@ function _updateStartPoint(axis: "x" | "y", value: number) {
   emit("update", updated);
 }
 
-function _updateEndPoint(axis: "x" | "y", value: number) {
+function updateEndPoint(axis: "x" | "y", value: number) {
   const updated = { ...props.shape };
   updated.gradient = {
     ...updated.gradient,
@@ -293,7 +293,7 @@ function _updateEndPoint(axis: "x" | "y", value: number) {
   emit("update", updated);
 }
 
-function _updateHighlightLength(value: number) {
+function updateHighlightLength(value: number) {
   const updated = { ...props.shape };
   updated.gradient = {
     ...updated.gradient,
@@ -302,7 +302,7 @@ function _updateHighlightLength(value: number) {
   emit("update", updated);
 }
 
-function _updateHighlightAngle(value: number) {
+function updateHighlightAngle(value: number) {
   const updated = { ...props.shape };
   updated.gradient = {
     ...updated.gradient,

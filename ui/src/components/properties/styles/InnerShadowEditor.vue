@@ -77,9 +77,9 @@ defineProps<{
   style: InnerShadowStyle;
 }>();
 
-const _emit = defineEmits<(e: "update", updates: InnerShadowUpdate) => void>();
+const emit = defineEmits<(e: "update", updates: InnerShadowUpdate) => void>();
 
-const _blendModes: BlendMode[] = [
+const blendModes: BlendMode[] = [
   "normal",
   "multiply",
   "screen",
@@ -90,21 +90,21 @@ const _blendModes: BlendMode[] = [
   "color-burn",
 ];
 
-function _formatMode(mode: string): string {
+function formatMode(mode: string): string {
   return mode
     .split("-")
     .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
     .join(" ");
 }
 
-function _rgbaToHex(color: RGBA): string {
+function rgbaToHex(color: RGBA): string {
   const r = Math.round(color.r).toString(16).padStart(2, "0");
   const g = Math.round(color.g).toString(16).padStart(2, "0");
   const b = Math.round(color.b).toString(16).padStart(2, "0");
   return `#${r}${g}${b}`;
 }
 
-function _hexToRgba(hex: string): RGBA {
+function hexToRgba(hex: string): RGBA {
   const r = parseInt(hex.slice(1, 3), 16);
   const g = parseInt(hex.slice(3, 5), 16);
   const b = parseInt(hex.slice(5, 7), 16);

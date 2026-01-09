@@ -60,7 +60,7 @@ const keyframeAtCurrentFrame = computed(() => {
 });
 
 // Icon class based on state
-const _iconClass = computed(() => {
+const iconClass = computed(() => {
   if (hasKeyframeAtCurrentFrame.value) {
     return "pi-circle-fill"; // Filled diamond/circle for keyframe present
   }
@@ -71,7 +71,7 @@ const _iconClass = computed(() => {
 });
 
 // Button title
-const _buttonTitle = computed(() => {
+const buttonTitle = computed(() => {
   const exprHint = "\nAlt+click: Add expression";
   if (hasExpression.value) {
     return "Expression active (Alt+click to edit)";
@@ -86,7 +86,7 @@ const _buttonTitle = computed(() => {
 });
 
 // Handle click - Alt+click opens expression mode
-function _handleClick(event: MouseEvent): void {
+function handleClick(event: MouseEvent): void {
   if (event.altKey) {
     // Alt+click: Open expression editor
     expressionEditor.openExpressionEditor(

@@ -84,7 +84,7 @@ const emit = defineEmits<{
   (e: "update", key: keyof VisualizationConfig, value: any): void;
 }>();
 
-function _update(key: keyof VisualizationConfig, value: any): void {
+function update(key: keyof VisualizationConfig, value: any): void {
   emit("update", key, value);
 }
 </script>

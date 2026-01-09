@@ -31,7 +31,7 @@ import type { MergeMode, MergePathsOperator } from "@/types/shapes";
 const props = defineProps<{ operator: MergePathsOperator; layerId: string }>();
 const emit = defineEmits(["update"]);
 
-const _modeDescription = computed(() => {
+const modeDescription = computed(() => {
   const descs: Record<MergeMode, string> = {
     add: "Combines all paths into one",
     subtract: "Removes overlapping areas",
@@ -43,7 +43,7 @@ const _modeDescription = computed(() => {
   return descs[props.operator.mode];
 });
 
-function _updateMode(e: Event) {
+function updateMode(e: Event) {
   const updated = { ...props.operator };
   updated.mode = (e.target as HTMLSelectElement).value as MergeMode;
   emit("update", updated);

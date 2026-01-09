@@ -12,7 +12,7 @@
       <label>Width</label>
       <ScrubableNumber
         :modelValue="shape.width.value"
-        @update:modelValue="v => updateNumber('width', v)"
+        @update:modelValue="(v: number) => updateNumber('width', v)"
         :min="0"
         :max="100"
         unit="px"
@@ -24,7 +24,7 @@
       <label>Opacity</label>
       <ScrubableNumber
         :modelValue="shape.opacity.value"
-        @update:modelValue="v => updateNumber('opacity', v)"
+        @update:modelValue="(v: number) => updateNumber('opacity', v)"
         :min="0"
         :max="100"
         unit="%"
@@ -85,7 +85,7 @@
         />
         <ScrubableNumber
           :modelValue="stop.position * 100"
-          @update:modelValue="v => updateStopPosition(index, v / 100)"
+          @update:modelValue="(v: number) => updateStopPosition(index, v / 100)"
           :min="0"
           :max="100"
           unit="%"
@@ -101,7 +101,7 @@
       <label>Dash Offset</label>
       <ScrubableNumber
         :modelValue="shape.dashOffset.value"
-        @update:modelValue="v => updateNumber('dashOffset', v)"
+        @update:modelValue="(v: number) => updateNumber('dashOffset', v)"
         :min="0"
         :max="100"
         unit="px"
@@ -130,7 +130,7 @@ const emit = defineEmits(["update"]);
 const store = useCompositorStore();
 
 // Gradient preview CSS
-const _gradientPreviewStyle = computed(() => {
+const gradientPreviewStyle = computed(() => {
   const g = props.shape.gradient.value;
   const stops = g.stops
     .map(
@@ -146,12 +146,12 @@ const _gradientPreviewStyle = computed(() => {
   }
 });
 
-const _dashPatternDisplay = computed(() => {
+const dashPatternDisplay = computed(() => {
   const pattern = props.shape.dashPattern?.value || [];
   return pattern.length > 0 ? pattern.join(", ") : "No dashes";
 });
 
-function _colorToHex(color: ShapeColor): string {
+function colorToHex(color: ShapeColor): string {
   const r = Math.round(color.r).toString(16).padStart(2, "0");
   const g = Math.round(color.g).toString(16).padStart(2, "0");
   const b = Math.round(color.b).toString(16).padStart(2, "0");
@@ -165,7 +165,7 @@ function hexToColor(hex: string): ShapeColor {
   return { r, g, b, a: 1 };
 }
 
-function _updateGradientType(e: Event) {
+function updateGradientType(e: Event) {
   const updated = { ...props.shape };
   updated.gradient = {
     ...updated.gradient,
@@ -177,7 +177,7 @@ function _updateGradientType(e: Event) {
   emit("update", updated);
 }
 
-function _updateNumber(
+function updateNumber(
   prop: "width" | "opacity" | "dashOffset",
   value: number,
 ) {
@@ -186,7 +186,7 @@ function _updateNumber(
   emit("update", updated);
 }
 
-function _toggleKeyframe(prop: "width" | "opacity" | "dashOffset") {
+function toggleKeyframe(prop: "width" | "opacity" | "dashOffset") {
   const updated = { ...props.shape };
   const animProp = updated[prop];
   const frame = store.currentFrame;
@@ -200,31 +200,31 @@ function _toggleKeyframe(prop: "width" | "opacity" | "dashOffset") {
   emit("update", updated);
 }
 
-function _updateLineCap(e: Event) {
+function updateLineCap(e: Event) {
   const updated = { ...props.shape };
   updated.lineCap = (e.target as HTMLSelectElement).value as LineCap;
   emit("update", updated);
 }
 
-function _updateLineJoin(e: Event) {
+function updateLineJoin(e: Event) {
   const updated = { ...props.shape };
   updated.lineJoin = (e.target as HTMLSelectElement).value as LineJoin;
   emit("update", updated);
 }
 
-function _updateMiterLimit(value: number) {
+function updateMiterLimit(value: number) {
   const updated = { ...props.shape };
   updated.miterLimit = value;
   emit("update", updated);
 }
 
-function _updateBlendMode(e: Event) {
+function updateBlendMode(e: Event) {
   const updated = { ...props.shape };
   updated.blendMode = (e.target as HTMLSelectElement).value;
   emit("update", updated);
 }
 
-function _updateStopColor(index: number, hex: string) {
+function updateStopColor(index: number, hex: string) {
   const updated = { ...props.shape };
   const stops = [...updated.gradient.value.stops];
   stops[index] = { ...stops[index], color: hexToColor(hex) };
@@ -235,7 +235,7 @@ function _updateStopColor(index: number, hex: string) {
   emit("update", updated);
 }
 
-function _updateStopPosition(index: number, position: number) {
+function updateStopPosition(index: number, position: number) {
   const updated = { ...props.shape };
   const stops = [...updated.gradient.value.stops];
   stops[index] = { ...stops[index], position };
@@ -246,7 +246,7 @@ function _updateStopPosition(index: number, position: number) {
   emit("update", updated);
 }
 
-function _addStop() {
+function addStop() {
   const updated = { ...props.shape };
   const stops = [...updated.gradient.value.stops];
   stops.push({ position: 0.5, color: { r: 128, g: 128, b: 128, a: 1 } });
@@ -258,7 +258,7 @@ function _addStop() {
   emit("update", updated);
 }
 
-function _removeStop(index: number) {
+function removeStop(index: number) {
   if (props.shape.gradient.value.stops.length <= 2) return;
   const updated = { ...props.shape };
   const stops = [...updated.gradient.value.stops];

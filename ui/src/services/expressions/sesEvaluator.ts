@@ -22,7 +22,7 @@
  *    Use only for render-loop where async is not possible.
  *    WARNING: Can hang on infinite loops.
  *
- * This replaces the previous Proxy+with sandbox (BUG-006) which was bypassable.
+ * This replaces the previous Proxy+with sandbox which was bypassable.
  */
 
 import type { ExpressionContext } from "./types";

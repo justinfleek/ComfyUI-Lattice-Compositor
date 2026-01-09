@@ -132,7 +132,7 @@ export function renderAudioSpectrum(
   const dy = endPointY - startPointY;
   const length = Math.sqrt(dx * dx + dy * dy);
 
-  // BUG-020: Guard against zero-length line (start === end point)
+  // Guard against zero-length line (start === end point)
   if (length === 0) {
     return { canvas, ctx };
   }
@@ -354,7 +354,7 @@ export function renderAudioWaveform(
   const dy = endPointY - startPointY;
   const length = Math.sqrt(dx * dx + dy * dy);
 
-  // BUG-020: Guard against zero-length line (start === end point)
+  // Guard against zero-length line (start === end point)
   if (length === 0) {
     return { canvas, ctx };
   }

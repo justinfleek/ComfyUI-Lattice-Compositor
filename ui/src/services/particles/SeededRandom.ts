@@ -100,4 +100,16 @@ export class SeededRandom {
       z: Math.cos(phi),
     };
   }
+
+  /**
+   * Get random number from Gaussian/normal distribution
+   * Uses Box-Muller transform for deterministic gaussian sampling
+   */
+  gaussian(mean: number = 0, stdDev: number = 1): number {
+    const u1 = this.next();
+    const u2 = this.next();
+    // Box-Muller transform
+    const z = Math.sqrt(-2 * Math.log(u1 || 1e-10)) * Math.cos(2 * Math.PI * u2);
+    return mean + z * stdDev;
+  }
 }

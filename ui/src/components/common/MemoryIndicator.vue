@@ -65,7 +65,7 @@ import {
   unloadableItems,
 } from "@/services/memoryBudget";
 
-const _showDetails = ref(false);
+const showDetails = ref(false);
 const isCleaningUp = ref(false);
 
 // Computed values from memory state
@@ -75,23 +75,23 @@ const usagePercent = computed(() =>
 const totalUsage = computed(() => memoryState.totalUsageMB.value);
 const available = computed(() => memoryState.availableVRAM.value);
 const warningLevel = computed(() => memoryState.warningLevel.value);
-const _gpuInfo = computed(() => memoryState.gpuInfo.value);
-const _usageByCategory = computed(() => memoryState.usageByCategory.value);
-const _warning = computed(() => getWarning());
-const _unloadableCount = computed(() => unloadableItems.value.length);
+const gpuInfo = computed(() => memoryState.gpuInfo.value);
+const usageByCategory = computed(() => memoryState.usageByCategory.value);
+const warning = computed(() => getWarning());
+const unloadableCount = computed(() => unloadableItems.value.length);
 
-const _warningClass = computed(() => ({
+const warningClass = computed(() => ({
   "level-none": warningLevel.value === "none",
   "level-info": warningLevel.value === "info",
   "level-warning": warningLevel.value === "warning",
   "level-critical": warningLevel.value === "critical",
 }));
 
-const _usageText = computed(() => {
+const usageText = computed(() => {
   return `${formatMB(totalUsage.value)} / ${formatMB(available.value)}`;
 });
 
-const _tooltipText = computed(() => {
+const tooltipText = computed(() => {
   const percent = usagePercent.value;
   if (warningLevel.value === "critical") {
     return `CRITICAL: ${percent}% GPU memory used - cleanup needed!`;
@@ -109,7 +109,7 @@ function formatMB(mb: number): string {
   return `${Math.round(mb)}MB`;
 }
 
-function _formatCategory(category: string): string {
+function formatCategory(category: string): string {
   const labels: Record<string, string> = {
     model: "AI Models",
     texture: "Textures",
@@ -122,7 +122,7 @@ function _formatCategory(category: string): string {
   return labels[category] || category;
 }
 
-async function _performCleanup() {
+async function performCleanup() {
   isCleaningUp.value = true;
   try {
     const target = totalUsage.value * 0.3; // Try to free 30%

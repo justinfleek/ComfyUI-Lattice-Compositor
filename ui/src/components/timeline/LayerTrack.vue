@@ -91,13 +91,13 @@ const store = useCompositorStore();
 const trackAreaRef = ref<HTMLDivElement | null>(null);
 
 // Selection state
-const _isSelected = computed(() =>
+const isSelected = computed(() =>
   store.selectedLayerIds.includes(props.layer.id),
 );
-const _selectedKeyframeIds = computed(() => store.selectedKeyframeIds);
+const selectedKeyframeIds = computed(() => store.selectedKeyframeIds);
 
 // Calculate duration bar style using startFrame/endFrame (primary properties)
-const _durationBarStyle = computed(() => {
+const durationBarStyle = computed(() => {
   const inPercent = (props.layer.startFrame / props.frameCount) * 100;
   const outPercent = ((props.layer.endFrame + 1) / props.frameCount) * 100;
   const width = outPercent - inPercent;
@@ -149,41 +149,41 @@ const allKeyframes = computed(() => {
   return Array.from(frameMap.values());
 });
 
-const _hasKeyframes = computed(() => allKeyframes.value.length > 0);
+const hasKeyframes = computed(() => allKeyframes.value.length > 0);
 
 // Get keyframe position as percentage
-function _getKeyframePosition(frame: number): number {
+function getKeyframePosition(frame: number): number {
   return (frame / props.frameCount) * 100;
 }
 
 // Actions
-function _selectLayer() {
+function selectLayer() {
   emit("select", props.layer.id);
 }
 
-function _toggleVisibility() {
+function toggleVisibility() {
   emit("updateLayer", props.layer.id, { visible: !props.layer.visible });
 }
 
-function _toggleLock() {
+function toggleLock() {
   emit("updateLayer", props.layer.id, { locked: !props.layer.locked });
 }
 
-function _selectKeyframe(keyframeId: string) {
+function selectKeyframe(keyframeId: string) {
   emit("selectKeyframe", keyframeId);
 }
 
 // Trimming
 let trimType: "in" | "out" | null = null;
 
-function _startTrimIn(_event: MouseEvent) {
+function startTrimIn(_event: MouseEvent) {
   if (props.layer.locked) return;
   trimType = "in";
   document.addEventListener("mousemove", handleTrim);
   document.addEventListener("mouseup", stopTrim);
 }
 
-function _startTrimOut(_event: MouseEvent) {
+function startTrimOut(_event: MouseEvent) {
   if (props.layer.locked) return;
   trimType = "out";
   document.addEventListener("mousemove", handleTrim);

@@ -143,10 +143,10 @@ const configState = reactive<EnvironmentMapConfig>({
 const selectedPreset = ref<string | null>(null);
 
 // Alias for template compatibility (avoiding conflict with props.config)
-const _config = configState;
+const config = configState;
 
 // Built-in presets (these would normally link to actual HDRI files)
-const _presets: EnvironmentPreset[] = [
+const presets: EnvironmentPreset[] = [
   {
     id: "studio",
     name: "Studio",
@@ -191,7 +191,7 @@ watch(
 );
 
 // Methods
-function _updateConfig<K extends keyof EnvironmentMapConfig>(
+function updateConfig<K extends keyof EnvironmentMapConfig>(
   key: K,
   value: EnvironmentMapConfig[K],
 ) {
@@ -199,7 +199,7 @@ function _updateConfig<K extends keyof EnvironmentMapConfig>(
   emitUpdate();
 }
 
-function _onHdriUpload(file: File, dataUrl?: string) {
+function onHdriUpload(file: File, dataUrl?: string) {
   if (dataUrl) {
     configState.url = dataUrl;
     selectedPreset.value = null;
@@ -209,13 +209,13 @@ function _onHdriUpload(file: File, dataUrl?: string) {
   }
 }
 
-function _onHdriRemove() {
+function onHdriRemove() {
   configState.url = undefined;
   emitUpdate();
   emit("clear");
 }
 
-function _applyPreset(preset: EnvironmentPreset) {
+function applyPreset(preset: EnvironmentPreset) {
   selectedPreset.value = preset.id;
   if (preset.url) {
     configState.url = preset.url;

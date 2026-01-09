@@ -302,18 +302,18 @@ function updateStats() {
 }
 
 // Queue controls
-function _startQueue() {
+function startQueue() {
   queueManager?.start();
   isRunning.value = true;
   isPaused.value = false;
 }
 
-function _pauseQueue() {
+function pauseQueue() {
   queueManager?.pause();
   isPaused.value = true;
 }
 
-function _stopQueue() {
+function stopQueue() {
   queueManager?.stop();
   isRunning.value = false;
   isPaused.value = false;
@@ -321,7 +321,7 @@ function _stopQueue() {
 }
 
 // Job actions
-async function _addJob() {
+async function addJob() {
   if (!queueManager) return;
 
   const comp = store.getActiveComp();
@@ -347,22 +347,22 @@ async function _addJob() {
   refreshJobs();
 }
 
-function _pauseJob(_jobId: string) {
+function pauseJob(_jobId: string) {
   queueManager?.pause();
   isPaused.value = true;
 }
 
-function _resumeJob(_jobId: string) {
+function resumeJob(_jobId: string) {
   queueManager?.resume();
   isPaused.value = false;
 }
 
-async function _removeJob(jobId: string) {
+async function removeJob(jobId: string) {
   await queueManager?.removeJob(jobId);
   refreshJobs();
 }
 
-async function _downloadJob(jobId: string) {
+async function downloadJob(jobId: string) {
   if (!queueManager) {
     console.error("Queue manager not initialized");
     return;
@@ -425,7 +425,7 @@ async function _downloadJob(jobId: string) {
 }
 
 // Format time helper
-function _formatTime(seconds: number): string {
+function formatTime(seconds: number): string {
   if (!seconds || seconds === Infinity) return "--:--";
   const mins = Math.floor(seconds / 60);
   const secs = Math.floor(seconds % 60);

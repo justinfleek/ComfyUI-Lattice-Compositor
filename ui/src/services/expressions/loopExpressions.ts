@@ -85,7 +85,7 @@ export function repeatAfter(
       return addValues(baseValue, scaleValue(delta, cycles + 1));
     }
     case "continue": {
-      // Continue at last velocity (BUG-015: ensure type matching)
+      // Continue at last velocity (ensures type matching)
       const velocity = ctx.velocity;
       const value = ctx.value;
       if (typeof velocity === "number" && typeof value === "number") {
@@ -101,7 +101,7 @@ export function repeatAfter(
       return value;
     }
     default: {
-      // BUG-014: Handle unknown loop type
+      // Fallback for unrecognized loop type
       console.warn(`[Expressions] Unknown loop type in repeatAfter: ${type}`);
       return ctx.value;
     }
@@ -157,7 +157,7 @@ export function repeatBefore(
       return addValues(baseValue, scaleValue(delta, cycles + 1));
     }
     case "continue": {
-      // Continue at last velocity (BUG-015: ensure type matching)
+      // Continue at last velocity (ensures type matching)
       const velocity = ctx.velocity;
       const value = ctx.value;
       if (typeof velocity === "number" && typeof value === "number") {
@@ -173,7 +173,7 @@ export function repeatBefore(
       return value;
     }
     default: {
-      // BUG-014: Handle unknown loop type
+      // Fallback for unrecognized loop type
       console.warn(`[Expressions] Unknown loop type in repeatBefore: ${type}`);
       return ctx.value;
     }

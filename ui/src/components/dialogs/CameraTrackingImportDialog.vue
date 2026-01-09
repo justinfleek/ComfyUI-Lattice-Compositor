@@ -236,14 +236,14 @@ function clearFile() {
   detectedFormat.value = "unknown";
 }
 
-function _handleFileSelect(event: Event) {
+function handleFileSelect(event: Event) {
   const input = event.target as HTMLInputElement;
   if (input.files?.[0]) {
     processFile(input.files[0]);
   }
 }
 
-function _handleDrop(event: DragEvent) {
+function handleDrop(event: DragEvent) {
   isDragging.value = false;
   const files = event.dataTransfer?.files;
   if (files?.[0]) {
@@ -282,7 +282,7 @@ async function processFile(file: File) {
   }
 }
 
-async function _importTracking() {
+async function importTracking() {
   if (!parseResult.value) return;
 
   importing.value = true;

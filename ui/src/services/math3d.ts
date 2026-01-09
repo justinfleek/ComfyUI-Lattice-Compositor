@@ -7,7 +7,50 @@
  * - Float32 has ~7 significant digits of precision (1e-7 relative error)
  * - For operations requiring higher precision, use Mat4_64 variants
  * - Scale operations with values < 0.01 or > 100 may accumulate error
+ * 
+ * EDGE CASE HANDLING:
+ * - All edge cases emit warnings via math3dWarn() - NO SILENT FAILURES
+ * - Set math3dWarnHandler to customize warning behavior (e.g., throw errors)
  */
+
+// ============================================================================
+// Warning System - NO SILENT FAILURES
+// ============================================================================
+
+export type Math3DWarning = 
+  | 'SCALE_OUT_OF_RANGE'
+  | 'GIMBAL_LOCK'
+  | 'ZERO_VECTOR_NORMALIZE'
+  | 'SINGULAR_MATRIX'
+  | 'DIVISION_BY_ZERO';
+
+export interface Math3DWarnEvent {
+  type: Math3DWarning;
+  message: string;
+  context?: Record<string, unknown>;
+}
+
+/**
+ * Default warning handler - logs to console.
+ * Replace this to throw errors, collect metrics, etc.
+ */
+export let math3dWarnHandler: (event: Math3DWarnEvent) => void = (event) => {
+  console.warn(`[math3d] ${event.type}: ${event.message}`, event.context);
+};
+
+/**
+ * Set custom warning handler. Use this to:
+ * - Throw errors in strict mode
+ * - Collect telemetry
+ * - Show user notifications
+ */
+export function setMath3DWarnHandler(handler: (event: Math3DWarnEvent) => void): void {
+  math3dWarnHandler = handler;
+}
+
+function math3dWarn(type: Math3DWarning, message: string, context?: Record<string, unknown>): void {
+  math3dWarnHandler({ type, message, context });
+}
 
 export interface Vec3 {
   x: number;
@@ -53,7 +96,13 @@ export function lengthVec3(v: Vec3): number {
 
 export function normalizeVec3(v: Vec3): Vec3 {
   const len = lengthVec3(v);
-  if (len === 0) return { x: 0, y: 0, z: 0 };
+  if (len === 0) {
+    math3dWarn('ZERO_VECTOR_NORMALIZE', 
+      'Attempted to normalize zero vector - returning zero vector', 
+      { input: v }
+    );
+    return { x: 0, y: 0, z: 0 };
+  }
   return { x: v.x / len, y: v.y / len, z: v.z / len };
 }
 
@@ -159,6 +208,26 @@ export function perspectiveMat4(
   near: number,
   far: number,
 ): Mat4 {
+  // Validate inputs
+  if (near >= far) {
+    math3dWarn('DIVISION_BY_ZERO',
+      'perspectiveMat4: near >= far will cause invalid projection',
+      { near, far }
+    );
+  }
+  if (aspect <= 0) {
+    math3dWarn('DIVISION_BY_ZERO',
+      'perspectiveMat4: aspect ratio must be positive',
+      { aspect }
+    );
+  }
+  if (fovY <= 0 || fovY >= Math.PI) {
+    math3dWarn('DIVISION_BY_ZERO',
+      'perspectiveMat4: FOV must be in (0, π) radians',
+      { fovY, fovDegrees: fovY * 180 / Math.PI }
+    );
+  }
+  
   const te = new Float32Array(16);
   const f = 1.0 / Math.tan(fovY / 2);
   const nf = 1 / (near - far);
@@ -191,6 +260,26 @@ export function orthographicMat4(
   near: number,
   far: number,
 ): Mat4 {
+  // Validate inputs
+  if (left >= right) {
+    math3dWarn('DIVISION_BY_ZERO',
+      'orthographicMat4: left >= right will cause invalid projection',
+      { left, right }
+    );
+  }
+  if (bottom >= top) {
+    math3dWarn('DIVISION_BY_ZERO',
+      'orthographicMat4: bottom >= top will cause invalid projection',
+      { bottom, top }
+    );
+  }
+  if (near >= far) {
+    math3dWarn('DIVISION_BY_ZERO',
+      'orthographicMat4: near >= far will cause invalid projection',
+      { near, far }
+    );
+  }
+  
   const te = new Float32Array(16);
   const w = 1.0 / (right - left);
   const h = 1.0 / (top - bottom);
@@ -387,11 +476,25 @@ export function rotateZMat4(angle: number): Mat4 {
  * Create a scale matrix.
  * Uses Float64 intermediate array for precision before converting to Float32.
  */
-/**
- * Create a scale matrix.
- * Uses Float64 intermediate array for precision before converting to Float32.
- */
 export function scaleMat4(s: Vec3): Mat4 {
+  // Only warn at truly extreme values (likely mistakes)
+  // 0.001 = 0.1% scale, 1000 = 100,000% scale
+  const EXTREME_MIN = 0.001;
+  const EXTREME_MAX = 1000;
+  
+  const extremeValues = [
+    { axis: 'x', value: s.x },
+    { axis: 'y', value: s.y },
+    { axis: 'z', value: s.z },
+  ].filter(({ value }) => value !== 0 && (Math.abs(value) < EXTREME_MIN || Math.abs(value) > EXTREME_MAX));
+  
+  if (extremeValues.length > 0) {
+    math3dWarn('SCALE_OUT_OF_RANGE',
+      `Extreme scale values detected - this may be unintentional`,
+      { scale: s, extremeValues }
+    );
+  }
+  
   // Create in Float64 first for precision
   const temp = new Float64Array([
     s.x, 0, 0, 0,
@@ -405,6 +508,14 @@ export function scaleMat4(s: Vec3): Mat4 {
 export function transformPoint(m: Mat4, p: Vec3): Vec3 {
   const e = m.elements;
   const w = e[3] * p.x + e[7] * p.y + e[11] * p.z + e[15];
+  
+  if (Math.abs(w) < 1e-10) {
+    math3dWarn('DIVISION_BY_ZERO',
+      'transformPoint: homogeneous coordinate w ≈ 0, point is at infinity',
+      { w, point: p }
+    );
+  }
+  
   return {
     x: (e[0] * p.x + e[4] * p.y + e[8] * p.z + e[12]) / w,
     y: (e[1] * p.x + e[5] * p.y + e[9] * p.z + e[13]) / w,
@@ -473,7 +584,21 @@ export function invertMat4(m: Mat4): Mat4 | null {
 
   const det = n11 * t11 + n21 * t12 + n31 * t13 + n41 * t14;
 
-  if (det === 0) return null;
+  if (det === 0) {
+    math3dWarn('SINGULAR_MATRIX',
+      'Cannot invert singular matrix (determinant = 0)',
+      { determinant: det }
+    );
+    return null;
+  }
+  
+  // Warn on near-singular matrices that may cause precision issues
+  if (Math.abs(det) < 1e-10) {
+    math3dWarn('SINGULAR_MATRIX',
+      'Matrix is near-singular - inversion may be imprecise',
+      { determinant: det }
+    );
+  }
 
   const detInv = 1 / det;
 
@@ -608,6 +733,15 @@ export function focalLengthToFOV(
  * @returns Focal length in mm
  */
 export function fovToFocalLength(fov: number, sensorSize: number): number {
+  // BUG FIX: Prevent division by zero when fov=0 (tan(0)=0)
+  if (fov <= 0 || fov >= Math.PI) {
+    math3dWarn('DIVISION_BY_ZERO',
+      'fovToFocalLength: FOV must be in (0, π) radians',
+      { fov, fovDegrees: fov * 180 / Math.PI }
+    );
+    // Return a sensible default (50mm equivalent)
+    return sensorSize;
+  }
   return sensorSize / (2 * Math.tan(fov / 2));
 }
 
@@ -623,6 +757,14 @@ export function zoomToFocalLength(
   compWidth: number,
   filmSize: number,
 ): number {
+  // BUG FIX: Prevent division by zero when compWidth=0
+  if (compWidth <= 0) {
+    math3dWarn('DIVISION_BY_ZERO',
+      'zoomToFocalLength: compWidth must be positive',
+      { compWidth }
+    );
+    return filmSize; // Default to 1:1 zoom ratio
+  }
   return (zoom * filmSize) / compWidth;
 }
 
@@ -638,6 +780,14 @@ export function focalLengthToZoom(
   compWidth: number,
   filmSize: number,
 ): number {
+  // BUG FIX: Prevent division by zero when filmSize=0
+  if (filmSize <= 0) {
+    math3dWarn('DIVISION_BY_ZERO',
+      'focalLengthToZoom: filmSize must be positive',
+      { filmSize }
+    );
+    return compWidth; // Default to 1:1 zoom ratio
+  }
   return (focalLength * compWidth) / filmSize;
 }
 
@@ -705,6 +855,16 @@ export function quatFromEuler(x: number, y: number, z: number): Quat {
 export function quatToEuler(q: Quat): Vec3 {
   // Normalize quaternion to prevent numerical issues
   const len = Math.sqrt(q.x * q.x + q.y * q.y + q.z * q.z + q.w * q.w);
+  
+  // BUG FIX: Prevent division by zero for zero quaternion
+  if (len === 0) {
+    math3dWarn('ZERO_VECTOR_NORMALIZE',
+      'quatToEuler: Cannot convert zero quaternion to Euler - returning identity rotation',
+      { quaternion: q }
+    );
+    return { x: 0, y: 0, z: 0 };
+  }
+  
   const qx = q.x / len;
   const qy = q.y / len;
   const qz = q.z / len;
@@ -735,8 +895,12 @@ export function quatToEuler(q: Quat): Vec3 {
   const sinY = Math.max(-1, Math.min(1, m13));
   
   if (Math.abs(sinY) > 0.9999999) {
-    // Gimbal lock: pitch is at ±90°
-    // Set yaw to 0 and compute roll from remaining rotation
+    // Gimbal lock: pitch is EXACTLY ±90° (within 0.01°)
+    // Only warn here - this is the only case that actually matters
+    math3dWarn('GIMBAL_LOCK',
+      'Camera pitch is exactly ±90°. If animating through this angle, you may see a rotation glitch.',
+      { pitchDegrees: Math.sign(sinY) * 90 }
+    );
     y = Math.sign(sinY) * Math.PI / 2;
     z = 0;
     x = Math.atan2(-m32, m22);

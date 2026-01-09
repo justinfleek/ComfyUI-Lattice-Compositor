@@ -4,7 +4,7 @@
       <label>Start</label>
       <ScrubableNumber
         :modelValue="operator.start.value"
-        @update:modelValue="v => updateNumber('start', v)"
+        @update:modelValue="(v: number) => updateNumber('start', v)"
         :min="0"
         :max="100"
         unit="%"
@@ -15,7 +15,7 @@
       <label>End</label>
       <ScrubableNumber
         :modelValue="operator.end.value"
-        @update:modelValue="v => updateNumber('end', v)"
+        @update:modelValue="(v: number) => updateNumber('end', v)"
         :min="0"
         :max="100"
         unit="%"
@@ -26,7 +26,7 @@
       <label>Offset</label>
       <ScrubableNumber
         :modelValue="operator.offset.value"
-        @update:modelValue="v => updateNumber('offset', v)"
+        @update:modelValue="(v: number) => updateNumber('offset', v)"
         :min="-360"
         :max="360"
         unit="°"
@@ -52,19 +52,19 @@ const props = defineProps<{ operator: TrimPathsOperator; layerId: string }>();
 const emit = defineEmits(["update"]);
 const store = useCompositorStore();
 
-function _updateNumber(prop: "start" | "end" | "offset", value: number) {
+function updateNumber(prop: "start" | "end" | "offset", value: number) {
   const updated = { ...props.operator };
   updated[prop] = { ...updated[prop], value };
   emit("update", updated);
 }
 
-function _updateMode(e: Event) {
+function updateMode(e: Event) {
   const updated = { ...props.operator };
   updated.mode = (e.target as HTMLSelectElement).value as TrimMode;
   emit("update", updated);
 }
 
-function _toggleKeyframe(prop: "start" | "end" | "offset") {
+function toggleKeyframe(prop: "start" | "end" | "offset") {
   const updated = { ...props.operator };
   const animProp = updated[prop];
   const frame = store.currentFrame;

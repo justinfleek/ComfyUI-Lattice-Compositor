@@ -130,24 +130,24 @@ const viewportState = computed(() => store.viewportState);
 
 type ViewOptionKey = keyof ViewOptions;
 
-function _toggleOption(key: ViewOptionKey) {
+function toggleOption(key: ViewOptionKey) {
   const current = viewOptions.value[key];
   if (typeof current === "boolean") {
     store.updateViewOptions({ [key]: !current });
   }
 }
 
-function _setCameraWireframes(value: WireframeVisibility) {
+function setCameraWireframes(value: WireframeVisibility) {
   store.updateViewOptions({ cameraWireframes: value });
 }
 
-function _setView(viewType: ViewType) {
+function setView(viewType: ViewType) {
   const newViews = [...viewportState.value.views];
   newViews[viewportState.value.activeViewIndex] = viewType;
   store.updateViewportState({ views: newViews });
 }
 
-function _resetView() {
+function resetView() {
   const activeView =
     viewportState.value.views[viewportState.value.activeViewIndex];
   if (activeView.startsWith("custom-")) {
@@ -168,7 +168,7 @@ function _resetView() {
   }
 }
 
-function _focusSelected() {
+function focusSelected() {
   const selectedLayer = store.layers.find((l) =>
     store.selectedLayerIds.includes(l.id),
   );
