@@ -1322,11 +1322,17 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
         stepForward(e.shiftKey ? 10 : 1);
         break;
 
-      // Keyframe navigation (J/K)
+      // Keyframe/Marker navigation (J/K, Shift+J/K for markers)
       case "j":
         if (!e.ctrlKey && !e.metaKey) {
           e.preventDefault();
-          goToPrevKeyframe();
+          if (e.shiftKey) {
+            // Shift+J: Jump to previous marker
+            store.jumpToPreviousMarker();
+          } else {
+            // J: Go to previous keyframe
+            goToPrevKeyframe();
+          }
         }
         break;
       case "k":
@@ -1342,6 +1348,10 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
         } else if (e.ctrlKey || e.metaKey) {
           e.preventDefault();
           showCompositionSettingsDialog.value = true;
+        } else if (e.shiftKey) {
+          // Shift+K: Jump to next marker
+          e.preventDefault();
+          store.jumpToNextMarker();
         } else {
           e.preventDefault();
           goToNextKeyframe();
@@ -1630,6 +1640,19 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
         if (showKeyboardShortcutsModal) {
           showKeyboardShortcutsModal.value = !showKeyboardShortcutsModal.value;
         }
+        break;
+
+      // Add marker at playhead (* on numpad or Shift+8)
+      case "*":
+      case "numpadmultiply":
+        e.preventDefault();
+        store.addMarkers([
+          {
+            frame: store.currentFrame,
+            label: `Marker ${store.getMarkers().length + 1}`,
+            color: "#FFFF00",
+          },
+        ]);
         break;
     }
   }

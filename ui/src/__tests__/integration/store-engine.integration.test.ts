@@ -61,7 +61,7 @@ describe('Store → Engine Integration', () => {
       store.addKeyframe(layer.id, 'opacity', 100);
       
       // Modify first keyframe
-      store.setKeyframeValue(layer.id, 'opacity', kf1.id, 50);
+      store.setKeyframeValue(layer.id, 'opacity', kf1!.id, 50);
       
       // Evaluate at frame 0
       const project = store.project;
@@ -82,7 +82,7 @@ describe('Store → Engine Integration', () => {
       store.addKeyframe(layer.id, 'opacity', 100);
       
       // Delete first keyframe (method is removeKeyframe, not deleteKeyframe)
-      store.removeKeyframe(layer.id, 'opacity', kf1.id);
+      store.removeKeyframe(layer.id, 'opacity', kf1!.id);
       
       // Evaluate at frame 0
       const project = store.project;

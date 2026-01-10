@@ -73,14 +73,14 @@ describe("PROPERTY: createDefaultTransform", () => {
 
   it("orientation defaults to (0, 0, 0)", () => {
     const transform = createDefaultTransform();
-    expect(transform.orientation.value).toEqual({ x: 0, y: 0, z: 0 });
+    expect(transform.orientation?.value).toEqual({ x: 0, y: 0, z: 0 });
   });
 
   it("rotationX, rotationY, rotationZ default to 0", () => {
     const transform = createDefaultTransform();
-    expect(transform.rotationX.value).toBe(0);
-    expect(transform.rotationY.value).toBe(0);
-    expect(transform.rotationZ.value).toBe(0);
+    expect(transform.rotationX?.value).toBe(0);
+    expect(transform.rotationY?.value).toBe(0);
+    expect(transform.rotationZ?.value).toBe(0);
   });
 
   it("origin and anchorPoint reference same object (backwards compat)", () => {
@@ -109,8 +109,8 @@ describe("PROPERTY: createDefaultTransform", () => {
       expect(prop).toHaveProperty("value");
       expect(prop).toHaveProperty("animated");
       expect(prop).toHaveProperty("keyframes");
-      expect(prop.animated).toBe(false);
-      expect(prop.keyframes).toEqual([]);
+      expect(prop?.animated).toBe(false);
+      expect(prop?.keyframes).toEqual([]);
     }
   });
 

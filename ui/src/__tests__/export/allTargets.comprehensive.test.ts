@@ -182,16 +182,25 @@ function createParamsForTarget(
     case "uni3c-motion":
       return {
         ...base,
-        uni3cRenderVideo: "camera_render.mp4",
+        trajType: "orbit",
+        cameraData: { trajectory: [] },
         depthSequence: ["depth/frame_001.png"],
         ...overrides,
       };
 
     case "wan-move":
-      return { ...base, trackCoords: '[[{"x":100,"y":200}]]', ...overrides };
+      return {
+        ...base,
+        motionData: { tracks: [[{ x: 100, y: 200 }]] },
+        ...overrides,
+      };
 
     case "ati":
-      return { ...base, trackCoords: '[[{"x":100,"y":200}]]', ...overrides };
+      return {
+        ...base,
+        motionData: { trajectories: [[{ x: 100, y: 200 }]] },
+        ...overrides,
+      };
 
     case "ttm":
     case "ttm-wan":
@@ -199,8 +208,15 @@ function createParamsForTarget(
     case "ttm-svd":
       return {
         ...base,
-        ttmMotionVideo: "motion.mp4",
-        ttmEndFrame: "end.png",
+        ttmCombinedMask: "combined_mask.png",
+        ttmLayers: [
+          {
+            layerId: "layer-1",
+            layerName: "Test Layer",
+            motionMask: "mask.png",
+            trajectory: [{ frame: 0, x: 100, y: 200 }],
+          },
+        ],
         ...overrides,
       };
 
@@ -213,7 +229,7 @@ function createParamsForTarget(
       };
 
     case "light-x":
-      return { ...base, lightXLora: "light-x.safetensors", ...overrides };
+      return { ...base, loraModel: "light-x.safetensors", ...overrides };
 
     default:
       return base;
@@ -306,32 +322,34 @@ describe("REQUIRED INPUTS: All Targets", () => {
 });
 
 describe("REQUIRED INPUTS: Trajectory Targets", () => {
-  it("wan-move: should generate workflow without trackCoords", () => {
+  it("wan-move: should generate workflow without motionData", () => {
     const params = createParamsForTarget("wan-move", {
-      trackCoords: undefined,
+      motionData: undefined,
     });
 
-    // Generator uses defaults when trackCoords not provided
+    // Generator uses defaults when motionData not provided
     const workflow = generateWorkflowForTarget("wan-move", params);
     expect(Object.keys(workflow).length).toBeGreaterThan(0);
   });
 
-  it("ati: should generate workflow without trackCoords", () => {
-    const params = createParamsForTarget("ati", { trackCoords: undefined });
+  it("ati: should generate workflow without motionData", () => {
+    const params = createParamsForTarget("ati", { motionData: undefined });
 
-    // Generator uses defaults when trackCoords not provided
+    // Generator uses defaults when motionData not provided
     const workflow = generateWorkflowForTarget("ati", params);
     expect(Object.keys(workflow).length).toBeGreaterThan(0);
   });
 
-  it("wan-move: should accept valid trackCoords JSON", () => {
+  it("wan-move: should accept valid motionData with tracks", () => {
     const params = createParamsForTarget("wan-move", {
-      trackCoords: JSON.stringify([
-        [
-          { x: 100, y: 200 },
-          { x: 150, y: 250 },
+      motionData: {
+        tracks: [
+          [
+            { x: 100, y: 200 },
+            { x: 150, y: 250 },
+          ],
         ],
-      ]),
+      },
     });
 
     const workflow = generateWorkflowForTarget("wan-move", params);
@@ -343,8 +361,8 @@ describe("REQUIRED INPUTS: TTM Targets", () => {
   for (const target of TTM_TARGETS) {
     it(`${target}: should generate workflow without motion inputs`, () => {
       const params = createParamsForTarget(target, {
-        ttmMotionVideo: undefined,
-        ttmMaskDirectory: undefined,
+        ttmLayers: undefined,
+        ttmCombinedMask: undefined,
       });
 
       // Generator uses defaults when motion inputs not provided
@@ -352,19 +370,25 @@ describe("REQUIRED INPUTS: TTM Targets", () => {
       expect(Object.keys(workflow).length).toBeGreaterThan(0);
     });
 
-    it(`${target}: should accept ttmMotionVideo`, () => {
+    it(`${target}: should accept ttmCombinedMask`, () => {
       const params = createParamsForTarget(target, {
-        ttmMotionVideo: "motion.mp4",
+        ttmCombinedMask: "combined_mask.png",
       });
 
       const workflow = generateWorkflowForTarget(target, params);
       expect(Object.keys(workflow).length).toBeGreaterThan(0);
     });
 
-    it(`${target}: should accept ttmMaskDirectory`, () => {
+    it(`${target}: should accept ttmLayers`, () => {
       const params = createParamsForTarget(target, {
-        ttmMotionVideo: undefined,
-        ttmMaskDirectory: "/masks/",
+        ttmLayers: [
+          {
+            layerId: "layer-1",
+            layerName: "Test Layer",
+            motionMask: "mask.png",
+            trajectory: [{ frame: 0, x: 100, y: 200 }],
+          },
+        ],
       });
 
       const workflow = generateWorkflowForTarget(target, params);
@@ -819,21 +843,21 @@ describe("EDGE CASES: Target-Specific", () => {
     expect(Object.keys(workflow).length).toBeGreaterThan(0);
   });
 
-  it("wan-move: should handle empty trackCoords array", () => {
+  it("wan-move: should handle empty motionData tracks array", () => {
     const params = createParamsForTarget("wan-move", {
-      trackCoords: "[]",
+      motionData: { tracks: [] },
     });
 
-    // Should handle gracefully (empty but valid JSON)
+    // Should handle gracefully (empty but valid tracks)
     expect(() => {
       generateWorkflowForTarget("wan-move", params);
     }).not.toThrow();
   });
 
-  it("ttm: should handle missing optional ttmStartStep/ttmEndStep", () => {
+  it("ttm: should handle missing optional ttmTweakIndex/ttmTstrongIndex", () => {
     const params = createParamsForTarget("ttm", {
-      ttmStartStep: undefined,
-      ttmEndStep: undefined,
+      ttmTweakIndex: undefined,
+      ttmTstrongIndex: undefined,
     });
 
     const workflow = generateWorkflowForTarget("ttm", params);

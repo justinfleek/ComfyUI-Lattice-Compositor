@@ -38,16 +38,22 @@ function createKeyframe<T>(frame: number, value: T): Keyframe<T> {
 
 function createTestLayer(): Layer {
   testLayerCounter++;
+  const origin = {
+    id: 'origin',
+    name: 'Origin',
+    type: 'vector3' as const,
+    value: { x: 0, y: 0, z: 0 },
+    animated: false,
+    keyframes: [],
+  };
   return {
     id: `test-layer-${testLayerCounter}-${Date.now()}`,
     name: 'Test Layer',
     type: 'solid',
     visible: true,
     locked: false,
-    solo: false,
-    shy: false,
-    inPoint: 0,
-    outPoint: 100,
+    isolate: false,
+    motionBlur: false,
     startFrame: 0,
     endFrame: 100,
     parentId: null,
@@ -57,6 +63,7 @@ function createTestLayer(): Layer {
       position: {
         id: 'position',
         name: 'Position',
+        type: 'vector3',
         value: { x: 0, y: 0, z: 0 },
         animated: false,
         keyframes: [],
@@ -64,6 +71,7 @@ function createTestLayer(): Layer {
       scale: {
         id: 'scale',
         name: 'Scale',
+        type: 'vector3',
         value: { x: 100, y: 100, z: 100 },
         animated: false,
         keyframes: [],
@@ -71,27 +79,26 @@ function createTestLayer(): Layer {
       rotation: {
         id: 'rotation',
         name: 'Rotation',
+        type: 'number',
         value: 0,
         animated: false,
         keyframes: [],
       },
-      anchorPoint: {
-        id: 'anchorPoint',
-        name: 'Anchor Point',
-        value: { x: 0, y: 0, z: 0 },
-        animated: false,
-        keyframes: [],
-      },
+      origin,
+      anchorPoint: origin,
     },
     opacity: {
       id: 'opacity',
       name: 'Opacity',
+      type: 'number',
       value: 100,
       animated: false,
       keyframes: [],
     },
     effects: [],
     properties: [],
+    masks: [],
+    data: { color: '#000000', width: 100, height: 100 },
   } as Layer;
 }
 

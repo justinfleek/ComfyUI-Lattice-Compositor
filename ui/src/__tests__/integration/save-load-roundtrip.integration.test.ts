@@ -14,17 +14,20 @@ import type {
   Keyframe,
   Layer,
   LatticeProject,
+  SolidLayerData,
+  CameraLayerData,
 } from "@/types/project";
+import { createDefaultTextData, type TextData } from "@/types/text";
 
 // ============================================================================
 // Test Helpers
 // ============================================================================
 
-function createTestKeyframe(
+function createTestKeyframe<T>(
   frame: number,
-  value: number | { x: number; y: number; z?: number },
+  value: T,
   interpolation: "linear" | "bezier" | "hold" = "linear"
-): Keyframe {
+): Keyframe<T> {
   return {
     id: `kf-${frame}`,
     frame,
@@ -38,7 +41,7 @@ function createTestKeyframe(
 
 function createAnimatableProperty<T>(
   value: T,
-  keyframes: Keyframe[] = []
+  keyframes: Keyframe<T>[] = []
 ): AnimatableProperty<T> {
   return {
     id: `prop-${Math.random().toString(36).slice(2, 8)}`,
@@ -57,12 +60,10 @@ function createTestLayer(overrides: Partial<Layer> = {}): Layer {
     type: "solid",
     visible: true,
     locked: false,
-    solo: false,
-    shy: false,
+    isolate: false,
+    motionBlur: false,
     startFrame: 0,
     endFrame: 150,
-    inPoint: 0,
-    outPoint: 150,
     blendMode: "normal",
     threeD: false,
     opacity: createAnimatableProperty(100),
@@ -75,37 +76,44 @@ function createTestLayer(overrides: Partial<Layer> = {}): Layer {
     effects: [],
     properties: [],
     parentId: null,
-    data: { type: "solid", color: "#ff0000" },
+    data: { color: "#ff0000", width: 1920, height: 1080 } as SolidLayerData,
     ...overrides,
   };
 }
 
 function createTestProject(layers: Layer[]): LatticeProject {
+  const settings = {
+    width: 1920,
+    height: 1080,
+    fps: 30,
+    frameCount: 150,
+    duration: 5,
+    backgroundColor: "#000000",
+    autoResizeToContent: false,
+    frameBlendingEnabled: false,
+  };
+
   const composition: Composition = {
     id: "main",
     name: "Test Composition",
-    settings: {
-      width: 1920,
-      height: 1080,
-      fps: 30,
-      duration: 5,
-      backgroundColor: "#000000",
-    },
+    settings,
     layers,
+    currentFrame: 0,
+    isNestedComp: false,
   };
 
   return {
-    id: "test-project",
     version: "1.0.0",
     mainCompositionId: "main",
     compositions: { main: composition },
-    composition: composition.settings,
+    composition: settings,
     assets: {},
+    layers, // Legacy property for backwards compatibility
+    currentFrame: 0,
     meta: {
       name: "Test Project",
       created: new Date().toISOString(),
       modified: new Date().toISOString(),
-      version: "1.0.0",
     },
   };
 }
@@ -127,7 +135,7 @@ describe("Save/Load Roundtrip - Basic Types", () => {
     const original = createTestProject([]);
     const restored = roundtripJSON(original);
 
-    expect(restored.id).toBe(original.id);
+    expect(restored.version).toBe(original.version);
     expect(restored.mainCompositionId).toBe(original.mainCompositionId);
     expect(Object.keys(restored.compositions)).toEqual(Object.keys(original.compositions));
     expect(restored.compositions.main.layers).toHaveLength(0);
@@ -155,7 +163,7 @@ describe("Save/Load Roundtrip - Basic Types", () => {
     const restored = roundtripJSON(original);
 
     expect(restored.meta.name).toBe("My Important Project");
-    expect(restored.meta.version).toBeDefined();
+    expect(restored.version).toBeDefined(); // version is on project root, not meta
     expect(restored.meta.created).toBeDefined();
   });
 });
@@ -193,7 +201,7 @@ describe("Save/Load Roundtrip - Layers", () => {
       name: "Test",
       visible: false,
       locked: true,
-      solo: true,
+      isolate: true,
       startFrame: 10,
       endFrame: 200,
       blendMode: "multiply",
@@ -205,7 +213,7 @@ describe("Save/Load Roundtrip - Layers", () => {
 
     expect(restoredLayer.visible).toBe(false);
     expect(restoredLayer.locked).toBe(true);
-    expect(restoredLayer.solo).toBe(true);
+    expect(restoredLayer.isolate).toBe(true);
     expect(restoredLayer.startFrame).toBe(10);
     expect(restoredLayer.endFrame).toBe(200);
     expect(restoredLayer.blendMode).toBe("multiply");
@@ -316,63 +324,77 @@ describe("Save/Load Roundtrip - Animation Data", () => {
 
 describe("Save/Load Roundtrip - Layer Types", () => {
   test("solid layer data survives roundtrip", () => {
+    const solidData: SolidLayerData = { color: "#ff5500", width: 500, height: 300 };
     const layer = createTestLayer({
       type: "solid",
-      data: { type: "solid", color: "#ff5500", width: 500, height: 300 },
+      data: solidData,
     });
     const original = createTestProject([layer]);
 
     const restored = roundtripJSON(original);
-    const restoredData = restored.compositions.main.layers[0].data;
+    const restoredLayer = restored.compositions.main.layers[0];
+    const restoredData = restoredLayer.data as SolidLayerData;
 
-    expect(restoredData.type).toBe("solid");
+    expect(restoredLayer.type).toBe("solid");
     expect(restoredData.color).toBe("#ff5500");
   });
 
   test("text layer data survives roundtrip", () => {
+    const textData: TextData = {
+      ...createDefaultTextData(),
+      text: "Hello World!",
+      fontFamily: "Arial",
+      fontSize: 72,
+      fill: "#ffffff",
+    };
     const layer = createTestLayer({
       type: "text",
-      data: {
-        type: "text",
-        text: "Hello World!",
-        fontFamily: "Arial",
-        fontSize: 72,
-        fill: "#ffffff",
-      },
+      data: textData as any, // TextData is compatible with layer data union
     });
     const original = createTestProject([layer]);
 
     const restored = roundtripJSON(original);
-    const restoredData = restored.compositions.main.layers[0].data;
+    const restoredLayer = restored.compositions.main.layers[0];
+    const restoredData = restoredLayer.data as TextData;
 
-    expect(restoredData.type).toBe("text");
+    expect(restoredLayer.type).toBe("text");
     expect(restoredData.text).toBe("Hello World!");
     expect(restoredData.fontFamily).toBe("Arial");
     expect(restoredData.fontSize).toBe(72);
   });
 
   test("camera layer data survives roundtrip", () => {
+    const cameraData: CameraLayerData = {
+      cameraId: "cam-1",
+      isActiveCamera: true,
+      camera: {
+        type: "one-node",
+        position: { x: 0, y: 0, z: 1000 },
+        pointOfInterest: { x: 0, y: 0, z: 0 },
+        zoom: 1,
+        depthOfField: true,
+        focusDistance: 1000,
+        aperture: 2.8,
+        blurLevel: 50,
+        xRotation: 0,
+        yRotation: 0,
+        zRotation: 0,
+      },
+    };
     const layer = createTestLayer({
       type: "camera",
-      data: {
-        type: "camera",
-        depthOfField: {
-          enabled: true,
-          focusDistance: 1000,
-          aperture: 2.8,
-          blurLevel: 50,
-        },
-      },
+      data: cameraData,
     });
     const original = createTestProject([layer]);
 
     const restored = roundtripJSON(original);
-    const restoredData = restored.compositions.main.layers[0].data;
+    const restoredLayer = restored.compositions.main.layers[0];
+    const restoredData = restoredLayer.data as CameraLayerData;
 
-    expect(restoredData.type).toBe("camera");
-    expect(restoredData.depthOfField.enabled).toBe(true);
-    expect(restoredData.depthOfField.focusDistance).toBe(1000);
-    expect(restoredData.depthOfField.aperture).toBe(2.8);
+    expect(restoredLayer.type).toBe("camera");
+    expect(restoredData.camera?.depthOfField).toBe(true);
+    expect(restoredData.camera?.focusDistance).toBe(1000);
+    expect(restoredData.camera?.aperture).toBe(2.8);
   });
 });
 
@@ -455,39 +477,43 @@ describe("Save/Load Roundtrip - Special Values", () => {
   });
 
   test("empty strings survive roundtrip", () => {
+    const textData: TextData = {
+      ...createDefaultTextData(),
+      text: "",
+    };
     const layer = createTestLayer({
       name: "",
       type: "text",
-      data: { type: "text", text: "", fontFamily: "Arial", fontSize: 72, fill: "#fff" },
+      data: textData as any,
     });
     const original = createTestProject([layer]);
 
     const restored = roundtripJSON(original);
     const restoredLayer = restored.compositions.main.layers[0];
+    const restoredData = restoredLayer.data as TextData;
 
     expect(restoredLayer.name).toBe("");
-    expect(restoredLayer.data.text).toBe("");
+    expect(restoredData.text).toBe("");
   });
 
   test("unicode text survives roundtrip", () => {
+    const textData: TextData = {
+      ...createDefaultTextData(),
+      text: "Hello 世界 🌍 مرحبا",
+    };
     const layer = createTestLayer({
       name: "レイヤー 🎬",
       type: "text",
-      data: {
-        type: "text",
-        text: "Hello 世界 🌍 مرحبا",
-        fontFamily: "Arial",
-        fontSize: 72,
-        fill: "#fff",
-      },
+      data: textData as any,
     });
     const original = createTestProject([layer]);
 
     const restored = roundtripJSON(original);
     const restoredLayer = restored.compositions.main.layers[0];
+    const restoredData = restoredLayer.data as TextData;
 
     expect(restoredLayer.name).toBe("レイヤー 🎬");
-    expect(restoredLayer.data.text).toBe("Hello 世界 🌍 مرحبا");
+    expect(restoredData.text).toBe("Hello 世界 🌍 مرحبا");
   });
 });
 

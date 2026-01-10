@@ -29,6 +29,7 @@ function createMinimalProject(name: string = 'Test'): LatticeProject {
   const compId = 'comp-1';
   return {
     version: '1.0.0',
+    schemaVersion: 1,
     mainCompositionId: compId,
     meta: {
       name,
@@ -40,7 +41,10 @@ function createMinimalProject(name: string = 'Test'): LatticeProject {
       height: 1080,
       frameCount: 300,
       fps: 30,
+      duration: 10,
       backgroundColor: '#000000',
+      autoResizeToContent: false,
+      frameBlendingEnabled: false,
     },
     compositions: {
       [compId]: {
@@ -51,13 +55,19 @@ function createMinimalProject(name: string = 'Test'): LatticeProject {
           height: 1080,
           frameCount: 300,
           fps: 30,
+          duration: 10,
           backgroundColor: '#000000',
+          autoResizeToContent: false,
+          frameBlendingEnabled: false,
         },
         layers: [],
+        currentFrame: 0,
+        isNestedComp: false,
       },
     },
+    layers: [],
+    currentFrame: 0,
     assets: {},
-    audioMappings: [],
   };
 }
 

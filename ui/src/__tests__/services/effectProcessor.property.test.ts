@@ -24,8 +24,58 @@ import {
   type EvaluatedEffectParams,
   type EffectStackResult,
 } from '@/services/effectProcessor';
-import type { EffectInstance, EffectParameterDefinition } from '@/types/effects';
-import type { AnimatableProperty } from '@/types/project';
+import type { EffectInstance, EffectCategory } from '@/types/effects';
+import type { AnimatableProperty, Keyframe, BezierHandle, ControlMode, InterpolationType } from '@/types/animation';
+
+// ============================================================================
+// HELPER FUNCTIONS FOR TYPE-SAFE FIXTURES
+// ============================================================================
+
+/**
+ * Create a properly-typed BezierHandle
+ */
+function createHandle(frame: number, value: number, enabled: boolean = false): BezierHandle {
+  return { frame, value, enabled };
+}
+
+/**
+ * Create a properly-typed Keyframe
+ */
+function createKeyframe<T>(
+  frame: number,
+  value: T,
+  interpolation: InterpolationType = 'linear'
+): Keyframe<T> {
+  return {
+    id: `kf-${frame}-${Math.random().toString(36).slice(2, 8)}`,
+    frame,
+    value,
+    interpolation,
+    inHandle: createHandle(-5, 0, interpolation === 'bezier'),
+    outHandle: createHandle(5, 0, interpolation === 'bezier'),
+    controlMode: 'smooth' as ControlMode,
+  };
+}
+
+/**
+ * Create a properly-typed AnimatableProperty
+ */
+function createAnimatableProperty<T>(
+  name: string,
+  value: T,
+  type: AnimatableProperty<T>['type'] = 'number',
+  keyframes: Keyframe<T>[] = [],
+  animated: boolean = keyframes.length > 0
+): AnimatableProperty<T> {
+  return {
+    id: `prop-${name}-${Math.random().toString(36).slice(2, 8)}`,
+    name,
+    type,
+    value,
+    animated,
+    keyframes,
+  };
+}
 
 // ============================================================================
 // TEST DATA GENERATORS
@@ -36,31 +86,61 @@ import type { AnimatableProperty } from '@/types/project';
  */
 const arbitraryAnimatableNumber = (): fc.Arbitrary<AnimatableProperty<number>> =>
   fc.record({
+    id: fc.uuid(),
     name: fc.string({ minLength: 1, maxLength: 20 }),
+    type: fc.constant('number' as const),
     value: fc.double({ min: -1000, max: 1000, noNaN: true, noDefaultInfinity: true }),
+    animated: fc.boolean(),
     keyframes: fc.array(
       fc.record({
+        id: fc.uuid(),
         frame: fc.integer({ min: 0, max: 1000 }),
         value: fc.double({ min: -1000, max: 1000, noNaN: true, noDefaultInfinity: true }),
-        easing: fc.constantFrom('linear', 'easeIn', 'easeOut', 'easeInOut'),
+        interpolation: fc.constantFrom('linear', 'bezier', 'hold') as fc.Arbitrary<InterpolationType>,
+        inHandle: fc.record({
+          frame: fc.integer({ min: -10, max: 0 }),
+          value: fc.double({ min: -1, max: 1, noNaN: true, noDefaultInfinity: true }),
+          enabled: fc.boolean(),
+        }),
+        outHandle: fc.record({
+          frame: fc.integer({ min: 0, max: 10 }),
+          value: fc.double({ min: -1, max: 1, noNaN: true, noDefaultInfinity: true }),
+          enabled: fc.boolean(),
+        }),
+        controlMode: fc.constantFrom('smooth', 'corner', 'autoSmooth', 'free') as fc.Arbitrary<ControlMode>,
       }),
       { maxLength: 5 }
     ).map(kfs => [...kfs].sort((a, b) => a.frame - b.frame)),
-  });
+  }) as fc.Arbitrary<AnimatableProperty<number>>;
 
 const arbitraryAnimatableColor = (): fc.Arbitrary<AnimatableProperty<string>> =>
   fc.record({
+    id: fc.uuid(),
     name: fc.string({ minLength: 1, maxLength: 20 }),
+    type: fc.constant('color' as const),
     value: fc.constantFrom('#000000', '#ffffff', '#ff0000', '#00ff00', '#0000ff'),
+    animated: fc.boolean(),
     keyframes: fc.array(
       fc.record({
+        id: fc.uuid(),
         frame: fc.integer({ min: 0, max: 1000 }),
         value: fc.constantFrom('#000000', '#ffffff', '#ff0000', '#00ff00', '#0000ff'),
-        easing: fc.constantFrom('linear', 'easeIn', 'easeOut', 'easeInOut'),
+        interpolation: fc.constantFrom('linear', 'bezier', 'hold') as fc.Arbitrary<InterpolationType>,
+        inHandle: fc.record({
+          frame: fc.integer({ min: -10, max: 0 }),
+          value: fc.double({ min: -1, max: 1, noNaN: true, noDefaultInfinity: true }),
+          enabled: fc.boolean(),
+        }),
+        outHandle: fc.record({
+          frame: fc.integer({ min: 0, max: 10 }),
+          value: fc.double({ min: -1, max: 1, noNaN: true, noDefaultInfinity: true }),
+          enabled: fc.boolean(),
+        }),
+        controlMode: fc.constantFrom('smooth', 'corner', 'autoSmooth', 'free') as fc.Arbitrary<ControlMode>,
       }),
       { maxLength: 5 }
     ).map(kfs => [...kfs].sort((a, b) => a.frame - b.frame)),
-  });
+  }) as fc.Arbitrary<AnimatableProperty<string>>;
 
 /**
  * Generate a valid effect instance
@@ -78,7 +158,15 @@ const arbitraryEffectInstance = (effectKey?: string): fc.Arbitrary<EffectInstanc
       'vignette'
     ),
     name: fc.string({ minLength: 1, maxLength: 30 }),
+    category: fc.constantFrom(
+      'blur-sharpen',
+      'color-correction',
+      'distort',
+      'generate',
+      'stylize'
+    ) as fc.Arbitrary<EffectCategory>,
     enabled: fc.boolean(),
+    expanded: fc.boolean(),
     parameters: fc.dictionary(
       fc.string({ minLength: 1, maxLength: 20 }),
       arbitraryAnimatableNumber()
@@ -168,9 +256,11 @@ describe('STRICT: Effect Parameter Evaluation', () => {
     
     // All parameters should be evaluated to concrete values
     for (const [key, value] of Object.entries(evaluated)) {
-      // Should not be an AnimatableProperty anymore
-      expect(typeof value).not.toBe('object' || !('keyframes' in (value as any)));
-      
+      // Should not be an AnimatableProperty anymore (shouldn't have keyframes)
+      if (typeof value === 'object' && value !== null) {
+        expect(value).not.toHaveProperty('keyframes');
+      }
+
       // Should be a concrete value (number, string, boolean, etc.)
       expect(value).toBeDefined();
     }
@@ -186,14 +276,13 @@ describe('STRICT: Effect Parameter Evaluation', () => {
       id: 'test-effect',
       effectKey: 'blur',
       name: 'Test Blur',
+      category: 'blur-sharpen',
       enabled: true,
+      expanded: false,
       parameters: {
-        radius: {
-          name: 'radius',
-          value: startVal,
-          animated: true, // Must be true for keyframes to be used
-          keyframes: [{ frame: keyframeFrame, value: endVal, easing: 'linear' }],
-        },
+        radius: createAnimatableProperty('radius', startVal, 'number', [
+          createKeyframe(keyframeFrame, endVal, 'linear'),
+        ], true),
       },
     };
     
@@ -212,17 +301,14 @@ describe('STRICT: Effect Parameter Evaluation', () => {
       id: 'test-effect',
       effectKey: 'brightness',
       name: 'Test',
+      category: 'color-correction',
       enabled: true,
+      expanded: false,
       parameters: {
-        amount: {
-          name: 'amount',
-          value: startVal,
-          animated: true, // Must be true for keyframes to be used
-          keyframes: [
-            { frame: 0, value: startVal, easing: 'linear' },
-            { frame: 100, value: endVal, easing: 'linear' },
-          ],
-        },
+        amount: createAnimatableProperty('amount', startVal, 'number', [
+          createKeyframe(0, startVal, 'linear'),
+          createKeyframe(100, endVal, 'linear'),
+        ], true),
       },
     };
     
@@ -242,10 +328,12 @@ describe('STRICT: Effect Parameter Evaluation', () => {
       id: 'test-empty',
       effectKey: 'pass-through',
       name: 'Empty',
+      category: 'utility',
       enabled: true,
+      expanded: false,
       parameters: {},
     };
-    
+
     const evaluated = evaluateEffectParameters(effect, 0);
     expect(evaluated).toEqual({});
   });
@@ -255,17 +343,14 @@ describe('STRICT: Effect Parameter Evaluation', () => {
       id: 'test-static',
       effectKey: 'brightness',
       name: 'Static',
+      category: 'color-correction',
       enabled: true,
+      expanded: false,
       parameters: {
-        amount: {
-          name: 'amount',
-          value: 42,
-          animated: false,
-          keyframes: [],
-        },
+        amount: createAnimatableProperty('amount', 42, 'number', [], false),
       },
     };
-    
+
     // Should return static value regardless of frame
     expect(evaluateEffectParameters(effect, 0).amount).toBe(42);
     expect(evaluateEffectParameters(effect, 50).amount).toBe(42);
@@ -278,22 +363,21 @@ describe('STRICT: Effect Parameter Evaluation', () => {
   ])('frame before first keyframe returns first keyframe value', (val, keyframeFrame) => {
     // Only test when keyframe is after frame 0
     fc.pre(keyframeFrame > 0);
-    
+
     const effect: EffectInstance = {
       id: 'test',
       effectKey: 'blur',
       name: 'Test',
+      category: 'blur-sharpen',
       enabled: true,
+      expanded: false,
       parameters: {
-        radius: {
-          name: 'radius',
-          value: 999, // Different from keyframe value
-          animated: true,
-          keyframes: [{ frame: keyframeFrame, value: val, easing: 'linear' }],
-        },
+        radius: createAnimatableProperty('radius', 999, 'number', [
+          createKeyframe(keyframeFrame, val, 'linear'),
+        ], true),
       },
     };
-    
+
     // Frame 0 (before keyframe) should return keyframe value
     const evaluated = evaluateEffectParameters(effect, 0);
     expect(evaluated.radius).toBeCloseTo(val, 6);
@@ -307,17 +391,16 @@ describe('STRICT: Effect Parameter Evaluation', () => {
       id: 'test',
       effectKey: 'blur',
       name: 'Test',
+      category: 'blur-sharpen',
       enabled: true,
+      expanded: false,
       parameters: {
-        radius: {
-          name: 'radius',
-          value: 0,
-          animated: true,
-          keyframes: [{ frame: lastFrame, value: val, easing: 'linear' }],
-        },
+        radius: createAnimatableProperty('radius', 0, 'number', [
+          createKeyframe(lastFrame, val, 'linear'),
+        ], true),
       },
     };
-    
+
     // Frame way after should return last keyframe value
     const evaluated = evaluateEffectParameters(effect, lastFrame + 1000);
     expect(evaluated.radius).toBeCloseTo(val, 6);
@@ -332,26 +415,26 @@ describe('STRICT: Effect Parameter Evaluation', () => {
       { minLength: 1, maxLength: 5 }
     ).map(kfs => [...kfs].sort((a, b) => a.frame - b.frame)),
     fc.integer({ min: 0, max: 1000 })
-  ])('evaluateEffectParameters is deterministic', (keyframes, frame) => {
+  ])('evaluateEffectParameters is deterministic', (keyframeData, frame) => {
+    // Convert the generated keyframe data to proper Keyframe<number> objects
+    const keyframes = keyframeData.map(kf => createKeyframe(kf.frame, kf.value, 'linear'));
+
     const effect: EffectInstance = {
       id: 'test',
       effectKey: 'brightness',
       name: 'Test',
+      category: 'color-correction',
       enabled: true,
+      expanded: false,
       parameters: {
-        amount: {
-          name: 'amount',
-          value: 0,
-          animated: true,
-          keyframes: keyframes.map(kf => ({ ...kf, easing: 'linear' })),
-        },
+        amount: createAnimatableProperty('amount', 0, 'number', keyframes, true),
       },
     };
-    
+
     // Evaluate twice
     const result1 = evaluateEffectParameters(effect, frame);
     const result2 = evaluateEffectParameters(effect, frame);
-    
+
     // Must be identical
     expect(result1.amount).toBe(result2.amount);
   });
@@ -368,16 +451,18 @@ describe('STRICT: Effect Parameter Evaluation', () => {
       id: 'test',
       effectKey: 'color-correction',
       name: 'Test',
+      category: 'color-correction',
       enabled: true,
+      expanded: false,
       parameters: {
-        brightness: { name: 'brightness', value: values.param1, animated: false, keyframes: [] },
-        contrast: { name: 'contrast', value: values.param2, animated: false, keyframes: [] },
-        saturation: { name: 'saturation', value: values.param3, animated: false, keyframes: [] },
+        brightness: createAnimatableProperty('brightness', values.param1, 'number', [], false),
+        contrast: createAnimatableProperty('contrast', values.param2, 'number', [], false),
+        saturation: createAnimatableProperty('saturation', values.param3, 'number', [], false),
       },
     };
-    
+
     const evaluated = evaluateEffectParameters(effect, frame);
-    
+
     // All parameters should be evaluated
     expect(evaluated.brightness).toBe(values.param1);
     expect(evaluated.contrast).toBe(values.param2);
@@ -473,26 +558,26 @@ describe('STRICT: hasEnabledEffects', () => {
 
   it('returns false when all effects disabled', () => {
     const effects: EffectInstance[] = [
-      { id: '1', effectKey: 'blur', name: 'Blur', enabled: false, parameters: {} },
-      { id: '2', effectKey: 'glow', name: 'Glow', enabled: false, parameters: {} },
-      { id: '3', effectKey: 'noise', name: 'Noise', enabled: false, parameters: {} },
+      { id: '1', effectKey: 'blur', name: 'Blur', category: 'blur-sharpen', enabled: false, expanded: false, parameters: {} },
+      { id: '2', effectKey: 'glow', name: 'Glow', category: 'stylize', enabled: false, expanded: false, parameters: {} },
+      { id: '3', effectKey: 'noise', name: 'Noise', category: 'noise-grain', enabled: false, expanded: false, parameters: {} },
     ];
     expect(hasEnabledEffects(effects)).toBe(false);
   });
 
   it('returns true when single effect enabled', () => {
     const effects: EffectInstance[] = [
-      { id: '1', effectKey: 'blur', name: 'Blur', enabled: false, parameters: {} },
-      { id: '2', effectKey: 'glow', name: 'Glow', enabled: true, parameters: {} },
-      { id: '3', effectKey: 'noise', name: 'Noise', enabled: false, parameters: {} },
+      { id: '1', effectKey: 'blur', name: 'Blur', category: 'blur-sharpen', enabled: false, expanded: false, parameters: {} },
+      { id: '2', effectKey: 'glow', name: 'Glow', category: 'stylize', enabled: true, expanded: false, parameters: {} },
+      { id: '3', effectKey: 'noise', name: 'Noise', category: 'noise-grain', enabled: false, expanded: false, parameters: {} },
     ];
     expect(hasEnabledEffects(effects)).toBe(true);
   });
 
   it('returns true when all effects enabled', () => {
     const effects: EffectInstance[] = [
-      { id: '1', effectKey: 'blur', name: 'Blur', enabled: true, parameters: {} },
-      { id: '2', effectKey: 'glow', name: 'Glow', enabled: true, parameters: {} },
+      { id: '1', effectKey: 'blur', name: 'Blur', category: 'blur-sharpen', enabled: true, expanded: false, parameters: {} },
+      { id: '2', effectKey: 'glow', name: 'Glow', category: 'stylize', enabled: true, expanded: false, parameters: {} },
     ];
     expect(hasEnabledEffects(effects)).toBe(true);
   });

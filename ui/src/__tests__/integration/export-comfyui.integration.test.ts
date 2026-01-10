@@ -42,6 +42,7 @@ const TARGET_NODE_MAPPING: Record<ExportTarget, string[]> = {
   "controlnet-depth": ["ControlNetLoader", "ControlNetApply", "LoadImage"],
   "controlnet-canny": ["ControlNetLoader", "ControlNetApply", "CannyEdge"],
   "controlnet-lineart": ["ControlNetLoader", "ControlNetApply", "LineartPreprocessor"],
+  "controlnet-pose": ["ControlNetLoader", "ControlNetApply", "PosePreprocessor"],
   "animatediff-cameractrl": ["AnimateDiff", "CameraCtrl", "LoadImage"],
   "custom-workflow": [],
   "light-x": ["LightX", "LoadImage"],
@@ -50,6 +51,7 @@ const TARGET_NODE_MAPPING: Record<ExportTarget, string[]> = {
   "ttm-wan": ["TTM", "WanVideo"],
   "ttm-cogvideox": ["TTM", "CogVideoX"],
   "ttm-svd": ["TTM", "SVD"],
+  scail: ["SCAIL", "LoadImage", "LoadPose"],
   "camera-comfyui": ["LoadCamera", "ApplyCamera"],
 };
 

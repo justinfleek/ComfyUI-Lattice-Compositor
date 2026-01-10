@@ -26,11 +26,11 @@ import type {
 // Test Helpers
 // ============================================================================
 
-function createTestKeyframe(
+function createTestKeyframe<T>(
   frame: number,
-  value: number | { x: number; y: number; z?: number },
+  value: T,
   interpolation: "linear" | "bezier" | "hold" = "linear"
-): Keyframe {
+): Keyframe<T> {
   return {
     id: `kf-${frame}-${Math.random().toString(36).slice(2, 8)}`,
     frame,
@@ -44,7 +44,7 @@ function createTestKeyframe(
 
 function createAnimatableProperty<T>(
   value: T,
-  keyframes: Keyframe[] = []
+  keyframes: Keyframe<T>[] = []
 ): AnimatableProperty<T> {
   return {
     id: `prop-${Math.random().toString(36).slice(2, 8)}`,
@@ -63,8 +63,8 @@ function createTestLayer(overrides: Partial<Layer> = {}): Layer {
     type: "solid",
     visible: true,
     locked: false,
-    solo: false,
-    shy: false,
+    isolate: false,
+    motionBlur: false,
     startFrame: 0,
     endFrame: 150,
     inPoint: 0,
@@ -81,7 +81,7 @@ function createTestLayer(overrides: Partial<Layer> = {}): Layer {
     effects: [],
     properties: [],
     parentId: null,
-    data: { type: "solid", color: "#ff0000" },
+    data: { color: "#ff0000", width: 1920, height: 1080 },
     ...overrides,
   };
 }
@@ -93,24 +93,31 @@ function createTestProject(layers: Layer[]): LatticeProject {
     settings: {
       width: 1920,
       height: 1080,
+      frameCount: 150,
       fps: 30,
       duration: 5,
       backgroundColor: "#000000",
+      autoResizeToContent: false,
+      frameBlendingEnabled: false,
     },
     layers,
+    currentFrame: 0,
+    isNestedComp: false,
   };
 
   return {
-    id: "test-project",
+    version: "1.0.0",
+    schemaVersion: 2,
     mainCompositionId: "main",
     compositions: { main: composition },
     composition: composition.settings,
     assets: {},
+    layers: [],
+    currentFrame: 0,
     meta: {
       name: "Test Project",
       created: new Date().toISOString(),
       modified: new Date().toISOString(),
-      version: "1.0.0",
     },
   };
 }
@@ -368,12 +375,20 @@ describe("Engine → Export Data Flow", () => {
         type: "camera",
         threeD: true,
         data: {
-          type: "camera",
-          depthOfField: {
-            enabled: false,
+          cameraId: "camera-1",
+          isActiveCamera: true,
+          camera: {
+            type: "one-node",
+            position: { x: 0, y: 0, z: 1000 },
+            pointOfInterest: { x: 0, y: 0, z: 0 },
+            zoom: 50,
+            depthOfField: false,
             focusDistance: 1000,
             aperture: 2.8,
             blurLevel: 50,
+            xRotation: 0,
+            yRotation: 0,
+            zRotation: 0,
           },
         },
       });
@@ -469,10 +484,11 @@ describe("Full Pipeline: Store → Engine → Export", () => {
     for (let frame = 0; frame <= 120; frame += 30) {
       const frameState = engine.evaluate(frame, project);
       if (frameState.layers.length > 0) {
+        const pos = frameState.layers[0].transform.position;
         exportData.frames.push({
           frame,
           opacity: frameState.layers[0].opacity,
-          position: { ...frameState.layers[0].transform.position },
+          position: { x: pos.x, y: pos.y, z: pos.z ?? 0 },
         });
       }
     }

@@ -71,6 +71,7 @@ describe('BUG Regression: Missing Undo/Redo', () => {
 
     // Delete the layer
     const deleteCall: ToolCall = {
+      id: 'call-delete-layer',
       name: 'deleteLayer',
       arguments: {
         layerId: layer.id,
@@ -101,6 +102,7 @@ describe('BUG Regression: Missing Undo/Redo', () => {
 
     // Change a property
     const setPropertyCall: ToolCall = {
+      id: 'call-set-property',
       name: 'setLayerProperty',
       arguments: {
         layerId: layer.id,

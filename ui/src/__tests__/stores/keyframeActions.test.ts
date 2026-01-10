@@ -69,8 +69,8 @@ function createMockLayer(id: string, overrides: Partial<Layer> = {}): Layer {
     type: "solid",
     visible: true,
     locked: false,
-    solo: false,
-    shy: false,
+    isolate: false,
+    motionBlur: false,
     startFrame: 0,
     endFrame: 100,
     inPoint: 0,
@@ -83,11 +83,12 @@ function createMockLayer(id: string, overrides: Partial<Layer> = {}): Layer {
       scale: createAnimatableProperty({ x: 100, y: 100, z: 100 }),
       rotation: createAnimatableProperty(0),
       origin: createAnimatableProperty({ x: 0, y: 0, z: 0 }),
+      anchorPoint: createAnimatableProperty({ x: 0, y: 0, z: 0 }),
     },
     effects: [],
     properties: [],
     parentId: null,
-    data: { type: "solid", color: "#ff0000" },
+    data: { color: "#ff0000", width: 1920, height: 1080 },
     ...overrides,
   };
 }
@@ -99,12 +100,16 @@ function createMockStore(layers: Layer[] = []): KeyframeStore {
     settings: {
       width: 1920,
       height: 1080,
+      frameCount: 150,
       fps: 30,
       duration: 5,
       backgroundColor: "#000000",
+      autoResizeToContent: false,
+      frameBlendingEnabled: false,
     },
     layers,
     currentFrame: 0,
+    isNestedComp: false,
   };
 
   return {

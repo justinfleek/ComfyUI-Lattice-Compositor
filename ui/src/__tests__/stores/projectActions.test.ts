@@ -53,6 +53,8 @@ function createMockProject(overrides: Partial<LatticeProject> = {}): LatticeProj
       fps: 16,
       duration: 5,
       backgroundColor: "#000000",
+      autoResizeToContent: false,
+      frameBlendingEnabled: false,
     },
     compositions: {
       main: {
@@ -65,9 +67,12 @@ function createMockProject(overrides: Partial<LatticeProject> = {}): LatticeProj
           fps: 16,
           duration: 5,
           backgroundColor: "#000000",
+          autoResizeToContent: false,
+          frameBlendingEnabled: false,
         },
         layers: [],
         currentFrame: 0,
+        isNestedComp: false,
       },
     },
     mainCompositionId: "main",
@@ -100,8 +105,8 @@ function createMockLayer(id: string, type: string = "solid", data: any = {}): La
     type: type as any,
     visible: true,
     locked: false,
-    solo: false,
-    shy: false,
+    isolate: false,
+    motionBlur: false,
     startFrame: 0,
     endFrame: 100,
     inPoint: 0,
@@ -194,11 +199,11 @@ describe("History Management", () => {
       pushHistory(store);
 
       // Modify layer after push
-      store.project.compositions.main.layers[0].data.color = "#00ff00";
+      (store.project.compositions.main.layers[0].data as { color: string }).color = "#00ff00";
 
       // History should have original color
       const snapshot = store.historyStack[store.historyIndex];
-      expect(snapshot.compositions.main.layers[0].data.color).toBe("#ff0000");
+      expect((snapshot.compositions.main.layers[0].data as { color: string }).color).toBe("#ff0000");
     });
   });
 
@@ -738,6 +743,7 @@ describe("Asset Management", () => {
         settings: store.project.composition,
         layers: [createMockLayer("layer-2", "image", { assetId: "img-002" })],
         currentFrame: 0,
+        isNestedComp: false,
       };
 
       // Add layer to main comp
@@ -1005,6 +1011,6 @@ describe("Determinism", () => {
 
     expect(store2.project.meta.name).toBe(store.project.meta.name);
     expect(store2.project.compositions.main.layers.length).toBe(1);
-    expect(store2.project.compositions.main.layers[0].data.text).toBe("Hello World");
+    expect((store2.project.compositions.main.layers[0].data as { text: string }).text).toBe("Hello World");
   });
 });

@@ -33,17 +33,32 @@ const resetPinia = () => {
  */
 const arbitraryAnimatableProperty = <T>(valueArb: fc.Arbitrary<T>): fc.Arbitrary<AnimatableProperty<T>> =>
   fc.record({
+    id: fc.uuid(),
     name: fc.string({ minLength: 1, maxLength: 20 }),
+    type: fc.constantFrom('number', 'position', 'color', 'vector3', 'enum') as fc.Arbitrary<"number" | "position" | "color" | "vector3" | "enum">,
     value: valueArb,
+    animated: fc.boolean(),
     keyframes: fc.array(
       fc.record({
+        id: fc.uuid(),
         frame: fc.integer({ min: 0, max: 1000 }),
         value: valueArb,
-        easing: fc.constantFrom('linear', 'easeIn', 'easeOut', 'easeInOut'),
+        interpolation: fc.constantFrom('linear', 'bezier', 'hold') as fc.Arbitrary<"linear" | "bezier" | "hold">,
+        inHandle: fc.record({
+          frame: fc.double({ min: -10, max: 0, noNaN: true }),
+          value: fc.double({ min: -100, max: 100, noNaN: true }),
+          enabled: fc.boolean(),
+        }),
+        outHandle: fc.record({
+          frame: fc.double({ min: 0, max: 10, noNaN: true }),
+          value: fc.double({ min: -100, max: 100, noNaN: true }),
+          enabled: fc.boolean(),
+        }),
+        controlMode: fc.constantFrom('smooth', 'corner', 'auto') as fc.Arbitrary<"smooth" | "corner" | "auto">,
       }),
       { maxLength: 10 }
     ),
-  });
+  }) as fc.Arbitrary<AnimatableProperty<T>>;
 
 /**
  * Generate a minimal valid layer
@@ -52,16 +67,22 @@ const arbitraryLayer = (): fc.Arbitrary<Layer> =>
   fc.record({
     id: fc.uuid(),
     name: fc.string({ minLength: 1, maxLength: 50 }),
-    type: fc.constantFrom('solid', 'text', 'image', 'video', 'shape', 'null', 'camera', 'light'),
+    type: fc.constantFrom('solid', 'text', 'image', 'video', 'shape', 'control', 'camera', 'light'),
     visible: fc.boolean(),
     locked: fc.boolean(),
-    solo: fc.boolean(),
-    shy: fc.boolean(),
+    isolate: fc.boolean(),
+    motionBlur: fc.boolean(),
     blendMode: fc.constantFrom('normal', 'multiply', 'screen', 'overlay'),
     threeD: fc.boolean(),
     parentId: fc.option(fc.uuid(), { nil: undefined }),
     opacity: arbitraryAnimatableProperty(fc.integer({ min: 0, max: 100 })),
-    transform: fc.record({
+    transform: arbitraryAnimatableProperty(
+      fc.record({
+        x: fc.double({ min: -1000, max: 1000, noNaN: true, noDefaultInfinity: true }),
+        y: fc.double({ min: -1000, max: 1000, noNaN: true, noDefaultInfinity: true }),
+        z: fc.double({ min: -1000, max: 1000, noNaN: true, noDefaultInfinity: true }),
+      })
+    ).chain(origin => fc.record({
       position: arbitraryAnimatableProperty(
         fc.record({
           x: fc.double({ min: -1000, max: 1000, noNaN: true, noDefaultInfinity: true }),
@@ -77,7 +98,9 @@ const arbitraryLayer = (): fc.Arbitrary<Layer> =>
         })
       ),
       rotation: arbitraryAnimatableProperty(fc.double({ min: -360, max: 360, noNaN: true, noDefaultInfinity: true })),
-    }),
+      origin: fc.constant(origin),
+      anchorPoint: fc.constant(origin),
+    })),
     effects: fc.constant([]),
     properties: fc.constant([]),
     masks: fc.constant([]),
@@ -98,9 +121,14 @@ const arbitraryComposition = (): fc.Arbitrary<Composition> =>
       height: fc.integer({ min: 100, max: 4096 }),
       frameCount: fc.integer({ min: 10, max: 1000 }),
       fps: fc.constantFrom(16, 24, 30, 60),
+      duration: fc.double({ min: 1, max: 60, noNaN: true }),
       backgroundColor: fc.constantFrom('#000000', '#ffffff', '#ff0000', '#00ff00', '#0000ff'),
+      autoResizeToContent: fc.boolean(),
+      frameBlendingEnabled: fc.boolean(),
     }),
     layers: fc.array(arbitraryLayer(), { minLength: 0, maxLength: 10 }),
+    currentFrame: fc.integer({ min: 0, max: 100 }),
+    isNestedComp: fc.boolean(),
   }) as fc.Arbitrary<Composition>;
 
 /**
@@ -109,6 +137,7 @@ const arbitraryComposition = (): fc.Arbitrary<Composition> =>
 const arbitraryProject = (): fc.Arbitrary<LatticeProject> =>
   fc.record({
     version: fc.constant('1.0.0'),
+    schemaVersion: fc.constant(1),
     mainCompositionId: fc.uuid(),
     meta: fc.record({
       name: fc.string({ minLength: 1, maxLength: 50 }),
@@ -122,9 +151,14 @@ const arbitraryProject = (): fc.Arbitrary<LatticeProject> =>
       height: fc.integer({ min: 100, max: 4096 }),
       frameCount: fc.integer({ min: 10, max: 1000 }),
       fps: fc.constantFrom(16, 24, 30, 60),
+      duration: fc.double({ min: 1, max: 60, noNaN: true }),
       backgroundColor: fc.constantFrom('#000000', '#ffffff', '#ff0000', '#00ff00', '#0000ff'),
+      autoResizeToContent: fc.boolean(),
+      frameBlendingEnabled: fc.boolean(),
     }),
     compositions: fc.dictionary(fc.uuid(), arbitraryComposition()),
+    layers: fc.array(arbitraryLayer(), { minLength: 0, maxLength: 5 }),
+    currentFrame: fc.integer({ min: 0, max: 100 }),
     assets: fc.constant({}),
     audioMappings: fc.constant([]),
   }) as fc.Arbitrary<LatticeProject>;

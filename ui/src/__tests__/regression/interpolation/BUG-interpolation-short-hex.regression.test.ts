@@ -22,7 +22,7 @@ describe('BUG Regression: Short Hex Color (#fff) Garbage', () => {
     const prop: AnimatableProperty<string> = {
       id: 'test',
       name: 'test',
-      type: 'string',
+      type: 'color',
       value: '#000000',
       animated: true,
       keyframes: [
@@ -75,7 +75,7 @@ describe('BUG Regression: Short Hex Color (#fff) Garbage', () => {
       const prop: AnimatableProperty<string> = {
         id: 'test',
         name: 'test',
-        type: 'string',
+        type: 'color',
         value: start,
         animated: true,
         keyframes: [
@@ -112,7 +112,7 @@ describe('BUG Regression: Short Hex Color (#fff) Garbage', () => {
     const prop: AnimatableProperty<string> = {
       id: 'test',
       name: 'test',
-      type: 'string',
+      type: 'color',
       value: '#ffffff',
       animated: true,
       keyframes: [

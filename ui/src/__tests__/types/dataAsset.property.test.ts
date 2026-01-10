@@ -26,13 +26,10 @@ function createJSONAsset(): JSONDataAsset {
     id: "test-json",
     name: "Test JSON",
     type: "json",
-    path: "/path/to/file.json",
-    data: { key: "value" },
-    structure: {
-      rootType: "object",
-      fields: [{ name: "key", path: "key", type: "string", sampleValue: "value" }],
-    },
-    loaded: true,
+    filePath: "/path/to/file.json",
+    sourceData: { key: "value" },
+    lastModified: Date.now(),
+    rawContent: '{"key":"value"}',
   };
 }
 
@@ -41,13 +38,10 @@ function createMGJSONAsset(): JSONDataAsset {
     id: "test-mgjson",
     name: "Test MGJSON",
     type: "mgjson",
-    path: "/path/to/file.mgjson",
-    data: { key: "value" },
-    structure: {
-      rootType: "object",
-      fields: [],
-    },
-    loaded: true,
+    filePath: "/path/to/file.mgjson",
+    sourceData: { key: "value" },
+    lastModified: Date.now(),
+    rawContent: '{"key":"value"}',
   };
 }
 
@@ -56,11 +50,13 @@ function createCSVAsset(): CSVDataAsset {
     id: "test-csv",
     name: "Test CSV",
     type: "csv",
-    path: "/path/to/file.csv",
+    filePath: "/path/to/file.csv",
     headers: ["col1", "col2"],
     rows: [["a", "b"], ["c", "d"]],
-    rowCount: 2,
-    loaded: true,
+    numRows: 3,
+    numColumns: 2,
+    lastModified: Date.now(),
+    rawContent: 'col1,col2\na,b\nc,d',
   };
 }
 
@@ -69,11 +65,13 @@ function createTSVAsset(): CSVDataAsset {
     id: "test-tsv",
     name: "Test TSV",
     type: "tsv",
-    path: "/path/to/file.tsv",
+    filePath: "/path/to/file.tsv",
     headers: ["col1", "col2"],
     rows: [["a", "b"]],
-    rowCount: 1,
-    loaded: true,
+    numRows: 2,
+    numColumns: 2,
+    lastModified: Date.now(),
+    rawContent: 'col1\tcol2\na\tb',
   };
 }
 

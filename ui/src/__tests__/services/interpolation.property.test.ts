@@ -70,14 +70,18 @@ const interpolationTypeArb = fc.constantFrom(
   "easeOutCubic",
 );
 
+const controlModeArb = fc.constantFrom("smooth", "corner", "auto-bezier", "continuous-bezier");
+
 function keyframeArb<T>(valueArb: fc.Arbitrary<T>): fc.Arbitrary<Keyframe<T>> {
   return fc.record({
+    id: fc.uuid(),
     frame: frame,
     value: valueArb,
     interpolation: interpolationTypeArb,
     outHandle: bezierHandleArb,
     inHandle: bezierHandleArb,
-  });
+    controlMode: controlModeArb,
+  }) as fc.Arbitrary<Keyframe<T>>;
 }
 
 // Generate sorted keyframes (required for interpolation)
@@ -102,10 +106,13 @@ function sortedKeyframesArb<T>(
     .filter((kfs) => kfs.length >= minCount);
 }
 
+const propertyTypeArb = fc.constantFrom("number", "position", "color", "vector3");
+
 function animatablePropertyArb<T>(
   valueArb: fc.Arbitrary<T>,
 ): fc.Arbitrary<AnimatableProperty<T>> {
   return fc.record({
+    id: fc.uuid(),
     value: valueArb,
     animated: fc.boolean(),
     keyframes: fc.oneof(
@@ -113,7 +120,33 @@ function animatablePropertyArb<T>(
       sortedKeyframesArb(valueArb, 2, 5),
     ),
     name: fc.constant("testProperty"),
-  });
+    type: propertyTypeArb,
+  }) as fc.Arbitrary<AnimatableProperty<T>>;
+}
+
+// Helper to create keyframe with required fields
+function createTestKeyframe<T>(overrides: Partial<Keyframe<T>> & { frame: number; value: T }): Keyframe<T> {
+  return {
+    id: `kf-${overrides.frame}`,
+    frame: overrides.frame,
+    value: overrides.value,
+    interpolation: overrides.interpolation ?? "linear",
+    outHandle: overrides.outHandle ?? { frame: 0, value: 0, enabled: false },
+    inHandle: overrides.inHandle ?? { frame: 0, value: 0, enabled: false },
+    controlMode: overrides.controlMode ?? "smooth",
+  };
+}
+
+// Helper to create animatable property with required fields
+function createTestProperty<T>(value: T, keyframes: Keyframe<T>[] = [], animated = keyframes.length > 0): AnimatableProperty<T> {
+  return {
+    id: `prop-${Math.random().toString(36).slice(2, 8)}`,
+    name: "test",
+    type: "number" as const,
+    value,
+    animated,
+    keyframes,
+  };
 }
 
 // ============================================================================
@@ -163,12 +196,7 @@ describe("PROPERTY: interpolateProperty boundary conditions", () => {
       const firstFrame = keyframes[0].frame;
       if (f > firstFrame) return; // Only test frames before first
 
-      const prop: AnimatableProperty<number> = {
-        value: 0,
-        animated: true,
-        keyframes,
-        name: "test",
-      };
+      const prop = createTestProperty(0, keyframes, true);
 
       const result = interpolateProperty(prop, f);
       expect(result).toBe(keyframes[0].value);
@@ -182,12 +210,7 @@ describe("PROPERTY: interpolateProperty boundary conditions", () => {
       const lastFrame = keyframes[keyframes.length - 1].frame;
       if (f < lastFrame) return; // Only test frames after last
 
-      const prop: AnimatableProperty<number> = {
-        value: 0,
-        animated: true,
-        keyframes,
-        name: "test",
-      };
+      const prop = createTestProperty(0, keyframes, true);
 
       const result = interpolateProperty(prop, f);
       expect(result).toBe(keyframes[keyframes.length - 1].value);
@@ -197,12 +220,7 @@ describe("PROPERTY: interpolateProperty boundary conditions", () => {
   test.prop([finiteNumber])(
     "non-animated property always returns static value",
     (value) => {
-      const prop: AnimatableProperty<number> = {
-        value,
-        animated: false,
-        keyframes: [],
-        name: "test",
-      };
+      const prop = createTestProperty(value, [], false);
 
       // Test various frames
       expect(interpolateProperty(prop, 0)).toBe(value);
@@ -225,19 +243,14 @@ describe("PROPERTY: linear interpolation", () => {
       if (duration < 1) return;
 
       const keyframes: Keyframe<number>[] = [
-        { frame: 0, value: v1, interpolation: "linear", outHandle: { frame: 0, value: 0, enabled: false }, inHandle: { frame: 0, value: 0, enabled: false } },
-        { frame: duration, value: v2, interpolation: "linear", outHandle: { frame: 0, value: 0, enabled: false }, inHandle: { frame: 0, value: 0, enabled: false } },
+        createTestKeyframe({ frame: 0, value: v1 }),
+        createTestKeyframe({ frame: duration, value: v2 }),
       ];
 
-      const prop: AnimatableProperty<number> = {
-        value: 0,
-        animated: true,
-        keyframes,
-        name: "test",
-      };
+      const prop = createTestProperty(0, keyframes, true);
 
-      const frame = Math.round(t * duration);
-      const result = interpolateProperty(prop, frame);
+      const testFrame = Math.round(t * duration);
+      const result = interpolateProperty(prop, testFrame);
 
       // Result should be between min and max (inclusive)
       const min = Math.min(v1, v2);
@@ -252,16 +265,11 @@ describe("PROPERTY: linear interpolation", () => {
     (v1, duration) => {
       const v2 = v1 + 100; // Different value
       const keyframes: Keyframe<number>[] = [
-        { frame: 0, value: v1, interpolation: "linear", outHandle: { frame: 0, value: 0, enabled: false }, inHandle: { frame: 0, value: 0, enabled: false } },
-        { frame: duration, value: v2, interpolation: "linear", outHandle: { frame: 0, value: 0, enabled: false }, inHandle: { frame: 0, value: 0, enabled: false } },
+        createTestKeyframe({ frame: 0, value: v1 }),
+        createTestKeyframe({ frame: duration, value: v2 }),
       ];
 
-      const prop: AnimatableProperty<number> = {
-        value: 0,
-        animated: true,
-        keyframes,
-        name: "test",
-      };
+      const prop = createTestProperty(0, keyframes, true);
 
       expect(interpolateProperty(prop, 0)).toBe(v1);
     },
@@ -272,16 +280,11 @@ describe("PROPERTY: linear interpolation", () => {
     (v1, duration) => {
       const v2 = v1 + 100; // Different value
       const keyframes: Keyframe<number>[] = [
-        { frame: 0, value: v1, interpolation: "linear", outHandle: { frame: 0, value: 0, enabled: false }, inHandle: { frame: 0, value: 0, enabled: false } },
-        { frame: duration, value: v2, interpolation: "linear", outHandle: { frame: 0, value: 0, enabled: false }, inHandle: { frame: 0, value: 0, enabled: false } },
+        createTestKeyframe({ frame: 0, value: v1 }),
+        createTestKeyframe({ frame: duration, value: v2 }),
       ];
 
-      const prop: AnimatableProperty<number> = {
-        value: 0,
-        animated: true,
-        keyframes,
-        name: "test",
-      };
+      const prop = createTestProperty(0, keyframes, true);
 
       expect(interpolateProperty(prop, duration)).toBe(v2);
     },
@@ -300,19 +303,14 @@ describe("PROPERTY: hold interpolation", () => {
       if (duration < 2) return;
 
       const keyframes: Keyframe<number>[] = [
-        { frame: 0, value: v1, interpolation: "hold", outHandle: { frame: 0, value: 0, enabled: false }, inHandle: { frame: 0, value: 0, enabled: false } },
-        { frame: duration, value: v2, interpolation: "linear", outHandle: { frame: 0, value: 0, enabled: false }, inHandle: { frame: 0, value: 0, enabled: false } },
+        createTestKeyframe({ frame: 0, value: v1, interpolation: "hold" }),
+        createTestKeyframe({ frame: duration, value: v2 }),
       ];
 
-      const prop: AnimatableProperty<number> = {
-        value: 0,
-        animated: true,
-        keyframes,
-        name: "test",
-      };
+      const prop = createTestProperty(0, keyframes, true);
 
-      const frame = Math.round(t * (duration - 1)); // Frame before last
-      const result = interpolateProperty(prop, frame);
+      const testFrame = Math.round(t * (duration - 1)); // Frame before last
+      const result = interpolateProperty(prop, testFrame);
       expect(result).toBe(v1);
     },
   );
@@ -323,15 +321,17 @@ describe("PROPERTY: Vec2/Vec3 interpolation", () => {
     "Vec2 interpolation preserves structure",
     (v1, v2, duration) => {
       const keyframes: Keyframe<typeof v1>[] = [
-        { frame: 0, value: v1, interpolation: "linear", outHandle: { frame: 0, value: 0, enabled: false }, inHandle: { frame: 0, value: 0, enabled: false } },
-        { frame: duration, value: v2, interpolation: "linear", outHandle: { frame: 0, value: 0, enabled: false }, inHandle: { frame: 0, value: 0, enabled: false } },
+        createTestKeyframe({ frame: 0, value: v1 }),
+        createTestKeyframe({ frame: duration, value: v2 }),
       ];
 
       const prop: AnimatableProperty<typeof v1> = {
+        id: "prop-vec2-test",
         value: v1,
         animated: true,
         keyframes,
         name: "test",
+        type: "position",
       };
 
       const result = interpolateProperty(prop, Math.floor(duration / 2));
@@ -346,15 +346,17 @@ describe("PROPERTY: Vec2/Vec3 interpolation", () => {
     "Vec3 interpolation preserves structure",
     (v1, v2, duration) => {
       const keyframes: Keyframe<typeof v1>[] = [
-        { frame: 0, value: v1, interpolation: "linear", outHandle: { frame: 0, value: 0, enabled: false }, inHandle: { frame: 0, value: 0, enabled: false } },
-        { frame: duration, value: v2, interpolation: "linear", outHandle: { frame: 0, value: 0, enabled: false }, inHandle: { frame: 0, value: 0, enabled: false } },
+        createTestKeyframe({ frame: 0, value: v1 }),
+        createTestKeyframe({ frame: duration, value: v2 }),
       ];
 
       const prop: AnimatableProperty<typeof v1> = {
+        id: "prop-vec3-test",
         value: v1,
         animated: true,
         keyframes,
         name: "test",
+        type: "vector3",
       };
 
       const result = interpolateProperty(prop, Math.floor(duration / 2));
@@ -370,15 +372,17 @@ describe("PROPERTY: color interpolation", () => {
     "color interpolation returns valid hex color",
     (c1, c2, duration) => {
       const keyframes: Keyframe<string>[] = [
-        { frame: 0, value: c1, interpolation: "linear", outHandle: { frame: 0, value: 0, enabled: false }, inHandle: { frame: 0, value: 0, enabled: false } },
-        { frame: duration, value: c2, interpolation: "linear", outHandle: { frame: 0, value: 0, enabled: false }, inHandle: { frame: 0, value: 0, enabled: false } },
+        createTestKeyframe({ frame: 0, value: c1 }),
+        createTestKeyframe({ frame: duration, value: c2 }),
       ];
 
       const prop: AnimatableProperty<string> = {
+        id: "prop-color-test",
         value: c1,
         animated: true,
         keyframes,
         name: "test",
+        type: "color",
       };
 
       const result = interpolateProperty(prop, Math.floor(duration / 2));
@@ -549,28 +553,23 @@ describe("PROPERTY: bezier cache behavior", () => {
       // Create many different bezier interpolations
       for (let i = 0; i < iterations; i++) {
         const keyframes: Keyframe<number>[] = [
-          {
+          createTestKeyframe({
             frame: 0,
             value: v1 + i,
             interpolation: "bezier",
             outHandle: { frame: i + 1, value: i, enabled: true },
             inHandle: { frame: 0, value: 0, enabled: false },
-          },
-          {
+          }),
+          createTestKeyframe({
             frame: 100 + i,
             value: v2 + i,
             interpolation: "linear",
             outHandle: { frame: 0, value: 0, enabled: false },
             inHandle: { frame: -(i + 1), value: -i, enabled: true },
-          },
+          }),
         ];
 
-        const prop: AnimatableProperty<number> = {
-          value: 0,
-          animated: true,
-          keyframes,
-          name: "test",
-        };
+        const prop = createTestProperty(0, keyframes, true);
 
         interpolateProperty(prop, 50 + i);
       }
@@ -618,22 +617,22 @@ describe("PROPERTY: PURITY - no mutation", () => {
 describe("PROBE: Interpolation Edge Cases", () => {
   it("PROBE: 3D to 2D transition loses Z correctly", () => {
     const prop: AnimatableProperty<{x: number, y: number, z?: number}> = {
-      id: 't', name: 't', type: 'object' as const, value: {x:0,y:0,z:100},
+      id: 't', name: 't', type: 'vector3', value: {x:0,y:0,z:100},
       animated: true,
       keyframes: [
         { id:'k1', frame:0, value:{x:0,y:0,z:100}, interpolation:'linear', inHandle:{frame:-5,value:0,enabled:true}, outHandle:{frame:5,value:0,enabled:true}, controlMode:'smooth' },
         { id:'k2', frame:100, value:{x:100,y:100}, interpolation:'linear', inHandle:{frame:-5,value:0,enabled:true}, outHandle:{frame:5,value:0,enabled:true}, controlMode:'smooth' },
       ],
     };
-    
+
     const at0 = interpolateProperty(prop, 0, 30);
     const at50 = interpolateProperty(prop, 50, 30);
     const at100 = interpolateProperty(prop, 100, 30);
-    
+
     // Z interpolates from 100 towards 0 during transition
     expect(at0.z).toBe(100);
     expect(at50.z).toBe(50); // 100 * (1 - 0.5) = 50
-    
+
     // DESIGN: At exact keyframe frame, returns keyframe value directly
     // The endpoint keyframe has no Z (2D), so Z becomes undefined, not 0
     // This matches professional animation software behavior
@@ -642,18 +641,18 @@ describe("PROBE: Interpolation Edge Cases", () => {
 
   it("PROBE: 2D to 3D transition gains Z correctly", () => {
     const prop: AnimatableProperty<{x: number, y: number, z?: number}> = {
-      id: 't', name: 't', type: 'object' as const, value: {x:0,y:0},
+      id: 't', name: 't', type: 'vector3', value: {x:0,y:0},
       animated: true,
       keyframes: [
         { id:'k1', frame:0, value:{x:0,y:0}, interpolation:'linear', inHandle:{frame:-5,value:0,enabled:true}, outHandle:{frame:5,value:0,enabled:true}, controlMode:'smooth' },
         { id:'k2', frame:100, value:{x:100,y:100,z:100}, interpolation:'linear', inHandle:{frame:-5,value:0,enabled:true}, outHandle:{frame:5,value:0,enabled:true}, controlMode:'smooth' },
       ],
     };
-    
+
     const at0 = interpolateProperty(prop, 0, 30);
     const at50 = interpolateProperty(prop, 50, 30);
     const at100 = interpolateProperty(prop, 100, 30);
-    
+
     // Z should grow from 0 to 100
     expect(at0.z).toBeUndefined(); // No Z at start
     expect(at50.z).toBe(50); // Should be 100 * 0.5 = 50
@@ -662,7 +661,7 @@ describe("PROBE: Interpolation Edge Cases", () => {
 
   it("PROBE: malformed hex color handling", () => {
     const prop: AnimatableProperty<string> = {
-      id: 't', name: 't', type: 'string' as const, value: '#000000',
+      id: 't', name: 't', type: 'color', value: '#000000',
       animated: true,
       keyframes: [
         { id:'k1', frame:0, value:'#xyz', interpolation:'linear', inHandle:{frame:-5,value:0,enabled:true}, outHandle:{frame:5,value:0,enabled:true}, controlMode:'smooth' },

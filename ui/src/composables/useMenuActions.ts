@@ -112,6 +112,32 @@ export function useMenuActions(options: MenuActionsOptions) {
         showExportDialog.value = true;
         break;
 
+      // Server operations
+      case "saveProjectToServer":
+        store.saveProjectToServer().then((projectId: string | null) => {
+          if (projectId) {
+            alert(`Project saved to server with ID: ${projectId}`);
+          } else {
+            alert("Failed to save project to server");
+          }
+        });
+        break;
+      case "loadProjectFromServer":
+        // For now, prompt for project ID - later can add a project browser dialog
+        {
+          const projectId = prompt("Enter project ID to load:");
+          if (projectId) {
+            store.loadProjectFromServer(projectId).then((success: boolean) => {
+              if (success) {
+                alert("Project loaded from server");
+              } else {
+                alert("Failed to load project from server");
+              }
+            });
+          }
+        }
+        break;
+
       // Edit menu
       case "undo":
         store.undo();
@@ -139,6 +165,33 @@ export function useMenuActions(options: MenuActionsOptions) {
         break;
       case "deselectAll":
         store.clearSelection();
+        break;
+
+      // Markers
+      case "addMarkerAtPlayhead":
+        store.addMarkers([
+          {
+            frame: store.currentFrame,
+            label: `Marker ${store.getMarkers().length + 1}`,
+            color: "#FFFF00",
+          },
+        ]);
+        break;
+      case "jumpToNextMarker":
+        store.jumpToNextMarker();
+        break;
+      case "jumpToPreviousMarker":
+        store.jumpToPreviousMarker();
+        break;
+      case "clearMarkers":
+        if (confirm("Clear all markers?")) {
+          store.clearMarkers();
+        }
+        break;
+
+      // Cache operations
+      case "clearFrameCache":
+        store.clearFrameCache();
         break;
 
       // Create menu - layer types

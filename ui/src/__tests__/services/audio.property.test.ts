@@ -16,8 +16,8 @@ import {
   getFeatureAtFrame,
   isBeatAtFrame,
   type AudioAnalysis,
-  type AudioFeature,
 } from '@/services/audioFeatures';
+import type { AudioFeature } from '@/services/audioReactiveMapping';
 
 // ============================================================================
 // TEST DATA GENERATORS

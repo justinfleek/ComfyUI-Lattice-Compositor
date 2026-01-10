@@ -22,7 +22,7 @@ describe('BUG Regression: RGBA Hex Color Alpha Lost', () => {
     const prop: AnimatableProperty<string> = {
       id: 'test',
       name: 'test',
-      type: 'string',
+      type: 'color',
       value: '#00000000',
       animated: true,
       keyframes: [
@@ -67,7 +67,7 @@ describe('BUG Regression: RGBA Hex Color Alpha Lost', () => {
     const prop: AnimatableProperty<string> = {
       id: 'test',
       name: 'test',
-      type: 'string',
+      type: 'color',
       value: '#ff000000',
       animated: true,
       keyframes: [
@@ -108,7 +108,7 @@ describe('BUG Regression: RGBA Hex Color Alpha Lost', () => {
     const prop: AnimatableProperty<string> = {
       id: 'test',
       name: 'test',
-      type: 'string',
+      type: 'color',
       value: '#000000',
       animated: true,
       keyframes: [
@@ -143,7 +143,7 @@ describe('BUG Regression: RGBA Hex Color Alpha Lost', () => {
     const prop: AnimatableProperty<string> = {
       id: 'test',
       name: 'test',
-      type: 'string',
+      type: 'color',
       value: '#0000',
       animated: true,
       keyframes: [

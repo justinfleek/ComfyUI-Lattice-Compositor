@@ -37,6 +37,14 @@
           <span class="shortcut">Ctrl+M</span>
         </button>
         <div class="separator"></div>
+        <div class="menu-section-label">Server</div>
+        <button @click="handleAction('saveProjectToServer')">
+          <span class="label">Save to Server...</span>
+        </button>
+        <button @click="handleAction('loadProjectFromServer')">
+          <span class="label">Load from Server...</span>
+        </button>
+        <div class="separator"></div>
         <button @click="handleAction('projectSettings')">
           <span class="label">Project Settings...</span>
           <span class="shortcut">Ctrl+Alt+P</span>
@@ -95,6 +103,28 @@
         <button @click="handleAction('deselectAll')">
           <span class="label">Deselect All</span>
           <span class="shortcut">F2</span>
+        </button>
+        <div class="separator"></div>
+        <div class="menu-section-label">Markers</div>
+        <button @click="handleAction('addMarkerAtPlayhead')">
+          <span class="label">Add Marker at Playhead</span>
+          <span class="shortcut">*</span>
+        </button>
+        <button @click="handleAction('jumpToNextMarker')">
+          <span class="label">Jump to Next Marker</span>
+          <span class="shortcut">Shift+J</span>
+        </button>
+        <button @click="handleAction('jumpToPreviousMarker')">
+          <span class="label">Jump to Previous Marker</span>
+          <span class="shortcut">Shift+K</span>
+        </button>
+        <button @click="handleAction('clearMarkers')">
+          <span class="label">Clear All Markers</span>
+        </button>
+        <div class="separator"></div>
+        <div class="menu-section-label">Cache</div>
+        <button @click="handleAction('clearFrameCache')">
+          <span class="label">Clear Frame Cache</span>
         </button>
       </div>
     </div>

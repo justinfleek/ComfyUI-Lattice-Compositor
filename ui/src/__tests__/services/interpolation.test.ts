@@ -33,10 +33,12 @@ function createProperty<T>(
   keyframes: Keyframe<T>[] = [],
 ): AnimatableProperty<T> {
   return {
+    id: `prop-${Math.random().toString(36).slice(2)}`,
+    name: "testProperty",
+    type: "number",
     value,
     animated,
     keyframes,
-    name: "testProperty",
   };
 }
 
@@ -49,11 +51,13 @@ function createKeyframeWithHandles<T>(
   inHandle?: BezierHandle,
 ): Keyframe<T> {
   return {
+    id: `kf-${Math.random().toString(36).slice(2)}`,
     frame,
     value,
     interpolation,
     outHandle: outHandle || { frame: 0, value: 0, enabled: false },
     inHandle: inHandle || { frame: 0, value: 0, enabled: false },
+    controlMode: "smooth",
   };
 }
 
@@ -323,7 +327,7 @@ describe("interpolateProperty", () => {
     test("handles Vec3 to Vec2 transition", () => {
       const prop = createProperty({ x: 0, y: 0, z: 100 }, true, [
         createKeyframe(0, { x: 0, y: 0, z: 100 }),
-        createKeyframe(100, { x: 100, y: 100 }), // No z
+        createKeyframe(100, { x: 100, y: 100, z: 0 }), // Z goes to 0
       ]);
       const mid = interpolateProperty(prop, 50) as any;
       expect(mid.x).toBe(50);

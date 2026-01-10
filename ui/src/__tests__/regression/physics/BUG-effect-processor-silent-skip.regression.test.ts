@@ -41,7 +41,9 @@ describe('BUG Regression: Silent Effect Skip', () => {
       id: 'test-effect',
       effectKey: 'definitely-not-registered-effect-xyz', // Unregistered effect
       name: 'Unknown Effect',
+      category: 'stylize',
       enabled: true,
+      expanded: false,
       parameters: {},
     };
 
@@ -64,7 +66,9 @@ describe('BUG Regression: Silent Effect Skip', () => {
       id: 'test-effect-id',
       effectKey: 'invalid-effect-key',
       name: 'Test Effect Name',
+      category: 'stylize',
       enabled: true,
+      expanded: false,
       parameters: {},
     };
 
@@ -94,14 +98,18 @@ describe('BUG Regression: Silent Effect Skip', () => {
         id: 'effect-1',
         effectKey: 'invalid-key-1',
         name: 'Invalid 1',
+        category: 'stylize',
         enabled: true,
+        expanded: false,
         parameters: {},
       },
       {
         id: 'effect-2',
         effectKey: 'invalid-key-2',
         name: 'Invalid 2',
+        category: 'stylize',
         enabled: true,
+        expanded: false,
         parameters: {},
       },
     ];
@@ -121,7 +129,9 @@ describe('BUG Regression: Silent Effect Skip', () => {
       id: 'test-effect',
       effectKey: 'invalid-effect-key',
       name: 'Disabled Invalid',
+      category: 'stylize',
       enabled: false, // Disabled
+      expanded: false,
       parameters: {},
     };
 

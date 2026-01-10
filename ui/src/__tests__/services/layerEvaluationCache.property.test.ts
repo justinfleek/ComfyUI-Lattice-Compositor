@@ -28,57 +28,67 @@ import type { EvaluatedLayer } from '@/engine/MotionEngine';
 // ============================================================================
 
 function createMinimalLayer(id: string): Layer {
+  const origin = {
+    id: 'origin',
+    name: 'origin',
+    type: 'vector3' as const,
+    value: { x: 0, y: 0, z: 0 },
+    animated: false,
+    keyframes: [],
+  };
   return {
     id,
     name: 'Test Layer',
     type: 'solid',
     visible: true,
     locked: false,
-    solo: false,
-    shy: false,
+    isolate: false,
+    motionBlur: false,
     blendMode: 'normal',
     threeD: false,
     parentId: null,
-    opacity: { 
+    opacity: {
       id: 'opacity',
-      name: 'opacity', 
+      name: 'opacity',
       type: 'number',
-      value: 100, 
+      value: 100,
       animated: false,
-      keyframes: [] 
+      keyframes: []
     },
     transform: {
-      position: { 
+      position: {
         id: 'position',
-        name: 'position', 
-        type: 'vec3',
-        value: { x: 0, y: 0, z: 0 }, 
+        name: 'position',
+        type: 'vector3',
+        value: { x: 0, y: 0, z: 0 },
         animated: false,
-        keyframes: [] 
+        keyframes: []
       },
-      scale: { 
+      scale: {
         id: 'scale',
-        name: 'scale', 
-        type: 'vec3',
-        value: { x: 100, y: 100, z: 100 }, 
+        name: 'scale',
+        type: 'vector3',
+        value: { x: 100, y: 100, z: 100 },
         animated: false,
-        keyframes: [] 
+        keyframes: []
       },
-      rotation: { 
+      rotation: {
         id: 'rotation',
-        name: 'rotation', 
+        name: 'rotation',
         type: 'number',
-        value: 0, 
+        value: 0,
         animated: false,
-        keyframes: [] 
+        keyframes: []
       },
+      origin,
+      anchorPoint: origin,
     },
     effects: [],
     properties: [],
     masks: [],
     startFrame: 0,
     endFrame: 100,
-    data: null,
+    data: { color: '#000000', width: 100, height: 100 },
   } as Layer;
 }
 

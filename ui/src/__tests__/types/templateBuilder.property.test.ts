@@ -27,7 +27,7 @@ const expressionControlTypeArb = fc.constantFrom(
 ) as fc.Arbitrary<ExpressionControlType>;
 
 const exposedPropertyTypeArb = fc.constantFrom(
-  "number", "position", "color", "boolean", "dropdown", "text"
+  "number", "point", "color", "checkbox", "dropdown", "sourceText"
 ) as fc.Arbitrary<ExposedPropertyType>;
 
 // ============================================================
@@ -296,12 +296,12 @@ describe("PROPERTY: createExposedProperty", () => {
   });
 
   it("config is empty object by default", () => {
-    const prop = createExposedProperty("layer1", "transform.position", "Position", "position", 0);
+    const prop = createExposedProperty("layer1", "transform.position", "Position", "point", 0);
     expect(prop.config).toEqual({});
   });
 
   it("id starts with exp_ prefix", () => {
-    const prop = createExposedProperty("layer1", "transform.position", "Position", "position", 0);
+    const prop = createExposedProperty("layer1", "transform.position", "Position", "point", 0);
     expect(prop.id).toMatch(/^exp_/);
   });
 });

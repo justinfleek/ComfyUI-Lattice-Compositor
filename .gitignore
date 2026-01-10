@@ -52,7 +52,6 @@ ui/e2e/screenshots/
 # Test artifacts
 ui/test-inventory.txt
 ui/test-malicious.lattice.json
-web/
 .aider*
 
 # Hypothesis test cache
