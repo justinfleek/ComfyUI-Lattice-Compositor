@@ -66,7 +66,7 @@ def register_all_routes() -> dict:
   for module_name, expected_routes in route_modules:
     try:
       # Import module - this triggers decorator-based route registration
-      __import__(f"lattice.nodes.{module_name}", fromlist=[module_name])
+      __import__(f"src.lattice.nodes.{module_name}", fromlist=[module_name])
       results[module_name] = {"status": "success", "expected_routes": expected_routes}
       print(f"[Lattice] Registered routes from {module_name}")
     except ImportError as e:
