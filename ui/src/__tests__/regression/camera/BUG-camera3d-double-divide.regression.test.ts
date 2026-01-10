@@ -103,11 +103,12 @@ describe('BUG Regression: Double Perspective Divide', () => {
     const compHeight = 1080;
     const matrices = getCameraViewMatrices(camera, compWidth, compHeight);
 
-    // Point behind camera (positive Z in camera space)
-    const pointBehind = vec3(0, 0, 2000);
+    // Point behind camera: camera is at z=-1000 looking toward z=0,
+    // so "behind" means z < -1000 (e.g., z=-2000)
+    const pointBehind = vec3(0, 0, -2000);
     const result = projectToScreen(pointBehind, matrices.viewProjection, compWidth, compHeight);
 
-    // Should be marked as not visible
+    // Should be marked as not visible (behind camera)
     expect(result.visible).toBe(false);
     expect(result.x).toBe(0);
     expect(result.y).toBe(0);

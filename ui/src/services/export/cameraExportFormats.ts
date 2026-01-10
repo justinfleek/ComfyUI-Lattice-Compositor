@@ -133,11 +133,16 @@ function lerp(a: number, b: number, t: number): number {
 }
 
 function lerpAngle(a: number, b: number, t: number): number {
-  // Handle angle wrapping
+  // Handle angle wrapping - take the shortest path around the circle
   let diff = b - a;
   if (diff > 180) diff -= 360;
   if (diff < -180) diff += 360;
-  return a + diff * t;
+  let result = a + diff * t;
+  // Normalize result to [0, 360] range for camera exports
+  // Note: 360 is kept as-is (equivalent to 0) for compatibility
+  while (result > 360) result -= 360;
+  while (result < 0) result += 360;
+  return result;
 }
 
 // ============================================================================
@@ -150,10 +155,20 @@ function lerpAngle(a: number, b: number, t: number): number {
 export function computeViewMatrix(cam: InterpolatedCamera): number[][] {
   const { position, rotation } = cam;
 
+  // Guard against NaN/Infinity from invalid keyframe interpolation or corrupted
+  // camera state. NaN values would propagate through matrix math and produce
+  // an invalid view matrix. Fallback to identity-like values (0) for safety.
+  const rotX = Number.isFinite(rotation.x) ? rotation.x : 0;
+  const rotY = Number.isFinite(rotation.y) ? rotation.y : 0;
+  const rotZ = Number.isFinite(rotation.z) ? rotation.z : 0;
+  const posX = Number.isFinite(position.x) ? position.x : 0;
+  const posY = Number.isFinite(position.y) ? position.y : 0;
+  const posZ = Number.isFinite(position.z) ? position.z : 0;
+
   // Convert degrees to radians
-  const rx = (rotation.x * Math.PI) / 180;
-  const ry = (rotation.y * Math.PI) / 180;
-  const rz = (rotation.z * Math.PI) / 180;
+  const rx = (rotX * Math.PI) / 180;
+  const ry = (rotY * Math.PI) / 180;
+  const rz = (rotZ * Math.PI) / 180;
 
   // Rotation matrices
   const cosX = Math.cos(rx),
@@ -178,10 +193,10 @@ export function computeViewMatrix(cam: InterpolatedCamera): number[][] {
 
   // View matrix = inverse of camera transform
   // For orthonormal rotation, inverse is transpose
-  // Translation is -R^T * position
-  const tx = -(r00 * position.x + r10 * position.y + r20 * position.z);
-  const ty = -(r01 * position.x + r11 * position.y + r21 * position.z);
-  const tz = -(r02 * position.x + r12 * position.y + r22 * position.z);
+  // Translation is -R^T * position (using validated position values)
+  const tx = -(r00 * posX + r10 * posY + r20 * posZ);
+  const ty = -(r01 * posX + r11 * posY + r21 * posZ);
+  const tz = -(r02 * posX + r12 * posY + r22 * posZ);
 
   return [
     [r00, r01, r02, tx],
@@ -200,17 +215,53 @@ export function computeProjectionMatrix(
   nearClip: number = 0.1,
   farClip: number = 1000,
 ): number[][] {
+  // Aspect ratio must be positive and finite for valid projection matrix
+  if (!Number.isFinite(aspectRatio) || aspectRatio <= 0) {
+    throw new Error(
+      `Invalid aspectRatio: ${aspectRatio}. Must be a positive finite number.`,
+    );
+  }
+
+  // Ensure clip planes are valid to prevent NaN in perspective division.
+  // Near must be positive, far must be greater than near.
+  let validNear = nearClip;
+  let validFar = farClip;
+
+  if (!Number.isFinite(nearClip) || nearClip <= 0) {
+    console.warn(
+      `Invalid nearClip: ${nearClip}. Using fallback value 0.1.`,
+    );
+    validNear = 0.1;
+  }
+
+  if (!Number.isFinite(farClip) || farClip <= validNear) {
+    console.warn(
+      `Invalid farClip: ${farClip} (must be > nearClip ${validNear}). Using fallback value 1000.`,
+    );
+    validFar = 1000;
+  }
+
+  // Default to 50mm focal length (standard lens) if value is invalid
+  let focalLength = cam.focalLength;
+  if (!Number.isFinite(cam.focalLength)) {
+    console.warn(
+      `Invalid focalLength: ${cam.focalLength}. Using fallback value 50mm.`,
+    );
+    focalLength = 50;
+  }
+
   // focalLengthToFOV returns radians - do NOT convert again!
-  const fovRad = focalLengthToFOV(cam.focalLength, 36); // 36mm film, returns radians
+  const fovRad = focalLengthToFOV(focalLength, 36); // 36mm film, returns radians
   const tanHalfFov = Math.tan(fovRad / 2);
 
-  const f = 1 / tanHalfFov;
-  const nf = 1 / (nearClip - farClip);
+  // Handle edge case where tanHalfFov could be 0 or very small
+  const f = tanHalfFov > 0.001 ? 1 / tanHalfFov : 1000;
+  const nf = 1 / (validNear - validFar);
 
   return [
     [f / aspectRatio, 0, 0, 0],
     [0, f, 0, 0],
-    [0, 0, (farClip + nearClip) * nf, 2 * farClip * nearClip * nf],
+    [0, 0, (validFar + validNear) * nf, 2 * validFar * validNear * nf],
     [0, 0, -1, 0],
   ];
 }
@@ -265,9 +316,14 @@ export function detectMotionCtrlSVDPreset(
 
   const threshold = 50; // Movement threshold
 
-  // Check for zoom (Z movement)
+  // Detect zoom by comparing distance from origin rather than raw Z delta.
+  // This correctly handles cameras positioned on either side of the origin -
+  // "zoom in" means moving closer to the scene (origin), regardless of
+  // whether the camera starts at positive or negative Z.
   if (Math.abs(deltaZ) > threshold) {
-    return deltaZ < 0 ? "zoom_in" : "zoom_out";
+    const distStart = Math.abs(firstPos.z);
+    const distEnd = Math.abs(lastPos.z);
+    return distEnd < distStart ? "zoom_in" : "zoom_out";
   }
 
   // Check for rotation
@@ -470,6 +526,10 @@ export function detectUni3CTrajectoryType(
 
 /**
  * Export camera animation to Uni3C format
+ *
+ * @deprecated This export format is non-functional with current Uni3C models.
+ * The trajectory format does not match the expected input structure.
+ * Use exportToCameraCtrl or exportToMotionCtrl instead.
  */
 export function exportToUni3C(
   camera: Camera3D,
@@ -478,6 +538,11 @@ export function exportToUni3C(
   compWidth: number,
   compHeight: number,
 ): Uni3CCameraData {
+  console.warn(
+    "exportToUni3C is non-functional with current Uni3C models. " +
+      "Consider using exportToCameraCtrl or exportToMotionCtrl instead.",
+  );
+
   const detectedType = detectUni3CTrajectoryType(keyframes);
 
   if (detectedType !== "custom") {
@@ -615,10 +680,38 @@ export function exportCameraMatrices(
     fps: number;
   },
 ): FullCameraExport {
-  const frames: FullCameraFrame[] = [];
-  const aspectRatio = options.width / options.height;
+  const { width, height, fps, frameCount } = options;
 
-  for (let frame = 0; frame < options.frameCount; frame++) {
+  // Validate dimensions - throw for any invalid value (zero, negative, NaN, Infinity)
+  if (!Number.isFinite(width) || width <= 0) {
+    throw new Error(
+      `Invalid dimensions: ${width}x${height}. Width and height must be positive finite numbers.`,
+    );
+  }
+  if (!Number.isFinite(height) || height <= 0) {
+    throw new Error(
+      `Invalid dimensions: ${width}x${height}. Width and height must be positive finite numbers.`,
+    );
+  }
+
+  // Validate FPS - throw for any invalid value
+  if (!Number.isFinite(fps) || fps <= 0) {
+    throw new Error(
+      `Invalid fps: ${fps}. FPS must be a positive finite number.`,
+    );
+  }
+
+  // Validate frame count - throw for any invalid value
+  if (!Number.isFinite(frameCount) || frameCount < 1) {
+    throw new Error(
+      `Invalid frameCount: ${frameCount}. Frame count must be at least 1.`,
+    );
+  }
+
+  const frames: FullCameraFrame[] = [];
+  const aspectRatio = width / height;
+
+  for (let frame = 0; frame < frameCount; frame++) {
     const cam = interpolateCameraAtFrame(camera, keyframes, frame);
 
     const viewMatrix = computeViewMatrix(cam);
@@ -626,7 +719,7 @@ export function exportCameraMatrices(
 
     frames.push({
       frame,
-      timestamp: frame / options.fps,
+      timestamp: frame / fps,
       view_matrix: viewMatrix,
       projection_matrix: projMatrix,
       position: [cam.position.x, cam.position.y, cam.position.z],
@@ -640,10 +733,10 @@ export function exportCameraMatrices(
   return {
     frames,
     metadata: {
-      width: options.width,
-      height: options.height,
-      fps: options.fps,
-      total_frames: options.frameCount,
+      width,
+      height,
+      fps,
+      total_frames: frameCount,
       camera_type: camera.type,
       film_size: camera.filmSize,
     },

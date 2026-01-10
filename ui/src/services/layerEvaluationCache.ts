@@ -222,6 +222,14 @@ function isAnimatableProperty(
 
 /**
  * Evaluate transform properties at a frame
+ *
+ * IMPORTANT: This function handles separated dimensions (positionX/Y/Z and scaleX/Y/Z).
+ * When `transform.separateDimensions.position` is true, individual dimension properties
+ * are evaluated instead of the combined position property. Same for scale.
+ *
+ * This must match the behavior in MotionEngine.ts:evaluateTransform to ensure
+ * consistent results between rendering and export.
+ *
  * @param fps - Frames per second (required for expression evaluation)
  */
 function evaluateTransform(
@@ -230,13 +238,48 @@ function evaluateTransform(
   is3D: boolean,
   fps: number,
 ): EvaluatedTransform {
-  const position = interpolateProperty(transform.position, frame, fps);
+  // Evaluate position - check for separate dimensions first
+  let position: { x: number; y: number; z?: number };
+  if (
+    transform.separateDimensions?.position &&
+    transform.positionX &&
+    transform.positionY
+  ) {
+    position = {
+      x: interpolateProperty(transform.positionX, frame, fps),
+      y: interpolateProperty(transform.positionY, frame, fps),
+      z: transform.positionZ
+        ? interpolateProperty(transform.positionZ, frame, fps)
+        : 0,
+    };
+  } else {
+    position = interpolateProperty(transform.position, frame, fps);
+  }
+
   // Use origin (new name) with fallback to anchorPoint for backwards compatibility
   const originProp = transform.origin || transform.anchorPoint;
   const origin = originProp
     ? interpolateProperty(originProp, frame, fps)
     : { x: 0, y: 0, z: 0 };
-  const scale = interpolateProperty(transform.scale, frame, fps);
+
+  // Evaluate scale - check for separate dimensions first
+  let scale: { x: number; y: number; z?: number };
+  if (
+    transform.separateDimensions?.scale &&
+    transform.scaleX &&
+    transform.scaleY
+  ) {
+    scale = {
+      x: interpolateProperty(transform.scaleX, frame, fps),
+      y: interpolateProperty(transform.scaleY, frame, fps),
+      z: transform.scaleZ
+        ? interpolateProperty(transform.scaleZ, frame, fps)
+        : 100,
+    };
+  } else {
+    scale = interpolateProperty(transform.scale, frame, fps);
+  }
+
   const rotation = interpolateProperty(transform.rotation, frame, fps);
 
   const result: EvaluatedTransform = {

@@ -498,13 +498,22 @@ export function convertDepthToFormat(
   format: DepthMapFormat,
 ): Float32Array | Uint8Array | Uint16Array {
   const spec = DEPTH_FORMAT_SPECS[format];
-  
+
   // Validate format exists in spec table
   if (!spec) {
     throw new Error(`Unknown depth format: ${format}. Valid formats: ${Object.keys(DEPTH_FORMAT_SPECS).join(', ')}`);
   }
-  
+
   const { depthBuffer, width, height, minDepth, maxDepth } = result;
+
+  // Validate dimensions - zero or negative dimensions are invalid
+  if (!Number.isFinite(width) || width <= 0) {
+    throw new Error(`Invalid dimensions: width=${width}. Width must be a positive number.`);
+  }
+  if (!Number.isFinite(height) || height <= 0) {
+    throw new Error(`Invalid dimensions: height=${height}. Height must be a positive number.`);
+  }
+
   const pixelCount = width * height;
 
   // Raw format: return Float32Array copy directly without conversion
