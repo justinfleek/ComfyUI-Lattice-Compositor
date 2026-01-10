@@ -14,6 +14,7 @@ export interface MenuActionsOptions {
   showExportDialog: Ref<boolean>;
   showPrecomposeDialog: Ref<boolean>;
   showTimeStretchDialog: Ref<boolean>;
+  showFrameInterpolationDialog: Ref<boolean>;
   showPreferencesDialog: Ref<boolean>;
   showHDPreview: Ref<boolean>;
 
@@ -50,6 +51,7 @@ export function useMenuActions(options: MenuActionsOptions) {
     showExportDialog,
     showPrecomposeDialog,
     showTimeStretchDialog,
+    showFrameInterpolationDialog,
     showPreferencesDialog,
     showHDPreview,
     leftTab,
@@ -192,6 +194,9 @@ export function useMenuActions(options: MenuActionsOptions) {
         break;
       case "timeStretch":
         showTimeStretchDialog.value = true;
+        break;
+      case "frameInterpolation":
+        showFrameInterpolationDialog.value = true;
         break;
       case "timeReverse":
         store.reverseSelectedLayers();

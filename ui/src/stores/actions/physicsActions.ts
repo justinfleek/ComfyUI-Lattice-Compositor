@@ -51,7 +51,7 @@ export interface PhysicsStore {
   };
 
   // Layer access
-  getLayerById(id: string): Layer | null | undefined;
+  getLayerById(id: string): Layer | null;
   updateLayerData(layerId: string, data: Record<string, any>): void;
   // Signature must match compositorStore.addKeyframe
   addKeyframe<T>(

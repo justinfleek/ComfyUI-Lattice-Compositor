@@ -1435,6 +1435,21 @@ export const useCompositorStore = defineStore("compositor", {
     },
 
     /**
+     * Move multiple keyframes by a frame delta (for marquee selection bulk moves).
+     * All keyframes move together by the same delta, maintaining relative positions.
+     */
+    moveKeyframes(
+      keyframes: Array<{
+        layerId: string;
+        propertyPath: string;
+        keyframeId: string;
+      }>,
+      frameDelta: number,
+    ): void {
+      keyframeActions.moveKeyframes(this, keyframes, frameDelta);
+    },
+
+    /**
      * Set keyframe value (for graph editor numeric input)
      */
     setKeyframeValue(
@@ -2917,6 +2932,58 @@ export const useCompositorStore = defineStore("compositor", {
      */
     timeReverseKeyframes(layerId: string, propertyPath?: string): number {
       return keyframeActions.timeReverseKeyframes(this, layerId, propertyPath);
+    },
+
+    /**
+     * Scale keyframe timing around an anchor frame
+     * @param layerId The layer ID
+     * @param propertyPath Optional specific property, otherwise scales all transform properties
+     * @param scaleFactor Scale factor (0.5 = double speed, 2.0 = half speed)
+     * @param anchorFrame The frame to anchor scaling around (default: 0)
+     * @returns Number of keyframes scaled
+     */
+    scaleKeyframeTiming(
+      layerId: string,
+      propertyPath: string | undefined,
+      scaleFactor: number,
+      anchorFrame: number = 0,
+    ): number {
+      return keyframeActions.scaleKeyframeTiming(
+        this,
+        layerId,
+        propertyPath,
+        scaleFactor,
+        anchorFrame,
+      );
+    },
+
+    /**
+     * Apply roving keyframes to position property
+     * Roving automatically adjusts keyframe timing based on spatial distance
+     * so motion appears at constant speed between keyframes.
+     * @param layerId The layer ID
+     * @returns True if roving was applied successfully
+     */
+    applyRovingToPosition(layerId: string): boolean {
+      return keyframeActions.applyRovingToPosition(this, layerId);
+    },
+
+    /**
+     * Check if roving would have any impact on a layer's position keyframes
+     * @param layerId The layer ID
+     * @returns True if roving would modify keyframe timing
+     */
+    checkRovingImpact(layerId: string): boolean {
+      return keyframeActions.checkRovingImpact(this, layerId);
+    },
+
+    /**
+     * Clear all keyframes from a property (single undo entry)
+     * @param layerId The layer ID
+     * @param propertyPath Path to the property (e.g., 'transform.position')
+     */
+    clearKeyframes(layerId: string, propertyPath: string): void {
+      keyframeActions.clearKeyframes(this, layerId, propertyPath);
     },
 
     /**

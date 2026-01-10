@@ -186,7 +186,7 @@ describe('BUG Regression: Missing Undo/Redo', () => {
     });
 
     // Each action should create a history entry
-    expect(store.history.length).toBeGreaterThanOrEqual(initialHistoryLength + 3);
+    expect(store.historyStack.length).toBeGreaterThanOrEqual(initialHistoryLength + 3);
     
     // Should be able to undo all three
     const layerCountAfterActions = store.getActiveCompLayers().length;

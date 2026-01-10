@@ -117,19 +117,22 @@ describe("videoEncoder: Type Structures", () => {
 });
 
 // ============================================================
-// BROWSER-DEPENDENT TESTS (Skipped - require Playwright)
+// BROWSER-DEPENDENT TESTS
 // ============================================================
-
-describe.skip("videoEncoder: Browser-dependent (need Playwright)", () => {
-  it("WebCodecsVideoEncoder encodes frames", () => {
-    // Requires actual browser with WebCodecs support
-  });
-
-  it("encodeFrameSequence produces video", () => {
-    // Requires Canvas and WebCodecs
-  });
-
-  it("downloadVideo triggers download", () => {
-    // Requires DOM (document.createElement, URL.createObjectURL)
-  });
-});
+//
+// The following browser-dependent functionality is tested in E2E:
+//
+// Location: /ui/e2e/export/video-encoder.spec.ts
+//
+// Covered:
+// - isWebCodecsSupported (E2E lines 24-41)
+// - getSupportedCodecs (E2E lines 43-61)
+// - WebCodecsVideoEncoder class (E2E lines 64-185)
+//   - create encoder instance
+//   - encode canvas frame
+//   - finish encoding and return video
+// - encodeFrameSequence (E2E lines 187-230)
+// - encodeFromGenerator (E2E lines 232-274)
+// - downloadVideo (E2E lines 277-316)
+//
+// Run E2E tests with: bunx playwright test video-encoder.spec.ts

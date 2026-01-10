@@ -200,7 +200,9 @@ export class CameraController {
     this.camera.lookAt(this.target);
     this.camera.updateProjectionMatrix();
 
-    // Sync camera controls to this exact position (instant, no animation)
+    // Sync camera-controls to this exact position without animation.
+    // The update(0) call forces immediate internal state sync, preventing
+    // the smoothDamp interpolation from drifting back to old positions.
     if (this.cameraControls) {
       this.cameraControls.setLookAt(
         this.camera.position.x,
@@ -211,6 +213,7 @@ export class CameraController {
         this.target.z,
         false, // No animation
       );
+      this.cameraControls.update(0); // Force immediate internal state sync
     }
 
     // Reset viewport zoom/pan state
@@ -449,16 +452,23 @@ export class CameraController {
 
     this.camera.updateProjectionMatrix();
 
-    // Sync camera-controls internal state to prevent it from reverting our changes
-    this.cameraControls?.setLookAt(
-      cameraPosX,
-      cameraPosY,
-      distance,
-      cameraPosX,
-      cameraPosY,
-      0,
-      false,
-    );
+    // Sync camera-controls internal state to match the new position.
+    // In 2D mode, setLookAt alone isn't enough - the internal spherical
+    // coordinates can "fight back" during update(). Calling update(0)
+    // forces immediate sync, preventing the smoothDamp from interpolating
+    // back to old positions.
+    if (this.cameraControls) {
+      this.cameraControls.setLookAt(
+        cameraPosX,
+        cameraPosY,
+        distance,
+        cameraPosX,
+        cameraPosY,
+        0,
+        false, // No transition animation
+      );
+      this.cameraControls.update(0); // Force immediate internal state sync
+    }
   }
 
   /**

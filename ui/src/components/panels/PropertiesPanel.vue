@@ -48,78 +48,193 @@
             </div>
           </div>
 
-          <!-- Position -->
-          <div class="property-row" v-show="showPosition" :class="{ 'has-driver': hasDriver('transform.position.x') }">
-            <span class="keyframe-toggle" :class="{ active: hasKeyframe('position') }" @click="toggleKeyframe('position')">◆</span>
-            <PropertyLink
-              v-if="selectedLayer"
-              :layerId="selectedLayer.id"
-              property="transform.position.x"
-              :linkedTo="getDriverForProperty('transform.position.x')"
-              @link="(target: any) => onPropertyLink('transform.position.x', target)"
-              @unlink="() => onPropertyUnlink('transform.position.x')"
-            />
-            <label>Position</label>
-            <div class="value-group">
-              <ScrubableNumber
-                v-model="transform.position.x"
-                :precision="1"
-                unit="px"
-                @update:modelValue="updateTransform"
+          <!-- Position (Combined or Separated) -->
+          <template v-if="!positionSeparated">
+            <!-- Combined Position -->
+            <div class="property-row" v-show="showPosition" :class="{ 'has-driver': hasDriver('transform.position.x') }">
+              <span class="keyframe-toggle" :class="{ active: hasKeyframe('position') }" @click="toggleKeyframe('position')">◆</span>
+              <PropertyLink
+                v-if="selectedLayer"
+                :layerId="selectedLayer.id"
+                property="transform.position.x"
+                :linkedTo="getDriverForProperty('transform.position.x')"
+                @link="(target: any) => onPropertyLink('transform.position.x', target)"
+                @unlink="() => onPropertyUnlink('transform.position.x')"
               />
-              <ScrubableNumber
-                v-model="transform.position.y"
-                :precision="1"
-                unit="px"
-                @update:modelValue="updateTransform"
-              />
-              <ScrubableNumber
-                v-if="selectedLayer?.threeD"
-                v-model="transform.position.z"
-                :precision="1"
-                unit="px"
-                @update:modelValue="updateTransform"
-              />
-            </div>
-          </div>
-
-          <!-- Scale -->
-          <div class="property-row" v-show="showScale" :class="{ 'has-driver': hasDriver('transform.scale.x') || hasDriver('transform.scale.y') }">
-            <span class="keyframe-toggle" :class="{ active: hasKeyframe('scale') }" @click="toggleKeyframe('scale')">◆</span>
-            <label>Scale</label>
-            <div class="value-group scale-group">
+              <label>Position</label>
               <button
-                class="link-btn"
-                :class="{ active: scaleLocked }"
-                @click="scaleLocked = !scaleLocked"
-                title="Constrain Proportions"
-              >
-                {{ scaleLocked ? '🔗' : '⛓️‍💥' }}
-              </button>
-              <ScrubableNumber
-                v-model="transform.scale.x"
-                :min="0"
-                :max="1000"
-                suffix="%"
-                @update:modelValue="updateTransform"
-              />
-              <ScrubableNumber
-                v-model="transform.scale.y"
-                :min="0"
-                :max="1000"
-                suffix="%"
-                @update:modelValue="updateTransform"
-              />
-              <ScrubableNumber
-                v-if="selectedLayer?.threeD"
-                v-model="transform.scale.z"
-                :min="0"
-                :max="1000"
-                suffix="%"
-                @update:modelValue="updateTransform"
-              />
+                class="dimension-sep-btn"
+                @click="togglePositionSeparation"
+                title="Separate X, Y, Z dimensions for independent keyframing"
+              >⊞</button>
+              <div class="value-group">
+                <ScrubableNumber
+                  v-model="transform.position.x"
+                  :precision="1"
+                  unit="px"
+                  @update:modelValue="updateTransform"
+                />
+                <ScrubableNumber
+                  v-model="transform.position.y"
+                  :precision="1"
+                  unit="px"
+                  @update:modelValue="updateTransform"
+                />
+                <ScrubableNumber
+                  v-if="selectedLayer?.threeD"
+                  v-model="transform.position.z"
+                  :precision="1"
+                  unit="px"
+                  @update:modelValue="updateTransform"
+                />
+              </div>
             </div>
-          </div>
+          </template>
+          <template v-else>
+            <!-- Separated Position X -->
+            <div class="property-row" v-show="showPosition" :class="{ 'has-driver': hasDriver('transform.position.x') }">
+              <span class="keyframe-toggle" :class="{ active: hasKeyframe('positionX') }" @click="toggleKeyframe('positionX')">◆</span>
+              <label class="x-label">X Position</label>
+              <button
+                class="dimension-sep-btn active"
+                @click="togglePositionSeparation"
+                title="Link X, Y, Z dimensions back into combined property"
+              >⊟</button>
+              <div class="value-group">
+                <ScrubableNumber
+                  v-model="transform.position.x"
+                  :precision="1"
+                  unit="px"
+                  @update:modelValue="updateTransform"
+                />
+              </div>
+            </div>
+            <!-- Separated Position Y -->
+            <div class="property-row" v-show="showPosition" :class="{ 'has-driver': hasDriver('transform.position.y') }">
+              <span class="keyframe-toggle" :class="{ active: hasKeyframe('positionY') }" @click="toggleKeyframe('positionY')">◆</span>
+              <label class="y-label">Y Position</label>
+              <div class="dimension-sep-spacer"></div>
+              <div class="value-group">
+                <ScrubableNumber
+                  v-model="transform.position.y"
+                  :precision="1"
+                  unit="px"
+                  @update:modelValue="updateTransform"
+                />
+              </div>
+            </div>
+            <!-- Separated Position Z (3D only) -->
+            <div class="property-row" v-if="selectedLayer?.threeD" v-show="showPosition" :class="{ 'has-driver': hasDriver('transform.position.z') }">
+              <span class="keyframe-toggle" :class="{ active: hasKeyframe('positionZ') }" @click="toggleKeyframe('positionZ')">◆</span>
+              <label class="z-label">Z Position</label>
+              <div class="dimension-sep-spacer"></div>
+              <div class="value-group">
+                <ScrubableNumber
+                  v-model="transform.position.z"
+                  :precision="1"
+                  unit="px"
+                  @update:modelValue="updateTransform"
+                />
+              </div>
+            </div>
+          </template>
+
+          <!-- Scale (Combined or Separated) -->
+          <template v-if="!scaleSeparated">
+            <!-- Combined Scale -->
+            <div class="property-row" v-show="showScale" :class="{ 'has-driver': hasDriver('transform.scale.x') || hasDriver('transform.scale.y') }">
+              <span class="keyframe-toggle" :class="{ active: hasKeyframe('scale') }" @click="toggleKeyframe('scale')">◆</span>
+              <label>Scale</label>
+              <button
+                class="dimension-sep-btn"
+                @click="toggleScaleSeparation"
+                title="Separate X, Y, Z dimensions for independent keyframing"
+              >⊞</button>
+              <div class="value-group scale-group">
+                <button
+                  class="link-btn"
+                  :class="{ active: scaleLocked }"
+                  @click="scaleLocked = !scaleLocked"
+                  title="Constrain Proportions"
+                >
+                  {{ scaleLocked ? '🔗' : '⛓️‍💥' }}
+                </button>
+                <ScrubableNumber
+                  v-model="transform.scale.x"
+                  :min="0"
+                  :max="1000"
+                  suffix="%"
+                  @update:modelValue="updateTransform"
+                />
+                <ScrubableNumber
+                  v-model="transform.scale.y"
+                  :min="0"
+                  :max="1000"
+                  suffix="%"
+                  @update:modelValue="updateTransform"
+                />
+                <ScrubableNumber
+                  v-if="selectedLayer?.threeD"
+                  v-model="transform.scale.z"
+                  :min="0"
+                  :max="1000"
+                  suffix="%"
+                  @update:modelValue="updateTransform"
+                />
+              </div>
+            </div>
+          </template>
+          <template v-else>
+            <!-- Separated Scale X -->
+            <div class="property-row" v-show="showScale" :class="{ 'has-driver': hasDriver('transform.scale.x') }">
+              <span class="keyframe-toggle" :class="{ active: hasKeyframe('scaleX') }" @click="toggleKeyframe('scaleX')">◆</span>
+              <label class="x-label">X Scale</label>
+              <button
+                class="dimension-sep-btn active"
+                @click="toggleScaleSeparation"
+                title="Link X, Y, Z dimensions back into combined property"
+              >⊟</button>
+              <div class="value-group">
+                <ScrubableNumber
+                  v-model="transform.scale.x"
+                  :min="0"
+                  :max="1000"
+                  suffix="%"
+                  @update:modelValue="updateTransform"
+                />
+              </div>
+            </div>
+            <!-- Separated Scale Y -->
+            <div class="property-row" v-show="showScale" :class="{ 'has-driver': hasDriver('transform.scale.y') }">
+              <span class="keyframe-toggle" :class="{ active: hasKeyframe('scaleY') }" @click="toggleKeyframe('scaleY')">◆</span>
+              <label class="y-label">Y Scale</label>
+              <div class="dimension-sep-spacer"></div>
+              <div class="value-group">
+                <ScrubableNumber
+                  v-model="transform.scale.y"
+                  :min="0"
+                  :max="1000"
+                  suffix="%"
+                  @update:modelValue="updateTransform"
+                />
+              </div>
+            </div>
+            <!-- Separated Scale Z (3D only) -->
+            <div class="property-row" v-if="selectedLayer?.threeD" v-show="showScale" :class="{ 'has-driver': hasDriver('transform.scale.z') }">
+              <span class="keyframe-toggle" :class="{ active: hasKeyframe('scaleZ') }" @click="toggleKeyframe('scaleZ')">◆</span>
+              <label class="z-label">Z Scale</label>
+              <div class="dimension-sep-spacer"></div>
+              <div class="value-group">
+                <ScrubableNumber
+                  v-model="transform.scale.z"
+                  :min="0"
+                  :max="1000"
+                  suffix="%"
+                  @update:modelValue="updateTransform"
+                />
+              </div>
+            </div>
+          </template>
 
           <!-- 3D Rotations -->
           <template v-if="selectedLayer?.threeD">
@@ -604,6 +719,17 @@ const showOpacity = computed(() => {
   return false;
 });
 
+// Dimension separation state for position and scale
+const positionSeparated = computed(() => {
+  if (!selectedLayer.value) return false;
+  return store.hasPositionSeparated(selectedLayer.value.id);
+});
+
+const scaleSeparated = computed(() => {
+  if (!selectedLayer.value) return false;
+  return store.hasScaleSeparated(selectedLayer.value.id);
+});
+
 // Show indicator when in solo mode
 const soloModeActive = computed(() => soloedProperty.value !== null);
 
@@ -902,6 +1028,38 @@ function toggle3D(event: Event) {
     if (!t.rotationZ) {
       t.rotationZ = createAnimatableProperty("rotationZ", 0, "number");
     }
+  }
+}
+
+// ============================================================
+// DIMENSION SEPARATION METHODS
+// ============================================================
+
+/**
+ * Toggle position dimension separation.
+ * When separated, X, Y, Z can have independent keyframes.
+ */
+function togglePositionSeparation() {
+  if (!selectedLayer.value) return;
+
+  if (positionSeparated.value) {
+    store.linkPositionDimensions(selectedLayer.value.id);
+  } else {
+    store.separatePositionDimensions(selectedLayer.value.id);
+  }
+}
+
+/**
+ * Toggle scale dimension separation.
+ * When separated, X, Y, Z can have independent keyframes.
+ */
+function toggleScaleSeparation() {
+  if (!selectedLayer.value) return;
+
+  if (scaleSeparated.value) {
+    store.linkScaleDimensions(selectedLayer.value.id);
+  } else {
+    store.separateScaleDimensions(selectedLayer.value.id);
   }
 }
 
@@ -1349,6 +1507,55 @@ function hasDriver(property: PropertyPath): boolean {
 
 .link-btn.active {
   color: var(--lattice-accent, #8B5CF6);
+}
+
+/* Dimension separation button */
+.dimension-sep-btn {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 1px solid var(--lattice-border-default, #2a2a2a);
+  background: var(--lattice-surface-2, #1a1a1a);
+  color: var(--lattice-text-muted, #6B7280);
+  cursor: pointer;
+  border-radius: var(--lattice-radius-sm, 2px);
+  font-size: 10px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dimension-sep-btn:hover {
+  background: var(--lattice-surface-3, #222222);
+  border-color: var(--lattice-accent, #8B5CF6);
+  color: var(--lattice-text-primary, #E5E5E5);
+}
+
+.dimension-sep-btn.active {
+  background: var(--lattice-accent-muted, rgba(139, 92, 246, 0.2));
+  border-color: var(--lattice-accent, #8B5CF6);
+  color: var(--lattice-accent, #8B5CF6);
+}
+
+/* Spacer for aligned separated dimension rows */
+.dimension-sep-spacer {
+  width: 18px;
+  flex: 0 0 auto;
+}
+
+/* Color labels for separated dimensions */
+.property-row label.x-label {
+  color: #ff6b6b;
+}
+
+.property-row label.y-label {
+  color: #51cf66;
+}
+
+.property-row label.z-label {
+  color: #4dabf7;
 }
 
 .keyframe-btn {

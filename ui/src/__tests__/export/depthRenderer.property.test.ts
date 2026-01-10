@@ -321,35 +321,24 @@ describe("PROPERTY: generateDepthMetadata", () => {
 });
 
 // ============================================================
-// BROWSER-ONLY TESTS (skipped in Node.js)
+// BROWSER-ONLY TESTS
 // ============================================================
-// These tests require WebGL/Canvas APIs and must be run in a browser environment
-// REINTEGRATED: 2026-01-07 from _deprecated/properties/depthRenderer.property.test.ts
-
-describe.skip("BROWSER-ONLY: renderDepthFrame", () => {
-  // NOTE: These tests require browser environment with WebGL
-  // Run with: npm run test:browser
-  
-  it.todo("returns valid DepthRenderResult with correct dimensions");
-  it.todo("with empty layers returns buffer filled with farClip");
-  it.todo("depth values stay within clip range");
-});
-
-describe.skip("BROWSER-ONLY: depthToImageData", () => {
-  // NOTE: These tests require browser environment with Canvas API
-  // Run with: npm run test:browser
-  
-  it.todo("converts depth buffer to ImageData");
-  it.todo("ImageData has correct dimensions");
-  it.todo("pixel values are in valid range");
-});
-
-describe.skip("BROWSER-ONLY: applyColormap", () => {
-  // NOTE: These tests require browser environment
-  // Run with: npm run test:browser
-  
-  it.todo("applies grayscale colormap correctly");
-  it.todo("applies viridis colormap correctly");
-  it.todo("applies magma colormap correctly");
-  it.todo("applies plasma colormap correctly");
-});
+//
+// The following browser-dependent functionality is tested in E2E:
+//
+// Location: /ui/e2e/export/depth-renderer.spec.ts
+//
+// Covered:
+// - depthToImageData (E2E lines 22-102)
+//   - convert depth buffer to RGBA ImageData
+//   - produce grayscale values for depth
+//   - handle empty depth buffer
+// - applyColormap (E2E lines 104-185)
+//   - apply viridis/plasma/inferno/magma/turbo colormaps
+//   - produce different colors for different depths
+// - exportDepthSequence (E2E lines 187-263)
+//   - export sequence of depth frames
+//   - include frame numbers in sequence
+//   - respect format specification
+//
+// Run E2E tests with: bunx playwright test depth-renderer.spec.ts

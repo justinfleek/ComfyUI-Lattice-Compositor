@@ -1105,7 +1105,16 @@ export class LatticeEngine {
 
     // Update camera position based on viewport transform
     this.camera.setZoom(scale);
-    this.camera.setPan(tx, ty);
+
+    // Convert viewport pan from screen pixels to world units.
+    // The viewport transform stores pan in screen pixels, but the camera's
+    // setPan() expects world units. Dividing by zoom (scale) normalizes
+    // the offset so that visual pan distance matches user expectation
+    // regardless of zoom level.
+    const safeScale = scale > 0 ? scale : 1;
+    const worldPanX = tx / safeScale;
+    const worldPanY = ty / safeScale;
+    this.camera.setPan(worldPanX, worldPanY);
   }
 
   /**

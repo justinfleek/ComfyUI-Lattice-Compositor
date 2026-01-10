@@ -22,6 +22,7 @@ export interface KeyboardShortcutsOptions {
   showExportDialog: Ref<boolean>;
   showCompositionSettingsDialog: Ref<boolean>;
   showKeyframeInterpolationDialog: Ref<boolean>;
+  showKeyframeVelocityDialog: Ref<boolean>;
   showPrecomposeDialog: Ref<boolean>;
   showCurveEditor: Ref<boolean>;
   showTimeStretchDialog: Ref<boolean>;
@@ -58,6 +59,7 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
     showExportDialog,
     showCompositionSettingsDialog,
     showKeyframeInterpolationDialog,
+    showKeyframeVelocityDialog,
     showPrecomposeDialog,
     showCurveEditor,
     showTimeStretchDialog,
@@ -1405,7 +1407,17 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
         }
         break;
       case "v":
-        if (e.ctrlKey || e.metaKey) {
+        if ((e.ctrlKey || e.metaKey) && e.shiftKey) {
+          // Ctrl+Shift+V - Keyframe Velocity Dialog
+          e.preventDefault();
+          if (store.selectedKeyframeIds.length > 0) {
+            showKeyframeVelocityDialog.value = true;
+          } else {
+            console.log(
+              "[Lattice] No keyframes selected for velocity dialog",
+            );
+          }
+        } else if (e.ctrlKey || e.metaKey) {
           e.preventDefault();
           store.pasteLayers();
         } else if (!e.shiftKey) {

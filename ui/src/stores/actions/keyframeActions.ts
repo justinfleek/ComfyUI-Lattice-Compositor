@@ -38,7 +38,7 @@ export interface KeyframeStore {
   };
   getActiveComp(): { currentFrame: number; layers: Layer[] } | null;
   getActiveCompLayers(): Layer[];
-  getLayerById(id: string): Layer | null | undefined;
+  getLayerById(id: string): Layer | null;
   pushHistory(): void;
 }
 
@@ -400,7 +400,17 @@ export function moveKeyframe(
 }
 
 /**
- * Move multiple keyframes by a frame delta
+ * Move multiple keyframes by a frame delta (for marquee selection bulk moves).
+ *
+ * IMPORTANT: This function handles two types of collisions:
+ * 1. Collisions with NON-SELECTED keyframes at target frames (removes them)
+ * 2. Collisions between SELECTED keyframes that end up at same frame (keeps one with larger original frame)
+ *
+ * The interpolation system uses binary search and REQUIRES sorted keyframes with unique frames.
+ * Violating this invariant breaks ALL animation evaluation, exports, and rendering.
+ *
+ * @see interpolation.ts - findKeyframeIndex() assumes sorted, unique frames
+ * @see layerEvaluationCache.ts - evaluateLayerCached() calls interpolateProperty
  */
 export function moveKeyframes(
   store: KeyframeStore,
@@ -417,6 +427,16 @@ export function moveKeyframes(
     return;
   }
 
+  // Group keyframes by layer+property for efficient collision handling
+  const grouped = new Map<
+    string,
+    {
+      layer: Layer;
+      property: AnimatableProperty<unknown>;
+      keyframeIds: Set<string>;
+    }
+  >();
+
   for (const kf of keyframes) {
     const layer = store.getActiveCompLayers().find((l) => l.id === kf.layerId);
     if (!layer) continue;
@@ -424,33 +444,82 @@ export function moveKeyframes(
     const property = findPropertyByPath(layer, kf.propertyPath);
     if (!property) continue;
 
-    const keyframe = property.keyframes.find((k) => k.id === kf.keyframeId);
-    if (!keyframe) continue;
-
-    const newFrame = Math.max(0, keyframe.frame + frameDelta);
-    keyframe.frame = newFrame;
+    const key = `${kf.layerId}:${kf.propertyPath}`;
+    if (!grouped.has(key)) {
+      grouped.set(key, {
+        layer,
+        property,
+        keyframeIds: new Set(),
+      });
+    }
+    grouped.get(key)!.keyframeIds.add(kf.keyframeId);
   }
 
-  // Re-sort all affected properties
-  const layerIds = new Set(keyframes.map((kf) => kf.layerId));
-  for (const layerId of layerIds) {
-    const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
-    if (!layer) continue;
+  // Process each property group
+  const layerIds = new Set<string>();
+  for (const { layer, property, keyframeIds } of grouped.values()) {
+    layerIds.add(layer.id);
 
-    const propertyPaths = new Set(
-      keyframes
-        .filter((kf) => kf.layerId === layerId)
-        .map((kf) => kf.propertyPath),
-    );
-    for (const propertyPath of propertyPaths) {
-      const property = findPropertyByPath(layer, propertyPath);
-      if (property) {
-        property.keyframes.sort((a, b) => a.frame - b.frame);
+    // Calculate target frames for all selected keyframes
+    const moves: Array<{
+      kf: Keyframe<unknown>;
+      originalFrame: number;
+      targetFrame: number;
+    }> = [];
+    for (const kf of property.keyframes) {
+      if (keyframeIds.has(kf.id)) {
+        const targetFrame = Math.max(0, kf.frame + frameDelta);
+        moves.push({ kf, originalFrame: kf.frame, targetFrame });
       }
     }
+
+    // Build map of target frame -> winning keyframe
+    // Sort moves by original frame descending so later keyframes win on collision
+    // (when two selected keyframes end up at same frame after move)
+    const targetFrameMap = new Map<
+      number,
+      { kf: Keyframe<unknown>; originalFrame: number }
+    >();
+    moves.sort((a, b) => b.originalFrame - a.originalFrame);
+    for (const move of moves) {
+      if (!targetFrameMap.has(move.targetFrame)) {
+        targetFrameMap.set(move.targetFrame, {
+          kf: move.kf,
+          originalFrame: move.originalFrame,
+        });
+      }
+    }
+
+    // Build set of selected keyframe IDs that will survive collisions
+    const survivingIds = new Set<string>();
+    for (const { kf } of targetFrameMap.values()) {
+      survivingIds.add(kf.id);
+    }
+
+    // Remove:
+    // 1. Non-selected keyframes at target frames (collision with moved keyframes)
+    // 2. Selected keyframes that lost collision with other selected keyframes
+    property.keyframes = property.keyframes.filter((kf: Keyframe<unknown>) => {
+      if (!keyframeIds.has(kf.id)) {
+        // Non-selected: keep unless at a target frame
+        return !targetFrameMap.has(kf.frame);
+      }
+      // Selected: keep only if it won its target slot
+      return survivingIds.has(kf.id);
+    });
+
+    // Apply new frame values
+    for (const [targetFrame, { kf }] of targetFrameMap) {
+      kf.frame = targetFrame;
+    }
+
+    // Re-sort keyframes by frame (maintains interpolation system invariant)
+    property.keyframes.sort(
+      (a: Keyframe<unknown>, b: Keyframe<unknown>) => a.frame - b.frame,
+    );
   }
 
-  // Mark all affected layers as dirty
+  // Mark all affected layers as dirty (invalidates evaluation cache)
   for (const layerId of layerIds) {
     markLayerDirty(layerId);
   }
@@ -1089,7 +1158,7 @@ export function insertKeyframeOnPath(
 // ============================================================================
 
 export interface RovingKeyframeStore extends KeyframeStore {
-  getLayerById(id: string): Layer | undefined;
+  getLayerById(id: string): Layer | null;
 }
 
 /**

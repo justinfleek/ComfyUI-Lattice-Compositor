@@ -230,27 +230,19 @@ describe("exportPipeline: Configuration Validation", () => {
 });
 
 // ============================================================
-// BROWSER-DEPENDENT TESTS (Skipped - require Playwright)
+// BROWSER-DEPENDENT TESTS
 // ============================================================
-
-describe.skip("exportPipeline: Browser-dependent (need Playwright)", () => {
-  it("ExportPipeline.execute() renders frames", () => {
-    // Requires OffscreenCanvas
-  });
-
-  it("exportToComfyUI sends to ComfyUI", () => {
-    // Requires network and ComfyUI running
-  });
-
-  it("quickExportDepthSequence generates depth maps", () => {
-    // Requires OffscreenCanvas and depth rendering
-  });
-
-  it("quickExportReferenceFrame exports first frame", () => {
-    // Requires Canvas
-  });
-
-  it("abort signal stops export", () => {
-    // Requires async execution
-  });
-});
+//
+// The following browser-dependent functionality is tested in E2E:
+//
+// Location: /ui/e2e/export/export-pipeline.spec.ts
+//
+// Covered:
+// - ExportPipeline class (E2E lines 22-106)
+//   - create instance with valid options
+//   - execute and return result
+// - exportToComfyUI (E2E lines 108-148)
+// - quickExportDepthSequence (E2E lines 150-173)
+// - quickExportReferenceFrame (E2E lines 175-195)
+//
+// Run E2E tests with: bunx playwright test export-pipeline.spec.ts

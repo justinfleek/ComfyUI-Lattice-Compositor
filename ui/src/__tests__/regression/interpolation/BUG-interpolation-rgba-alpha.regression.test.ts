@@ -95,10 +95,13 @@ describe('BUG Regression: RGBA Hex Color Alpha Lost', () => {
     const result = interpolateProperty(prop, 50, 30);
     expect(typeof result).toBe('string');
     expect(result).toMatch(/^#[0-9a-f]{8}$/i);
-    
-    // RGB should interpolate: red (255,0,0) + green (0,255,0) = yellow (255,255,0) at t=0.5
-    // Alpha should interpolate: 0 + 255 = 127.5 ≈ 128 = 80 hex
-    expect(result.toLowerCase()).toMatch(/^#80808080$/);
+
+    // RGB should interpolate: red (255,0,0) + green (0,255,0) at t=0.5:
+    // R: (255 + 0) / 2 = 127.5 ≈ 128 = 0x80
+    // G: (0 + 255) / 2 = 127.5 ≈ 128 = 0x80
+    // B: (0 + 0) / 2 = 0 = 0x00
+    // Alpha should interpolate: 0 + 255 = 127.5 ≈ 128 = 0x80
+    expect(result.toLowerCase()).toMatch(/^#80800080$/);
   });
 
   test('mixed 6-char and 8-char hex works', () => {

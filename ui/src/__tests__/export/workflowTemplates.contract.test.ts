@@ -969,39 +969,49 @@ describe("Workflow Parameter Validation", () => {
     });
   });
 
-  describe("FUTURE: Dimension validation (not yet implemented)", () => {
-    it.skip("should throw for width = 0", () => {
+  describe("Dimension validation", () => {
+    it("should throw for width = 0", () => {
       const params = createValidParams({ width: 0 });
-      expect(() => generateWorkflowForTarget("wan22-i2v", params)).toThrow();
+      expect(() => generateWorkflowForTarget("wan22-i2v", params)).toThrow(/Invalid width/);
     });
 
-    it.skip("should throw for negative dimensions", () => {
+    it("should throw for negative dimensions", () => {
       const params = createValidParams({ width: -512, height: -480 });
-      expect(() => generateWorkflowForTarget("wan22-i2v", params)).toThrow();
+      expect(() => generateWorkflowForTarget("wan22-i2v", params)).toThrow(/Invalid width.*Invalid height/s);
     });
 
-    it.skip("should throw for NaN dimensions", () => {
+    it("should throw for NaN dimensions", () => {
       const params = createValidParams({ width: NaN });
-      expect(() => generateWorkflowForTarget("wan22-i2v", params)).toThrow();
+      expect(() => generateWorkflowForTarget("wan22-i2v", params)).toThrow(/Invalid width/);
+    });
+
+    it("should throw for Infinity dimensions", () => {
+      const params = createValidParams({ width: Infinity });
+      expect(() => generateWorkflowForTarget("wan22-i2v", params)).toThrow(/Invalid width/);
     });
   });
 
-  describe("FUTURE: Frame count validation (not yet implemented)", () => {
-    it.skip("should throw for frameCount = 0", () => {
+  describe("Frame count validation", () => {
+    it("should throw for frameCount = 0", () => {
       const params = createValidParams({ frameCount: 0 });
-      expect(() => generateWorkflowForTarget("wan22-i2v", params)).toThrow();
+      expect(() => generateWorkflowForTarget("wan22-i2v", params)).toThrow(/Invalid frameCount/);
     });
 
-    it.skip("should throw for negative frameCount", () => {
+    it("should throw for negative frameCount", () => {
       const params = createValidParams({ frameCount: -10 });
-      expect(() => generateWorkflowForTarget("wan22-i2v", params)).toThrow();
+      expect(() => generateWorkflowForTarget("wan22-i2v", params)).toThrow(/Invalid frameCount/);
     });
   });
 
-  describe("FUTURE: FPS validation (not yet implemented)", () => {
-    it.skip("should throw for fps = 0", () => {
+  describe("FPS validation", () => {
+    it("should throw for fps = 0", () => {
       const params = createValidParams({ fps: 0 });
-      expect(() => generateWorkflowForTarget("wan22-i2v", params)).toThrow();
+      expect(() => generateWorkflowForTarget("wan22-i2v", params)).toThrow(/Invalid fps/);
+    });
+
+    it("should throw for negative fps", () => {
+      const params = createValidParams({ fps: -16 });
+      expect(() => generateWorkflowForTarget("wan22-i2v", params)).toThrow(/Invalid fps/);
     });
   });
 });

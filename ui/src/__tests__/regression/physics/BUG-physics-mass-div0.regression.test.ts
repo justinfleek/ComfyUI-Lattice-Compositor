@@ -10,7 +10,29 @@
 
 import { describe, test, expect } from 'vitest';
 import { PhysicsEngine } from '@/services/physics/PhysicsEngine';
-import type { RigidBodyConfig } from '@/services/physics/PhysicsEngine';
+import type { RigidBodyConfig } from '@/types/physics';
+
+// Helper to create a complete RigidBodyConfig with sensible defaults
+function createRigidBodyConfig(overrides: Partial<RigidBodyConfig> & { id: string }): RigidBodyConfig {
+  return {
+    layerId: overrides.layerId ?? `layer-${overrides.id}`,
+    type: 'dynamic',
+    position: { x: 0, y: 0 },
+    velocity: { x: 0, y: 0 },
+    mass: 1,
+    angle: 0,
+    angularVelocity: 0,
+    shape: { type: 'circle', radius: 10 },
+    material: { density: 1, restitution: 0.5, friction: 0.5 },
+    filter: { category: 1, mask: 1, group: 0 },
+    response: 'normal',
+    linearDamping: 0,
+    angularDamping: 0,
+    canSleep: false,
+    sleepThreshold: 0.1,
+    ...overrides,
+  };
+}
 
 describe('BUG Regression: Mass=0 Division by Zero', () => {
   /**
@@ -22,15 +44,11 @@ describe('BUG Regression: Mass=0 Division by Zero', () => {
     const engine = new PhysicsEngine();
 
     // Create a dynamic body with mass=0 (the bug case)
-    const bodyConfig: RigidBodyConfig = {
+    const bodyConfig = createRigidBodyConfig({
       id: 'test-body',
       type: 'dynamic',
-      position: { x: 0, y: 0 },
-      velocity: { x: 0, y: 0 },
       mass: 0, // Zero mass - would cause division by zero
-      angle: 0,
-      angularVelocity: 0,
-    };
+    });
 
     // Before fix: Would throw or produce Infinity
     // After fix: Should handle gracefully (mass||1 = 1, so inverseMass = 1)
@@ -55,20 +73,16 @@ describe('BUG Regression: Mass=0 Division by Zero', () => {
   test('kinematic body with mass=0 also works', () => {
     const engine = new PhysicsEngine();
 
-    const bodyConfig: RigidBodyConfig = {
+    const bodyConfig = createRigidBodyConfig({
       id: 'test-kinematic',
       type: 'kinematic',
-      position: { x: 0, y: 0 },
-      velocity: { x: 0, y: 0 },
       mass: 0, // Zero mass
-      angle: 0,
-      angularVelocity: 0,
-    };
+    });
 
     engine.addRigidBody(bodyConfig);
     const state = engine.evaluateFrame(0);
-    const body = state.rigidBodies.find(b => b.id === 'test-kinematic');
-    
+    const body = state.rigidBodies.find((b) => b.id === 'test-kinematic');
+
     expect(body).toBeDefined();
     if (body) {
       // Verify body has valid state (not NaN/Infinity)
@@ -80,20 +94,16 @@ describe('BUG Regression: Mass=0 Division by Zero', () => {
   test('static bodies with mass=0 have zero inverseMass', () => {
     const engine = new PhysicsEngine();
 
-    const bodyConfig: RigidBodyConfig = {
+    const bodyConfig = createRigidBodyConfig({
       id: 'test-static',
       type: 'static',
-      position: { x: 0, y: 0 },
-      velocity: { x: 0, y: 0 },
       mass: 0, // Zero mass, but static
-      angle: 0,
-      angularVelocity: 0,
-    };
+    });
 
     engine.addRigidBody(bodyConfig);
     const state = engine.evaluateFrame(0);
-    const body = state.rigidBodies.find(b => b.id === 'test-static');
-    
+    const body = state.rigidBodies.find((b) => b.id === 'test-static');
+
     expect(body).toBeDefined();
     if (body) {
       // Verify body has valid state
@@ -104,20 +114,16 @@ describe('BUG Regression: Mass=0 Division by Zero', () => {
   test('normal dynamic bodies with non-zero mass work correctly', () => {
     const engine = new PhysicsEngine();
 
-    const bodyConfig: RigidBodyConfig = {
+    const bodyConfig = createRigidBodyConfig({
       id: 'test-normal',
       type: 'dynamic',
-      position: { x: 0, y: 0 },
-      velocity: { x: 0, y: 0 },
       mass: 10, // Normal mass
-      angle: 0,
-      angularVelocity: 0,
-    };
+    });
 
     engine.addRigidBody(bodyConfig);
     const state = engine.evaluateFrame(0);
-    const body = state.rigidBodies.find(b => b.id === 'test-normal');
-    
+    const body = state.rigidBodies.find((b) => b.id === 'test-normal');
+
     expect(body).toBeDefined();
     if (body) {
       // Verify body has valid state

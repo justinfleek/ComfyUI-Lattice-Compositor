@@ -1056,29 +1056,32 @@ describe("extractLayerTrajectory", () => {
 });
 
 // ============================================================================
-// exportTTMLayer, generateMotionMask, imageDataToBase64 - BROWSER ONLY
+// BROWSER-ONLY TESTS (Canvas API)
 // ============================================================================
-
-describe.skip("exportTTMLayer (browser-only - needs Canvas API)", () => {
-  // These functions require document.createElement("canvas") which is browser-only:
-  // - generateMotionMask: Creates canvas to render motion mask
-  // - imageDataToBase64: Uses canvas to convert ImageData to base64
-  // - exportTTMLayer: Calls both above functions
-  //
-  // To test: Use Playwright browser tests or mock canvas with vitest-canvas-mock
-  
-  it("should export layer with TTM metadata", () => {
-    // Requires: generateMotionMask -> document.createElement("canvas")
-  });
-  
-  it("should include bounding box when provided", () => {
-    // Requires: getLayerBounds callback with canvas rendering
-  });
-  
-  it("should include mask when layer has mask", () => {
-    // Requires: imageDataToBase64 -> document.createElement("canvas")
-  });
-});
+//
+// The following browser-dependent functionality is tested in E2E:
+//
+// Location: /ui/e2e/export/model-export.spec.ts
+//
+// Covered:
+// - exportTTMLayer (E2E lines 22-99)
+//   - export layer with TTM metadata
+//   - include bounding box when provided
+// - generateMotionMask (E2E lines 101-211)
+//   - generate binary mask from layer motion
+//   - respect brush size
+//   - create continuous path between points
+// - generateCombinedMotionMask (E2E lines 213-297)
+//   - combine multiple layer masks
+//   - handle overlapping trajectories
+//   - handle empty trajectories
+// - imageDataToBase64 (E2E lines 299-438)
+//   - convert ImageData to base64 PNG
+//   - preserve image dimensions
+//   - preserve pixel colors
+//   - handle transparent pixels
+//
+// Run E2E tests with: bunx playwright test model-export.spec.ts
 
 // ============================================================================
 // exportForModel Tests

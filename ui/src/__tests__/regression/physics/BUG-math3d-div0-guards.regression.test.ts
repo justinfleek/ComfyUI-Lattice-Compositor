@@ -140,13 +140,14 @@ describe('BUG Regression: Dead Code Division by Zero Guards', () => {
     test('valid quaternions work correctly', () => {
       const identityQuat: Quat = { x: 0, y: 0, z: 0, w: 1 };
       const result = quatToEuler(identityQuat);
-      
+
       expect(Number.isFinite(result.x)).toBe(true);
       expect(Number.isFinite(result.y)).toBe(true);
       expect(Number.isFinite(result.z)).toBe(true);
-      expect(result.x).toBe(0);
-      expect(result.y).toBe(0);
-      expect(result.z).toBe(0);
+      // Use toBeCloseTo to handle -0 vs 0 (JavaScript Object.is treats them as different)
+      expect(result.x).toBeCloseTo(0);
+      expect(result.y).toBeCloseTo(0);
+      expect(result.z).toBeCloseTo(0);
     });
   });
 

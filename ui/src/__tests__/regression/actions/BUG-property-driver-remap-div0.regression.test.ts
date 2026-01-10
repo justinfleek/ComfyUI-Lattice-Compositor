@@ -102,16 +102,16 @@ describe('BUG Regression: Remap Division by Zero', () => {
 
   test('non-zero input ranges work correctly', () => {
     const system = new PropertyDriverSystem();
-    
+
     const driver: PropertyDriver = {
       id: 'test-normal',
       name: 'Test Driver',
       enabled: true,
       targetLayerId: 'layer-1',
       targetProperty: 'transform.position.x',
-      sourceType: 'time',
+      sourceType: 'time', // Uses frame as source value
       transforms: [
-        createRemapTransform(0, 1, 0, 100), // Normal range
+        createRemapTransform(0, 1, 0, 100), // Normal range: maps frame [0,1] → [0,100]
       ],
       blendMode: 'replace',
       blendAmount: 1,
@@ -120,9 +120,11 @@ describe('BUG Regression: Remap Division by Zero', () => {
     system.addDriver(driver);
 
     // Normal remap should work as expected
-    expect(system.evaluateDriver(driver, 0, 0)).toBe(0);
-    expect(system.evaluateDriver(driver, 0, 0.5)).toBe(50);
-    expect(system.evaluateDriver(driver, 0, 1)).toBe(100);
+    // Note: evaluateDriver(driver, frame, baseValue) uses frame as source value for sourceType='time'
+    // baseValue is used for blending only
+    expect(system.evaluateDriver(driver, 0, 0)).toBe(0);    // frame=0 → remap(0) = 0
+    expect(system.evaluateDriver(driver, 0.5, 0)).toBe(50); // frame=0.5 → remap(0.5) = 50
+    expect(system.evaluateDriver(driver, 1, 0)).toBe(100);  // frame=1 → remap(1) = 100
   });
 
   test('zero-range with any input value returns same output', () => {

@@ -16,6 +16,7 @@ import { multiplyMat4, identityMat4, translateMat4, scaleMat4, type Mat4 } from 
 import { motionEngine } from '@/engine/MotionEngine';
 import { useCompositorStore } from '@/stores/compositorStore';
 import { createAnimatableProperty } from '@/types/animation';
+import { SeededRandom } from '@/services/particles/SeededRandom';
 import type { AnimatableProperty } from '@/types/project';
 
 // Performance targets (in milliseconds)
@@ -208,26 +209,50 @@ describe('Performance: Serialization', () => {
 });
 
 describe('Performance: RNG', () => {
-  test.skip('hashSeed() meets target', () => {
-    // TODO: Find hashSeed function or SeededRandom implementation
-    // const result = benchmark(() => {
-    //   hashSeed(Math.floor(Math.random() * 2**32));
-    // }, 100000);
-    // 
-    // console.log(`hashSeed: ${result.avg.toFixed(6)}ms`);
-    // expect(result.avg).toBeLessThan(TARGETS.hashSeed.max);
+  test('SeededRandom constructor (seed hashing) meets target', () => {
+    // The mulberry32 algorithm hashes the seed during next() calls
+    // Testing constructor + initial next() to measure seed initialization
+    const result = benchmark(() => {
+      const rng = new SeededRandom(Math.floor(Math.random() * 2**32));
+      rng.next(); // Force state initialization
+    }, 100000);
+
+    console.log(`SeededRandom init: avg=${result.avg.toFixed(6)}ms, max=${result.max.toFixed(6)}ms`);
+    expect(result.avg).toBeLessThan(TARGETS.hashSeed.max);
   });
 
-  test.skip('SeededRandom.next() meets target', () => {
-    // TODO: Find SeededRandom implementation
-    // const rng = new SeededRandom(12345);
-    // 
-    // const result = benchmark(() => {
-    //   rng.next();
-    // }, 100000);
-    // 
-    // console.log(`SeededRandom.next: ${result.avg.toFixed(6)}ms`);
-    // expect(result.avg).toBeLessThan(0.001); // 0.001ms = 1µs
+  test('SeededRandom.next() meets target', () => {
+    const rng = new SeededRandom(12345);
+
+    const result = benchmark(() => {
+      rng.next();
+    }, 100000);
+
+    console.log(`SeededRandom.next: avg=${result.avg.toFixed(6)}ms, max=${result.max.toFixed(6)}ms`);
+    expect(result.avg).toBeLessThan(0.001); // 0.001ms = 1µs target
+  });
+
+  test('SeededRandom.range() meets target', () => {
+    const rng = new SeededRandom(12345);
+
+    const result = benchmark(() => {
+      rng.range(0, 100);
+    }, 100000);
+
+    console.log(`SeededRandom.range: avg=${result.avg.toFixed(6)}ms, max=${result.max.toFixed(6)}ms`);
+    expect(result.avg).toBeLessThan(0.001); // 0.001ms = 1µs target
+  });
+
+  test('SeededRandom.gaussian() meets target', () => {
+    const rng = new SeededRandom(12345);
+
+    const result = benchmark(() => {
+      rng.gaussian(0, 1);
+    }, 100000);
+
+    console.log(`SeededRandom.gaussian: avg=${result.avg.toFixed(6)}ms, max=${result.max.toFixed(6)}ms`);
+    // Gaussian uses Box-Muller with 2 next() calls + math, allow more time
+    expect(result.avg).toBeLessThan(0.01); // 0.01ms = 10µs
   });
 });
 

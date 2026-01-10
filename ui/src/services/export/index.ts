@@ -87,7 +87,19 @@ export {
   interpolateCameraAtFrame,
   mapToWan22FunCamera,
 } from "./cameraExportFormats";
-// Depth rendering
+// Backend depth service (calls Python DepthAnything/NormalCrafter)
+export {
+  BackendDepthService,
+  base64ToBlob,
+  base64ToDataUrl,
+  canvasToBase64,
+  type DepthGenerationOptions,
+  type DepthGenerationResult,
+  getBackendDepthService,
+  type NormalGenerationOptions,
+  type NormalGenerationResult,
+} from "./backendDepthService";
+// Depth rendering (client-side)
 export {
   applyColormap,
   convertDepthToFormat,

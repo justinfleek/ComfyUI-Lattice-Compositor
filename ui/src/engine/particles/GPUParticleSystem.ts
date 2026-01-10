@@ -1169,14 +1169,16 @@ export class GPUParticleSystem {
         emitter.burstOnBeat &&
         this.state.currentAudioFeatures.get("onsets") === 1
       ) {
-        // Cap burst count to prevent infinite loops
+        // Cap burst count to maxParticles to prevent O(n²) performance.
+        // See triggerBurst() comment for detailed explanation.
+        const maxBurst = Math.min(this.config.maxParticles, 10000);
         // Validate beatEmissionMultiplier before use
         const safeBeatMultiplier = Number.isFinite(emitter.beatEmissionMultiplier)
           ? Math.max(0, emitter.beatEmissionMultiplier)
           : 5;
         const rawBurstCount = emitter.burstCount * safeBeatMultiplier;
         const burstCount = Number.isFinite(rawBurstCount)
-          ? Math.min(Math.floor(rawBurstCount), 10000)
+          ? Math.min(Math.floor(rawBurstCount), maxBurst)
           : 0;
         for (let i = 0; i < burstCount; i++) {
           this.spawnParticle(emitter);
@@ -1193,9 +1195,10 @@ export class GPUParticleSystem {
         const intervalSeconds = burstInterval / 60;
         while (emitter.burstTimer >= intervalSeconds) {
           emitter.burstTimer -= intervalSeconds;
-          // Trigger a burst
+          // Cap burst count to maxParticles to prevent O(n²) performance.
+          const maxBurst = Math.min(this.config.maxParticles, 10000);
           const burstCount = Number.isFinite(emitter.burstCount)
-            ? Math.min(Math.floor(emitter.burstCount), 10000)
+            ? Math.min(Math.floor(emitter.burstCount), maxBurst)
             : 10;
           for (let i = 0; i < burstCount; i++) {
             this.spawnParticle(emitter);
@@ -1647,13 +1650,18 @@ export class GPUParticleSystem {
    * Trigger burst on all beat-enabled emitters
    */
   triggerBurst(emitterId?: string): void {
-    // Cap burst count to prevent infinite loops
-    const MAX_BURST = 10000;
+    // Cap burst count to maxParticles to prevent O(n²) performance degradation.
+    // When burstCount exceeds maxParticles, each spawn after pool fills triggers
+    // an O(n) scan to find the oldest particle to recycle. Spawning more than
+    // maxParticles provides no visual benefit - it just repeatedly overwrites.
+    // Also cap to absolute maximum 10000 for safety.
+    const maxBurst = Math.min(this.config.maxParticles, 10000);
+
     if (emitterId) {
       const emitter = this.emitters.get(emitterId);
       if (emitter) {
         const count = Number.isFinite(emitter.burstCount)
-          ? Math.min(emitter.burstCount, MAX_BURST)
+          ? Math.min(Math.floor(emitter.burstCount), maxBurst)
           : 0;
         for (let i = 0; i < count; i++) {
           this.spawnParticle(emitter);
@@ -1663,7 +1671,7 @@ export class GPUParticleSystem {
       for (const emitter of this.emitters.values()) {
         if (emitter.burstOnBeat && emitter.enabled) {
           const count = Number.isFinite(emitter.burstCount)
-            ? Math.min(emitter.burstCount, MAX_BURST)
+            ? Math.min(Math.floor(emitter.burstCount), maxBurst)
             : 0;
           for (let i = 0; i < count; i++) {
             this.spawnParticle(emitter);

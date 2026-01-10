@@ -510,8 +510,19 @@ const overlayStyle = computed(() => {
   const width = fitWidth * zoomFactor;
   const height = fitHeight * zoomFactor;
 
-  const left = (props.containerWidth - width) / 2;
-  const top = (props.containerHeight - height) / 2;
+  // Apply viewport pan offset to keep SVG aligned with the canvas.
+  // viewportTransform[4,5] contain screen-pixel pan offsets. The SVG must
+  // move with the viewport so mouse coordinates stay aligned with canvas
+  // content during pan operations.
+  const vpt = props.viewportTransform;
+  const panOffsetX = vpt && vpt.length > 4 && Number.isFinite(vpt[4]) ? vpt[4] : 0;
+  const panOffsetY = vpt && vpt.length > 5 && Number.isFinite(vpt[5]) ? vpt[5] : 0;
+
+  // Center position plus pan offset
+  const centerLeft = (props.containerWidth - width) / 2;
+  const centerTop = (props.containerHeight - height) / 2;
+  const left = centerLeft + panOffsetX;
+  const top = centerTop + panOffsetY;
 
   return {
     position: "absolute" as const,

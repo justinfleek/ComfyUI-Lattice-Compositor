@@ -1,9 +1,11 @@
 <template>
   <div class="mask-editor">
     <!-- Mask path visualization and control points via SVG overlay -->
+    <!-- CSS transform applied via overlayStyle keeps masks aligned during pan/zoom -->
     <svg
       class="mask-overlay"
       :viewBox="`0 0 ${canvasWidth} ${canvasHeight}`"
+      :style="overlayStyle"
       @mousedown="handleMouseDown"
       @mousemove="handleMouseMove"
       @mouseup="handleMouseUp"
@@ -186,6 +188,22 @@ const selectedMaskVertices = computed<MaskVertex[]>(() => {
 const selectedVertex = computed<MaskVertex | null>(() => {
   if (selectedVertexIndex.value === null) return null;
   return selectedMaskVertices.value[selectedVertexIndex.value] ?? null;
+});
+
+// Compute CSS transform to keep mask overlay aligned with canvas during pan/zoom.
+// viewportTransform: [scaleX, skewX, skewY, scaleY, translateX, translateY]
+// We apply translate for pan offset and scale for zoom level.
+const overlayStyle = computed(() => {
+  const vt = props.viewportTransform;
+  // Safely extract pan offsets with NaN/Infinity guards
+  const tx = vt && vt.length > 4 && Number.isFinite(vt[4]) ? vt[4] : 0;
+  const ty = vt && vt.length > 5 && Number.isFinite(vt[5]) ? vt[5] : 0;
+  const zoom = props.zoom > 0 && Number.isFinite(props.zoom) ? props.zoom : 1;
+
+  return {
+    transform: `translate(${tx}px, ${ty}px) scale(${zoom})`,
+    transformOrigin: 'top left',
+  };
 });
 
 // Helper to get mask path value (handles animated properties)

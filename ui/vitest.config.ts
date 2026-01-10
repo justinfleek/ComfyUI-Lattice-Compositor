@@ -7,6 +7,8 @@ export default defineConfig({
   test: {
     globals: true,
     environment: "happy-dom",
+    // Setup file for mocks (e.g., SES evaluator)
+    setupFiles: ["src/__tests__/setup.ts"],
     // NOTE: Property-based tests (fast-check) run 100+ iterations and need more time
     // Especially shape morphing, attractor systems, and depth renderer tests
     testTimeout: 45000, // 45 seconds for property tests

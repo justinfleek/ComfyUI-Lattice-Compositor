@@ -1118,6 +1118,8 @@ describe('STRICT: MotionEngine Edge Cases', () => {
     });
 
     test('evaluates depth of field settings', () => {
+      // Uses legacy inline format (camera.depthOfField: boolean)
+      // MotionEngine should handle both legacy and structured formats
       const camera = createCameraLayer({
         data: {
           cameraId: 'camera-1',

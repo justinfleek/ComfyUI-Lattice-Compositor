@@ -313,6 +313,9 @@
           <span class="label">Freeze Frame</span>
           <span class="shortcut">Ctrl+Shift+F</span>
         </button>
+        <button @click="handleAction('frameInterpolation')" :disabled="!hasSelection">
+          <span class="label">Frame Interpolation (RIFE)...</span>
+        </button>
         <div class="separator"></div>
         <button @click="handleAction('lockLayer')" :disabled="!hasSelection">
           <span class="label">Lock Layer</span>

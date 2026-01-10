@@ -161,8 +161,29 @@
          <div class="menu-item" @click="goToKeyframe">
            <span class="icon">➡️</span> Go to Frame
          </div>
+         <div class="menu-divider"></div>
+         <!-- Auto-calculate tangents (only for bezier keyframes) -->
+         <div v-if="hasBezierSelected" class="menu-item" @click="autoCalculateTangents">
+           <span class="icon">🔄</span> Auto Tangents
+         </div>
+         <!-- Reverse selected keyframes (only when multiple selected) -->
+         <div v-if="hasMultipleSelected" class="menu-item" @click="reverseSelectedKeyframes">
+           <span class="icon">↔️</span> Reverse Selected
+         </div>
+         <!-- Scale keyframe timing (only when multiple selected) -->
+         <div v-if="hasMultipleSelected" class="menu-item" @click="scaleKeyframeTiming">
+           <span class="icon">⏱️</span> Scale Timing...
+         </div>
+         <!-- Roving keyframes (only for position with 3+ keyframes) -->
+         <div v-if="canApplyRoving" class="menu-item" @click="applyRovingKeyframes">
+           <span class="icon">🚶</span> Roving Keyframes
+         </div>
+         <div class="menu-divider"></div>
+         <div class="menu-item" @click="clearAllKeyframes">
+           <span class="icon">✖️</span> Clear All Keyframes
+         </div>
          <div class="menu-item delete" @click="deleteSelectedKeyframes">
-           <span class="icon">🗑️</span> Delete
+           <span class="icon">🗑️</span> Delete Selected
          </div>
        </div>
 
@@ -306,6 +327,22 @@ const hasNextKeyframe = computed(() => {
   return sortedKeyframes.value.some((kf: any) => kf.frame > store.currentFrame);
 });
 
+// Check if multiple keyframes are selected (for reverse/scale operations)
+const hasMultipleSelected = computed(() => selectedKeyframeIds.value.size >= 2);
+
+// Check if any selected keyframe has bezier interpolation (for auto-tangent)
+const hasBezierSelected = computed(() => {
+  const keyframes = props.property?.keyframes || [];
+  return keyframes.some(
+    (kf: any) => selectedKeyframeIds.value.has(kf.id) && kf.interpolation === "bezier"
+  );
+});
+
+// Check if roving can be applied (position property with 3+ keyframes)
+const canApplyRoving = computed(() => {
+  return isPositionProperty.value && (props.property?.keyframes?.length || 0) >= 3;
+});
+
 // Keyframe navigator functions
 function goToPrevKeyframe() {
   const prevKfs = sortedKeyframes.value.filter(
@@ -444,8 +481,12 @@ function startKeyframeDrag(e: MouseEvent, kf: Keyframe<any>) {
       selectedKeyframeIds.value.add(kf.id);
     }
   } else {
-    selectedKeyframeIds.value.clear();
-    selectedKeyframeIds.value.add(kf.id);
+    // If the keyframe is not in the selection, clear and select only it
+    // If it's already selected (part of multi-selection), keep the selection
+    if (!selectedKeyframeIds.value.has(kf.id)) {
+      selectedKeyframeIds.value.clear();
+      selectedKeyframeIds.value.add(kf.id);
+    }
   }
 
   // Check for Ctrl+Alt (scale mode) at drag start
@@ -454,6 +495,20 @@ function startKeyframeDrag(e: MouseEvent, kf: Keyframe<any>) {
   // Set up drag
   const startX = e.clientX;
   const startFrame = kf.frame;
+
+  // Check if we're dragging multiple keyframes (bulk move)
+  const isBulkMove = selectedKeyframeIds.value.size > 1 && selectedKeyframeIds.value.has(kf.id);
+
+  // Capture the starting frame for each selected keyframe (for bulk move)
+  const startingFrames = new Map<string, number>();
+  if (isBulkMove) {
+    for (const kfId of selectedKeyframeIds.value) {
+      const keyframe = props.property?.keyframes?.find((k: { id: string }) => k.id === kfId);
+      if (keyframe) {
+        startingFrames.set(kfId, keyframe.frame);
+      }
+    }
+  }
 
   // For scale mode, capture original keyframe positions
   const originalKeyframes: { id: string; frame: number }[] = isScaleMode
@@ -467,6 +522,9 @@ function startKeyframeDrag(e: MouseEvent, kf: Keyframe<any>) {
         ...originalKeyframes.map((k: { id: string; frame: number }) => k.frame),
       )
     : 0;
+
+  // Track the last applied delta for bulk moves (to avoid duplicate moves)
+  let lastAppliedDelta = 0;
 
   const onMove = (ev: MouseEvent) => {
     const dx = ev.clientX - startX;
@@ -509,8 +567,31 @@ function startKeyframeDrag(e: MouseEvent, kf: Keyframe<any>) {
       return;
     }
 
-    // Normal drag mode - move keyframe
+    // Calculate frame delta from pixel movement
     const frameDelta = Math.round(dx / props.pixelsPerFrame);
+
+    // Bulk move mode - move all selected keyframes together
+    if (isBulkMove) {
+      // Only move if delta changed
+      if (frameDelta !== lastAppliedDelta) {
+        // Build the keyframes array for bulk move
+        const keyframesToMove = Array.from(selectedKeyframeIds.value).map(kfId => ({
+          layerId: props.layerId,
+          propertyPath: props.propertyPath,
+          keyframeId: kfId,
+        }));
+
+        // Calculate the actual delta from the last applied position
+        const deltaDiff = frameDelta - lastAppliedDelta;
+
+        // Use bulk moveKeyframes for all selected keyframes
+        store.moveKeyframes(keyframesToMove, deltaDiff);
+        lastAppliedDelta = frameDelta;
+      }
+      return;
+    }
+
+    // Single keyframe drag mode
     let newFrame = Math.max(
       0,
       Math.min(store.frameCount - 1, startFrame + frameDelta),
@@ -657,6 +738,88 @@ function deleteSelectedKeyframes() {
     store.removeKeyframe(props.layerId, props.propertyPath, kfId);
   }
   selectedKeyframeIds.value.clear();
+  hideContextMenu();
+}
+
+// Auto-calculate bezier tangents for selected keyframes
+function autoCalculateTangents() {
+  // Get all selected keyframe IDs as array
+  const selectedIds = Array.from(selectedKeyframeIds.value);
+
+  // Call the store action for each selected keyframe
+  for (const kfId of selectedIds) {
+    store.autoCalculateBezierTangents(props.layerId, props.propertyPath, kfId);
+  }
+
+  console.log(`[Lattice] Auto-calculated tangents for ${selectedIds.length} keyframes`);
+  hideContextMenu();
+}
+
+// Reverse the timing of selected keyframes
+function reverseSelectedKeyframes() {
+  const count = store.timeReverseKeyframes(props.layerId, props.propertyPath);
+  console.log(`[Lattice] Reversed ${count} keyframes for ${props.propertyPath}`);
+  hideContextMenu();
+}
+
+// Clear all keyframes from this property (single undo entry)
+function clearAllKeyframes() {
+  store.clearKeyframes(props.layerId, props.propertyPath);
+  selectedKeyframeIds.value.clear();
+  console.log(`[Lattice] Cleared all keyframes from ${props.propertyPath}`);
+  hideContextMenu();
+}
+
+// Apply roving keyframes (constant-speed motion)
+function applyRovingKeyframes() {
+  // Check if roving would have impact before applying
+  const wouldChange = store.checkRovingImpact(props.layerId);
+
+  if (!wouldChange) {
+    console.log("[Lattice] Roving keyframes: no changes needed (already uniform speed)");
+    hideContextMenu();
+    return;
+  }
+
+  const success = store.applyRovingToPosition(props.layerId);
+  if (success) {
+    console.log("[Lattice] Applied roving keyframes to position");
+  } else {
+    console.warn("[Lattice] Failed to apply roving keyframes");
+  }
+  hideContextMenu();
+}
+
+// Scale the timing between keyframes
+function scaleKeyframeTiming() {
+  // Prompt user for scale factor
+  const input = prompt(
+    "Scale Factor (0.5 = double speed, 2.0 = half speed):",
+    "1.0"
+  );
+
+  if (input === null) {
+    hideContextMenu();
+    return;
+  }
+
+  const scaleFactor = parseFloat(input);
+  if (!Number.isFinite(scaleFactor) || scaleFactor <= 0) {
+    console.warn("[Lattice] Invalid scale factor:", input);
+    hideContextMenu();
+    return;
+  }
+
+  // Use current frame as anchor point
+  const anchorFrame = store.currentFrame;
+  const count = store.scaleKeyframeTiming(
+    props.layerId,
+    props.propertyPath,
+    scaleFactor,
+    anchorFrame
+  );
+
+  console.log(`[Lattice] Scaled ${count} keyframes by ${scaleFactor}x around frame ${anchorFrame}`);
   hideContextMenu();
 }
 

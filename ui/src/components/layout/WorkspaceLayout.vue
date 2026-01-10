@@ -142,6 +142,21 @@
       @confirm="onKeyframeInterpolationConfirm"
     />
 
+    <!-- Keyframe Velocity Dialog -->
+    <KeyframeVelocityDialog
+      :visible="showKeyframeVelocityDialog"
+      :keyframe-count="store.selectedKeyframeIds.length"
+      @close="showKeyframeVelocityDialog = false"
+      @confirm="onKeyframeVelocityConfirm"
+    />
+
+    <!-- Frame Interpolation Dialog (RIFE) -->
+    <FrameInterpolationDialog
+      v-if="showFrameInterpolationDialog"
+      @close="showFrameInterpolationDialog = false"
+      @complete="onFrameInterpolationComplete"
+    />
+
     <!-- Time Stretch Dialog -->
     <TimeStretchDialog
       :visible="showTimeStretchDialog"
@@ -326,6 +341,8 @@ const showCompositionSettingsDialog = ref(false);
 const showPrecomposeDialog = ref(false);
 const showPathSuggestionDialog = ref(false);
 const showKeyframeInterpolationDialog = ref(false);
+const showKeyframeVelocityDialog = ref(false);
+const showFrameInterpolationDialog = ref(false);
 const showTimeStretchDialog = ref(false);
 const showCameraTrackingImportDialog = ref(false);
 const showPreferencesDialog = ref(false);
@@ -427,6 +444,7 @@ const keyboard = useKeyboardShortcuts({
   showExportDialog,
   showCompositionSettingsDialog,
   showKeyframeInterpolationDialog,
+  showKeyframeVelocityDialog,
   showPrecomposeDialog,
   showCurveEditor,
   showTimeStretchDialog,
@@ -675,6 +693,13 @@ function onComfyUIExportComplete(result: any) {
   playExportChime();
 }
 
+function onFrameInterpolationComplete(frames: string[]) {
+  console.log("[Lattice] Frame interpolation completed:", frames.length, "frames");
+  showFrameInterpolationDialog.value = false;
+  playExportChime();
+  // TODO: Allow user to save frames or add to project
+}
+
 function onCompositionSettingsConfirm(settings: {
   name: string;
   width: number;
@@ -727,7 +752,10 @@ function onCameraTrackingImported(result: {
   }
 }
 
-// Keyframe interpolation dialog handler
+/**
+ * Keyframe interpolation dialog handler.
+ * Uses store actions for proper undo/redo support.
+ */
 function onKeyframeInterpolationConfirm(settings: {
   interpolation: BaseInterpolationType;
   easingPreset: string;
@@ -735,6 +763,8 @@ function onKeyframeInterpolationConfirm(settings: {
 }) {
   const selectedKeyframeIds = store.selectedKeyframeIds;
   if (selectedKeyframeIds.length === 0) return;
+
+  let appliedCount = 0;
 
   // Get the layers that contain these keyframes
   const layers = store.layers;
@@ -748,6 +778,8 @@ function onKeyframeInterpolationConfirm(settings: {
       const prop = transform[propName];
       if (!prop?.keyframes) continue;
 
+      const propertyPath = `transform.${propName}`;
+
       // Sort keyframes by frame for proper next-keyframe lookup
       const sortedKeyframes = [...prop.keyframes].sort(
         (a: any, b: any) => a.frame - b.frame,
@@ -756,9 +788,20 @@ function onKeyframeInterpolationConfirm(settings: {
       for (let i = 0; i < sortedKeyframes.length; i++) {
         const kf = sortedKeyframes[i];
         if (selectedKeyframeIds.includes(kf.id)) {
-          // Update interpolation
-          kf.interpolation = settings.interpolation;
-          kf.controlMode = settings.controlMode;
+          // Use store actions for proper undo/redo support
+          store.setKeyframeInterpolation(
+            layer.id,
+            propertyPath,
+            kf.id,
+            settings.interpolation,
+          );
+          store.setKeyframeControlMode(
+            layer.id,
+            propertyPath,
+            kf.id,
+            settings.controlMode,
+          );
+          appliedCount++;
 
           // For bezier, set easing preset handles
           if (settings.interpolation === "bezier" && settings.easingPreset) {
@@ -783,22 +826,25 @@ function onKeyframeInterpolationConfirm(settings: {
                       : 0;
                 const valueDelta = nextValue - kfValue;
 
-                // Convert normalized preset values to absolute frame/value offsets
-                // outHandle: relative to current keyframe, points toward next
-                kf.outHandle = {
+                // Use store action to set outHandle on current keyframe
+                store.setKeyframeHandle(layer.id, propertyPath, kf.id, "out", {
                   frame: presetHandles.outX * frameDuration,
                   value: presetHandles.outY * valueDelta,
                   enabled: true,
-                };
-                // inHandle: relative to next keyframe, points back toward current
-                // Formula: frame = -(1 - inX) * duration, value = (1 - inY) * delta
-                nextKf.inHandle = {
-                  frame: -(1 - presetHandles.inX) * frameDuration,
-                  value: (1 - presetHandles.inY) * valueDelta,
-                  enabled: true,
-                };
+                });
+                // Use store action to set inHandle on next keyframe
+                store.setKeyframeHandle(
+                  layer.id,
+                  propertyPath,
+                  nextKf.id,
+                  "in",
+                  {
+                    frame: -(1 - presetHandles.inX) * frameDuration,
+                    value: (1 - presetHandles.inY) * valueDelta,
+                    enabled: true,
+                  },
+                );
               }
-              // Note: Last keyframe's outHandle has no effect (no next segment)
             }
           }
         }
@@ -806,11 +852,58 @@ function onKeyframeInterpolationConfirm(settings: {
     }
   }
 
-  // Mark dirty and log
   console.log(
-    `[Lattice] Applied ${settings.interpolation} interpolation to ${selectedKeyframeIds.length} keyframes`,
+    `[Lattice] Applied ${settings.interpolation} interpolation to ${appliedCount} keyframes`,
   );
   showKeyframeInterpolationDialog.value = false;
+}
+
+/**
+ * Handle keyframe velocity dialog confirmation.
+ * Applies velocity/influence settings to all selected keyframes via store action.
+ */
+function onKeyframeVelocityConfirm(settings: {
+  incomingVelocity: number;
+  outgoingVelocity: number;
+  incomingInfluence: number;
+  outgoingInfluence: number;
+}) {
+  const selectedKeyframeIds = store.selectedKeyframeIds;
+  if (selectedKeyframeIds.length === 0) return;
+
+  // Get the layers that contain these keyframes
+  const layers = store.layers;
+  let appliedCount = 0;
+
+  for (const layer of layers) {
+    const transform = layer.transform as any;
+    if (!transform) continue;
+
+    // Check all animatable properties for keyframes
+    const props = ["position", "rotation", "scale", "anchor", "opacity"];
+    for (const propName of props) {
+      const prop = transform[propName];
+      if (!prop?.keyframes) continue;
+
+      for (const kf of prop.keyframes) {
+        if (selectedKeyframeIds.includes(kf.id)) {
+          // Use store action for proper undo/redo support
+          const success = store.applyKeyframeVelocity(
+            layer.id,
+            `transform.${propName}`,
+            kf.id,
+            settings,
+          );
+          if (success) appliedCount++;
+        }
+      }
+    }
+  }
+
+  console.log(
+    `[Lattice] Applied velocity settings to ${appliedCount} keyframes`,
+  );
+  showKeyframeVelocityDialog.value = false;
 }
 
 // Get bezier handle positions for easing presets
@@ -1013,6 +1106,7 @@ const { handleMenuAction } = useMenuActions({
   showExportDialog,
   showPrecomposeDialog,
   showTimeStretchDialog,
+  showFrameInterpolationDialog,
   showPreferencesDialog,
   showHDPreview,
   leftTab,

@@ -174,6 +174,11 @@
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { type ExportOptions, matteExporter } from "@/services/matteExporter";
 import { projectCollectionService } from "@/services/projectCollection";
+import {
+  base64ToBlob,
+  canvasToBase64,
+  getBackendDepthService,
+} from "@/services/export/backendDepthService";
 import { useCompositorStore } from "@/stores/compositorStore";
 
 const emit = defineEmits<{
@@ -414,7 +419,7 @@ async function startExport(): Promise<void> {
   }
 }
 
-// Generate depth map frames from current composition
+// Generate depth map frames using backend DepthAnything V3
 async function generateDepthFrames(
   frameCount: number,
   width: number,
@@ -422,53 +427,101 @@ async function generateDepthFrames(
   onProgress?: (frame: number, total: number) => void,
 ): Promise<Blob[]> {
   const frames: Blob[] = [];
-  const canvas = new OffscreenCanvas(width, height);
-  const ctx = canvas.getContext("2d")!;
+  const depthService = getBackendDepthService();
+
+  // Access the engine to render frames
+  const engine = (window as any).__latticeEngine;
 
   for (let frame = 0; frame < frameCount; frame++) {
     if (onProgress) onProgress(frame, frameCount);
 
-    // Render depth as grayscale gradient (simulated depth based on layer order)
-    // In a full implementation, this would use Three.js depth buffer
-    ctx.fillStyle = "#000000";
-    ctx.fillRect(0, 0, width, height);
+    try {
+      // Render the current frame to a canvas
+      let frameImageBase64: string;
 
-    // Get layers sorted by z-index/depth
-    const layers = store.activeComposition?.layers || [];
-    const visibleLayers = layers.filter((layer) => {
-      const start = layer.startFrame ?? layer.inPoint ?? 0;
-      const end = layer.endFrame ?? layer.outPoint ?? 80;
-      return layer.visible && frame >= start && frame <= end;
-    });
+      if (engine && typeof engine.renderFrameToCanvas === "function") {
+        // Use engine's render method if available
+        const frameCanvas = await engine.renderFrameToCanvas(frame, width, height);
+        frameImageBase64 = canvasToBase64(frameCanvas);
+      } else {
+        // Fallback: render using matte exporter's frame generation
+        const matteBlob = await matteExporter.generatePreviewFrame(
+          store.project,
+          frame,
+          { width, height, matteMode: "include_all" },
+        );
+        if (matteBlob) {
+          // Convert data URL to base64
+          frameImageBase64 = matteBlob.replace(/^data:image\/png;base64,/, "");
+        } else {
+          // Generate fallback grayscale frame (layer order depth simulation)
+          const fallbackBlob = await generateFallbackDepthFrame(frame, width, height);
+          frames.push(fallbackBlob);
+          continue;
+        }
+      }
 
-    // Render each layer as a depth value (farther = darker, closer = brighter)
-    for (let i = 0; i < visibleLayers.length; i++) {
-      const depth = Math.round(
-        (i / Math.max(visibleLayers.length - 1, 1)) * 255,
-      );
-      const gray = 255 - depth; // Invert: closer layers are brighter
-      ctx.fillStyle = `rgb(${gray}, ${gray}, ${gray})`;
+      // Call backend depth estimation
+      const depthResult = await depthService.generateDepth(frameImageBase64);
 
-      // Simple rectangular representation (actual impl would render layer shapes)
-      const layer = visibleLayers[i];
-      const pos = layer.transform?.position?.value || {
-        x: width / 2,
-        y: height / 2,
-      };
-      const scale = layer.transform?.scale?.value || { x: 1, y: 1 };
-      const w = 200 * scale.x;
-      const h = 150 * scale.y;
-      ctx.fillRect(pos.x - w / 2, pos.y - h / 2, w, h);
+      if (depthResult.status === "success" && depthResult.depth) {
+        // Convert base64 depth to blob
+        const depthBlob = base64ToBlob(depthResult.depth);
+        frames.push(depthBlob);
+      } else {
+        // Fallback to client-side depth simulation
+        console.warn(`[ExportDialog] Depth API failed for frame ${frame}, using fallback`);
+        const fallbackBlob = await generateFallbackDepthFrame(frame, width, height);
+        frames.push(fallbackBlob);
+      }
+    } catch (error) {
+      console.error(`[ExportDialog] Depth generation error for frame ${frame}:`, error);
+      // Use fallback
+      const fallbackBlob = await generateFallbackDepthFrame(frame, width, height);
+      frames.push(fallbackBlob);
     }
-
-    const blob = await canvas.convertToBlob({ type: "image/png" });
-    frames.push(blob);
   }
 
   return frames;
 }
 
-// Generate normal map frames from current composition
+// Fallback depth frame generation (client-side simulation)
+async function generateFallbackDepthFrame(
+  frame: number,
+  width: number,
+  height: number,
+): Promise<Blob> {
+  const canvas = new OffscreenCanvas(width, height);
+  const ctx = canvas.getContext("2d")!;
+
+  // Render depth as grayscale gradient based on layer order
+  ctx.fillStyle = "#000000";
+  ctx.fillRect(0, 0, width, height);
+
+  const layers = store.activeComposition?.layers || [];
+  const visibleLayers = layers.filter((layer) => {
+    const start = layer.startFrame ?? layer.inPoint ?? 0;
+    const end = layer.endFrame ?? layer.outPoint ?? 80;
+    return layer.visible && frame >= start && frame <= end;
+  });
+
+  for (let i = 0; i < visibleLayers.length; i++) {
+    const depth = Math.round((i / Math.max(visibleLayers.length - 1, 1)) * 255);
+    const gray = 255 - depth;
+    ctx.fillStyle = `rgb(${gray}, ${gray}, ${gray})`;
+
+    const layer = visibleLayers[i];
+    const pos = layer.transform?.position?.value || { x: width / 2, y: height / 2 };
+    const scale = layer.transform?.scale?.value || { x: 1, y: 1 };
+    const w = 200 * scale.x;
+    const h = 150 * scale.y;
+    ctx.fillRect(pos.x - w / 2, pos.y - h / 2, w, h);
+  }
+
+  return canvas.convertToBlob({ type: "image/png" });
+}
+
+// Generate normal map frames using backend (algebraic or NormalCrafter)
 async function generateNormalFrames(
   frameCount: number,
   width: number,
@@ -476,46 +529,90 @@ async function generateNormalFrames(
   onProgress?: (frame: number, total: number) => void,
 ): Promise<Blob[]> {
   const frames: Blob[] = [];
-  const canvas = new OffscreenCanvas(width, height);
-  const ctx = canvas.getContext("2d")!;
+  const depthService = getBackendDepthService();
+  const engine = (window as any).__latticeEngine;
 
   for (let frame = 0; frame < frameCount; frame++) {
     if (onProgress) onProgress(frame, frameCount);
 
-    // Default normal map: flat surface pointing toward camera (RGB 128, 128, 255)
-    ctx.fillStyle = "rgb(128, 128, 255)";
-    ctx.fillRect(0, 0, width, height);
+    try {
+      // Render the current frame to a canvas
+      let frameImageBase64: string;
 
-    // In a full implementation, this would calculate actual surface normals
-    // For now, generate a simple normal map with slight variation per layer
-    const layers = store.activeComposition?.layers || [];
-    const visibleLayers = layers.filter((layer) => {
-      const start = layer.startFrame ?? layer.inPoint ?? 0;
-      const end = layer.endFrame ?? layer.outPoint ?? 80;
-      return layer.visible && frame >= start && frame <= end;
-    });
+      if (engine && typeof engine.renderFrameToCanvas === "function") {
+        const frameCanvas = await engine.renderFrameToCanvas(frame, width, height);
+        frameImageBase64 = canvasToBase64(frameCanvas);
+      } else {
+        // Fallback: render using matte exporter
+        const matteBlob = await matteExporter.generatePreviewFrame(
+          store.project,
+          frame,
+          { width, height, matteMode: "include_all" },
+        );
+        if (matteBlob) {
+          frameImageBase64 = matteBlob.replace(/^data:image\/png;base64,/, "");
+        } else {
+          const fallbackBlob = await generateFallbackNormalFrame(frame, width, height);
+          frames.push(fallbackBlob);
+          continue;
+        }
+      }
 
-    for (const layer of visibleLayers) {
-      const pos = layer.transform?.position?.value || {
-        x: width / 2,
-        y: height / 2,
-      };
-      const scale = layer.transform?.scale?.value || { x: 1, y: 1 };
-      const w = 200 * scale.x;
-      const h = 150 * scale.y;
+      // Call backend normal generation (will generate depth internally if needed)
+      const normalResult = await depthService.generateNormal(frameImageBase64);
 
-      // Slight normal variation based on layer type
-      const r = 128 + Math.random() * 10 - 5;
-      const g = 128 + Math.random() * 10 - 5;
-      ctx.fillStyle = `rgb(${r}, ${g}, 255)`;
-      ctx.fillRect(pos.x - w / 2, pos.y - h / 2, w, h);
+      if (normalResult.status === "success" && normalResult.normal) {
+        const normalBlob = base64ToBlob(normalResult.normal);
+        frames.push(normalBlob);
+      } else {
+        console.warn(`[ExportDialog] Normal API failed for frame ${frame}, using fallback`);
+        const fallbackBlob = await generateFallbackNormalFrame(frame, width, height);
+        frames.push(fallbackBlob);
+      }
+    } catch (error) {
+      console.error(`[ExportDialog] Normal generation error for frame ${frame}:`, error);
+      const fallbackBlob = await generateFallbackNormalFrame(frame, width, height);
+      frames.push(fallbackBlob);
     }
-
-    const blob = await canvas.convertToBlob({ type: "image/png" });
-    frames.push(blob);
   }
 
   return frames;
+}
+
+// Fallback normal frame generation (client-side flat normal)
+async function generateFallbackNormalFrame(
+  _frame: number,
+  width: number,
+  height: number,
+): Promise<Blob> {
+  const canvas = new OffscreenCanvas(width, height);
+  const ctx = canvas.getContext("2d")!;
+
+  // Default normal map: flat surface pointing toward camera (RGB 128, 128, 255)
+  ctx.fillStyle = "rgb(128, 128, 255)";
+  ctx.fillRect(0, 0, width, height);
+
+  const layers = store.activeComposition?.layers || [];
+  const visibleLayers = layers.filter((layer) => {
+    const start = layer.startFrame ?? layer.inPoint ?? 0;
+    const end = layer.endFrame ?? layer.outPoint ?? 80;
+    return layer.visible && _frame >= start && _frame <= end;
+  });
+
+  for (const layer of visibleLayers) {
+    const pos = layer.transform?.position?.value || { x: width / 2, y: height / 2 };
+    const scale = layer.transform?.scale?.value || { x: 1, y: 1 };
+    const w = 200 * scale.x;
+    const h = 150 * scale.y;
+
+    // Slight normal variation based on position
+    const r = 128 + (pos.x / width - 0.5) * 20;
+    const g = 128 + (pos.y / height - 0.5) * 20;
+    ctx.fillStyle = `rgb(${r}, ${g}, 255)`;
+    ctx.fillRect(pos.x - w / 2, pos.y - h / 2, w, h);
+  }
+
+  return canvas.convertToBlob({ type: "image/png" });
 }
 
 // Watch for changes that affect preview

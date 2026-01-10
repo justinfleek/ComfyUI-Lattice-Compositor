@@ -319,11 +319,32 @@ const animatableProperties = computed((): AnimatableProperty<any>[] => {
   if (!layer) return [];
 
   const props: AnimatableProperty<any>[] = [];
+  const t = layer.transform;
 
-  // Transform properties
-  props.push(layer.transform.position);
-  props.push(layer.transform.scale);
-  props.push(layer.transform.rotation);
+  // Position - check if dimensions are separated
+  if (t.separateDimensions?.position && t.positionX && t.positionY) {
+    // Separated: show individual X, Y, Z properties
+    props.push(t.positionX);
+    props.push(t.positionY);
+    if (t.positionZ) props.push(t.positionZ);
+  } else {
+    // Combined: show single position property
+    props.push(t.position);
+  }
+
+  // Scale - check if dimensions are separated
+  if (t.separateDimensions?.scale && t.scaleX && t.scaleY) {
+    // Separated: show individual X, Y, Z properties
+    props.push(t.scaleX);
+    props.push(t.scaleY);
+    if (t.scaleZ) props.push(t.scaleZ);
+  } else {
+    // Combined: show single scale property
+    props.push(t.scale);
+  }
+
+  // Rotation
+  props.push(t.rotation);
 
   // Opacity
   props.push(layer.opacity);

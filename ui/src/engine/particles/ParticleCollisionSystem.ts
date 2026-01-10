@@ -86,7 +86,7 @@ export class ParticleCollisionSystem {
       bounceDamping: config.bounceDamping ?? 0.8,
       bounds: config.bounds,
       boundsBehavior: config.boundsBehavior ?? "none",
-      planes: config.planes ?? [],  // BUG-194: Was missing, planes never got copied!
+      planes: config.planes ?? [],  // Must explicitly copy - collision planes wouldn't work otherwise
     };
   }
 

@@ -88,8 +88,19 @@ export function useViewportControls(
 
   /**
    * Set zoom to a specific level (0.1 to 10)
+   *
+   * Invalid zoom values (NaN, Infinity, <= 0) are rejected with a warning
+   * and the function returns early without changing state.
    */
   function setZoom(newZoom: number) {
+    // Reject invalid input to prevent viewport state corruption
+    if (!Number.isFinite(newZoom) || newZoom <= 0) {
+      console.warn(
+        `[ViewportControls] Invalid zoom value: ${newZoom}. Must be a positive finite number.`,
+      );
+      return; // Reject invalid values instead of silently corrupting state
+    }
+
     newZoom = Math.max(0.1, Math.min(10, newZoom));
     zoom.value = newZoom;
     viewportTransform.value[0] = newZoom;
@@ -180,15 +191,40 @@ export function useViewportControls(
 
   /**
    * Convert screen coordinates to scene coordinates
+   *
+   * Guards against division by zero/NaN to prevent coordinate corruption.
+   * If scale values are invalid, returns (0, 0) and logs a warning.
    */
   function screenToScene(
     screenX: number,
     screenY: number,
   ): { x: number; y: number } {
     const vpt = viewportTransform.value;
+
+    // Guard against division by zero or NaN scale values
+    const scaleX = vpt[0];
+    const scaleY = vpt[3];
+
+    if (!Number.isFinite(scaleX) || scaleX === 0) {
+      console.warn(
+        `[ViewportControls] Invalid scaleX in viewportTransform: ${scaleX}`,
+      );
+      return { x: 0, y: 0 };
+    }
+    if (!Number.isFinite(scaleY) || scaleY === 0) {
+      console.warn(
+        `[ViewportControls] Invalid scaleY in viewportTransform: ${scaleY}`,
+      );
+      return { x: 0, y: 0 };
+    }
+
+    // Safely extract pan offsets with NaN guards
+    const panX = Number.isFinite(vpt[4]) ? vpt[4] : 0;
+    const panY = Number.isFinite(vpt[5]) ? vpt[5] : 0;
+
     return {
-      x: (screenX - vpt[4]) / vpt[0],
-      y: (screenY - vpt[5]) / vpt[3],
+      x: (screenX - panX) / scaleX,
+      y: (screenY - panY) / scaleY,
     };
   }
 

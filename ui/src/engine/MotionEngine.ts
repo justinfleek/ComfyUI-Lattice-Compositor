@@ -1115,9 +1115,18 @@ export class MotionEngine {
     }
 
     // Evaluate depth of field
-    let focusDistance = cameraData.depthOfField?.focusDistance ?? 1000;
-    let aperture = cameraData.depthOfField?.aperture ?? 2.8;
-    let blurLevel = cameraData.depthOfField?.blurLevel ?? 50;
+    // Support both new structured format (cameraData.depthOfField) and
+    // legacy inline format (cameraData.camera.*)
+    const dofConfig = cameraData.depthOfField;
+    const legacyCamera = cameraData.camera;
+
+    // Determine if DOF is enabled - check structured format first, then legacy
+    const dofEnabled = dofConfig?.enabled ?? legacyCamera?.depthOfField ?? false;
+
+    // Get initial values - prefer structured format, fall back to legacy
+    let focusDistance = dofConfig?.focusDistance ?? legacyCamera?.focusDistance ?? 1000;
+    let aperture = dofConfig?.aperture ?? legacyCamera?.aperture ?? 2.8;
+    let blurLevel = dofConfig?.blurLevel ?? legacyCamera?.blurLevel ?? 50;
 
     if (cameraData.animatedFocusDistance) {
       focusDistance = interpolateProperty(
@@ -1297,7 +1306,7 @@ export class MotionEngine {
       fov,
       focalLength,
       depthOfField: Object.freeze({
-        enabled: cameraData.depthOfField?.enabled ?? false,
+        enabled: dofEnabled,
         focusDistance,
         aperture,
         blurLevel,

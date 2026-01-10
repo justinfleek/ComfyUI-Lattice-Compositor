@@ -533,7 +533,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
   // ==========================================================================
 
   describe('Section 8: Expression Selector', () => {
-    test('Step 138-144: Expression "textIndex * 10" - linear gradient', () => {
+    test('Step 138-144: Expression "textIndex * 10" - linear gradient', async () => {
       const layer = store.createTextLayer('ABCDEFGHIJ'); // 10 chars
       const animator = store.addTextAnimator(layer.id);
       store.setAnimatorPropertyValue(layer.id, animator!.id, 'position', { x: 0, y: -100 });
@@ -544,7 +544,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
         shape: 'square'
       });
 
-      store.configureExpressionSelector(layer.id, animator!.id, {
+      await store.configureExpressionSelector(layer.id, animator!.id, {
         expression: 'textIndex * 10', // 0, 10, 20, ... 90
         mode: 'intersect'
       });
@@ -558,7 +558,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
       expect(values[9]).toBeCloseTo(90, 0);
     });
 
-    test('Step 145-150: Expression "100 - textIndex * 10" - reverse gradient', () => {
+    test('Step 145-150: Expression "100 - textIndex * 10" - reverse gradient', async () => {
       const layer = store.createTextLayer('ABCDEFGHIJ'); // 10 chars
       const animator = store.addTextAnimator(layer.id);
 
@@ -568,7 +568,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
         shape: 'square'
       });
 
-      store.configureExpressionSelector(layer.id, animator!.id, {
+      await store.configureExpressionSelector(layer.id, animator!.id, {
         expression: '100 - textIndex * 10', // 100, 90, 80, ... 10
         mode: 'intersect'
       });
@@ -1061,13 +1061,13 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
       }
     });
 
-    test('Step 399-402: Expression selector is deterministic', () => {
+    test('Step 399-402: Expression selector is deterministic', async () => {
       const layer = store.createTextLayer('EXPRESSION');
       const animator = store.addTextAnimator(layer.id);
       store.setAnimatorPropertyValue(layer.id, animator!.id, 'position', { x: 0, y: -100 });
 
       // Use expression with textIndex
-      store.configureExpressionSelector(layer.id, animator!.id, {
+      await store.configureExpressionSelector(layer.id, animator!.id, {
         expression: 'textIndex * 10 + time * 5'
       });
 
@@ -1492,7 +1492,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
       expect(offset40[5].position.y).toBe(-50); // 55.6% in 40-60%
     });
 
-    test('Step 125-128: Range with expression-driven offset', () => {
+    test('Step 125-128: Range with expression-driven offset', async () => {
       const layer = store.createTextLayer('EXPRESSION');
       const animator = store.addTextAnimator(layer.id);
       store.setAnimatorPropertyValue(layer.id, animator!.id, 'position', { x: 0, y: -100 });
@@ -1504,7 +1504,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
       });
 
       // Expression selector: time * 10 (0 at frame 0, 10 at frame 24)
-      store.configureExpressionSelector(layer.id, animator!.id, {
+      await store.configureExpressionSelector(layer.id, animator!.id, {
         expression: 'time * 50', // 0% at t=0, 50% at t=1s (frame 24)
         mode: 'add'
       });
@@ -1686,7 +1686,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
       expect(transforms[transforms.length - 1].tracking).toBeCloseTo(0, 0);
     });
 
-    test('Step 247-250: Wave effect with expression selector', () => {
+    test('Step 247-250: Wave effect with expression selector', async () => {
       const layer = store.createTextLayer('WAVE WAVE');
       const animator = store.addTextAnimator(layer.id);
 
@@ -1699,7 +1699,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
       });
 
       // Expression creates wave: sin(textIndex * 0.5) * 50 + 50
-      store.configureExpressionSelector(layer.id, animator!.id, {
+      await store.configureExpressionSelector(layer.id, animator!.id, {
         expression: 'Math.sin(textIndex * 0.5) * 50 + 50',
         mode: 'intersect'
       });
@@ -1712,7 +1712,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
       expect(uniqueY.size).toBeGreaterThan(1);
     });
 
-    test('Step 251-253: Expression selector modifies selection', () => {
+    test('Step 251-253: Expression selector modifies selection', async () => {
       const layer = store.createTextLayer('SUBTRACT');
       const animator = store.addTextAnimator(layer.id);
 
@@ -1726,7 +1726,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
       });
 
       // Expression creates gradient based on textIndex
-      store.configureExpressionSelector(layer.id, animator!.id, {
+      await store.configureExpressionSelector(layer.id, animator!.id, {
         expression: 'textIndex * 12.5', // 0, 12.5, 25, ...
         mode: 'intersect'
       });
@@ -1854,7 +1854,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
   // ==========================================================================
 
   describe('Section 29: Expression-Driven Properties', () => {
-    test('Step 281-283: Expression on position property', () => {
+    test('Step 281-283: Expression on position property', async () => {
       const layer = store.createTextLayer('EXPR POS');
       const animator = store.addTextAnimator(layer.id);
 
@@ -1868,7 +1868,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
       });
 
       // Use expression selector to vary selection per character
-      store.configureExpressionSelector(layer.id, animator!.id, {
+      await store.configureExpressionSelector(layer.id, animator!.id, {
         expression: 'textIndex * 12.5', // 0, 12.5, 25, ... up to 100
         mode: 'intersect'
       });
@@ -1880,7 +1880,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
       expect(values[4]).toBeCloseTo(50, 0);
     });
 
-    test('Step 284-286: Expression on rotation with time', () => {
+    test('Step 284-286: Expression on rotation with time', async () => {
       const layer = store.createTextLayer('ROTATE');
       const animator = store.addTextAnimator(layer.id);
 
@@ -1893,7 +1893,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
       });
 
       // Expression uses time to animate
-      store.configureExpressionSelector(layer.id, animator!.id, {
+      await store.configureExpressionSelector(layer.id, animator!.id, {
         expression: 'time * 100', // At t=0 → 0%, at t=1s (frame 24) → 100%
         mode: 'intersect'
       });
@@ -1907,7 +1907,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
       expect(frame24[0].rotation.z).toBe(360);
     });
 
-    test('Step 289-292: Time-varying expression produces different values', () => {
+    test('Step 289-292: Time-varying expression produces different values', async () => {
       const layer = store.createTextLayer('OSCILLATE');
       const animator = store.addTextAnimator(layer.id);
 
@@ -1920,7 +1920,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
       });
 
       // Sine wave expression
-      store.configureExpressionSelector(layer.id, animator!.id, {
+      await store.configureExpressionSelector(layer.id, animator!.id, {
         expression: 'Math.sin(time * Math.PI * 2) * 50 + 50', // Oscillates 0-100
         mode: 'intersect'
       });
@@ -1936,7 +1936,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
       expect(frame12[0].position.y).not.toBe(frame0[0].position.y);
     });
 
-    test('Step 293-296: Per-character phase offset', () => {
+    test('Step 293-296: Per-character phase offset', async () => {
       const layer = store.createTextLayer('PHASE');
       const animator = store.addTextAnimator(layer.id);
 
@@ -1949,7 +1949,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
       });
 
       // Each character has different phase based on textIndex
-      store.configureExpressionSelector(layer.id, animator!.id, {
+      await store.configureExpressionSelector(layer.id, animator!.id, {
         expression: 'Math.sin((time + textIndex * 0.2) * Math.PI * 2) * 50 + 50',
         mode: 'intersect'
       });
@@ -2732,7 +2732,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
         expect(transforms[0].rotation.z).toBe(15);
       });
 
-      test('Step 222: Expression selector with path text', () => {
+      test('Step 222: Expression selector with path text', async () => {
         const layer = store.createTextLayer('EXPR');
         const path = createHorizontalPath();
 
@@ -2741,7 +2741,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
         // Add animator with expression selector
         const animator = store.addTextAnimator(layer.id);
         store.setAnimatorPropertyValue(layer.id, animator!.id, 'position', { x: 0, y: -50 });
-        store.configureExpressionSelector(layer.id, animator!.id, {
+        await store.configureExpressionSelector(layer.id, animator!.id, {
           expression: 'textIndex % 2 === 0 ? 100 : 0'
         });
 
@@ -3472,14 +3472,14 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
         expect(transforms.every(t => t.opacity <= 100)).toBe(true);
       });
 
-      test('Step 248: Wave effect - Expression selector with sin', () => {
+      test('Step 248: Wave effect - Expression selector with sin', async () => {
         const layer = store.createTextLayer('WAVE');
 
         const animator = store.addTextAnimator(layer.id);
         store.setAnimatorPropertyValue(layer.id, animator!.id, 'position', { x: 0, y: -30 });
 
         // Expression creates wave based on character index
-        store.configureExpressionSelector(layer.id, animator!.id, {
+        await store.configureExpressionSelector(layer.id, animator!.id, {
           expression: 'Math.sin(textIndex * 0.8) * 50 + 50'
         });
 
@@ -3556,7 +3556,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
     });
 
     describe('Section 8.5: Complex Combinations (Steps 251-256)', () => {
-      test('Step 251: Path + Animator + Expression Selector', () => {
+      test('Step 251: Path + Animator + Expression Selector', async () => {
         const layer = store.createTextLayer('COMBO');
 
         // Set up path
@@ -3570,7 +3570,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
         // Add animator with expression
         const animator = store.addTextAnimator(layer.id);
         store.setAnimatorPropertyValue(layer.id, animator!.id, 'position', { x: 0, y: -20 });
-        store.configureExpressionSelector(layer.id, animator!.id, {
+        await store.configureExpressionSelector(layer.id, animator!.id, {
           expression: 'textIndex % 2 === 0 ? 100 : 0'
         });
 
@@ -3684,20 +3684,20 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
         expect(transforms[0].scale.x).toBe(75);
       });
 
-      test('Step 256: Text animator with multiple expression effects', () => {
+      test('Step 256: Text animator with multiple expression effects', async () => {
         const layer = store.createTextLayer('EXPRESS');
 
         // Animator 1: wave Y position
         const anim1 = store.addTextAnimator(layer.id);
         store.setAnimatorPropertyValue(layer.id, anim1!.id, 'position', { x: 0, y: -25 });
-        store.configureExpressionSelector(layer.id, anim1!.id, {
+        await store.configureExpressionSelector(layer.id, anim1!.id, {
           expression: 'Math.abs(Math.sin(textIndex)) * 100'
         });
 
         // Animator 2: rotation based on index
         const anim2 = store.addTextAnimator(layer.id);
         store.setAnimatorPropertyValue(layer.id, anim2!.id, 'rotation', 10);
-        store.configureExpressionSelector(layer.id, anim2!.id, {
+        await store.configureExpressionSelector(layer.id, anim2!.id, {
           expression: 'textIndex * 15'
         });
 

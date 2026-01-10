@@ -9,8 +9,11 @@
  */
 
 import { describe, test, expect } from 'vitest';
-import { calculateMotion } from '@/services/depthflow';
+import { evaluateMotionComponent } from '@/services/depthflow';
 import type { MotionComponent } from '@/services/depthflow';
+
+// Alias for backward compatibility with test naming
+const calculateMotion = evaluateMotionComponent;
 
 function createExponentialMotion(
   startValue: number,

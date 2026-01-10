@@ -544,6 +544,48 @@ export class BufferAttribute {
     this.itemSize = itemSize;
     this.count = array.length / itemSize;
   }
+
+  // Setter methods used by GPUParticleSystem.updateInstanceBuffers()
+  setXY(index: number, x: number, y: number) {
+    const offset = index * this.itemSize;
+    this.array[offset] = x;
+    this.array[offset + 1] = y;
+    return this;
+  }
+
+  setXYZ(index: number, x: number, y: number, z: number) {
+    const offset = index * this.itemSize;
+    this.array[offset] = x;
+    this.array[offset + 1] = y;
+    this.array[offset + 2] = z;
+    return this;
+  }
+
+  setXYZW(index: number, x: number, y: number, z: number, w: number) {
+    const offset = index * this.itemSize;
+    this.array[offset] = x;
+    this.array[offset + 1] = y;
+    this.array[offset + 2] = z;
+    this.array[offset + 3] = w;
+    return this;
+  }
+
+  // Getter methods
+  getX(index: number) {
+    return this.array[index * this.itemSize];
+  }
+
+  getY(index: number) {
+    return this.array[index * this.itemSize + 1];
+  }
+
+  getZ(index: number) {
+    return this.array[index * this.itemSize + 2];
+  }
+
+  getW(index: number) {
+    return this.array[index * this.itemSize + 3];
+  }
 }
 
 export class Float32BufferAttribute extends BufferAttribute {
@@ -552,6 +594,28 @@ export class Float32BufferAttribute extends BufferAttribute {
       array instanceof Float32Array ? array : new Float32Array(array),
       itemSize,
     );
+  }
+}
+
+// Instanced buffer attribute for particle systems
+export class InstancedBufferAttribute extends BufferAttribute {
+  meshPerAttribute: number;
+
+  constructor(array: Float32Array, itemSize: number, normalized = false, meshPerAttribute = 1) {
+    super(array, itemSize);
+    // normalized is accepted but not used in mock
+    void normalized;
+    this.meshPerAttribute = meshPerAttribute;
+  }
+}
+
+// Instanced buffer geometry for particle systems
+export class InstancedBufferGeometry extends BufferGeometry {
+  type = "InstancedBufferGeometry";
+  instanceCount = Infinity;
+
+  copy(_source: InstancedBufferGeometry) {
+    return this;
   }
 }
 

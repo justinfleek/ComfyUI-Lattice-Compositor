@@ -81,6 +81,68 @@ export interface WorkflowParams {
 }
 
 // ============================================================================
+// Parameter Validation
+// ============================================================================
+
+// Validation constants
+const MIN_DIMENSION = 64;
+const MAX_DIMENSION = 8192;
+const MAX_FRAME_COUNT = 10000;
+const MAX_FPS = 120;
+
+/**
+ * Validates WorkflowParams before generating a workflow.
+ * Throws an error if any required parameter is invalid.
+ */
+export function validateWorkflowParams(params: WorkflowParams): void {
+  const errors: string[] = [];
+
+  // Validate dimensions have both lower and upper bounds to prevent
+  // memory exhaustion from unreasonably large canvas allocations
+  if (!Number.isFinite(params.width) || params.width < MIN_DIMENSION) {
+    errors.push(
+      `Invalid width: ${params.width}. Must be at least ${MIN_DIMENSION}.`,
+    );
+  } else if (params.width > MAX_DIMENSION) {
+    errors.push(
+      `Invalid width: ${params.width}. Must be at most ${MAX_DIMENSION}.`,
+    );
+  }
+
+  if (!Number.isFinite(params.height) || params.height < MIN_DIMENSION) {
+    errors.push(
+      `Invalid height: ${params.height}. Must be at least ${MIN_DIMENSION}.`,
+    );
+  } else if (params.height > MAX_DIMENSION) {
+    errors.push(
+      `Invalid height: ${params.height}. Must be at most ${MAX_DIMENSION}.`,
+    );
+  }
+
+  // Validate frame count to prevent unbounded generation requests
+  if (!Number.isFinite(params.frameCount) || params.frameCount <= 0) {
+    errors.push(
+      `Invalid frameCount: ${params.frameCount}. Must be a positive number.`,
+    );
+  } else if (params.frameCount > MAX_FRAME_COUNT) {
+    errors.push(
+      `Invalid frameCount: ${params.frameCount}. Must be at most ${MAX_FRAME_COUNT}.`,
+    );
+  }
+
+  // Validate FPS to prevent unreasonable values that could cause issues
+  if (!Number.isFinite(params.fps) || params.fps <= 0) {
+    errors.push(`Invalid fps: ${params.fps}. Must be a positive number.`);
+  } else if (params.fps > MAX_FPS) {
+    errors.push(`Invalid fps: ${params.fps}. Must be at most ${MAX_FPS}.`);
+  }
+
+  if (errors.length > 0) {
+    throw new Error(`Invalid workflow parameters:\n${errors.join("\n")}`);
+  }
+}
+
+// ============================================================================
 // Node Factory Helpers
 // ============================================================================
 
@@ -1274,6 +1336,14 @@ export function generateTTMWorkflow(params: WorkflowParams): ComfyUIWorkflow {
   const ttmModel = params.ttmModel || "wan";
   const layers = params.ttmLayers || [];
 
+  // TTM (Time-to-Move) currently only has official support for Wan models.
+  // Other model backends may produce unexpected results.
+  if (ttmModel !== "wan") {
+    console.warn(
+      `TTM (Time-to-Move) is only supported for Wan models. Using "${ttmModel}" may produce unexpected results.`,
+    );
+  }
+
   // Load reference image
   const imageLoaderId = addLoadImage(
     workflow,
@@ -2458,6 +2528,9 @@ export function generateWorkflowForTarget(
   target: ExportTarget,
   params: WorkflowParams,
 ): ComfyUIWorkflow {
+  // Validate parameters before generating workflow
+  validateWorkflowParams(params);
+
   switch (target) {
     case "wan22-i2v":
       return generateWan22I2VWorkflow(params);
@@ -2548,8 +2621,21 @@ export function injectParameters(
 
   for (const [key, value] of Object.entries(replacements)) {
     const placeholder = `{{${key}}}`;
-    const replacement =
-      typeof value === "string" ? value : JSON.stringify(value);
+    let replacement: string;
+
+    // Escape values for JSON string context. Placeholders appear inside
+    // quotes in the JSON string, so special characters (quotes, backslashes,
+    // newlines, etc.) must be escaped to prevent JSON parse errors.
+    if (typeof value === "string") {
+      // For strings, use JSON.stringify to escape, then remove outer quotes
+      replacement = JSON.stringify(value).slice(1, -1);
+    } else {
+      // For non-strings (objects, arrays, numbers, booleans):
+      // First stringify to JSON, then escape that string for JSON context
+      const jsonStr = JSON.stringify(value);
+      replacement = JSON.stringify(jsonStr).slice(1, -1);
+    }
+
     result = result.replace(new RegExp(placeholder, "g"), replacement);
   }
 
@@ -2586,11 +2672,12 @@ export function validateWorkflow(workflow: ComfyUIWorkflow): {
   }
 
   // Check for output nodes
+  // Note: class_type may be undefined/null for invalid nodes (already reported as error above)
   const hasOutput = Object.values(workflow).some(
     (node) =>
-      node.class_type.includes("Save") ||
-      node.class_type.includes("Output") ||
-      node.class_type.includes("Preview"),
+      node.class_type?.includes("Save") ||
+      node.class_type?.includes("Output") ||
+      node.class_type?.includes("Preview"),
   );
 
   if (!hasOutput) {
