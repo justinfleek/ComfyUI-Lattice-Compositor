@@ -34,25 +34,21 @@ export {
   type ViewTransform,
   type XYZ,
 } from "../colorManagement/ColorProfileService";
-// Model export (Light-X, TTM, Wan-Move, ATI, camera-comfyUI)
+// Model export (Light-X, TTM, Wan-Move, camera-comfyUI)
 export {
-  type ATITrajectoryInstruction,
-  type ATITrajectoryType,
   type CameraMatrix4x4,
   type CameraTrajectoryExport,
-  calculatePanSpeed,
   // Camera matrix export
   camera3DToMatrix4x4,
+  // Conversion function for WanVideoWrapper-compatible exports
+  convertPointTrajectoriesToWanMove,
   // NPY utilities
   createNpyHeader,
   // Light-X
   detectMotionStyle,
-  // ATI (Any Trajectory Instruction)
-  exportATITrajectory,
   exportCameraTrajectory,
   // TTM (Time-to-Move)
   exportTTMLayer,
-  exportWanMoveTrajectories,
   // Wan-Move trajectories
   extractLayerTrajectory,
   extractSplineTrajectories,
@@ -83,7 +79,7 @@ export {
   exportAsCameraCtrlPosesText,
   exportCameraForTarget,
   exportCameraMatrices,
-  exportForKijaiFunCamera,
+  exportFunCameraPackage,
   exportToCameraCtrl,
   exportToMotionCtrl,
   exportToMotionCtrlSVD,
@@ -91,15 +87,15 @@ export {
   interpolateCameraAtFrame,
   mapToWan22FunCamera,
 } from "./cameraExportFormats";
-// ATI (Any-point Trajectory Inference) Export - Kijai compatible
+// ATI (Any-point Trajectory Inference) Export - WanVideoWrapper compatible
 export {
   ATI_FIXED_FRAMES,
   type ATIExportResult,
   type ATITrackPoint,
   createATITrajectory,
-  exportAsKijaiATI,
+  exportATITrackCoordsJSON,
   exportAsNormalizedATI,
-  exportForKijaiATI,
+  exportATIPackage,
   validateForATI,
 } from "./atiExport";
 // Backend depth service (calls Python DepthAnything/NormalCrafter)
@@ -212,12 +208,11 @@ export {
   // Export functions
   exportAsJSON as exportWanMoveJSON,
   exportAsNPYData as exportWanMoveNPY,
-  exportWanMovePackage,
-  // Kijai WanVideoWrapper compatible exports
-  exportAsKijaiWanMoveJSON,
-  exportAsKijaiWanMoveVisibility,
-  exportForKijaiWanMove,
-  type KijaiTrackPoint,
+  exportWanMoveTrackCoordsPackage,
+  // WanVideoWrapper compatible exports
+  exportWanMoveTrackCoordsJSON,
+  exportWanMoveVisibility,
+  type TrackPoint,
   // Presets
   FLOW_PRESETS,
   type FlowLayer,

@@ -399,21 +399,21 @@ export function exportAsJSON(trajectory: WanMoveTrajectory): string {
 }
 
 // ============================================================================
-// KIJAI WANVIDEOWRAPPER COMPATIBLE EXPORTS
+// COMFYUI-WANVIDEOWRAPPER COMPATIBLE EXPORTS
 // ============================================================================
 
 /**
- * Track point as expected by Kijai's WanVideoWrapper
+ * Track point format for WanVideoWrapper nodes
  */
-export interface KijaiTrackPoint {
+export interface TrackPoint {
   x: number;
   y: number;
 }
 
 /**
- * Export trajectory as Kijai WanMove compatible JSON string
+ * Export trajectory as WanMove-compatible JSON string
  *
- * Kijai's WanVideoWrapper expects:
+ * WanVideoWrapper expects:
  * - JSON string input to `track_coords` parameter
  * - Format: `[[{x, y}, {x, y}, ...], [{x, y}, ...], ...]`
  * - Each inner array is one track with per-frame {x, y} objects
@@ -421,32 +421,32 @@ export interface KijaiTrackPoint {
  *
  * @see https://github.com/kijai/ComfyUI-WanVideoWrapper/blob/main/WanMove/nodes.py
  */
-export function exportAsKijaiWanMoveJSON(trajectory: WanMoveTrajectory): string {
+export function exportWanMoveTrackCoordsJSON(trajectory: WanMoveTrajectory): string {
   const { tracks } = trajectory;
 
   // Convert from number[][][] to {x, y}[][]
   // Lattice format: tracks[pointIdx][frameIdx][0=x, 1=y]
-  // Kijai format: tracks[trackIdx][frameIdx] = {x, y}
-  const kijaiTracks: KijaiTrackPoint[][] = tracks.map((track) =>
+  // WanVideoWrapper format: tracks[trackIdx][frameIdx] = {x, y}
+  const formattedTracks: TrackPoint[][] = tracks.map((track) =>
     track.map(([x, y]) => ({ x, y })),
   );
 
-  return JSON.stringify(kijaiTracks);
+  return JSON.stringify(formattedTracks);
 }
 
 /**
- * Export visibility as Kijai WanMove compatible JSON string
+ * Export visibility as WanMove-compatible JSON string
  *
- * Kijai's WanVideoWrapper creates visibility tensor from mask or defaults to all-visible.
+ * WanVideoWrapper creates visibility tensor from mask or defaults to all-visible.
  * When providing explicit visibility, it should be a boolean tensor matching track shape.
  *
  * Note: Most WanMove workflows don't require explicit visibility input -
  * the node creates all-visible mask by default. This is provided for completeness.
  */
-export function exportAsKijaiWanMoveVisibility(
+export function exportWanMoveVisibility(
   trajectory: WanMoveTrajectory,
 ): string {
-  // Kijai expects visibility shape (frames, num_tracks) after processing
+  // Visibility shape is (frames, num_tracks) after processing
   // but the JSON input is just used to create tracks, not visibility directly.
   // Visibility is typically derived from a mask input or defaulted to all-visible.
   //
@@ -466,16 +466,16 @@ export function exportAsKijaiWanMoveVisibility(
 }
 
 /**
- * Export complete WanMove package for Kijai's WanVideoWrapper
+ * Export WanMove track_coords with metadata for WanVideoWrapper
  *
  * Returns the track_coords JSON string ready for the WanVideoAddWanMoveTracks node.
  */
-export function exportForKijaiWanMove(trajectory: WanMoveTrajectory): {
+export function exportWanMoveTrackCoordsPackage(trajectory: WanMoveTrajectory): {
   trackCoords: string;
   metadata: WanMoveTrajectory["metadata"];
 } {
   return {
-    trackCoords: exportAsKijaiWanMoveJSON(trajectory),
+    trackCoords: exportWanMoveTrackCoordsJSON(trajectory),
     metadata: trajectory.metadata,
   };
 }

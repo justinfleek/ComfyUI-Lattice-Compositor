@@ -890,17 +890,17 @@ describe("SHAPE_PRESETS", () => {
 });
 
 // ============================================================================
-// Kijai WanVideoWrapper Compatible Export Tests
+// WanVideoWrapper Compatible Export Tests
 // ============================================================================
 
 import {
-  exportAsKijaiWanMoveJSON,
-  exportAsKijaiWanMoveVisibility,
-  exportForKijaiWanMove,
-  type KijaiTrackPoint,
+  exportWanMoveTrackCoordsJSON,
+  exportWanMoveVisibility,
+  exportWanMoveTrackCoordsPackage,
+  type TrackPoint,
 } from "@/services/export/wanMoveExport";
 
-describe("exportAsKijaiWanMoveJSON", () => {
+describe("exportWanMoveTrackCoordsJSON", () => {
   it("should export trajectory as JSON string with {x,y} objects", () => {
     const trajectory: WanMoveTrajectory = {
       tracks: [
@@ -917,7 +917,7 @@ describe("exportAsKijaiWanMoveJSON", () => {
       },
     };
 
-    const json = exportAsKijaiWanMoveJSON(trajectory);
+    const json = exportWanMoveTrackCoordsJSON(trajectory);
     const parsed = JSON.parse(json);
 
     // Verify structure: [[{x,y},{x,y},...], [{x,y},...]]
@@ -934,7 +934,7 @@ describe("exportAsKijaiWanMoveJSON", () => {
   it("should produce valid JSON", () => {
     const trajectory = generateFromPreset("neural-flow", 10, 17, 1920, 1080, 12345);
 
-    const json = exportAsKijaiWanMoveJSON(trajectory);
+    const json = exportWanMoveTrackCoordsJSON(trajectory);
 
     expect(typeof json).toBe("string");
     expect(() => JSON.parse(json)).not.toThrow();
@@ -943,8 +943,8 @@ describe("exportAsKijaiWanMoveJSON", () => {
   it("should have correct number of tracks and frames", () => {
     const trajectory = generateFromPreset("cosmic-spiral", 25, 49, 1920, 1080, 12345);
 
-    const json = exportAsKijaiWanMoveJSON(trajectory);
-    const parsed = JSON.parse(json) as KijaiTrackPoint[][];
+    const json = exportWanMoveTrackCoordsJSON(trajectory);
+    const parsed = JSON.parse(json) as TrackPoint[][];
 
     expect(parsed.length).toBe(25);
     expect(parsed[0].length).toBe(49);
@@ -965,7 +965,7 @@ describe("exportAsKijaiWanMoveJSON", () => {
       },
     };
 
-    const json = exportAsKijaiWanMoveJSON(trajectory);
+    const json = exportWanMoveTrackCoordsJSON(trajectory);
     const parsed = JSON.parse(json);
 
     expect(parsed[0][0].x).toBe(123.456);
@@ -985,14 +985,14 @@ describe("exportAsKijaiWanMoveJSON", () => {
       },
     };
 
-    const json = exportAsKijaiWanMoveJSON(trajectory);
+    const json = exportWanMoveTrackCoordsJSON(trajectory);
     const parsed = JSON.parse(json);
 
     expect(parsed).toEqual([]);
   });
 });
 
-describe("exportAsKijaiWanMoveVisibility", () => {
+describe("exportWanMoveVisibility", () => {
   it("should transpose visibility from [N][T] to [T][N]", () => {
     const trajectory: WanMoveTrajectory = {
       tracks: [
@@ -1012,7 +1012,7 @@ describe("exportAsKijaiWanMoveVisibility", () => {
       },
     };
 
-    const json = exportAsKijaiWanMoveVisibility(trajectory);
+    const json = exportWanMoveVisibility(trajectory);
     const parsed = JSON.parse(json);
 
     // Expected transposed: [T][N]
@@ -1038,18 +1038,18 @@ describe("exportAsKijaiWanMoveVisibility", () => {
       },
     };
 
-    const json = exportAsKijaiWanMoveVisibility(trajectory);
+    const json = exportWanMoveVisibility(trajectory);
     const parsed = JSON.parse(json);
 
     expect(parsed[0][0]).toBe(true);
   });
 });
 
-describe("exportForKijaiWanMove", () => {
+describe("exportWanMoveTrackCoordsPackage", () => {
   it("should return trackCoords and metadata", () => {
     const trajectory = generateFromPreset("neural-flow", 10, 17, 1920, 1080, 12345);
 
-    const result = exportForKijaiWanMove(trajectory);
+    const result = exportWanMoveTrackCoordsPackage(trajectory);
 
     expect(result).toHaveProperty("trackCoords");
     expect(result).toHaveProperty("metadata");
@@ -1060,16 +1060,16 @@ describe("exportForKijaiWanMove", () => {
   it("should produce valid JSON in trackCoords", () => {
     const trajectory = generateFromPreset("singularity", 15, 33, 1920, 1080, 99999);
 
-    const result = exportForKijaiWanMove(trajectory);
+    const result = exportWanMoveTrackCoordsPackage(trajectory);
 
     expect(() => JSON.parse(result.trackCoords)).not.toThrow();
   });
 
-  it("should have trackCoords match exportAsKijaiWanMoveJSON output", () => {
+  it("should have trackCoords match exportWanMoveTrackCoordsJSON output", () => {
     const trajectory = generateFromPreset("hivemind", 20, 49, 1920, 1080, 42);
 
-    const result = exportForKijaiWanMove(trajectory);
-    const direct = exportAsKijaiWanMoveJSON(trajectory);
+    const result = exportWanMoveTrackCoordsPackage(trajectory);
+    const direct = exportWanMoveTrackCoordsJSON(trajectory);
 
     expect(result.trackCoords).toBe(direct);
   });

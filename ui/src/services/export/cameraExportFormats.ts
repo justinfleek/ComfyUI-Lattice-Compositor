@@ -744,7 +744,7 @@ export function exportCameraMatrices(
 }
 
 // ============================================================================
-// Kijai CameraCtrl Poses Format (CAMERACTRL_POSES)
+// CameraCtrl Poses Format (CAMERACTRL_POSES)
 // ============================================================================
 
 /**
@@ -829,7 +829,7 @@ function computeW2CMatrix(cam: InterpolatedCamera): number[][] {
 }
 
 /**
- * Export camera animation as CameraCtrl poses for Kijai's WanVideoWrapper
+ * Export camera animation as CameraCtrl poses for WanVideoWrapper
  *
  * This produces the CAMERACTRL_POSES format used by:
  * - WanVideoFunCameraEmbeds node
@@ -933,11 +933,11 @@ export function exportAsCameraCtrlPosesText(
 }
 
 /**
- * Export for Kijai's WanVideoFunCameraEmbeds node
+ * Export for WanVideoFunCameraEmbeds node
  *
  * Returns the pose array ready for the CAMERACTRL_POSES input.
  */
-export function exportForKijaiFunCamera(
+export function exportFunCameraPackage(
   camera: Camera3D,
   keyframes: CameraKeyframe[],
   frameCount: number,

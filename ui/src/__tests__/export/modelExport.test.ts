@@ -16,18 +16,15 @@ import { describe, it, expect, beforeEach } from "vitest";
 import {
   camera3DToMatrix4x4,
   exportCameraTrajectory,
-  calculatePanSpeed,
-  exportATITrajectory,
   detectMotionStyle,
   createNpyHeader,
   trajectoriesToNpy,
   extractLayerTrajectory,
   extractSplineTrajectories,
-  exportWanMoveTrajectories,
   exportTTMLayer,
+  convertPointTrajectoriesToWanMove,
   type CameraMatrix4x4,
   type CameraTrajectoryExport,
-  type ATITrajectoryInstruction,
   type LightXMotionStyle,
   type PointTrajectory,
 } from "@/services/modelExport";
@@ -305,165 +302,6 @@ describe("exportCameraTrajectory", () => {
 });
 
 // ============================================================================
-// calculatePanSpeed Tests
-// ============================================================================
-
-describe("calculatePanSpeed", () => {
-  // calculatePanSpeed takes (layer, startFrame, endFrame, getPositionAtFrame)
-  // It's designed to work with Layer objects and a position getter function
-
-  function mockGetPosition(
-    positions: Array<{ x: number; y: number }>
-  ): (layer: any, frame: number) => { x: number; y: number } {
-    return (_layer: any, frame: number) => positions[frame] || { x: 0, y: 0 };
-  }
-
-  const mockLayer = { id: "layer-1" } as any;
-
-  it("should return zero speed for no motion", () => {
-    const positions = [
-      { x: 100, y: 200 },
-      { x: 100, y: 200 },
-      { x: 100, y: 200 },
-    ];
-
-    const speed = calculatePanSpeed(mockLayer, 0, 2, mockGetPosition(positions));
-
-    expect(speed.x).toBe(0);
-    expect(speed.y).toBe(0);
-  });
-
-  it("should calculate horizontal pan speed", () => {
-    const positions = [
-      { x: 0, y: 100 },
-      { x: 50, y: 100 },
-      { x: 100, y: 100 },
-    ];
-
-    const speed = calculatePanSpeed(mockLayer, 0, 2, mockGetPosition(positions));
-
-    expect(speed.x).toBe(50); // 100 / 2 frames
-    expect(speed.y).toBe(0);
-  });
-
-  it("should calculate vertical pan speed", () => {
-    const positions = [
-      { x: 100, y: 0 },
-      { x: 100, y: 50 },
-      { x: 100, y: 100 },
-    ];
-
-    const speed = calculatePanSpeed(mockLayer, 0, 2, mockGetPosition(positions));
-
-    expect(speed.x).toBe(0);
-    expect(speed.y).toBe(50);
-  });
-
-  it("should calculate diagonal pan speed", () => {
-    const positions = [
-      { x: 0, y: 0 },
-      { x: 50, y: 100 },
-    ];
-
-    const speed = calculatePanSpeed(mockLayer, 0, 1, mockGetPosition(positions));
-
-    expect(speed.x).toBe(50);
-    expect(speed.y).toBe(100);
-  });
-
-  it("should handle negative motion", () => {
-    const positions = [
-      { x: 100, y: 100 },
-      { x: 0, y: 0 },
-    ];
-
-    const speed = calculatePanSpeed(mockLayer, 0, 1, mockGetPosition(positions));
-
-    expect(speed.x).toBe(-100);
-    expect(speed.y).toBe(-100);
-  });
-
-  it("should return zero for invalid frame range", () => {
-    const positions = [{ x: 0, y: 0 }, { x: 100, y: 100 }];
-
-    // startFrame >= endFrame should return zero
-    const speed = calculatePanSpeed(mockLayer, 5, 5, mockGetPosition(positions));
-
-    expect(speed.x).toBe(0);
-    expect(speed.y).toBe(0);
-  });
-});
-
-// ============================================================================
-// exportATITrajectory Tests
-// ============================================================================
-
-describe("exportATITrajectory", () => {
-  // Helper to create PointTrajectory
-  function createPointTrajectory(
-    coords: Array<[number, number]>,
-    layerId: string = "layer-1"
-  ): PointTrajectory {
-    return {
-      id: layerId,
-      points: coords.map(([x, y], i) => ({ frame: i, x, y })),
-      visibility: coords.map(() => true),
-    };
-  }
-
-  describe("Output Structure", () => {
-    it("should include type field", () => {
-      const trajectory = createPointTrajectory([[0, 0], [10, 10], [20, 20]]);
-
-      const result = exportATITrajectory(trajectory, 1920, 1080);
-
-      expect(result.type).toBeDefined();
-      expect(["free", "circular", "static", "pan"]).toContain(result.type);
-    });
-  });
-
-  describe("Type Detection", () => {
-    it("should detect static for single point", () => {
-      const trajectory = createPointTrajectory([[100, 100]]);
-
-      const result = exportATITrajectory(trajectory, 1920, 1080);
-
-      expect(result.type).toBe("static");
-    });
-
-    it("should detect pan for linear horizontal movement", () => {
-      const trajectory = createPointTrajectory([
-        [0, 500], [100, 500], [200, 500], [300, 500],
-      ]);
-
-      const result = exportATITrajectory(trajectory, 1920, 1080);
-
-      expect(["pan", "free"]).toContain(result.type);
-    });
-
-    it("should detect free for non-linear movement", () => {
-      const trajectory = createPointTrajectory([
-        [0, 0], [100, 200], [50, 100], [200, 50], [150, 300],
-      ]);
-
-      const result = exportATITrajectory(trajectory, 1920, 1080);
-
-      expect(result.type).toBe("free");
-    });
-  });
-
-  describe("Edge Cases", () => {
-    it("should handle two-point trajectory", () => {
-      const trajectory = createPointTrajectory([[0, 0], [100, 100]]);
-
-      const result = exportATITrajectory(trajectory, 1920, 1080);
-
-      expect(["pan", "free", "static"]).toContain(result.type);
-    });
-  });
-});
-
-// ============================================================================
 // detectMotionStyle Tests (Light-X)
 // ============================================================================
 
@@ -694,22 +532,6 @@ describe("Determinism", () => {
     expect(JSON.stringify(result1)).toBe(JSON.stringify(result2));
   });
 
-  it("should produce identical ATI output for identical input", () => {
-    const trajectory: PointTrajectory = {
-      id: "layer-1",
-      points: [
-        { frame: 0, x: 0, y: 0 },
-        { frame: 1, x: 100, y: 100 },
-        { frame: 2, x: 200, y: 50 },
-      ],
-      visibility: [true, true, true],
-    };
-
-    const result1 = exportATITrajectory(trajectory, 1920, 1080);
-    const result2 = exportATITrajectory(trajectory, 1920, 1080);
-
-    expect(JSON.stringify(result1)).toBe(JSON.stringify(result2));
-  });
 });
 
 // ============================================================================
@@ -884,88 +706,117 @@ describe("extractSplineTrajectories", () => {
 });
 
 // ============================================================================
-// exportWanMoveTrajectories Tests
+// convertPointTrajectoriesToWanMove Tests
 // ============================================================================
 
-describe("exportWanMoveTrajectories", () => {
-  it("should export trajectories in Wan-Move format", () => {
+describe("convertPointTrajectoriesToWanMove", () => {
+  it("converts single trajectory to WanMoveTrajectory format", () => {
     const trajectories: PointTrajectory[] = [
       {
-        id: "traj-1",
+        id: "track-1",
         points: [
           { frame: 0, x: 100, y: 200 },
-          { frame: 1, x: 150, y: 250 },
+          { frame: 1, x: 110, y: 205 },
+          { frame: 2, x: 120, y: 210 },
         ],
-        visibility: [true, true],
+        visibility: [true, true, false],
       },
     ];
 
-    const result = exportWanMoveTrajectories(trajectories, 1920, 1080);
+    const result = convertPointTrajectoriesToWanMove(trajectories, 1920, 1080, 24);
 
-    expect(result.trajectories.length).toBe(1);
-    expect(result.trajectories[0].length).toBe(2);
-    expect(result.visibility.length).toBe(1);
-    expect(result.metadata.numPoints).toBe(1);
-    expect(result.metadata.numFrames).toBe(2);
+    // Verify tracks structure: [N][T][2]
+    expect(result.tracks).toHaveLength(1);
+    expect(result.tracks[0]).toHaveLength(3);
+    expect(result.tracks[0][0]).toEqual([100, 200]);
+    expect(result.tracks[0][1]).toEqual([110, 205]);
+    expect(result.tracks[0][2]).toEqual([120, 210]);
+
+    // Verify visibility structure: [N][T]
+    expect(result.visibility).toHaveLength(1);
+    expect(result.visibility[0]).toEqual([true, true, false]);
+
+    // Verify metadata
+    expect(result.metadata).toEqual({
+      numPoints: 1,
+      numFrames: 3,
+      width: 1920,
+      height: 1080,
+      fps: 24,
+    });
   });
 
-  it("should normalize coordinates to image dimensions", () => {
+  it("converts multiple trajectories", () => {
     const trajectories: PointTrajectory[] = [
       {
-        id: "traj-1",
+        id: "track-1",
         points: [
-          { frame: 0, x: 960, y: 540 }, // Center of 1920x1080
+          { frame: 0, x: 100, y: 100 },
+          { frame: 1, x: 150, y: 100 },
         ],
-        visibility: [true],
-      },
-    ];
-
-    const result = exportWanMoveTrajectories(trajectories, 1920, 1080);
-
-    // Coordinates should be in pixel space
-    expect(result.trajectories[0][0][0]).toBe(960);
-    expect(result.trajectories[0][0][1]).toBe(540);
-  });
-
-  it("should handle multiple trajectories", () => {
-    const trajectories: PointTrajectory[] = [
-      {
-        id: "traj-1",
-        points: [{ frame: 0, x: 0, y: 0 }, { frame: 1, x: 10, y: 10 }],
         visibility: [true, true],
       },
       {
-        id: "traj-2",
-        points: [{ frame: 0, x: 100, y: 100 }, { frame: 1, x: 110, y: 110 }],
-        visibility: [true, true],
-      },
-      {
-        id: "traj-3",
-        points: [{ frame: 0, x: 200, y: 200 }, { frame: 1, x: 210, y: 210 }],
-        visibility: [true, true],
-      },
-    ];
-
-    const result = exportWanMoveTrajectories(trajectories, 1920, 1080);
-
-    expect(result.metadata.numPoints).toBe(3);
-    expect(result.trajectories.length).toBe(3);
-  });
-
-  it("should preserve visibility values", () => {
-    const trajectories: PointTrajectory[] = [
-      {
-        id: "traj-1",
-        points: [{ frame: 0, x: 0, y: 0 }, { frame: 1, x: 10, y: 10 }],
+        id: "track-2",
+        points: [
+          { frame: 0, x: 500, y: 300 },
+          { frame: 1, x: 550, y: 350 },
+        ],
         visibility: [true, false],
       },
     ];
 
-    const result = exportWanMoveTrajectories(trajectories, 1920, 1080);
+    const result = convertPointTrajectoriesToWanMove(trajectories, 1920, 1080, 16);
 
-    // Visibility is stored as numbers (1 or 0)
-    expect(result.visibility[0][0]).toBe(1);
-    expect(result.visibility[0][1]).toBe(0);
+    expect(result.tracks).toHaveLength(2);
+    expect(result.tracks[0][0]).toEqual([100, 100]);
+    expect(result.tracks[1][0]).toEqual([500, 300]);
+    expect(result.metadata.numPoints).toBe(2);
+    expect(result.metadata.numFrames).toBe(2);
+  });
+
+  it("handles empty trajectories array", () => {
+    const result = convertPointTrajectoriesToWanMove([], 1920, 1080, 24);
+
+    expect(result.tracks).toEqual([]);
+    expect(result.visibility).toEqual([]);
+    expect(result.metadata.numPoints).toBe(0);
+    expect(result.metadata.numFrames).toBe(0);
+  });
+
+  it("drops z coordinate (2D only)", () => {
+    const trajectories: PointTrajectory[] = [
+      {
+        id: "track-3d",
+        points: [
+          { frame: 0, x: 100, y: 200, z: 50 },
+          { frame: 1, x: 110, y: 205, z: 55 },
+        ],
+        visibility: [true, true],
+      },
+    ];
+
+    const result = convertPointTrajectoriesToWanMove(trajectories, 1920, 1080, 24);
+
+    // Should only have [x, y], not [x, y, z]
+    expect(result.tracks[0][0]).toEqual([100, 200]);
+    expect(result.tracks[0][0]).toHaveLength(2);
+  });
+
+  it("drops id field (not needed in WanMoveTrajectory)", () => {
+    const trajectories: PointTrajectory[] = [
+      {
+        id: "my-unique-id",
+        points: [{ frame: 0, x: 100, y: 200 }],
+        visibility: [true],
+      },
+    ];
+
+    const result = convertPointTrajectoriesToWanMove(trajectories, 1920, 1080, 24);
+
+    // WanMoveTrajectory has no id field
+    expect(result).not.toHaveProperty("id");
+    expect(result.tracks).toBeDefined();
   });
 });
 

@@ -1004,13 +1004,13 @@ describe("detectUni3CTrajectoryType", () => {
 });
 
 // ============================================================================
-// Kijai CameraCtrl Poses Export Tests
+// CameraCtrl Poses Export Tests
 // ============================================================================
 
 import {
   exportAsCameraCtrlPoses,
   exportAsCameraCtrlPosesText,
-  exportForKijaiFunCamera,
+  exportFunCameraPackage,
   type CameraCtrlPoseEntry,
 } from "@/services/export/cameraExportFormats";
 
@@ -1218,12 +1218,12 @@ describe("exportAsCameraCtrlPosesText", () => {
   });
 });
 
-describe("exportForKijaiFunCamera", () => {
+describe("exportFunCameraPackage", () => {
   it("should return poses and metadata", () => {
     const camera = createTestCamera();
     const keyframes = [createKeyframe(0)];
 
-    const result = exportForKijaiFunCamera(camera, keyframes, 10, 1920, 1080);
+    const result = exportFunCameraPackage(camera, keyframes, 10, 1920, 1080);
 
     expect(result).toHaveProperty("poses");
     expect(result).toHaveProperty("metadata");
@@ -1233,7 +1233,7 @@ describe("exportForKijaiFunCamera", () => {
     const camera = createTestCamera({ focalLength: 35 });
     const keyframes = [createKeyframe(0)];
 
-    const result = exportForKijaiFunCamera(camera, keyframes, 10, 1280, 720);
+    const result = exportFunCameraPackage(camera, keyframes, 10, 1280, 720);
 
     expect(result.metadata.frameCount).toBe(10);
     expect(result.metadata.width).toBe(1280);
@@ -1245,7 +1245,7 @@ describe("exportForKijaiFunCamera", () => {
     const camera = createTestCamera();
     const keyframes = [createKeyframe(0), createKeyframe(10)];
 
-    const result = exportForKijaiFunCamera(camera, keyframes, 10, 1920, 1080);
+    const result = exportFunCameraPackage(camera, keyframes, 10, 1920, 1080);
     const direct = exportAsCameraCtrlPoses(camera, keyframes, 10, 1920, 1080);
 
     expect(JSON.stringify(result.poses)).toBe(JSON.stringify(direct));
@@ -1255,7 +1255,7 @@ describe("exportForKijaiFunCamera", () => {
     const camera = createTestCamera();
     const keyframes = [createKeyframe(0)];
 
-    const result = exportForKijaiFunCamera(camera, keyframes, 25, 1920, 1080);
+    const result = exportFunCameraPackage(camera, keyframes, 25, 1920, 1080);
 
     expect(result.poses.length).toBe(25);
   });

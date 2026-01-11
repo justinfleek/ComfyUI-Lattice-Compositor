@@ -157,9 +157,9 @@ describe("SCAIL Workflow Contract Tests", () => {
     });
   });
 
-  describe("SCAIL required Kijai nodes", () => {
+  describe("SCAIL required WanVideoWrapper nodes", () => {
     /**
-     * SCAIL uses specific Kijai WanVideoWrapper nodes:
+     * SCAIL uses specific WanVideoWrapper nodes:
      * - WanVideoAddSCAILReferenceEmbeds: Encodes identity from reference image
      * - WanVideoAddSCAILPoseEmbeds: Encodes motion from pose video
      */

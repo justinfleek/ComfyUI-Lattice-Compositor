@@ -1695,7 +1695,7 @@ export function generateTTMWorkflow(params: WorkflowParams): ComfyUIWorkflow {
  * SCAIL uses a reference image (for identity/appearance) and a pose video/sequence
  * to generate videos with the reference person performing the poses.
  *
- * Uses Kijai's ComfyUI-WanVideoWrapper nodes:
+ * Uses ComfyUI-WanVideoWrapper nodes:
  * - WanVideoAddSCAILReferenceEmbeds: Encodes reference image identity
  * - WanVideoAddSCAILPoseEmbeds: Encodes pose sequence for motion guidance
  *
@@ -2016,7 +2016,7 @@ export function generateControlNetWorkflow(
  * Generate a Light-X workflow for relighting video generation.
  * Light-X uses a LoRA to control lighting conditions in generated video.
  *
- * Uses Kijai's ComfyUI-WanVideoWrapper nodes:
+ * Uses ComfyUI-WanVideoWrapper nodes:
  * - WanVideoLoraSelect: Applies Light-X LoRA for relighting control
  *
  * Reference: https://github.com/kijai/ComfyUI-WanVideoWrapper
@@ -2150,7 +2150,7 @@ export function generateLightXWorkflow(params: WorkflowParams): ComfyUIWorkflow 
  * Generate a Wan-Move workflow for point trajectory-controlled video.
  * Wan-Move allows tracking specific points through the video with controlled motion.
  *
- * Uses Kijai's ComfyUI-WanVideoWrapper nodes:
+ * Uses ComfyUI-WanVideoWrapper nodes:
  * - WanVideoAddWanMoveTracks: Adds point trajectory tracking data
  *
  * Reference: https://github.com/kijai/ComfyUI-WanVideoWrapper
@@ -2287,7 +2287,7 @@ export function generateWanMoveWorkflow(params: WorkflowParams): ComfyUIWorkflow
  * Generate an ATI workflow for trajectory-controlled video generation.
  * ATI allows specifying arbitrary motion trajectories for objects in the video.
  *
- * Uses Kijai's ComfyUI-WanVideoWrapper nodes:
+ * Uses ComfyUI-WanVideoWrapper nodes:
  * - WanVideoATITracks: Adds ATI trajectory data for motion control
  *
  * Reference: https://github.com/kijai/ComfyUI-WanVideoWrapper

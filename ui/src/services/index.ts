@@ -546,18 +546,14 @@ export {
 } from "./matteExporter";
 // Model export
 export {
-  type ATITrajectoryInstruction,
-  type ATITrajectoryType,
   type CameraMatrix4x4,
   type CameraTrajectoryExport,
-  calculatePanSpeed,
   camera3DToMatrix4x4,
+  convertPointTrajectoriesToWanMove,
   createNpyHeader,
   detectMotionStyle,
-  exportATITrajectory,
   exportCameraTrajectory,
   exportTTMLayer,
-  exportWanMoveTrajectories,
   extractLayerTrajectory,
   extractSplineTrajectories,
   generateCombinedMotionMask,

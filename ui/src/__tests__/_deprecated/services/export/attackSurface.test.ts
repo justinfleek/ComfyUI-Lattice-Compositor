@@ -279,7 +279,7 @@ describe("ATTACK: Memory Exhaustion", () => {
   });
 
   it("should reject absurdly long trajectories", async () => {
-    const { exportWanMoveTrajectories } = await import(
+    const { convertPointTrajectoriesToWanMove } = await import(
       "@/services/modelExport"
     );
 
@@ -300,7 +300,7 @@ describe("ATTACK: Memory Exhaustion", () => {
     const startTime = Date.now();
 
     try {
-      exportWanMoveTrajectories([massiveTrajectory], 1920, 1080);
+      convertPointTrajectoriesToWanMove([massiveTrajectory], 1920, 1080, 24);
     } catch (_e) {
       // Expected to fail
     }

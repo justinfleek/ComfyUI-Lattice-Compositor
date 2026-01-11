@@ -542,13 +542,13 @@ export const PREPROCESSOR_REGISTRY: Record<string, PreprocessorInfo> = {
   },
 
   // ========================================================================
-  // VIDEO POSE (from kijai/ComfyUI-WanAnimatePreprocess)
+  // VIDEO POSE (ComfyUI-WanAnimatePreprocess)
   // For Wan 2.2 video animation preprocessing
   // ========================================================================
   vitpose: {
     id: "vitpose",
     display_name: "ViTPose + Face (Video)",
-    description: "ViTPose detection with face for video animation (Kijai)",
+    description: "ViTPose detection with face for video animation",
     category: "video",
     source: "wan_animate",
     is_video: true,
@@ -560,7 +560,7 @@ export const PREPROCESSOR_REGISTRY: Record<string, PreprocessorInfo> = {
   vitpose_draw: {
     id: "vitpose_draw",
     display_name: "Draw ViTPose Skeleton",
-    description: "Render ViTPose skeleton visualization (Kijai)",
+    description: "Render ViTPose skeleton visualization",
     category: "video",
     source: "wan_animate",
     inputs: {
@@ -575,7 +575,7 @@ export const PREPROCESSOR_REGISTRY: Record<string, PreprocessorInfo> = {
   vitpose_one_to_all: {
     id: "vitpose_one_to_all",
     display_name: "Pose One-to-All Animation",
-    description: "Transfer single pose to video sequence (Kijai)",
+    description: "Transfer single pose to video sequence",
     category: "video",
     source: "wan_animate",
     is_video: true,

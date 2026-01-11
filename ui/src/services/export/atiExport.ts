@@ -1,12 +1,12 @@
 /**
  * ATI (Any-point Trajectory Inference) Export Service
  *
- * Exports trajectory data in Kijai's ATI-compatible format for
+ * Exports trajectory data in ATI-compatible format for
  * ComfyUI-WanVideoWrapper's WanVideoATITracks node.
  *
  * ATI Format Requirements:
  * - JSON string input with tracks as `[[{x, y}, ...], ...]`
- * - Fixed 121 frames (FIXED_LENGTH in Kijai's code)
+ * - Fixed 121 frames (FIXED_LENGTH constant)
  * - Coordinates centered around frame center
  * - Normalized to [-1, 1] based on SHORT EDGE
  * - Visibility encoded as float: 1.0 = visible, 0.0 = hidden
@@ -24,7 +24,7 @@ import type { WanMoveTrajectory } from "./wanMoveExport";
 
 /**
  * Fixed frame count for ATI model
- * Must match FIXED_LENGTH in Kijai's ATI/nodes.py
+ * Must match FIXED_LENGTH in ATI/nodes.py
  */
 export const ATI_FIXED_FRAMES = 121;
 
@@ -61,20 +61,20 @@ export interface ATIExportResult {
 // ============================================================================
 
 /**
- * Export trajectory as Kijai ATI compatible JSON string
+ * Export trajectory as ATI-compatible JSON string
  *
  * This function:
  * 1. Pads or truncates tracks to exactly 121 frames
- * 2. Keeps coordinates in PIXEL space (normalization is done by Kijai's process_tracks)
+ * 2. Keeps coordinates in PIXEL space (normalization is done by the ATI node)
  * 3. Formats as `[[{x, y}, ...], ...]`
  *
- * Note: Kijai's ATI node does normalization internally via process_tracks().
+ * Note: The ATI node does normalization internally via process_tracks().
  * The JSON input should contain RAW PIXEL coordinates, not normalized ones.
  *
  * @param trajectory - WanMove trajectory to convert
  * @returns JSON string ready for WanVideoATITracks node
  */
-export function exportAsKijaiATI(trajectory: WanMoveTrajectory): string {
+export function exportATITrackCoordsJSON(trajectory: WanMoveTrajectory): string {
   const { tracks, visibility, metadata } = trajectory;
   const { numFrames } = metadata;
 
@@ -109,13 +109,13 @@ export function exportAsKijaiATI(trajectory: WanMoveTrajectory): string {
  * Returns the complete export package including the JSON string
  * and metadata about the export.
  */
-export function exportForKijaiATI(
+export function exportATIPackage(
   trajectory: WanMoveTrajectory,
 ): ATIExportResult {
   const { metadata } = trajectory;
 
   return {
-    tracks: exportAsKijaiATI(trajectory),
+    tracks: exportATITrackCoordsJSON(trajectory),
     width: metadata.width,
     height: metadata.height,
     numTracks: metadata.numPoints,
@@ -130,7 +130,7 @@ export function exportForKijaiATI(
  * by ATI's internal processing. Use this if you need the normalized values
  * directly (e.g., for visualization or debugging).
  *
- * Normalization formula (from Kijai's motion.py):
+ * Normalization formula (from ATI motion.py):
  * 1. Center: coords - [width/2, height/2]
  * 2. Normalize: coords / short_edge * 2
  *
@@ -192,7 +192,7 @@ export function exportAsNormalizedATI(trajectory: WanMoveTrajectory): {
       const normX = (centeredX / shortEdge) * 2;
       const normY = (centeredY / shortEdge) * 2;
 
-      // Visibility: Kijai converts 0/1 to -1/1 via (vis * 2 - 1)
+      // Visibility: ATI node converts 0/1 to -1/1 via (vis * 2 - 1)
       // We store as 0/1 here, matching the input to process_tracks
       const visFloat = vis ? 1.0 : 0.0;
 

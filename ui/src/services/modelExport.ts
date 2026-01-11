@@ -13,6 +13,11 @@ import * as THREE from "three";
 import type { Camera3D } from "@/types/camera";
 import type { Layer, SplineData } from "@/types/project";
 import { interpolateProperty } from "./interpolation";
+import {
+  exportWanMoveTrackCoordsJSON,
+  type WanMoveTrajectory,
+} from "./export/wanMoveExport";
+import { exportATITrackCoordsJSON } from "./export/atiExport";
 
 // ============================================================================
 // CAMERA MATRIX EXPORT (camera-comfyUI compatible)
@@ -119,6 +124,33 @@ export interface PointTrajectory {
   // Extended properties for 3D exports
   rotation?: Array<{ frame: number; x: number; y: number; z: number }>; // Euler degrees
   scale?: Array<{ frame: number; x: number; y: number }>;
+}
+
+/**
+ * Convert internal PointTrajectory[] format to WanMoveTrajectory format.
+ *
+ * PointTrajectory: Single trajectory with points[frame].{x,y} and visibility[frame]
+ * WanMoveTrajectory: All trajectories with tracks[point][frame][x,y] and visibility[point][frame]
+ */
+export function convertPointTrajectoriesToWanMove(
+  trajectories: PointTrajectory[],
+  width: number,
+  height: number,
+  fps: number,
+): WanMoveTrajectory {
+  const numFrames = trajectories[0]?.points.length ?? 0;
+
+  return {
+    tracks: trajectories.map((t) => t.points.map((p) => [p.x, p.y])),
+    visibility: trajectories.map((t) => t.visibility),
+    metadata: {
+      numPoints: trajectories.length,
+      numFrames,
+      width,
+      height,
+      fps,
+    },
+  };
 }
 
 /**
@@ -315,192 +347,6 @@ export function extractSplineTrajectories(
   }));
 }
 
-/**
- * Export trajectories in Wan-Move format
- * Now supports 3D positions, rotation, and scale data
- */
-export function exportWanMoveTrajectories(
-  trajectories: PointTrajectory[],
-  imageWidth: number,
-  imageHeight: number,
-  options?: {
-    include3D?: boolean;
-    includeRotation?: boolean;
-    includeScale?: boolean;
-  },
-): WanMoveTrajectoryExport {
-  const opts = {
-    include3D: true,
-    includeRotation: true,
-    includeScale: true,
-    ...options,
-  };
-
-  if (trajectories.length === 0) {
-    return {
-      trajectories: [],
-      visibility: [],
-      metadata: {
-        numPoints: 0,
-        numFrames: 0,
-        imageWidth,
-        imageHeight,
-        is3D: false,
-        hasRotation: false,
-        hasScale: false,
-      },
-    };
-  }
-
-  const numFrames = trajectories[0].points.length;
-
-  // Check if any trajectory has 3D data
-  const has3D = trajectories.some((t) =>
-    t.points.some((p) => p.z !== undefined),
-  );
-  const hasRotation = trajectories.some(
-    (t) => t.rotation && t.rotation.length > 0,
-  );
-  const hasScale = trajectories.some((t) => t.scale && t.scale.length > 0);
-
-  // Convert to [num_points, num_frames, 2 or 3] format
-  const trajArray = trajectories.map((traj) =>
-    traj.points.map((pt) =>
-      opts.include3D && has3D ? [pt.x, pt.y, pt.z ?? 0] : [pt.x, pt.y],
-    ),
-  );
-
-  // Convert visibility to [num_points, num_frames] format (1 or 0)
-  const visArray = trajectories.map((traj) =>
-    traj.visibility.map((v) => (v ? 1 : 0)),
-  );
-
-  const result: WanMoveTrajectoryExport = {
-    trajectories: trajArray,
-    visibility: visArray,
-    metadata: {
-      numPoints: trajectories.length,
-      numFrames,
-      imageWidth,
-      imageHeight,
-      is3D: opts.include3D && has3D,
-      hasRotation: opts.includeRotation && hasRotation,
-      hasScale: opts.includeScale && hasScale,
-    },
-  };
-
-  // Add rotation data if present
-  if (opts.includeRotation && hasRotation) {
-    result.rotations = trajectories.map((traj) =>
-      traj.rotation
-        ? traj.rotation.map((r) => [r.x, r.y, r.z])
-        : Array(numFrames).fill([0, 0, 0]),
-    );
-  }
-
-  // Add scale data if present
-  if (opts.includeScale && hasScale) {
-    result.scales = trajectories.map((traj) =>
-      traj.scale
-        ? traj.scale.map((s) => [s.x, s.y])
-        : Array(numFrames).fill([1, 1]),
-    );
-  }
-
-  return result;
-}
-
-// ============================================================================
-// ATI TRAJECTORY EXPORT
-// ============================================================================
-
-/**
- * ATI trajectory instruction types
- */
-export type ATITrajectoryType = "free" | "circular" | "static" | "pan";
-
-export interface ATITrajectoryInstruction {
-  type: ATITrajectoryType;
-  points?: Array<{ x: number; y: number }>; // For free trajectories
-  center?: { x: number; y: number }; // For circular
-  radius?: number;
-  panSpeed?: { x: number; y: number }; // Pixels per frame
-}
-
-/**
- * Calculate pan speed from position animation
- */
-export function calculatePanSpeed(
-  layer: Layer,
-  startFrame: number,
-  endFrame: number,
-  getPositionAtFrame: (layer: Layer, frame: number) => { x: number; y: number },
-): { x: number; y: number } {
-  if (endFrame <= startFrame) return { x: 0, y: 0 };
-
-  const startPos = getPositionAtFrame(layer, startFrame);
-  const endPos = getPositionAtFrame(layer, endFrame);
-  const frameCount = endFrame - startFrame;
-
-  return {
-    x: (endPos.x - startPos.x) / frameCount,
-    y: (endPos.y - startPos.y) / frameCount,
-  };
-}
-
-/**
- * Export trajectory in ATI format
- */
-export function exportATITrajectory(
-  trajectory: PointTrajectory,
-  _imageWidth: number,
-  _imageHeight: number,
-): ATITrajectoryInstruction {
-  const points = trajectory.points;
-
-  if (points.length < 2) {
-    return { type: "static" };
-  }
-
-  // Check if it's a linear pan (constant velocity)
-  const dx = points[points.length - 1].x - points[0].x;
-  const dy = points[points.length - 1].y - points[0].y;
-  const frameCount = points.length - 1;
-
-  // Calculate variance to detect linear motion
-  let isLinear = true;
-  const expectedDxPerFrame = dx / frameCount;
-  const expectedDyPerFrame = dy / frameCount;
-
-  for (let i = 1; i < points.length; i++) {
-    const actualDx = points[i].x - points[i - 1].x;
-    const actualDy = points[i].y - points[i - 1].y;
-
-    if (
-      Math.abs(actualDx - expectedDxPerFrame) > 1 ||
-      Math.abs(actualDy - expectedDyPerFrame) > 1
-    ) {
-      isLinear = false;
-      break;
-    }
-  }
-
-  if (isLinear && (Math.abs(dx) > 5 || Math.abs(dy) > 5)) {
-    return {
-      type: "pan",
-      panSpeed: {
-        x: expectedDxPerFrame,
-        y: expectedDyPerFrame,
-      },
-    };
-  }
-
-  // Otherwise, export as free trajectory
-  return {
-    type: "free",
-    points: points.map((p) => ({ x: p.x, y: p.y })),
-  };
-}
 
 // ============================================================================
 // TTM (Time-to-Move) EXPORT
@@ -875,32 +721,33 @@ export async function exportForModel(
         }
       }
 
-      const wanMoveData = exportWanMoveTrajectories(
+      // Convert to WanMoveTrajectory format and export as JSON with {x,y} objects
+      const wanMoveTrajectory = convertPointTrajectoriesToWanMove(
         trajectories,
         compWidth,
         compHeight,
+        fps,
       );
+      const trackCoordsJson = exportWanMoveTrackCoordsJSON(wanMoveTrajectory);
 
-      // Convert to pseudo-NPY format (JSON representation)
-      // Real NPY export would require a proper binary encoder
       return {
         success: true,
         target,
-        data: wanMoveData,
+        data: wanMoveTrajectory,
         files: [
           {
-            name: "trajectories.json",
-            content: JSON.stringify(wanMoveData.trajectories, null, 2),
+            name: "track_coords.json",
+            content: trackCoordsJson,
             type: "json",
           },
           {
             name: "visibility.json",
-            content: JSON.stringify(wanMoveData.visibility, null, 2),
+            content: JSON.stringify(wanMoveTrajectory.visibility, null, 2),
             type: "json",
           },
           {
             name: "metadata.json",
-            content: JSON.stringify(wanMoveData.metadata, null, 2),
+            content: JSON.stringify(wanMoveTrajectory.metadata, null, 2),
             type: "json",
           },
         ],
@@ -908,45 +755,62 @@ export async function exportForModel(
     }
 
     case "ati": {
-      // Export trajectories with pan speed calculation
-      const atiInstructions: ATITrajectoryInstruction[] = [];
+      // Extract trajectories from animated layers
+      const trajectories: PointTrajectory[] = [];
 
       for (const layer of layers) {
         if (layer.transform.position.animated) {
-          const trajectory = extractLayerTrajectory(
-            layer,
-            startFrame,
-            endFrame,
-            options.getPositionAtFrame,
-          );
-          atiInstructions.push(
-            exportATITrajectory(trajectory, compWidth, compHeight),
+          trajectories.push(
+            extractLayerTrajectory(
+              layer,
+              startFrame,
+              endFrame,
+              options.getPositionAtFrame,
+            ),
           );
         }
       }
 
       // Also export camera as trajectory if animated
       if (cameras.length > 1) {
-        const _camTrajectory = exportCameraTrajectory(
-          cameras,
-          fps,
-          compWidth,
-          compHeight,
-        );
-        atiInstructions.push({
-          type: "circular", // Camera motion is typically orbital
-          points: cameras.map((c) => ({ x: c.position.x, y: c.position.y })),
+        trajectories.push({
+          id: "camera",
+          points: cameras.map((c, i) => ({
+            frame: startFrame + i,
+            x: c.position.x,
+            y: c.position.y,
+          })),
+          visibility: cameras.map(() => true),
         });
       }
+
+      // Convert to WanMoveTrajectory and export as ATI format (121 frames, {x,y} objects)
+      const wanMoveTrajectory = convertPointTrajectoriesToWanMove(
+        trajectories,
+        compWidth,
+        compHeight,
+        fps,
+      );
+      const atiTrackCoordsJson = exportATITrackCoordsJSON(wanMoveTrajectory);
 
       return {
         success: true,
         target,
-        data: atiInstructions,
+        data: wanMoveTrajectory,
         files: [
           {
-            name: "ati_trajectories.json",
-            content: JSON.stringify(atiInstructions, null, 2),
+            name: "ati_track_coords.json",
+            content: atiTrackCoordsJson,
+            type: "json",
+          },
+          {
+            name: "visibility.json",
+            content: JSON.stringify(wanMoveTrajectory.visibility, null, 2),
+            type: "json",
+          },
+          {
+            name: "metadata.json",
+            content: JSON.stringify(wanMoveTrajectory.metadata, null, 2),
             type: "json",
           },
         ],
@@ -1115,44 +979,56 @@ export async function exportForModel(
         }
       }
 
-      const wanMove3DData = exportWanMoveTrajectories(
+      // Convert to WanMoveTrajectory format (2D) for WanVideoWrapper
+      const wanMoveTrajectory = convertPointTrajectoriesToWanMove(
         trajectories,
         compWidth,
         compHeight,
-        { include3D: true, includeRotation: true, includeScale: true },
+        fps,
       );
 
-      // Build files including rotation/scale if present
+      // Export as WanVideoWrapper-compatible track_coords format
+      const trackCoordsJson = exportWanMoveTrackCoordsJSON(wanMoveTrajectory);
+
+      // Build files - include both WanVideoWrapper format and extended 3D data
       const files: UnifiedExportResult["files"] = [
         {
-          name: "trajectories_3d.json",
-          content: JSON.stringify(wanMove3DData.trajectories, null, 2),
+          name: "track_coords.json",
+          content: trackCoordsJson,
           type: "json",
         },
         {
           name: "visibility.json",
-          content: JSON.stringify(wanMove3DData.visibility, null, 2),
+          content: JSON.stringify(wanMoveTrajectory.visibility, null, 2),
           type: "json",
         },
         {
           name: "metadata.json",
-          content: JSON.stringify(wanMove3DData.metadata, null, 2),
+          content: JSON.stringify(wanMoveTrajectory.metadata, null, 2),
           type: "json",
         },
       ];
 
-      if (wanMove3DData.rotations) {
+      // Add rotation data if any trajectory has it
+      const rotationData = trajectories
+        .filter((t) => t.rotation !== undefined)
+        .map((t) => ({ id: t.id, rotation: t.rotation }));
+      if (rotationData.length > 0) {
         files.push({
           name: "rotations.json",
-          content: JSON.stringify(wanMove3DData.rotations, null, 2),
+          content: JSON.stringify(rotationData, null, 2),
           type: "json",
         });
       }
 
-      if (wanMove3DData.scales) {
+      // Add scale data if any trajectory has it
+      const scaleData = trajectories
+        .filter((t) => t.scale !== undefined)
+        .map((t) => ({ id: t.id, scale: t.scale }));
+      if (scaleData.length > 0) {
         files.push({
           name: "scales.json",
-          content: JSON.stringify(wanMove3DData.scales, null, 2),
+          content: JSON.stringify(scaleData, null, 2),
           type: "json",
         });
       }
@@ -1160,14 +1036,14 @@ export async function exportForModel(
       // Also add NPY binary for trajectories
       files.push({
         name: "trajectories.npy",
-        content: trajectoriesToNpy(wanMove3DData.trajectories),
+        content: trajectoriesToNpy(wanMoveTrajectory.tracks),
         type: "npy",
       });
 
       return {
         success: true,
         target,
-        data: wanMove3DData,
+        data: wanMoveTrajectory,
         files,
       };
     }
@@ -1327,10 +1203,9 @@ export function trajectoriesToNpy(trajectories: number[][][]): Blob {
 
 export default {
   camera3DToMatrix4x4,
+  convertPointTrajectoriesToWanMove,
   exportCameraTrajectory,
   extractLayerTrajectory,
-  exportWanMoveTrajectories,
-  exportATITrajectory,
   exportForModel,
   trajectoriesToNpy,
 };

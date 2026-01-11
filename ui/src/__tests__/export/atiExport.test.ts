@@ -1,17 +1,17 @@
 /**
  * ATI (Any-point Trajectory Inference) Export Tests
  *
- * Tests for Kijai's ATI-compatible export format used by
+ * Tests for ATI-compatible export format used by
  * ComfyUI-WanVideoWrapper's WanVideoATITracks node.
  *
- * @audit P0 CRITICAL - ATI format compliance for Kijai nodes
+ * @audit P0 CRITICAL - ATI format compliance for WanVideoWrapper
  */
 
 import { describe, it, expect } from "vitest";
 import {
   ATI_FIXED_FRAMES,
-  exportAsKijaiATI,
-  exportForKijaiATI,
+  exportATITrackCoordsJSON,
+  exportATIPackage,
   exportAsNormalizedATI,
   validateForATI,
   createATITrajectory,
@@ -69,14 +69,14 @@ describe("ATI_FIXED_FRAMES", () => {
 });
 
 // ============================================================================
-// exportAsKijaiATI Tests
+// exportATITrackCoordsJSON Tests
 // ============================================================================
 
-describe("exportAsKijaiATI", () => {
+describe("exportATITrackCoordsJSON", () => {
   it("should export as valid JSON string", () => {
     const trajectory = createTestTrajectory(3, 50);
 
-    const json = exportAsKijaiATI(trajectory);
+    const json = exportATITrackCoordsJSON(trajectory);
 
     expect(typeof json).toBe("string");
     expect(() => JSON.parse(json)).not.toThrow();
@@ -85,7 +85,7 @@ describe("exportAsKijaiATI", () => {
   it("should produce exactly 121 frames per track", () => {
     const trajectory = createTestTrajectory(5, 50);
 
-    const json = exportAsKijaiATI(trajectory);
+    const json = exportATITrackCoordsJSON(trajectory);
     const parsed = JSON.parse(json) as ATITrackPoint[][];
 
     expect(parsed.length).toBe(5); // 5 tracks
@@ -107,7 +107,7 @@ describe("exportAsKijaiATI", () => {
       },
     };
 
-    const json = exportAsKijaiATI(trajectory);
+    const json = exportATITrackCoordsJSON(trajectory);
     const parsed = JSON.parse(json);
 
     expect(parsed[0][0]).toEqual({ x: 100, y: 200 });
@@ -128,7 +128,7 @@ describe("exportAsKijaiATI", () => {
       },
     };
 
-    const json = exportAsKijaiATI(trajectory);
+    const json = exportATITrackCoordsJSON(trajectory);
     const parsed = JSON.parse(json) as ATITrackPoint[][];
 
     // First 3 frames should be original data
@@ -144,7 +144,7 @@ describe("exportAsKijaiATI", () => {
   it("should truncate long trajectories to 121 frames", () => {
     const trajectory = createTestTrajectory(2, 200); // 200 frames > 121
 
-    const json = exportAsKijaiATI(trajectory);
+    const json = exportATITrackCoordsJSON(trajectory);
     const parsed = JSON.parse(json) as ATITrackPoint[][];
 
     expect(parsed[0].length).toBe(121);
@@ -164,7 +164,7 @@ describe("exportAsKijaiATI", () => {
       },
     };
 
-    const json = exportAsKijaiATI(trajectory);
+    const json = exportATITrackCoordsJSON(trajectory);
     const parsed = JSON.parse(json) as ATITrackPoint[][];
 
     expect(parsed[0].length).toBe(121);
@@ -185,7 +185,7 @@ describe("exportAsKijaiATI", () => {
       },
     };
 
-    const json = exportAsKijaiATI(trajectory);
+    const json = exportATITrackCoordsJSON(trajectory);
     const parsed = JSON.parse(json);
 
     expect(parsed[0][0].x).toBe(123.456);
@@ -194,14 +194,14 @@ describe("exportAsKijaiATI", () => {
 });
 
 // ============================================================================
-// exportForKijaiATI Tests
+// exportATIPackage Tests
 // ============================================================================
 
-describe("exportForKijaiATI", () => {
+describe("exportATIPackage", () => {
   it("should return complete ATIExportResult", () => {
     const trajectory = createTestTrajectory(5, 60, 1920, 1080);
 
-    const result = exportForKijaiATI(trajectory);
+    const result = exportATIPackage(trajectory);
 
     expect(result).toHaveProperty("tracks");
     expect(result).toHaveProperty("width");
@@ -213,7 +213,7 @@ describe("exportForKijaiATI", () => {
   it("should include correct metadata", () => {
     const trajectory = createTestTrajectory(10, 80, 1280, 720);
 
-    const result = exportForKijaiATI(trajectory);
+    const result = exportATIPackage(trajectory);
 
     expect(result.width).toBe(1280);
     expect(result.height).toBe(720);
@@ -224,17 +224,17 @@ describe("exportForKijaiATI", () => {
   it("should have tracks as valid JSON string", () => {
     const trajectory = createTestTrajectory(3, 50);
 
-    const result = exportForKijaiATI(trajectory);
+    const result = exportATIPackage(trajectory);
 
     expect(typeof result.tracks).toBe("string");
     expect(() => JSON.parse(result.tracks)).not.toThrow();
   });
 
-  it("should match exportAsKijaiATI output", () => {
+  it("should match exportATITrackCoordsJSON output", () => {
     const trajectory = createTestTrajectory(5, 100);
 
-    const result = exportForKijaiATI(trajectory);
-    const direct = exportAsKijaiATI(trajectory);
+    const result = exportATIPackage(trajectory);
+    const direct = exportATITrackCoordsJSON(trajectory);
 
     expect(result.tracks).toBe(direct);
   });
@@ -528,8 +528,8 @@ describe("Round-trip export", () => {
   it("should produce consistent output for same input", () => {
     const trajectory = createTestTrajectory(10, 100);
 
-    const result1 = exportAsKijaiATI(trajectory);
-    const result2 = exportAsKijaiATI(trajectory);
+    const result1 = exportATITrackCoordsJSON(trajectory);
+    const result2 = exportATITrackCoordsJSON(trajectory);
 
     expect(result1).toBe(result2);
   });
@@ -537,7 +537,7 @@ describe("Round-trip export", () => {
   it("should be parseable back to ATITrackPoint format", () => {
     const trajectory = createTestTrajectory(5, 50);
 
-    const json = exportAsKijaiATI(trajectory);
+    const json = exportATITrackCoordsJSON(trajectory);
     const parsed = JSON.parse(json) as ATITrackPoint[][];
 
     // Verify structure
