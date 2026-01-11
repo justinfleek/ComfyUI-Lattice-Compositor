@@ -5,6 +5,11 @@
  * Import stores from this file for cleaner imports.
  */
 
+export {
+  type AnimationStoreType,
+  type AnimationStoreAccess,
+  useAnimationStore,
+} from "./animationStore";
 export { type AudioStore, useAudioStore } from "./audioStore";
 // Main compositor store (legacy - being refactored into domain stores)
 export { useCompositorStore } from "./compositorStore";

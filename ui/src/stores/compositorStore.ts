@@ -110,8 +110,8 @@ import {
 } from "./keyframeStore";
 import * as markerActions from "./actions/markerActions";
 import * as particleLayerActions from "./actions/particleLayerActions";
-import * as playbackActions from "./actions/playbackActions";
 import * as projectActions from "./actions/projectActions";
+import { useAnimationStore } from "./animationStore";
 import * as propertyDriverActions from "./actions/propertyDriverActions";
 import * as segmentationActions from "./actions/segmentationActions";
 import * as textAnimatorActions from "./actions/textAnimatorActions";
@@ -1062,43 +1062,43 @@ export const useCompositorStore = defineStore("compositor", {
     },
 
     // ============================================================
-    // PLAYBACK CONTROLS (delegated to playbackActions)
+    // PLAYBACK CONTROLS (delegated to animationStore)
     // ============================================================
 
     play(): void {
-      playbackActions.play(this);
+      useAnimationStore().play(this);
     },
 
     pause(): void {
-      playbackActions.pause(this);
+      useAnimationStore().pause(this);
     },
 
     togglePlayback(): void {
-      playbackActions.togglePlayback(this);
+      useAnimationStore().togglePlayback(this);
     },
 
     setFrame(frame: number): void {
-      playbackActions.setFrame(this, frame);
+      useAnimationStore().setFrame(this, frame);
     },
 
     nextFrame(): void {
-      playbackActions.nextFrame(this);
+      useAnimationStore().nextFrame(this);
     },
 
     prevFrame(): void {
-      playbackActions.prevFrame(this);
+      useAnimationStore().prevFrame(this);
     },
 
     goToStart(): void {
-      playbackActions.goToStart(this);
+      useAnimationStore().goToStart(this);
     },
 
     goToEnd(): void {
-      playbackActions.goToEnd(this);
+      useAnimationStore().goToEnd(this);
     },
 
     jumpFrames(n: number): void {
-      playbackActions.jumpFrames(this, n);
+      useAnimationStore().jumpFrames(this, n);
     },
 
     /**
@@ -3087,19 +3087,7 @@ export const useCompositorStore = defineStore("compositor", {
      * @param layerId Optional layer ID. If not provided, uses selected layers or all layers.
      */
     jumpToNextKeyframe(layerId?: string): void {
-      const layerIds = layerId
-        ? [layerId]
-        : useSelectionStore().selectedLayerIds.length > 0
-          ? useSelectionStore().selectedLayerIds
-          : [];
-      const nextFrame = useKeyframeStore().findNextKeyframeFrame(
-        this,
-        this.currentFrame,
-        layerIds,
-      );
-      if (nextFrame !== null) {
-        this.setFrame(nextFrame);
-      }
+      useAnimationStore().jumpToNextKeyframe(this, layerId);
     },
 
     /**
@@ -3107,19 +3095,7 @@ export const useCompositorStore = defineStore("compositor", {
      * @param layerId Optional layer ID. If not provided, uses selected layers or all layers.
      */
     jumpToPrevKeyframe(layerId?: string): void {
-      const layerIds = layerId
-        ? [layerId]
-        : useSelectionStore().selectedLayerIds.length > 0
-          ? useSelectionStore().selectedLayerIds
-          : [];
-      const prevFrame = useKeyframeStore().findPrevKeyframeFrame(
-        this,
-        this.currentFrame,
-        layerIds,
-      );
-      if (prevFrame !== null) {
-        this.setFrame(prevFrame);
-      }
+      useAnimationStore().jumpToPrevKeyframe(this, layerId);
     },
 
     /**
