@@ -976,11 +976,11 @@ describe("detectUni3CTrajectoryType", () => {
 
   it("should return orbit for large rotation with position change", () => {
     const keyframes = [
-      createKeyframe(0, { 
+      createKeyframe(0, {
         position: { x: -100, y: 0, z: 500 },
         orientation: { x: 0, y: 0, z: 0 },
       }),
-      createKeyframe(10, { 
+      createKeyframe(10, {
         position: { x: 100, y: 0, z: 500 },
         orientation: { x: 0, y: 90, z: 0 },
       }),
@@ -1000,5 +1000,285 @@ describe("detectUni3CTrajectoryType", () => {
     const result = detectUni3CTrajectoryType(keyframes);
 
     expect(result).toBe("custom");
+  });
+});
+
+// ============================================================================
+// Kijai CameraCtrl Poses Export Tests
+// ============================================================================
+
+import {
+  exportAsCameraCtrlPoses,
+  exportAsCameraCtrlPosesText,
+  exportForKijaiFunCamera,
+  type CameraCtrlPoseEntry,
+} from "@/services/export/cameraExportFormats";
+
+describe("exportAsCameraCtrlPoses", () => {
+  it("should return array of poses with correct length", () => {
+    const camera = createTestCamera();
+    const keyframes = [createKeyframe(0), createKeyframe(10)];
+
+    const poses = exportAsCameraCtrlPoses(camera, keyframes, 10, 1920, 1080);
+
+    expect(poses.length).toBe(10);
+  });
+
+  it("should have 20 elements per pose entry", () => {
+    const camera = createTestCamera();
+    const keyframes = [createKeyframe(0)];
+
+    const poses = exportAsCameraCtrlPoses(camera, keyframes, 5, 1920, 1080);
+
+    // [time, fx, fy, cx, cy, aspect, 0, 0, w2c[0..11]] = 20 elements
+    for (const pose of poses) {
+      expect(pose.length).toBe(20);
+    }
+  });
+
+  it("should have sequential frame numbers as first element", () => {
+    const camera = createTestCamera();
+    const keyframes = [createKeyframe(0)];
+
+    const poses = exportAsCameraCtrlPoses(camera, keyframes, 5, 1920, 1080);
+
+    expect(poses[0][0]).toBe(0);
+    expect(poses[1][0]).toBe(1);
+    expect(poses[2][0]).toBe(2);
+    expect(poses[3][0]).toBe(3);
+    expect(poses[4][0]).toBe(4);
+  });
+
+  it("should compute focal length in pixels", () => {
+    const camera = createTestCamera({ focalLength: 50, filmSize: 36, zoom: 1 });
+    const keyframes = [createKeyframe(0)];
+
+    const poses = exportAsCameraCtrlPoses(camera, keyframes, 1, 1920, 1080);
+
+    // fx = focalLength * zoom * width / sensorWidth = 50 * 1 * 1920 / 36 ≈ 2666.67
+    const fx = poses[0][1];
+    const fy = poses[0][2];
+
+    expect(fx).toBeCloseTo(2666.67, 0);
+    expect(fy).toBe(fx); // Square pixels
+  });
+
+  it("should have principal point at 0.5, 0.5", () => {
+    const camera = createTestCamera();
+    const keyframes = [createKeyframe(0)];
+
+    const poses = exportAsCameraCtrlPoses(camera, keyframes, 1, 1920, 1080);
+
+    const cx = poses[0][3];
+    const cy = poses[0][4];
+
+    expect(cx).toBe(0.5);
+    expect(cy).toBe(0.5);
+  });
+
+  it("should compute correct aspect ratio", () => {
+    const camera = createTestCamera();
+    const keyframes = [createKeyframe(0)];
+
+    const poses1 = exportAsCameraCtrlPoses(camera, keyframes, 1, 1920, 1080);
+    const poses2 = exportAsCameraCtrlPoses(camera, keyframes, 1, 1280, 720);
+
+    expect(poses1[0][5]).toBeCloseTo(1920 / 1080);
+    expect(poses2[0][5]).toBeCloseTo(1280 / 720);
+  });
+
+  it("should have zeros at indices 6 and 7", () => {
+    const camera = createTestCamera();
+    const keyframes = [createKeyframe(0)];
+
+    const poses = exportAsCameraCtrlPoses(camera, keyframes, 1, 1920, 1080);
+
+    expect(poses[0][6]).toBe(0);
+    expect(poses[0][7]).toBe(0);
+  });
+
+  it("should include 12 w2c matrix values", () => {
+    const camera = createTestCamera();
+    const keyframes = [createKeyframe(0)];
+
+    const poses = exportAsCameraCtrlPoses(camera, keyframes, 1, 1920, 1080);
+
+    // w2c values are at indices 8-19 (12 values)
+    const w2cValues = poses[0].slice(8, 20);
+    expect(w2cValues.length).toBe(12);
+
+    // All should be finite numbers
+    for (const val of w2cValues) {
+      expect(Number.isFinite(val)).toBe(true);
+    }
+  });
+
+  it("should have identity-like rotation for zero angles", () => {
+    const camera = createTestCamera({
+      position: { x: 0, y: 0, z: 0 },
+      orientation: { x: 0, y: 0, z: 0 },
+    });
+    const keyframes = [createKeyframe(0)];
+
+    const poses = exportAsCameraCtrlPoses(camera, keyframes, 1, 1920, 1080);
+
+    // For zero rotation, the 3x3 rotation part of w2c should be identity
+    // w2c[0][0], w2c[1][1], w2c[2][2] should be 1
+    // These are at indices 8, 13, 18 in the flattened array
+    expect(poses[0][8]).toBeCloseTo(1); // r00
+    expect(poses[0][13]).toBeCloseTo(1); // r11
+    // r22 is at index 8+10 = 18
+  });
+
+  it("should interpolate camera position between keyframes", () => {
+    const camera = createTestCamera();
+    const keyframes = [
+      createKeyframe(0, { position: { x: 0, y: 0, z: 0 } }),
+      createKeyframe(10, { position: { x: 100, y: 100, z: 100 } }),
+    ];
+
+    const poses = exportAsCameraCtrlPoses(camera, keyframes, 11, 1920, 1080);
+
+    // Translation is in the w2c matrix at positions 11, 15, 19 (tx, ty, tz)
+    // For w2c, translation is -R^T * position
+    // At frame 0, position is (0,0,0) so translation should be (0,0,0)
+    // At frame 10, position is (100,100,100)
+    // The w2c translation should reflect the negative position transformed by rotation
+
+    // Just verify the values change across frames
+    const pose0 = poses[0];
+    const pose10 = poses[10];
+
+    // Translation values should be different
+    expect(pose0[11]).not.toBe(pose10[11]);
+  });
+
+  it("should handle NaN values gracefully", () => {
+    const camera = createTestCamera({
+      position: { x: NaN, y: Infinity, z: -Infinity },
+      orientation: { x: NaN, y: 0, z: 0 },
+    });
+    const keyframes = [createKeyframe(0)];
+
+    const poses = exportAsCameraCtrlPoses(camera, keyframes, 1, 1920, 1080);
+
+    // All values should be finite (NaN guarded)
+    for (const val of poses[0]) {
+      expect(Number.isFinite(val)).toBe(true);
+    }
+  });
+});
+
+describe("exportAsCameraCtrlPosesText", () => {
+  it("should return space-separated lines", () => {
+    const camera = createTestCamera();
+    const keyframes = [createKeyframe(0)];
+
+    const text = exportAsCameraCtrlPosesText(camera, keyframes, 3, 1920, 1080);
+
+    const lines = text.split("\n");
+    expect(lines.length).toBe(3);
+  });
+
+  it("should have 20 values per line", () => {
+    const camera = createTestCamera();
+    const keyframes = [createKeyframe(0)];
+
+    const text = exportAsCameraCtrlPosesText(camera, keyframes, 1, 1920, 1080);
+
+    const values = text.trim().split(" ");
+    expect(values.length).toBe(20);
+  });
+
+  it("should be parseable back to numbers", () => {
+    const camera = createTestCamera();
+    const keyframes = [createKeyframe(0)];
+
+    const text = exportAsCameraCtrlPosesText(camera, keyframes, 1, 1920, 1080);
+
+    const values = text.trim().split(" ").map(Number);
+
+    for (const val of values) {
+      expect(Number.isFinite(val)).toBe(true);
+    }
+  });
+
+  it("should match exportAsCameraCtrlPoses output", () => {
+    const camera = createTestCamera();
+    const keyframes = [createKeyframe(0), createKeyframe(10)];
+
+    const poses = exportAsCameraCtrlPoses(camera, keyframes, 5, 1920, 1080);
+    const text = exportAsCameraCtrlPosesText(camera, keyframes, 5, 1920, 1080);
+
+    const lines = text.split("\n");
+    for (let i = 0; i < poses.length; i++) {
+      const expected = poses[i].join(" ");
+      expect(lines[i]).toBe(expected);
+    }
+  });
+});
+
+describe("exportForKijaiFunCamera", () => {
+  it("should return poses and metadata", () => {
+    const camera = createTestCamera();
+    const keyframes = [createKeyframe(0)];
+
+    const result = exportForKijaiFunCamera(camera, keyframes, 10, 1920, 1080);
+
+    expect(result).toHaveProperty("poses");
+    expect(result).toHaveProperty("metadata");
+  });
+
+  it("should have correct metadata", () => {
+    const camera = createTestCamera({ focalLength: 35 });
+    const keyframes = [createKeyframe(0)];
+
+    const result = exportForKijaiFunCamera(camera, keyframes, 10, 1280, 720);
+
+    expect(result.metadata.frameCount).toBe(10);
+    expect(result.metadata.width).toBe(1280);
+    expect(result.metadata.height).toBe(720);
+    expect(result.metadata.focalLength).toBe(35);
+  });
+
+  it("should have poses matching exportAsCameraCtrlPoses", () => {
+    const camera = createTestCamera();
+    const keyframes = [createKeyframe(0), createKeyframe(10)];
+
+    const result = exportForKijaiFunCamera(camera, keyframes, 10, 1920, 1080);
+    const direct = exportAsCameraCtrlPoses(camera, keyframes, 10, 1920, 1080);
+
+    expect(JSON.stringify(result.poses)).toBe(JSON.stringify(direct));
+  });
+
+  it("should produce correct number of poses", () => {
+    const camera = createTestCamera();
+    const keyframes = [createKeyframe(0)];
+
+    const result = exportForKijaiFunCamera(camera, keyframes, 25, 1920, 1080);
+
+    expect(result.poses.length).toBe(25);
+  });
+});
+
+// ============================================================================
+// CameraCtrl Poses Determinism Tests
+// ============================================================================
+
+describe("CameraCtrl Poses Determinism", () => {
+  it("should produce identical output for identical input", () => {
+    const camera = createTestCamera({
+      position: { x: 100, y: 200, z: 300 },
+      orientation: { x: 15, y: 30, z: 45 },
+    });
+    const keyframes = [
+      createKeyframe(0, { position: { x: 0, y: 0, z: 500 } }),
+      createKeyframe(10, { position: { x: 100, y: 50, z: 400 } }),
+    ];
+
+    const result1 = exportAsCameraCtrlPoses(camera, keyframes, 10, 1920, 1080);
+    const result2 = exportAsCameraCtrlPoses(camera, keyframes, 10, 1920, 1080);
+
+    expect(JSON.stringify(result1)).toBe(JSON.stringify(result2));
   });
 });

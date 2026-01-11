@@ -1213,8 +1213,21 @@ export class GPUParticleSystem {
       // Cap spawns per frame to prevent browser freeze
       // If browser pauses (dt=10s), don't try to spawn 1M particles
       const MAX_SPAWN_PER_FRAME = 10000;
+      // BUG-099 FIX: Cap recycle scans per frame to prevent O(N²) performance collapse.
+      // When pool is full, spawnParticle() does O(N) scan to find oldest particle.
+      // Without this cap, large dt + high emission = 10000 spawns × N particles = O(N²).
+      const MAX_RECYCLE_SCANS_PER_FRAME = 100;
       let spawned = 0;
+      let recycleScans = 0;
       while (emitter.accumulator >= 1 && spawned < MAX_SPAWN_PER_FRAME) {
+        // Check if we'd trigger an expensive recycle scan
+        if (this.freeIndices.length === 0) {
+          if (recycleScans >= MAX_RECYCLE_SCANS_PER_FRAME) {
+            // Hit recycle budget - stop spawning this frame to avoid O(N²)
+            break;
+          }
+          recycleScans++;
+        }
         this.spawnParticle(emitter);
         emitter.accumulator -= 1;
         spawned++;

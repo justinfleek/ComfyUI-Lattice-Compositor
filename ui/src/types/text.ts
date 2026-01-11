@@ -44,14 +44,14 @@ export interface TextData {
   pathOffset: number; // 0-100%, animatable - shifts all characters along path
   pathAlign: "left" | "center" | "right"; // Baseline alignment
 
-  // More Options (Advanced)
-  anchorPointGrouping: "character" | "word" | "line" | "all";
-  groupingAlignment: { x: number; y: number }; // Percentages
-  fillAndStroke: "fill-over-stroke" | "stroke-over-fill";
-  interCharacterBlending: "normal" | "multiply" | "screen" | "overlay";
+  // More Options (Advanced) - CODE IS TRUTH: not in defaults, code uses fallbacks
+  anchorPointGrouping?: "character" | "word" | "line" | "all";
+  groupingAlignment?: { x: number; y: number }; // Percentages
+  fillAndStroke?: "fill-over-stroke" | "stroke-over-fill";
+  interCharacterBlending?: "normal" | "multiply" | "screen" | "overlay";
 
-  // 3D Text
-  perCharacter3D: boolean;
+  // 3D Text - CODE IS TRUTH: not in defaults
+  perCharacter3D?: boolean;
 
   // Advanced Character Properties (Tutorial 7)
   baselineShift?: number; // Vertical shift in pixels

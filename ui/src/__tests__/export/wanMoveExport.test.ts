@@ -888,3 +888,189 @@ describe("SHAPE_PRESETS", () => {
     }
   });
 });
+
+// ============================================================================
+// Kijai WanVideoWrapper Compatible Export Tests
+// ============================================================================
+
+import {
+  exportAsKijaiWanMoveJSON,
+  exportAsKijaiWanMoveVisibility,
+  exportForKijaiWanMove,
+  type KijaiTrackPoint,
+} from "@/services/export/wanMoveExport";
+
+describe("exportAsKijaiWanMoveJSON", () => {
+  it("should export trajectory as JSON string with {x,y} objects", () => {
+    const trajectory: WanMoveTrajectory = {
+      tracks: [
+        [[10, 20], [30, 40], [50, 60]],
+        [[100, 200], [300, 400], [500, 600]],
+      ],
+      visibility: [[true, true, true], [true, true, true]],
+      metadata: {
+        numPoints: 2,
+        numFrames: 3,
+        width: 1920,
+        height: 1080,
+        fps: 16,
+      },
+    };
+
+    const json = exportAsKijaiWanMoveJSON(trajectory);
+    const parsed = JSON.parse(json);
+
+    // Verify structure: [[{x,y},{x,y},...], [{x,y},...]]
+    expect(Array.isArray(parsed)).toBe(true);
+    expect(parsed.length).toBe(2); // 2 tracks
+    expect(parsed[0].length).toBe(3); // 3 frames each
+
+    // Verify {x, y} object format
+    expect(parsed[0][0]).toEqual({ x: 10, y: 20 });
+    expect(parsed[0][1]).toEqual({ x: 30, y: 40 });
+    expect(parsed[1][0]).toEqual({ x: 100, y: 200 });
+  });
+
+  it("should produce valid JSON", () => {
+    const trajectory = generateFromPreset("neural-flow", 10, 17, 1920, 1080, 12345);
+
+    const json = exportAsKijaiWanMoveJSON(trajectory);
+
+    expect(typeof json).toBe("string");
+    expect(() => JSON.parse(json)).not.toThrow();
+  });
+
+  it("should have correct number of tracks and frames", () => {
+    const trajectory = generateFromPreset("cosmic-spiral", 25, 49, 1920, 1080, 12345);
+
+    const json = exportAsKijaiWanMoveJSON(trajectory);
+    const parsed = JSON.parse(json) as KijaiTrackPoint[][];
+
+    expect(parsed.length).toBe(25);
+    expect(parsed[0].length).toBe(49);
+  });
+
+  it("should preserve exact coordinate values", () => {
+    const trajectory: WanMoveTrajectory = {
+      tracks: [
+        [[123.456, 789.012]],
+      ],
+      visibility: [[true]],
+      metadata: {
+        numPoints: 1,
+        numFrames: 1,
+        width: 1920,
+        height: 1080,
+        fps: 16,
+      },
+    };
+
+    const json = exportAsKijaiWanMoveJSON(trajectory);
+    const parsed = JSON.parse(json);
+
+    expect(parsed[0][0].x).toBe(123.456);
+    expect(parsed[0][0].y).toBe(789.012);
+  });
+
+  it("should handle empty trajectory", () => {
+    const trajectory: WanMoveTrajectory = {
+      tracks: [],
+      visibility: [],
+      metadata: {
+        numPoints: 0,
+        numFrames: 0,
+        width: 1920,
+        height: 1080,
+        fps: 16,
+      },
+    };
+
+    const json = exportAsKijaiWanMoveJSON(trajectory);
+    const parsed = JSON.parse(json);
+
+    expect(parsed).toEqual([]);
+  });
+});
+
+describe("exportAsKijaiWanMoveVisibility", () => {
+  it("should transpose visibility from [N][T] to [T][N]", () => {
+    const trajectory: WanMoveTrajectory = {
+      tracks: [
+        [[0, 0], [0, 0], [0, 0]],
+        [[0, 0], [0, 0], [0, 0]],
+      ],
+      visibility: [
+        [true, false, true],  // Track 0: frame 0=true, 1=false, 2=true
+        [false, true, false], // Track 1: frame 0=false, 1=true, 2=false
+      ],
+      metadata: {
+        numPoints: 2,
+        numFrames: 3,
+        width: 1920,
+        height: 1080,
+        fps: 16,
+      },
+    };
+
+    const json = exportAsKijaiWanMoveVisibility(trajectory);
+    const parsed = JSON.parse(json);
+
+    // Expected transposed: [T][N]
+    // Frame 0: [track0=true, track1=false]
+    // Frame 1: [track0=false, track1=true]
+    // Frame 2: [track0=true, track1=false]
+    expect(parsed.length).toBe(3); // 3 frames
+    expect(parsed[0]).toEqual([true, false]);
+    expect(parsed[1]).toEqual([false, true]);
+    expect(parsed[2]).toEqual([true, false]);
+  });
+
+  it("should default to true for missing visibility", () => {
+    const trajectory: WanMoveTrajectory = {
+      tracks: [[[0, 0]]],
+      visibility: [], // Empty visibility
+      metadata: {
+        numPoints: 1,
+        numFrames: 1,
+        width: 1920,
+        height: 1080,
+        fps: 16,
+      },
+    };
+
+    const json = exportAsKijaiWanMoveVisibility(trajectory);
+    const parsed = JSON.parse(json);
+
+    expect(parsed[0][0]).toBe(true);
+  });
+});
+
+describe("exportForKijaiWanMove", () => {
+  it("should return trackCoords and metadata", () => {
+    const trajectory = generateFromPreset("neural-flow", 10, 17, 1920, 1080, 12345);
+
+    const result = exportForKijaiWanMove(trajectory);
+
+    expect(result).toHaveProperty("trackCoords");
+    expect(result).toHaveProperty("metadata");
+    expect(typeof result.trackCoords).toBe("string");
+    expect(result.metadata).toEqual(trajectory.metadata);
+  });
+
+  it("should produce valid JSON in trackCoords", () => {
+    const trajectory = generateFromPreset("singularity", 15, 33, 1920, 1080, 99999);
+
+    const result = exportForKijaiWanMove(trajectory);
+
+    expect(() => JSON.parse(result.trackCoords)).not.toThrow();
+  });
+
+  it("should have trackCoords match exportAsKijaiWanMoveJSON output", () => {
+    const trajectory = generateFromPreset("hivemind", 20, 49, 1920, 1080, 42);
+
+    const result = exportForKijaiWanMove(trajectory);
+    const direct = exportAsKijaiWanMoveJSON(trajectory);
+
+    expect(result.trackCoords).toBe(direct);
+  });
+});

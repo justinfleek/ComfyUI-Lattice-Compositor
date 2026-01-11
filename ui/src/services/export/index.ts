@@ -76,10 +76,14 @@ export {
 } from "../modelExport";
 // Camera export formats
 export {
+  type CameraCtrlPoseEntry,
   computeProjectionMatrix,
   computeViewMatrix,
+  exportAsCameraCtrlPoses,
+  exportAsCameraCtrlPosesText,
   exportCameraForTarget,
   exportCameraMatrices,
+  exportForKijaiFunCamera,
   exportToCameraCtrl,
   exportToMotionCtrl,
   exportToMotionCtrlSVD,
@@ -87,6 +91,17 @@ export {
   interpolateCameraAtFrame,
   mapToWan22FunCamera,
 } from "./cameraExportFormats";
+// ATI (Any-point Trajectory Inference) Export - Kijai compatible
+export {
+  ATI_FIXED_FRAMES,
+  type ATIExportResult,
+  type ATITrackPoint,
+  createATITrajectory,
+  exportAsKijaiATI,
+  exportAsNormalizedATI,
+  exportForKijaiATI,
+  validateForATI,
+} from "./atiExport";
 // Backend depth service (calls Python DepthAnything/NormalCrafter)
 export {
   BackendDepthService,
@@ -198,6 +213,11 @@ export {
   exportAsJSON as exportWanMoveJSON,
   exportAsNPYData as exportWanMoveNPY,
   exportWanMovePackage,
+  // Kijai WanVideoWrapper compatible exports
+  exportAsKijaiWanMoveJSON,
+  exportAsKijaiWanMoveVisibility,
+  exportForKijaiWanMove,
+  type KijaiTrackPoint,
   // Presets
   FLOW_PRESETS,
   type FlowLayer,

@@ -278,7 +278,11 @@ export class NestedCompLayer extends BaseLayer {
   // ============================================================================
 
   protected onEvaluateFrame(frame: number): void {
-    if (!this.renderContext || !this.cachedComposition) {
+    if (
+      !this.renderContext ||
+      !this.cachedComposition ||
+      !this.nestedCompData.compositionId
+    ) {
       return;
     }
 
@@ -397,7 +401,7 @@ export class NestedCompLayer extends BaseLayer {
    * Check if flatten transform is enabled
    */
   isFlattenEnabled(): boolean {
-    return this.nestedCompData.flattenTransform;
+    return this.nestedCompData.flattenTransform ?? false;
   }
 
   /** @deprecated Use isFlattenEnabled instead */
@@ -525,7 +529,7 @@ export class NestedCompLayer extends BaseLayer {
     const data = properties.data as Partial<NestedCompData> | undefined;
 
     if (data) {
-      if (data.compositionId !== undefined) {
+      if (data.compositionId !== undefined && data.compositionId !== null) {
         this.setComposition(data.compositionId);
       }
       // Check speedMap first (new naming), then timeRemap (backwards compatibility)
@@ -548,7 +552,9 @@ export class NestedCompLayer extends BaseLayer {
         data.frameRate !== undefined
       ) {
         this.setFrameRateOverride(
-          data.overrideFrameRate ?? this.nestedCompData.overrideFrameRate,
+          data.overrideFrameRate ??
+            this.nestedCompData.overrideFrameRate ??
+            false,
           data.frameRate ?? this.nestedCompData.frameRate,
         );
       }
@@ -576,7 +582,7 @@ export class NestedCompLayer extends BaseLayer {
   /**
    * Get composition ID
    */
-  getCompositionId(): string {
+  getCompositionId(): string | null {
     return this.nestedCompData.compositionId;
   }
 

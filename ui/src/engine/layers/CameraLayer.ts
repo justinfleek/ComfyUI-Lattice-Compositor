@@ -402,7 +402,7 @@ export class CameraLayer extends BaseLayer {
   /**
    * Get camera ID
    */
-  getCameraId(): string {
+  getCameraId(): string | null {
     return this.cameraData.cameraId;
   }
 

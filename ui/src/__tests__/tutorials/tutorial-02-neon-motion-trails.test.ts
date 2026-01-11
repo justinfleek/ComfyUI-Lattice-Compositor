@@ -583,19 +583,19 @@ describe('Tutorial 02: Neon Motion Trails', () => {
       test('Step 39: Set line cap to round', () => {
         const layer = store.createLayer('spline', 'Light_Streak_01');
 
-        store.updateLayerData(layer!.id, { strokeLineCap: 'round' });
+        store.updateLayerData(layer!.id, { lineCap: 'round' });
 
         const splineData = getLayer(layer!.id)!.data as SplineData;
-        expect(splineData.strokeLineCap).toBe('round');
+        expect(splineData.lineCap).toBe('round');
       });
 
       test('Step 40: Set line join to round', () => {
         const layer = store.createLayer('spline', 'Light_Streak_01');
 
-        store.updateLayerData(layer!.id, { strokeLineJoin: 'round' });
+        store.updateLayerData(layer!.id, { lineJoin: 'round' });
 
         const splineData = getLayer(layer!.id)!.data as SplineData;
-        expect(splineData.strokeLineJoin).toBe('round');
+        expect(splineData.lineJoin).toBe('round');
       });
 
       test('Step 41-42: Verify stroke renders correctly', () => {
@@ -606,8 +606,8 @@ describe('Tutorial 02: Neon Motion Trails', () => {
         store.updateLayerData(layer!.id, {
           stroke: cyanHex,
           strokeWidth: 8,
-          strokeLineCap: 'round',
-          strokeLineJoin: 'round',
+          lineCap: 'round',
+          lineJoin: 'round',
           fill: ''
         });
 
@@ -615,8 +615,8 @@ describe('Tutorial 02: Neon Motion Trails', () => {
         const splineData = updatedLayer!.data as SplineData;
         expect(splineData.stroke).toBe(cyanHex);
         expect(splineData.strokeWidth).toBe(8);
-        expect(splineData.strokeLineCap).toBe('round');
-        expect(splineData.strokeLineJoin).toBe('round');
+        expect(splineData.lineCap).toBe('round');
+        expect(splineData.lineJoin).toBe('round');
       });
     });
 
@@ -653,7 +653,7 @@ describe('Tutorial 02: Neon Motion Trails', () => {
         store.updateLayerData(layer!.id, {
           stroke: cyanHex,
           strokeWidth: 8,
-          strokeLineCap: 'round',
+          lineCap: 'round',
           fill: ''
         });
 
@@ -672,7 +672,7 @@ describe('Tutorial 02: Neon Motion Trails', () => {
         const loadedSplineData = loadedLayer!.data as SplineData;
         expect(loadedSplineData.stroke).toBe(cyanHex);
         expect(loadedSplineData.strokeWidth).toBe(8);
-        expect(loadedSplineData.strokeLineCap).toBe('round');
+        expect(loadedSplineData.lineCap).toBe('round');
       });
     });
   });

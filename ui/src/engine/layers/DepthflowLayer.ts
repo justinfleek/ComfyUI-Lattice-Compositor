@@ -564,19 +564,27 @@ export class DepthflowLayer extends BaseLayer {
 
     if (!data) return;
 
-    // Update source/depth layers
+    // Update source/depth layers (handle null values)
     if (
       data.sourceLayerId !== undefined &&
       data.sourceLayerId !== this.depthflowData.sourceLayerId
     ) {
-      this.setSourceLayer(data.sourceLayerId);
+      if (data.sourceLayerId !== null) {
+        this.setSourceLayer(data.sourceLayerId);
+      } else {
+        this.depthflowData.sourceLayerId = null;
+      }
     }
 
     if (
       data.depthLayerId !== undefined &&
       data.depthLayerId !== this.depthflowData.depthLayerId
     ) {
-      this.setDepthLayer(data.depthLayerId);
+      if (data.depthLayerId !== null) {
+        this.setDepthLayer(data.depthLayerId);
+      } else {
+        this.depthflowData.depthLayerId = null;
+      }
     }
 
     // Update config

@@ -108,13 +108,17 @@ export interface ParticleLayerData {
   emitters: ParticleEmitterConfig[];
   gravityWells: GravityWellConfig[];
   vortices: VortexConfig[];
-  modulations: ParticleModulationConfig[];
+  modulations?: ParticleModulationConfig[]; // CODE IS TRUTH - not always in defaults
   renderOptions: ParticleRenderOptions;
   turbulenceFields?: TurbulenceFieldConfig[];
   subEmitters?: SubEmitterConfig[];
   flocking?: FlockingConfig;
   collision?: CollisionConfig;
   audioBindings?: AudioBindingConfig[];
+  // CODE IS TRUTH - added from defaults analysis
+  audioMappings?: AudioParticleMapping[];
+  exportEnabled?: boolean;
+  exportFormat?: string;
 
   // Time remapping support (like VideoLayer)
   speedMapEnabled?: boolean;

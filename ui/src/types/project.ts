@@ -586,7 +586,7 @@ export interface Layer {
     | SplineData
     | PathLayerData
     | TextData
-    | ParticleData
+    | LegacyParticleLayerData // Was ParticleData - CODE IS TRUTH
     | ParticleLayerData
     | DepthflowLayerData
     | GeneratedMapData
@@ -594,11 +594,10 @@ export interface Layer {
     | ImageLayerData
     | VideoData
     | NestedCompData
-    | ProceduralMatteData
+    | MatteLayerData // Was ProceduralMatteData - CODE IS TRUTH
     | ShapeLayerData
     | ModelLayerData
     | PointCloudLayerData
-    // Previously missing - now matches LayerDataMap
     | DepthLayerData
     | NormalLayerData
     | AudioLayerData
@@ -609,9 +608,9 @@ export interface Layer {
     | NullLayerData
     | GroupLayerData
     | EffectLayerData
-    // Additional types used by Properties components
     | GeneratedLayerData
-    | MatteLayerData
+    | ProceduralMatteData // Keep for procedural pattern mattes
+    | ParticleData // Keep for advanced particle configs
     | null;
 }
 
@@ -711,14 +710,14 @@ export type LayerDataMap = {
   spline: SplineData;
   path: PathLayerData;
   text: TextData;
-  particle: ParticleData;
+  particle: LegacyParticleLayerData; // Was ParticleData - CODE IS TRUTH
   particles: ParticleLayerData;
   depthflow: DepthflowLayerData;
   generated: GeneratedMapData;
   camera: CameraLayerData;
   video: VideoData;
   nestedComp: NestedCompData;
-  matte: ProceduralMatteData;
+  matte: MatteLayerData; // Was ProceduralMatteData - CODE IS TRUTH
   shape: ShapeLayerData;
   model: ModelLayerData;
   pointcloud: PointCloudLayerData;
@@ -1127,8 +1126,8 @@ export interface LightLayerData {
   /** Cone angle for spot lights (degrees) */
   coneAngle?: number;
 
-  /** Penumbra for spot light soft edge (0-1) */
-  penumbra?: number;
+  /** Cone feather for spot light soft edge (0-100) - CODE IS TRUTH (was penumbra) */
+  coneFeather?: number;
 
   /** Target position for spot/directional lights */
   target?: { x: number; y: number; z: number };
@@ -1388,13 +1387,13 @@ export interface VideoData {
 
   // Playback control
   loop: boolean; // Loop when reaching end
-  pingPong: boolean; // Reverse at end instead of restart
+  pingPong?: boolean; // CODE IS TRUTH - not in defaults, code uses fallback
   startTime: number; // Start offset in source video (seconds)
   endTime?: number; // End time in source (undefined = full duration)
   speed: number; // Playback speed (1 = normal, 2 = 2x, 0.5 = half)
 
   // Speed mapping (professional feature for time manipulation)
-  speedMapEnabled: boolean;
+  speedMapEnabled?: boolean; // CODE IS TRUTH - not in defaults
   speedMap?: AnimatableProperty<number>; // Maps comp time to video time
   /** @deprecated Use 'speedMapEnabled' instead */
   timeRemapEnabled?: boolean;
@@ -1409,11 +1408,11 @@ export interface VideoData {
   timewarpMethod?: "whole-frames" | "frame-mix" | "pixel-motion";
 
   // Frame blending for speed changes
-  frameBlending: "none" | "frame-mix" | "pixel-motion";
+  frameBlending?: "none" | "frame-mix" | "pixel-motion"; // CODE IS TRUTH - not in defaults
 
   // Audio
-  audioEnabled: boolean;
-  audioLevel: number; // 0-100
+  audioEnabled?: boolean; // CODE IS TRUTH - not in defaults
+  audioLevel?: number; // 0-100 - CODE IS TRUTH - not in defaults
 
   // Poster frame (for thumbnails)
   posterFrame: number; // Frame to show when paused at start
@@ -1424,10 +1423,10 @@ export interface VideoData {
 // ============================================================
 
 export interface NestedCompData {
-  compositionId: string; // Reference to composition in project.compositions
+  compositionId: string | null; // Reference to composition in project.compositions - CODE IS TRUTH (defaults create null)
 
   // Speed mapping (time manipulation)
-  speedMapEnabled: boolean;
+  speedMapEnabled?: boolean; // CODE IS TRUTH - not in defaults
   speedMap?: AnimatableProperty<number>; // Maps parent time to nested comp time
   /** @deprecated Use 'speedMapEnabled' instead */
   timeRemapEnabled?: boolean;
@@ -1440,10 +1439,10 @@ export interface NestedCompData {
   timewarpMethod?: "whole-frames" | "frame-mix" | "pixel-motion";
 
   // Flatten transform (render nested layers in parent's 3D space)
-  flattenTransform: boolean;
+  flattenTransform?: boolean; // CODE IS TRUTH - not in defaults
 
   // Override nested comp settings
-  overrideFrameRate: boolean;
+  overrideFrameRate?: boolean; // CODE IS TRUTH - not in defaults
   frameRate?: number;
 }
 
@@ -1635,8 +1634,8 @@ export type DepthflowPreset =
   | "custom";
 
 export interface DepthflowLayerData {
-  sourceLayerId: string;
-  depthLayerId: string;
+  sourceLayerId: string | null; // CODE IS TRUTH - defaults create null
+  depthLayerId: string | null; // CODE IS TRUTH - defaults create null
   config: DepthflowConfig;
   animatedZoom?: AnimatableProperty<number>;
   animatedOffsetX?: AnimatableProperty<number>;
@@ -2008,7 +2007,7 @@ export interface CameraTrajectoryKeyframes {
 }
 
 export interface CameraLayerData {
-  cameraId: string; // Reference to the Camera3D object
+  cameraId: string | null; // Reference to the Camera3D object - CODE IS TRUTH (defaults create null)
   isActiveCamera: boolean; // Is this the composition's active camera?
 
   // Camera3D object (inline storage)

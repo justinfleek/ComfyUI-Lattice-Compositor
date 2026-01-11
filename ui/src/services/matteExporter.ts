@@ -513,8 +513,8 @@ class MatteExporter {
         system.addVortex(vortex);
       }
 
-      // Add modulations
-      for (const mod of data.modulations) {
+      // Add modulations (if defined)
+      for (const mod of data.modulations ?? []) {
         system.addModulation(mod);
       }
 

@@ -744,6 +744,232 @@ export function exportCameraMatrices(
 }
 
 // ============================================================================
+// Kijai CameraCtrl Poses Format (CAMERACTRL_POSES)
+// ============================================================================
+
+/**
+ * Single CameraCtrl pose entry
+ *
+ * Format: [time, fx, fy, cx, cy, aspect, 0, 0, w2c[0], w2c[1], ..., w2c[11]]
+ * - time: frame timestamp (normalized or frame number)
+ * - fx, fy: focal length in pixels (fx = fy for square pixels)
+ * - cx, cy: principal point (usually image center)
+ * - aspect: aspect ratio
+ * - 0, 0: flags (unused)
+ * - w2c[0..11]: 3x4 world-to-camera matrix, flattened row-major
+ */
+export type CameraCtrlPoseEntry = number[];
+
+/**
+ * Compute world-to-camera (w2c) matrix from camera state
+ *
+ * The w2c matrix transforms world coordinates to camera coordinates.
+ * It's the inverse of the camera-to-world (c2w) matrix.
+ */
+function computeW2CMatrix(cam: InterpolatedCamera): number[][] {
+  const { position, rotation } = cam;
+
+  // Guard against NaN/Infinity
+  const rotX = Number.isFinite(rotation.x) ? rotation.x : 0;
+  const rotY = Number.isFinite(rotation.y) ? rotation.y : 0;
+  const rotZ = Number.isFinite(rotation.z) ? rotation.z : 0;
+  const posX = Number.isFinite(position.x) ? position.x : 0;
+  const posY = Number.isFinite(position.y) ? position.y : 0;
+  const posZ = Number.isFinite(position.z) ? position.z : 0;
+
+  // Convert degrees to radians
+  const rx = (rotX * Math.PI) / 180;
+  const ry = (rotY * Math.PI) / 180;
+  const rz = (rotZ * Math.PI) / 180;
+
+  // Rotation matrices
+  const cosX = Math.cos(rx),
+    sinX = Math.sin(rx);
+  const cosY = Math.cos(ry),
+    sinY = Math.sin(ry);
+  const cosZ = Math.cos(rz),
+    sinZ = Math.sin(rz);
+
+  // Combined rotation (Y * X * Z order) - this gives us R for c2w
+  const r00 = cosY * cosZ + sinY * sinX * sinZ;
+  const r01 = -cosY * sinZ + sinY * sinX * cosZ;
+  const r02 = sinY * cosX;
+
+  const r10 = cosX * sinZ;
+  const r11 = cosX * cosZ;
+  const r12 = -sinX;
+
+  const r20 = -sinY * cosZ + cosY * sinX * sinZ;
+  const r21 = sinY * sinZ + cosY * sinX * cosZ;
+  const r22 = cosY * cosX;
+
+  // For w2c, rotation is transposed (R^T) and translation is -R^T * t
+  // w2c rotation (transpose of c2w rotation)
+  const w2c_r00 = r00,
+    w2c_r01 = r10,
+    w2c_r02 = r20;
+  const w2c_r10 = r01,
+    w2c_r11 = r11,
+    w2c_r12 = r21;
+  const w2c_r20 = r02,
+    w2c_r21 = r12,
+    w2c_r22 = r22;
+
+  // w2c translation = -R^T * t
+  const tx = -(w2c_r00 * posX + w2c_r01 * posY + w2c_r02 * posZ);
+  const ty = -(w2c_r10 * posX + w2c_r11 * posY + w2c_r12 * posZ);
+  const tz = -(w2c_r20 * posX + w2c_r21 * posY + w2c_r22 * posZ);
+
+  // Return 3x4 w2c matrix
+  return [
+    [w2c_r00, w2c_r01, w2c_r02, tx],
+    [w2c_r10, w2c_r11, w2c_r12, ty],
+    [w2c_r20, w2c_r21, w2c_r22, tz],
+  ];
+}
+
+/**
+ * Export camera animation as CameraCtrl poses for Kijai's WanVideoWrapper
+ *
+ * This produces the CAMERACTRL_POSES format used by:
+ * - WanVideoFunCameraEmbeds node
+ * - AnimateDiff-Evolved CameraCtrl integration
+ *
+ * Each pose entry format: [time, fx, fy, cx, cy, aspect, 0, 0, w2c[0..11]]
+ *
+ * @see https://github.com/kijai/ComfyUI-WanVideoWrapper/blob/main/fun_camera/nodes.py
+ * @see https://github.com/hehao13/CameraCtrl
+ */
+export function exportAsCameraCtrlPoses(
+  camera: Camera3D,
+  keyframes: CameraKeyframe[],
+  frameCount: number,
+  width: number,
+  height: number,
+): CameraCtrlPoseEntry[] {
+  const poses: CameraCtrlPoseEntry[] = [];
+
+  // Compute focal length in pixels from camera properties
+  // fx = focal_length_mm * width / sensor_width_mm
+  // For 36mm sensor (full frame), fx = focalLength * width / 36
+  const sensorWidth = camera.filmSize || 36; // Default to 36mm
+
+  for (let frame = 0; frame < frameCount; frame++) {
+    const cam = interpolateCameraAtFrame(camera, keyframes, frame);
+
+    // Focal length in pixels
+    // Use the camera's focal length, accounting for zoom
+    const focalLengthMM = cam.focalLength * (cam.zoom || 1);
+    const fx = (focalLengthMM * width) / sensorWidth;
+    const fy = fx; // Square pixels
+
+    // Principal point (image center)
+    const cx = 0.5; // Normalized to [0, 1]
+    const cy = 0.5;
+
+    // Aspect ratio
+    const aspect = width / height;
+
+    // Compute 3x4 w2c matrix
+    const w2c = computeW2CMatrix(cam);
+
+    // Flatten w2c matrix row-major: [r00, r01, r02, tx, r10, r11, r12, ty, r20, r21, r22, tz]
+    const w2cFlat = [
+      w2c[0][0],
+      w2c[0][1],
+      w2c[0][2],
+      w2c[0][3],
+      w2c[1][0],
+      w2c[1][1],
+      w2c[1][2],
+      w2c[1][3],
+      w2c[2][0],
+      w2c[2][1],
+      w2c[2][2],
+      w2c[2][3],
+    ];
+
+    // Build pose entry: [time, fx, fy, cx, cy, aspect, 0, 0, w2c[0..11]]
+    const poseEntry: CameraCtrlPoseEntry = [
+      frame, // time (frame number)
+      fx, // focal length x (pixels)
+      fy, // focal length y (pixels)
+      cx, // principal point x (normalized)
+      cy, // principal point y (normalized)
+      aspect, // aspect ratio
+      0, // flag 1 (unused)
+      0, // flag 2 (unused)
+      ...w2cFlat, // 12 w2c matrix values
+    ];
+
+    poses.push(poseEntry);
+  }
+
+  return poses;
+}
+
+/**
+ * Export CameraCtrl poses as space-separated strings
+ *
+ * This is the text format used by some CameraCtrl implementations
+ * where each line is a space-separated list of values.
+ */
+export function exportAsCameraCtrlPosesText(
+  camera: Camera3D,
+  keyframes: CameraKeyframe[],
+  frameCount: number,
+  width: number,
+  height: number,
+): string {
+  const poses = exportAsCameraCtrlPoses(
+    camera,
+    keyframes,
+    frameCount,
+    width,
+    height,
+  );
+
+  return poses.map((pose) => pose.join(" ")).join("\n");
+}
+
+/**
+ * Export for Kijai's WanVideoFunCameraEmbeds node
+ *
+ * Returns the pose array ready for the CAMERACTRL_POSES input.
+ */
+export function exportForKijaiFunCamera(
+  camera: Camera3D,
+  keyframes: CameraKeyframe[],
+  frameCount: number,
+  width: number,
+  height: number,
+): {
+  poses: CameraCtrlPoseEntry[];
+  metadata: {
+    frameCount: number;
+    width: number;
+    height: number;
+    focalLength: number;
+  };
+} {
+  return {
+    poses: exportAsCameraCtrlPoses(
+      camera,
+      keyframes,
+      frameCount,
+      width,
+      height,
+    ),
+    metadata: {
+      frameCount,
+      width,
+      height,
+      focalLength: camera.focalLength,
+    },
+  };
+}
+
+// ============================================================================
 // Export Router
 // ============================================================================
 

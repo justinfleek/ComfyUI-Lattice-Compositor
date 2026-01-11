@@ -93,16 +93,16 @@ export interface SplineData {
   strokeGradient?: SplineStrokeGradient; // Gradient definition (used when strokeType is "gradient")
   strokeWidth: number; // Stroke width in pixels
   strokeOpacity?: number; // Stroke opacity 0-100 (default 100)
-  strokeLineCap?: "butt" | "round" | "square"; // Line cap style
-  strokeLineJoin?: "miter" | "round" | "bevel"; // Line join style
+  lineCap?: "butt" | "round" | "square"; // Line cap style (CODE IS TRUTH - was strokeLineCap)
+  lineJoin?: "miter" | "round" | "bevel"; // Line join style (CODE IS TRUTH - was strokeLineJoin)
   strokeMiterLimit?: number; // Miter limit (default 4)
 
-  // Animated Dash properties
-  strokeDashArray?: number[] | AnimatableProperty<number[]>; // Dash pattern [dash, gap, ...]
-  strokeDashOffset?: number | AnimatableProperty<number>; // Animated dash offset
+  // Animated Dash properties (CODE IS TRUTH - was strokeDashArray/strokeDashOffset)
+  dashArray?: number[] | AnimatableProperty<number[]>; // Dash pattern [dash, gap, ...]
+  dashOffset?: number | AnimatableProperty<number>; // Animated dash offset
 
   // Fill properties
-  fill: string; // Fill color hex (empty = no fill)
+  fill?: string; // Fill color hex (empty = no fill) - made optional per CODE IS TRUTH
   fillOpacity?: number; // Fill opacity 0-100 (default 100)
 
   // Animated Trim Paths (for draw-on effects)
