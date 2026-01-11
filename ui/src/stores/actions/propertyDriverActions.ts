@@ -15,14 +15,17 @@ import {
 } from "@/services/propertyDriver";
 import { useAudioStore } from "@/stores/audioStore";
 import { storeLogger } from "@/utils/logger";
+import type { ExpressionStoreAccess } from "@/stores/expressionStore/types";
 
 /**
- * Store interface for property driver actions
- * Using Record<string, any> to work with Pinia reactive proxies
- * which wrap class instances and modify their type signatures
+ * Store interface for property driver actions.
+ * Uses ExpressionStoreAccess which has the proper structural interface
+ * for Pinia reactive proxy compatibility.
+ *
+ * @deprecated Use expressionStore actions directly instead.
+ * This module exists for backwards compatibility during migration.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type PropertyDriverStore = Record<string, any>;
+export type PropertyDriverStore = ExpressionStoreAccess;
 
 /**
  * Initialize the property driver system

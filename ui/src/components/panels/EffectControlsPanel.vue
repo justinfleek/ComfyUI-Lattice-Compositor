@@ -351,9 +351,10 @@ function toggleParamAnim(effectId: string, paramKey: string) {
 // --- Drag & Drop ---
 
 function onDragStart(event: DragEvent, index: number) {
+  if (!event.dataTransfer) return;
   draggedIndex.value = index;
-  event.dataTransfer?.setData("application/effect-reorder", String(index));
-  event.dataTransfer!.effectAllowed = "move";
+  event.dataTransfer.setData("application/effect-reorder", String(index));
+  event.dataTransfer.effectAllowed = "move";
 }
 
 function onDragEnd() {

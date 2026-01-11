@@ -91,6 +91,7 @@ import {
   type ParticleSystemState,
   type SubEmitterConfig,
 } from "./types";
+import { omitKeys } from "@/utils/typeUtils";
 
 // ============================================================================
 // Constants
@@ -1913,17 +1914,10 @@ export class GPUParticleSystem {
    * Get current configuration (emitters and force fields)
    */
   getConfig(): { emitters: EmitterConfig[]; forceFields: ForceFieldConfig[] } {
-    // Extract EmitterConfig from the stored emitters (removing runtime-only fields)
-    const emitters: EmitterConfig[] = Array.from(this.emitters.values()).map(
-      (e) => {
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const { accumulator, burstTimer, velocity, ...config } = e;
-        return config;
-      },
-    );
-
     return {
-      emitters,
+      emitters: Array.from(this.emitters.values()).map((e) =>
+        omitKeys(e, ["accumulator", "burstTimer", "velocity"] as const),
+      ),
       forceFields: Array.from(this.forceFields.values()),
     };
   }

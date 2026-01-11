@@ -369,14 +369,16 @@ export function moveKeyframes(
     if (!property) continue;
 
     const key = `${kf.layerId}:${kf.propertyPath}`;
-    if (!grouped.has(key)) {
-      grouped.set(key, {
+    let group = grouped.get(key);
+    if (!group) {
+      group = {
         layer,
         property,
         keyframeIds: new Set(),
-      });
+      };
+      grouped.set(key, group);
     }
-    grouped.get(key)!.keyframeIds.add(kf.keyframeId);
+    group.keyframeIds.add(kf.keyframeId);
   }
 
   // Process each property group

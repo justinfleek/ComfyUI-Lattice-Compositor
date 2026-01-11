@@ -30,10 +30,8 @@ import type {
   PeakData,
   PeakDetectionConfig,
 } from "@/services/audioFeatures";
-import type {
-  AudioPathAnimator,
-  PathAnimatorConfig,
-} from "@/services/audioPathAnimator";
+import type { PathAnimatorConfig } from "@/services/audioPathAnimator";
+import type { PathAnimatorAccess } from "./actions/audioActions";
 import type {
   AudioMapping,
   TargetParameter,
@@ -173,7 +171,7 @@ interface CompositorState {
   historyIndex: number;
 
   // Path animators for audio-driven motion (only state still managed here)
-  pathAnimators: Map<string, AudioPathAnimator>;
+  pathAnimators: Map<string, PathAnimatorAccess>;
 
   // Camera system
   cameras: Map<string, Camera3D>; // All cameras by ID
@@ -2433,7 +2431,7 @@ export const useCompositorStore = defineStore("compositor", {
     removePathAnimator(layerId: string): void {
       audioActions.removePathAnimator(this, layerId);
     },
-    getPathAnimator(layerId: string): AudioPathAnimator | undefined {
+    getPathAnimator(layerId: string): PathAnimatorAccess | undefined {
       return audioActions.getPathAnimator(this, layerId);
     },
     updatePathAnimators(): void {

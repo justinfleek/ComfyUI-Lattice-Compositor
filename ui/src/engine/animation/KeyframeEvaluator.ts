@@ -12,6 +12,7 @@ import type {
   InterpolationType,
   Keyframe,
 } from "@/types/project";
+import { isFiniteNumber, hasXY, isNumberArray } from "@/utils/typeGuards";
 import { easingFunctions } from "./EasingFunctions";
 
 export class KeyframeEvaluator {
@@ -257,32 +258,46 @@ export class KeyframeEvaluator {
   }
 
   /**
-   * Interpolate between two values
+   * Interpolate between two values of generic type T.
+   *
+   * This function uses runtime type checking to dispatch to the appropriate
+   * interpolation method. The return type casts are necessary because TypeScript
+   * cannot narrow generic type T based on runtime checks (this is a known
+   * limitation of TypeScript generics with runtime polymorphism).
+   *
+   * Each branch validates types with proper type guards before interpolation.
    */
   private interpolateValue<T>(from: T, to: T, t: number, _defaultValue: T): T {
-    // Number
-    if (typeof from === "number" && typeof to === "number") {
-      return (from + (to - from) * t) as unknown as T;
+    // Number - use type guard to validate both values
+    if (isFiniteNumber(from) && isFiniteNumber(to)) {
+      // Safe: both values confirmed as finite numbers
+      const result = from + (to - from) * t;
+      return result as T; // T is number in this branch
     }
 
-    // Position/Vector object
-    if (this.isPositionLike(from) && this.isPositionLike(to)) {
-      return this.interpolatePosition(from, to, t) as unknown as T;
+    // Position/Vector object - use type guard for xy coordinates
+    if (hasXY(from) && hasXY(to)) {
+      // Safe: both values confirmed as { x: number, y: number }
+      const result = this.interpolatePosition(from, to, t);
+      return result as T; // T is position-like in this branch
     }
 
-    // Color string
+    // Color string - hex color interpolation
     if (typeof from === "string" && typeof to === "string") {
       if (from.startsWith("#") && to.startsWith("#")) {
-        return this.interpolateColor(from, to, t) as unknown as T;
+        const result = this.interpolateColor(from, to, t);
+        return result as T; // T is string in this branch
       }
     }
 
-    // Array
-    if (Array.isArray(from) && Array.isArray(to)) {
-      return this.interpolateArray(from, to, t) as unknown as T;
+    // Array - element-wise interpolation (numeric arrays only)
+    if (isNumberArray(from) && isNumberArray(to)) {
+      // Safe: both values confirmed as number[]
+      const result = this.interpolateArray(from, to, t);
+      return result as T; // T is number[] in this branch
     }
 
-    // Default: return from value (no interpolation)
+    // Default: return from value (no interpolation for unsupported types)
     return t < 0.5 ? from : to;
   }
 

@@ -5,24 +5,38 @@
  */
 
 import type { Layer } from "@/types/project";
-import type { PropertyDriver } from "@/services/propertyDriver";
+import type { PropertyDriver, PropertyPath, PropertyGetter } from "@/services/propertyDriver";
+import type { AudioAnalysis } from "@/services/audioFeatures";
+
+/**
+ * Structural interface for PropertyDriverSystem methods actually used.
+ * This avoids Pinia reactive proxy issues by only declaring the methods we call,
+ * not the full class implementation.
+ */
+export interface PropertyDriverSystemAccess {
+  setPropertyGetter(getter: PropertyGetter): void;
+  setAudioAnalysis(analysis: AudioAnalysis | null): void;
+  addDriver(driver: PropertyDriver): boolean;
+  removeDriver(driverId: string): void;
+  updateDriver(driverId: string, updates: Partial<PropertyDriver>): void;
+  evaluateLayerDrivers(
+    layerId: string,
+    frame: number,
+    baseValues: Map<PropertyPath, number>,
+  ): Map<PropertyPath, number>;
+}
 
 /**
  * Interface for accessing compositor store from expression actions.
  * Uses dependency injection to avoid circular imports.
- *
- * Note: Using `any` for propertyDriverSystem because Pinia reactive proxies
- * wrap class instances and modify their type signatures. This is the same
- * pattern used in propertyDriverActions.ts.
  */
 export interface ExpressionStoreAccess {
   /** Project metadata */
   project: {
     meta: { modified: string };
   };
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  /** Property driver system instance (any due to Pinia proxy) */
-  propertyDriverSystem: any;
+  /** Property driver system instance */
+  propertyDriverSystem: PropertyDriverSystemAccess | null;
   /** Serializable driver configs */
   propertyDrivers: PropertyDriver[];
   /** Get the currently active composition */
@@ -39,11 +53,10 @@ export interface ExpressionStoreAccess {
   readonly frameCount: number;
   /** Push history state */
   pushHistory(): void;
-  /** Get property value at frame (for driver evaluation) */
+  /** Get property value at frame - returns null if layer not found or property unsupported */
   getPropertyValueAtFrame(layerId: string, propertyPath: string, frame: number): number | null;
-  /** Evaluate property at frame with expression support (for baking) */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  evaluatePropertyAtFrame(layerId: string, propertyPath: string, frame: number): any;
+  /** Evaluate property at frame with expression support - returns array for position/scale, number for scalars */
+  evaluatePropertyAtFrame(layerId: string, propertyPath: string, frame: number): number[] | number | null;
 }
 
 /**

@@ -78,9 +78,8 @@ export function useViewportGuides(options: UseViewportGuidesOptions) {
    * Project the 3D composition bounds to screen space for accurate overlay positioning
    */
   const safeFrameBounds: ComputedRef<SafeFrameBounds> = computed(() => {
-    // Reactive dependencies: these trigger recompute when camera changes
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const _ = [
+    // Force reactive dependency tracking - Vue registers these .value accesses
+    void [
       zoom.value,
       viewportTransform.value,
       canvasWidth.value,
@@ -194,9 +193,8 @@ export function useViewportGuides(options: UseViewportGuidesOptions) {
    * These show where 480p/720p/1080p would crop from center of the composition
    */
   const resolutionCropGuides: ComputedRef<ResolutionGuide[]> = computed(() => {
-    // Reactive dependencies
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const _ = [
+    // Force reactive dependency tracking - Vue registers these .value accesses
+    void [
       zoom.value,
       viewportTransform.value,
       canvasWidth.value,

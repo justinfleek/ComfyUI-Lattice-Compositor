@@ -221,12 +221,36 @@ import {
   updateStyleProperty,
 } from "@/stores/actions/layerStyleActions";
 import { useCompositorStore } from "@/stores/compositorStore";
-import type { LayerStyles } from "@/types/layerStyles";
+import type {
+  BevelEmbossUpdate,
+  ColorOverlayUpdate,
+  DropShadowUpdate,
+  GradientOverlayUpdate,
+  InnerGlowUpdate,
+  InnerShadowUpdate,
+  LayerStyles,
+  OuterGlowUpdate,
+  SatinUpdate,
+  StrokeStyleUpdate,
+  StyleBlendingOptionsUpdate,
+} from "@/types/layerStyles";
 
 const store = useCompositorStore();
 
-// Track expanded sections
-const expandedSections = reactive({
+// Track expanded sections - subset of LayerStyles that can be expanded
+type ExpandableStyleType =
+  | "dropShadow"
+  | "innerShadow"
+  | "outerGlow"
+  | "innerGlow"
+  | "bevelEmboss"
+  | "satin"
+  | "colorOverlay"
+  | "gradientOverlay"
+  | "stroke"
+  | "blendingOptions";
+
+const expandedSections = reactive<Record<ExpandableStyleType, boolean>>({
   dropShadow: false,
   innerShadow: false,
   outerGlow: false,
@@ -238,6 +262,12 @@ const expandedSections = reactive({
   stroke: false,
   blendingOptions: false,
 });
+
+function isExpandableStyleType(
+  styleType: keyof LayerStyles,
+): styleType is ExpandableStyleType {
+  return styleType in expandedSections;
+}
 
 // Computed properties
 const selectedLayer = computed(() => {
@@ -299,8 +329,8 @@ function toggleStyle(styleType: keyof LayerStyles, enabled: boolean) {
   setStyleEnabled(store, selectedLayer.value.id, styleType, enabled);
 
   // Auto-expand when enabling
-  if (enabled && styleType in expandedSections) {
-    (expandedSections as any)[styleType] = true;
+  if (enabled && isExpandableStyleType(styleType)) {
+    expandedSections[styleType] = true;
   }
 }
 
@@ -345,145 +375,64 @@ function formatPresetName(name: string): string {
     .join(" ");
 }
 
-// Style update handlers
-function updateDropShadow(updates: any) {
+// Style update handlers - generic helper to reduce duplication
+function applyStyleUpdates<T extends keyof LayerStyles>(
+  styleType: T,
+  updates: Record<string, unknown>,
+): void {
   if (!selectedLayer.value) return;
   const layerId = selectedLayer.value.id;
-  Object.entries(updates).forEach(([key, value]) => {
+  for (const [key, value] of Object.entries(updates)) {
+    // Type assertion needed because Object.entries loses key type info
+    // The updateStyleProperty function validates keys at runtime
     updateStyleProperty(
       store,
       layerId,
-      "dropShadow",
-      key as any,
+      styleType,
+      key as keyof NonNullable<LayerStyles[T]>,
       value,
     );
-  });
+  }
 }
 
-function updateInnerShadow(updates: any) {
-  if (!selectedLayer.value) return;
-  const layerId = selectedLayer.value.id;
-  Object.entries(updates).forEach(([key, value]) => {
-    updateStyleProperty(
-      store,
-      layerId,
-      "innerShadow",
-      key as any,
-      value,
-    );
-  });
+function updateDropShadow(updates: DropShadowUpdate) {
+  applyStyleUpdates("dropShadow", updates as Record<string, unknown>);
 }
 
-function updateOuterGlow(updates: any) {
-  if (!selectedLayer.value) return;
-  const layerId = selectedLayer.value.id;
-  Object.entries(updates).forEach(([key, value]) => {
-    updateStyleProperty(
-      store,
-      layerId,
-      "outerGlow",
-      key as any,
-      value,
-    );
-  });
+function updateInnerShadow(updates: InnerShadowUpdate) {
+  applyStyleUpdates("innerShadow", updates as Record<string, unknown>);
 }
 
-function updateInnerGlow(updates: any) {
-  if (!selectedLayer.value) return;
-  const layerId = selectedLayer.value.id;
-  Object.entries(updates).forEach(([key, value]) => {
-    updateStyleProperty(
-      store,
-      layerId,
-      "innerGlow",
-      key as any,
-      value,
-    );
-  });
+function updateOuterGlow(updates: OuterGlowUpdate) {
+  applyStyleUpdates("outerGlow", updates as Record<string, unknown>);
 }
 
-function updateBevelEmboss(updates: any) {
-  if (!selectedLayer.value) return;
-  const layerId = selectedLayer.value.id;
-  Object.entries(updates).forEach(([key, value]) => {
-    updateStyleProperty(
-      store,
-      layerId,
-      "bevelEmboss",
-      key as any,
-      value,
-    );
-  });
+function updateInnerGlow(updates: InnerGlowUpdate) {
+  applyStyleUpdates("innerGlow", updates as Record<string, unknown>);
 }
 
-function updateSatin(updates: any) {
-  if (!selectedLayer.value) return;
-  const layerId = selectedLayer.value.id;
-  Object.entries(updates).forEach(([key, value]) => {
-    updateStyleProperty(
-      store,
-      layerId,
-      "satin",
-      key as any,
-      value,
-    );
-  });
+function updateBevelEmboss(updates: BevelEmbossUpdate) {
+  applyStyleUpdates("bevelEmboss", updates as Record<string, unknown>);
 }
 
-function updateColorOverlay(updates: any) {
-  if (!selectedLayer.value) return;
-  const layerId = selectedLayer.value.id;
-  Object.entries(updates).forEach(([key, value]) => {
-    updateStyleProperty(
-      store,
-      layerId,
-      "colorOverlay",
-      key as any,
-      value,
-    );
-  });
+function updateSatin(updates: SatinUpdate) {
+  applyStyleUpdates("satin", updates as Record<string, unknown>);
 }
 
-function updateGradientOverlay(updates: any) {
-  if (!selectedLayer.value) return;
-  const layerId = selectedLayer.value.id;
-  Object.entries(updates).forEach(([key, value]) => {
-    updateStyleProperty(
-      store,
-      layerId,
-      "gradientOverlay",
-      key as any,
-      value,
-    );
-  });
+function updateColorOverlay(updates: ColorOverlayUpdate) {
+  applyStyleUpdates("colorOverlay", updates as Record<string, unknown>);
 }
 
-function updateStroke(updates: any) {
-  if (!selectedLayer.value) return;
-  const layerId = selectedLayer.value.id;
-  Object.entries(updates).forEach(([key, value]) => {
-    updateStyleProperty(
-      store,
-      layerId,
-      "stroke",
-      key as any,
-      value,
-    );
-  });
+function updateGradientOverlay(updates: GradientOverlayUpdate) {
+  applyStyleUpdates("gradientOverlay", updates as Record<string, unknown>);
 }
 
-function updateBlendingOptions(updates: any) {
-  if (!selectedLayer.value) return;
-  const layerId = selectedLayer.value.id;
-  Object.entries(updates).forEach(([key, value]) => {
-    updateStyleProperty(
-      store,
-      layerId,
-      "blendingOptions",
-      key as any,
-      value,
-    );
-  });
+function updateStroke(updates: StrokeStyleUpdate) {
+  applyStyleUpdates("stroke", updates as Record<string, unknown>);
+}
+
+function updateBlendingOptions(updates: StyleBlendingOptionsUpdate) {
+  applyStyleUpdates("blendingOptions", updates as Record<string, unknown>);
 }
 </script>
 

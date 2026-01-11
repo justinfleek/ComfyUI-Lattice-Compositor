@@ -62,11 +62,12 @@ export interface VelocityStoreAccess extends KeyframeStoreAccess {
 export interface BakeExpressionStoreAccess extends KeyframeStoreAccess {
   fps: number;
   frameCount: number;
+  /** Returns array for position/scale (x,y components), number for scalars, null if not found */
   evaluatePropertyAtFrame(
     layerId: string,
     propertyPath: string,
     frame: number,
-  ): any;
+  ): number[] | number | null;
 }
 
 // ============================================================================

@@ -588,18 +588,20 @@ function handleDragStart(
   _index: number,
   groupId?: string,
 ) {
+  if (!event.dataTransfer) return;
   draggedItem.value = item;
   draggedGroup.value = null;
   draggedFromGroupId.value = groupId || null;
-  event.dataTransfer?.setData("text/plain", item.id);
-  event.dataTransfer!.effectAllowed = "move";
+  event.dataTransfer.setData("text/plain", item.id);
+  event.dataTransfer.effectAllowed = "move";
 }
 
 function handleGroupDragStart(event: DragEvent, group: PropertyGroup) {
+  if (!event.dataTransfer) return;
   draggedGroup.value = group;
   draggedItem.value = null;
-  event.dataTransfer?.setData("text/plain", group.id);
-  event.dataTransfer!.effectAllowed = "move";
+  event.dataTransfer.setData("text/plain", group.id);
+  event.dataTransfer.effectAllowed = "move";
 }
 
 function handleDragEnd() {

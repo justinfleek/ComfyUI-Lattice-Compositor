@@ -20,6 +20,14 @@ import { ref, computed } from "vue";
 export type RenderingBackend = "auto" | "webgpu" | "webgl2" | "cpu";
 export type SimulationMode = "realtime" | "cached" | "baked";
 
+/**
+ * Extended GPUAdapter interface for newer WebGPU APIs.
+ * requestAdapterInfo was added to WebGPU spec but may not be in all TS type definitions.
+ */
+interface GPUAdapterWithInfo extends GPUAdapter {
+  requestAdapterInfo?(): Promise<{ device?: string; description?: string; vendor?: string }>;
+}
+
 export interface ParticlePreferences {
   /**
    * Rendering backend preference
@@ -112,8 +120,8 @@ export const useParticlePreferencesStore = defineStore("particlePreferences", ()
           hasWebGPU.value = true;
           // requestAdapterInfo is not available in all implementations
           try {
-            // @ts-expect-error - requestAdapterInfo may not exist in all WebGPU implementations
-            const info = await adapter.requestAdapterInfo?.();
+            const adapterWithInfo = adapter as GPUAdapterWithInfo;
+            const info = await adapterWithInfo.requestAdapterInfo?.();
             gpuName.value = info?.device || info?.description || "WebGPU Device";
           } catch {
             gpuName.value = "WebGPU Device";

@@ -197,6 +197,10 @@ export class ParticleSPHSystem {
    * Compute density and pressure at each particle
    */
   private computeDensityPressure(buffer: Float32Array, h: number): void {
+    if (!this.spatialHash) {
+      throw new Error("SPH computeDensityPressure called without spatialHash");
+    }
+    const spatialHash = this.spatialHash;
     const restDensity = this.config.restDensity;
     const gasConstant = this.config.gasConstant;
 
@@ -224,7 +228,7 @@ export class ParticleSPHSystem {
       density += mass * poly6Kernel(0, h);
 
       // Neighbor contributions
-      for (const j of this.spatialHash!.getNeighbors(px, py, pz)) {
+      for (const j of spatialHash.getNeighbors(px, py, pz)) {
         if (j === i) continue;
 
         const jOffset = j * PARTICLE_STRIDE;
@@ -257,6 +261,10 @@ export class ParticleSPHSystem {
    * Compute pressure, viscosity, and surface tension forces
    */
   private computeForces(buffer: Float32Array, h: number): void {
+    if (!this.spatialHash) {
+      throw new Error("SPH computeForces called without spatialHash");
+    }
+    const spatialHash = this.spatialHash;
     const viscosity = this.config.viscosity;
     const surfaceTension = this.config.surfaceTension;
     const enableST = this.config.enableSurfaceTension;
@@ -290,7 +298,7 @@ export class ParticleSPHSystem {
       let colorFieldLaplacian = 0;
 
       // Sum forces from neighbors
-      for (const j of this.spatialHash!.getNeighbors(px, py, pz)) {
+      for (const j of spatialHash.getNeighbors(px, py, pz)) {
         if (j === i) continue;
 
         const jOffset = j * PARTICLE_STRIDE;

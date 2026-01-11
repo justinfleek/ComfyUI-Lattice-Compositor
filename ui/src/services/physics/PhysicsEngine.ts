@@ -29,6 +29,7 @@ import type {
   SoftBodyState,
 } from "@/types/physics";
 import { DEFAULT_SPACE_CONFIG } from "@/types/physics";
+import { hasXY, isFiniteNumber } from "@/utils/typeGuards";
 
 import { extractRagdollState } from "./RagdollBuilder";
 
@@ -1815,10 +1816,12 @@ export class PhysicsEngine {
       const next = keyframes[i + 1].value;
 
       // Check if current point deviates significantly from line
-      if (typeof curr === "object" && curr !== null && "x" in curr) {
-        const p = prev as unknown as PhysicsVec2;
-        const c = curr as unknown as PhysicsVec2;
-        const n = next as unknown as PhysicsVec2;
+      // Use type guards to safely narrow the generic type
+      if (hasXY(curr) && hasXY(prev) && hasXY(next)) {
+        // Type guards narrow to { x: number; y: number } which is compatible with PhysicsVec2
+        const p: PhysicsVec2 = prev;
+        const c: PhysicsVec2 = curr;
+        const n: PhysicsVec2 = next;
 
         // Calculate distance from point to line
         const lineDir = vec2.sub(n, p);
@@ -1839,11 +1842,11 @@ export class PhysicsEngine {
             lastAdded = i;
           }
         }
-      } else if (typeof curr === "number") {
-        // For scalar values
-        const p = prev as unknown as number;
-        const c = curr as unknown as number;
-        const n = next as unknown as number;
+      } else if (isFiniteNumber(curr) && isFiniteNumber(prev) && isFiniteNumber(next)) {
+        // Type guards narrow to number
+        const p: number = prev;
+        const c: number = curr;
+        const n: number = next;
 
         const expected =
           p + (n - p) * ((i - lastAdded) / (keyframes.length - 1 - lastAdded));

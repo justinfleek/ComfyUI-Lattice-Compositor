@@ -232,8 +232,9 @@ const isSelected = computed(() =>
 const isDragTarget = ref(false);
 
 function onDragStart(event: DragEvent) {
-  event.dataTransfer?.setData("application/layer-reorder", props.layer.id);
-  event.dataTransfer!.effectAllowed = "move";
+  if (!event.dataTransfer) return;
+  event.dataTransfer.setData("application/layer-reorder", props.layer.id);
+  event.dataTransfer.effectAllowed = "move";
 }
 
 function onDragEnd() {

@@ -3,6 +3,38 @@ import { useAudioStore } from "@/stores/audioStore";
 import { useCompositorStore } from "@/stores/compositorStore";
 import { usePlaybackStore } from "@/stores/playbackStore";
 import { useSelectionStore } from "@/stores/selectionStore";
+import type { AnimatableProperty } from "@/types/animation";
+import type { LayerTransform } from "@/types/transform";
+
+// Internal types for dynamic property access
+
+/** Transform property keys that can be iterated for easing operations */
+type EasingTransformKey = "position" | "scale" | "rotation" | "anchor" | "opacity";
+
+/** Layer data with optional dimension/asset properties (used by fit-to-comp and reveal operations) */
+interface LayerDataWithDimensions {
+  width?: number;
+  height?: number;
+  assetId?: string | null;
+  compositionId?: string;
+  [key: string]: unknown;
+}
+
+/** Type-safe transform property accessor for easing operations */
+function getTransformProperty(
+  transform: LayerTransform,
+  key: EasingTransformKey,
+): AnimatableProperty<unknown> | undefined {
+  // Map "anchor" to "origin" (the new property name)
+  if (key === "anchor") {
+    return transform.origin as AnimatableProperty<unknown>;
+  }
+  // For other keys, access directly
+  if (key === "position") return transform.position as AnimatableProperty<unknown>;
+  if (key === "scale") return transform.scale as AnimatableProperty<unknown>;
+  if (key === "rotation") return transform.rotation as AnimatableProperty<unknown>;
+  return undefined;
+}
 
 // Types
 export type SoloPropertyType =
@@ -118,15 +150,10 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
       const layer = store.getLayerById(layerId);
       if (!layer?.transform) continue;
 
-      const transform = layer.transform as any;
-      for (const propKey of [
-        "position",
-        "scale",
-        "rotation",
-        "anchor",
-        "opacity",
-      ]) {
-        const prop = transform[propKey];
+      const transform = layer.transform;
+      const easingKeys: EasingTransformKey[] = ["position", "scale", "rotation", "anchor"];
+      for (const propKey of easingKeys) {
+        const prop = getTransformProperty(transform, propKey);
         if (prop?.animated && prop?.keyframes) {
           for (const kf of prop.keyframes) {
             store.setKeyframeInterpolation(
@@ -165,15 +192,10 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
       const layer = store.getLayerById(layerId);
       if (!layer?.transform) continue;
 
-      const transform = layer.transform as any;
-      for (const propKey of [
-        "position",
-        "scale",
-        "rotation",
-        "anchor",
-        "opacity",
-      ]) {
-        const prop = transform[propKey];
+      const transform = layer.transform;
+      const easingKeys: EasingTransformKey[] = ["position", "scale", "rotation", "anchor"];
+      for (const propKey of easingKeys) {
+        const prop = getTransformProperty(transform, propKey);
         if (prop?.animated && prop?.keyframes) {
           for (const kf of prop.keyframes) {
             store.setKeyframeInterpolation(
@@ -214,15 +236,10 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
       const layer = store.getLayerById(layerId);
       if (!layer?.transform) continue;
 
-      const transform = layer.transform as any;
-      for (const propKey of [
-        "position",
-        "scale",
-        "rotation",
-        "anchor",
-        "opacity",
-      ]) {
-        const prop = transform[propKey];
+      const transform = layer.transform;
+      const easingKeys: EasingTransformKey[] = ["position", "scale", "rotation", "anchor"];
+      for (const propKey of easingKeys) {
+        const prop = getTransformProperty(transform, propKey);
         if (prop?.animated && prop?.keyframes) {
           for (const kf of prop.keyframes) {
             store.setKeyframeInterpolation(
@@ -267,15 +284,10 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
       const layer = store.getLayerById(layerId);
       if (!layer?.transform) continue;
 
-      const transform = layer.transform as any;
-      for (const propKey of [
-        "position",
-        "scale",
-        "rotation",
-        "anchor",
-        "opacity",
-      ]) {
-        const prop = transform[propKey];
+      const transform = layer.transform;
+      const easingKeys: EasingTransformKey[] = ["position", "scale", "rotation", "anchor"];
+      for (const propKey of easingKeys) {
+        const prop = getTransformProperty(transform, propKey);
         if (prop?.animated && prop?.keyframes) {
           for (const kf of prop.keyframes) {
             if (kf.frame < currentFrame && kf.frame > prevFrame) {
@@ -302,15 +314,10 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
       const layer = store.getLayerById(layerId);
       if (!layer?.transform) continue;
 
-      const transform = layer.transform as any;
-      for (const propKey of [
-        "position",
-        "scale",
-        "rotation",
-        "anchor",
-        "opacity",
-      ]) {
-        const prop = transform[propKey];
+      const transform = layer.transform;
+      const easingKeys: EasingTransformKey[] = ["position", "scale", "rotation", "anchor"];
+      for (const propKey of easingKeys) {
+        const prop = getTransformProperty(transform, propKey);
         if (prop?.animated && prop?.keyframes) {
           for (const kf of prop.keyframes) {
             if (kf.frame > currentFrame && kf.frame < nextFrame) {
@@ -742,15 +749,10 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
       const layer = store.getLayerById(layerId);
       if (!layer?.transform) continue;
 
-      const transform = layer.transform as any;
-      for (const propKey of [
-        "position",
-        "scale",
-        "rotation",
-        "anchor",
-        "opacity",
-      ]) {
-        const prop = transform[propKey];
+      const transform = layer.transform;
+      const easingKeys: EasingTransformKey[] = ["position", "scale", "rotation", "anchor"];
+      for (const propKey of easingKeys) {
+        const prop = getTransformProperty(transform, propKey);
         if (prop?.animated && prop?.keyframes) {
           for (const kf of prop.keyframes) {
             store.setKeyframeInterpolation(
@@ -802,7 +804,7 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
       const layer = store.getLayerById(id);
       if (!layer) continue;
 
-      const data = layer.data as any;
+      const data = layer.data as unknown as LayerDataWithDimensions;
       const layerW = data?.width || compW;
       const layerH = data?.height || compH;
 
@@ -833,7 +835,7 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
       const layer = store.getLayerById(id);
       if (!layer) continue;
 
-      const data = layer.data as any;
+      const data = layer.data as unknown as LayerDataWithDimensions;
       const layerW = data?.width || compW;
 
       const scale = compW / layerW;
@@ -856,7 +858,7 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
       const layer = store.getLayerById(id);
       if (!layer) continue;
 
-      const data = layer.data as any;
+      const data = layer.data as unknown as LayerDataWithDimensions;
       const layerH = data?.height || compH;
 
       const scale = compH / layerH;
@@ -895,18 +897,18 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
       const layer = store.getLayerById(id);
       if (!layer) continue;
 
-      const data = layer.data as any;
+      const data = layer.data as unknown as LayerDataWithDimensions;
       const layerW = data?.width || compWidth.value;
       const layerH = data?.height || compHeight.value;
 
       const centerX = layerW / 2;
       const centerY = layerH / 2;
 
-      const transform = layer.transform as any;
-      const currentAnchor = transform?.anchor?.value ||
-        transform?.anchor?.defaultValue || { x: 0, y: 0, z: 0 };
-      const currentPos = transform?.position?.value ||
-        transform?.position?.defaultValue || { x: 0, y: 0, z: 0 };
+      const transform = layer.transform;
+      // Use 'origin' (new name) or fall back to 'anchorPoint' (deprecated)
+      const currentAnchor = transform.origin?.value ??
+        transform.anchorPoint?.value ?? { x: 0, y: 0, z: 0 };
+      const currentPos = transform.position?.value ?? { x: 0, y: 0, z: 0 };
 
       const offsetX = centerX - (currentAnchor.x || 0);
       const offsetY = centerY - (currentAnchor.y || 0);
@@ -938,9 +940,8 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
       const layer = store.getLayerById(id);
       if (!layer) continue;
 
-      const transform = layer.transform as any;
-      const currentPos = transform?.position?.value ||
-        transform?.position?.defaultValue || { x: 0, y: 0, z: 0 };
+      const transform = layer.transform;
+      const currentPos = transform.position?.value ?? { x: 0, y: 0, z: 0 };
 
       store.updateLayerTransform?.(id, {
         position: { x: centerX, y: centerY, z: currentPos.z || 0 },
@@ -979,7 +980,7 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
     const layer = store.getLayerById(selectedIds[0]);
     if (!layer) return;
 
-    const data = layer.data as any;
+    const data = layer.data as unknown as LayerDataWithDimensions;
     let assetId: string | null = null;
 
     if (data?.assetId) {
@@ -1018,11 +1019,11 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
       const layer = store.getLayerById(layerId);
       if (!layer) continue;
 
-      const transform = layer.transform as any;
+      const transform = layer.transform;
       if (transform) {
-        const props = ["position", "rotation", "scale", "anchor", "opacity"];
-        for (const propName of props) {
-          const prop = transform[propName];
+        const easingKeys: EasingTransformKey[] = ["position", "rotation", "scale", "anchor"];
+        for (const propName of easingKeys) {
+          const prop = getTransformProperty(transform, propName);
           if (prop?.keyframes && Array.isArray(prop.keyframes)) {
             for (const kf of prop.keyframes) {
               if (kf.id) keyframeIds.push(kf.id);
@@ -1031,7 +1032,7 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
         }
       }
 
-      const data = layer.data as any;
+      const data = layer.data as unknown as LayerDataWithDimensions;
       if (data) {
         const checkForKeyframes = (obj: any) => {
           if (!obj || typeof obj !== "object") return;

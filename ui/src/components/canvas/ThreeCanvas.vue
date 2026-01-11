@@ -1577,16 +1577,12 @@ function onMotionPathTangentUpdated(
   const keyframe = positionProp.keyframes.find((kf) => kf.id === keyframeId);
   if (!keyframe) return;
 
-  // Initialize spatial tangent if not present
+  // Initialize spatial tangent if not present and apply delta
   const tangentKey =
     tangentType === "in" ? "spatialInTangent" : "spatialOutTangent";
-  if (!keyframe[tangentKey]) {
-    keyframe[tangentKey] = { x: 0, y: 0, z: 0 };
-  }
-
-  // Apply delta to spatial tangent
-  keyframe[tangentKey]!.x += delta.x;
-  keyframe[tangentKey]!.y += delta.y;
+  const tangent = keyframe[tangentKey] ?? (keyframe[tangentKey] = { x: 0, y: 0, z: 0 });
+  tangent.x += delta.x;
+  tangent.y += delta.y;
 
   // Mark layer as dirty for re-evaluation
   markLayerDirty(layerId);

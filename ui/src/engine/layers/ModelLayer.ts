@@ -451,9 +451,10 @@ export class ModelLayer extends BaseLayer {
   private setupAnimations(object: THREE.Object3D): void {
     this.mixer = new THREE.AnimationMixer(object);
 
-    // Update model data with clip info
-    if (!this.modelData.animation) {
-      this.modelData.animation = {
+    // Update model data with clip info - ensure animation object exists
+    const animation =
+      this.modelData.animation ??
+      (this.modelData.animation = {
         clips: [],
         time: {
           id: `${this.id}_anim_time`,
@@ -466,17 +467,16 @@ export class ModelLayer extends BaseLayer {
         speed: 1,
         loop: true,
         autoPlay: false,
-      };
-    }
+      });
 
-    this.modelData.animation!.clips = this.animationClips.map((clip) => ({
+    animation.clips = this.animationClips.map((clip) => ({
       name: clip.name,
       duration: clip.duration,
       frameCount: Math.round(clip.duration * this.compositionFps),
     }));
 
     // Auto-play first clip if enabled
-    if (this.modelData.animation.autoPlay && this.animationClips.length > 0) {
+    if (animation.autoPlay && this.animationClips.length > 0) {
       this.playAnimation(this.animationClips[0].name);
     }
   }

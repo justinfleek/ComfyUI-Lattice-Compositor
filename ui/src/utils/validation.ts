@@ -1,309 +1,388 @@
-/**
- * Validation Utilities
- *
- * Centralized input validation to eliminate NaN/Infinity/null bugs.
- * Created during forensic audit to fix SYSTEMIC-001 through SYSTEMIC-006.
- *
- * Usage:
- *   import { safeNumber, safeFps, safeDivide, safeIndex } from '@/utils/validation';
- */
-
 // ============================================================================
-// SYSTEM DEFAULTS (Wan model requirements)
+// INPUT VALIDATION UTILITIES
+// ============================================================================
+// Runtime validation for input boundaries (AI commands, file imports, user input)
+// These functions ACTUALLY CHECK values at runtime, not just assert types.
 // ============================================================================
 
 /**
- * Default FPS for static/generated content (Wan model standard)
- * Used by: image, shape, particles, camera, lights, spline, path layers
+ * Validation result - either success with typed value, or failure with error message
  */
-export const WAN_DEFAULT_FPS = 16;
+export type ValidationResult<T> =
+  | { ok: true; value: T }
+  | { ok: false; error: string };
 
 /**
- * Default frame count for Wan model (4n+1 requirement)
- * Used by: static/generated layers
+ * Helper to create success result
  */
-export const WAN_DEFAULT_FRAMES = 81;
-
-/**
- * Content-based layers (video, audio, animated imports) should use
- * their native FPS from the content metadata, NOT these defaults.
- */
-
-// ============================================================================
-// SYSTEMIC-003, SYSTEMIC-005: Safe number validation
-// ============================================================================
-
-export interface SafeNumberOptions {
-  min?: number;
-  max?: number;
-  allowZero?: boolean;
-  allowNegative?: boolean;
+export function ok<T>(value: T): ValidationResult<T> {
+  return { ok: true, value };
 }
 
 /**
- * Validates a number is finite and optionally within range.
- * Returns defaultValue if invalid.
- *
- * Fixes: SYSTEMIC-005 (Math.max/min don't catch NaN)
- *
- * @example
- * safeNumber(userInput, 1.0, { min: 0, max: 1 })  // clamp opacity
- * safeNumber(scale, 1.0, { allowZero: false })    // prevent scale=0
+ * Helper to create failure result
  */
-export function safeNumber(
+export function fail<T>(error: string): ValidationResult<T> {
+  return { ok: false, error };
+}
+
+// ============================================================================
+// PRIMITIVE VALIDATORS
+// ============================================================================
+
+/**
+ * Validate that value is a string
+ */
+export function validateString(
   value: unknown,
-  defaultValue: number,
-  options: SafeNumberOptions = {},
-): number {
-  // Check if it's a finite number
-  if (typeof value !== "number" || !Number.isFinite(value)) {
-    return defaultValue;
+  name: string,
+  options: { minLength?: number; maxLength?: number; allowEmpty?: boolean } = {},
+): ValidationResult<string> {
+  if (typeof value !== "string") {
+    return fail(`${name} must be a string, got ${typeof value}`);
+  }
+  if (!options.allowEmpty && value.length === 0) {
+    return fail(`${name} cannot be empty`);
+  }
+  if (options.minLength !== undefined && value.length < options.minLength) {
+    return fail(`${name} must be at least ${options.minLength} characters`);
+  }
+  if (options.maxLength !== undefined && value.length > options.maxLength) {
+    return fail(`${name} must be at most ${options.maxLength} characters`);
+  }
+  return ok(value);
+}
+
+/**
+ * Validate that value is a finite number (not NaN, not Infinity)
+ */
+export function validateFiniteNumber(
+  value: unknown,
+  name: string,
+  options: { min?: number; max?: number; allowNaN?: boolean } = {},
+): ValidationResult<number> {
+  const num = typeof value === "number" ? value : Number(value);
+
+  if (Number.isNaN(num)) {
+    if (options.allowNaN) return ok(num);
+    return fail(`${name} must be a valid number, got NaN`);
   }
 
-  // Check zero
-  if (!options.allowZero && value === 0) {
-    return defaultValue;
+  if (!Number.isFinite(num)) {
+    return fail(`${name} must be a finite number, got ${value}`);
   }
 
-  // Check negative
-  if (!options.allowNegative && value < 0) {
-    return options.min !== undefined ? options.min : defaultValue;
+  if (options.min !== undefined && num < options.min) {
+    return fail(`${name} must be >= ${options.min}, got ${num}`);
   }
 
-  // Apply min/max bounds
-  let result = value;
-  if (options.min !== undefined && result < options.min) {
-    result = options.min;
+  if (options.max !== undefined && num > options.max) {
+    return fail(`${name} must be <= ${options.max}, got ${num}`);
   }
-  if (options.max !== undefined && result > options.max) {
-    result = options.max;
+
+  return ok(num);
+}
+
+/**
+ * Validate that value is an integer
+ */
+export function validateInteger(
+  value: unknown,
+  name: string,
+  options: { min?: number; max?: number } = {},
+): ValidationResult<number> {
+  const result = validateFiniteNumber(value, name, options);
+  if (!result.ok) return result;
+
+  if (!Number.isInteger(result.value)) {
+    return fail(`${name} must be an integer, got ${result.value}`);
   }
 
   return result;
 }
 
-// ============================================================================
-// SYSTEMIC-003: Safe FPS validation
-// ============================================================================
-
 /**
- * Validates FPS - must be positive finite number.
- *
- * IMPORTANT: defaultFps is REQUIRED. Caller must specify the correct default:
- * - For static/generated layers: use WAN_DEFAULT_FPS (16)
- * - For content-based layers: use content.fps or content metadata
- *
- * Fixes: SYSTEMIC-003 (Division by fps=0)
- *
- * @example
- * // Static layer (particles, shape, etc.)
- * const fps = safeFps(composition.fps, WAN_DEFAULT_FPS);
- *
- * // Content-based layer (video, audio)
- * const fps = safeFps(composition.fps, videoMetadata.fps);
+ * Validate that value is a boolean
  */
-export function safeFps(fps: unknown, defaultFps: number): number {
-  // Validate defaultFps itself (developer error if invalid)
-  if (
-    typeof defaultFps !== "number" ||
-    !Number.isFinite(defaultFps) ||
-    defaultFps <= 0
-  ) {
-    console.error(
-      "[safeFps] Invalid defaultFps provided:",
-      defaultFps,
-      "- using WAN_DEFAULT_FPS",
-    );
-    defaultFps = 16; // Fallback to Wan default as last resort
-  }
-
-  if (typeof fps !== "number" || !Number.isFinite(fps) || fps <= 0) {
-    return defaultFps;
-  }
-  // Clamp to reasonable range (1-240 fps)
-  return Math.max(1, Math.min(fps, 240));
-}
-
-// ============================================================================
-// SYSTEMIC-003: Safe division
-// ============================================================================
-
-/**
- * Safe division - returns defaultValue if divisor is 0, NaN, or Infinity.
- *
- * Fixes: SYSTEMIC-003 (Division by zero)
- *
- * @example
- * const frameTime = safeDivide(1, fps, 1/30);
- * const normalized = safeDivide(value, max, 0);
- */
-export function safeDivide(
-  numerator: number,
-  divisor: number,
-  defaultValue: number = 0,
-): number {
-  if (!Number.isFinite(divisor) || divisor === 0) {
-    return defaultValue;
-  }
-  if (!Number.isFinite(numerator)) {
-    return defaultValue;
-  }
-  const result = numerator / divisor;
-  return Number.isFinite(result) ? result : defaultValue;
-}
-
-// ============================================================================
-// SYSTEMIC-002: Safe array index validation
-// ============================================================================
-
-/**
- * Validates array index is a valid integer within bounds.
- * Returns null if invalid (caller must handle).
- *
- * Fixes: SYSTEMIC-002 (NaN bypasses comparison guards)
- *
- * @example
- * const idx = safeIndex(userIndex, array.length);
- * if (idx === null) return;  // Invalid index
- * const item = array[idx];   // Safe access
- */
-export function safeIndex(index: unknown, arrayLength: number): number | null {
-  if (!Number.isInteger(index)) {
-    return null;
-  }
-  const idx = index as number;
-  if (idx < 0 || idx >= arrayLength) {
-    return null;
-  }
-  return idx;
-}
-
-/**
- * Safe array access - returns defaultValue if index is invalid.
- *
- * @example
- * const item = safeArrayAccess(items, userIndex, defaultItem);
- */
-export function safeArrayAccess<T>(
-  array: T[],
-  index: unknown,
-  defaultValue: T,
-): T {
-  const idx = safeIndex(index, array.length);
-  if (idx === null) {
-    return defaultValue;
-  }
-  return array[idx] ?? defaultValue;
-}
-
-// ============================================================================
-// SYSTEMIC-001: Safe frame number validation
-// ============================================================================
-
-/**
- * Validates a frame number is a finite integer >= 0.
- *
- * Fixes: SYSTEMIC-001 (NaN frame equality fails)
- *
- * @example
- * const frame = safeFrame(keyframe.frame, 0);
- */
-export function safeFrame(frame: unknown, defaultFrame: number = 0): number {
-  if (typeof frame !== "number" || !Number.isFinite(frame)) {
-    return defaultFrame;
-  }
-  return Math.max(0, Math.round(frame));
-}
-
-/**
- * Compares two frame numbers, handling NaN correctly.
- *
- * Fixes: SYSTEMIC-001 (NaN === NaN is false)
- *
- * @example
- * if (framesEqual(k.frame, targetFrame)) { ... }
- */
-export function framesEqual(a: number, b: number): boolean {
-  if (Number.isNaN(a) && Number.isNaN(b)) {
-    return true; // Both NaN = equal (for finding NaN keyframes)
-  }
-  return a === b;
-}
-
-// ============================================================================
-// Safe object/null validation
-// ============================================================================
-
-/**
- * Validates object is not null/undefined before property access.
- * Returns true if safe to access, false otherwise.
- *
- * @example
- * if (!isValidObject(material)) return;
- * material.opacity = 0.5;  // Safe
- */
-export function isValidObject(obj: unknown): obj is object {
-  return obj !== null && obj !== undefined && typeof obj === "object";
-}
-
-/**
- * Safe property access with default value.
- *
- * @example
- * const opacity = safeGet(material, 'opacity', 1.0);
- */
-export function safeGet<T>(obj: unknown, key: string, defaultValue: T): T {
-  if (!isValidObject(obj)) {
-    return defaultValue;
-  }
-  const value = (obj as Record<string, unknown>)[key];
-  return value !== undefined && value !== null ? (value as T) : defaultValue;
-}
-
-// ============================================================================
-// SYSTEMIC-006: Safe particle/loop count
-// ============================================================================
-
-/**
- * Validates a count for loops - must be finite positive integer with max cap.
- * Prevents infinite loops from Infinity or huge values.
- *
- * Fixes: SYSTEMIC-006 (Unbounded maxParticles causes infinite loops)
- *
- * @example
- * const count = safeLoopCount(maxParticles, 10000, 1000000);
- * for (let i = 0; i < count; i++) { ... }  // Guaranteed to terminate
- */
-export function safeLoopCount(
-  count: unknown,
-  defaultCount: number,
-  maxAllowed: number = 1000000,
-): number {
-  if (typeof count !== "number" || !Number.isFinite(count) || count < 0) {
-    return defaultCount;
-  }
-  return Math.min(Math.floor(count), maxAllowed);
-}
-
-// ============================================================================
-// Validation error logging (optional, for debugging)
-// ============================================================================
-
-let validationWarningsEnabled = false;
-
-export function enableValidationWarnings(enabled: boolean): void {
-  validationWarningsEnabled = enabled;
-}
-
-export function logValidationWarning(
-  functionName: string,
-  paramName: string,
+export function validateBoolean(
   value: unknown,
-  defaultUsed: unknown,
-): void {
-  if (validationWarningsEnabled) {
-    console.warn(
-      `[Validation] ${functionName}: Invalid ${paramName}=${value}, using default=${defaultUsed}`,
+  name: string,
+): ValidationResult<boolean> {
+  if (typeof value !== "boolean") {
+    return fail(`${name} must be a boolean, got ${typeof value}`);
+  }
+  return ok(value);
+}
+
+/**
+ * Validate that value is one of allowed values
+ */
+export function validateEnum<T extends string>(
+  value: unknown,
+  name: string,
+  allowed: readonly T[],
+): ValidationResult<T> {
+  if (typeof value !== "string") {
+    return fail(`${name} must be a string, got ${typeof value}`);
+  }
+  if (!allowed.includes(value as T)) {
+    return fail(`${name} must be one of [${allowed.join(", ")}], got "${value}"`);
+  }
+  return ok(value as T);
+}
+
+// ============================================================================
+// ARRAY VALIDATORS
+// ============================================================================
+
+/**
+ * Validate that value is an array
+ */
+export function validateArray<T>(
+  value: unknown,
+  name: string,
+  itemValidator: (item: unknown, index: number) => ValidationResult<T>,
+  options: { minLength?: number; maxLength?: number } = {},
+): ValidationResult<T[]> {
+  if (!Array.isArray(value)) {
+    return fail(`${name} must be an array, got ${typeof value}`);
+  }
+
+  if (options.minLength !== undefined && value.length < options.minLength) {
+    return fail(`${name} must have at least ${options.minLength} items`);
+  }
+
+  if (options.maxLength !== undefined && value.length > options.maxLength) {
+    return fail(`${name} must have at most ${options.maxLength} items`);
+  }
+
+  const result: T[] = [];
+  for (let i = 0; i < value.length; i++) {
+    const itemResult = itemValidator(value[i], i);
+    if (!itemResult.ok) {
+      return fail(`${name}[${i}]: ${itemResult.error}`);
+    }
+    result.push(itemResult.value);
+  }
+
+  return ok(result);
+}
+
+/**
+ * Validate array of finite numbers
+ */
+export function validateNumberArray(
+  value: unknown,
+  name: string,
+  options: {
+    minLength?: number;
+    maxLength?: number;
+    min?: number;
+    max?: number;
+  } = {},
+): ValidationResult<number[]> {
+  return validateArray(
+    value,
+    name,
+    (item, i) =>
+      validateFiniteNumber(item, `item ${i}`, {
+        min: options.min,
+        max: options.max,
+      }),
+    { minLength: options.minLength, maxLength: options.maxLength },
+  );
+}
+
+// ============================================================================
+// OBJECT VALIDATORS
+// ============================================================================
+
+/**
+ * Validate that value is a non-null object
+ */
+export function validateObject(
+  value: unknown,
+  name: string,
+): ValidationResult<Record<string, unknown>> {
+  if (typeof value !== "object" || value === null) {
+    return fail(
+      `${name} must be an object, got ${value === null ? "null" : typeof value}`,
     );
   }
+  return ok(value as Record<string, unknown>);
+}
+
+/**
+ * Validate a Vec2 (x, y coordinates)
+ */
+export function validateVec2(
+  value: unknown,
+  name: string,
+): ValidationResult<{ x: number; y: number }> {
+  const objResult = validateObject(value, name);
+  if (!objResult.ok) return objResult;
+
+  const obj = objResult.value;
+  const x = validateFiniteNumber(obj.x, `${name}.x`);
+  if (!x.ok) return x;
+
+  const y = validateFiniteNumber(obj.y, `${name}.y`);
+  if (!y.ok) return y;
+
+  return ok({ x: x.value, y: y.value });
+}
+
+/**
+ * Validate a Vec3 (x, y, z coordinates)
+ */
+export function validateVec3(
+  value: unknown,
+  name: string,
+  options: { allowMissingZ?: boolean } = {},
+): ValidationResult<{ x: number; y: number; z: number }> {
+  const objResult = validateObject(value, name);
+  if (!objResult.ok) return objResult;
+
+  const obj = objResult.value;
+  const x = validateFiniteNumber(obj.x, `${name}.x`);
+  if (!x.ok) return x;
+
+  const y = validateFiniteNumber(obj.y, `${name}.y`);
+  if (!y.ok) return y;
+
+  let z: number;
+  if (obj.z === undefined && options.allowMissingZ) {
+    z = 0;
+  } else {
+    const zResult = validateFiniteNumber(obj.z, `${name}.z`);
+    if (!zResult.ok) return zResult;
+    z = zResult.value;
+  }
+
+  return ok({ x: x.value, y: y.value, z });
+}
+
+/**
+ * Validate a color object (r, g, b, optional a)
+ */
+export function validateColor(
+  value: unknown,
+  name: string,
+): ValidationResult<{ r: number; g: number; b: number; a?: number }> {
+  const objResult = validateObject(value, name);
+  if (!objResult.ok) return objResult;
+
+  const obj = objResult.value;
+  const r = validateFiniteNumber(obj.r, `${name}.r`, { min: 0, max: 255 });
+  if (!r.ok) return r;
+
+  const g = validateFiniteNumber(obj.g, `${name}.g`, { min: 0, max: 255 });
+  if (!g.ok) return g;
+
+  const b = validateFiniteNumber(obj.b, `${name}.b`, { min: 0, max: 255 });
+  if (!b.ok) return b;
+
+  if (obj.a !== undefined) {
+    const a = validateFiniteNumber(obj.a, `${name}.a`, { min: 0, max: 1 });
+    if (!a.ok) return a;
+    return ok({ r: r.value, g: g.value, b: b.value, a: a.value });
+  }
+
+  return ok({ r: r.value, g: g.value, b: b.value });
+}
+
+// ============================================================================
+// OPTIONAL VALIDATORS
+// ============================================================================
+
+/**
+ * Make a validator optional - returns undefined if value is undefined/null
+ */
+export function optional<T>(
+  validator: (value: unknown, name: string) => ValidationResult<T>,
+): (value: unknown, name: string) => ValidationResult<T | undefined> {
+  return (value, name) => {
+    if (value === undefined || value === null) {
+      return ok(undefined);
+    }
+    return validator(value, name);
+  };
+}
+
+/**
+ * Provide a default value if undefined
+ */
+export function withDefault<T>(
+  validator: (value: unknown, name: string) => ValidationResult<T>,
+  defaultValue: T,
+): (value: unknown, name: string) => ValidationResult<T> {
+  return (value, name) => {
+    if (value === undefined || value === null) {
+      return ok(defaultValue);
+    }
+    return validator(value, name);
+  };
+}
+
+// ============================================================================
+// COMPOSITION HELPERS
+// ============================================================================
+
+/**
+ * Validate all fields of an object schema
+ * Returns typed object if all validations pass
+ */
+export function validateSchema<T extends Record<string, unknown>>(
+  value: unknown,
+  name: string,
+  schema: {
+    [K in keyof T]: (value: unknown, name: string) => ValidationResult<T[K]>;
+  },
+): ValidationResult<T> {
+  const objResult = validateObject(value, name);
+  if (!objResult.ok) return objResult;
+
+  const obj = objResult.value;
+  const result: Partial<T> = {};
+
+  for (const key of Object.keys(schema) as (keyof T)[]) {
+    const fieldValidator = schema[key];
+    const fieldResult = fieldValidator(
+      obj[key as string],
+      `${name}.${String(key)}`,
+    );
+    if (!fieldResult.ok) {
+      return fieldResult as ValidationResult<T>;
+    }
+    result[key] = fieldResult.value;
+  }
+
+  return ok(result as T);
+}
+
+// ============================================================================
+// ERROR AGGREGATION
+// ============================================================================
+
+/**
+ * Collect all validation errors instead of failing on first
+ */
+export function validateAll<T>(
+  validations: Array<() => ValidationResult<unknown>>,
+  onSuccess: () => T,
+): ValidationResult<T> {
+  const errors: string[] = [];
+
+  for (const validate of validations) {
+    const result = validate();
+    if (!result.ok) {
+      errors.push(result.error);
+    }
+  }
+
+  if (errors.length > 0) {
+    return fail(errors.join("; "));
+  }
+
+  return ok(onSuccess());
 }

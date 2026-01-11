@@ -299,8 +299,9 @@ function distributeLayers(direction: DistributeDirection) {
 
   // Apply distribution
   for (let i = 1; i < sorted.length - 1; i++) {
-    const layer = sorted[i]!;
-    const pos = { ...layer.transform.position?.value };
+    const layer = sorted[i];
+    if (!layer?.transform?.position) continue;
+    const pos = { ...layer.transform.position.value };
 
     if (direction === "horizontal") {
       pos.x = first.x + spacing * i;
@@ -308,7 +309,7 @@ function distributeLayers(direction: DistributeDirection) {
       pos.y = first.y + spacing * i;
     }
 
-    layer.transform.position!.value = pos;
+    layer.transform.position.value = pos;
   }
 
   store.project.meta.modified = new Date().toISOString();

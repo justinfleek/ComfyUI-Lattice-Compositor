@@ -12,6 +12,7 @@
 import {
   AudioPathAnimator,
   type PathAnimatorConfig,
+  type PathAnimatorState,
 } from "@/services/audioPathAnimator";
 import type { AnimatableProperty, Keyframe, Layer } from "@/types/project";
 import { storeLogger } from "@/utils/logger";
@@ -21,8 +22,20 @@ import { useAudioStore } from "@/stores/audioStore";
 // STORE INTERFACE
 // ============================================================
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type PathAnimatorMap = Map<string, AudioPathAnimator | any>;
+/**
+ * Structural interface for AudioPathAnimator methods actually used.
+ * This avoids Pinia reactive proxy issues by only declaring the methods we call,
+ * not the full class implementation with private properties.
+ */
+export interface PathAnimatorAccess {
+  setPath(pathData: string): void;
+  setConfig(updates: Partial<PathAnimatorConfig>): void;
+  update(audioValue: number, isBeat: boolean): PathAnimatorState;
+  reset(): void;
+}
+
+/** Map of layer IDs to their PathAnimator instances (structural access) */
+type PathAnimatorMap = Map<string, PathAnimatorAccess>;
 
 /**
  * Interface for stores that can use audio-to-keyframe conversion
@@ -96,7 +109,7 @@ export function removePathAnimator(
 export function getPathAnimator(
   store: AudioKeyframeStore,
   layerId: string,
-): AudioPathAnimator | undefined {
+): PathAnimatorAccess | undefined {
   return store.pathAnimators.get(layerId);
 }
 

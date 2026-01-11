@@ -299,19 +299,20 @@ const overlayStyle = computed(() => ({
 }));
 
 const cameraSuggestions = computed<CameraSuggestion[]>(() => {
-  return props.suggestions
-    .filter((s) => s.type === "camera" && s.points && s.points.length >= 2)
-    .map((s) => {
-      const firstPoint = s.points![0];
-      const lastPoint = s.points![s.points!.length - 1];
-      return {
+  return props.suggestions.flatMap((s) => {
+    if (s.type !== "camera" || !s.points || s.points.length < 2) return [];
+    const firstPoint = s.points[0];
+    const lastPoint = s.points[s.points.length - 1];
+    return [
+      {
         type: s.description?.split(" ")[0] || "Camera",
         startX: firstPoint.x,
         startY: firstPoint.y,
         endX: lastPoint.x,
         endY: lastPoint.y,
-      };
-    });
+      },
+    ];
+  });
 });
 
 // Methods

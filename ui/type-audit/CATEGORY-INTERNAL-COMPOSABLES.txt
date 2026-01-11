@@ -1,0 +1,40 @@
+# INTERNAL (Composables) Issues - Fix with typeGuards.ts
+
+src/composables/useAssetHandlers.ts:102:  function onEnvironmentUpdate(settings: any) {
+src/composables/useAssetHandlers.ts:113:  async function onEnvironmentLoad(settings: any) {
+src/composables/useAssetHandlers.ts:19:  const store = useCompositorStore() as any;
+src/composables/useAssetHandlers.ts:32:    storedSvg.document.paths.forEach((path: any, index: number) => {
+src/composables/useAssetHandlers.ts:80:    const layer = store.layers.find((l: any) => l.id === selectedLayerIds[0]);
+src/composables/useAssetHandlers.ts:89:        ...(layer.data as any).emitter,
+src/composables/useCurveEditorCoords.ts:129:export function getNumericValue(value: any): number {
+src/composables/useCurveEditorInteraction.ts:57:  getNumericValue: (value: any) => number;
+src/composables/useCurveEditorInteraction.ts:62:  store: any;
+src/composables/useKeyboardShortcuts.ts:1035:      const data = layer.data as unknown as LayerDataWithDimensions;
+src/composables/useKeyboardShortcuts.ts:1037:        const checkForKeyframes = (obj: any) => {
+src/composables/useKeyboardShortcuts.ts:1124:              const data = layer.data as unknown as Record<string, unknown>;
+src/composables/useKeyboardShortcuts.ts:1138:            const data = layer.data as unknown as Record<string, unknown>;
+src/composables/useKeyboardShortcuts.ts:1148:            const data = layer.data as unknown as Record<string, unknown>;
+src/composables/useKeyboardShortcuts.ts:807:      const data = layer.data as unknown as LayerDataWithDimensions;
+src/composables/useKeyboardShortcuts.ts:82:  assetStore: any;
+src/composables/useKeyboardShortcuts.ts:838:      const data = layer.data as unknown as LayerDataWithDimensions;
+src/composables/useKeyboardShortcuts.ts:861:      const data = layer.data as unknown as LayerDataWithDimensions;
+src/composables/useKeyboardShortcuts.ts:900:      const data = layer.data as unknown as LayerDataWithDimensions;
+src/composables/useKeyboardShortcuts.ts:983:    const data = layer.data as unknown as LayerDataWithDimensions;
+src/composables/useMenuActions.ts:47:  const store = useCompositorStore() as any;
+src/composables/useShapeDrawing.ts:249:    const shapeData = newLayer.data as any;
+src/composables/useShapeDrawing.ts:255:    let group = shapeData.contents.find((c: any) => c.type === "group");
+src/composables/useShapeDrawing.ts:271:    let generator: any;
+src/composables/useShapeDrawing.ts:31:  keyframes: any[];
+src/composables/useSplineInteraction.ts:308:    const layer = store.layers.find((l: any) => l.id === layerId.value);
+src/composables/useSplineInteraction.ts:450:        const rawNewPointX = (newPoint as any)?.rawX ?? newPoint?.x ?? 0;
+src/composables/useSplineInteraction.ts:451:        const rawNewPointY = (newPoint as any)?.rawY ?? newPoint?.y ?? 0;
+src/composables/useSplineInteraction.ts:499:      const layer = store.layers.find((l: any) => l.id === layerId.value);
+src/composables/useSplineInteraction.ts:514:        const updates: any = { x: layerPos.x, y: layerPos.y };
+src/composables/useSplineInteraction.ts:531:        const updates: any = { handleIn: { x: layerPos.x, y: layerPos.y } };
+src/composables/useSplineInteraction.ts:542:        const updates: any = { handleOut: { x: layerPos.x, y: layerPos.y } };
+src/composables/useSplineInteraction.ts:571:        const updates: any = { x: newX };
+src/composables/useSplineInteraction.ts:594:        const updates: any = { y: newY };
+src/composables/useSplineInteraction.ts:627:      const layer = store.layers.find((l: any) => l.id === layerId.value);
+src/composables/useSplineInteraction.ts:63:  store: any;
+src/composables/useSplineInteraction.ts:831:      startDepth: (point as any).depth ?? 0,
+src/composables/useSplineInteraction.ts:841:        const layer = store.layers.find((l: any) => l.id === layerId.value);
