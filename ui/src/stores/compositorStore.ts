@@ -112,7 +112,7 @@ import * as markerActions from "./actions/markerActions";
 import * as particleLayerActions from "./actions/particleLayerActions";
 import * as projectActions from "./actions/projectActions";
 import { useAnimationStore } from "./animationStore";
-import * as propertyDriverActions from "./actions/propertyDriverActions";
+import { useExpressionStore } from "./expressionStore";
 import * as segmentationActions from "./actions/segmentationActions";
 import * as textAnimatorActions from "./actions/textAnimatorActions";
 import type { VideoImportResult } from "./actions/videoActions";
@@ -2512,21 +2512,11 @@ export const useCompositorStore = defineStore("compositor", {
     },
 
     // ============================================================
-    // PROPERTY DRIVER SYSTEM (delegated to propertyDriverActions)
+    // PROPERTY DRIVER SYSTEM (delegated to expressionStore)
     // ============================================================
 
     initializePropertyDriverSystem(): void {
-      this.propertyDriverSystem = new PropertyDriverSystem();
-      this.propertyDriverSystem.setPropertyGetter(
-        (layerId, propertyPath, frame) => {
-          return this.getPropertyValueAtFrame(layerId, propertyPath, frame);
-        },
-      );
-      const audioStore = useAudioStore();
-      if (audioStore.audioAnalysis)
-        this.propertyDriverSystem.setAudioAnalysis(audioStore.audioAnalysis);
-      for (const driver of this.propertyDrivers)
-        this.propertyDriverSystem.addDriver(driver);
+      useExpressionStore().initializePropertyDriverSystem(this);
     },
     // Evaluates property at frame, using composition's fps and duration for expressions
     getPropertyValueAtFrame(
@@ -2731,14 +2721,14 @@ export const useCompositorStore = defineStore("compositor", {
     },
 
     getDrivenValuesForLayer(layerId: string): Map<PropertyPath, number> {
-      return propertyDriverActions.getEvaluatedLayerProperties(
+      return useExpressionStore().getEvaluatedLayerProperties(
         this,
         layerId,
         this.getActiveComp()?.currentFrame ?? 0,
       );
     },
     addPropertyDriver(driver: PropertyDriver): boolean {
-      return propertyDriverActions.addPropertyDriver(this, driver);
+      return useExpressionStore().addPropertyDriver(this, driver);
     },
     createAudioPropertyDriver(
       targetLayerId: string,
@@ -2751,7 +2741,7 @@ export const useCompositorStore = defineStore("compositor", {
         smoothing?: number;
       } = {},
     ): PropertyDriver {
-      return propertyDriverActions.createAudioPropertyDriver(
+      return useExpressionStore().createAudioPropertyDriver(
         this,
         targetLayerId,
         targetProperty,
@@ -2770,7 +2760,7 @@ export const useCompositorStore = defineStore("compositor", {
         blendMode?: "replace" | "add" | "multiply";
       } = {},
     ): PropertyDriver | null {
-      return propertyDriverActions.createPropertyLinkDriver(
+      return useExpressionStore().createPropertyLinkDriver(
         this,
         targetLayerId,
         targetProperty,
@@ -2780,19 +2770,19 @@ export const useCompositorStore = defineStore("compositor", {
       );
     },
     removePropertyDriver(driverId: string): void {
-      propertyDriverActions.removePropertyDriver(this, driverId);
+      useExpressionStore().removePropertyDriver(this, driverId);
     },
     updatePropertyDriver(
       driverId: string,
       updates: Partial<PropertyDriver>,
     ): void {
-      propertyDriverActions.updatePropertyDriver(this, driverId, updates);
+      useExpressionStore().updatePropertyDriver(this, driverId, updates);
     },
     getDriversForLayer(layerId: string): PropertyDriver[] {
-      return propertyDriverActions.getDriversForLayer(this, layerId);
+      return useExpressionStore().getDriversForLayer(this, layerId);
     },
     togglePropertyDriver(driverId: string): void {
-      propertyDriverActions.togglePropertyDriver(this, driverId);
+      useExpressionStore().togglePropertyDriver(this, driverId);
     },
 
     // ============================================================
@@ -3056,8 +3046,8 @@ export const useCompositorStore = defineStore("compositor", {
       endFrame?: number,
       sampleRate?: number,
     ): number {
-      return useKeyframeStore().convertExpressionToKeyframes(
-        this as unknown as BakeExpressionStoreAccess,
+      return useExpressionStore().convertExpressionToKeyframes(
+        this,
         layerId,
         propertyPath,
         startFrame,
@@ -3070,7 +3060,7 @@ export const useCompositorStore = defineStore("compositor", {
      * Check if a property has a bakeable expression
      */
     canBakeExpression(layerId: string, propertyPath: string): boolean {
-      return useKeyframeStore().canBakeExpression(this, layerId, propertyPath);
+      return useExpressionStore().canBakeExpression(this, layerId, propertyPath);
     },
 
     /**
@@ -3139,7 +3129,7 @@ export const useCompositorStore = defineStore("compositor", {
     },
 
     // ============================================================
-    // EXPRESSION METHODS
+    // EXPRESSION METHODS (delegated to expressionStore)
     // ============================================================
 
     /**
@@ -3150,7 +3140,7 @@ export const useCompositorStore = defineStore("compositor", {
       propertyPath: string,
       expression: import("@/types/animation").PropertyExpression,
     ): boolean {
-      return useKeyframeStore().setPropertyExpression(
+      return useExpressionStore().setPropertyExpression(
         this,
         layerId,
         propertyPath,
@@ -3167,7 +3157,7 @@ export const useCompositorStore = defineStore("compositor", {
       expressionName: string = "custom",
       params: Record<string, number | string | boolean> = {},
     ): boolean {
-      return useKeyframeStore().enablePropertyExpression(
+      return useExpressionStore().enablePropertyExpression(
         this,
         layerId,
         propertyPath,
@@ -3180,7 +3170,7 @@ export const useCompositorStore = defineStore("compositor", {
      * Disable expression on a property
      */
     disablePropertyExpression(layerId: string, propertyPath: string): boolean {
-      return useKeyframeStore().disablePropertyExpression(
+      return useExpressionStore().disablePropertyExpression(
         this,
         layerId,
         propertyPath,
@@ -3191,7 +3181,7 @@ export const useCompositorStore = defineStore("compositor", {
      * Toggle expression enabled state
      */
     togglePropertyExpression(layerId: string, propertyPath: string): boolean {
-      return useKeyframeStore().togglePropertyExpression(
+      return useExpressionStore().togglePropertyExpression(
         this,
         layerId,
         propertyPath,
@@ -3202,7 +3192,7 @@ export const useCompositorStore = defineStore("compositor", {
      * Remove expression from property
      */
     removePropertyExpression(layerId: string, propertyPath: string): boolean {
-      return useKeyframeStore().removePropertyExpression(
+      return useExpressionStore().removePropertyExpression(
         this,
         layerId,
         propertyPath,
@@ -3216,14 +3206,14 @@ export const useCompositorStore = defineStore("compositor", {
       layerId: string,
       propertyPath: string,
     ): import("@/types/animation").PropertyExpression | undefined {
-      return useKeyframeStore().getPropertyExpression(this, layerId, propertyPath);
+      return useExpressionStore().getPropertyExpression(this, layerId, propertyPath);
     },
 
     /**
      * Check if property has an expression
      */
     hasPropertyExpression(layerId: string, propertyPath: string): boolean {
-      return useKeyframeStore().hasPropertyExpression(this, layerId, propertyPath);
+      return useExpressionStore().hasPropertyExpression(this, layerId, propertyPath);
     },
 
     /**
@@ -3234,7 +3224,7 @@ export const useCompositorStore = defineStore("compositor", {
       propertyPath: string,
       params: Record<string, number | string | boolean>,
     ): boolean {
-      return useKeyframeStore().updateExpressionParams(
+      return useExpressionStore().updateExpressionParams(
         this,
         layerId,
         propertyPath,

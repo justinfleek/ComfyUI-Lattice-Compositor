@@ -11,6 +11,11 @@ export {
   useAnimationStore,
 } from "./animationStore";
 export { type AudioStore, useAudioStore } from "./audioStore";
+export {
+  type ExpressionStoreType,
+  type ExpressionStoreAccess,
+  useExpressionStore,
+} from "./expressionStore";
 // Main compositor store (legacy - being refactored into domain stores)
 export { useCompositorStore } from "./compositorStore";
 export { type HistoryStore, useHistoryStore } from "./historyStore";
