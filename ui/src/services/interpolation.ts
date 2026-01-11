@@ -40,6 +40,7 @@ import {
   evaluateExpression,
 } from "./expressions";
 import { isBezierPath, morphPaths, prepareMorphPaths } from "./pathMorphing";
+import { safeLerp } from "@/utils/numericSafety";
 
 // ============================================================================
 // BEZIER HANDLE CACHE
@@ -535,9 +536,9 @@ function bezierDerivative(
  * UPDATED: Now supports Z-axis interpolation for 3D transforms
  */
 function interpolateValue<T>(v1: T, v2: T, t: number): T {
-  // Number
+  // Number - use safeLerp to handle extreme values that would overflow
   if (typeof v1 === "number" && typeof v2 === "number") {
-    return (v1 + (v2 - v1) * t) as T;
+    return safeLerp(v1, v2, t) as T;
   }
 
   // Position/Vector object (Supports 2D and 3D)
@@ -554,20 +555,21 @@ function interpolateValue<T>(v1: T, v2: T, t: number): T {
     const val1 = v1 as any;
     const val2 = v2 as any;
 
+    // Use safeLerp for each component to handle extreme values
     const result: any = {
-      x: val1.x + (val2.x - val1.x) * t,
-      y: val1.y + (val2.y - val1.y) * t,
+      x: safeLerp(val1.x, val2.x, t),
+      y: safeLerp(val1.y, val2.y, t),
     };
 
     // Handle Z if present in both
     if ("z" in val1 && "z" in val2) {
-      result.z = val1.z + (val2.z - val1.z) * t;
+      result.z = safeLerp(val1.z, val2.z, t);
     } else if ("z" in val1) {
       // Transitioning from 3D to 2D (rare, but handle it)
-      result.z = val1.z * (1 - t);
+      result.z = safeLerp(val1.z, 0, t);
     } else if ("z" in val2) {
       // Transitioning from 2D to 3D
-      result.z = val2.z * t;
+      result.z = safeLerp(0, val2.z, t);
     }
 
     return result as T;
