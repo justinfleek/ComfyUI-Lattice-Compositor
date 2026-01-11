@@ -4,6 +4,7 @@ import App from "./App.vue";
 import "splitpanes/dist/splitpanes.css";
 import "./styles/design-tokens.css";
 import { initializeEffects } from "./services/effects";
+import { cleanupEffectResources } from "./services/effectProcessor";
 import { initializeSES } from "./services/expressions/sesEvaluator";
 
 let appInstance: VueApp | null = null;
@@ -13,6 +14,10 @@ let sesInitialized = false;
 let sesInitPromise: Promise<void> | null = null;
 
 let bridgeHandler: EventListener | null = null;
+let cleanupInterval: ReturnType<typeof setInterval> | null = null;
+
+// Cleanup interval period (60 seconds)
+const CLEANUP_INTERVAL_MS = 60000;
 
 /**
  * SECURITY: Initialize expression security.
@@ -114,6 +119,11 @@ export async function mountApp(
   appInstance = app;
   setupBridge();
 
+  // Start periodic cleanup of effect resources (canvas pool, etc.)
+  if (!cleanupInterval) {
+    cleanupInterval = setInterval(cleanupEffectResources, CLEANUP_INTERVAL_MS);
+  }
+
   return app;
 }
 
@@ -126,6 +136,15 @@ export function unmountApp(): void {
   try {
     teardownBridge();
     appInstance.unmount();
+
+    // Stop cleanup interval
+    if (cleanupInterval) {
+      clearInterval(cleanupInterval);
+      cleanupInterval = null;
+    }
+
+    // Run final cleanup
+    cleanupEffectResources();
   } catch (error) {
     console.error("[Lattice] unmount failed:", error);
   } finally {

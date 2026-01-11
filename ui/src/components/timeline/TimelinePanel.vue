@@ -692,8 +692,8 @@ function startRulerScrub(e: MouseEvent) {
         effectivePpf.value,
         {
           layers: store.layers,
-          audioAnalysis: store.audioAnalysis,
-          peakData: store.peakData,
+          audioAnalysis: audioStore.audioAnalysis,
+          peakData: audioStore.peakData,
         },
       );
       if (snap) {

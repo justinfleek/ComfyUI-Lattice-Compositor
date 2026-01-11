@@ -14,11 +14,9 @@
 
 import { describe, expect, it } from "vitest";
 import { getDefaultLayerData } from "@/stores/actions/layer/layerDefaults";
-import {
-  createLayer,
-  duplicateLayer,
-  setLayerParent,
-} from "@/stores/actions/layerActions";
+// These functions are now in layerStore modules - test imports the modules directly
+import { createLayer, duplicateLayer } from "@/stores/layerStore/crud";
+import { setLayerParent } from "@/stores/layerStore/hierarchy";
 import type { Layer, LayerType } from "@/types/project";
 
 // All 26 layer types as per CLAUDE.md
@@ -66,7 +64,7 @@ function createMockStore(composition?: { width: number; height: number }) {
       keyframes: [],
     },
     getActiveComp: () => ({
-      settings: { width: comp.width, height: comp.height, frameCount: 81 },
+      settings: { width: comp.width, height: comp.height, fps: 30, frameCount: 81 },
       layers,
     }),
     getActiveCompLayers: () => layers,

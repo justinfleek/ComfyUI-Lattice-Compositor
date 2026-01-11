@@ -12,6 +12,7 @@
 import { createPinia, setActivePinia } from "pinia";
 import type { FrameState } from "@/engine/MotionEngine";
 import { MotionEngine } from "@/engine/MotionEngine";
+import { useAudioStore } from "@/stores/audioStore";
 import { useCompositorStore } from "@/stores/compositorStore";
 
 /**
@@ -30,14 +31,16 @@ export function createEngineTestHarness() {
   const pinia = createPinia();
   setActivePinia(pinia);
 
-  // Get real store
+  // Get real stores
   const store = useCompositorStore();
+  const audioStore = useAudioStore();
 
   // Real motion engine for evaluation - this is the PURE evaluation engine
   const motionEngine = new MotionEngine();
 
   return {
     store,
+    audioStore,
     motionEngine,
     pinia,
 
@@ -53,7 +56,7 @@ export function createEngineTestHarness() {
       const frameState = motionEngine.evaluate(
         frame,
         store.project,
-        store.audioAnalysis,
+        audioStore.audioAnalysis,
       );
       return frameState;
     },

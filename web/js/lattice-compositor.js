@@ -60,6 +60,84 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
   }
 });
 
+class CanvasPool {
+  pool = [];
+  maxSize = 20;
+  // Max pooled canvases
+  maxAge = 6e4;
+  // 60 second TTL for unused canvases
+  /**
+   * Acquire a canvas of the specified dimensions
+   */
+  acquire(width, height) {
+    const now = Date.now();
+    for (const item of this.pool) {
+      if (!item.inUse && item.width === width && item.height === height) {
+        item.inUse = true;
+        item.lastUsed = now;
+        item.ctx.clearRect(0, 0, width, height);
+        return { canvas: item.canvas, ctx: item.ctx };
+      }
+    }
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext("2d");
+    if (this.pool.length < this.maxSize) {
+      this.pool.push({
+        canvas,
+        ctx,
+        width,
+        height,
+        inUse: true,
+        lastUsed: now
+      });
+    }
+    return { canvas, ctx };
+  }
+  /**
+   * Release a canvas back to the pool
+   * Call this when done with an effect result
+   */
+  release(canvas) {
+    const item = this.pool.find((p) => p.canvas === canvas);
+    if (item) {
+      item.inUse = false;
+      item.lastUsed = Date.now();
+    }
+  }
+  /**
+   * Clean up old unused canvases to free memory
+   */
+  cleanup() {
+    const now = Date.now();
+    this.pool = this.pool.filter((item) => {
+      if (!item.inUse && now - item.lastUsed > this.maxAge) {
+        return false;
+      }
+      return true;
+    });
+  }
+  /**
+   * Clear all pooled canvases
+   */
+  clear() {
+    this.pool = [];
+  }
+  /**
+   * Get pool statistics
+   */
+  getStats() {
+    const inUse = this.pool.filter((p) => p.inUse).length;
+    return {
+      total: this.pool.length,
+      inUse,
+      available: this.pool.length - inUse
+    };
+  }
+}
+const canvasPool = new CanvasPool();
+
 const LOG_LEVELS = {
   debug: 0,
   info: 1,
@@ -3155,83 +3233,9 @@ function interpolatePath(p1, p2, t) {
   return morphPaths(prepared.source, prepared.target, t);
 }
 
-class CanvasPool {
-  pool = [];
-  maxSize = 20;
-  // Max pooled canvases
-  maxAge = 6e4;
-  // 60 second TTL for unused canvases
-  /**
-   * Acquire a canvas of the specified dimensions
-   */
-  acquire(width, height) {
-    const now = Date.now();
-    for (const item of this.pool) {
-      if (!item.inUse && item.width === width && item.height === height) {
-        item.inUse = true;
-        item.lastUsed = now;
-        item.ctx.clearRect(0, 0, width, height);
-        return { canvas: item.canvas, ctx: item.ctx };
-      }
-    }
-    const canvas = document.createElement("canvas");
-    canvas.width = width;
-    canvas.height = height;
-    const ctx = canvas.getContext("2d");
-    if (this.pool.length < this.maxSize) {
-      this.pool.push({
-        canvas,
-        ctx,
-        width,
-        height,
-        inUse: true,
-        lastUsed: now
-      });
-    }
-    return { canvas, ctx };
-  }
-  /**
-   * Release a canvas back to the pool
-   * Call this when done with an effect result
-   */
-  release(canvas) {
-    const item = this.pool.find((p) => p.canvas === canvas);
-    if (item) {
-      item.inUse = false;
-      item.lastUsed = Date.now();
-    }
-  }
-  /**
-   * Clean up old unused canvases to free memory
-   */
-  cleanup() {
-    const now = Date.now();
-    this.pool = this.pool.filter((item) => {
-      if (!item.inUse && now - item.lastUsed > this.maxAge) {
-        return false;
-      }
-      return true;
-    });
-  }
-  /**
-   * Clear all pooled canvases
-   */
-  clear() {
-    this.pool = [];
-  }
-  /**
-   * Get pool statistics
-   */
-  getStats() {
-    const inUse = this.pool.filter((p) => p.inUse).length;
-    return {
-      total: this.pool.length,
-      inUse,
-      available: this.pool.length - inUse
-    };
-  }
+function cleanupEffectResources() {
+  canvasPool.cleanup();
 }
-const canvasPool = new CanvasPool();
 const effectRenderers = /* @__PURE__ */ new Map();
 function registerEffectRenderer(effectKey, renderer) {
   effectRenderers.set(effectKey, renderer);
@@ -9806,6 +9810,8 @@ let effectsInitialized = false;
 let sesInitialized = false;
 let sesInitPromise = null;
 let bridgeHandler = null;
+let cleanupInterval = null;
+const CLEANUP_INTERVAL_MS = 6e4;
 async function initializeSecuritySandbox() {
   if (sesInitialized) return;
   if (!sesInitPromise) {
@@ -9864,6 +9870,9 @@ async function mountApp(container) {
   app.mount(el);
   appInstance = app;
   setupBridge();
+  if (!cleanupInterval) {
+    cleanupInterval = setInterval(cleanupEffectResources, CLEANUP_INTERVAL_MS);
+  }
   return app;
 }
 function unmountApp() {
@@ -9871,6 +9880,11 @@ function unmountApp() {
   try {
     teardownBridge();
     appInstance.unmount();
+    if (cleanupInterval) {
+      clearInterval(cleanupInterval);
+      cleanupInterval = null;
+    }
+    cleanupEffectResources();
   } catch (error) {
     console.error("[Lattice] unmount failed:", error);
   } finally {

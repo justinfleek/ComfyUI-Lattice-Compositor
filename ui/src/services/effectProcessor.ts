@@ -14,6 +14,7 @@
  */
 import type { EffectInstance } from "@/types/effects";
 import type { AnimatableProperty } from "@/types/project";
+import { canvasPool, type CanvasResult } from "@/utils/canvasPool";
 import { renderLogger } from "@/utils/logger";
 import type { AudioReactiveModifiers } from "./audioReactiveMapping";
 import { type GPURenderPath, gpuEffectDispatcher } from "./gpuEffectDispatcher";
@@ -106,114 +107,8 @@ function applyAudioModifiersToEffect(
 }
 
 // ============================================================================
-// CANVAS BUFFER POOL
-// Reuses canvas elements to reduce allocation overhead
+// CANVAS BUFFER POOL (imported from @/utils/canvasPool)
 // ============================================================================
-
-interface PooledCanvas {
-  canvas: HTMLCanvasElement;
-  ctx: CanvasRenderingContext2D;
-  width: number;
-  height: number;
-  inUse: boolean;
-  lastUsed: number;
-}
-
-/**
- * Canvas buffer pool for effect processing
- * Reduces GC pressure by reusing canvas elements
- */
-class CanvasPool {
-  private pool: PooledCanvas[] = [];
-  private readonly maxSize = 20; // Max pooled canvases
-  private readonly maxAge = 60000; // 60 second TTL for unused canvases
-
-  /**
-   * Acquire a canvas of the specified dimensions
-   */
-  acquire(width: number, height: number): EffectStackResult {
-    const now = Date.now();
-
-    // Try to find a matching canvas in the pool
-    for (const item of this.pool) {
-      if (!item.inUse && item.width === width && item.height === height) {
-        item.inUse = true;
-        item.lastUsed = now;
-        // Clear the canvas for reuse
-        item.ctx.clearRect(0, 0, width, height);
-        return { canvas: item.canvas, ctx: item.ctx };
-      }
-    }
-
-    // Create a new canvas
-    const canvas = document.createElement("canvas");
-    canvas.width = width;
-    canvas.height = height;
-    const ctx = canvas.getContext("2d")!;
-
-    // Add to pool if not at capacity
-    if (this.pool.length < this.maxSize) {
-      this.pool.push({
-        canvas,
-        ctx,
-        width,
-        height,
-        inUse: true,
-        lastUsed: now,
-      });
-    }
-
-    return { canvas, ctx };
-  }
-
-  /**
-   * Release a canvas back to the pool
-   * Call this when done with an effect result
-   */
-  release(canvas: HTMLCanvasElement): void {
-    const item = this.pool.find((p) => p.canvas === canvas);
-    if (item) {
-      item.inUse = false;
-      item.lastUsed = Date.now();
-    }
-  }
-
-  /**
-   * Clean up old unused canvases to free memory
-   */
-  cleanup(): void {
-    const now = Date.now();
-    this.pool = this.pool.filter((item) => {
-      if (!item.inUse && now - item.lastUsed > this.maxAge) {
-        // Let GC collect old canvases
-        return false;
-      }
-      return true;
-    });
-  }
-
-  /**
-   * Clear all pooled canvases
-   */
-  clear(): void {
-    this.pool = [];
-  }
-
-  /**
-   * Get pool statistics
-   */
-  getStats(): { total: number; inUse: number; available: number } {
-    const inUse = this.pool.filter((p) => p.inUse).length;
-    return {
-      total: this.pool.length,
-      inUse,
-      available: this.pool.length - inUse,
-    };
-  }
-}
-
-// Singleton canvas pool
-const canvasPool = new CanvasPool();
 
 // ============================================================================
 // EFFECT RESULT CACHE
@@ -504,19 +399,21 @@ export function processEffectStack(
   fps: number = 16,
   audioModifiers?: AudioReactiveModifiers,
 ): EffectStackResult {
+  const width = inputCanvas.width;
+  const height = inputCanvas.height;
+
   // Keep the original source for additive effects (glow, bloom)
   // These effects should extract bright pixels from the original, not from chain output
-  const originalCanvas = document.createElement("canvas");
-  originalCanvas.width = inputCanvas.width;
-  originalCanvas.height = inputCanvas.height;
-  const originalCtx = originalCanvas.getContext("2d")!;
+  // Use canvas pool to avoid memory leaks
+  const originalResult = canvasPool.acquire(width, height);
+  const originalCanvas = originalResult.canvas;
+  const originalCtx = originalResult.ctx;
   originalCtx.drawImage(inputCanvas, 0, 0);
 
-  // Create a working copy of the input
-  const workCanvas = document.createElement("canvas");
-  workCanvas.width = inputCanvas.width;
-  workCanvas.height = inputCanvas.height;
-  const workCtx = workCanvas.getContext("2d")!;
+  // Create a working copy of the input using canvas pool
+  const workResult = canvasPool.acquire(width, height);
+  const workCanvas = workResult.canvas;
+  const workCtx = workResult.ctx;
   workCtx.drawImage(inputCanvas, 0, 0);
 
   let current: EffectStackResult = {
@@ -524,73 +421,79 @@ export function processEffectStack(
     ctx: workCtx,
   };
 
-  // Process each enabled effect in order
-  for (const effect of effects) {
-    if (!effect.enabled) {
-      continue;
-    }
-
-    const renderer = effectRenderers.get(effect.effectKey);
-    if (!renderer) {
-      // Throw descriptive error for missing effect renderers (fail loud, not silent)
-      const error = new Error(
-        `EFFECT RENDERER NOT FOUND: "${effect.effectKey}" (effect: "${effect.name}", id: ${effect.id}). ` +
-        `Available renderers: [${Array.from(effectRenderers.keys()).join(', ')}]`
-      );
-      renderLogger.error(error.message);
-      throw error;
-    }
-
-    // Evaluate parameters at current frame
-    const params = evaluateEffectParameters(effect, frame);
-
-    // Apply audio-reactive modifiers to effect parameters (glow intensity, glitch amount, etc.)
-    if (audioModifiers) {
-      applyAudioModifiersToEffect(effect.effectKey, params, audioModifiers);
-    }
-
-    // Inject context for time-based effects (Echo, Posterize Time, etc.)
-    // These effects need frame, fps, and layerId to access frame buffers
-    if (context) {
-      params._frame = context.frame;
-      params._fps = context.fps;
-      params._layerId = context.layerId;
-      if (context.compositionId) {
-        params._compositionId = context.compositionId;
+  try {
+    // Process each enabled effect in order
+    for (const effect of effects) {
+      if (!effect.enabled) {
+        continue;
       }
-    } else {
-      // Fallback: use the frame parameter and provided fps
-      params._frame = frame;
-      params._fps = fps;
-      params._layerId = "default";
+
+      const renderer = effectRenderers.get(effect.effectKey);
+      if (!renderer) {
+        // Throw descriptive error for missing effect renderers (fail loud, not silent)
+        const error = new Error(
+          `EFFECT RENDERER NOT FOUND: "${effect.effectKey}" (effect: "${effect.name}", id: ${effect.id}). ` +
+          `Available renderers: [${Array.from(effectRenderers.keys()).join(', ')}]`
+        );
+        renderLogger.error(error.message);
+        throw error;
+      }
+
+      // Evaluate parameters at current frame
+      const params = evaluateEffectParameters(effect, frame);
+
+      // Apply audio-reactive modifiers to effect parameters (glow intensity, glitch amount, etc.)
+      if (audioModifiers) {
+        applyAudioModifiersToEffect(effect.effectKey, params, audioModifiers);
+      }
+
+      // Inject context for time-based effects (Echo, Posterize Time, etc.)
+      // These effects need frame, fps, and layerId to access frame buffers
+      if (context) {
+        params._frame = context.frame;
+        params._fps = context.fps;
+        params._layerId = context.layerId;
+        if (context.compositionId) {
+          params._compositionId = context.compositionId;
+        }
+      } else {
+        // Fallback: use the frame parameter and provided fps
+        params._frame = frame;
+        params._fps = fps;
+        params._layerId = "default";
+      }
+
+      // For additive effects (glow, bloom), provide the original source canvas
+      // This ensures they extract bright pixels from the original, not from previous glow output
+      if (ADDITIVE_EFFECTS.has(effect.effectKey)) {
+        params._sourceCanvas = originalCanvas;
+      }
+
+      // For mesh-deform effect, inject the effect instance (contains pins array)
+      if (effect.effectKey === "mesh-deform") {
+        params._effectInstance = effect;
+      }
+
+      // Apply the effect - NO silent failures
+      try {
+        current = renderer(current, params);
+      } catch (error) {
+        // Wrap and propagate renderer errors with context (fail loud, not silent)
+        const wrappedError = new Error(
+          `EFFECT EXECUTION FAILED: "${effect.effectKey}" (effect: "${effect.name}", id: ${effect.id}). ` +
+          `Original error: ${error instanceof Error ? error.message : String(error)}`
+        );
+        renderLogger.error(wrappedError.message, error);
+        throw wrappedError;
+      }
     }
 
-    // For additive effects (glow, bloom), provide the original source canvas
-    // This ensures they extract bright pixels from the original, not from previous glow output
-    if (ADDITIVE_EFFECTS.has(effect.effectKey)) {
-      params._sourceCanvas = originalCanvas;
-    }
-
-    // For mesh-deform effect, inject the effect instance (contains pins array)
-    if (effect.effectKey === "mesh-deform") {
-      params._effectInstance = effect;
-    }
-
-    // Apply the effect - NO silent failures
-    try {
-      current = renderer(current, params);
-    } catch (error) {
-      // Wrap and propagate renderer errors with context (fail loud, not silent)
-      const wrappedError = new Error(
-        `EFFECT EXECUTION FAILED: "${effect.effectKey}" (effect: "${effect.name}", id: ${effect.id}). ` +
-        `Original error: ${error instanceof Error ? error.message : String(error)}`
-      );
-      renderLogger.error(wrappedError.message, error);
-      throw wrappedError;
-    }
+    return current;
+  } finally {
+    // Always release the original canvas back to pool (it's only used internally)
+    // Note: workCanvas is returned to caller - they must call releaseCanvas() when done
+    canvasPool.release(originalCanvas);
   }
-
-  return current;
 }
 
 /**
@@ -661,18 +564,19 @@ export async function processEffectStackAsync(
     );
   }
 
-  // Keep the original source for additive effects (glow, bloom)
-  const originalCanvas = document.createElement("canvas");
-  originalCanvas.width = inputCanvas.width;
-  originalCanvas.height = inputCanvas.height;
-  const originalCtx = originalCanvas.getContext("2d")!;
+  const width = inputCanvas.width;
+  const height = inputCanvas.height;
+
+  // Keep the original source for additive effects (glow, bloom) - use pool
+  const originalResult = canvasPool.acquire(width, height);
+  const originalCanvas = originalResult.canvas;
+  const originalCtx = originalResult.ctx;
   originalCtx.drawImage(inputCanvas, 0, 0);
 
-  // Create working canvas
-  const workCanvas = document.createElement("canvas");
-  workCanvas.width = inputCanvas.width;
-  workCanvas.height = inputCanvas.height;
-  const workCtx = workCanvas.getContext("2d")!;
+  // Create working canvas - use pool (will be returned via current)
+  const workResult = canvasPool.acquire(width, height);
+  const workCanvas = workResult.canvas;
+  const workCtx = workResult.ctx;
   workCtx.drawImage(inputCanvas, 0, 0);
 
   let current: EffectStackResult = {
@@ -683,6 +587,7 @@ export async function processEffectStackAsync(
   let gpuEffectsProcessed = 0;
   let cpuEffectsProcessed = 0;
 
+  try {
   // Process each enabled effect
   for (const effect of effects) {
     if (!effect.enabled) {
@@ -814,6 +719,10 @@ export async function processEffectStackAsync(
   }
 
   return current;
+  } finally {
+    // Always release the original canvas back to pool
+    canvasPool.release(originalCanvas);
+  }
 }
 
 /**

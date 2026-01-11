@@ -6,9 +6,20 @@
  */
 
 export { type AudioStore, useAudioStore } from "./audioStore";
-// Main compositor store (legacy - being refactored)
+// Main compositor store (legacy - being refactored into domain stores)
 export { useCompositorStore } from "./compositorStore";
 export { type HistoryStore, useHistoryStore } from "./historyStore";
-// Domain-specific stores
+// Domain-specific stores (Phase 1+ migration targets)
+export {
+  type LayerStoreType,
+  type LayerSourceReplacement,
+  type CreateLayerOptions,
+  type DeleteLayerOptions,
+  type DuplicateLayerOptions,
+  type SequenceLayersOptions,
+  type ExponentialScaleOptions,
+  type TimeStretchOptions,
+  useLayerStore,
+} from "./layerStore";
 export { type PlaybackStore, usePlaybackStore } from "./playbackStore";
 export { type SelectionStore, useSelectionStore } from "./selectionStore";

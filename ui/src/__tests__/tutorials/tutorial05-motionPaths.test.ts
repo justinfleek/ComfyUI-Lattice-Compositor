@@ -13,7 +13,7 @@ import { describe, test, expect, beforeEach, vi } from 'vitest';
 import { setActivePinia, createPinia } from 'pinia';
 import { useCompositorStore } from '@/stores/compositorStore';
 import type { Keyframe } from '@/types/animation';
-import type { VelocitySettings } from '@/stores/actions/keyframeActions';
+import type { VelocitySettings } from '@/stores/keyframeStore/types';
 import {
   separatePositionDimensions,
   linkPositionDimensions,

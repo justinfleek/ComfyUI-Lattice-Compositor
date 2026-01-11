@@ -394,6 +394,11 @@ export class GLSLEngine {
   private uniformLocations: Map<string, WebGLUniformLocation> = new Map();
   private currentShaderSource: string = "";
 
+  // Context loss handling
+  private contextLost = false;
+  private contextLostHandler: ((e: Event) => void) | null = null;
+  private contextRestoredHandler: ((e: Event) => void) | null = null;
+
   constructor(private options: GLSLEngineOptions = {}) {}
 
   /**
@@ -425,9 +430,39 @@ export class GLSLEngine {
   private init(width: number, height: number): boolean {
     if (!this.isAvailable()) return false;
 
+    // If context was lost, we need to wait for restoration
+    if (this.contextLost) {
+      return false;
+    }
+
     // Create or resize canvas
     if (!this.canvas) {
       this.canvas = document.createElement("canvas");
+
+      // Set up context loss handlers
+      this.contextLostHandler = (e: Event) => {
+        e.preventDefault();
+        this.contextLost = true;
+        // Clear all WebGL resources
+        this.gl = null;
+        this.program = null;
+        this.positionBuffer = null;
+        this.texCoordBuffer = null;
+        this.inputTexture = null;
+        this.framebuffer = null;
+        this.outputTexture = null;
+        this.uniformLocations.clear();
+        console.warn("WebGL context lost in GLSLEngine");
+      };
+
+      this.contextRestoredHandler = () => {
+        this.contextLost = false;
+        // Context will be re-initialized on next render call
+        console.info("WebGL context restored in GLSLEngine");
+      };
+
+      this.canvas.addEventListener("webglcontextlost", this.contextLostHandler);
+      this.canvas.addEventListener("webglcontextrestored", this.contextRestoredHandler);
     }
 
     if (this.currentWidth !== width || this.currentHeight !== height) {
@@ -791,9 +826,28 @@ export class GLSLEngine {
   }
 
   /**
+   * Check if context is currently lost
+   */
+  isContextLost(): boolean {
+    return this.contextLost;
+  }
+
+  /**
    * Dispose of WebGL resources
    */
   dispose(): void {
+    // Remove context loss event listeners
+    if (this.canvas) {
+      if (this.contextLostHandler) {
+        this.canvas.removeEventListener("webglcontextlost", this.contextLostHandler);
+      }
+      if (this.contextRestoredHandler) {
+        this.canvas.removeEventListener("webglcontextrestored", this.contextRestoredHandler);
+      }
+    }
+    this.contextLostHandler = null;
+    this.contextRestoredHandler = null;
+
     if (this.gl) {
       if (this.program) this.gl.deleteProgram(this.program);
       if (this.inputTexture) this.gl.deleteTexture(this.inputTexture);
@@ -808,6 +862,7 @@ export class GLSLEngine {
     this.program = null;
     this.uniformLocations.clear();
     this._isAvailable = null;
+    this.contextLost = false;
   }
 }
 

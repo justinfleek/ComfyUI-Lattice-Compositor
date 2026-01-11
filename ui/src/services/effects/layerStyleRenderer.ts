@@ -36,6 +36,7 @@ import type {
   StrokeStyle,
 } from "@/types/layerStyles";
 import type { AnimatableProperty } from "@/types/project";
+import { canvasPool } from "@/utils/canvasPool";
 // blendModes module provides blendImages, blendPixel etc. via default export
 // import blendModes from '../blendModes';
 import { interpolateProperty } from "../interpolation";
@@ -76,17 +77,21 @@ function getValue<T>(
 }
 
 /**
- * Create a canvas matching input dimensions
+ * Create a canvas matching input dimensions using the canvas pool
  */
 function createMatchingCanvas(source: HTMLCanvasElement): {
   canvas: HTMLCanvasElement;
   ctx: CanvasRenderingContext2D;
 } {
-  const canvas = document.createElement("canvas");
-  canvas.width = source.width;
-  canvas.height = source.height;
-  const ctx = canvas.getContext("2d", { willReadFrequently: true })!;
-  return { canvas, ctx };
+  const result = canvasPool.acquire(source.width, source.height);
+  return { canvas: result.canvas, ctx: result.ctx };
+}
+
+/**
+ * Release a canvas back to the pool
+ */
+function releaseMatchingCanvas(canvas: HTMLCanvasElement): void {
+  canvasPool.release(canvas);
 }
 
 /**
@@ -127,10 +132,14 @@ function applyBlur(canvas: HTMLCanvasElement, radius: number): void {
   const ctx = canvas.getContext("2d")!;
   ctx.filter = `blur(${radius}px)`;
   const temp = createMatchingCanvas(canvas);
-  temp.ctx.drawImage(canvas, 0, 0);
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.drawImage(temp.canvas, 0, 0);
-  ctx.filter = "none";
+  try {
+    temp.ctx.drawImage(canvas, 0, 0);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(temp.canvas, 0, 0);
+    ctx.filter = "none";
+  } finally {
+    releaseMatchingCanvas(temp.canvas);
+  }
 }
 
 /**
@@ -237,48 +246,52 @@ export function renderDropShadowStyle(
   // Create shadow layer
   const { canvas: shadowCanvas, ctx: shadowCtx } = createMatchingCanvas(input);
 
-  // Draw input alpha as solid color for shadow
-  shadowCtx.fillStyle = rgbaToString(color, 1);
-  shadowCtx.fillRect(0, 0, shadowCanvas.width, shadowCanvas.height);
-  shadowCtx.globalCompositeOperation = "destination-in";
-  shadowCtx.drawImage(input, 0, 0);
-  shadowCtx.globalCompositeOperation = "source-over";
+  try {
+    // Draw input alpha as solid color for shadow
+    shadowCtx.fillStyle = rgbaToString(color, 1);
+    shadowCtx.fillRect(0, 0, shadowCanvas.width, shadowCanvas.height);
+    shadowCtx.globalCompositeOperation = "destination-in";
+    shadowCtx.drawImage(input, 0, 0);
+    shadowCtx.globalCompositeOperation = "source-over";
 
-  // Apply spread (choke)
-  if (spread > 0) {
-    const spreadAmount = (spread / 100) * size;
-    const imageData = shadowCtx.getImageData(
-      0,
-      0,
-      shadowCanvas.width,
-      shadowCanvas.height,
-    );
-    const dilated = dilateAlpha(imageData, spreadAmount);
-    shadowCtx.putImageData(dilated, 0, 0);
+    // Apply spread (choke)
+    if (spread > 0) {
+      const spreadAmount = (spread / 100) * size;
+      const imageData = shadowCtx.getImageData(
+        0,
+        0,
+        shadowCanvas.width,
+        shadowCanvas.height,
+      );
+      const dilated = dilateAlpha(imageData, spreadAmount);
+      shadowCtx.putImageData(dilated, 0, 0);
+    }
+
+    // Apply blur
+    if (size > 0) {
+      applyBlur(shadowCanvas, size * (1 - spread / 100));
+    }
+
+    // Draw shadow with offset
+    ctx.globalAlpha = opacity;
+    ctx.drawImage(shadowCanvas, offsetX, offsetY);
+    ctx.globalAlpha = 1;
+
+    // Draw original on top (unless knockedOut)
+    if (!style.layerKnocksOut) {
+      ctx.drawImage(input, 0, 0);
+    } else {
+      // Knock out shadow where original exists
+      ctx.globalCompositeOperation = "destination-out";
+      ctx.drawImage(input, 0, 0);
+      ctx.globalCompositeOperation = "source-over";
+      ctx.drawImage(input, 0, 0);
+    }
+
+    return output;
+  } finally {
+    releaseMatchingCanvas(shadowCanvas);
   }
-
-  // Apply blur
-  if (size > 0) {
-    applyBlur(shadowCanvas, size * (1 - spread / 100));
-  }
-
-  // Draw shadow with offset
-  ctx.globalAlpha = opacity;
-  ctx.drawImage(shadowCanvas, offsetX, offsetY);
-  ctx.globalAlpha = 1;
-
-  // Draw original on top (unless knockedOut)
-  if (!style.layerKnocksOut) {
-    ctx.drawImage(input, 0, 0);
-  } else {
-    // Knock out shadow where original exists
-    ctx.globalCompositeOperation = "destination-out";
-    ctx.drawImage(input, 0, 0);
-    ctx.globalCompositeOperation = "source-over";
-    ctx.drawImage(input, 0, 0);
-  }
-
-  return output;
 }
 
 // ============================================================================
@@ -313,50 +326,54 @@ export function renderInnerShadowStyle(
 
   // Create inverted alpha mask (shadow appears inside)
   const { canvas: shadowCanvas, ctx: shadowCtx } = createMatchingCanvas(input);
+  const { canvas: clippedShadow, ctx: clippedCtx } = createMatchingCanvas(input);
 
-  // Fill with shadow color
-  shadowCtx.fillStyle = rgbaToString(color, 1);
-  shadowCtx.fillRect(0, 0, shadowCanvas.width, shadowCanvas.height);
+  try {
+    // Fill with shadow color
+    shadowCtx.fillStyle = rgbaToString(color, 1);
+    shadowCtx.fillRect(0, 0, shadowCanvas.width, shadowCanvas.height);
 
-  // Cut out the layer shape (inverted)
-  shadowCtx.globalCompositeOperation = "destination-out";
-  shadowCtx.drawImage(input, -offsetX, -offsetY);
-  shadowCtx.globalCompositeOperation = "source-over";
+    // Cut out the layer shape (inverted)
+    shadowCtx.globalCompositeOperation = "destination-out";
+    shadowCtx.drawImage(input, -offsetX, -offsetY);
+    shadowCtx.globalCompositeOperation = "source-over";
 
-  // Apply choke
-  if (choke > 0) {
-    const chokeAmount = (choke / 100) * size;
-    const imageData = shadowCtx.getImageData(
-      0,
-      0,
-      shadowCanvas.width,
-      shadowCanvas.height,
-    );
-    const eroded = erodeAlpha(imageData, chokeAmount);
-    shadowCtx.putImageData(eroded, 0, 0);
+    // Apply choke
+    if (choke > 0) {
+      const chokeAmount = (choke / 100) * size;
+      const imageData = shadowCtx.getImageData(
+        0,
+        0,
+        shadowCanvas.width,
+        shadowCanvas.height,
+      );
+      const eroded = erodeAlpha(imageData, chokeAmount);
+      shadowCtx.putImageData(eroded, 0, 0);
+    }
+
+    // Apply blur
+    if (size > 0) {
+      applyBlur(shadowCanvas, size * (1 - choke / 100));
+    }
+
+    // Clip shadow to original shape
+    clippedCtx.drawImage(shadowCanvas, 0, 0);
+    clippedCtx.globalCompositeOperation = "destination-in";
+    clippedCtx.drawImage(input, 0, 0);
+
+    // Composite shadow onto output using blend mode
+    ctx.globalAlpha = opacity;
+    ctx.globalCompositeOperation =
+      style.blendMode === "multiply" ? "multiply" : "source-over";
+    ctx.drawImage(clippedShadow, 0, 0);
+    ctx.globalAlpha = 1;
+    ctx.globalCompositeOperation = "source-over";
+
+    return output;
+  } finally {
+    releaseMatchingCanvas(shadowCanvas);
+    releaseMatchingCanvas(clippedShadow);
   }
-
-  // Apply blur
-  if (size > 0) {
-    applyBlur(shadowCanvas, size * (1 - choke / 100));
-  }
-
-  // Clip shadow to original shape
-  const { canvas: clippedShadow, ctx: clippedCtx } =
-    createMatchingCanvas(input);
-  clippedCtx.drawImage(shadowCanvas, 0, 0);
-  clippedCtx.globalCompositeOperation = "destination-in";
-  clippedCtx.drawImage(input, 0, 0);
-
-  // Composite shadow onto output using blend mode
-  ctx.globalAlpha = opacity;
-  ctx.globalCompositeOperation =
-    style.blendMode === "multiply" ? "multiply" : "source-over";
-  ctx.drawImage(clippedShadow, 0, 0);
-  ctx.globalAlpha = 1;
-  ctx.globalCompositeOperation = "source-over";
-
-  return output;
 }
 
 // ============================================================================
@@ -382,43 +399,47 @@ export function renderOuterGlowStyle(
   // Create glow layer
   const { canvas: glowCanvas, ctx: glowCtx } = createMatchingCanvas(input);
 
-  // Draw input alpha as glow color
-  glowCtx.fillStyle = rgbaToString(color, 1);
-  glowCtx.fillRect(0, 0, glowCanvas.width, glowCanvas.height);
-  glowCtx.globalCompositeOperation = "destination-in";
-  glowCtx.drawImage(input, 0, 0);
-  glowCtx.globalCompositeOperation = "source-over";
+  try {
+    // Draw input alpha as glow color
+    glowCtx.fillStyle = rgbaToString(color, 1);
+    glowCtx.fillRect(0, 0, glowCanvas.width, glowCanvas.height);
+    glowCtx.globalCompositeOperation = "destination-in";
+    glowCtx.drawImage(input, 0, 0);
+    glowCtx.globalCompositeOperation = "source-over";
 
-  // Apply spread
-  if (spread > 0) {
-    const spreadAmount = (spread / 100) * size;
-    const imageData = glowCtx.getImageData(
-      0,
-      0,
-      glowCanvas.width,
-      glowCanvas.height,
-    );
-    const dilated = dilateAlpha(imageData, spreadAmount);
-    glowCtx.putImageData(dilated, 0, 0);
+    // Apply spread
+    if (spread > 0) {
+      const spreadAmount = (spread / 100) * size;
+      const imageData = glowCtx.getImageData(
+        0,
+        0,
+        glowCanvas.width,
+        glowCanvas.height,
+      );
+      const dilated = dilateAlpha(imageData, spreadAmount);
+      glowCtx.putImageData(dilated, 0, 0);
+    }
+
+    // Apply blur
+    if (size > 0) {
+      applyBlur(glowCanvas, size);
+    }
+
+    // Draw glow behind original
+    ctx.globalAlpha = opacity;
+    ctx.globalCompositeOperation =
+      style.blendMode === "screen" ? "screen" : "lighter";
+    ctx.drawImage(glowCanvas, 0, 0);
+    ctx.globalAlpha = 1;
+    ctx.globalCompositeOperation = "source-over";
+
+    // Draw original on top
+    ctx.drawImage(input, 0, 0);
+
+    return output;
+  } finally {
+    releaseMatchingCanvas(glowCanvas);
   }
-
-  // Apply blur
-  if (size > 0) {
-    applyBlur(glowCanvas, size);
-  }
-
-  // Draw glow behind original
-  ctx.globalAlpha = opacity;
-  ctx.globalCompositeOperation =
-    style.blendMode === "screen" ? "screen" : "lighter";
-  ctx.drawImage(glowCanvas, 0, 0);
-  ctx.globalAlpha = 1;
-  ctx.globalCompositeOperation = "source-over";
-
-  // Draw original on top
-  ctx.drawImage(input, 0, 0);
-
-  return output;
 }
 
 // ============================================================================
@@ -447,73 +468,83 @@ export function renderInnerGlowStyle(
 
   // Create glow layer
   const { canvas: glowCanvas, ctx: glowCtx } = createMatchingCanvas(input);
+  const { canvas: clippedGlow, ctx: clippedCtx } = createMatchingCanvas(input);
+  let erodedCanvas: HTMLCanvasElement | null = null;
 
-  if (source === "edge") {
-    // Glow from edges inward
-    // Create inverted alpha for edge detection
-    glowCtx.fillStyle = rgbaToString(color, 1);
-    glowCtx.fillRect(0, 0, glowCanvas.width, glowCanvas.height);
-    glowCtx.globalCompositeOperation = "destination-out";
+  try {
+    if (source === "edge") {
+      // Glow from edges inward
+      // Create inverted alpha for edge detection
+      glowCtx.fillStyle = rgbaToString(color, 1);
+      glowCtx.fillRect(0, 0, glowCanvas.width, glowCanvas.height);
+      glowCtx.globalCompositeOperation = "destination-out";
 
-    // Erode the shape to create edge glow
-    const { canvas: erodedCanvas, ctx: erodedCtx } =
-      createMatchingCanvas(input);
-    erodedCtx.drawImage(input, 0, 0);
-    if (size > 0) {
-      const imageData = erodedCtx.getImageData(
+      // Erode the shape to create edge glow
+      const erodedResult = createMatchingCanvas(input);
+      erodedCanvas = erodedResult.canvas;
+      const erodedCtx = erodedResult.ctx;
+      erodedCtx.drawImage(input, 0, 0);
+      if (size > 0) {
+        const imageData = erodedCtx.getImageData(
+          0,
+          0,
+          erodedCanvas.width,
+          erodedCanvas.height,
+        );
+        const eroded = erodeAlpha(imageData, size);
+        erodedCtx.putImageData(eroded, 0, 0);
+      }
+
+      glowCtx.drawImage(erodedCanvas, 0, 0);
+      glowCtx.globalCompositeOperation = "source-over";
+    } else {
+      // Glow from center
+      // Create radial gradient from center
+      const centerX = glowCanvas.width / 2;
+      const centerY = glowCanvas.height / 2;
+      const maxDist = Math.sqrt(centerX * centerX + centerY * centerY);
+
+      const gradient = glowCtx.createRadialGradient(
+        centerX,
+        centerY,
         0,
-        0,
-        erodedCanvas.width,
-        erodedCanvas.height,
+        centerX,
+        centerY,
+        maxDist,
       );
-      const eroded = erodeAlpha(imageData, size);
-      erodedCtx.putImageData(eroded, 0, 0);
+      gradient.addColorStop(0, rgbaToString(color, 1));
+      gradient.addColorStop(1, rgbaToString(color, 0));
+
+      glowCtx.fillStyle = gradient;
+      glowCtx.fillRect(0, 0, glowCanvas.width, glowCanvas.height);
     }
 
-    glowCtx.drawImage(erodedCanvas, 0, 0);
-    glowCtx.globalCompositeOperation = "source-over";
-  } else {
-    // Glow from center
-    // Create radial gradient from center
-    const centerX = glowCanvas.width / 2;
-    const centerY = glowCanvas.height / 2;
-    const maxDist = Math.sqrt(centerX * centerX + centerY * centerY);
+    // Apply blur
+    if (size > 0 && source === "edge") {
+      applyBlur(glowCanvas, size * (1 - choke / 100));
+    }
 
-    const gradient = glowCtx.createRadialGradient(
-      centerX,
-      centerY,
-      0,
-      centerX,
-      centerY,
-      maxDist,
-    );
-    gradient.addColorStop(0, rgbaToString(color, 1));
-    gradient.addColorStop(1, rgbaToString(color, 0));
+    // Clip glow to original shape
+    clippedCtx.drawImage(glowCanvas, 0, 0);
+    clippedCtx.globalCompositeOperation = "destination-in";
+    clippedCtx.drawImage(input, 0, 0);
 
-    glowCtx.fillStyle = gradient;
-    glowCtx.fillRect(0, 0, glowCanvas.width, glowCanvas.height);
+    // Composite glow onto output
+    ctx.globalAlpha = opacity;
+    ctx.globalCompositeOperation =
+      style.blendMode === "screen" ? "screen" : "lighter";
+    ctx.drawImage(clippedGlow, 0, 0);
+    ctx.globalAlpha = 1;
+    ctx.globalCompositeOperation = "source-over";
+
+    return output;
+  } finally {
+    releaseMatchingCanvas(glowCanvas);
+    releaseMatchingCanvas(clippedGlow);
+    if (erodedCanvas) {
+      releaseMatchingCanvas(erodedCanvas);
+    }
   }
-
-  // Apply blur
-  if (size > 0 && source === "edge") {
-    applyBlur(glowCanvas, size * (1 - choke / 100));
-  }
-
-  // Clip glow to original shape
-  const { canvas: clippedGlow, ctx: clippedCtx } = createMatchingCanvas(input);
-  clippedCtx.drawImage(glowCanvas, 0, 0);
-  clippedCtx.globalCompositeOperation = "destination-in";
-  clippedCtx.drawImage(input, 0, 0);
-
-  // Composite glow onto output
-  ctx.globalAlpha = opacity;
-  ctx.globalCompositeOperation =
-    style.blendMode === "screen" ? "screen" : "lighter";
-  ctx.drawImage(clippedGlow, 0, 0);
-  ctx.globalAlpha = 1;
-  ctx.globalCompositeOperation = "source-over";
-
-  return output;
 }
 
 // ============================================================================
@@ -568,82 +599,87 @@ export function renderBevelEmbossStyle(
     createMatchingCanvas(input);
   const { canvas: shadowCanvas, ctx: shadowCtx } = createMatchingCanvas(input);
 
-  const highlightData = highlightCtx.createImageData(input.width, input.height);
-  const shadowData = shadowCtx.createImageData(input.width, input.height);
+  try {
+    const highlightData = highlightCtx.createImageData(input.width, input.height);
+    const shadowData = shadowCtx.createImageData(input.width, input.height);
 
-  const width = input.width;
-  const height = input.height;
+    const width = input.width;
+    const height = input.height;
 
-  for (let y = 1; y < height - 1; y++) {
-    for (let x = 1; x < width - 1; x++) {
-      const idx = (y * width + x) * 4;
-      const alpha = inputData.data[idx + 3];
+    for (let y = 1; y < height - 1; y++) {
+      for (let x = 1; x < width - 1; x++) {
+        const idx = (y * width + x) * 4;
+        const alpha = inputData.data[idx + 3];
 
-      if (alpha === 0) continue;
+        if (alpha === 0) continue;
 
-      // Calculate normal from alpha gradients (Sobel-like)
-      const leftIdx = (y * width + (x - 1)) * 4;
-      const rightIdx = (y * width + (x + 1)) * 4;
-      const topIdx = ((y - 1) * width + x) * 4;
-      const bottomIdx = ((y + 1) * width + x) * 4;
+        // Calculate normal from alpha gradients (Sobel-like)
+        const leftIdx = (y * width + (x - 1)) * 4;
+        const rightIdx = (y * width + (x + 1)) * 4;
+        const topIdx = ((y - 1) * width + x) * 4;
+        const bottomIdx = ((y + 1) * width + x) * 4;
 
-      const gradX =
-        (inputData.data[rightIdx + 3] - inputData.data[leftIdx + 3]) / 255;
-      const gradY =
-        (inputData.data[bottomIdx + 3] - inputData.data[topIdx + 3]) / 255;
+        const gradX =
+          (inputData.data[rightIdx + 3] - inputData.data[leftIdx + 3]) / 255;
+        const gradY =
+          (inputData.data[bottomIdx + 3] - inputData.data[topIdx + 3]) / 255;
 
-      // Calculate lighting
-      const normalX = -gradX * size * depth;
-      const normalY = -gradY * size * depth;
-      const normalZ = 1;
-      const normalLen = Math.sqrt(
-        normalX * normalX + normalY * normalY + normalZ * normalZ,
-      );
+        // Calculate lighting
+        const normalX = -gradX * size * depth;
+        const normalY = -gradY * size * depth;
+        const normalZ = 1;
+        const normalLen = Math.sqrt(
+          normalX * normalX + normalY * normalY + normalZ * normalZ,
+        );
 
-      const dot =
-        (normalX / normalLen) * lightX +
-        (normalY / normalLen) * lightY +
-        (normalZ / normalLen) * lightZ;
+        const dot =
+          (normalX / normalLen) * lightX +
+          (normalY / normalLen) * lightY +
+          (normalZ / normalLen) * lightZ;
 
-      if (dot > 0) {
-        // Highlight
-        const intensity = dot * highlightOpacity * (alpha / 255);
-        highlightData.data[idx] = highlightColor.r;
-        highlightData.data[idx + 1] = highlightColor.g;
-        highlightData.data[idx + 2] = highlightColor.b;
-        highlightData.data[idx + 3] = Math.min(255, intensity * 255);
-      } else {
-        // Shadow
-        const intensity = -dot * shadowOpacity * (alpha / 255);
-        shadowData.data[idx] = shadowColor.r;
-        shadowData.data[idx + 1] = shadowColor.g;
-        shadowData.data[idx + 2] = shadowColor.b;
-        shadowData.data[idx + 3] = Math.min(255, intensity * 255);
+        if (dot > 0) {
+          // Highlight
+          const intensity = dot * highlightOpacity * (alpha / 255);
+          highlightData.data[idx] = highlightColor.r;
+          highlightData.data[idx + 1] = highlightColor.g;
+          highlightData.data[idx + 2] = highlightColor.b;
+          highlightData.data[idx + 3] = Math.min(255, intensity * 255);
+        } else {
+          // Shadow
+          const intensity = -dot * shadowOpacity * (alpha / 255);
+          shadowData.data[idx] = shadowColor.r;
+          shadowData.data[idx + 1] = shadowColor.g;
+          shadowData.data[idx + 2] = shadowColor.b;
+          shadowData.data[idx + 3] = Math.min(255, intensity * 255);
+        }
       }
     }
+
+    highlightCtx.putImageData(highlightData, 0, 0);
+    shadowCtx.putImageData(shadowData, 0, 0);
+
+    // Apply soften blur
+    if (soften > 0) {
+      applyBlur(highlightCanvas, soften);
+      applyBlur(shadowCanvas, soften);
+    }
+
+    // Composite highlight and shadow
+    ctx.globalCompositeOperation =
+      style.highlightMode === "screen" ? "screen" : "lighter";
+    ctx.drawImage(highlightCanvas, 0, 0);
+
+    ctx.globalCompositeOperation =
+      style.shadowMode === "multiply" ? "multiply" : "darken";
+    ctx.drawImage(shadowCanvas, 0, 0);
+
+    ctx.globalCompositeOperation = "source-over";
+
+    return output;
+  } finally {
+    releaseMatchingCanvas(highlightCanvas);
+    releaseMatchingCanvas(shadowCanvas);
   }
-
-  highlightCtx.putImageData(highlightData, 0, 0);
-  shadowCtx.putImageData(shadowData, 0, 0);
-
-  // Apply soften blur
-  if (soften > 0) {
-    applyBlur(highlightCanvas, soften);
-    applyBlur(shadowCanvas, soften);
-  }
-
-  // Composite highlight and shadow
-  ctx.globalCompositeOperation =
-    style.highlightMode === "screen" ? "screen" : "lighter";
-  ctx.drawImage(highlightCanvas, 0, 0);
-
-  ctx.globalCompositeOperation =
-    style.shadowMode === "multiply" ? "multiply" : "darken";
-  ctx.drawImage(shadowCanvas, 0, 0);
-
-  ctx.globalCompositeOperation = "source-over";
-
-  return output;
 }
 
 // ============================================================================
@@ -675,39 +711,43 @@ export function renderSatinStyle(
 
   // Create satin effect by combining offset copies
   const { canvas: satinCanvas, ctx: satinCtx } = createMatchingCanvas(input);
+  const { canvas: coloredCanvas, ctx: coloredCtx } = createMatchingCanvas(input);
 
-  // Draw two offset copies of the alpha
-  satinCtx.globalCompositeOperation = "source-over";
-  satinCtx.drawImage(input, offsetX, offsetY);
-  satinCtx.globalCompositeOperation = invert ? "xor" : "source-over";
-  satinCtx.drawImage(input, -offsetX, -offsetY);
+  try {
+    // Draw two offset copies of the alpha
+    satinCtx.globalCompositeOperation = "source-over";
+    satinCtx.drawImage(input, offsetX, offsetY);
+    satinCtx.globalCompositeOperation = invert ? "xor" : "source-over";
+    satinCtx.drawImage(input, -offsetX, -offsetY);
 
-  // Apply blur
-  if (size > 0) {
-    applyBlur(satinCanvas, size);
+    // Apply blur
+    if (size > 0) {
+      applyBlur(satinCanvas, size);
+    }
+
+    // Colorize
+    coloredCtx.fillStyle = rgbaToString(color, 1);
+    coloredCtx.fillRect(0, 0, coloredCanvas.width, coloredCanvas.height);
+    coloredCtx.globalCompositeOperation = "destination-in";
+    coloredCtx.drawImage(satinCanvas, 0, 0);
+
+    // Clip to original shape
+    coloredCtx.globalCompositeOperation = "destination-in";
+    coloredCtx.drawImage(input, 0, 0);
+
+    // Composite
+    ctx.globalAlpha = opacity;
+    ctx.globalCompositeOperation =
+      style.blendMode === "multiply" ? "multiply" : "source-over";
+    ctx.drawImage(coloredCanvas, 0, 0);
+    ctx.globalAlpha = 1;
+    ctx.globalCompositeOperation = "source-over";
+
+    return output;
+  } finally {
+    releaseMatchingCanvas(satinCanvas);
+    releaseMatchingCanvas(coloredCanvas);
   }
-
-  // Colorize
-  const { canvas: coloredCanvas, ctx: coloredCtx } =
-    createMatchingCanvas(input);
-  coloredCtx.fillStyle = rgbaToString(color, 1);
-  coloredCtx.fillRect(0, 0, coloredCanvas.width, coloredCanvas.height);
-  coloredCtx.globalCompositeOperation = "destination-in";
-  coloredCtx.drawImage(satinCanvas, 0, 0);
-
-  // Clip to original shape
-  coloredCtx.globalCompositeOperation = "destination-in";
-  coloredCtx.drawImage(input, 0, 0);
-
-  // Composite
-  ctx.globalAlpha = opacity;
-  ctx.globalCompositeOperation =
-    style.blendMode === "multiply" ? "multiply" : "source-over";
-  ctx.drawImage(coloredCanvas, 0, 0);
-  ctx.globalAlpha = 1;
-  ctx.globalCompositeOperation = "source-over";
-
-  return output;
 }
 
 // ============================================================================
@@ -734,25 +774,30 @@ export function renderColorOverlayStyle(
   // Create color overlay
   const { canvas: overlayCanvas, ctx: overlayCtx } =
     createMatchingCanvas(input);
-  overlayCtx.fillStyle = rgbaToString(color, 1);
-  overlayCtx.fillRect(0, 0, overlayCanvas.width, overlayCanvas.height);
 
-  // Clip to original shape
-  overlayCtx.globalCompositeOperation = "destination-in";
-  overlayCtx.drawImage(input, 0, 0);
+  try {
+    overlayCtx.fillStyle = rgbaToString(color, 1);
+    overlayCtx.fillRect(0, 0, overlayCanvas.width, overlayCanvas.height);
 
-  // Apply with blend mode
-  ctx.globalAlpha = opacity;
+    // Clip to original shape
+    overlayCtx.globalCompositeOperation = "destination-in";
+    overlayCtx.drawImage(input, 0, 0);
 
-  // Map blend modes to canvas composite operations
-  const compositeOp = getCompositeOperation(style.blendMode);
-  ctx.globalCompositeOperation = compositeOp;
-  ctx.drawImage(overlayCanvas, 0, 0);
+    // Apply with blend mode
+    ctx.globalAlpha = opacity;
 
-  ctx.globalAlpha = 1;
-  ctx.globalCompositeOperation = "source-over";
+    // Map blend modes to canvas composite operations
+    const compositeOp = getCompositeOperation(style.blendMode);
+    ctx.globalCompositeOperation = compositeOp;
+    ctx.drawImage(overlayCanvas, 0, 0);
 
-  return output;
+    ctx.globalAlpha = 1;
+    ctx.globalCompositeOperation = "source-over";
+
+    return output;
+  } finally {
+    releaseMatchingCanvas(overlayCanvas);
+  }
 }
 
 /**
@@ -816,108 +861,112 @@ export function renderGradientOverlayStyle(
   const { canvas: overlayCanvas, ctx: overlayCtx } =
     createMatchingCanvas(input);
 
-  const centerX = width / 2 + offset.x;
-  const centerY = height / 2 + offset.y;
+  try {
+    const centerX = width / 2 + offset.x;
+    const centerY = height / 2 + offset.y;
 
-  let gradient: CanvasGradient;
+    let gradient: CanvasGradient;
 
-  switch (style.style) {
-    case "radial":
-    case "diamond": {
-      const radius = (Math.max(width, height) * scale) / 2;
-      gradient = overlayCtx.createRadialGradient(
-        centerX,
-        centerY,
-        0,
-        centerX,
-        centerY,
-        radius,
-      );
-      break;
+    switch (style.style) {
+      case "radial":
+      case "diamond": {
+        const radius = (Math.max(width, height) * scale) / 2;
+        gradient = overlayCtx.createRadialGradient(
+          centerX,
+          centerY,
+          0,
+          centerX,
+          centerY,
+          radius,
+        );
+        break;
+      }
+      case "angle": {
+        // Angle gradient approximated with conic gradient (not directly supported)
+        // Fall back to linear for now
+        const angleRad = ((angle - 90) * Math.PI) / 180;
+        const length = Math.max(width, height) * scale;
+        gradient = overlayCtx.createLinearGradient(
+          centerX - (Math.cos(angleRad) * length) / 2,
+          centerY + (Math.sin(angleRad) * length) / 2,
+          centerX + (Math.cos(angleRad) * length) / 2,
+          centerY - (Math.sin(angleRad) * length) / 2,
+        );
+        break;
+      }
+      case "reflected": {
+        // Reflected gradient: goes from edge to center to edge
+        const angleRad = ((angle - 90) * Math.PI) / 180;
+        const length = Math.max(width, height) * scale;
+        gradient = overlayCtx.createLinearGradient(
+          centerX - (Math.cos(angleRad) * length) / 2,
+          centerY + (Math.sin(angleRad) * length) / 2,
+          centerX + (Math.cos(angleRad) * length) / 2,
+          centerY - (Math.sin(angleRad) * length) / 2,
+        );
+        // Add mirrored stops
+        const stops = reverse
+          ? [...gradientDef.stops].reverse()
+          : gradientDef.stops;
+        stops.forEach((stop) => {
+          const pos = stop.position / 2; // First half
+          gradient.addColorStop(pos, rgbaToString(stop.color, 1));
+        });
+        [...stops].reverse().forEach((stop) => {
+          const pos = 0.5 + (1 - stop.position) / 2; // Second half mirrored
+          gradient.addColorStop(pos, rgbaToString(stop.color, 1));
+        });
+        overlayCtx.fillStyle = gradient;
+        overlayCtx.fillRect(0, 0, width, height);
+        // Skip normal stop addition
+        overlayCtx.globalCompositeOperation = "destination-in";
+        overlayCtx.drawImage(input, 0, 0);
+        ctx.globalAlpha = opacity;
+        ctx.globalCompositeOperation = getCompositeOperation(style.blendMode);
+        ctx.drawImage(overlayCanvas, 0, 0);
+        ctx.globalAlpha = 1;
+        ctx.globalCompositeOperation = "source-over";
+        return output;
+      }
+      default: {
+        const angleRad = ((angle - 90) * Math.PI) / 180;
+        const length = Math.max(width, height) * scale;
+        gradient = overlayCtx.createLinearGradient(
+          centerX - (Math.cos(angleRad) * length) / 2,
+          centerY + (Math.sin(angleRad) * length) / 2,
+          centerX + (Math.cos(angleRad) * length) / 2,
+          centerY - (Math.sin(angleRad) * length) / 2,
+        );
+        break;
+      }
     }
-    case "angle": {
-      // Angle gradient approximated with conic gradient (not directly supported)
-      // Fall back to linear for now
-      const angleRad = ((angle - 90) * Math.PI) / 180;
-      const length = Math.max(width, height) * scale;
-      gradient = overlayCtx.createLinearGradient(
-        centerX - (Math.cos(angleRad) * length) / 2,
-        centerY + (Math.sin(angleRad) * length) / 2,
-        centerX + (Math.cos(angleRad) * length) / 2,
-        centerY - (Math.sin(angleRad) * length) / 2,
-      );
-      break;
-    }
-    case "reflected": {
-      // Reflected gradient: goes from edge to center to edge
-      const angleRad = ((angle - 90) * Math.PI) / 180;
-      const length = Math.max(width, height) * scale;
-      gradient = overlayCtx.createLinearGradient(
-        centerX - (Math.cos(angleRad) * length) / 2,
-        centerY + (Math.sin(angleRad) * length) / 2,
-        centerX + (Math.cos(angleRad) * length) / 2,
-        centerY - (Math.sin(angleRad) * length) / 2,
-      );
-      // Add mirrored stops
-      const stops = reverse
-        ? [...gradientDef.stops].reverse()
-        : gradientDef.stops;
-      stops.forEach((stop) => {
-        const pos = stop.position / 2; // First half
-        gradient.addColorStop(pos, rgbaToString(stop.color, 1));
-      });
-      [...stops].reverse().forEach((stop) => {
-        const pos = 0.5 + (1 - stop.position) / 2; // Second half mirrored
-        gradient.addColorStop(pos, rgbaToString(stop.color, 1));
-      });
-      overlayCtx.fillStyle = gradient;
-      overlayCtx.fillRect(0, 0, width, height);
-      // Skip normal stop addition
-      overlayCtx.globalCompositeOperation = "destination-in";
-      overlayCtx.drawImage(input, 0, 0);
-      ctx.globalAlpha = opacity;
-      ctx.globalCompositeOperation = getCompositeOperation(style.blendMode);
-      ctx.drawImage(overlayCanvas, 0, 0);
-      ctx.globalAlpha = 1;
-      ctx.globalCompositeOperation = "source-over";
-      return output;
-    }
-    default: {
-      const angleRad = ((angle - 90) * Math.PI) / 180;
-      const length = Math.max(width, height) * scale;
-      gradient = overlayCtx.createLinearGradient(
-        centerX - (Math.cos(angleRad) * length) / 2,
-        centerY + (Math.sin(angleRad) * length) / 2,
-        centerX + (Math.cos(angleRad) * length) / 2,
-        centerY - (Math.sin(angleRad) * length) / 2,
-      );
-      break;
-    }
+
+    // Add gradient stops
+    const stops = reverse ? [...gradientDef.stops].reverse() : gradientDef.stops;
+    stops.forEach((stop) => {
+      const pos = reverse ? 1 - stop.position : stop.position;
+      gradient.addColorStop(pos, rgbaToString(stop.color, 1));
+    });
+
+    overlayCtx.fillStyle = gradient;
+    overlayCtx.fillRect(0, 0, width, height);
+
+    // Clip to original shape
+    overlayCtx.globalCompositeOperation = "destination-in";
+    overlayCtx.drawImage(input, 0, 0);
+
+    // Apply with blend mode
+    ctx.globalAlpha = opacity;
+    ctx.globalCompositeOperation = getCompositeOperation(style.blendMode);
+    ctx.drawImage(overlayCanvas, 0, 0);
+
+    ctx.globalAlpha = 1;
+    ctx.globalCompositeOperation = "source-over";
+
+    return output;
+  } finally {
+    releaseMatchingCanvas(overlayCanvas);
   }
-
-  // Add gradient stops
-  const stops = reverse ? [...gradientDef.stops].reverse() : gradientDef.stops;
-  stops.forEach((stop) => {
-    const pos = reverse ? 1 - stop.position : stop.position;
-    gradient.addColorStop(pos, rgbaToString(stop.color, 1));
-  });
-
-  overlayCtx.fillStyle = gradient;
-  overlayCtx.fillRect(0, 0, width, height);
-
-  // Clip to original shape
-  overlayCtx.globalCompositeOperation = "destination-in";
-  overlayCtx.drawImage(input, 0, 0);
-
-  // Apply with blend mode
-  ctx.globalAlpha = opacity;
-  ctx.globalCompositeOperation = getCompositeOperation(style.blendMode);
-  ctx.drawImage(overlayCanvas, 0, 0);
-
-  ctx.globalAlpha = 1;
-  ctx.globalCompositeOperation = "source-over";
-
-  return output;
 }
 
 // ============================================================================
@@ -947,88 +996,98 @@ export function renderStrokeStyle(
 
   // Create stroke based on position
   const { canvas: strokeCanvas, ctx: strokeCtx } = createMatchingCanvas(input);
+  let erodedCanvas: HTMLCanvasElement | null = null;
 
-  switch (position) {
-    case "outside": {
-      // Dilate alpha, then subtract original
-      const dilatedData = dilateAlpha(inputData, size);
-      strokeCtx.putImageData(dilatedData, 0, 0);
-      strokeCtx.globalCompositeOperation = "destination-out";
-      strokeCtx.drawImage(input, 0, 0);
-      break;
-    }
-    case "inside": {
-      // Original minus eroded
-      strokeCtx.drawImage(input, 0, 0);
-      const erodedData = erodeAlpha(inputData, size);
-      const { canvas: erodedCanvas, ctx: erodedCtx } =
-        createMatchingCanvas(input);
-      erodedCtx.putImageData(erodedData, 0, 0);
-      strokeCtx.globalCompositeOperation = "destination-out";
-      strokeCtx.drawImage(erodedCanvas, 0, 0);
-      break;
-    }
-    case "center": {
-      // Half outside, half inside
-      const halfSize = size / 2;
-      const dilatedData = dilateAlpha(inputData, halfSize);
-      const erodedData = erodeAlpha(inputData, halfSize);
+  try {
+    switch (position) {
+      case "outside": {
+        // Dilate alpha, then subtract original
+        const dilatedData = dilateAlpha(inputData, size);
+        strokeCtx.putImageData(dilatedData, 0, 0);
+        strokeCtx.globalCompositeOperation = "destination-out";
+        strokeCtx.drawImage(input, 0, 0);
+        break;
+      }
+      case "inside": {
+        // Original minus eroded
+        strokeCtx.drawImage(input, 0, 0);
+        const erodedData = erodeAlpha(inputData, size);
+        const erodedResult = createMatchingCanvas(input);
+        erodedCanvas = erodedResult.canvas;
+        const erodedCtx = erodedResult.ctx;
+        erodedCtx.putImageData(erodedData, 0, 0);
+        strokeCtx.globalCompositeOperation = "destination-out";
+        strokeCtx.drawImage(erodedCanvas, 0, 0);
+        break;
+      }
+      case "center": {
+        // Half outside, half inside
+        const halfSize = size / 2;
+        const dilatedData = dilateAlpha(inputData, halfSize);
+        const erodedData = erodeAlpha(inputData, halfSize);
 
-      strokeCtx.putImageData(dilatedData, 0, 0);
-      const { canvas: erodedCanvas, ctx: erodedCtx } =
-        createMatchingCanvas(input);
-      erodedCtx.putImageData(erodedData, 0, 0);
-      strokeCtx.globalCompositeOperation = "destination-out";
-      strokeCtx.drawImage(erodedCanvas, 0, 0);
-      break;
+        strokeCtx.putImageData(dilatedData, 0, 0);
+        const erodedResult = createMatchingCanvas(input);
+        erodedCanvas = erodedResult.canvas;
+        const erodedCtx = erodedResult.ctx;
+        erodedCtx.putImageData(erodedData, 0, 0);
+        strokeCtx.globalCompositeOperation = "destination-out";
+        strokeCtx.drawImage(erodedCanvas, 0, 0);
+        break;
+      }
+    }
+
+    // Colorize stroke
+    strokeCtx.globalCompositeOperation = "source-in";
+
+    if (style.fillType === "gradient" && style.gradient) {
+      // Apply gradient fill
+      const gradientAngle = getValue(style.gradientAngle, 90);
+      const angleRad = ((gradientAngle - 90) * Math.PI) / 180;
+      const length = Math.max(width, height);
+      const gradient = strokeCtx.createLinearGradient(
+        width / 2 - (Math.cos(angleRad) * length) / 2,
+        height / 2 + (Math.sin(angleRad) * length) / 2,
+        width / 2 + (Math.cos(angleRad) * length) / 2,
+        height / 2 - (Math.sin(angleRad) * length) / 2,
+      );
+      style.gradient.stops.forEach((stop) => {
+        gradient.addColorStop(stop.position, rgbaToString(stop.color, 1));
+      });
+      strokeCtx.fillStyle = gradient;
+    } else {
+      strokeCtx.fillStyle = rgbaToString(color, 1);
+    }
+    strokeCtx.fillRect(0, 0, width, height);
+
+    strokeCtx.globalCompositeOperation = "source-over";
+
+    // Composite: stroke behind or on top depending on position
+    if (position === "outside") {
+      // Stroke behind
+      ctx.globalAlpha = opacity;
+      ctx.globalCompositeOperation = getCompositeOperation(style.blendMode);
+      ctx.drawImage(strokeCanvas, 0, 0);
+      ctx.globalAlpha = 1;
+      ctx.globalCompositeOperation = "source-over";
+      ctx.drawImage(input, 0, 0);
+    } else {
+      // Stroke on top (inside or center)
+      ctx.drawImage(input, 0, 0);
+      ctx.globalAlpha = opacity;
+      ctx.globalCompositeOperation = getCompositeOperation(style.blendMode);
+      ctx.drawImage(strokeCanvas, 0, 0);
+      ctx.globalAlpha = 1;
+      ctx.globalCompositeOperation = "source-over";
+    }
+
+    return output;
+  } finally {
+    releaseMatchingCanvas(strokeCanvas);
+    if (erodedCanvas) {
+      releaseMatchingCanvas(erodedCanvas);
     }
   }
-
-  // Colorize stroke
-  strokeCtx.globalCompositeOperation = "source-in";
-
-  if (style.fillType === "gradient" && style.gradient) {
-    // Apply gradient fill
-    const gradientAngle = getValue(style.gradientAngle, 90);
-    const angleRad = ((gradientAngle - 90) * Math.PI) / 180;
-    const length = Math.max(width, height);
-    const gradient = strokeCtx.createLinearGradient(
-      width / 2 - (Math.cos(angleRad) * length) / 2,
-      height / 2 + (Math.sin(angleRad) * length) / 2,
-      width / 2 + (Math.cos(angleRad) * length) / 2,
-      height / 2 - (Math.sin(angleRad) * length) / 2,
-    );
-    style.gradient.stops.forEach((stop) => {
-      gradient.addColorStop(stop.position, rgbaToString(stop.color, 1));
-    });
-    strokeCtx.fillStyle = gradient;
-  } else {
-    strokeCtx.fillStyle = rgbaToString(color, 1);
-  }
-  strokeCtx.fillRect(0, 0, width, height);
-
-  strokeCtx.globalCompositeOperation = "source-over";
-
-  // Composite: stroke behind or on top depending on position
-  if (position === "outside") {
-    // Stroke behind
-    ctx.globalAlpha = opacity;
-    ctx.globalCompositeOperation = getCompositeOperation(style.blendMode);
-    ctx.drawImage(strokeCanvas, 0, 0);
-    ctx.globalAlpha = 1;
-    ctx.globalCompositeOperation = "source-over";
-    ctx.drawImage(input, 0, 0);
-  } else {
-    // Stroke on top (inside or center)
-    ctx.drawImage(input, 0, 0);
-    ctx.globalAlpha = opacity;
-    ctx.globalCompositeOperation = getCompositeOperation(style.blendMode);
-    ctx.drawImage(strokeCanvas, 0, 0);
-    ctx.globalAlpha = 1;
-    ctx.globalCompositeOperation = "source-over";
-  }
-
-  return output;
 }
 
 // ============================================================================

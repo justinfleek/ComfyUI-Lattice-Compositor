@@ -13,6 +13,7 @@ import {
   PropertyDriverSystem,
   type PropertyPath,
 } from "@/services/propertyDriver";
+import { useAudioStore } from "@/stores/audioStore";
 import { storeLogger } from "@/utils/logger";
 
 /**
@@ -38,9 +39,10 @@ export function initializePropertyDriverSystem(
     },
   );
 
-  // Connect audio if available
-  if (store.audioAnalysis) {
-    store.propertyDriverSystem.setAudioAnalysis(store.audioAnalysis);
+  // Connect audio if available (from audioStore, the source of truth)
+  const audioStore = useAudioStore();
+  if (audioStore.audioAnalysis) {
+    store.propertyDriverSystem.setAudioAnalysis(audioStore.audioAnalysis);
   }
 
   // Load existing drivers

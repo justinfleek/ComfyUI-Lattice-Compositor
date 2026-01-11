@@ -9,13 +9,8 @@
 import { describe, expect, beforeEach, it } from "vitest";
 import { test } from "@fast-check/vitest";
 import * as fc from "fast-check";
-import {
-  moveKeyframes,
-  moveKeyframe,
-  addKeyframe,
-  clearKeyframes,
-  type KeyframeStore,
-} from "@/stores/actions/keyframeActions";
+import { moveKeyframes, moveKeyframe, addKeyframe, clearKeyframes } from "@/stores/keyframeStore/crud";
+import type { KeyframeStoreAccess as KeyframeStore } from "@/stores/keyframeStore/types";
 import {
   separatePositionDimensions,
   linkPositionDimensions,

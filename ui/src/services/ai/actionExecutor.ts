@@ -24,9 +24,8 @@ import {
   normalizeControlPoints,
 } from "@/services/vectorize";
 import * as effectActions from "@/stores/actions/effectActions";
-import * as keyframeActions from "@/stores/actions/keyframeActions";
-import * as layerActions from "@/stores/actions/layerActions";
 import { useCompositorStore } from "@/stores/compositorStore";
+import { useKeyframeStore, findPropertyByPath } from "@/stores/keyframeStore";
 import { usePlaybackStore } from "@/stores/playbackStore";
 import { useSelectionStore } from "@/stores/selectionStore";
 import type {
@@ -270,8 +269,7 @@ function executeCreateLayer(
   };
 
   const internalType = typeMap[type] || type;
-  const layer = layerActions.createLayer(
-    store,
+  const layer = store.createLayer(
     internalType as LayerType,
     name,
   );
@@ -309,7 +307,7 @@ function executeDeleteLayer(
   }
 
   const layerName = layer.name;
-  layerActions.deleteLayer(store, layerId);
+  store.deleteLayer(layerId);
 
   return {
     success: true,
@@ -324,7 +322,7 @@ function executeDuplicateLayer(
   const { store } = context;
   const { layerId, newName } = args;
 
-  const duplicate = layerActions.duplicateLayer(store, layerId);
+  const duplicate = store.duplicateLayer(layerId);
   if (!duplicate) {
     return { layerId: null, message: `Failed to duplicate layer ${layerId}` };
   }
@@ -371,7 +369,7 @@ function executeSetLayerParent(
   const { store } = context;
   const { layerId, parentId } = args;
 
-  layerActions.setLayerParent(store, layerId, parentId || null);
+  store.setLayerParent(layerId, parentId || null);
 
   return {
     success: true,
@@ -388,7 +386,7 @@ function executeReorderLayers(
   const { store } = context;
   const { layerId, newIndex } = args;
 
-  layerActions.moveLayer(store, layerId, newIndex);
+  store.moveLayer(layerId, newIndex);
 
   return {
     success: true,
@@ -511,7 +509,7 @@ function executeAddKeyframe(
   const { store } = context;
   const { layerId, propertyPath, frame, value, interpolation } = args;
 
-  const keyframe = keyframeActions.addKeyframe(
+  const keyframe = useKeyframeStore().addKeyframe(
     store,
     layerId,
     propertyPath,
@@ -528,7 +526,7 @@ function executeAddKeyframe(
 
   // Set interpolation if specified
   if (interpolation && keyframe) {
-    keyframeActions.setKeyframeInterpolation(
+    useKeyframeStore().setKeyframeInterpolation(
       store,
       layerId,
       propertyPath,
@@ -556,7 +554,7 @@ function executeRemoveKeyframe(
   }
 
   // Find keyframe at frame
-  const property = keyframeActions.findPropertyByPath(layer, propertyPath);
+  const property = findPropertyByPath(layer, propertyPath);
   if (!property) {
     return { success: false, message: `Property ${propertyPath} not found` };
   }
@@ -566,7 +564,7 @@ function executeRemoveKeyframe(
     return { success: false, message: `No keyframe at frame ${frame}` };
   }
 
-  keyframeActions.removeKeyframe(store, layerId, propertyPath, keyframe.id);
+  useKeyframeStore().removeKeyframe(store, layerId, propertyPath, keyframe.id);
 
   return {
     success: true,
@@ -586,7 +584,7 @@ function executeSetKeyframeEasing(
     return { success: false, message: `Layer ${layerId} not found` };
   }
 
-  const property = keyframeActions.findPropertyByPath(layer, propertyPath);
+  const property = findPropertyByPath(layer, propertyPath);
   if (!property) {
     return { success: false, message: `Property ${propertyPath} not found` };
   }
@@ -596,7 +594,7 @@ function executeSetKeyframeEasing(
     return { success: false, message: `No keyframe at frame ${frame}` };
   }
 
-  keyframeActions.setKeyframeInterpolation(
+  useKeyframeStore().setKeyframeInterpolation(
     store,
     layerId,
     propertyPath,
@@ -630,7 +628,7 @@ function executeScaleKeyframeTiming(
   let scaledCount = 0;
 
   for (const propPath of propertiesToScale) {
-    const property = keyframeActions.findPropertyByPath(layer, propPath);
+    const property = findPropertyByPath(layer, propPath);
     if (property?.keyframes && property.keyframes.length > 0) {
       // Scale each keyframe's frame number
       for (const kf of property.keyframes) {
@@ -670,7 +668,7 @@ function executeSetExpression(
     return { success: false, message: `Layer ${layerId} not found` };
   }
 
-  const property = keyframeActions.findPropertyByPath(layer, propertyPath);
+  const property = findPropertyByPath(layer, propertyPath);
   if (!property) {
     return { success: false, message: `Property ${propertyPath} not found` };
   }
@@ -705,7 +703,7 @@ function executeRemoveExpression(
     return { success: false, message: `Layer ${layerId} not found` };
   }
 
-  const property = keyframeActions.findPropertyByPath(layer, propertyPath);
+  const property = findPropertyByPath(layer, propertyPath);
   if (!property) {
     return { success: false, message: `Property ${propertyPath} not found` };
   }
@@ -975,7 +973,7 @@ function executeApplyCameraTrajectory(
   // Also create standard layer keyframes for position
   for (const kf of keyframes.position) {
     if (kf.position) {
-      keyframeActions.addKeyframe(
+      useKeyframeStore().addKeyframe(
         store,
         cameraLayerId,
         "cameraPosition",
@@ -1125,7 +1123,7 @@ function executeApplyRackFocus(
   // Apply focus keyframes to layer
   for (const kf of focusKeyframes) {
     if (kf.focusDistance !== undefined) {
-      keyframeActions.addKeyframe(
+      useKeyframeStore().addKeyframe(
         store,
         cameraLayerId,
         "focusDistance",
@@ -1553,7 +1551,7 @@ async function executeDecomposeImage(
   const createdLayerIds: string[] = [];
   for (let i = decomposedLayers.length - 1; i >= 0; i--) {
     const decomposed = decomposedLayers[i];
-    const layer = layerActions.createLayer(store, "image", decomposed.label);
+    const layer = store.createLayer("image", decomposed.label);
     if (layer.data) {
       (layer.data as any).source = decomposed.image;
     }
@@ -1675,8 +1673,7 @@ async function executeVectorizeImage(
       }
 
       // Create the spline layer
-      const layer = layerActions.createLayer(
-        store,
+      const layer = store.createLayer(
         "spline",
         `Vector Path ${i + 1}`,
       );
@@ -1717,7 +1714,7 @@ async function executeVectorizeImage(
       controlPoints = autoGroupPoints(allPoints, { method: "quadrant" });
     }
 
-    const layer = layerActions.createLayer(store, "spline", "Vectorized Paths");
+    const layer = store.createLayer("spline", "Vectorized Paths");
 
     if (layer.data) {
       Object.assign(layer.data, {

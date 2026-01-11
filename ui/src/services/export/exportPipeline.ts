@@ -944,16 +944,21 @@ export class ExportPipeline {
     // Create object URL for download
     const url = URL.createObjectURL(blob);
 
-    // Trigger download
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    try {
+      // Trigger download
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
 
-    // Keep URL for reference (cleanup handled elsewhere)
-    return url;
+      // Return filename as path reference (URL is revoked after download starts)
+      return filename;
+    } finally {
+      // Revoke object URL to free memory - download has started at this point
+      URL.revokeObjectURL(url);
+    }
   }
 }
 

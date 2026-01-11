@@ -44,9 +44,14 @@ interface AudioState {
   loadingPhase: string;
   loadingError: string | null;
 
+  // Volume control
+  volume: number; // 0-100
+  muted: boolean;
+
   // Playback state
   audioContext: AudioContext | null;
   audioSource: AudioBufferSourceNode | null;
+  gainNode: GainNode | null;
   isPlayingAudio: boolean;
   audioStartTime: number;
   audioStartOffset: number;
@@ -75,8 +80,11 @@ export const useAudioStore = defineStore("audio", {
     loadingProgress: 0,
     loadingPhase: "",
     loadingError: null,
+    volume: 100,
+    muted: false,
     audioContext: null,
     audioSource: null,
+    gainNode: null,
     isPlayingAudio: false,
     audioStartTime: 0,
     audioStartOffset: 0,
@@ -424,12 +432,57 @@ export const useAudioStore = defineStore("audio", {
     // AUDIO PLAYBACK (Ctrl+. for audio-only preview)
     // ============================================================
 
+    // ============================================================
+    // VOLUME CONTROL
+    // ============================================================
+
+    /**
+     * Set audio volume (0-100)
+     */
+    setVolume(volume: number): void {
+      this.volume = Math.max(0, Math.min(100, volume));
+      this.updateGainNode();
+    },
+
+    /**
+     * Set muted state
+     */
+    setMuted(muted: boolean): void {
+      this.muted = muted;
+      this.updateGainNode();
+    },
+
+    /**
+     * Toggle muted state
+     */
+    toggleMuted(): void {
+      this.muted = !this.muted;
+      this.updateGainNode();
+    },
+
+    /**
+     * Update gain node with current volume/muted state
+     */
+    updateGainNode(): void {
+      if (this.gainNode) {
+        const effectiveVolume = this.muted ? 0 : this.volume / 100;
+        this.gainNode.gain.setValueAtTime(
+          effectiveVolume,
+          this.audioContext?.currentTime ?? 0,
+        );
+      }
+    },
+
     /**
      * Initialize audio context if needed
      */
     ensureAudioContext(): AudioContext {
       if (!this.audioContext) {
         this.audioContext = new AudioContext();
+        // Create persistent gain node for volume control
+        this.gainNode = this.audioContext.createGain();
+        this.gainNode.connect(this.audioContext.destination);
+        this.updateGainNode();
       }
       return this.audioContext;
     },
@@ -458,10 +511,10 @@ export const useAudioStore = defineStore("audio", {
       // Calculate start time in seconds
       const startTime = frame / fps;
 
-      // Create new source
+      // Create new source and connect through gain node
       this.audioSource = context.createBufferSource();
       this.audioSource.buffer = this.audioBuffer;
-      this.audioSource.connect(context.destination);
+      this.audioSource.connect(this.gainNode!);
 
       // Store start info for getCurrentTime calculation
       this.audioStartTime = context.currentTime;
@@ -555,10 +608,10 @@ export const useAudioStore = defineStore("audio", {
       const time = frame / fps;
       const scrubDuration = 0.1; // Play 100ms of audio
 
-      // Create and play short snippet
+      // Create and play short snippet through gain node for volume control
       this.audioSource = context.createBufferSource();
       this.audioSource.buffer = this.audioBuffer;
-      this.audioSource.connect(context.destination);
+      this.audioSource.connect(this.gainNode!);
 
       // Start at frame time, play for scrubDuration
       const endTime = Math.min(time + scrubDuration, this.audioBuffer.duration);

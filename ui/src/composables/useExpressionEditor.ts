@@ -1,10 +1,7 @@
 import { ref, shallowRef } from "vue";
 import { isExpressionSafe } from "@/services/expressions/expressionValidator";
-import {
-  removePropertyExpression,
-  setPropertyExpression,
-} from "@/stores/actions/keyframeActions";
 import { useCompositorStore } from "@/stores/compositorStore";
+import { useKeyframeStore } from "@/stores/keyframeStore";
 import type { AnimatableProperty, PropertyExpression } from "@/types/project";
 
 // Global state for expression editor
@@ -68,7 +65,7 @@ export function useExpressionEditor() {
     }
 
     const store = useCompositorStore();
-    setPropertyExpression(
+    useKeyframeStore().setPropertyExpression(
       store,
       currentLayerId.value,
       currentPropertyPath.value,
@@ -85,7 +82,7 @@ export function useExpressionEditor() {
   function removeExpression() {
     if (currentLayerId.value && currentPropertyPath.value) {
       const store = useCompositorStore();
-      removePropertyExpression(
+      useKeyframeStore().removePropertyExpression(
         store,
         currentLayerId.value,
         currentPropertyPath.value,

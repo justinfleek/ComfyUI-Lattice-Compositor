@@ -15,10 +15,6 @@ export * from "./cameraActions";
 // Effect actions
 export * from "./effectActions";
 
-// Keyframe actions
-export * from "./keyframeActions";
-// Layer actions
-export * from "./layerActions";
 // Layer decomposition actions (Qwen-Image-Layered integration)
 export * from "./layerDecompositionActions";
 // Layer style actions (Photoshop-style layer effects)

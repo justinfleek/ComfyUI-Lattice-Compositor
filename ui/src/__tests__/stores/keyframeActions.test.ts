@@ -9,26 +9,13 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import {
-  findPropertyByPath,
-  addKeyframe,
-  removeKeyframe,
-  clearKeyframes,
-  moveKeyframe,
-  moveKeyframes,
-  setKeyframeValue,
-  setKeyframeInterpolation,
-  setPropertyValue,
-  setPropertyAnimated,
-  getKeyframesAtFrame,
-  getAllKeyframeFrames,
-  findNextKeyframeFrame,
-  findPrevKeyframeFrame,
-  findSurroundingKeyframes,
-  scaleKeyframeTiming,
-  timeReverseKeyframes,
-  type KeyframeStore,
-} from "@/stores/actions/keyframeActions";
+import { findPropertyByPath } from "@/stores/keyframeStore/helpers";
+import { addKeyframe, removeKeyframe, clearKeyframes, moveKeyframe, moveKeyframes, setKeyframeValue } from "@/stores/keyframeStore/crud";
+import { setKeyframeInterpolation } from "@/stores/keyframeStore/interpolation";
+import { setPropertyValue, setPropertyAnimated } from "@/stores/keyframeStore/property";
+import { getKeyframesAtFrame, getAllKeyframeFrames, findNextKeyframeFrame, findPrevKeyframeFrame, findSurroundingKeyframes } from "@/stores/keyframeStore/query";
+import { scaleKeyframeTiming, timeReverseKeyframes } from "@/stores/keyframeStore/timing";
+import type { KeyframeStoreAccess as KeyframeStore } from "@/stores/keyframeStore/types";
 import type { Layer, AnimatableProperty, Keyframe, Composition } from "@/types/project";
 
 // ============================================================================

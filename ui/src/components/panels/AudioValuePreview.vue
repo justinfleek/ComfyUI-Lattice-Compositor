@@ -16,8 +16,10 @@
 import { computed, ref } from "vue";
 import { getFeatureAtFrame, isBeatAtFrame } from "@/services/audioFeatures";
 import { useCompositorStore } from "@/stores/compositorStore";
+import { useAudioStore } from "@/stores/audioStore";
 
 const store = useCompositorStore();
+const audioStore = useAudioStore();
 
 // Whether to show expanded view
 const expanded = ref(false);
@@ -26,10 +28,10 @@ const expanded = ref(false);
 const currentFrame = computed(() => store.currentFrame);
 
 // Check if audio is loaded
-const hasAudio = computed(() => !!store.audioAnalysis);
+const hasAudio = computed(() => !!audioStore.audioAnalysis);
 
 // Audio analysis data
-const audioAnalysis = computed(() => store.audioAnalysis);
+const audioAnalysis = computed(() => audioStore.audioAnalysis);
 
 // Feature values at current frame
 const amplitude = computed(() => {

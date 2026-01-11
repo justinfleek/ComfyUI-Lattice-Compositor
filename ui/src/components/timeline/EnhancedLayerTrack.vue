@@ -183,7 +183,6 @@ import {
   renderTimelineWaveform,
   type WaveformData,
 } from "@/services/timelineWaveform";
-import { convertTextLayerToSplines } from "@/stores/actions/layerActions";
 import { useAudioStore } from "@/stores/audioStore";
 import { useCompositorStore } from "@/stores/compositorStore";
 
@@ -969,7 +968,7 @@ async function convertToSplines() {
   if (props.layer.type !== "text") return;
 
   try {
-    const result = await convertTextLayerToSplines(store, props.layer.id, {
+    const result = await store.convertTextLayerToSplines(props.layer.id, {
       perCharacter: true,
       groupCharacters: true,
       keepOriginal: true,

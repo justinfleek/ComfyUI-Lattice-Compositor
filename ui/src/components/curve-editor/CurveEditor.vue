@@ -222,12 +222,14 @@ import { computed, onMounted, onUnmounted, reactive, ref, watch } from "vue";
 import { EASING_PRESETS } from "@/services/interpolation";
 import { findNearestSnap } from "@/services/timelineSnap";
 import { useCompositorStore } from "@/stores/compositorStore";
+import { useAudioStore } from "@/stores/audioStore";
 import type { AnimatableProperty, Keyframe } from "@/types/project";
 import type { CurveMode, EasingPreset } from "./CurveEditorHeader.vue";
 
 const emit = defineEmits<(e: "close") => void>();
 
 const store = useCompositorStore();
+const audioStore = useAudioStore();
 
 // Refs
 const canvasRef = ref<HTMLCanvasElement | null>(null);
@@ -902,8 +904,8 @@ function moveSelectedKeyframes(screenX: number, screenY: number): void {
         layers: store.layers,
         selectedLayerId: layer.id,
         currentFrame: store.currentFrame,
-        audioAnalysis: store.audioAnalysis,
-        peakData: store.peakData,
+        audioAnalysis: audioStore.audioAnalysis,
+        peakData: audioStore.peakData,
       });
 
       if (snap) {

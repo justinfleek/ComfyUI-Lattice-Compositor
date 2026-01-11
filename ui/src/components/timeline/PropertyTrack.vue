@@ -209,6 +209,7 @@
 import { computed, onMounted, onUnmounted, ref } from "vue";
 import { findNearestSnap } from "@/services/timelineSnap";
 import { useCompositorStore } from "@/stores/compositorStore";
+import { useAudioStore } from "@/stores/audioStore";
 import { getShapeForEasing, KEYFRAME_SHAPES } from "@/styles/keyframe-shapes";
 import type { Keyframe } from "@/types/project";
 
@@ -240,6 +241,7 @@ const props = defineProps([
 ]);
 const emit = defineEmits(["selectKeyframe", "deleteKeyframe", "moveKeyframe"]);
 const store = useCompositorStore();
+const audioStore = useAudioStore();
 
 const selectedKeyframeIds = ref<Set<string>>(new Set());
 const trackRef = ref<HTMLElement | null>(null);
@@ -607,8 +609,8 @@ function startKeyframeDrag(e: MouseEvent, kf: Keyframe<any>) {
           layers: store.layers,
           selectedLayerId: props.layerId,
           currentFrame: store.currentFrame,
-          audioAnalysis: store.audioAnalysis,
-          peakData: store.peakData,
+          audioAnalysis: audioStore.audioAnalysis,
+          peakData: audioStore.peakData,
         },
       );
       if (snap) {

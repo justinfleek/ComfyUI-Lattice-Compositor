@@ -763,27 +763,27 @@ const isCreatingPathAnim = ref(false);
 const pathAnimResult = ref<string | null>(null);
 const pathAnimError = ref<string | null>(null);
 
-// Audio volume/mute now uses store state
+// Audio volume/mute now uses audioStore
 const masterVolume = computed({
-  get: () => store.audioVolume,
-  set: (val: number) => store.setAudioVolume(val),
+  get: () => audioStore.volume,
+  set: (val: number) => audioStore.setVolume(val),
 });
 const isMuted = computed({
-  get: () => store.audioMuted,
-  set: (val: boolean) => store.setAudioMuted(val),
+  get: () => audioStore.muted,
+  set: (val: boolean) => audioStore.setMuted(val),
 });
 
-const hasAudio = computed(() => !!store.audioBuffer);
-const audioFileName = computed(() => store.audioFile?.name || "Unknown");
+const hasAudio = computed(() => !!audioStore.audioBuffer);
+const audioFileName = computed(() => audioStore.audioFile?.name || "Unknown");
 const audioSampleRate = computed(() =>
-  store.audioBuffer
-    ? `${(store.audioBuffer.sampleRate / 1000).toFixed(1)} kHz`
+  audioStore.audioBuffer
+    ? `${(audioStore.audioBuffer.sampleRate / 1000).toFixed(1)} kHz`
     : "",
 );
 const audioDuration = computed(() => {
-  if (!store.audioBuffer) return "0:00";
-  const m = Math.floor(store.audioBuffer.duration / 60);
-  const s = Math.floor(store.audioBuffer.duration % 60);
+  if (!audioStore.audioBuffer) return "0:00";
+  const m = Math.floor(audioStore.audioBuffer.duration / 60);
+  const s = Math.floor(audioStore.audioBuffer.duration % 60);
   return `${m}:${s.toString().padStart(2, "0")}`;
 });
 
@@ -812,7 +812,7 @@ async function createPathAnimator() {
     return;
   }
 
-  if (!store.audioBuffer || !store.audioAnalysis) {
+  if (!audioStore.audioBuffer || !audioStore.audioAnalysis) {
     pathAnimError.value = "Please load and analyze audio first";
     return;
   }
@@ -835,7 +835,7 @@ async function createPathAnimator() {
     }
 
     // Get audio feature data based on selection
-    const audioData = store.audioAnalysis;
+    const audioData = audioStore.audioAnalysis;
     const _fps = store.fps || 16;
     const frameCount = store.frameCount;
 
@@ -951,7 +951,7 @@ function toggleMute() {
 }
 
 async function convertAudioToKeyframes() {
-  if (!store.audioBuffer) {
+  if (!audioStore.audioBuffer) {
     convertError.value = "No audio loaded";
     return;
   }
@@ -990,7 +990,7 @@ async function convertAudioToKeyframes() {
 }
 
 function drawWaveform() {
-  if (!waveformCanvas.value || !store.audioBuffer) return;
+  if (!waveformCanvas.value || !audioStore.audioBuffer) return;
   const canvas = waveformCanvas.value;
   const ctx = canvas.getContext("2d");
   if (!ctx) return;
@@ -1000,7 +1000,7 @@ function drawWaveform() {
   const _h = (canvas.height = 60 * window.devicePixelRatio);
   ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
 
-  const data = store.audioBuffer.getChannelData(0);
+  const data = audioStore.audioBuffer.getChannelData(0);
   const step = Math.ceil(data.length / rect.width);
   const amp = 30;
 
@@ -1029,7 +1029,7 @@ function drawWaveform() {
   ctx.fillRect(px, 0, 1, 60);
 }
 
-watch(() => [store.audioBuffer, store.currentFrame], drawWaveform);
+watch(() => [audioStore.audioBuffer, store.currentFrame], drawWaveform);
 
 onMounted(() => {
   if (hasAudio.value) {
@@ -1076,7 +1076,7 @@ function getStemIcon(stemName: string): string {
 }
 
 async function separateStem(stem: StemType) {
-  if (!store.audioFile) return;
+  if (!audioStore.audioFile) return;
 
   isSeparating.value = true;
   separationError.value = null;
@@ -1084,7 +1084,7 @@ async function separateStem(stem: StemType) {
   separationMessage.value = `Isolating ${stem}...`;
 
   try {
-    const arrayBuffer = await store.audioFile.arrayBuffer();
+    const arrayBuffer = await audioStore.audioFile.arrayBuffer();
     separationProgress.value = 30;
 
     const result = await isolateStem(arrayBuffer, stem, selectedModel.value);
@@ -1108,7 +1108,7 @@ async function separateStem(stem: StemType) {
 }
 
 async function makeKaraoke() {
-  if (!store.audioFile) return;
+  if (!audioStore.audioFile) return;
 
   isSeparating.value = true;
   separationError.value = null;
@@ -1116,7 +1116,7 @@ async function makeKaraoke() {
   separationMessage.value = "Creating karaoke track...";
 
   try {
-    const arrayBuffer = await store.audioFile.arrayBuffer();
+    const arrayBuffer = await audioStore.audioFile.arrayBuffer();
     separationProgress.value = 30;
 
     const result = await isolateStem(
@@ -1144,7 +1144,7 @@ async function makeKaraoke() {
 }
 
 async function separateAll() {
-  if (!store.audioFile) return;
+  if (!audioStore.audioFile) return;
 
   isSeparating.value = true;
   separationError.value = null;
@@ -1152,7 +1152,7 @@ async function separateAll() {
   separationMessage.value = "Separating all stems...";
 
   try {
-    const arrayBuffer = await store.audioFile.arrayBuffer();
+    const arrayBuffer = await audioStore.audioFile.arrayBuffer();
     separationProgress.value = 30;
 
     const result = await separateStemsService(arrayBuffer, {
@@ -1185,7 +1185,7 @@ function playStem(stemName: string) {
 
   // Create and play new audio
   const audio = createAudioElement(separatedStems.value[stemName]);
-  audio.volume = store.audioVolume / 100;
+  audio.volume = audioStore.volume / 100;
   audio.play();
   currentStemAudio.value = audio;
 }
@@ -1193,7 +1193,7 @@ function playStem(stemName: string) {
 function downloadStemFile(stemName: string) {
   if (!separatedStems.value?.[stemName]) return;
 
-  const fileName = `${store.audioFile?.name?.replace(/\.[^.]+$/, "") || "audio"}_${stemName}.wav`;
+  const fileName = `${audioStore.audioFile?.name?.replace(/\.[^.]+$/, "") || "audio"}_${stemName}.wav`;
   downloadStem(separatedStems.value[stemName], fileName);
 }
 
@@ -1241,7 +1241,7 @@ function applyBeatPreset() {
     const preset = BEAT_DETECTION_PRESETS[beatPreset.value];
     beatConfig.value = { ...DEFAULT_BEAT_CONFIG, ...preset };
     // Re-analyze if we already have audio
-    if (store.audioAnalysis) {
+    if (audioStore.audioAnalysis) {
       analyzeBeats();
     }
   }
@@ -1251,13 +1251,13 @@ function updateBeatConfig() {
   // Clear preset when manually editing
   beatPreset.value = "";
   // Re-analyze if we already have results
-  if (store.audioAnalysis && beatGrid.value) {
+  if (audioStore.audioAnalysis && beatGrid.value) {
     analyzeBeats();
   }
 }
 
 async function analyzeBeats() {
-  if (!store.audioAnalysis) {
+  if (!audioStore.audioAnalysis) {
     console.warn("[Lattice] No audio analysis available for beat detection");
     return;
   }
@@ -1269,7 +1269,7 @@ async function analyzeBeats() {
     const fps = store.fps || 16;
 
     beatGrid.value = createEnhancedBeatGrid(
-      store.audioAnalysis,
+      audioStore.audioAnalysis,
       fps,
       beatConfig.value,
     );

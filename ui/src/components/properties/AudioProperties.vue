@@ -318,8 +318,10 @@ import {
   getTargetDisplayName,
 } from "@/services/audioReactiveMapping";
 import { useCompositorStore } from "@/stores/compositorStore";
+import { useAudioStore } from "@/stores/audioStore";
 
 const store = useCompositorStore();
+const audioStore = useAudioStore();
 
 // UI State
 const expandedSections = ref(new Set(["peaks", "mappings"]));
@@ -352,9 +354,9 @@ const playheadPosition = computed(
 );
 
 const currentFeatureValue = computed(() => {
-  if (!store.audioAnalysis) return 0;
+  if (!audioStore.audioAnalysis) return 0;
   return getFeatureAtFrame(
-    store.audioAnalysis,
+    audioStore.audioAnalysis,
     visualizerFeature.value,
     store.currentFrame,
   );
@@ -403,9 +405,9 @@ function toggleMappingExpanded(id: string): void {
 }
 
 function detectPeaks(): void {
-  if (!store.audioAnalysis) return;
+  if (!audioStore.audioAnalysis) return;
 
-  const weights = store.audioAnalysis.amplitudeEnvelope;
+  const weights = audioStore.audioAnalysis.amplitudeEnvelope;
   peakData.value = detectAudioPeaks(weights, peakConfig.value);
 
   // Store in compositor store
@@ -434,7 +436,7 @@ function removeMapping(id: string): void {
 
 function drawVisualizer(): void {
   const canvas = visualizerCanvas.value;
-  if (!canvas || !store.audioAnalysis) return;
+  if (!canvas || !audioStore.audioAnalysis) return;
 
   const ctx = canvas.getContext("2d");
   if (!ctx) return;
@@ -448,7 +450,7 @@ function drawVisualizer(): void {
 
   // Get feature data
   let featureData: number[] = [];
-  const analysis = store.audioAnalysis;
+  const analysis = audioStore.audioAnalysis;
 
   switch (visualizerFeature.value) {
     case "amplitude":
@@ -579,7 +581,7 @@ function drawVisualizer(): void {
 
 // Watch for changes
 watch(
-  () => [store.audioAnalysis, visualizerFeature.value, peakData.value],
+  () => [audioStore.audioAnalysis, visualizerFeature.value, peakData.value],
   () => {
     drawVisualizer();
   },
