@@ -9,7 +9,9 @@
  */
 
 import { describe, test, expect } from 'vitest';
-import { KNOWN_BAD_SEEDS } from '@/__tests__/_deprecated/utils/bugPatterns';
+
+// Known bad seed from BUG-002 that triggers the minDepth > maxDepth issue
+const BUG_002_SEED = -1642374030;
 
 describe('BUG-019 Regression: minDepth > maxDepth Invariant Violation', () => {
   /**
@@ -19,7 +21,7 @@ describe('BUG-019 Regression: minDepth > maxDepth Invariant Violation', () => {
    */
   test('original counterexample now passes - minDepth <= maxDepth invariant holds', () => {
     // Counterexample: seed=-1642374030
-    const seed = KNOWN_BAD_SEEDS['BUG-002']; // -1642374030
+    const _seed = BUG_002_SEED;
     
     // Simulate empty scene case that would cause minDepth > maxDepth
     let minDepth = Infinity;

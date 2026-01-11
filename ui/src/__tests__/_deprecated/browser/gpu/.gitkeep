@@ -1,8 +1,0 @@
-# P1 HIGH: GPU/WebGL/WebGPU Browser Tests
-# These tests verify hardware-accelerated rendering
-#
-# Files to test:
-# - glsl.browser.test.ts
-# - webgpu.browser.test.ts
-# - gpuEffects.browser.test.ts
-# - particles.browser.test.ts

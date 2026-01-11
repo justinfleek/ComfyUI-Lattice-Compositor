@@ -1,6 +1,0 @@
-# P0 CRITICAL: Effect Renderer Browser Tests
-# These tests verify that all effects render correctly
-#
-# Files to test:
-# - All files in services/effects/
-# - effectProcessor.browser.test.ts ✅ EXISTS (move here)
