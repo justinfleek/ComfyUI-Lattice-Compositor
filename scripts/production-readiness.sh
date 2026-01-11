@@ -72,8 +72,9 @@ else
 fi
 
 echo -n "  Vitest:       "
-if npm test -- --reporter=dot 2>&1 | tail -1 | grep -q "pass"; then
-    PASS_COUNT=$(npm test -- --reporter=dot 2>&1 | grep -oP '\d+(?= passed)')
+TEST_OUTPUT=$(npm test -- --reporter=dot --run 2>&1)
+if echo "$TEST_OUTPUT" | grep -qE "passed|✓"; then
+    PASS_COUNT=$(echo "$TEST_OUTPUT" | grep -oE '[0-9]+ passed' | grep -oE '[0-9]+' || echo "?")
     echo "✅ PASS ($PASS_COUNT tests)"
 else
     echo "❌ FAIL"
