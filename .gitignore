@@ -17,6 +17,8 @@ _archived/
 !PROJECT_STATUS.md
 !.github/**/*.md
 !docs/*.md
+!ui/.claude/**/*.md
+!.cursor/**/*.mdc
 
 # Internal development files - NOT for public repo
 CLAUDE.md
@@ -30,6 +32,8 @@ specs/
 
 # Claude Code settings (local only)
 .claude/
+# But track ui/.claude/ for session infrastructure
+!ui/.claude/
 
 # Python
 __pycache__/

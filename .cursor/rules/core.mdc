@@ -1,0 +1,48 @@
+---
+description: Core development rules for Lattice Compositor
+alwaysApply: true
+---
+
+# LATTICE COMPOSITOR - CURSOR RULES
+
+## CRITICAL PRINCIPLES
+
+### CODE IS TRUTH, TYPES DESCRIBE
+- NEVER delete properties or code to satisfy TypeScript
+- ALWAYS update type definitions to match working code
+- If fixing a type error, change the TYPE not the CODE
+
+### FULL FILE READS
+- Read entire files before editing
+- No grep/head/tail to understand code
+- State file size and exports before editing
+
+### PATTERN-BASED FIXES
+- Fix ALL instances of a pattern across codebase
+- Never fix one file and move on
+
+## EXISTING TOOLING (USE THESE, DON'T RECREATE)
+
+### TypeScript/Vue (ui/)
+- Formatter: `npx biome format --write`
+- Linter: `npx biome check`
+- Types: `npx tsc --noEmit`
+- Tests: `npm test`
+
+### Python (src/)
+- Formatter: `ruff format`
+- Linter: `ruff check`
+- Types: `pyright`
+- Tests: `pytest` (70% coverage required)
+
+### Nix
+- Format all: `nix fmt`
+- Check flake: `nix flake check`
+- Enter dev shell: `nix develop`
+
+## TYPE SAFETY UTILITIES (ui/src/utils/)
+- validation.ts - Input boundary validation
+- typeGuards.ts - Runtime type narrowing
+- numericSafety.ts - NaN/Infinity guards
+
+@ui/.claude/MANDATORY_READ.md

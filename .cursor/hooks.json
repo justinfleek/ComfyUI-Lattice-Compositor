@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "hooks": {
+    "afterFileEdit": [
+      {
+        "command": "npx biome check --write \"$CURSOR_FILE_PATH\"",
+        "workingDirectory": "ui"
+      }
+    ]
+  }
+}
