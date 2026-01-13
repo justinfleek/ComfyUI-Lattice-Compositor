@@ -10,28 +10,92 @@
  */
 
 import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
-import {
-  pushHistory,
-  undo,
-  redo,
-  canUndo,
-  canRedo,
-  clearHistory,
-  exportProject,
-  importProject,
-  createDefaultProject,
-  resetProject,
-  markUnsavedChanges,
-  configureAutosave,
-  startAutosave,
-  stopAutosave,
-  performAutosave,
-  findUsedAssetIds,
-  removeUnusedAssets,
-  getAssetUsageStats,
-  type ProjectStore,
-} from "@/stores/actions/projectActions";
+import { setActivePinia, createPinia } from "pinia";
+import { useProjectStore, createDefaultProject, findUsedAssetIds } from "@/stores/projectStore";
+import type { ProjectStore } from "@/stores/projectStore";
 import type { LatticeProject, Layer, Composition } from "@/types/project";
+
+// Initialize Pinia before tests
+beforeEach(() => {
+  setActivePinia(createPinia());
+});
+
+// ============================================================================
+// Shim functions - wrap store actions for backward compatibility with tests
+// ============================================================================
+
+const projectStore = () => useProjectStore();
+
+function pushHistory(store: ProjectStore): void {
+  projectStore().pushHistory(store);
+}
+
+function undo(store: ProjectStore): boolean {
+  return projectStore().undo(store);
+}
+
+function redo(store: ProjectStore): boolean {
+  return projectStore().redo(store);
+}
+
+function canUndo(store: ProjectStore): boolean {
+  return projectStore().canUndo(store);
+}
+
+function canRedo(store: ProjectStore): boolean {
+  return projectStore().canRedo(store);
+}
+
+function clearHistory(store: ProjectStore): void {
+  projectStore().clearHistory(store);
+}
+
+function exportProject(store: ProjectStore): string {
+  return projectStore().exportProject(store);
+}
+
+function importProject(store: ProjectStore, json: string, pushHistoryFn: () => void): boolean {
+  return projectStore().importProject(store, json, pushHistoryFn);
+}
+
+function resetProject(store: ProjectStore): void {
+  // Reset to default project state
+  const defaultProject = createDefaultProject();
+  store.project = defaultProject;
+  store.historyStack = [structuredClone(defaultProject)];
+  store.historyIndex = 0;
+  store.hasUnsavedChanges = false;
+  store.lastSaveProjectId = null;
+  store.lastSaveTime = 0;
+}
+
+function markUnsavedChanges(store: ProjectStore): void {
+  projectStore().markUnsavedChanges(store);
+}
+
+function configureAutosave(store: ProjectStore, enabled: boolean, intervalMs: number, performAutosaveFn: () => Promise<void>): void {
+  projectStore().configureAutosave(store, enabled, intervalMs, performAutosaveFn);
+}
+
+function startAutosave(store: ProjectStore, performAutosaveFn: () => Promise<void>): void {
+  projectStore().startAutosave(store, performAutosaveFn);
+}
+
+function stopAutosave(store: ProjectStore): void {
+  projectStore().stopAutosave(store);
+}
+
+async function performAutosave(store: ProjectStore): Promise<void> {
+  return projectStore().performAutosave(store);
+}
+
+function removeUnusedAssets(store: ProjectStore): { removed: number; assetNames: string[] } {
+  return projectStore().removeUnusedAssets(store);
+}
+
+function getAssetUsageStats(store: ProjectStore): { total: number; used: number; unused: number; usedNames: string[]; unusedNames: string[] } {
+  return projectStore().getAssetUsageStats(store);
+}
 
 // ============================================================================
 // Test Helpers

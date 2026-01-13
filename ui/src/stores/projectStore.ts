@@ -232,7 +232,7 @@ function invalidateParticleCaches(): void {
 // ASSET HELPERS
 // ============================================================================
 
-function findUsedAssetIds(store: ProjectStore): Set<string> {
+export function findUsedAssetIds(store: ProjectStore): Set<string> {
   const usedIds = new Set<string>();
 
   for (const comp of Object.values(store.project.compositions)) {
