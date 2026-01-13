@@ -1139,9 +1139,9 @@ export class ParticleSystem {
       case "cone": {
         // Emit from cone volume
         // Cone opens along Y axis from emitter position
-        const coneAngle = (((emitter as any).coneAngle ?? 45) * Math.PI) / 180;
-        const coneRadius = (emitter as any).coneRadius ?? 0.1;
-        const coneLength = (emitter as any).coneLength ?? 0.2;
+        const coneAngle = ((emitter.coneAngle ?? 45) * Math.PI) / 180;
+        const coneRadius = emitter.coneRadius ?? 0.1;
+        const coneLength = emitter.coneLength ?? 0.2;
 
         // Random point in cone
         const t = this.rng.next(); // 0-1 along cone length
@@ -1308,7 +1308,7 @@ export class ParticleSystem {
     x: number;
     y: number;
   } {
-    const config = (emitter as any).depthMapEmission;
+    const config = emitter.depthMapEmission;
 
     // Fall back to point emission if no depth map config
     if (!config) {
@@ -1407,7 +1407,7 @@ export class ParticleSystem {
     x: number;
     y: number;
   } {
-    const config = (emitter as any).maskEmission;
+    const config = emitter.maskEmission;
 
     // Fall back to point emission if no mask config
     if (!config) {
@@ -1553,8 +1553,8 @@ export class ParticleSystem {
     x: number;
     y: number;
   } {
-    const sourceLayerId = (emitter as any).imageSourceLayerId;
-    const threshold = (emitter as any).emissionThreshold ?? 0.1;
+    const sourceLayerId = emitter.imageSourceLayerId;
+    const threshold = emitter.emissionThreshold ?? 0.1;
 
     // Fall back to point emission if no source layer configured
     if (!sourceLayerId) {
@@ -1635,8 +1635,8 @@ export class ParticleSystem {
     x: number;
     y: number;
   } {
-    const sourceLayerId = (emitter as any).depthSourceLayerId;
-    const threshold = (emitter as any).depthEdgeThreshold ?? 0.05;
+    const sourceLayerId = emitter.depthSourceLayerId;
+    const threshold = emitter.depthEdgeThreshold ?? 0.05;
 
     // Fall back to point emission if no source layer configured
     if (!sourceLayerId) {

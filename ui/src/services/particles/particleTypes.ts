@@ -179,6 +179,20 @@ export interface EmitterConfig {
   splinePath: SplinePathEmission | null;
   // Sprite/texture configuration
   sprite: SpriteConfig;
+  // Cone emission parameters (when shape = 'cone')
+  coneAngle?: number; // Opening angle in degrees, default 45
+  coneRadius?: number; // Base radius, default 0.1
+  coneLength?: number; // Cone height, default 0.2
+  // Depth map emission parameters (when shape = 'depth-map')
+  depthMapEmission?: import("@/types/particles").DepthMapEmission;
+  // Mask emission parameters (when shape = 'mask')
+  maskEmission?: import("@/types/particles").MaskEmission;
+  // Image-based emission parameters (when shape = 'image')
+  imageSourceLayerId?: string;
+  emissionThreshold?: number;
+  // Depth edge emission parameters (when shape = 'depthEdge')
+  depthSourceLayerId?: string;
+  depthEdgeThreshold?: number;
 }
 
 // ============================================================================
