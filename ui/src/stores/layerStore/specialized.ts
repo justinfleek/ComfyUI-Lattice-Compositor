@@ -373,7 +373,7 @@ export async function createVideoLayer(
   // Delegate to videoStore which handles metadata extraction and asset creation
   // Type assertion: compositorStore implements required interface at runtime
   return videoStore.createVideoLayer(
-    compositorStore as Parameters<typeof videoStore.createVideoLayer>[0],
+    compositorStore as unknown as Parameters<typeof videoStore.createVideoLayer>[0],
     file,
     autoResizeComposition
   );

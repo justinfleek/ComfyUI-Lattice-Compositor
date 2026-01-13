@@ -150,7 +150,7 @@ export const useCameraStore = defineStore("camera", {
       const layerStore = useLayerStore();
       // Type assertion: compositorStore passed at runtime implements required interface
       layerStore.selectLayer(
-        store as Parameters<typeof layerStore.selectLayer>[0],
+        store as unknown as Parameters<typeof layerStore.selectLayer>[0],
         layerId
       );
 

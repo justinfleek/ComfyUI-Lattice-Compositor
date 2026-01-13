@@ -345,7 +345,7 @@ export const useAudioKeyframeStore = defineStore("audioKeyframe", {
       const layerStore = useLayerStore();
       // Type assertion: compositorStore passed at runtime implements required interface
       const layer = layerStore.createLayer(
-        store as Parameters<typeof layerStore.createLayer>[0],
+        store as unknown as Parameters<typeof layerStore.createLayer>[0],
         "null",
         name
       );
@@ -488,7 +488,7 @@ export const useAudioKeyframeStore = defineStore("audioKeyframe", {
       const layerStore = useLayerStore();
       // Type assertion: compositorStore passed at runtime implements required interface
       const layer = layerStore.createLayer(
-        store as Parameters<typeof layerStore.createLayer>[0],
+        store as unknown as Parameters<typeof layerStore.createLayer>[0],
         "null",
         name
       );
@@ -564,7 +564,7 @@ export const useAudioKeyframeStore = defineStore("audioKeyframe", {
       const layerStore = useLayerStore();
       // Type assertion: compositorStore passed at runtime implements required interface
       const layer = layerStore.createLayer(
-        store as Parameters<typeof layerStore.createLayer>[0],
+        store as unknown as Parameters<typeof layerStore.createLayer>[0],
         "null",
         name
       );
