@@ -5,7 +5,7 @@
  */
 
 import { markLayerDirty } from "@/services/layerEvaluationCache";
-import type { Keyframe } from "@/types/project";
+import type { Keyframe, PropertyValue } from "@/types/project";
 import { findPropertyByPath } from "./helpers";
 import type { KeyframeStoreAccess } from "./types";
 
@@ -20,7 +20,7 @@ export function setPropertyValue(
   store: KeyframeStoreAccess,
   layerId: string,
   propertyPath: string,
-  value: any,
+  value: PropertyValue,
 ): void {
   const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
   if (!layer) return;
@@ -73,7 +73,7 @@ export function setPropertyAnimated(
       const comp = store.getActiveComp();
       const frame = comp?.currentFrame ?? 0;
 
-      const keyframe: Keyframe<any> = {
+      const keyframe: Keyframe<PropertyValue> = {
         id: `kf_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`,
         frame,
         value: property.value,

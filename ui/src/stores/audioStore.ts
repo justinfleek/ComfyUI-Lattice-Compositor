@@ -12,7 +12,7 @@ import type {
 } from "@/services/audioFeatures";
 import {
   detectPeaks,
-  getFeatureAtFrame,
+  getFeatureAtFrame as getFeatureAtFrameService,
   isBeatAtFrame,
 } from "@/services/audioFeatures";
 import type {
@@ -26,6 +26,7 @@ import {
 } from "@/services/audioWorkerClient";
 import type { AudioParticleMapping } from "@/types/project";
 import { storeLogger } from "@/utils/logger";
+import { useExpressionStore } from "./expressionStore";
 
 interface StemData {
   buffer: AudioBuffer;
@@ -199,6 +200,12 @@ export const useAudioStore = defineStore("audio", {
         // Initialize the audio reactive mapper
         this.initializeReactiveMapper();
 
+        // Update property driver system with new audio analysis
+        const expressionStore = useExpressionStore();
+        if (expressionStore.propertyDriverSystem && this.audioAnalysis) {
+          expressionStore.propertyDriverSystem.setAudioAnalysis(this.audioAnalysis);
+        }
+
         storeLogger.debug("Audio loaded:", {
           duration: this.audioBuffer.duration,
           bpm: this.audioAnalysis.bpm,
@@ -262,9 +269,15 @@ export const useAudioStore = defineStore("audio", {
     /**
      * Get audio feature value at frame
      */
-    getFeatureAtFrame(feature: string, frame: number): number {
+    getFeatureAtFrame(
+      store: { getActiveComp(): { currentFrame: number } | null } | null,
+      feature: string,
+      frame?: number,
+    ): number {
       if (!this.audioAnalysis) return 0;
-      return getFeatureAtFrame(this.audioAnalysis, feature, frame);
+      const targetFrame =
+        frame ?? store?.getActiveComp()?.currentFrame ?? 0;
+      return getFeatureAtFrameService(this.audioAnalysis, feature, targetFrame);
     },
 
     /**
@@ -725,7 +738,7 @@ export const useAudioStore = defineStore("audio", {
         : this.audioAnalysis;
 
       if (!analysis) return 0;
-      return getFeatureAtFrame(analysis, feature, frame);
+      return getFeatureAtFrameService(analysis, feature, frame);
     },
 
     /**

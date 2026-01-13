@@ -36,13 +36,15 @@ export interface ExpressionContext {
 
   // Keyframe info
   numKeys: number;
-  keyframes: Keyframe<any>[];
+  keyframes: Keyframe<number | number[]>[];
 
-  // External data (JSON-driven)
-  data?: Record<string, any>;
+  // External data (JSON-driven) - unused, kept for future extensibility
+  // If used, should be typed based on actual JSON schema
+  data?: never;
 
   // Expression control parameters (for effect("Slider")("Slider") access)
-  params?: Record<string, any>;
+  // Values are numbers (sliders), strings (text), or booleans (checkboxes)
+  params?: Record<string, number | string | boolean>;
 
   // Other layer properties (for linking)
   getLayerProperty?: (
@@ -94,7 +96,7 @@ export interface ExpressionContext {
 export interface Expression {
   type: "preset" | "function" | "custom";
   name: string;
-  params: Record<string, any>;
+  params: Record<string, number | string | boolean>;
   enabled: boolean;
   code?: string; // For custom expressions - JavaScript code string
 }
@@ -133,8 +135,8 @@ export interface TextSourceInfo {
   fontSize: number;
   fontFamily: string;
   fontStyle: string;
-  fillColor: any;
-  strokeColor: any;
+  fillColor: string; // Hex color string (e.g., "#FF0000")
+  strokeColor: string; // Hex color string (e.g., "#000000")
   strokeWidth: number;
   tracking: number;
   leading: number;

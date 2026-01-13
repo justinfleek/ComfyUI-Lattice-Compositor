@@ -7,6 +7,7 @@
 
 import { computed, ref } from "vue";
 import { useCompositorStore } from "@/stores/compositorStore";
+import { useLayerStore } from "@/stores/layerStore";
 
 export interface ShapeDrawBounds {
   x1: number;
@@ -54,6 +55,7 @@ function createDefaultShapeTransform() {
 
 export function useShapeDrawing() {
   const store = useCompositorStore();
+  const layerStore = useLayerStore();
 
   // State
   const isDrawingShape = ref(false);
@@ -240,7 +242,7 @@ export function useShapeDrawing() {
     const centerY = (bounds.y1 + bounds.y2) / 2;
 
     // Create a new shape layer
-    const newLayer = store.createLayer("shape");
+    const newLayer = layerStore.createShapeLayer(store);
 
     // Get current shape tool options
     const options = store.shapeToolOptions;
@@ -340,7 +342,7 @@ export function useShapeDrawing() {
     group.contents = [generator, fill, stroke];
 
     // Update the layer position to center of drawn shape
-    store.updateLayer(newLayer.id, {
+    layerStore.updateLayer(store, newLayer.id, {
       transform: {
         ...newLayer.transform,
         position: {
@@ -352,7 +354,7 @@ export function useShapeDrawing() {
     });
 
     // Select the new layer
-    store.selectLayer(newLayer.id);
+    layerStore.selectLayer(store, newLayer.id);
 
     // Switch back to select tool
     store.setTool("select");

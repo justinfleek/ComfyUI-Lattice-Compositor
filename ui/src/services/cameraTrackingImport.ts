@@ -12,10 +12,17 @@
  */
 
 import { useCompositorStore } from "@/stores/compositorStore";
+import { useLayerStore } from "@/stores/layerStore";
+import { parseAndSanitize } from "@/services/security/jsonSanitizer";
+import {
+  CameraTrackingSolveSchema,
+  BlenderMotionTrackingDataSchema,
+  LatticeFormatDetectionSchema,
+  BlenderFormatDetectionSchema,
+} from "@/schemas/imports/cameraTracking-schema";
 import type { AnimatableProperty } from "@/types/animation";
 import { createAnimatableProperty, createKeyframe } from "@/types/animation";
 import type {
-  BlenderFormat,
   CameraIntrinsics,
   CameraPose,
   CameraTrackingImportOptions,
@@ -29,15 +36,20 @@ import type {
  * Parse Lattice native JSON format
  */
 export function parseLatticeTrackingJSON(json: string): CameraTrackingSolve {
-  const data = JSON.parse(json);
-
-  if (!data.version || !data.cameraPath) {
-    throw new Error(
-      "Invalid Lattice tracking format: missing version or cameraPath",
-    );
+  const sanitizeResult = parseAndSanitize(json);
+  if (!sanitizeResult.valid) {
+    throw new Error(`Invalid JSON in Lattice tracking: ${sanitizeResult.error}`);
   }
 
-  return data as CameraTrackingSolve;
+  const parseResult = CameraTrackingSolveSchema.safeParse(sanitizeResult.data);
+  if (!parseResult.success) {
+    const issues = parseResult.error.issues
+      .map((i) => `${i.path.join(".")}: ${i.message}`)
+      .join("; ");
+    throw new Error(`Invalid Lattice tracking data: ${issues}`);
+  }
+
+  return parseResult.data;
 }
 
 /**
@@ -261,7 +273,22 @@ function parseCOLMAPPoints3D(content: string): COLMAPFormat.Point3D[] {
  * Parse Blender motion tracking JSON export
  */
 export function parseBlenderTrackingJSON(json: string): CameraTrackingSolve {
-  const data: BlenderFormat.MotionTrackingData = JSON.parse(json);
+  const sanitizeResult = parseAndSanitize(json);
+  if (!sanitizeResult.valid) {
+    throw new Error(`Invalid JSON in Blender tracking: ${sanitizeResult.error}`);
+  }
+
+  const parseResult = BlenderMotionTrackingDataSchema.safeParse(
+    sanitizeResult.data,
+  );
+  if (!parseResult.success) {
+    const issues = parseResult.error.issues
+      .map((i) => `${i.path.join(".")}: ${i.message}`)
+      .join("; ");
+    throw new Error(`Invalid Blender tracking data: ${issues}`);
+  }
+
+  const data = parseResult.data;
 
   const intrinsics: CameraIntrinsics = {
     focalLength:
@@ -298,7 +325,11 @@ export function parseBlenderTrackingJSON(json: string): CameraTrackingSolve {
       id: `pt_${i}`,
       position: { x: pt.co[0], y: pt.co[1], z: pt.co[2] },
       color: pt.color
-        ? { r: pt.color[0] * 255, g: pt.color[1] * 255, b: pt.color[2] * 255 }
+        ? {
+            r: Math.round(pt.color[0] * 255),
+            g: Math.round(pt.color[1] * 255),
+            b: Math.round(pt.color[2] * 255),
+          }
         : undefined,
       track2DIDs: [],
     })) || [];
@@ -332,17 +363,17 @@ export function parseBlenderTrackingJSON(json: string): CameraTrackingSolve {
 export function detectTrackingFormat(
   content: string,
 ): "lattice" | "blender" | "colmap" | "unknown" {
-  try {
-    const json = JSON.parse(content);
-
-    if (json.version && json.source && json.cameraPath) {
+  const sanitizeResult = parseAndSanitize(content);
+  if (sanitizeResult.valid) {
+    // Use loose detection schemas to check for format signatures
+    if (LatticeFormatDetectionSchema.safeParse(sanitizeResult.data).success) {
       return "lattice";
     }
 
-    if (json.fps && json.tracks && json.clip_width) {
+    if (BlenderFormatDetectionSchema.safeParse(sanitizeResult.data).success) {
       return "blender";
     }
-  } catch {
+  } else {
     // Not JSON, check for COLMAP text format
     if (content.includes("# Camera list") || content.includes("CAMERA_ID")) {
       return "colmap";
@@ -360,6 +391,7 @@ export async function importCameraTracking(
   options: CameraTrackingImportOptions = {},
 ): Promise<CameraTrackingImportResult> {
   const store = useCompositorStore();
+  const layerStore = useLayerStore();
   const result: CameraTrackingImportResult = {
     success: false,
     warnings: [],
@@ -415,10 +447,8 @@ export async function importCameraTracking(
       });
 
       // Create camera layer
-      const cameraLayer = store.addLayer(
-        "camera",
-        `Tracked Camera (${solve.source})`,
-      );
+      const cameraLayer = layerStore.createCameraLayer(store as any);
+      cameraLayer.name = `Tracked Camera (${solve.source})`;
 
       if (cameraLayer) {
         // Apply keyframed transform
@@ -443,7 +473,7 @@ export async function importCameraTracking(
         orientationProp.keyframes = rotationKeyframes as any;
 
         // Update the camera layer with camera-specific data and transform
-        store.updateLayer(cameraLayer.id, {
+        layerStore.updateLayer(store, cameraLayer.id, {
           threeD: true,
           transform: {
             ...cameraLayer.transform,
@@ -479,10 +509,10 @@ export async function importCameraTracking(
             offset.z,
         };
 
-        const nullLayer = store.addLayer("control", `Track Point ${point.id}`);
+        const nullLayer = layerStore.createLayer(store, "control", `Track Point ${point.id}`);
 
         if (nullLayer) {
-          store.updateLayer(nullLayer.id, {
+          layerStore.updateLayer(store, nullLayer.id, {
             threeD: true,
             transform: {
               ...nullLayer.transform,
@@ -537,14 +567,11 @@ export async function importCameraTracking(
         }
       }
 
-      const pointCloudLayer = store.addLayer(
-        "pointcloud",
-        `Track Points (${solve.source})`,
-      );
+      const pointCloudLayer = layerStore.createLayer(store, "pointcloud", `Track Points (${solve.source})`);
 
       if (pointCloudLayer) {
         // Note: point cloud data structure may vary - cast as any for flexibility
-        store.updateLayer(pointCloudLayer.id, {
+        layerStore.updateLayer(store, pointCloudLayer.id, {
           data: {
             positions: new Float32Array(positions),
             colors: new Float32Array(colors),

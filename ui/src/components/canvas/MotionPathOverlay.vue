@@ -121,6 +121,7 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 import { useCompositorStore } from "@/stores/compositorStore";
+import { useLayerStore } from "@/stores/layerStore";
 import type { AnimatableProperty, Keyframe } from "@/types/project";
 
 interface Props {
@@ -149,6 +150,7 @@ const emit = defineEmits<{
 }>();
 
 const store = useCompositorStore();
+const layerStore = useLayerStore();
 
 // Drag state
 const draggingHandle = ref<{ keyframeId: string; type: "in" | "out" } | null>(
@@ -168,7 +170,7 @@ type PositionValue = { x: number; y: number; z?: number };
 const positionProperty = computed(
   (): AnimatableProperty<PositionValue> | null => {
     if (!props.layerId) return null;
-    const layer = store.getLayerById?.(props.layerId);
+    const layer = layerStore.getLayerById(store, props.layerId);
     if (!layer?.transform?.position) return null;
     return layer.transform.position;
   },

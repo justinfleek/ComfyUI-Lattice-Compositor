@@ -94,10 +94,10 @@ export function evaluateTextAnimatorExpression(
     const textTotal = ${ctx.textTotal};
     const selectorValue = ${ctx.selectorValue};
     const char = ${JSON.stringify(ctx.char)};
-    const wordIndex = ${ctx.wordIndex || 0};
-    const lineIndex = ${ctx.lineIndex || 0};
-    const charInWord = ${ctx.charInWord || 0};
-    const charInLine = ${ctx.charInLine || 0};
+    const wordIndex = ${ctx.wordIndex ?? 0};
+    const lineIndex = ${ctx.lineIndex ?? 0};
+    const charInWord = ${ctx.charInWord ?? 0};
+    const charInLine = ${ctx.charInLine ?? 0};
     ${code}
   `;
 

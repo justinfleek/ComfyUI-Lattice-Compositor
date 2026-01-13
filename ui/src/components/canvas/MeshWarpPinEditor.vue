@@ -169,6 +169,7 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { useCompositorStore } from "@/stores/compositorStore";
+import { useLayerStore } from "@/stores/layerStore";
 import type { WarpPin, WarpPinType } from "@/types/meshWarp";
 import { createDefaultWarpPin } from "@/types/meshWarp";
 
@@ -190,6 +191,7 @@ const emit = defineEmits<{
 
 // Store
 const store = useCompositorStore();
+const layerStore = useLayerStore();
 
 // Local state
 const pinTool = ref<WarpPinType | "delete">("position");
@@ -200,7 +202,7 @@ const dragStartPos = ref<{ x: number; y: number } | null>(null);
 // Computed
 const pins = computed<WarpPin[]>(() => {
   if (!props.layerId) return [];
-  const layer = store.getLayerById(props.layerId);
+  const layer = layerStore.getLayerById(store, props.layerId);
   if (!layer || layer.type !== "spline") return [];
   // Support both old 'puppetPins' and new 'warpPins' property names
   return (layer.data as any)?.warpPins ?? (layer.data as any)?.puppetPins ?? [];
@@ -344,13 +346,13 @@ function addPinToLayer(
   const newPin = createDefaultWarpPin(id, x, y, type);
 
   // Get current pins and add new one
-  const layer = store.getLayerById(props.layerId);
+  const layer = layerStore.getLayerById(store, props.layerId);
   if (!layer) return null;
 
   // Support both old and new property names, prefer new
   const currentPins =
     (layer.data as any)?.warpPins ?? (layer.data as any)?.puppetPins ?? [];
-  store.updateLayer(props.layerId, {
+  layerStore.updateLayer(store, props.layerId, {
     data: {
       ...(layer.data as any),
       warpPins: [...currentPins, newPin],
@@ -363,12 +365,12 @@ function addPinToLayer(
 function removePinFromLayer(pinId: string): void {
   if (!props.layerId) return;
 
-  const layer = store.getLayerById(props.layerId);
+  const layer = layerStore.getLayerById(store, props.layerId);
   if (!layer) return;
 
   const currentPins: WarpPin[] =
     (layer.data as any)?.warpPins ?? (layer.data as any)?.puppetPins ?? [];
-  store.updateLayer(props.layerId, {
+  layerStore.updateLayer(store, props.layerId, {
     data: {
       ...(layer.data as any),
       warpPins: currentPins.filter((p) => p.id !== pinId),
@@ -384,7 +386,7 @@ function removePinFromLayer(pinId: string): void {
 function updatePinPosition(pinId: string, x: number, y: number): void {
   if (!props.layerId) return;
 
-  const layer = store.getLayerById(props.layerId);
+  const layer = layerStore.getLayerById(store, props.layerId);
   if (!layer) return;
 
   const currentPins: WarpPin[] =
@@ -402,7 +404,7 @@ function updatePinPosition(pinId: string, x: number, y: number): void {
     return p;
   });
 
-  store.updateLayer(props.layerId, {
+  layerStore.updateLayer(store, props.layerId, {
     data: {
       ...(layer.data as any),
       warpPins: updatedPins,
@@ -413,7 +415,7 @@ function updatePinPosition(pinId: string, x: number, y: number): void {
 function updatePinProperty(pinId: string, property: string, value: any): void {
   if (!props.layerId) return;
 
-  const layer = store.getLayerById(props.layerId);
+  const layer = layerStore.getLayerById(store, props.layerId);
   if (!layer) return;
 
   const currentPins: WarpPin[] =
@@ -428,7 +430,7 @@ function updatePinProperty(pinId: string, property: string, value: any): void {
     return p;
   });
 
-  store.updateLayer(props.layerId, {
+  layerStore.updateLayer(store, props.layerId, {
     data: {
       ...(layer.data as any),
       warpPins: updatedPins,

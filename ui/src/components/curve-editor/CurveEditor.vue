@@ -223,13 +223,17 @@ import { EASING_PRESETS } from "@/services/interpolation";
 import { findNearestSnap } from "@/services/timelineSnap";
 import { useCompositorStore } from "@/stores/compositorStore";
 import { useAudioStore } from "@/stores/audioStore";
-import type { AnimatableProperty, Keyframe } from "@/types/project";
+import { useKeyframeStore } from "@/stores/keyframeStore";
+import { useAnimationStore } from "@/stores/animationStore";
+import type { AnimatableProperty, Keyframe, PropertyValue } from "@/types/project";
 import type { CurveMode, EasingPreset } from "./CurveEditorHeader.vue";
 
 const emit = defineEmits<(e: "close") => void>();
 
 const store = useCompositorStore();
 const audioStore = useAudioStore();
+const keyframeStore = useKeyframeStore();
+const animationStore = useAnimationStore();
 
 // Refs
 const canvasRef = ref<HTMLCanvasElement | null>(null);
@@ -259,7 +263,7 @@ const selectedPropertyIds = ref<string[]>([]);
 const visiblePropertyIds = ref<string[]>([]);
 const visibleDimensions = ref<Record<string, string[]>>({});
 const selectedKeyframes = ref<
-  Array<{ propId: string; index: number; keyframe: Keyframe<any> }>
+  Array<{ propId: string; index: number; keyframe: Keyframe<PropertyValue> }>
 >([]);
 const hoveredKeyframe = ref<{ propId: string; index: number } | null>(null);
 
@@ -278,7 +282,7 @@ const selectionBox = ref<{
   height: number;
 } | null>(null);
 const contextMenu = ref<{ x: number; y: number } | null>(null);
-const clipboard = ref<Keyframe<any>[] | null>(null);
+const clipboard = ref<Keyframe<PropertyValue>[] | null>(null);
 
 // Options
 const snapEnabled = ref(false);
@@ -316,11 +320,11 @@ const presetList: EasingPreset[] = [
 ];
 
 // Get all animatable properties from selected layer
-const animatableProperties = computed((): AnimatableProperty<any>[] => {
+const animatableProperties = computed((): AnimatableProperty<PropertyValue>[] => {
   const layer = store.selectedLayer;
   if (!layer) return [];
 
-  const props: AnimatableProperty<any>[] = [];
+  const props: AnimatableProperty<PropertyValue>[] = [];
   const t = layer.transform;
 
   // Position - check if dimensions are separated
@@ -404,13 +408,13 @@ function screenYToValue(screenY: number): number {
 }
 
 // Keyframe position helpers
-function getKeyframeScreenX(kf: Keyframe<any>): number {
+function getKeyframeScreenX(kf: Keyframe<PropertyValue>): number {
   return frameToScreenX(kf.frame);
 }
 
 function getKeyframeScreenY(
-  _prop: AnimatableProperty<any>,
-  kf: Keyframe<any>,
+  _prop: AnimatableProperty<PropertyValue>,
+  kf: Keyframe<PropertyValue>,
 ): number {
   const value =
     typeof kf.value === "number"
@@ -423,7 +427,7 @@ function getKeyframeScreenY(
 
 function getKeyframeDisplayValue(
   selection:
-    | { propId: string; index: number; keyframe: Keyframe<any> }
+    | { propId: string; index: number; keyframe: Keyframe<PropertyValue> }
     | undefined,
 ): number {
   if (!selection) return 0;
@@ -437,7 +441,7 @@ function getKeyframeDisplayValue(
 
 // Handle position helpers - using new absolute frame/value offsets
 function getOutHandleX(
-  prop: AnimatableProperty<any>,
+  prop: AnimatableProperty<PropertyValue>,
   kfIndex: number,
 ): number {
   const kf = prop.keyframes[kfIndex];
@@ -449,7 +453,7 @@ function getOutHandleX(
 }
 
 function getOutHandleY(
-  prop: AnimatableProperty<any>,
+  prop: AnimatableProperty<PropertyValue>,
   kfIndex: number,
 ): number {
   const kf = prop.keyframes[kfIndex];
@@ -461,7 +465,7 @@ function getOutHandleY(
   return valueToScreenY(handleValue);
 }
 
-function getInHandleX(prop: AnimatableProperty<any>, kfIndex: number): number {
+function getInHandleX(prop: AnimatableProperty<PropertyValue>, kfIndex: number): number {
   const kf = prop.keyframes[kfIndex];
   if (!kf || !kf.inHandle.enabled) return frameToScreenX(kf.frame);
 
@@ -470,7 +474,7 @@ function getInHandleX(prop: AnimatableProperty<any>, kfIndex: number): number {
   return frameToScreenX(handleFrame);
 }
 
-function getInHandleY(prop: AnimatableProperty<any>, kfIndex: number): number {
+function getInHandleY(prop: AnimatableProperty<PropertyValue>, kfIndex: number): number {
   const kf = prop.keyframes[kfIndex];
   if (!kf || !kf.inHandle.enabled)
     return valueToScreenY(getNumericValue(kf.value));
@@ -480,9 +484,13 @@ function getInHandleY(prop: AnimatableProperty<any>, kfIndex: number): number {
   return valueToScreenY(handleValue);
 }
 
-function getNumericValue(value: any): number {
+function getNumericValue(value: PropertyValue): number {
   if (typeof value === "number") return value;
-  if (typeof value === "object") return value.x ?? value.y ?? value.z ?? 0;
+  if (typeof value === "object" && value !== null) {
+    if ("x" in value && typeof value.x === "number") return value.x;
+    if ("y" in value && typeof value.y === "number") return value.y;
+    if ("z" in value && typeof value.z === "number") return value.z;
+  }
   return 0;
 }
 
@@ -493,7 +501,7 @@ function getPropertyColor(propId: string): string {
   return propertyColors[prop.name] ?? propertyColors.default;
 }
 
-function isKeyframeInView(kf: Keyframe<any>): boolean {
+function isKeyframeInView(kf: Keyframe<PropertyValue>): boolean {
   return kf.frame >= viewState.frameStart && kf.frame <= viewState.frameEnd;
 }
 
@@ -503,7 +511,7 @@ function isKeyframeSelected(propId: string, index: number): boolean {
   );
 }
 
-function hasDimension(prop: AnimatableProperty<any>, dim: string): boolean {
+function hasDimension(prop: AnimatableProperty<PropertyValue>, dim: string): boolean {
   if (!prop.animated || prop.keyframes.length === 0) return false;
   const value = prop.keyframes[0].value;
   return typeof value === "object" && dim in value;
@@ -632,7 +640,8 @@ function applyPreset(presetKey: string): void {
 
     // Convert normalized preset to absolute frame/value handles
     if (presetKey === "linear") {
-      store.setKeyframeInterpolation(
+      keyframeStore.setKeyframeInterpolation(
+        store,
         layer.id,
         propertyPath,
         sk.keyframe.id,
@@ -663,20 +672,23 @@ function applyPreset(presetKey: string): void {
         enabled: true,
       };
 
-      store.setKeyframeInterpolation(
+      keyframeStore.setKeyframeInterpolation(
+        store,
         layer.id,
         propertyPath,
         sk.keyframe.id,
         "bezier",
       );
-      store.setKeyframeHandle(
+      keyframeStore.setKeyframeHandle(
+        store,
         layer.id,
         propertyPath,
         sk.keyframe.id,
         "out",
         outHandle,
       );
-      store.setKeyframeHandle(
+      keyframeStore.setKeyframeHandle(
+        store,
         layer.id,
         propertyPath,
         sk.keyframe.id,
@@ -926,7 +938,7 @@ function moveSelectedKeyframes(screenX: number, screenY: number): void {
     const propertyPath = getPropertyPath(prop);
 
     // Call store method to persist the change
-    store.updateKeyframe(layer.id, propertyPath, sk.keyframe.id, {
+    keyframeStore.updateKeyframe(store, layer.id, propertyPath, sk.keyframe.id, {
       frame,
       value: typeof sk.keyframe.value === "number" ? newValue : undefined,
     });
@@ -942,7 +954,7 @@ function moveSelectedKeyframes(screenX: number, screenY: number): void {
 }
 
 // Helper to get property path from AnimatableProperty
-function getPropertyPath(prop: AnimatableProperty<any>): string {
+function getPropertyPath(prop: AnimatableProperty<PropertyValue>): string {
   const name = prop.name.toLowerCase();
   if (name === "position") return "transform.position";
   if (name === "scale") return "transform.scale";
@@ -1015,7 +1027,7 @@ function moveHandle(screenX: number, screenY: number): void {
     };
 
     // Call store method to persist
-    store.setKeyframeHandle(layer.id, propertyPath, kf.id, "out", newHandle);
+    keyframeStore.setKeyframeHandle(store, layer.id, propertyPath, kf.id, "out", newHandle);
 
     // Update local reference
     kf.outHandle = newHandle;
@@ -1045,7 +1057,7 @@ function moveHandle(screenX: number, screenY: number): void {
     };
 
     // Call store method to persist
-    store.setKeyframeHandle(layer.id, propertyPath, kf.id, "in", newHandle);
+    keyframeStore.setKeyframeHandle(store, layer.id, propertyPath, kf.id, "in", newHandle);
 
     // Update local reference
     kf.inHandle = newHandle;
@@ -1059,7 +1071,7 @@ function moveHandle(screenX: number, screenY: number): void {
 
 // Control mode constraints (from spec B2, B3, B4)
 function applyControlModeConstraints(
-  kf: Keyframe<any>,
+  kf: Keyframe<PropertyValue>,
   changedHandle: "in" | "out",
   propertyPath: string,
 ): void {
@@ -1078,7 +1090,7 @@ function applyControlModeConstraints(
       kf.outHandle.value = -kf.inHandle.value;
       kf.outHandle.enabled = kf.inHandle.enabled;
       // Persist to store
-      store.setKeyframeHandle(layer.id, propertyPath, kf.id, "out", {
+      keyframeStore.setKeyframeHandle(store, layer.id, propertyPath, kf.id, "out", {
         ...kf.outHandle,
       });
     } else {
@@ -1086,7 +1098,7 @@ function applyControlModeConstraints(
       kf.inHandle.value = -kf.outHandle.value;
       kf.inHandle.enabled = kf.outHandle.enabled;
       // Persist to store
-      store.setKeyframeHandle(layer.id, propertyPath, kf.id, "in", {
+      keyframeStore.setKeyframeHandle(store, layer.id, propertyPath, kf.id, "in", {
         ...kf.inHandle,
       });
     }
@@ -1107,7 +1119,7 @@ function applyControlModeConstraints(
       other.value = Math.sin(oppositeAngle) * otherLength;
 
       // Persist to store
-      store.setKeyframeHandle(layer.id, propertyPath, kf.id, otherType, {
+      keyframeStore.setKeyframeHandle(store, layer.id, propertyPath, kf.id, otherType, {
         ...other,
       });
     }
@@ -1142,7 +1154,7 @@ function addKeyframeAtPosition(): void {
       typeof prop.value === "number" ? value : { x: value, y: value };
 
     // Call store method to persist - it handles sorting and animation flag
-    store.addKeyframe(layer.id, propertyPath, keyframeValue, frame);
+    keyframeStore.addKeyframe(store, layer.id, propertyPath, keyframeValue, frame);
     drawGraph();
   }
 
@@ -1158,7 +1170,7 @@ function deleteSelectedKeyframes(): void {
     if (prop) {
       const propertyPath = getPropertyPath(prop);
       // Call store method to persist deletion
-      store.removeKeyframe(layer.id, propertyPath, sk.keyframe.id);
+      keyframeStore.removeKeyframe(store, layer.id, propertyPath, sk.keyframe.id);
     }
   }
   selectedKeyframes.value = [];
@@ -1182,7 +1194,8 @@ function pasteKeyframes(): void {
   for (const kf of clipboard.value) {
     const newFrame = kf.frame + offset;
     // Use store method to properly add keyframes
-    const newKeyframe = store.addKeyframe(
+    const newKeyframe = keyframeStore.addKeyframe(
+      store,
       layer.id,
       propertyPath,
       kf.value,
@@ -1192,7 +1205,8 @@ function pasteKeyframes(): void {
     // Set interpolation and handles on the newly created keyframe
     if (newKeyframe) {
       if (kf.interpolation !== "linear") {
-        store.setKeyframeInterpolation(
+        keyframeStore.setKeyframeInterpolation(
+          store,
           layer.id,
           propertyPath,
           newKeyframe.id,
@@ -1200,7 +1214,8 @@ function pasteKeyframes(): void {
         );
       }
       if (kf.inHandle?.enabled) {
-        store.setKeyframeHandle(
+        keyframeStore.setKeyframeHandle(
+          store,
           layer.id,
           propertyPath,
           newKeyframe.id,
@@ -1209,7 +1224,8 @@ function pasteKeyframes(): void {
         );
       }
       if (kf.outHandle?.enabled) {
-        store.setKeyframeHandle(
+        keyframeStore.setKeyframeHandle(
+          store,
           layer.id,
           propertyPath,
           newKeyframe.id,
@@ -1294,7 +1310,8 @@ function onTimeRulerClick(event: MouseEvent): void {
 
   const x = event.clientX - rect.left;
   const frame = Math.round(screenXToFrame(x));
-  store.setFrame(frame);
+  const animationStore = useAnimationStore();
+  animationStore.setFrame(store, frame);
 }
 
 // Drawing
@@ -1407,7 +1424,7 @@ function calculateGridStep(
 
 function drawPropertyCurve(
   ctx: CanvasRenderingContext2D,
-  prop: AnimatableProperty<any>,
+  prop: AnimatableProperty<PropertyValue>,
 ): void {
   if (prop.keyframes.length < 2) return;
 
@@ -1619,7 +1636,7 @@ function goToPreviousKeyframe(): void {
   allKeyframes.sort((a, b) => a - b);
   const prev = [...allKeyframes].reverse().find((f) => f < currentFrame);
   if (prev !== undefined) {
-    store.setFrame(prev);
+    animationStore.setFrame(store, prev);
   }
 }
 
@@ -1638,7 +1655,7 @@ function goToNextKeyframe(): void {
   allKeyframes.sort((a, b) => a - b);
   const next = allKeyframes.find((f) => f > currentFrame);
   if (next !== undefined) {
-    store.setFrame(next);
+    animationStore.setFrame(store, next);
   }
 }
 

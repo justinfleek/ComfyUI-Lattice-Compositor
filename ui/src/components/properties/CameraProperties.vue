@@ -528,6 +528,7 @@ import {
   type TrajectoryType,
 } from "@/services/cameraTrajectory";
 import { useCompositorStore } from "@/stores/compositorStore";
+import { useLayerStore } from "@/stores/layerStore";
 import { createKeyframe } from "@/types/animation";
 import type {
   AnimatableProperty,
@@ -543,6 +544,7 @@ import type {
 const props = defineProps<{ layer: Layer }>();
 const emit = defineEmits(["update"]);
 const store = useCompositorStore();
+const layerStore = useLayerStore();
 
 const expandedSections = ref<string[]>(["settings", "dof"]);
 
@@ -650,7 +652,7 @@ function toggleSection(section: string) {
 
 // Update camera data
 function update(key: keyof CameraLayerData | string, value: any) {
-  store.updateLayer(props.layer.id, {
+  layerStore.updateLayer(store, props.layer.id, {
     data: { ...cameraData.value, [key]: value },
   });
   emit("update");
@@ -760,7 +762,7 @@ function updatePathProperty(_key: string, value: number) {
     const updatedProperties = (props.layer.properties || []).map((p) =>
       p.name === "Path Position" ? { ...p, value } : p,
     );
-    store.updateLayer(props.layer.id, { properties: updatedProperties });
+    layerStore.updateLayer(store, props.layer.id, { properties: updatedProperties });
   }
 }
 
@@ -791,7 +793,7 @@ function updateAnimatable(propName: string, value: number, dataKey: string) {
     const updatedProperties = (props.layer.properties || []).map((p) =>
       p.name === propName ? { ...p, value } : p,
     );
-    store.updateLayer(props.layer.id, { properties: updatedProperties });
+    layerStore.updateLayer(store, props.layer.id, { properties: updatedProperties });
   }
 
   // Update in camera data's animated property
@@ -820,7 +822,7 @@ function updateDOFAnimatable(
     const updatedProperties = (props.layer.properties || []).map((p) =>
       p.name === propName ? { ...p, value } : p,
     );
-    store.updateLayer(props.layer.id, { properties: updatedProperties });
+    layerStore.updateLayer(store, props.layer.id, { properties: updatedProperties });
   }
   emit("update");
 }
@@ -842,7 +844,7 @@ function ensureProperty(propName: string, defaultValue: number, group: string) {
     } as AnimatableProperty<number>;
 
     // Update via store to track in history
-    store.updateLayer(props.layer.id, {
+    layerStore.updateLayer(store, props.layer.id, {
       properties: [...existingProperties, newProperty],
     });
   }
@@ -889,7 +891,7 @@ function toggleKeyframe(
         ? { ...p, keyframes: updatedKeyframes, animated: updatedAnimated }
         : p,
     );
-    store.updateLayer(props.layer.id, { properties: updatedProperties });
+    layerStore.updateLayer(store, props.layer.id, { properties: updatedProperties });
     emit("update");
   }
 }
@@ -927,7 +929,7 @@ function togglePathKeyframe(propName: string) {
         ? { ...p, keyframes: updatedKeyframes, animated: updatedAnimated }
         : p,
     );
-    store.updateLayer(props.layer.id, { properties: updatedProperties });
+    layerStore.updateLayer(store, props.layer.id, { properties: updatedProperties });
     emit("update");
   }
 }

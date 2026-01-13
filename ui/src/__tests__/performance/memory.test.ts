@@ -15,6 +15,7 @@
 import { describe, test, expect, beforeEach } from 'vitest';
 import { setActivePinia, createPinia } from 'pinia';
 import { useCompositorStore } from '@/stores/compositorStore';
+import { useLayerStore } from '@/stores/layerStore';
 import { motionEngine } from '@/engine/MotionEngine';
 
 // Helper to get current heap usage
@@ -70,9 +71,10 @@ describe('Memory: Layer Operations', () => {
     const initialHeap = getHeapUsed();
 
     // Stress test: create and delete many layers
+    const layerStore = useLayerStore();
     for (let i = 0; i < 1000; i++) {
-      const layer = store.createLayer('solid', `Layer ${i}`);
-      store.deleteLayer(layer.id);
+      const layer = layerStore.createLayer(store, 'solid', `Layer ${i}`);
+      layerStore.deleteLayer(store, layer.id);
     }
 
     await waitForGC();
@@ -89,22 +91,23 @@ describe('Memory: Layer Operations', () => {
 
   test('nested group creation/deletion does not leak', async () => {
     const store = useCompositorStore();
+    const layerStore = useLayerStore();
     await waitForGC();
     const initialHeap = getHeapUsed();
 
     for (let i = 0; i < 100; i++) {
       // Create nested structure
-      const groupLayer = store.createLayer('group', `Group ${i}`);
+      const groupLayer = layerStore.createLayer(store, 'group', `Group ${i}`);
       const groupId = groupLayer.id;
 
       // Add child layers
       for (let j = 0; j < 10; j++) {
-        const child = store.createLayer('solid', `Child ${j}`);
-        store.deleteLayer(child.id);
+        const child = layerStore.createLayer(store, 'solid', `Child ${j}`);
+        layerStore.deleteLayer(store, child.id);
       }
 
       // Delete entire group
-      store.deleteLayer(groupId);
+      layerStore.deleteLayer(store, groupId);
     }
 
     await waitForGC();
@@ -130,7 +133,8 @@ describe('Memory: Frame Playback', () => {
     const initialHeap = getHeapUsed();
 
     // Setup a composition with layers
-    const layer = store.createLayer('solid', 'Test Layer');
+    const layerStore = useLayerStore();
+    const layer = layerStore.createLayer(store, 'solid', 'Test Layer');
 
     // Add keyframes for opacity animation
     store.setFrame(0);
@@ -178,9 +182,10 @@ describe('Memory: Undo/Redo', () => {
     await waitForGC();
     const initialHeap = getHeapUsed();
 
+    const layerStore = useLayerStore();
     for (let i = 0; i < 500; i++) {
       // Make a change
-      store.createLayer('solid', `Layer ${i}`);
+      layerStore.createLayer(store, 'solid', `Layer ${i}`);
       store.pushHistory();
 
       // Undo
@@ -215,7 +220,8 @@ describe('Memory: Effect Processing', () => {
     const initialHeap = getHeapUsed();
 
     // Create test layer with effects
-    const layer = store.createLayer('solid', 'Effect Test');
+    const layerStore = useLayerStore();
+    const layer = layerStore.createLayer(store, 'solid', 'Effect Test');
     // Add effects (when API is available)
     // store.addEffect(layer.id, 'blur', { radius: 10 });
 

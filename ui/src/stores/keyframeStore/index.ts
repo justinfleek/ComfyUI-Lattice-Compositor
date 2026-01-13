@@ -128,6 +128,13 @@ import {
   autoCalculateAllBezierTangents as autoCalculateAllBezierTangentsImpl,
 } from "./autoBezier";
 
+// Property evaluation operations
+import {
+  getPropertyValueAtFrame as getPropertyValueAtFrameImpl,
+  evaluatePropertyAtFrame as evaluatePropertyAtFrameImpl,
+  getInterpolatedValue as getInterpolatedValueImpl,
+} from "./evaluation";
+
 // Types for internal use
 import type {
   KeyframeState,
@@ -232,7 +239,7 @@ export const useKeyframeStore = defineStore("keyframe", {
       layerId: string,
       propertyPath: string,
       keyframeId: string,
-      newValue: any,
+      newValue: PropertyValue,
     ): void {
       setKeyframeValueImpl(compositorStore, layerId, propertyPath, keyframeId, newValue);
     },
@@ -242,7 +249,7 @@ export const useKeyframeStore = defineStore("keyframe", {
       layerId: string,
       propertyPath: string,
       keyframeId: string,
-      updates: { frame?: number; value?: any },
+      updates: { frame?: number; value?: PropertyValue },
     ): void {
       updateKeyframeImpl(compositorStore, layerId, propertyPath, keyframeId, updates);
     },
@@ -310,7 +317,7 @@ export const useKeyframeStore = defineStore("keyframe", {
       compositorStore: KeyframeStoreAccess,
       layerId: string,
       propertyPath: string,
-      value: any,
+      value: PropertyValue,
     ): void {
       setPropertyValueImpl(compositorStore, layerId, propertyPath, value);
     },
@@ -333,7 +340,7 @@ export const useKeyframeStore = defineStore("keyframe", {
       compositorStore: KeyframeStoreAccess,
       layerId: string,
       frame: number,
-    ): Array<{ propertyPath: string; keyframe: Keyframe<any> }> {
+    ): Array<{ propertyPath: string; keyframe: Keyframe<PropertyValue> }> {
       return getKeyframesAtFrameImpl(compositorStore, layerId, frame);
     },
 
@@ -613,6 +620,57 @@ export const useKeyframeStore = defineStore("keyframe", {
       propertyPath: string,
     ): boolean {
       return canBakeExpressionImpl(compositorStore, layerId, propertyPath);
+    },
+
+    // ========================================================================
+    // PROPERTY EVALUATION
+    // ========================================================================
+
+    /**
+     * Get a single scalar property value at a specific frame.
+     * Returns null if layer not found or property unsupported.
+     */
+    getPropertyValueAtFrame(
+      compositorStore: KeyframeStoreAccess,
+      layerId: string,
+      propertyPath: string,
+      frame: number,
+    ): number | null {
+      return getPropertyValueAtFrameImpl(
+        compositorStore,
+        layerId,
+        propertyPath,
+        frame,
+      );
+    },
+
+    /**
+     * Evaluate a property at a specific frame and return the full value.
+     * Returns array for vector properties, number for scalars, null if not found.
+     */
+    evaluatePropertyAtFrame(
+      compositorStore: KeyframeStoreAccess,
+      layerId: string,
+      propertyPath: string,
+      frame: number,
+    ): number[] | number | null {
+      return evaluatePropertyAtFrameImpl(
+        compositorStore,
+        layerId,
+        propertyPath,
+        frame,
+      );
+    },
+
+    /**
+     * Get interpolated value for any animatable property at current frame.
+     * Convenience method that passes fps and duration from composition settings.
+     */
+    getInterpolatedValue<T>(
+      compositorStore: KeyframeStoreAccess,
+      property: AnimatableProperty<T>,
+    ): T {
+      return getInterpolatedValueImpl(compositorStore, property);
     },
   },
 });

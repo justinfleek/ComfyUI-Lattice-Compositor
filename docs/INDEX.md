@@ -1,12 +1,42 @@
 # Documentation Index
 
-## Current Status (2026-01-10)
+## Current Status (2026-01-12)
 
-| Phase | Status | Description |
-|-------|--------|-------------|
-| **Phase 0** | ✅ COMPLETE | 6 critical memory bugs fixed (BUG-243 to BUG-248) |
-| **Phase 1B** | ✅ CORE COMPLETE | layerStore 27 methods migrated |
-| **Phase 1B-MOD** | ✅ COMPLETE | layerStore modularized (8 files, all under 500 lines) |
+| Phase | Status | Description | Documentation |
+|-------|--------|-------------|---------------|
+| **Phase 0** | ✅ COMPLETE | 6 critical memory bugs fixed (BUG-243 to BUG-248) | [MASTER_REFACTOR_STATUS.md](MASTER_REFACTOR_STATUS.md#phase-0-critical-bug-fixes-weeks-1-2--complete) |
+| **Phase 1** | ✅ COMPLETE | Layer store migration (46/46 methods + 3 batch operations) | [PHASE_1_COMPLETE_VERIFICATION.md](PHASE_1_COMPLETE_VERIFICATION.md), [PHASE_1_MIGRATION_AUDIT.md](PHASE_1_MIGRATION_AUDIT.md) |
+| **Phase 2** | ⏳ IN PROGRESS | Method verification complete, state migration in progress (~5%) | [PHASE_2_AUDIT_SUMMARY.md](PHASE_2_AUDIT_SUMMARY.md), [PHASE_2_STATE_MIGRATION_PROGRESS.md](PHASE_2_STATE_MIGRATION_PROGRESS.md) |
+| **Phase 3** | ❌ NOT STARTED | Audio & Effects migration | [MASTER_REFACTOR_STATUS.md](MASTER_REFACTOR_STATUS.md#phase-3-audio--effects-weeks-19-26--not-started) |
+
+---
+
+## 🔴 CRITICAL: Technical Debt & Schema Audit (2026-01-12)
+
+### Type System Abuse: 7,793 Issues
+
+| Category | Count |
+|----------|-------|
+| Type escapes (`any`) | 581 |
+| Type assertions (`as X`, `!`) | 3,417 |
+| Runtime guards (`??`, `?.`) | 3,564 |
+| Lazy defaults (`\|\| 0`) | 231 |
+
+**See:** [PROJECT_PROGRESS.md](PROJECT_PROGRESS.md#-technical-debt-audit-2026-01-12) for full breakdown
+
+### Schema System: 40% Coverage
+
+| Status | Count |
+|--------|-------|
+| ✅ Covered type files | 10 |
+| ❌ Missing schema files | 8 |
+| 🔴 Wrong schemas | 1 (ShapeLayerData) |
+
+**Missing:** physics.ts, shapes.ts, layerStyles.ts, effects.ts, presets.ts, meshWarp.ts, masks.ts, assets.ts
+
+**See:** [PROJECT_PROGRESS.md](PROJECT_PROGRESS.md#-schema-system-status-2026-01-12) for details
+
+---
 
 ### Phase 1 Progress
 - [x] layerStore.ts created with interface
@@ -73,8 +103,22 @@
 
 | Document | Purpose |
 |----------|---------|
+| [MASTER_REFACTOR_STATUS.md](MASTER_REFACTOR_STATUS.md) | **PRIMARY STATUS** - Current progress, what's done vs what's not |
 | [STORE_MIGRATION_CONSUMERS.md](STORE_MIGRATION_CONSUMERS.md) | All 99 consumer files with exact method-to-store mapping |
 | [CROSS_DOMAIN_ACTIONS.md](CROSS_DOMAIN_ACTIONS.md) | 19 cross-domain actions with coordination patterns |
+| [COMPOSITORSTORE_BREAKDOWN.md](COMPOSITORSTORE_BREAKDOWN.md) | What remains in compositorStore after Phase 1 |
+
+### Phase 2 Documentation
+
+| Document | Purpose |
+|----------|---------|
+| [PHASE_2_AUDIT_SUMMARY.md](PHASE_2_AUDIT_SUMMARY.md) | **MAIN SUMMARY** - Complete verification of 63 methods, remaining work |
+| [PHASE_2_METHODICAL_AUDIT.md](PHASE_2_METHODICAL_AUDIT.md) | Detailed audit of 35 keyframe methods |
+| [PHASE_2_ANIMATION_AUDIT.md](PHASE_2_ANIMATION_AUDIT.md) | Detailed audit of 11 animation methods |
+| [PHASE_2_EXPRESSION_AUDIT.md](PHASE_2_EXPRESSION_AUDIT.md) | Detailed audit of 17 expression methods |
+| [PHASE_2_STATE_MIGRATION_PLAN.md](PHASE_2_STATE_MIGRATION_PLAN.md) | Plan for migrating 5 remaining state properties |
+| [PHASE_2_STATE_MIGRATION_PROGRESS.md](PHASE_2_STATE_MIGRATION_PROGRESS.md) | Progress tracking for state migration (1/5 complete) |
+| [SESSION_REVIEW_2026-01-12.md](SESSION_REVIEW_2026-01-12.md) | Complete review of 2026-01-12 session work |
 
 **Key Strategy:**
 1. Phase 0: Fix critical bugs FIRST (canvas leaks, WebGL context loss)

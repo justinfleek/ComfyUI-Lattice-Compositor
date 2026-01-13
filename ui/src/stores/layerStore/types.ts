@@ -159,4 +159,10 @@ export interface CompositorStoreAccess {
   // Layer CRUD methods (for cross-module operations)
   createLayer?(type: Layer["type"], name?: string): Layer;
   deleteLayer?(layerId: string): void;
+  // Camera store access (for camera layer creation)
+  cameras?: Map<string, any>;
+  activeCameraId?: string | null;
+  selectLayer?(layerId: string): void;
+  // Video store access (for video layer creation)
+  assets?: Record<string, any>;
 }

@@ -1995,7 +1995,7 @@ function inertia(ctx, amplitude = 0.1, frequency = 2, decay = 2) {
   const safeFrequency = Number.isFinite(frequency) ? frequency : 2;
   const safeDecay = Number.isFinite(decay) ? Math.max(1e-3, decay) : 2;
   if (keyframes.length === 0) return value;
-  const fps = ctx.fps || 16;
+  const fps = ctx.fps ?? 16;
   const currentFrame = time * fps;
   let nearestKey = null;
   for (let i = keyframes.length - 1; i >= 0; i--) {
@@ -2011,7 +2011,7 @@ function inertia(ctx, amplitude = 0.1, frequency = 2, decay = 2) {
   const valueArr = toArray(value);
   const velocityArr = toArray(velocity);
   const resultArr = valueArr.map((v, i) => {
-    const componentVel = velocityArr[i] || 0;
+    const componentVel = velocityArr[i] ?? 0;
     const oscillation = componentVel * safeAmplitude * Math.sin(safeFrequency * t * 2 * Math.PI) / Math.exp(safeDecay * t);
     return v + oscillation;
   });
@@ -2022,7 +2022,7 @@ function bounce(ctx, elasticity = 0.7, gravity = 4e3) {
   const safeElasticity = Number.isFinite(elasticity) ? Math.max(0, Math.min(1, elasticity)) : 0.7;
   const safeGravity = Number.isFinite(gravity) && gravity > 0 ? gravity : 4e3;
   if (keyframes.length === 0) return value;
-  const fps = ctx.fps || 16;
+  const fps = ctx.fps ?? 16;
   const currentFrame = time * fps;
   let lastKey = null;
   for (let i = keyframes.length - 1; i >= 0; i--) {
@@ -2060,7 +2060,7 @@ function elastic(ctx, amplitude = 1, period = 0.3) {
   const safeAmplitude = Number.isFinite(amplitude) ? amplitude : 1;
   const safePeriod = Number.isFinite(period) && period > 0 ? period : 0.3;
   if (keyframes.length === 0) return value;
-  const fps = ctx.fps || 16;
+  const fps = ctx.fps ?? 16;
   const currentFrame = time * fps;
   let lastKey = null;
   for (let i = keyframes.length - 1; i >= 0; i--) {
@@ -2099,12 +2099,12 @@ function createExpressionCompartment(ctx) {
       "[SES] Not initialized. Call initializeSES() at app startup."
     );
   }
-  const { Compartment, harden } = globalThis;
-  if (!Compartment) {
+  if (!globalThis.Compartment || !globalThis.harden) {
     throw new Error(
       "[SES] Compartment not available. Ensure lockdown() was called."
     );
   }
+  const { Compartment, harden } = globalThis;
   const safeMath = harden({
     PI: Math.PI,
     E: Math.E,
@@ -2196,7 +2196,7 @@ function createExpressionCompartment(ctx) {
       const arrB = Array.isArray(b) ? b : [b];
       let sum = 0;
       for (let i = 0; i < Math.max(arrA.length, arrB.length); i++) {
-        const diff = (arrA[i] || 0) - (arrB[i] || 0);
+        const diff = (arrA[i] ?? 0) - (arrB[i] ?? 0);
         sum += diff * diff;
       }
       return Math.sqrt(sum);
@@ -2209,7 +2209,7 @@ function createExpressionCompartment(ctx) {
       const len = Math.max(arrA.length, arrB.length);
       const result = [];
       for (let i = 0; i < len; i++) {
-        result.push((arrA[i] || 0) + (arrB[i] || 0));
+        result.push((arrA[i] ?? 0) + (arrB[i] ?? 0));
       }
       return result;
     },
@@ -2221,7 +2221,7 @@ function createExpressionCompartment(ctx) {
       const len = Math.max(arrA.length, arrB.length);
       const result = [];
       for (let i = 0; i < len; i++) {
-        result.push((arrA[i] || 0) - (arrB[i] || 0));
+        result.push((arrA[i] ?? 0) - (arrB[i] ?? 0));
       }
       return result;
     },
@@ -2239,25 +2239,28 @@ function createExpressionCompartment(ctx) {
       const len = Math.max(arrA.length, arrB.length);
       const result = [];
       for (let i = 0; i < len; i++) {
-        result.push((arrA[i] || 0) * (arrB[i] || 0));
+        result.push((arrA[i] ?? 0) * (arrB[i] ?? 0));
       }
       return result;
     },
     // Vector divide
     div: (a, b) => {
-      if (typeof a === "number" && typeof b === "number") return a / (b || 1);
+      if (typeof a === "number" && typeof b === "number") {
+        return b !== 0 ? a / b : 0;
+      }
       if (typeof b === "number" && Array.isArray(a)) {
-        return a.map((v) => v / (b || 1));
+        return b !== 0 ? a.map((v) => v / b) : a.map(() => 0);
       }
       if (typeof a === "number" && Array.isArray(b)) {
-        return b.map((v) => a / (v || 1));
+        return b.map((v) => v !== 0 ? a / v : 0);
       }
       const arrA = a;
       const arrB = b;
       const len = Math.max(arrA.length, arrB.length);
       const result = [];
       for (let i = 0; i < len; i++) {
-        result.push((arrA[i] || 0) / (arrB[i] || 1));
+        const divisor = arrB[i] ?? 1;
+        result.push(divisor !== 0 ? (arrA[i] ?? 0) / divisor : 0);
       }
       return result;
     }
@@ -2485,31 +2488,57 @@ function evaluateExpression(expression, ctx) {
 }
 function evaluatePreset(name, ctx, params) {
   switch (name) {
-    case "inertia":
-      return inertia(ctx, params.amplitude, params.frequency, params.decay);
-    case "bounce":
-      return bounce(ctx, params.elasticity, params.gravity);
-    case "elastic":
-      return elastic(ctx, params.amplitude, params.period);
-    case "jitter":
-      return jitter(ctx, params.frequency, params.amplitude, params.octaves);
-    case "repeatAfter":
-      return repeatAfter(ctx, params.type, params.numKeyframes);
-    case "repeatBefore":
-      return repeatBefore(ctx, params.type, params.numKeyframes);
+    case "inertia": {
+      const amplitude = typeof params.amplitude === "number" ? params.amplitude : 0.1;
+      const frequency = typeof params.frequency === "number" ? params.frequency : 2;
+      const decay = typeof params.decay === "number" ? params.decay : 2;
+      return inertia(ctx, amplitude, frequency, decay);
+    }
+    case "bounce": {
+      const elasticity = typeof params.elasticity === "number" ? params.elasticity : 0.7;
+      const gravity = typeof params.gravity === "number" ? params.gravity : 4e3;
+      return bounce(ctx, elasticity, gravity);
+    }
+    case "elastic": {
+      const amplitude = typeof params.amplitude === "number" ? params.amplitude : 1;
+      const period = typeof params.period === "number" ? params.period : 0.3;
+      return elastic(ctx, amplitude, period);
+    }
+    case "jitter": {
+      const frequency = typeof params.frequency === "number" ? params.frequency : 10;
+      const amplitude = typeof params.amplitude === "number" ? params.amplitude : 5;
+      const octaves = typeof params.octaves === "number" ? params.octaves : 1;
+      return jitter(ctx, frequency, amplitude, octaves);
+    }
+    case "repeatAfter": {
+      const type = typeof params.type === "string" && (params.type === "cycle" || params.type === "pingpong" || params.type === "offset" || params.type === "continue") ? params.type : "cycle";
+      const numKeyframes = typeof params.numKeyframes === "number" ? params.numKeyframes : 0;
+      return repeatAfter(ctx, type, numKeyframes);
+    }
+    case "repeatBefore": {
+      const type = typeof params.type === "string" && (params.type === "cycle" || params.type === "pingpong" || params.type === "offset" || params.type === "continue") ? params.type : "cycle";
+      const numKeyframes = typeof params.numKeyframes === "number" ? params.numKeyframes : 0;
+      return repeatBefore(ctx, type, numKeyframes);
+    }
     default:
       return ctx.value;
   }
 }
 function evaluateFunction(name, ctx, params) {
   if (name in timeExpressions) {
-    const fn = timeExpressions[name];
-    return fn(ctx.time, ...Object.values(params));
+    const timeExprs = timeExpressions;
+    const fn = timeExprs[name];
+    if (fn) {
+      return fn(ctx.time, ...Object.values(params));
+    }
   }
   if (name in mathExpressions) {
-    const fn = mathExpressions[name];
-    const val = typeof ctx.value === "number" ? ctx.value : ctx.value[0];
-    return fn(val, ...Object.values(params));
+    const mathExprs = mathExpressions;
+    const fn = mathExprs[name];
+    if (fn) {
+      const val = typeof ctx.value === "number" ? ctx.value : ctx.value[0];
+      return fn(val, ...Object.values(params));
+    }
   }
   return ctx.value;
 }
@@ -2901,6 +2930,32 @@ function isBezierPath(value) {
   return true;
 }
 
+function ensureFinite(value, fallback) {
+  if (typeof value !== "number") return fallback;
+  if (!Number.isFinite(value)) return fallback;
+  return value;
+}
+function clamp(value, min, max) {
+  if (Number.isNaN(value)) return min;
+  if (value < min) return min;
+  if (value > max) return max;
+  return value;
+}
+function clamp01(value) {
+  return clamp(value, 0, 1);
+}
+function safeLerp(a, b, t) {
+  const safeA = ensureFinite(a, 0);
+  const safeB = ensureFinite(b, 0);
+  const safeT = clamp01(ensureFinite(t, 0));
+  const diff = safeB - safeA;
+  if (!Number.isFinite(diff)) {
+    const result = safeA * (1 - safeT) + safeB * safeT;
+    return ensureFinite(result, safeA);
+  }
+  return safeA + diff * safeT;
+}
+
 class BezierCache {
   cache = /* @__PURE__ */ new Map();
   maxSize = 500;
@@ -2971,9 +3026,12 @@ function getValueDelta(v1, v2) {
     return v2 - v1;
   }
   if (typeof v1 === "object" && v1 !== null && "x" in v1 && "y" in v1 && typeof v2 === "object" && v2 !== null && "x" in v2 && "y" in v2) {
-    const dx = v2.x - v1.x;
-    const dy = v2.y - v1.y;
-    return Math.sqrt(dx * dx + dy * dy) || 1;
+    const v1Vec = v1;
+    const v2Vec = v2;
+    const dx = v2Vec.x - v1Vec.x;
+    const dy = v2Vec.y - v1Vec.y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+    return Number.isFinite(distance) && distance > 0 ? distance : 1;
   }
   return 1;
 }
@@ -3051,6 +3109,7 @@ function applyPropertyExpression(property, value, frame, fps, layerId, compDurat
     value,
     velocity,
     numKeys: property.keyframes.length,
+    // Type assertion: expressions only work with numeric keyframes (number or number[])
     keyframes: property.keyframes};
   const expression = {
     type: expr.type,
@@ -3069,9 +3128,9 @@ function calculateVelocity(property, frame, fps) {
     return (valueAfter - valueBefore) * fps;
   }
   if (typeof valueBefore === "object" && typeof valueAfter === "object") {
-    const vb = valueBefore;
-    const va = valueAfter;
-    if ("x" in vb && "y" in vb) {
+    if (valueBefore !== null && valueAfter !== null && "x" in valueBefore && "y" in valueBefore && "x" in valueAfter && "y" in valueAfter) {
+      const vb = valueBefore;
+      const va = valueAfter;
       const result = [(va.x - vb.x) * fps, (va.y - vb.y) * fps];
       if ("z" in vb && "z" in va) {
         result.push((va.z - vb.z) * fps);
@@ -3144,21 +3203,21 @@ function bezierDerivative(t, p0, p1, p2, p3) {
 }
 function interpolateValue(v1, v2, t) {
   if (typeof v1 === "number" && typeof v2 === "number") {
-    return v1 + (v2 - v1) * t;
+    return safeLerp(v1, v2, t);
   }
   if (typeof v1 === "object" && v1 !== null && typeof v2 === "object" && v2 !== null && "x" in v1 && "y" in v1 && "x" in v2 && "y" in v2) {
     const val1 = v1;
     const val2 = v2;
     const result = {
-      x: val1.x + (val2.x - val1.x) * t,
-      y: val1.y + (val2.y - val1.y) * t
+      x: safeLerp(val1.x, val2.x, t),
+      y: safeLerp(val1.y, val2.y, t)
     };
     if ("z" in val1 && "z" in val2) {
-      result.z = val1.z + (val2.z - val1.z) * t;
+      result.z = safeLerp(val1.z, val2.z, t);
     } else if ("z" in val1) {
-      result.z = val1.z * (1 - t);
+      result.z = safeLerp(val1.z, 0, t);
     } else if ("z" in val2) {
-      result.z = val2.z * t;
+      result.z = safeLerp(0, val2.z, t);
     }
     return result;
   }

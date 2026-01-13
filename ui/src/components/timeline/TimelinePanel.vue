@@ -29,10 +29,10 @@
 
     <div class="timeline-header">
       <div class="header-left">
-        <span class="timecode">{{ formatTimecode(store.currentFrame) }}</span>
+        <span class="timecode">{{ formatTimecode(animationStore.getCurrentFrame(store)) }}</span>
         <div class="frame-display">
-           <input type="number" :value="store.currentFrame" @change="setFrame" class="frame-input" />
-           <span class="fps-label">{{ store.fps }} fps</span>
+           <input type="number" :value="animationStore.getCurrentFrame(store)" @change="setFrame" class="frame-input" />
+           <span class="fps-label">{{ projectStore.getFps(store) }} fps</span>
         </div>
       </div>
 
@@ -185,7 +185,7 @@
                 :key="layer.id"
                 :layer="layer"
                 layoutMode="track"
-                :frameCount="store.frameCount"
+                :frameCount="projectStore.getFrameCount(store)"
                 :pixelsPerFrame="effectivePpf"
                 :isExpandedExternal="expandedLayers[layer.id]"
                 @select="selectLayer"
@@ -198,9 +198,9 @@
                :audioBuffer="audioStore.audioBuffer"
                :analysis="audioStore.audioAnalysis"
                :peakData="audioStore.peakData"
-               :currentFrame="store.currentFrame"
-               :totalFrames="store.frameCount"
-               :fps="store.fps"
+               :currentFrame="animationStore.getCurrentFrame(store)"
+               :totalFrames="projectStore.getFrameCount(store)"
+               :fps="projectStore.getFps(store)"
                :height="60"
                @seek="handleAudioSeek"
              />
@@ -228,7 +228,12 @@ import {
 import { findNearestSnap } from "@/services/timelineSnap";
 import { useAudioStore } from "@/stores/audioStore";
 import { useCompositorStore } from "@/stores/compositorStore";
+import { useCompositionStore } from "@/stores/compositionStore";
+import { useLayerStore } from "@/stores/layerStore";
+import { useParticleStore } from "@/stores/particleStore";
 import { usePlaybackStore } from "@/stores/playbackStore";
+import { useAnimationStore } from "@/stores/animationStore";
+import { useProjectStore } from "@/stores/projectStore";
 import type { Layer } from "@/types/project";
 
 // Inject work area state from WorkspaceLayout
@@ -241,8 +246,13 @@ const emit = defineEmits<{
 }>();
 
 const store = useCompositorStore();
+const compositionStore = useCompositionStore();
+const layerStore = useLayerStore();
+const particleStore = useParticleStore();
 const audioStore = useAudioStore();
 const playbackStore = usePlaybackStore();
+const animationStore = useAnimationStore();
+const projectStore = useProjectStore();
 const zoomPercent = ref(0); // 0 = fit to viewport, 100 = max zoom
 const sidebarWidth = ref(450); // Increased width for better visibility of layer names
 const expandedLayers = ref<Record<string, boolean>>({});
@@ -258,10 +268,10 @@ let isScrollingTrack = false;
 const viewportWidth = ref(1000); // Default, updated by observer
 const isDragOver = ref(false);
 
-const filteredLayers = computed(() => store.displayedLayers || []);
+const filteredLayers = computed(() => layerStore.getDisplayedLayers(store, store.hideMinimizedLayers) || []);
 // Playhead position as percentage of timeline
 const playheadPositionPct = computed(
-  () => (store.currentFrame / store.frameCount) * 100,
+  () => (animationStore.getCurrentFrame(store) / projectStore.getFrameCount(store)) * 100,
 );
 
 // Zoom calculation: 0% = fit viewport exactly, 100% = max zoom (~20 frames visible)
@@ -270,7 +280,7 @@ const MAX_PPF = 80;
 
 const effectivePpf = computed(() => {
   // minPpf ensures full composition fits viewport at 0% zoom
-  const minPpf = viewportWidth.value / store.frameCount;
+  const minPpf = viewportWidth.value / projectStore.getFrameCount(store);
   // Linear interpolation from minPpf (0%) to MAX_PPF (100%)
   return minPpf + (zoomPercent.value / 100) * (MAX_PPF - minPpf);
 });
@@ -282,7 +292,7 @@ const timelineWidth = computed(() => {
   if (zoomPercent.value === 0) {
     return viewportWidth.value;
   }
-  return store.frameCount * effectivePpf.value;
+  return projectStore.getFrameCount(store) * effectivePpf.value;
 });
 
 const computedWidthStyle = computed(() => `${timelineWidth.value}px`);
@@ -293,21 +303,22 @@ const hasWorkArea = computed(
 );
 const workAreaLeftPct = computed(() => {
   if (workAreaStart.value === null) return 0;
-  return (workAreaStart.value / store.frameCount) * 100;
+  return (workAreaStart.value / projectStore.getFrameCount(store)) * 100;
 });
 const workAreaWidthPct = computed(() => {
   if (workAreaStart.value === null || workAreaEnd.value === null) return 100;
   const start = Math.min(workAreaStart.value, workAreaEnd.value);
   const end = Math.max(workAreaStart.value, workAreaEnd.value);
-  return ((end - start) / store.frameCount) * 100;
+  return ((end - start) / projectStore.getFrameCount(store)) * 100;
 });
 const workAreaStyle = computed(() => {
   if (!hasWorkArea.value) return { display: "none" };
   const start = Math.min(workAreaStart.value!, workAreaEnd.value!);
   const end = Math.max(workAreaStart.value!, workAreaEnd.value!);
+  const frameCount = projectStore.getFrameCount(store);
   return {
-    left: `${(start / store.frameCount) * 100}%`,
-    width: `${((end - start) / store.frameCount) * 100}%`,
+    left: `${(start / frameCount) * 100}%`,
+    width: `${((end - start) / frameCount) * 100}%`,
   };
 });
 
@@ -341,19 +352,19 @@ const addLayerMenuStyle = computed((): CSSProperties => {
 function addLayer(type: string) {
   let newLayer: Layer | undefined;
 
-  if (type === "text") newLayer = store.createTextLayer();
-  else if (type === "video") newLayer = store.createLayer("video");
+  if (type === "text") newLayer = layerStore.createTextLayer(store);
+  else if (type === "video") newLayer = layerStore.createLayer(store, "video");
   else if (type === "camera") {
-    const result = store.createCameraLayer();
-    newLayer = result.layer;
-  } else if (type === "particles") newLayer = store.createParticleLayer();
-  else newLayer = store.createLayer(type as any);
+    const result = layerStore.createCameraLayer(store as any);
+    newLayer = result;
+  } else if (type === "particles") newLayer = particleStore.createParticleLayer(store);
+  else newLayer = layerStore.createLayer(store, type as Layer["type"]);
 
   showAddLayerMenu.value = false;
 
   // Auto-select the new layer
   if (newLayer) {
-    store.selectLayer(newLayer.id);
+    layerStore.selectLayer(store, newLayer.id);
 
     // Activate appropriate tool based on layer type
     if (type === "spline" || type === "shape" || type === "path") {
@@ -367,17 +378,17 @@ function addLayer(type: string) {
 }
 
 function selectLayer(id: string) {
-  store.selectLayer(id);
+  layerStore.selectLayer(store, id);
 }
-function updateLayer(id: string, u: any) {
-  store.updateLayer(id, u);
+function updateLayer(id: string, u: Partial<Layer>) {
+  layerStore.updateLayer(store, id, u);
 }
 
 // Handle audio track seek
 function handleAudioSeek(frame: number) {
-  store.setFrame(frame);
+  animationStore.setFrame(store, frame);
   // Also trigger audio scrub for feedback
-  audioStore.scrubAudio(frame, store.fps);
+  audioStore.scrubAudio(frame, projectStore.getFps(store));
 }
 
 // ============================================================
@@ -419,10 +430,10 @@ function onDrop(event: DragEvent) {
     // Handle different item types
     if (item.type === "composition") {
       // Create a nested composition layer
-      const layer = store.createLayer("nestedComp", item.name);
+      const layer = layerStore.createLayer(store, "nestedComp", item.name);
       if (layer) {
-        (layer.data as any).compositionId = item.id;
-        store.selectLayer(layer.id);
+        layerStore.updateLayerData(store, layer.id, { compositionId: item.id });
+        layerStore.selectLayer(store, layer.id);
         console.log(
           "[TimelinePanel] Created precomp layer for composition:",
           item.name,
@@ -433,10 +444,10 @@ function onDrop(event: DragEvent) {
       const asset = store.project.assets[item.id];
       if (asset) {
         if (asset.type === "video") {
-          const layer = store.createLayer("video", item.name);
+          const layer = layerStore.createLayer(store, "video", item.name);
           if (layer) {
-            (layer.data as any).assetId = item.id;
-            store.selectLayer(layer.id);
+            layerStore.updateLayerData(store, layer.id, { assetId: item.id });
+            layerStore.selectLayer(store, layer.id);
             console.log(
               "[TimelinePanel] Created video layer from asset:",
               item.name,
@@ -455,7 +466,7 @@ function onDrop(event: DragEvent) {
                 "x",
                 height,
               );
-              store.updateCompositionSettings(compId, { width, height });
+              compositionStore.updateCompositionSettings(store, compId, { width, height });
               console.log(
                 "[TimelinePanel] Comp resized. New size:",
                 store.width,
@@ -464,11 +475,10 @@ function onDrop(event: DragEvent) {
               );
             }
 
-            const layer = store.createLayer("image", item.name);
+            const layer = layerStore.createLayer(store, "image", item.name);
             if (layer) {
-              (layer.data as any).assetId = item.id;
-              (layer.data as any).source = asset.data;
-              store.selectLayer(layer.id);
+              layerStore.updateLayerData(store, layer.id, { assetId: item.id });
+              layerStore.selectLayer(store, layer.id);
               console.log("[TimelinePanel] Created image layer:", layer.id);
             }
           };
@@ -506,11 +516,10 @@ function onDrop(event: DragEvent) {
                 e,
               );
               // Still create the layer even if image fails to load for dimensions
-              const layer = store.createLayer("image", item.name);
+              const layer = layerStore.createLayer(store, "image", item.name);
               if (layer) {
-                (layer.data as any).assetId = item.id;
-                (layer.data as any).source = asset.data;
-                store.selectLayer(layer.id);
+                layerStore.updateLayerData(store, layer.id, { assetId: item.id });
+                layerStore.selectLayer(store, layer.id);
               }
             };
             img.src = asset.data;
@@ -518,16 +527,16 @@ function onDrop(event: DragEvent) {
         }
       } else {
         // Generic footage - create image layer
-        const layer = store.createLayer("image", item.name);
+        const layer = layerStore.createLayer(store, "image", item.name);
         if (layer) {
-          store.selectLayer(layer.id);
+          layerStore.selectLayer(store, layer.id);
           console.log("[TimelinePanel] Created image layer:", item.name);
         }
       }
     } else if (item.type === "solid") {
-      const layer = store.createLayer("solid", item.name);
+      const layer = layerStore.createLayer(store, "solid", item.name);
       if (layer) {
-        store.selectLayer(layer.id);
+        layerStore.selectLayer(store, layer.id);
         console.log("[TimelinePanel] Created solid layer:", item.name);
       }
     } else if (item.type === "audio") {
@@ -541,13 +550,13 @@ function onDrop(event: DragEvent) {
   }
 }
 function deleteSelectedLayers() {
-  store.selectedLayerIds.forEach((id) => store.deleteLayer(id));
+  layerStore.deleteSelectedLayers(store);
 }
 function setFrame(e: Event) {
-  store.setFrame(parseInt((e.target as HTMLInputElement).value, 10) || 0);
+  animationStore.setFrame(store, parseInt((e.target as HTMLInputElement).value, 10) || 0);
 }
 function togglePlayback() {
-  store.togglePlayback();
+  animationStore.togglePlayback(store);
 }
 function handleToggleExpand(id: string, val: boolean) {
   expandedLayers.value[id] = val;
@@ -555,7 +564,7 @@ function handleToggleExpand(id: string, val: boolean) {
 
 // Format frame as timecode (HH;MM;SS;FF) SMPTE format
 function formatTimecode(frame: number): string {
-  const fps = store.fps;
+  const fps = projectStore.getFps(store);
   const totalSeconds = Math.floor(frame / fps);
   const frames = Math.floor(frame % fps);
   const seconds = totalSeconds % 60;
@@ -587,7 +596,7 @@ function drawRuler() {
   // Ensure labels have enough room and don't overlap
   const labelMinWidth = 40; // minimum pixels between labels
   const maxLabels = Math.max(1, Math.floor(width / labelMinWidth));
-  const idealStep = Math.ceil(store.frameCount / maxLabels);
+  const idealStep = Math.ceil(projectStore.getFrameCount(store) / maxLabels);
 
   // Round up to a nice number for clean ruler
   const niceSteps = [1, 2, 5, 10, 20, 25, 50, 100, 200];
@@ -598,7 +607,7 @@ function drawRuler() {
 
   // Proportional positioning: frame position = (frame / frameCount) * width
   // This ensures the ruler fills the viewport when zoomed out
-  const frameCount = store.frameCount;
+  const frameCount = projectStore.getFrameCount(store);
 
   for (let f = 0; f <= frameCount; f++) {
     const x = (f / frameCount) * width;
@@ -676,11 +685,12 @@ function startRulerScrub(e: MouseEvent) {
       rulerScrollRef.value?.scrollLeft || trackScrollRef.value?.scrollLeft || 0;
     const x = ev.clientX - rect.left + currentScrollX;
     // Convert x position to frame using proportional formula
+    const frameCount = projectStore.getFrameCount(store);
     let f = Math.max(
       0,
       Math.min(
-        store.frameCount - 1,
-        (x / timelineWidth.value) * store.frameCount,
+        frameCount - 1,
+        (x / timelineWidth.value) * frameCount,
       ),
     );
 
@@ -702,11 +712,11 @@ function startRulerScrub(e: MouseEvent) {
     }
 
     const frame = Math.round(f);
-    store.setFrame(frame);
+    animationStore.setFrame(store, frame);
 
     // Ctrl+drag: Audio scrub - play short audio snippet at current position
     if (isAudioScrub || ev.ctrlKey || ev.metaKey) {
-      audioStore.scrubAudio(frame, store.fps);
+      audioStore.scrubAudio(frame, projectStore.getFps(store));
     }
   };
 
@@ -756,12 +766,13 @@ function startWorkAreaDrag(handle: "start" | "end", e: MouseEvent) {
     const currentScrollX =
       rulerScrollRef.value?.scrollLeft || trackScrollRef.value?.scrollLeft || 0;
     const x = ev.clientX - rect.left + currentScrollX;
+    const frameCount = projectStore.getFrameCount(store);
     let frame = Math.round(
       Math.max(
         0,
         Math.min(
-          store.frameCount - 1,
-          (x / timelineWidth.value) * store.frameCount,
+          frameCount - 1,
+          (x / timelineWidth.value) * frameCount,
         ),
       ),
     );
@@ -858,29 +869,27 @@ function handleKeydown(e: KeyboardEvent) {
   // Copy/Cut/Paste
   if ((e.ctrlKey || e.metaKey) && e.code === "KeyC") {
     e.preventDefault();
-    store.copySelectedLayers();
+    layerStore.copySelectedLayers(store);
   }
   if ((e.ctrlKey || e.metaKey) && e.code === "KeyX") {
     e.preventDefault();
-    store.cutSelectedLayers();
+    layerStore.cutSelectedLayers(store);
   }
   if ((e.ctrlKey || e.metaKey) && e.code === "KeyV") {
     e.preventDefault();
-    store.pasteLayers();
+    layerStore.pasteLayers(store);
   }
 
   // Select All
   if ((e.ctrlKey || e.metaKey) && e.code === "KeyA") {
     e.preventDefault();
-    store.selectAllLayers();
+    layerStore.selectAllLayers(store);
   }
 
   // Duplicate (Ctrl+D)
   if ((e.ctrlKey || e.metaKey) && e.code === "KeyD") {
     e.preventDefault();
-    for (const id of store.selectedLayerIds) {
-      store.duplicateLayer(id);
-    }
+    layerStore.duplicateSelectedLayers(store);
   }
 }
 
@@ -930,7 +939,7 @@ watch(
   () => [
     computedWidthStyle.value,
     zoomPercent.value,
-    store.frameCount,
+    projectStore.getFrameCount(store),
     audioStore.audioAnalysis,
     audioStore.peakData,
   ],

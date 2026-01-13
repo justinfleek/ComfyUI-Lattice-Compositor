@@ -153,7 +153,9 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
 import { useCompositorStore } from "@/stores/compositorStore";
-import type { Keyframe } from "@/types/project";
+import { useLayerStore } from "@/stores/layerStore";
+import { useKeyframeStore } from "@/stores/keyframeStore";
+import type { Keyframe, PropertyValue } from "@/types/project";
 
 const props = defineProps<{
   visible: boolean;
@@ -167,6 +169,7 @@ const emit = defineEmits<{
 }>();
 
 const store = useCompositorStore();
+const layerStore = useLayerStore();
 
 // Settings
 const spatialSmoothing = ref(50);
@@ -178,20 +181,20 @@ const applyScope = ref<"selected" | "all">("all");
 // Computed
 const targetLayerName = computed(() => {
   if (props.layerId) {
-    const layer = store.getLayerById(props.layerId);
+    const layer = layerStore.getLayerById(store, props.layerId);
     return layer?.name || "Unknown";
   }
   const selectedIds = store.selectedLayerIds;
   if (selectedIds.length === 0) return null;
-  const layer = store.getLayerById(selectedIds[0]);
+  const layer = layerStore.getLayerById(store, selectedIds[0]);
   return layer?.name || "Unknown";
 });
 
-const targetKeyframes = computed<Keyframe<any>[]>(() => {
+const targetKeyframes = computed<Keyframe<PropertyValue>[]>(() => {
   const layerId = props.layerId || store.selectedLayerIds[0];
   if (!layerId) return [];
 
-  const layer = store.getLayerById(layerId);
+  const layer = layerStore.getLayerById(store, layerId);
   if (!layer) return [];
 
   // Get position keyframes by default
@@ -310,12 +313,12 @@ function applySmoothing() {
 
   // Update keyframes in store
   // First clear existing keyframes
-  const layer = store.getLayerById(layerId);
+  const layer = layerStore.getLayerById(store, layerId);
   if (!layer) return;
 
   // Apply the smoothed/simplified keyframes
   finalKeyframes.forEach((kf) => {
-    store.setKeyframeValue(layerId, propertyPath, kf.id, kf.value);
+    keyframeStore.setKeyframeValue(store, layerId, propertyPath, kf.id, kf.value);
   });
 
   // If simplification removed keyframes, delete them
@@ -323,7 +326,7 @@ function applySmoothing() {
     const keptIds = new Set(finalKeyframes.map((kf) => kf.id));
     keyframes.forEach((kf) => {
       if (!keptIds.has(kf.id)) {
-        store.removeKeyframe(layerId, propertyPath, kf.id);
+        keyframeStore.removeKeyframe(store, layerId, propertyPath, kf.id);
       }
     });
   }
@@ -336,12 +339,12 @@ function applySmoothing() {
  * Douglas-Peucker simplification for keyframes
  */
 function simplifyKeyframesDouglasPeucker(
-  keyframes: Keyframe<any>[],
+  keyframes: Keyframe<PropertyValue>[],
   tolerance: number,
-): Keyframe<any>[] {
+): Keyframe<PropertyValue>[] {
   if (keyframes.length <= 2) return keyframes;
 
-  const getValue = (kf: Keyframe<any>) => {
+  const getValue = (kf: Keyframe<PropertyValue>) => {
     if (typeof kf.value === "object" && "x" in kf.value) {
       return { x: kf.value.x, y: kf.value.y };
     }

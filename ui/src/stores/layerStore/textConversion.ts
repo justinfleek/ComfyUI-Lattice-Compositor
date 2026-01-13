@@ -11,6 +11,7 @@ import { createAnimatableProperty, createDefaultTransform } from "@/types/projec
 import { storeLogger } from "@/utils/logger";
 import { useSelectionStore } from "../selectionStore";
 import type { CompositorStoreAccess } from "./types";
+import { createLayer, deleteLayer } from "./crud";
 
 // ============================================================================
 // TEXT TO SPLINE CONVERSION
@@ -96,8 +97,8 @@ export async function convertTextLayerToSplines(
       let parentId: string | null = layer.parentId ?? null;
 
       if (options.groupCharacters) {
-        // Use compositorStore.createLayer which delegates to layerStore
-        const groupLayer = compositorStore.createLayer!("null", `${layer.name} (Group)`);
+        // Use createLayer directly from crud module
+        const groupLayer = createLayer(compositorStore, "null", `${layer.name} (Group)`);
         groupLayer.transform = { ...layer.transform };
         parentId = groupLayer.id;
         createdLayerIds.push(groupLayer.id);
@@ -122,7 +123,7 @@ export async function convertTextLayerToSplines(
         if (allControlPoints.length === 0) continue;
 
         const charLayerName = `${layer.name} - "${charGroup.character}" [${i}]`;
-        const charLayer = compositorStore.createLayer!("spline", charLayerName);
+        const charLayer = createLayer(compositorStore, "spline", charLayerName);
 
         // Set up spline data
         const splineData: SplineData = {
@@ -172,7 +173,8 @@ export async function convertTextLayerToSplines(
         return null;
       }
 
-      const splineLayer = compositorStore.createLayer!(
+      const splineLayer = createLayer(
+        compositorStore,
         "spline",
         `${layer.name} (Spline)`,
       );
@@ -197,7 +199,7 @@ export async function convertTextLayerToSplines(
 
     // Remove original layer if not keeping
     if (!options.keepOriginal) {
-      compositorStore.deleteLayer!(layerId);
+      deleteLayer(compositorStore, layerId);
     }
 
     // Select the first created layer

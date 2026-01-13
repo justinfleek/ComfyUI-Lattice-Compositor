@@ -161,6 +161,8 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
 import { useCompositorStore } from "@/stores/compositorStore";
+import { useEffectStore } from "@/stores/effectStore";
+import { useKeyframeStore } from "@/stores/keyframeStore";
 import {
   ANIMATION_PRESETS,
   type AnimationPreset,
@@ -170,6 +172,7 @@ import {
 } from "@/types/effects";
 
 const store = useCompositorStore();
+const effectStore = useEffectStore();
 
 // State
 const activeTab = ref<"effects" | "presets" | "favorites">("effects");
@@ -311,7 +314,7 @@ function applyEffect(effectKey: string) {
   }
 
   // Add effect to layer via store action (use key directly)
-  store.addEffectToLayer(selectedLayer.id, effectKey);
+  effectStore.addEffectToLayer(store, selectedLayer.id, effectKey);
 }
 
 function applyPreset(preset: AnimationPreset) {
@@ -331,7 +334,7 @@ function applyPreset(preset: AnimationPreset) {
     for (const kf of propDef.keyframes) {
       // Convert normalized time (0-1) to frame number
       const frame = Math.round(startFrame + kf.time * duration);
-      store.addKeyframe(selectedLayer.id, propDef.property, kf.value, frame);
+      keyframeStore.addKeyframe(store, selectedLayer.id, propDef.property, kf.value, frame);
     }
   }
 }

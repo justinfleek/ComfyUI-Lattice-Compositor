@@ -95,6 +95,7 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 import { useCompositorStore } from "@/stores/compositorStore";
+import { useLayerStore } from "@/stores/layerStore";
 import type { Layer } from "@/types/project";
 import type { ShapeContent, ShapeLayerData } from "@/types/shapes";
 import {
@@ -124,6 +125,7 @@ import {
 const props = defineProps<{ layer: Layer }>();
 const emit = defineEmits(["update"]);
 const store = useCompositorStore();
+const layerStore = useLayerStore();
 
 const expandedSections = ref<string[]>(["contents", "settings"]);
 const newContentType = ref<string>("");
@@ -147,7 +149,7 @@ function toggleSection(section: string) {
 }
 
 function updateData() {
-  store.updateLayer(props.layer.id, {
+  layerStore.updateLayer(store, props.layer.id, {
     data: { ...layerData.value },
   });
   emit("update");
@@ -230,7 +232,7 @@ function addContent() {
 
   contents.push(newItem);
 
-  store.updateLayer(props.layer.id, {
+  layerStore.updateLayer(store, props.layer.id, {
     data: { ...layerData.value, contents },
   });
   emit("update");
@@ -241,7 +243,7 @@ function updateContentItem(index: number, updatedItem: ShapeContent) {
   const contents = [...(layerData.value.contents || [])];
   contents[index] = updatedItem;
 
-  store.updateLayer(props.layer.id, {
+  layerStore.updateLayer(store, props.layer.id, {
     data: { ...layerData.value, contents },
   });
   emit("update");
@@ -251,7 +253,7 @@ function deleteContentItem(index: number) {
   const contents = [...(layerData.value.contents || [])];
   contents.splice(index, 1);
 
-  store.updateLayer(props.layer.id, {
+  layerStore.updateLayer(store, props.layer.id, {
     data: { ...layerData.value, contents },
   });
   emit("update");
@@ -265,7 +267,7 @@ function moveContentItem(index: number, direction: -1 | 1) {
   // Swap items
   [contents[index], contents[newIndex]] = [contents[newIndex], contents[index]];
 
-  store.updateLayer(props.layer.id, {
+  layerStore.updateLayer(store, props.layer.id, {
     data: { ...layerData.value, contents },
   });
   emit("update");

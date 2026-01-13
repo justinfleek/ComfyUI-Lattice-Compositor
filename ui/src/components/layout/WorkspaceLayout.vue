@@ -257,15 +257,24 @@ import { detectGPUTier, type GPUTier } from "@/services/gpuDetection";
 // Track point service
 import { useTrackPoints } from "@/services/trackPointService";
 import { useCompositorStore } from "@/stores/compositorStore";
+import { useCameraStore } from "@/stores/cameraStore";
+import { useCompositionStore } from "@/stores/compositionStore";
+import { useLayerStore } from "@/stores/layerStore";
+import { useKeyframeStore } from "@/stores/keyframeStore";
 import type { Camera3D, ViewportState } from "@/types/camera";
 import {
   createDefaultCamera,
   createDefaultViewportState,
 } from "@/types/camera";
-import type { BaseInterpolationType, ControlMode } from "@/types/project";
+import type { BaseInterpolationType, ControlMode, ControlPoint, AnimatableProperty } from "@/types/project";
+import type { Keyframe, PropertyValue } from "@/types/animation";
 
 // Stores
 const store = useCompositorStore();
+const cameraStore = useCameraStore();
+const compositionStore = useCompositionStore();
+const layerStore = useLayerStore();
+const keyframeStore = useKeyframeStore();
 
 import { useAssetStore } from "@/stores/assetStore";
 
@@ -351,7 +360,21 @@ const showHDPreview = ref(false);
 const showTemplateBuilderDialog = ref(false);
 
 // Vision authoring state
-const pathSuggestions = ref<any[]>([]);
+interface PathSuggestion {
+  points: Array<{
+    id?: string;
+    x: number;
+    y: number;
+    depth?: number;
+    handleIn?: { x: number; y: number } | null;
+    handleOut?: { x: number; y: number } | null;
+    type?: "smooth" | "corner" | "bezier";
+  }>;
+  closed?: boolean;
+  name?: string;
+}
+
+const pathSuggestions = ref<PathSuggestion[]>([]);
 const selectedPathIndex = ref<number | null>(null);
 
 const gpuTier = ref<GPUTier["tier"]>("cpu");
@@ -648,16 +671,18 @@ provide("getSnapPoint", getSnapPoint);
 function updateCamera(camera: Camera3D) {
   // Update the camera in the store
   if (store.activeCameraId) {
-    store.updateCamera(camera.id, camera);
+    cameraStore.updateCamera(store, camera.id, camera);
   }
 }
 
 // Play a notification chime when export completes
 function playExportChime() {
   try {
-    const audioCtx = new (
-      window.AudioContext || (window as any).webkitAudioContext
-    )();
+    const AudioContextClass = window.AudioContext || (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (!AudioContextClass) {
+      throw new Error("AudioContext not available");
+    }
+    const audioCtx = new AudioContextClass();
     const gainNode = audioCtx.createGain();
     gainNode.connect(audioCtx.destination);
     gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
@@ -687,7 +712,7 @@ function onExportComplete() {
   playExportChime();
 }
 
-function onComfyUIExportComplete(result: any) {
+function onComfyUIExportComplete(result: Record<string, unknown>) {
   console.log("[Lattice] ComfyUI export completed", result);
   showComfyUIExportDialog.value = false;
   playExportChime();
@@ -712,7 +737,7 @@ function onCompositionSettingsConfirm(settings: {
   console.log("[Lattice] Composition settings updated:", settings);
 
   // Update active composition's settings
-  store.updateCompositionSettings(store.activeCompositionId, {
+  compositionStore.updateCompositionSettings(store, store.activeCompositionId, {
     width: settings.width,
     height: settings.height,
     fps: settings.fps,
@@ -743,7 +768,7 @@ function onCameraTrackingImported(result: {
 
   if (result.cameraLayerId) {
     // Select the imported camera
-    store.selectLayer(result.cameraLayerId);
+    layerStore.selectLayer(store, result.cameraLayerId);
     console.log("Camera tracking imported successfully:", result.cameraLayerId);
   }
 
@@ -769,33 +794,39 @@ function onKeyframeInterpolationConfirm(settings: {
   // Get the layers that contain these keyframes
   const layers = store.layers;
   for (const layer of layers) {
-    const transform = layer.transform as any;
+    const transform = layer.transform;
     if (!transform) continue;
 
     // Check all animatable properties for keyframes
-    const props = ["position", "rotation", "scale", "anchor", "opacity"];
-    for (const propName of props) {
-      const prop = transform[propName];
+    // Note: "anchor" maps to origin/anchorPoint, "opacity" is on layer not transform
+    const transformProps: Array<{ name: string; prop: AnimatableProperty<PropertyValue> | undefined }> = [
+      { name: "position", prop: transform.position },
+      { name: "rotation", prop: transform.rotation },
+      { name: "scale", prop: transform.scale },
+      { name: "anchor", prop: transform.origin || transform.anchorPoint },
+    ];
+    
+    for (const { name: propName, prop } of transformProps) {
       if (!prop?.keyframes) continue;
 
-      const propertyPath = `transform.${propName}`;
+      const propertyPath = `transform.${propName === "anchor" ? "origin" : propName}`;
 
       // Sort keyframes by frame for proper next-keyframe lookup
       const sortedKeyframes = [...prop.keyframes].sort(
-        (a: any, b: any) => a.frame - b.frame,
+        (a: Keyframe, b: Keyframe) => a.frame - b.frame,
       );
 
       for (let i = 0; i < sortedKeyframes.length; i++) {
         const kf = sortedKeyframes[i];
         if (selectedKeyframeIds.includes(kf.id)) {
           // Use store actions for proper undo/redo support
-          store.setKeyframeInterpolation(
+          keyframeStore.setKeyframeInterpolation(store, 
             layer.id,
             propertyPath,
             kf.id,
             settings.interpolation,
           );
-          store.setKeyframeControlMode(
+          keyframeStore.setKeyframeControlMode(store, 
             layer.id,
             propertyPath,
             kf.id,
@@ -827,13 +858,13 @@ function onKeyframeInterpolationConfirm(settings: {
                 const valueDelta = nextValue - kfValue;
 
                 // Use store action to set outHandle on current keyframe
-                store.setKeyframeHandle(layer.id, propertyPath, kf.id, "out", {
+                keyframeStore.setKeyframeHandle(store, layer.id, propertyPath, kf.id, "out", {
                   frame: presetHandles.outX * frameDuration,
                   value: presetHandles.outY * valueDelta,
                   enabled: true,
                 });
                 // Use store action to set inHandle on next keyframe
-                store.setKeyframeHandle(
+                keyframeStore.setKeyframeHandle(store, 
                   layer.id,
                   propertyPath,
                   nextKf.id,
@@ -844,6 +875,57 @@ function onKeyframeInterpolationConfirm(settings: {
                     enabled: true,
                   },
                 );
+              }
+            }
+          }
+        }
+      }
+    }
+    
+    // Check opacity separately (it's on layer, not transform)
+    if (layer.opacity?.keyframes) {
+      const sortedKeyframes = [...layer.opacity.keyframes].sort(
+        (a: Keyframe, b: Keyframe) => a.frame - b.frame,
+      );
+      
+      for (let i = 0; i < sortedKeyframes.length; i++) {
+        const kf = sortedKeyframes[i];
+        if (selectedKeyframeIds.includes(kf.id)) {
+          keyframeStore.setKeyframeInterpolation(store, 
+            layer.id,
+            "opacity",
+            kf.id,
+            settings.interpolation,
+          );
+          keyframeStore.setKeyframeControlMode(store, 
+            layer.id,
+            "opacity",
+            kf.id,
+            settings.controlMode,
+          );
+          appliedCount++;
+          
+          // For bezier, set easing preset handles
+          if (settings.interpolation === "bezier" && settings.easingPreset) {
+            const presetHandles = getEasingPresetHandles(settings.easingPreset);
+            if (presetHandles) {
+              const nextKf = sortedKeyframes[i + 1];
+              if (nextKf) {
+                const frameDuration = nextKf.frame - kf.frame;
+                const kfValue = typeof kf.value === "number" ? kf.value : 0;
+                const nextValue = typeof nextKf.value === "number" ? nextKf.value : 0;
+                const valueDelta = nextValue - kfValue;
+                
+                keyframeStore.setKeyframeHandle(store, layer.id, "opacity", kf.id, "out", {
+                  frame: presetHandles.outX * frameDuration,
+                  value: presetHandles.outY * valueDelta,
+                  enabled: true,
+                });
+                keyframeStore.setKeyframeHandle(store, layer.id, "opacity", nextKf.id, "in", {
+                  frame: -(1 - presetHandles.inX) * frameDuration,
+                  value: (1 - presetHandles.inY) * valueDelta,
+                  enabled: true,
+                });
               }
             }
           }
@@ -876,21 +958,43 @@ function onKeyframeVelocityConfirm(settings: {
   let appliedCount = 0;
 
   for (const layer of layers) {
-    const transform = layer.transform as any;
+    const transform = layer.transform;
     if (!transform) continue;
 
     // Check all animatable properties for keyframes
-    const props = ["position", "rotation", "scale", "anchor", "opacity"];
-    for (const propName of props) {
-      const prop = transform[propName];
+    // Note: "anchor" maps to origin/anchorPoint, "opacity" is on layer not transform
+    const transformProps: Array<{ name: string; prop: AnimatableProperty<PropertyValue> | undefined }> = [
+      { name: "position", prop: transform.position },
+      { name: "rotation", prop: transform.rotation },
+      { name: "scale", prop: transform.scale },
+      { name: "anchor", prop: transform.origin || transform.anchorPoint },
+    ];
+    
+    for (const { name: propName, prop } of transformProps) {
       if (!prop?.keyframes) continue;
 
+      const propertyPath = `transform.${propName === "anchor" ? "origin" : propName}`;
       for (const kf of prop.keyframes) {
         if (selectedKeyframeIds.includes(kf.id)) {
           // Use store action for proper undo/redo support
           const success = store.applyKeyframeVelocity(
             layer.id,
-            `transform.${propName}`,
+            propertyPath,
+            kf.id,
+            settings,
+          );
+          if (success) appliedCount++;
+        }
+      }
+    }
+    
+    // Check opacity separately (it's on layer, not transform)
+    if (layer.opacity?.keyframes) {
+      for (const kf of layer.opacity.keyframes) {
+        if (selectedKeyframeIds.includes(kf.id)) {
+          const success = store.applyKeyframeVelocity(
+            layer.id,
+            "opacity",
             kf.id,
             settings,
           );
@@ -1010,12 +1114,24 @@ function onPathSuggestionClose() {
   selectedPathIndex.value = null;
 }
 
-function onPathSuggestionPreview(suggestions: any[]) {
+function onPathSuggestionPreview(suggestions: PathSuggestion[]) {
   pathSuggestions.value = suggestions;
   selectedPathIndex.value = suggestions.length > 0 ? 0 : null;
 }
 
-function onPathSuggestionAccept(result: { keyframes: any[]; splines: any[] }) {
+interface PathSuggestionResult {
+  keyframes: Array<{
+    layerId: string;
+    propertyPath: string;
+    keyframes: Array<{
+      value: PropertyValue;
+      frame: number;
+    }>;
+  }>;
+  splines: PathSuggestion[];
+}
+
+function onPathSuggestionAccept(result: PathSuggestionResult) {
   console.log("[Lattice] Path suggestion accepted:", result);
 
   // Apply keyframes to the store
@@ -1025,7 +1141,8 @@ function onPathSuggestionAccept(result: { keyframes: any[]; splines: any[] }) {
       // Add keyframes to the appropriate layer/property
       // addKeyframe signature: (layerId, propertyPath, value, atFrame?)
       for (const keyframe of batch.keyframes) {
-        store.addKeyframe(
+        keyframeStore.addKeyframe(
+          store,
           batch.layerId,
           batch.propertyPath,
           keyframe.value,
@@ -1039,15 +1156,15 @@ function onPathSuggestionAccept(result: { keyframes: any[]; splines: any[] }) {
   if (result.splines && result.splines.length > 0) {
     for (const spline of result.splines) {
       // Create a new spline layer
-      const layer = store.createSplineLayer();
+      const layer = layerStore.createSplineLayer(store);
 
       // Rename if name provided
       if (spline.name) {
-        store.renameLayer(layer.id, spline.name);
+        layerStore.renameLayer(store, layer.id, spline.name);
       }
 
       // Convert points to control points format (preserve depth and handles from translator)
-      const controlPoints = (spline.points || []).map((p: any, i: number) => ({
+      const controlPoints: ControlPoint[] = (spline.points || []).map((p, i: number) => ({
         id: p.id || `cp_${Date.now()}_${i}`,
         x: p.x,
         y: p.y,
@@ -1064,7 +1181,7 @@ function onPathSuggestionAccept(result: { keyframes: any[]; splines: any[] }) {
       );
 
       // Update the layer data with the points and pathData
-      store.updateLayerData(layer.id, {
+      layerStore.updateLayerData(store, layer.id, {
         controlPoints,
         pathData,
         closed: spline.closed || false,
@@ -1135,7 +1252,12 @@ function triggerProjectOpen() {
 /**
  * Handle preferences save
  */
-function handlePreferencesSave(preferences: any) {
+interface Preferences {
+  theme?: string;
+  [key: string]: unknown;
+}
+
+function handlePreferencesSave(preferences: Preferences) {
   console.log("Preferences saved:", preferences);
   // Apply relevant preferences immediately
   if (preferences.theme) {
@@ -1149,19 +1271,27 @@ function _freezeFrameSelectedLayers() {
   if (selectedIds.length === 0) return;
 
   for (const id of selectedIds) {
-    store.freezeFrameAtPlayhead(id);
+    layerStore.freezeFrameAtPlayhead(store, id);
   }
 }
 
 // Performance monitoring
 let perfInterval: number;
 
+interface PerformanceMemory {
+  usedJSHeapSize: number;
+  totalJSHeapSize: number;
+  jsHeapSizeLimit: number;
+}
+
 function updatePerformanceStats() {
   // Memory usage (if available)
   if ("memory" in performance) {
-    const mem = (performance as any).memory;
-    const usedMB = Math.round(mem.usedJSHeapSize / 1024 / 1024);
-    memoryUsage.value = `${usedMB} MB`;
+    const mem = (performance as Performance & { memory?: PerformanceMemory }).memory;
+    if (mem) {
+      const usedMB = Math.round(mem.usedJSHeapSize / 1024 / 1024);
+      memoryUsage.value = `${usedMB} MB`;
+    }
   }
 }
 

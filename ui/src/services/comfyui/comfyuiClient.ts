@@ -9,6 +9,7 @@ import type {
   ComfyUIWorkflow,
   GenerationProgress,
 } from "@/types/export";
+import { parseAndSanitize } from "@/services/security/jsonSanitizer";
 import { createLogger } from "@/utils/logger";
 import { secureUUID } from "@/utils/security";
 
@@ -370,11 +371,11 @@ export class ComfyUIClient {
       };
 
       this.ws.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data);
-          this.handleWebSocketMessage(data);
-        } catch (e) {
-          comfyLogger.error("Failed to parse WebSocket message:", e);
+        const result = parseAndSanitize(event.data);
+        if (result.valid) {
+          this.handleWebSocketMessage(result.data);
+        } else {
+          comfyLogger.error("Failed to parse WebSocket message:", result.error);
         }
       };
     });

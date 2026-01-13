@@ -9,8 +9,8 @@
  * - drivers.ts: Property driver operations
  *
  * NOTE: Expressions are stored on keyframe data (in keyframeStore).
- * Property drivers are stored on compositorStore.propertyDrivers.
- * This store is a coordination layer for these systems.
+ * Property drivers are stored in this store's state (propertyDrivers).
+ * Property driver system instance is also stored here (propertyDriverSystem).
  */
 
 import { defineStore } from "pinia";
@@ -59,7 +59,10 @@ import type { ExpressionStoreAccess, ExpressionState } from "./types";
 // ============================================================================
 
 export const useExpressionStore = defineStore("expression", {
-  state: (): ExpressionState => ({}),
+  state: (): ExpressionState => ({
+    propertyDriverSystem: null,
+    propertyDrivers: [],
+  }),
 
   actions: {
     // ========================================================================

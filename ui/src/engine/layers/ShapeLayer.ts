@@ -110,6 +110,8 @@ interface EvaluatedPath {
     dashPattern: number[];
     dashOffset: number;
   };
+  /** Group blend mode (if this path came from a ShapeGroup) */
+  groupBlendMode?: string;
 }
 
 // ============================================================================
@@ -404,7 +406,55 @@ export class ShapeLayer extends BaseLayer {
     // Process nested groups recursively
     for (const group of groups) {
       const groupPaths = this.evaluateContents(group.contents);
-      result.push(...groupPaths);
+      
+      // Apply group transform to all paths in the group
+      const groupTransform = group.transform;
+      const groupOpacity = this.getAnimatedValue(groupTransform.opacity) / 100; // Convert 0-100 to 0-1
+      
+      const transformedGroupPaths = groupPaths.map((evalPath) => {
+        // Transform the path
+        const transformedPath = this.applyShapeTransform(
+          evalPath.path,
+          groupTransform,
+        );
+        
+        // Apply group opacity to fill/stroke opacities
+        const adjustedEvalPath: EvaluatedPath = {
+          ...evalPath,
+          path: transformedPath,
+          groupBlendMode: group.blendMode, // Store group blendMode for rendering
+        };
+        
+        // Multiply existing opacities by group opacity
+        if (adjustedEvalPath.fill) {
+          adjustedEvalPath.fill = {
+            ...adjustedEvalPath.fill,
+            opacity: adjustedEvalPath.fill.opacity * groupOpacity,
+          };
+        }
+        if (adjustedEvalPath.stroke) {
+          adjustedEvalPath.stroke = {
+            ...adjustedEvalPath.stroke,
+            opacity: adjustedEvalPath.stroke.opacity * groupOpacity,
+          };
+        }
+        if (adjustedEvalPath.gradientFill) {
+          adjustedEvalPath.gradientFill = {
+            ...adjustedEvalPath.gradientFill,
+            opacity: adjustedEvalPath.gradientFill.opacity * groupOpacity,
+          };
+        }
+        if (adjustedEvalPath.gradientStroke) {
+          adjustedEvalPath.gradientStroke = {
+            ...adjustedEvalPath.gradientStroke,
+            opacity: adjustedEvalPath.gradientStroke.opacity * groupOpacity,
+          };
+        }
+        
+        return adjustedEvalPath;
+      });
+      
+      result.push(...transformedGroupPaths);
     }
 
     return result;
@@ -782,11 +832,19 @@ export class ShapeLayer extends BaseLayer {
    * Render a single evaluated path to canvas
    */
   private renderPath(evalPath: EvaluatedPath): void {
-    const { path, fill, stroke, gradientFill, gradientStroke } = evalPath;
+    const { path, fill, stroke, gradientFill, gradientStroke, groupBlendMode } = evalPath;
 
     if (path.vertices.length < 2) return;
 
     this.ctx.save();
+
+    // Apply group blend mode if present
+    if (groupBlendMode && groupBlendMode !== "normal") {
+      const compositeOp = this.getBlendModeCompositeOperation(groupBlendMode);
+      if (compositeOp) {
+        this.ctx.globalCompositeOperation = compositeOp;
+      }
+    }
 
     // Build Path2D
     const path2d = this.buildPath2D(path);
@@ -838,6 +896,31 @@ export class ShapeLayer extends BaseLayer {
     }
 
     this.ctx.restore();
+  }
+
+  /**
+   * Map blend mode string to Canvas globalCompositeOperation
+   */
+  private getBlendModeCompositeOperation(
+    blendMode: string,
+  ): GlobalCompositeOperation | null {
+    const modeMap: Record<string, GlobalCompositeOperation> = {
+      normal: "source-over",
+      multiply: "multiply",
+      screen: "screen",
+      overlay: "overlay",
+      darken: "darken",
+      lighten: "lighten",
+      "color-dodge": "color-dodge",
+      "color-burn": "color-burn",
+      "hard-light": "hard-light",
+      "soft-light": "soft-light",
+      difference: "difference",
+      exclusion: "exclusion",
+      add: "lighter",
+      "linear-dodge": "lighter",
+    };
+    return modeMap[blendMode] ?? null;
   }
 
   /**

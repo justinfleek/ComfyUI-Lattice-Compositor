@@ -45,4 +45,73 @@ alwaysApply: true
 - typeGuards.ts - Runtime type narrowing
 - numericSafety.ts - NaN/Infinity guards
 
+## EVIDENCE-BASED ANALYSIS METHODOLOGY
+
+### TRACE EVERYTHING BACK TO SOURCE
+- Every claim must have exact file path and line number: `file.ts:123`
+- Show what was read, verified, and compared
+- Never make assumptions without verification
+
+### VERIFY BEFORE CREATING
+- Search codebase for existing patterns first
+- Read actual implementation (not just types)
+- Verify against runtime usage
+- Only then create/update files
+
+### SHOW EXACT TRACES IN OUTPUT
+- What was read (file paths, line ranges)
+- What was verified (exact code snippets)
+- What was changed (before/after)
+- Why it was changed (evidence-based reasoning)
+
+### CONNECT TO MASTER PLAN
+- Reference Master Refactor Plan phase/section
+- Explain why it's not myopic (bigger picture)
+- Show steps back to main refactor
+- Provide time estimates
+
+### DOCUMENT ASSUMPTIONS AND GAPS
+- What was verified ✅
+- What was assumed ⚠️
+- What needs verification ❓
+- What might be wrong
+
+**Output Format:**
+1. Summary with exact traces (file:line references)
+2. "Why This Is Not Myopic" section (master plan context)
+3. "Next Step" section (single best path forward)
+4. "Steps Back to Main Refactor" section (clear return path)
+
+**Reference:** `docs/EVIDENCE_BASED_ANALYSIS_METHODOLOGY.md` for complete methodology
+
+## BULLETPROOF CODEBASE REQUIREMENTS
+
+### VERIFY BEFORE CREATING
+- Search codebase for existing patterns first
+- Read actual implementation (not just types)
+- Verify against runtime usage
+- Check test files for examples
+- Only then create/update files
+
+### VERIFY AFTER CHANGING (MANDATORY)
+- **ALWAYS** run `npx tsc --noEmit` after code changes
+- **ALWAYS** verify exports are recognized by TypeScript
+- **ALWAYS** check that functions match existing patterns
+- **ALWAYS** verify file saves correctly (check for "(unsaved)" markers)
+- **NEVER** declare victory without verification
+- If TypeScript errors exist, fix them before proceeding
+
+### PATTERN-BASED FIXES
+- Fix ALL instances of a pattern across codebase
+- Never fix one file and move on
+- Search for all instances before fixing
+
+### EVIDENCE-BASED OUTPUT
+- Every claim must have file:line reference
+- Show what was read, verified, and compared
+- Connect to master plan
+- Document assumptions and gaps
+
+**Reference:** `docs/BULLETPROOF_CODEBASE_GUIDE.md` for complete methodology
+
 @ui/.claude/MANDATORY_READ.md

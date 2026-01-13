@@ -101,8 +101,10 @@ function createMockStore(layers: Layer[] = []): KeyframeStore {
 
   return {
     project: {
+      composition: { width: 1024, height: 1024 },
       meta: { modified: new Date().toISOString() },
     },
+    fps: comp.settings.fps,
     getActiveComp: () => comp,
     getActiveCompLayers: () => layers,
     getLayerById: (id: string) => layers.find((l) => l.id === id) || null,

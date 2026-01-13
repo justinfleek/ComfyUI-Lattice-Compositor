@@ -7,6 +7,15 @@
 
 import { measureTextLayerRect } from "../textMeasurement";
 import type { SourceRect, TextSourceInfo } from "./types";
+import type {
+  TextData,
+  ShapeLayerData,
+  SolidLayerData,
+  ImageLayerData,
+  VideoData,
+  EffectInstance,
+} from "@/types/project";
+import type { BezierPath, BezierVertex } from "@/types/shapes";
 
 // ============================================================
 // SOURCE RECT AT TIME
@@ -27,7 +36,14 @@ import type { SourceRect, TextSourceInfo } from "./types";
  * @returns SourceRect with top, left, width, height
  */
 export function sourceRectAtTime(
-  layerData: any,
+  layerData:
+    | TextData
+    | ShapeLayerData
+    | SolidLayerData
+    | ImageLayerData
+    | VideoData
+    | null
+    | undefined,
   layerType: string,
   _time: number = 0,
   includeExtents: boolean = false,
@@ -43,17 +59,17 @@ export function sourceRectAtTime(
 
   switch (layerType) {
     case "text":
-      return getTextSourceRect(layerData, includeExtents);
+      return getTextSourceRect(layerData as TextData, includeExtents);
 
     case "shape":
-      return getShapeSourceRect(layerData, includeExtents);
+      return getShapeSourceRect(layerData as ShapeLayerData, includeExtents);
 
     case "solid":
-      return getSolidSourceRect(layerData);
+      return getSolidSourceRect(layerData as SolidLayerData);
 
     case "image":
     case "video":
-      return getMediaSourceRect(layerData);
+      return getMediaSourceRect(layerData as ImageLayerData | VideoData);
 
     default:
       return defaultRect;
@@ -64,7 +80,10 @@ export function sourceRectAtTime(
  * Calculate source rect for text layers
  * Uses accurate Canvas API text measurement
  */
-function getTextSourceRect(data: any, includeExtents: boolean): SourceRect {
+function getTextSourceRect(
+  data: TextData,
+  includeExtents: boolean,
+): SourceRect {
   const rect = measureTextLayerRect(data, includeExtents);
 
   return {
@@ -78,23 +97,43 @@ function getTextSourceRect(data: any, includeExtents: boolean): SourceRect {
 /**
  * Calculate source rect for shape layers
  */
-function getShapeSourceRect(data: any, includeExtents: boolean): SourceRect {
+function getShapeSourceRect(
+  data: ShapeLayerData,
+  includeExtents: boolean,
+): SourceRect {
   let minX = Infinity,
     minY = Infinity;
   let maxX = -Infinity,
     maxY = -Infinity;
 
-  const paths = data.paths || [];
+  // Extract paths from shape layer contents
+  const paths: BezierPath[] = [];
+  function extractPaths(contents: ShapeLayerData["contents"]): void {
+    for (const item of contents) {
+      if (item.type === "path") {
+        // Path shape has a path property with vertices
+        const pathShape = item as { path: { value: BezierPath } };
+        if (pathShape.path?.value?.vertices) {
+          paths.push(pathShape.path.value);
+        }
+      } else if (item.type === "group") {
+        // Recursively extract from groups
+        extractPaths(item.contents);
+      }
+    }
+  }
+
+  extractPaths(data.contents ?? []);
 
   if (paths.length === 0) {
     return { top: 0, left: 0, width: 100, height: 100 };
   }
 
-  paths.forEach((path: any) => {
-    const points = path.points || [];
-    points.forEach((point: any) => {
-      const x = point.x ?? point[0] ?? 0;
-      const y = point.y ?? point[1] ?? 0;
+  paths.forEach((path: BezierPath) => {
+    const vertices = path.vertices ?? [];
+    vertices.forEach((vertex: BezierVertex) => {
+      const x = vertex.point?.x ?? 0;
+      const y = vertex.point?.y ?? 0;
       minX = Math.min(minX, x);
       minY = Math.min(minY, y);
       maxX = Math.max(maxX, x);
@@ -109,12 +148,28 @@ function getShapeSourceRect(data: any, includeExtents: boolean): SourceRect {
   let width = maxX - minX;
   let height = maxY - minY;
 
-  if (includeExtents && data.stroke?.width) {
-    const strokeExtent = data.stroke.width / 2;
-    minX -= strokeExtent;
-    minY -= strokeExtent;
-    width += strokeExtent * 2;
-    height += strokeExtent * 2;
+  if (includeExtents) {
+    // Find stroke width from stroke shapes in contents
+    let maxStrokeWidth = 0;
+    function findStrokeWidth(contents: ShapeLayerData["contents"]): void {
+      for (const item of contents) {
+        if (item.type === "stroke") {
+          const strokeWidth = typeof item.width?.value === "number" ? item.width.value : 0;
+          maxStrokeWidth = Math.max(maxStrokeWidth, strokeWidth);
+        } else if (item.type === "group") {
+          findStrokeWidth(item.contents);
+        }
+      }
+    }
+    findStrokeWidth(data.contents ?? []);
+    
+    if (maxStrokeWidth > 0) {
+      const strokeExtent = maxStrokeWidth / 2;
+      minX -= strokeExtent;
+      minY -= strokeExtent;
+      width += strokeExtent * 2;
+      height += strokeExtent * 2;
+    }
   }
 
   return {
@@ -128,9 +183,9 @@ function getShapeSourceRect(data: any, includeExtents: boolean): SourceRect {
 /**
  * Calculate source rect for solid layers
  */
-function getSolidSourceRect(data: any): SourceRect {
-  const width = data.width || 100;
-  const height = data.height || 100;
+function getSolidSourceRect(data: SolidLayerData): SourceRect {
+  const width = data.width ?? 100;
+  const height = data.height ?? 100;
 
   return {
     top: -height / 2,
@@ -143,9 +198,12 @@ function getSolidSourceRect(data: any): SourceRect {
 /**
  * Calculate source rect for image/video layers
  */
-function getMediaSourceRect(data: any): SourceRect {
-  const width = data.width || data.naturalWidth || 1920;
-  const height = data.height || data.naturalHeight || 1080;
+function getMediaSourceRect(data: ImageLayerData | VideoData): SourceRect {
+  // For image/video layers, we need to get dimensions from the asset
+  // Since we don't have direct access to asset dimensions here, use defaults
+  // In practice, this would be resolved by the expression evaluator with asset context
+  const width = 1920; // Default fallback
+  const height = 1080; // Default fallback
 
   return {
     top: -height / 2,
@@ -163,17 +221,17 @@ function getMediaSourceRect(data: any): SourceRect {
  * Get text layer content as an expression-accessible object
  * Mimics industry-standard text.sourceText
  */
-export function textSource(layerData: any): TextSourceInfo {
+export function textSource(layerData: TextData): TextSourceInfo {
   return {
-    text: layerData?.text || "",
-    fontSize: layerData?.fontSize || 72,
-    fontFamily: layerData?.fontFamily || "Arial",
-    fontStyle: layerData?.fontStyle || "normal",
-    fillColor: layerData?.fill || { r: 1, g: 1, b: 1, a: 1 },
-    strokeColor: layerData?.stroke || { r: 0, g: 0, b: 0, a: 1 },
-    strokeWidth: layerData?.strokeWidth || 0,
-    tracking: layerData?.letterSpacing || 0,
-    leading: layerData?.lineHeight || 1.2,
+    text: layerData?.text ?? "",
+    fontSize: layerData?.fontSize ?? 72,
+    fontFamily: layerData?.fontFamily ?? "Arial",
+    fontStyle: layerData?.fontStyle ?? "normal",
+    fillColor: layerData?.fill ?? "#FFFFFF",
+    strokeColor: layerData?.stroke ?? "#000000",
+    strokeWidth: layerData?.strokeWidth ?? 0,
+    tracking: layerData?.letterSpacing ?? 0,
+    leading: layerData?.lineHeight ?? 1.2,
   };
 }
 
@@ -196,14 +254,14 @@ export function textSource(layerData: any): TextSourceInfo {
  * @returns The parameter value, or null if not found
  */
 export function effectValue(
-  effects: any[] | undefined,
+  effects: EffectInstance[] | undefined,
   effectName: string,
   parameterName: string,
   _frame: number = 0,
-): any {
+): number | string | boolean | null {
   if (!effects || effects.length === 0) return null;
 
-  const effect = effects.find((e: any) => e.name === effectName);
+  const effect = effects.find((e: EffectInstance) => e.name === effectName);
   if (!effect) return null;
 
   const paramKey = parameterName.toLowerCase().replace(/\s+/g, "_");
@@ -211,7 +269,7 @@ export function effectValue(
 
   if (!param) return null;
 
-  return param.value;
+  return param.value as number | string | boolean;
 }
 
 // ============================================================

@@ -193,6 +193,9 @@ import {
   getLayerDecompositionService,
 } from "@/services/layerDecomposition";
 import { useCompositorStore } from "@/stores/compositorStore";
+import { useCompositionStore } from "@/stores/compositionStore";
+import { useProjectStore } from "@/stores/projectStore";
+import { useLayerStore } from "@/stores/layerStore";
 
 const emit = defineEmits<{
   (e: "close"): void;
@@ -200,6 +203,9 @@ const emit = defineEmits<{
 }>();
 
 const store = useCompositorStore();
+const compositionStore = useCompositionStore();
+const projectStore = useProjectStore();
+const layerStore = useLayerStore();
 
 // Model status
 const modelStatus = ref<DecompositionModelStatus | null>(null);
@@ -354,8 +360,8 @@ async function getSourceImage(): Promise<string | null> {
     const solidData =
       layer.data as unknown as import("@/types/project").SolidLayerData;
     const canvas = document.createElement("canvas");
-    canvas.width = solidData.width || store.width;
-    canvas.height = solidData.height || store.height;
+    canvas.width = solidData.width || projectStore.getWidth(store);
+    canvas.height = solidData.height || projectStore.getHeight(store);
     const ctx = canvas.getContext("2d")!;
     ctx.fillStyle = solidData.color || "#808080";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -393,7 +399,7 @@ async function createLayersFromDecomposition(
   if (groupIntoComp.value) {
     // Create a nested composition to contain all decomposed layers
     const nestedCompName = `Decomposed (${decomposedLayers.length} layers)`;
-    const nestedComp = store.createComposition(nestedCompName, {
+    const nestedComp = compositionStore.createComposition(store, nestedCompName, {
       width: comp.settings.width,
       height: comp.settings.height,
       frameCount: comp.settings.frameCount,
@@ -408,7 +414,7 @@ async function createLayersFromDecomposition(
     // Create image layers for each decomposed layer (reverse order so Background is at bottom)
     for (let i = decomposedLayers.length - 1; i >= 0; i--) {
       const decomposed = decomposedLayers[i];
-      const layer = store.createLayer("image", decomposed.label);
+      const layer = layerStore.createLayer(store, "image", decomposed.label);
       if (layer.data) {
         (layer.data as any).source = decomposed.image;
       }
@@ -418,7 +424,7 @@ async function createLayersFromDecomposition(
     store.switchComposition(originalCompId);
 
     // Add the nested comp as a layer in the original
-    const nestedLayer = store.createLayer("nestedComp", nestedCompName);
+    const nestedLayer = layerStore.createLayer(store, "nestedComp", nestedCompName);
     if (nestedLayer.data) {
       (nestedLayer.data as any).compositionId = nestedComp.id;
     }
@@ -426,7 +432,7 @@ async function createLayersFromDecomposition(
     // Create layers directly in current composition (original behavior)
     for (let i = decomposedLayers.length - 1; i >= 0; i--) {
       const decomposed = decomposedLayers[i];
-      const layer = store.createLayer("image", decomposed.label);
+      const layer = layerStore.createLayer(store, "image", decomposed.label);
       if (layer.data) {
         (layer.data as any).source = decomposed.image;
       }

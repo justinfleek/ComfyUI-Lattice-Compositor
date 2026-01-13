@@ -42,6 +42,15 @@ import {
   updateLayerData as updateLayerDataImpl,
   duplicateLayer as duplicateLayerImpl,
   moveLayer as moveLayerImpl,
+  renameLayer as renameLayerImpl,
+  updateLayerTransform as updateLayerTransformImpl,
+  toggleLayerLock as toggleLayerLockImpl,
+  toggleLayerVisibility as toggleLayerVisibilityImpl,
+  toggleLayerSolo as toggleLayerSoloImpl,
+  bringToFront as bringToFrontImpl,
+  sendToBack as sendToBackImpl,
+  bringForward as bringForwardImpl,
+  sendBackward as sendBackwardImpl,
   regenerateKeyframeIds,
 } from "./crud";
 
@@ -65,6 +74,15 @@ import {
   getLayerById as getLayerByIdImpl,
   getLayerChildren as getLayerChildrenImpl,
   getLayerDescendants as getLayerDescendantsImpl,
+  getVisibleLayers as getVisibleLayersImpl,
+  getDisplayedLayers as getDisplayedLayersImpl,
+  getRootLayers as getRootLayersImpl,
+  getCameraLayers as getCameraLayersImpl,
+  getSelectedLayers as getSelectedLayersImpl,
+  getSelectedLayer as getSelectedLayerImpl,
+  selectAllLayers as selectAllLayersImpl,
+  deleteSelectedLayers as deleteSelectedLayersImpl,
+  duplicateSelectedLayers as duplicateSelectedLayersImpl,
 } from "./hierarchy";
 
 // Specialized operations
@@ -72,6 +90,10 @@ import {
   createTextLayer as createTextLayerImpl,
   createSplineLayer as createSplineLayerImpl,
   createShapeLayer as createShapeLayerImpl,
+  createCameraLayer as createCameraLayerImpl,
+  createVideoLayer as createVideoLayerImpl,
+  createNestedCompLayer as createNestedCompLayerImpl,
+  updateNestedCompLayerData as updateNestedCompLayerDataImpl,
   replaceLayerSource as replaceLayerSourceImpl,
 } from "./specialized";
 
@@ -128,7 +150,7 @@ import type {
   TimeStretchOptions,
   LayerSourceReplacement,
 } from "./types";
-import type { Layer, ClipboardKeyframe, AnyLayerData, EvaluatedControlPoint } from "@/types/project";
+import type { Layer, ClipboardKeyframe, AnyLayerData, EvaluatedControlPoint, NestedCompData } from "@/types/project";
 import type { SplineControlPoint } from "./spline";
 import type { ConvertTextToSplinesOptions } from "./textConversion";
 import type { CopyPathToPositionOptions } from "./pathOperations";
@@ -221,6 +243,57 @@ export const useLayerStore = defineStore("layer", {
       moveLayerImpl(compositorStore, layerId, newIndex);
     },
 
+    renameLayer(
+      compositorStore: CompositorStoreAccess,
+      layerId: string,
+      newName: string,
+    ): void {
+      renameLayerImpl(compositorStore, layerId, newName);
+    },
+
+    updateLayerTransform(
+      compositorStore: CompositorStoreAccess,
+      layerId: string,
+      updates: {
+        position?: { x: number; y: number; z?: number };
+        scale?: { x: number; y: number; z?: number };
+        rotation?: number;
+        opacity?: number;
+        origin?: { x: number; y: number; z?: number };
+        anchor?: { x: number; y: number; z?: number };
+      },
+    ): void {
+      updateLayerTransformImpl(compositorStore, layerId, updates);
+    },
+
+    toggleLayerLock(compositorStore: CompositorStoreAccess): void {
+      toggleLayerLockImpl(compositorStore);
+    },
+
+    toggleLayerVisibility(compositorStore: CompositorStoreAccess): void {
+      toggleLayerVisibilityImpl(compositorStore);
+    },
+
+    toggleLayerSolo(compositorStore: CompositorStoreAccess): void {
+      toggleLayerSoloImpl(compositorStore);
+    },
+
+    bringToFront(compositorStore: CompositorStoreAccess): void {
+      bringToFrontImpl(compositorStore);
+    },
+
+    sendToBack(compositorStore: CompositorStoreAccess): void {
+      sendToBackImpl(compositorStore);
+    },
+
+    bringForward(compositorStore: CompositorStoreAccess): void {
+      bringForwardImpl(compositorStore);
+    },
+
+    sendBackward(compositorStore: CompositorStoreAccess): void {
+      sendBackwardImpl(compositorStore);
+    },
+
     /** @internal Used by clipboard operations */
     _regenerateKeyframeIds(layer: Layer): void {
       regenerateKeyframeIds(layer);
@@ -278,6 +351,18 @@ export const useLayerStore = defineStore("layer", {
       clearSelectionImpl(compositorStore);
     },
 
+    selectAllLayers(compositorStore: CompositorStoreAccess): void {
+      selectAllLayersImpl(compositorStore);
+    },
+
+    deleteSelectedLayers(compositorStore: CompositorStoreAccess): void {
+      deleteSelectedLayersImpl(compositorStore);
+    },
+
+    duplicateSelectedLayers(compositorStore: CompositorStoreAccess): string[] {
+      return duplicateSelectedLayersImpl(compositorStore);
+    },
+
     // ========================================================================
     // SPECIALIZED LAYER CREATION
     // ========================================================================
@@ -298,6 +383,58 @@ export const useLayerStore = defineStore("layer", {
       name: string = "Shape Layer",
     ): Layer {
       return createShapeLayerImpl(compositorStore, name);
+    },
+
+    /**
+     * Create a camera layer
+     * Requires camera store access (cameras Map, activeCameraId, selectLayer)
+     */
+    createCameraLayer(
+      compositorStore: CompositorStoreAccess & {
+        cameras: Map<string, any>;
+        activeCameraId: string | null;
+        selectLayer: (layerId: string) => void;
+      },
+      name?: string,
+    ): Layer {
+      return createCameraLayerImpl(compositorStore, name);
+    },
+
+    /**
+     * Create a video layer from a file
+     * Requires video store access (assets Record)
+     * Delegates to videoActions for metadata extraction and asset management
+     */
+    async createVideoLayer(
+      compositorStore: CompositorStoreAccess & {
+        assets: Record<string, any>;
+      },
+      file: File,
+      autoResizeComposition: boolean = true,
+    ): Promise<{ status: string; layer?: Layer; error?: string; [key: string]: any }> {
+      return createVideoLayerImpl(compositorStore, file, autoResizeComposition);
+    },
+
+    /**
+     * Create a nested comp layer referencing another composition
+     */
+    createNestedCompLayer(
+      compositorStore: CompositorStoreAccess,
+      compositionId: string,
+      name?: string,
+    ): Layer {
+      return createNestedCompLayerImpl(compositorStore, compositionId, name);
+    },
+
+    /**
+     * Update nested comp layer data
+     */
+    updateNestedCompLayerData(
+      compositorStore: CompositorStoreAccess,
+      layerId: string,
+      updates: Partial<NestedCompData>,
+    ): void {
+      updateNestedCompLayerDataImpl(compositorStore, layerId, updates);
     },
 
     // ========================================================================
@@ -408,6 +545,33 @@ export const useLayerStore = defineStore("layer", {
       layerId: string,
     ): Layer[] {
       return getLayerDescendantsImpl(compositorStore, layerId);
+    },
+
+    getVisibleLayers(compositorStore: CompositorStoreAccess): Layer[] {
+      return getVisibleLayersImpl(compositorStore);
+    },
+
+    getDisplayedLayers(
+      compositorStore: CompositorStoreAccess,
+      hideMinimized = false,
+    ): Layer[] {
+      return getDisplayedLayersImpl(compositorStore, hideMinimized);
+    },
+
+    getRootLayers(compositorStore: CompositorStoreAccess): Layer[] {
+      return getRootLayersImpl(compositorStore);
+    },
+
+    getCameraLayers(compositorStore: CompositorStoreAccess): Layer[] {
+      return getCameraLayersImpl(compositorStore);
+    },
+
+    getSelectedLayers(compositorStore: CompositorStoreAccess): Layer[] {
+      return getSelectedLayersImpl(compositorStore);
+    },
+
+    getSelectedLayer(compositorStore: CompositorStoreAccess): Layer | null {
+      return getSelectedLayerImpl(compositorStore);
     },
 
     // ========================================================================

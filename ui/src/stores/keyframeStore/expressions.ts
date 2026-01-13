@@ -6,8 +6,9 @@
  */
 
 import { markLayerDirty } from "@/services/layerEvaluationCache";
-import type { Keyframe, PropertyExpression } from "@/types/project";
+import type { Keyframe, PropertyExpression, PropertyValue } from "@/types/project";
 import { storeLogger } from "@/utils/logger";
+import { useLayerStore } from "@/stores/layerStore";
 import { findPropertyByPath } from "./helpers";
 import type { BakeExpressionStoreAccess, KeyframeStoreAccess } from "./types";
 
@@ -222,7 +223,8 @@ export function convertExpressionToKeyframes(
   endFrame?: number,
   sampleRate: number = 1,
 ): number {
-  const layer = store.getLayerById(layerId);
+  const layerStore = useLayerStore();
+  const layer = layerStore.getLayerById(store, layerId);
   if (!layer) {
     storeLogger.warn("convertExpressionToKeyframes: layer not found:", layerId);
     return 0;
@@ -262,10 +264,24 @@ export function convertExpressionToKeyframes(
     const value = store.evaluatePropertyAtFrame(layerId, propertyPath, frame);
 
     if (value !== undefined && value !== null) {
-      const keyframe: Keyframe<any> = {
+      // Convert array values [x, y] or [x, y, z] to object format for PropertyValue
+      let keyframeValue: PropertyValue;
+      if (Array.isArray(value)) {
+        if (value.length === 2) {
+          keyframeValue = { x: value[0], y: value[1] };
+        } else if (value.length >= 3) {
+          keyframeValue = { x: value[0], y: value[1], z: value[2] };
+        } else {
+          keyframeValue = value[0] ?? 0;
+        }
+      } else {
+        keyframeValue = value;
+      }
+
+      const keyframe: Keyframe<PropertyValue> = {
         id: `kf_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`,
         frame,
-        value,
+        value: keyframeValue,
         interpolation: "linear",
         inHandle: { frame: 0, value: 0, enabled: false },
         outHandle: { frame: 0, value: 0, enabled: false },
@@ -302,7 +318,8 @@ export function canBakeExpression(
   layerId: string,
   propertyPath: string,
 ): boolean {
-  const layer = store.getLayerById(layerId);
+  const layerStore = useLayerStore();
+  const layer = layerStore.getLayerById(store, layerId);
   if (!layer) return false;
 
   const property = findPropertyByPath(layer, propertyPath);

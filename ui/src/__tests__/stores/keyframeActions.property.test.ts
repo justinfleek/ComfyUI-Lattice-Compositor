@@ -161,6 +161,7 @@ function createMockStore(layers: Layer[]): KeyframeStore {
       id: "test-project",
       name: "Test Project",
       version: "1.0.0",
+      composition: { width: 1024, height: 1024 },
       meta: {
         created: new Date().toISOString(),
         modified: new Date().toISOString(),
@@ -173,6 +174,7 @@ function createMockStore(layers: Layer[]): KeyframeStore {
     },
     currentFrame: 0,
     selectedLayerIds: [],
+    fps: comp.settings.fps,
     getActiveComp() {
       return comp;
     },

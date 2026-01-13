@@ -642,6 +642,11 @@ import { PhKeyboard } from "@phosphor-icons/vue";
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { useAudioStore } from "@/stores/audioStore";
 import { useCompositorStore } from "@/stores/compositorStore";
+import { useMarkerStore } from "@/stores/markerStore";
+import { useProjectStore } from "@/stores/projectStore";
+import { useLayerStore } from "@/stores/layerStore";
+import { useKeyframeStore } from "@/stores/keyframeStore";
+import type { SplineData, AnimatableProperty, Vec3 } from "@/types/project";
 
 // PhPiano doesn't exist in phosphor-icons, using PhKeyboard as substitute
 const PhPiano = PhKeyboard;
@@ -678,7 +683,11 @@ import {
 } from "@/services/midiToKeyframes";
 
 const store = useCompositorStore();
+const projectStore = useProjectStore();
+const layerStore = useLayerStore();
 const audioStore = useAudioStore();
+const markerStore = useMarkerStore();
+const keyframeStore = useKeyframeStore();
 
 // Stem separation state
 const stemSectionExpanded = ref(false);
@@ -836,8 +845,8 @@ async function createPathAnimator() {
 
     // Get audio feature data based on selection
     const audioData = audioStore.audioAnalysis;
-    const _fps = store.fps || 16;
-    const frameCount = store.frameCount;
+    const _fps = projectStore.getFps(store) || 16;
+    const frameCount = projectStore.getFrameCount(store);
 
     // Build keyframes for the target layer position based on audio
     const keyframes: Array<{
@@ -846,7 +855,7 @@ async function createPathAnimator() {
     }> = [];
 
     // Get spline path data for position mapping
-    const splineData = splineLayer.data as any;
+    const splineData = splineLayer.data as SplineData;
     const controlPoints = splineData?.controlPoints || [];
 
     if (controlPoints.length < 2) {
@@ -900,7 +909,7 @@ async function createPathAnimator() {
 
     // Apply keyframes to target layer's position
     if (keyframes.length > 0) {
-      store.updateLayerProperty(targetLayer.id, "transform.position", {
+      keyframeStore.updateLayerProperty(store, targetLayer.id, "transform.position", {
         ...targetLayer.transform.position,
         animated: true,
         keyframes: keyframes.map((kf) => ({
@@ -943,11 +952,12 @@ async function handleAudioFileSelected(e: Event) {
 }
 
 function removeAudio() {
-  store.clearAudio();
+  audioStore.clear();
+store.pathAnimators.clear();
 }
 
 function toggleMute() {
-  store.toggleAudioMute();
+  audioStore.toggleMuted();
 }
 
 async function convertAudioToKeyframes() {
@@ -970,7 +980,7 @@ async function convertAudioToKeyframes() {
     if (result) {
       // AudioAmplitudeResult returns property IDs, not keyframe count
       // Get keyframe count from the created layer
-      const layer = store.getLayerById(result.layerId);
+      const layer = layerStore.getLayerById(store, result.layerId);
       const kfCount = layer?.properties?.[0]?.keyframes?.length || 0;
       convertResult.value = {
         layerName: result.layerName,
@@ -1024,7 +1034,7 @@ function drawWaveform() {
   ctx.stroke();
 
   // Playhead
-  const px = (store.currentFrame / store.frameCount) * rect.width;
+  const px = (store.currentFrame / projectStore.getFrameCount(store)) * rect.width;
   ctx.fillStyle = "#fff";
   ctx.fillRect(px, 0, 1, 60);
 }
@@ -1266,7 +1276,7 @@ async function analyzeBeats() {
 
   try {
     // Use store's fps or default to 16
-    const fps = store.fps || 16;
+    const fps = projectStore.getFps(store) || 16;
 
     beatGrid.value = createEnhancedBeatGrid(
       audioStore.audioAnalysis,
@@ -1296,7 +1306,7 @@ function snapToBeats() {
   let snappedCount = 0;
 
   for (const layerId of selectedLayers) {
-    const layer = store.getLayerById(layerId);
+    const layer = layerStore.getLayerById(store, layerId);
     if (!layer) continue;
 
     // Check each animated property for keyframes
@@ -1346,7 +1356,7 @@ function markBeatsAsMarkers() {
   // Add markers at downbeats (first beat of each measure)
   for (let i = 0; i < beatGrid.value.downbeats.length; i++) {
     const frame = beatGrid.value.downbeats[i];
-    store.addMarker({
+    markerStore.addMarker(store, {
       frame,
       label: `Bar ${i + 1}`,
       color: "#8B5CF6",
@@ -1500,7 +1510,7 @@ async function convertMIDIToKeyframes() {
   midiConvertResult.value = null;
 
   try {
-    const fps = store.fps || 16;
+    const fps = projectStore.getFps(store) || 16;
     const config: MIDIToKeyframeConfig = {
       trackIndex: midiTrackIndex.value,
       channel: midiChannel.value,
@@ -1527,10 +1537,7 @@ async function convertMIDIToKeyframes() {
     }
 
     // Create a null layer with the keyframes
-    const layer = store.addLayer(
-      "null",
-      midiLayerName.value || "MIDI Animation",
-    );
+    const layer = layerStore.createLayer(store, "null", midiLayerName.value || "MIDI Animation");
 
     if (layer) {
       // Apply keyframes to scale.x as a driver property
@@ -1548,7 +1555,7 @@ async function convertMIDIToKeyframes() {
           outHandle: { frame: 0, value: 0, enabled: false },
           controlMode: "smooth" as const,
         })),
-      } as any;
+      } as AnimatableProperty<Vec3>;
 
       midiConvertResult.value = {
         layerName: layer.name,

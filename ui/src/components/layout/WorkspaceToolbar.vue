@@ -280,6 +280,7 @@ import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { useCompositorStore } from "@/stores/compositorStore";
 import { usePlaybackStore } from "@/stores/playbackStore";
 import { type ThemeName, useThemeStore } from "@/stores/themeStore";
+import { useAnimationStore } from "@/stores/animationStore";
 
 const props = defineProps<{
   currentTool: string;
@@ -299,6 +300,7 @@ const emit = defineEmits<{
 const store = useCompositorStore();
 const _playbackStore = usePlaybackStore();
 const themeStore = useThemeStore();
+const animationStore = useAnimationStore();
 
 // Shape tool state
 const isShapeTool = computed(() =>
@@ -417,27 +419,27 @@ const formattedTimecode = computed(() => {
 
 // Playback controls
 function goToStart() {
-  store.setFrame(0);
+  animationStore.setFrame(store, 0);
 }
 
 function goToEnd() {
   const frameCount = store.activeComposition?.settings.frameCount || 81;
-  store.setFrame(frameCount - 1);
+  animationStore.setFrame(store, frameCount - 1);
 }
 
 function stepBackward() {
   const newFrame = Math.max(0, store.currentFrame - 1);
-  store.setFrame(newFrame);
+  animationStore.setFrame(store, newFrame);
 }
 
 function stepForward() {
   const frameCount = store.activeComposition?.settings.frameCount || 81;
   const newFrame = Math.min(frameCount - 1, store.currentFrame + 1);
-  store.setFrame(newFrame);
+  animationStore.setFrame(store, newFrame);
 }
 
 function togglePlay() {
-  store.togglePlayback();
+  animationStore.togglePlayback(store);
 }
 
 // Undo/Redo

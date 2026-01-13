@@ -23,7 +23,7 @@ export function useCanvasSegmentation() {
   /**
    * Start segment box drawing
    */
-  function startSegmentBox(scenePos: { x: number; y: number }) {
+  function startSegmentBox(scenePos: { x: number; y: number }): void {
     store.setSegmentBoxStart({ x: scenePos.x, y: scenePos.y });
     segmentBoxEnd.value = { x: scenePos.x, y: scenePos.y };
     isDrawingSegmentBox.value = true;
@@ -32,7 +32,7 @@ export function useCanvasSegmentation() {
   /**
    * Update segment box end position
    */
-  function updateSegmentBox(scenePos: { x: number; y: number }) {
+  function updateSegmentBox(scenePos: { x: number; y: number }): void {
     if (isDrawingSegmentBox.value && store.segmentBoxStart) {
       segmentBoxEnd.value = { x: scenePos.x, y: scenePos.y };
     }
@@ -41,7 +41,7 @@ export function useCanvasSegmentation() {
   /**
    * Cancel segment box drawing
    */
-  function cancelSegmentBox() {
+  function cancelSegmentBox(): void {
     isDrawingSegmentBox.value = false;
     store.setSegmentBoxStart(null);
     segmentBoxEnd.value = null;
@@ -76,7 +76,7 @@ export function useCanvasSegmentation() {
   /**
    * Handle point-based segmentation
    */
-  async function handleSegmentPoint(x: number, y: number) {
+  async function handleSegmentPoint(x: number, y: number): Promise<void> {
     if (!store.sourceImage) {
       console.warn("[useCanvasSegmentation] No source image for segmentation");
       return;
@@ -92,7 +92,6 @@ export function useCanvasSegmentation() {
         result.masks &&
         result.masks.length > 0
       ) {
-        // Set the first (best) mask as pending
         const mask = result.masks[0];
         store.setSegmentPendingMask({
           mask: mask.mask,
@@ -125,7 +124,7 @@ export function useCanvasSegmentation() {
     y1: number,
     x2: number,
     y2: number,
-  ) {
+  ): Promise<void> {
     if (!store.sourceImage) {
       console.warn("[useCanvasSegmentation] No source image for segmentation");
       return;
@@ -176,7 +175,7 @@ export function useCanvasSegmentation() {
   /**
    * Compute segment box preview style for overlay
    */
-  function getSegmentBoxStyle(viewportTransform: number[]) {
+  function getSegmentBoxStyle(viewportTransform: number[]): Record<string, string> {
     const start = store.segmentBoxStart;
     const end = segmentBoxEnd.value;
     if (!start || !end) return {};
@@ -200,7 +199,7 @@ export function useCanvasSegmentation() {
   /**
    * Compute mask overlay style
    */
-  function getMaskOverlayStyle(viewportTransform: number[]) {
+  function getMaskOverlayStyle(viewportTransform: number[]): Record<string, string> {
     const mask = store.segmentPendingMask;
     if (!mask) return {};
 

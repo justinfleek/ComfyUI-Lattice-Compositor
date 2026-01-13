@@ -74,7 +74,7 @@ export function valueAtTime(
   // Array interpolation
   if (Array.isArray(prevKf.value) && Array.isArray(nextKf.value)) {
     return prevKf.value.map(
-      (v, i) => v + t * ((nextKf.value as number[])[i] - v),
+      (v: number, i: number) => v + t * ((nextKf.value as number[])[i] - v),
     );
   }
 

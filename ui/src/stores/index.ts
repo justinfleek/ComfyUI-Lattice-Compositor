@@ -33,3 +33,6 @@ export {
 } from "./layerStore";
 export { type PlaybackStore, usePlaybackStore } from "./playbackStore";
 export { type SelectionStore, useSelectionStore } from "./selectionStore";
+export { type ProjectStoreAccess, useProjectStore } from "./projectStore";
+export { type MarkerStoreAccess, useMarkerStore } from "./markerStore";
+export { useUIStore } from "./uiStore";

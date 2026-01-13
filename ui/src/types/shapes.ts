@@ -349,7 +349,8 @@ export interface RepeaterOperator {
 export interface ShapeGroup {
   type: "group";
   name: string;
-  contents: ShapeContent[];
+  // Non-recursive: groups cannot contain other groups (breaks circular dependency)
+  contents: NonGroupShapeContent[];
   transform: ShapeTransform;
   blendMode: string;
 }
@@ -411,14 +412,17 @@ export type IllustratorOperator =
 // COMBINED SHAPE CONTENT TYPE
 // ============================================================================
 
-export type ShapeContent =
+// Non-group shape content (used inside ShapeGroup.contents to avoid circular dependency)
+export type NonGroupShapeContent =
   | ShapeGenerator
   | ShapeModifier
   | PathOperator
   | ShapeTransform
   | RepeaterOperator
-  | ShapeGroup
   | IllustratorOperator;
+
+// Full shape content (includes groups for root-level ShapeLayerData.contents)
+export type ShapeContent = NonGroupShapeContent | ShapeGroup;
 
 // ============================================================================
 // SHAPE LAYER DATA

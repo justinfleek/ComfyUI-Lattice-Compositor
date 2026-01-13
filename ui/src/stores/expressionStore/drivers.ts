@@ -13,6 +13,8 @@ import {
   type PropertyPath,
 } from "@/services/propertyDriver";
 import { useAudioStore } from "@/stores/audioStore";
+import { useExpressionStore } from "./index";
+import { useLayerStore } from "@/stores/layerStore";
 import { storeLogger } from "@/utils/logger";
 import type { ExpressionStoreAccess } from "./types";
 
@@ -25,10 +27,11 @@ export type { PropertyPath };
 export function initializePropertyDriverSystem(
   store: ExpressionStoreAccess,
 ): void {
-  store.propertyDriverSystem = new PropertyDriverSystem();
+  const expressionStore = useExpressionStore();
+  expressionStore.propertyDriverSystem = new PropertyDriverSystem();
 
   // Set up property getter that reads from store
-  store.propertyDriverSystem.setPropertyGetter(
+  expressionStore.propertyDriverSystem.setPropertyGetter(
     (layerId: string, propertyPath: string, frame: number) => {
       return store.getPropertyValueAtFrame(layerId, propertyPath, frame);
     },
@@ -37,12 +40,14 @@ export function initializePropertyDriverSystem(
   // Connect audio if available (from audioStore, the source of truth)
   const audioStore = useAudioStore();
   if (audioStore.audioAnalysis) {
-    store.propertyDriverSystem.setAudioAnalysis(audioStore.audioAnalysis);
+    expressionStore.propertyDriverSystem.setAudioAnalysis(
+      audioStore.audioAnalysis,
+    );
   }
 
   // Load existing drivers
-  for (const driver of store.propertyDrivers) {
-    store.propertyDriverSystem.addDriver(driver);
+  for (const driver of expressionStore.propertyDrivers) {
+    expressionStore.propertyDriverSystem.addDriver(driver);
   }
 }
 
@@ -54,10 +59,12 @@ export function getEvaluatedLayerProperties(
   layerId: string,
   frame: number,
 ): Map<PropertyPath, number> {
-  if (!store.propertyDriverSystem) {
+  const expressionStore = useExpressionStore();
+  if (!expressionStore.propertyDriverSystem) {
     return new Map();
   }
 
+  // Use store's getLayerById method (ExpressionStoreAccess includes this)
   const layer = store.getLayerById(layerId);
   if (!layer) return new Map();
 
@@ -155,7 +162,7 @@ export function getEvaluatedLayerProperties(
     interpolateProperty(layer.opacity, frame, fps, layerId, duration),
   );
 
-  return store.propertyDriverSystem.evaluateLayerDrivers(
+  return expressionStore.propertyDriverSystem.evaluateLayerDrivers(
     layerId,
     frame,
     baseValues,
@@ -170,9 +177,10 @@ export function addPropertyDriver(
   store: ExpressionStoreAccess,
   driver: PropertyDriver,
 ): boolean {
+  const expressionStore = useExpressionStore();
   // Check for cycles before adding
-  if (store.propertyDriverSystem) {
-    const added = store.propertyDriverSystem.addDriver(driver);
+  if (expressionStore.propertyDriverSystem) {
+    const added = expressionStore.propertyDriverSystem.addDriver(driver);
     if (!added) {
       storeLogger.warn(
         "Cannot add property driver: would create circular dependency",
@@ -181,7 +189,7 @@ export function addPropertyDriver(
     }
   }
 
-  store.propertyDrivers.push(driver);
+  expressionStore.propertyDrivers.push(driver);
   store.project.meta.modified = new Date().toISOString();
   store.pushHistory();
   return true;
@@ -251,15 +259,16 @@ export function removePropertyDriver(
   store: ExpressionStoreAccess,
   driverId: string,
 ): void {
-  const index = store.propertyDrivers.findIndex(
+  const expressionStore = useExpressionStore();
+  const index = expressionStore.propertyDrivers.findIndex(
     (d: PropertyDriver) => d.id === driverId,
   );
   if (index >= 0) {
-    store.propertyDrivers.splice(index, 1);
+    expressionStore.propertyDrivers.splice(index, 1);
   }
 
-  if (store.propertyDriverSystem) {
-    store.propertyDriverSystem.removeDriver(driverId);
+  if (expressionStore.propertyDriverSystem) {
+    expressionStore.propertyDriverSystem.removeDriver(driverId);
   }
 
   store.project.meta.modified = new Date().toISOString();
@@ -274,15 +283,16 @@ export function updatePropertyDriver(
   driverId: string,
   updates: Partial<PropertyDriver>,
 ): void {
-  const driver = store.propertyDrivers.find(
+  const expressionStore = useExpressionStore();
+  const driver = expressionStore.propertyDrivers.find(
     (d: PropertyDriver) => d.id === driverId,
   );
   if (driver) {
     Object.assign(driver, updates);
   }
 
-  if (store.propertyDriverSystem) {
-    store.propertyDriverSystem.updateDriver(driverId, updates);
+  if (expressionStore.propertyDriverSystem) {
+    expressionStore.propertyDriverSystem.updateDriver(driverId, updates);
   }
 
   store.project.meta.modified = new Date().toISOString();
@@ -295,7 +305,8 @@ export function getDriversForLayer(
   store: ExpressionStoreAccess,
   layerId: string,
 ): PropertyDriver[] {
-  return store.propertyDrivers.filter(
+  const expressionStore = useExpressionStore();
+  return expressionStore.propertyDrivers.filter(
     (d: PropertyDriver) => d.targetLayerId === layerId,
   );
 }
@@ -307,13 +318,14 @@ export function togglePropertyDriver(
   store: ExpressionStoreAccess,
   driverId: string,
 ): void {
-  const driver = store.propertyDrivers.find(
+  const expressionStore = useExpressionStore();
+  const driver = expressionStore.propertyDrivers.find(
     (d: PropertyDriver) => d.id === driverId,
   );
   if (driver) {
     driver.enabled = !driver.enabled;
-    if (store.propertyDriverSystem) {
-      store.propertyDriverSystem.updateDriver(driverId, {
+    if (expressionStore.propertyDriverSystem) {
+      expressionStore.propertyDriverSystem.updateDriver(driverId, {
         enabled: driver.enabled,
       });
     }

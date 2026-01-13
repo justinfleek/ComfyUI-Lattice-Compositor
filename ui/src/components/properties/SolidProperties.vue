@@ -105,6 +105,7 @@
 <script setup lang="ts">
 import { computed, reactive } from "vue";
 import { useCompositorStore } from "@/stores/compositorStore";
+import { useLayerStore } from "@/stores/layerStore";
 import type { SolidLayerData } from "@/types/project";
 
 const props = defineProps<{
@@ -115,6 +116,7 @@ const emit =
   defineEmits<(e: "update", data: Partial<SolidLayerData>) => void>();
 
 const store = useCompositorStore();
+const layerStore = useLayerStore();
 
 // Expanded sections
 const expandedSections = reactive(new Set<string>(["color", "shadow"]));
@@ -147,7 +149,7 @@ function updateSolidData<K extends keyof SolidLayerData>(
   key: K,
   value: SolidLayerData[K],
 ) {
-  store.updateLayerData(props.layerId, { [key]: value });
+  layerStore.updateLayerData(store, props.layerId, { [key]: value });
   emit("update", { [key]: value });
 }
 </script>

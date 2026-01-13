@@ -113,6 +113,7 @@
 import { storeToRefs } from "pinia";
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import { useCompositorStore } from "@/stores/compositorStore";
+import { useAnimationStore } from "@/stores/animationStore";
 
 const props = defineProps<{
   visible: boolean;
@@ -122,6 +123,7 @@ const props = defineProps<{
 const emit = defineEmits<(e: "close") => void>();
 
 const store = useCompositorStore();
+const animationStore = useAnimationStore();
 const { currentFrame, frameCount, fps, isPlaying } = storeToRefs(store);
 
 // Refs
@@ -199,24 +201,24 @@ function togglePlayback() {
 }
 
 function goToStart() {
-  store.setFrame(0);
+  animationStore.setFrame(store, 0);
 }
 
 function goToEnd() {
-  store.setFrame(frameCount.value - 1);
+  animationStore.setFrame(store, frameCount.value - 1);
 }
 
 function stepForward() {
-  store.setFrame(Math.min(currentFrame.value + 1, frameCount.value - 1));
+  animationStore.setFrame(store, Math.min(currentFrame.value + 1, frameCount.value - 1));
 }
 
 function stepBackward() {
-  store.setFrame(Math.max(currentFrame.value - 1, 0));
+  animationStore.setFrame(store, Math.max(currentFrame.value - 1, 0));
 }
 
 function onScrub(e: Event) {
   const target = e.target as HTMLInputElement;
-  store.setFrame(parseInt(target.value, 10));
+  animationStore.setFrame(store, parseInt(target.value, 10));
 }
 
 function toggleFullscreen() {

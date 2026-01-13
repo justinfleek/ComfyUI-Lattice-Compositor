@@ -2,10 +2,33 @@
 
 > **Comprehensive Type and Validation Reference**
 >
-> Last Updated: 2026-01-11
+> Last Updated: 2026-01-12
 > Total Layer Types: 26
 > Validation Boundaries: 23
-> Missing Schemas: 8
+> Missing Schemas: 8 (physics, shapes, layerStyles, effects, presets, meshWarp, masks, assets)
+
+---
+
+## ⚠️ CRITICAL: ShapeLayerData Schema is WRONG
+
+The current `ShapeLayerDataSchema` in `src/schemas/layers/layer-data-schema.ts` is structurally incorrect.
+
+**Current (WRONG):**
+```typescript
+{ shapeType: enum, fill?, stroke?, vertices?, closed? }
+```
+
+**Actual (shapes.ts):**
+```typescript
+{
+  contents: ShapeContent[];  // Union of ~22 discriminated types
+  blendMode: string;
+  quality: "draft" | "normal" | "high";
+  gpuAccelerated: boolean;
+}
+```
+
+This schema MUST be rewritten before it can be used for validation.
 
 ---
 
@@ -2054,5 +2077,5 @@ export function safeValidateMotionSuggestion(data: unknown) {
 ---
 
 *Document Size: ~47KB*
-*Last Updated: 2026-01-11*
+*Last Updated: 2026-01-12*
 *Author: Claude Code Audit*

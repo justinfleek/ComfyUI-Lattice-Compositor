@@ -21,6 +21,7 @@ import { clearLayerCache, markLayerDirty } from "@/services/layerEvaluationCache
 import { useSelectionStore } from "../selectionStore";
 import { getDefaultLayerData } from "../actions/layer/layerDefaults";
 import type { CompositorStoreAccess, DeleteLayerOptions } from "./types";
+import { getLayerById } from "./hierarchy";
 
 // ============================================================================
 // LAYER CREATION
@@ -364,3 +365,382 @@ export function moveLayer(
   compositorStore.pushHistory();
 }
 
+// ============================================================================
+// LAYER RENAME
+// ============================================================================
+
+/**
+ * Rename a layer by ID
+ *
+ * @param compositorStore - The compositor store instance
+ * @param layerId - The layer ID to rename
+ * @param newName - The new name for the layer
+ */
+export function renameLayer(
+  compositorStore: CompositorStoreAccess,
+  layerId: string,
+  newName: string,
+): void {
+  const layer = getLayerById(compositorStore, layerId);
+  if (!layer) return;
+
+  // Cannot rename locked layers
+  if (layer.locked) {
+    storeLogger.warn("Cannot rename locked layer:", layerId);
+    return;
+  }
+
+  // Validate name is not empty
+  const trimmedName = newName.trim();
+  if (!trimmedName) {
+    storeLogger.warn("Cannot rename layer to empty name:", layerId);
+    return;
+  }
+
+  layer.name = trimmedName;
+  markLayerDirty(layerId);
+  compositorStore.project.meta.modified = new Date().toISOString();
+  compositorStore.pushHistory();
+}
+
+// ============================================================================
+// LAYER TRANSFORM UPDATE
+// ============================================================================
+
+/**
+ * Update layer transform properties (position, scale, rotation, opacity, origin/anchor)
+ *
+ * @param compositorStore - The compositor store instance
+ * @param layerId - The layer ID
+ * @param updates - Object with transform properties to update
+ */
+export function updateLayerTransform(
+  compositorStore: CompositorStoreAccess,
+  layerId: string,
+  updates: {
+    position?: { x: number; y: number; z?: number };
+    scale?: { x: number; y: number; z?: number };
+    rotation?: number;
+    opacity?: number;
+    origin?: { x: number; y: number; z?: number };
+    anchor?: { x: number; y: number; z?: number }; // Alias for origin
+  },
+): void {
+  const layer = getLayerById(compositorStore, layerId);
+  if (!layer?.transform) return;
+
+  // Cannot update transform of locked layers
+  if (layer.locked) {
+    storeLogger.warn("Cannot update transform of locked layer:", layerId);
+    return;
+  }
+
+  if (updates.position !== undefined && layer.transform.position) {
+    // Validate position values are finite
+    const { x, y, z } = updates.position;
+    if (!Number.isFinite(x) || !Number.isFinite(y) || (z !== undefined && !Number.isFinite(z))) {
+      storeLogger.warn("updateLayerTransform: Invalid position values (NaN/Infinity)", { x, y, z });
+      return;
+    }
+    layer.transform.position.value = updates.position;
+  }
+  if (updates.scale !== undefined && layer.transform.scale) {
+    // Validate scale values are finite
+    const { x, y, z } = updates.scale;
+    if (!Number.isFinite(x) || !Number.isFinite(y) || (z !== undefined && !Number.isFinite(z))) {
+      storeLogger.warn("updateLayerTransform: Invalid scale values (NaN/Infinity)", { x, y, z });
+      return;
+    }
+    layer.transform.scale.value = updates.scale;
+  }
+  if (updates.rotation !== undefined && layer.transform.rotation) {
+    // Validate rotation is finite
+    if (!Number.isFinite(updates.rotation)) {
+      storeLogger.warn("updateLayerTransform: Invalid rotation value (NaN/Infinity)", updates.rotation);
+      return;
+    }
+    layer.transform.rotation.value = updates.rotation;
+  }
+  if (updates.opacity !== undefined) {
+    // Validate opacity is finite and in valid range
+    if (!Number.isFinite(updates.opacity) || updates.opacity < 0 || updates.opacity > 100) {
+      storeLogger.warn("updateLayerTransform: Invalid opacity value", updates.opacity);
+      return;
+    }
+    // Opacity is at layer level (layer.opacity), not transform level
+    if (
+      layer.opacity &&
+      typeof layer.opacity === "object" &&
+      "value" in layer.opacity
+    ) {
+      layer.opacity.value = updates.opacity;
+    }
+  }
+  // Handle origin/anchor (anchor is alias for origin)
+  const originUpdate = updates.origin ?? updates.anchor;
+  if (originUpdate !== undefined && layer.transform.origin) {
+    // Validate origin values are finite
+    const { x, y, z } = originUpdate;
+    if (!Number.isFinite(x) || !Number.isFinite(y) || (z !== undefined && !Number.isFinite(z))) {
+      storeLogger.warn("updateLayerTransform: Invalid origin values (NaN/Infinity)", { x, y, z });
+      return;
+    }
+    layer.transform.origin.value = originUpdate;
+  }
+
+  markLayerDirty(layerId);
+  compositorStore.project.meta.modified = new Date().toISOString();
+  compositorStore.pushHistory();
+}
+
+// ============================================================================
+// LAYER TOGGLE OPERATIONS
+// ============================================================================
+
+/**
+ * Toggle locked state for selected layers
+ *
+ * @param compositorStore - The compositor store instance
+ */
+export function toggleLayerLock(compositorStore: CompositorStoreAccess): void {
+  const selectionStore = useSelectionStore();
+  const selectedIds = selectionStore.selectedLayerIds;
+  if (selectedIds.length === 0) return;
+
+  compositorStore.pushHistory();
+
+  for (const id of selectedIds) {
+    const layer = getLayerById(compositorStore, id);
+    if (layer) {
+      layer.locked = !layer.locked;
+      markLayerDirty(id);
+    }
+  }
+
+  compositorStore.project.meta.modified = new Date().toISOString();
+}
+
+/**
+ * Toggle visibility for selected layers
+ *
+ * @param compositorStore - The compositor store instance
+ */
+export function toggleLayerVisibility(
+  compositorStore: CompositorStoreAccess,
+): void {
+  const selectionStore = useSelectionStore();
+  const selectedIds = selectionStore.selectedLayerIds;
+  if (selectedIds.length === 0) return;
+
+  compositorStore.pushHistory();
+
+  for (const id of selectedIds) {
+    const layer = getLayerById(compositorStore, id);
+    if (layer) {
+      layer.visible = !layer.visible;
+      markLayerDirty(id);
+    }
+  }
+
+  compositorStore.project.meta.modified = new Date().toISOString();
+}
+
+/**
+ * Toggle isolate (solo) state for selected layers
+ * Isolate shows only this layer, hiding all others
+ *
+ * @param compositorStore - The compositor store instance
+ */
+export function toggleLayerSolo(compositorStore: CompositorStoreAccess): void {
+  const selectionStore = useSelectionStore();
+  const selectedIds = selectionStore.selectedLayerIds;
+  if (selectedIds.length === 0) return;
+
+  compositorStore.pushHistory();
+
+  for (const id of selectedIds) {
+    const layer = getLayerById(compositorStore, id);
+    if (layer) {
+      layer.isolate = !layer.isolate;
+      markLayerDirty(id);
+    }
+  }
+
+  compositorStore.project.meta.modified = new Date().toISOString();
+}
+
+// ============================================================================
+// LAYER ORDERING OPERATIONS
+// ============================================================================
+
+/**
+ * Move selected layers to the front (top of stack, index 0)
+ *
+ * @param compositorStore - The compositor store instance
+ */
+export function bringToFront(compositorStore: CompositorStoreAccess): void {
+  const selectionStore = useSelectionStore();
+  const selectedIds = selectionStore.selectedLayerIds;
+  if (selectedIds.length === 0) return;
+
+  const layers = compositorStore.getActiveCompLayers();
+  if (layers.length === 0) return;
+
+  compositorStore.pushHistory();
+
+  // Get selected layers in reverse order (to maintain relative order when moved to front)
+  const selectedLayers = selectedIds
+    .map((id) => {
+      const index = layers.findIndex((l: Layer) => l.id === id);
+      return index !== -1 ? { layer: layers[index], index } : null;
+    })
+    .filter(
+      (
+        item,
+      ): item is { layer: Layer; index: number } => item !== null,
+    )
+    .sort((a, b) => b.index - a.index); // Sort descending to move from bottom to top
+
+  // Remove selected layers from their current positions
+  for (const { layer } of selectedLayers) {
+    const index = layers.findIndex((l: Layer) => l.id === layer.id);
+    if (index !== -1) {
+      layers.splice(index, 1);
+    }
+  }
+
+  // Insert at front (index 0) in reverse order to maintain relative order
+  for (let i = selectedLayers.length - 1; i >= 0; i--) {
+    layers.splice(0, 0, selectedLayers[i].layer);
+    markLayerDirty(selectedLayers[i].layer.id);
+  }
+
+  compositorStore.project.meta.modified = new Date().toISOString();
+}
+
+/**
+ * Move selected layers to the back (bottom of stack, last index)
+ *
+ * @param compositorStore - The compositor store instance
+ */
+export function sendToBack(compositorStore: CompositorStoreAccess): void {
+  const selectionStore = useSelectionStore();
+  const selectedIds = selectionStore.selectedLayerIds;
+  if (selectedIds.length === 0) return;
+
+  const layers = compositorStore.getActiveCompLayers();
+  if (layers.length === 0) return;
+
+  compositorStore.pushHistory();
+
+  // Get selected layers in order (to maintain relative order when moved to back)
+  const selectedLayers = selectedIds
+    .map((id) => {
+      const index = layers.findIndex((l: Layer) => l.id === id);
+      return index !== -1 ? { layer: layers[index], index } : null;
+    })
+    .filter(
+      (
+        item,
+      ): item is { layer: Layer; index: number } => item !== null,
+    )
+    .sort((a, b) => a.index - b.index); // Sort ascending to move from top to bottom
+
+  // Remove selected layers from their current positions
+  for (const { layer } of selectedLayers) {
+    const index = layers.findIndex((l: Layer) => l.id === layer.id);
+    if (index !== -1) {
+      layers.splice(index, 1);
+    }
+  }
+
+  // Insert at back (end of array) in order to maintain relative order
+  for (const { layer } of selectedLayers) {
+    layers.push(layer);
+    markLayerDirty(layer.id);
+  }
+
+  compositorStore.project.meta.modified = new Date().toISOString();
+}
+
+/**
+ * Move selected layers forward by one position (toward index 0)
+ *
+ * @param compositorStore - The compositor store instance
+ */
+export function bringForward(compositorStore: CompositorStoreAccess): void {
+  const selectionStore = useSelectionStore();
+  const selectedIds = selectionStore.selectedLayerIds;
+  if (selectedIds.length === 0) return;
+
+  const layers = compositorStore.getActiveCompLayers();
+  if (layers.length === 0) return;
+
+  compositorStore.pushHistory();
+
+  // Get selected layer IDs sorted by current index (ascending - top to bottom)
+  const selectedIndices = selectedIds
+    .map((id) => {
+      const index = layers.findIndex((l: Layer) => l.id === id);
+      return index !== -1 ? { id, index } : null;
+    })
+    .filter(
+      (item): item is { id: string; index: number } => item !== null,
+    )
+    .sort((a, b) => a.index - b.index);
+
+  // Move each layer forward (toward index 0) by one position
+  // Process top-to-bottom and recalculate indices after each move to handle adjacent layers
+  for (const { id } of selectedIndices) {
+    const currentIndex = layers.findIndex((l: Layer) => l.id === id);
+    if (currentIndex > 0) {
+      // Swap with layer above
+      const [movedLayer] = layers.splice(currentIndex, 1);
+      layers.splice(currentIndex - 1, 0, movedLayer);
+      markLayerDirty(id);
+    }
+  }
+
+  compositorStore.project.meta.modified = new Date().toISOString();
+}
+
+/**
+ * Move selected layers backward by one position (away from index 0)
+ *
+ * @param compositorStore - The compositor store instance
+ */
+export function sendBackward(compositorStore: CompositorStoreAccess): void {
+  const selectionStore = useSelectionStore();
+  const selectedIds = selectionStore.selectedLayerIds;
+  if (selectedIds.length === 0) return;
+
+  const layers = compositorStore.getActiveCompLayers();
+  if (layers.length === 0) return;
+
+  compositorStore.pushHistory();
+
+  // Get selected layer IDs sorted by current index (descending - bottom to top)
+  const selectedIndices = selectedIds
+    .map((id) => {
+      const index = layers.findIndex((l: Layer) => l.id === id);
+      return index !== -1 ? { id, index } : null;
+    })
+    .filter(
+      (item): item is { id: string; index: number } => item !== null,
+    )
+    .sort((a, b) => b.index - a.index); // Sort descending to move from bottom to top
+
+  // Move each layer backward (away from index 0) by one position
+  // Process bottom-to-top and recalculate indices after each move to handle adjacent layers
+  for (const { id } of selectedIndices) {
+    const currentIndex = layers.findIndex((l: Layer) => l.id === id);
+    if (currentIndex < layers.length - 1) {
+      // Swap with layer below
+      const [movedLayer] = layers.splice(currentIndex, 1);
+      layers.splice(currentIndex + 1, 0, movedLayer);
+      markLayerDirty(id);
+    }
+  }
+
+  compositorStore.project.meta.modified = new Date().toISOString();
+}

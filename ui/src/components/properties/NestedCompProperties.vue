@@ -110,6 +110,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { useCompositorStore } from "@/stores/compositorStore";
+import { useLayerStore } from "@/stores/layerStore";
 import type {
   AnimatableProperty,
   Layer,
@@ -125,6 +126,7 @@ const emit =
   defineEmits<(e: "update", data: Partial<NestedCompData>) => void>();
 
 const store = useCompositorStore();
+const layerStore = useLayerStore();
 
 // Get nested comp data from layer
 const nestedCompData = computed<NestedCompData>(() => {
@@ -207,7 +209,7 @@ function toggleSpeedMap(e: Event) {
     updates.timeRemap = newProp; // Backwards compatibility
   }
 
-  store.updateLayerData(props.layer.id, updates);
+  layerStore.updateLayerData(store, props.layer.id, updates);
   emit("update", updates);
 }
 
@@ -218,7 +220,7 @@ function updateSpeedMap(value: number) {
       ...prop,
       value,
     };
-    store.updateLayerData(props.layer.id, {
+    layerStore.updateLayerData(store, props.layer.id, {
       speedMap,
       timeRemap: speedMap, // Backwards compatibility
     });
@@ -233,21 +235,21 @@ function toggleFrameRateOverride(e: Event) {
     overrideFrameRate: enabled,
     frameRate: enabled ? compInfo.value?.fps || 30 : undefined,
   };
-  store.updateLayerData(props.layer.id, updates);
+  layerStore.updateLayerData(store, props.layer.id, updates);
   emit("update", updates);
 }
 
 function updateFrameRate(value: number) {
-  store.updateLayerData(props.layer.id, { frameRate: value });
+  layerStore.updateLayerData(store, props.layer.id, { frameRate: value });
   emit("update", { frameRate: value });
 }
 
 // Flatten transform
 function updateFlattenTransform(e: Event) {
   const enabled = (e.target as HTMLInputElement).checked;
-  store.updateLayerData(props.layer.id, { flattenTransform: enabled });
+  layerStore.updateLayerData(store, props.layer.id, { flattenTransform: enabled });
   // Also update the layer-level flag
-  store.updateLayer(props.layer.id, { flattenTransform: enabled });
+  layerStore.updateLayer(store, props.layer.id, { flattenTransform: enabled });
   emit("update", { flattenTransform: enabled });
 }
 

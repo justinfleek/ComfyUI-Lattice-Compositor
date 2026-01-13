@@ -2,9 +2,9 @@
 
 > **Target:** Modularize 232 files over 500 lines to ≤500 lines each
 > **Scope:** Full codebase refactoring - stores, services, engine, components, types
-> **Duration:** 10 months (40 weeks store migration + parallel file modularization)
+> **Duration:** 12 months (42 weeks store migration + 6 weeks lazy code cleanup + file modularization)
 > **Generated:** 2026-01-10
-> **Updated:** 2026-01-10 (Phase 0 COMPLETE - 6 memory bugs fixed)
+> **Updated:** 2026-01-12 (Added Phase 5.5: Lazy Code Cleanup - prevents pattern spreading during modularization)
 
 ---
 
@@ -33,25 +33,50 @@
 
 ## 1. Executive Summary
 
+### 🔴 CRITICAL: Security Pre-Requisite
+
+> **Before ANY distribution:** Complete security hardening per `docs/SECURITY_THREAT_MODEL.md`
+
+This system operates in a **HIGH-RISK threat environment**:
+- Autonomous LLM agent with tool execution
+- Untrusted templates from internet/users
+- Third-party ComfyUI nodes executing arbitrary code
+- Distributed via Nix packages to untrusted machines
+
+**Security Phases (125-170 hours, Weeks 1-3):**
+1. Schema validation at all untrusted boundaries (45-60 hrs)
+2. LLM agent scope system with default deny (45-60 hrs)
+3. Path traversal prevention (15-20 hrs)
+4. ComfyUI output validation (20-30 hrs)
+
+**Reference:** `docs/SECURITY_THREAT_MODEL.md` for complete threat analysis and implementation details.
+
+---
+
 ### Current State
 - **232 files** exceed the 500-line limit
 - **293,457 total lines** in oversized files
 - **compositorStore.ts** (3,292 lines, 101 users) is the critical bottleneck
 - Previous refactor attempts failed due to chicken-and-egg dependencies
+- **~4,954 lazy code patterns** in production code (verified 2026-01-13)
+- **0 TypeScript errors** in production (96 in test files)
 
 ### Target State
 - All files ≤500 lines
 - **13 domain stores** replace compositorStore god object
 - Clear separation of concerns with documented patterns
 - No facades, no wrapper methods, no technical debt
+- **Security-hardened** for untrusted input handling
+- **Zero TypeScript errors**
 
 ### Breaking the Chicken-and-Egg Cycle
 
 The December 2025 refactor stalled because cross-domain actions (like `convertAudioToKeyframes`) need multiple stores that don't exist yet. We break this by:
 
-1. **Create layerStore FIRST** - Most cross-domain actions need layer access
-2. **Action modules already use dependency injection** - They accept `store` as first parameter
-3. **Migrate incrementally** - One domain at a time, updating all consumers
+1. **Security FIRST** - Harden input validation before any distribution
+2. **Create layerStore FIRST** - Most cross-domain actions need layer access
+3. **Action modules already use dependency injection** - They accept `store` as first parameter
+4. **Migrate incrementally** - One domain at a time, updating all consumers
 
 ---
 
@@ -59,12 +84,19 @@ The December 2025 refactor stalled because cross-domain actions (like `convertAu
 
 ### Priority Classification
 
-| Priority | Criteria | Files | Action |
-|----------|----------|-------|--------|
-| **P0** | >2000 lines | 12 | Modularize first |
-| **P1** | 1500-2000 lines | 21 | Second wave |
-| **P2** | 1000-1500 lines | 45 | Third wave |
-| **P3** | 500-1000 lines | 154 | Final wave |
+| Priority | Criteria | Files (Original) | Files (Verified 2026-01-13) | Action |
+|----------|----------|------------------|------------------------------|--------|
+| **P0** | >2000 lines | 12 | **5** | Modularize first |
+| **P1** | 1500-2000 lines | 21 | **~27** | Second wave |
+| **P2** | 1000-1500 lines | 45 | TBD | Third wave |
+| **P3** | 500-1000 lines | 154 | TBD | Final wave |
+
+**Note (2026-01-13):** File line counts have decreased. Only 5 files remain >2000 lines:
+- types/effects.ts: 3,233
+- compositorStore.ts: 2,683
+- workflowTemplates.ts: 2,449
+- ParticleProperties.vue: 2,449
+- GPUParticleSystem.ts: 2,083
 
 ---
 
@@ -86,11 +118,11 @@ The December 2025 refactor stalled because cross-domain actions (like `convertAu
 
 ### 2.2 Stores (11 files, 13,975 lines)
 
-| File | Lines | Priority | Domain | Strategy |
-|------|-------|----------|--------|----------|
-| `stores/compositorStore.ts` | 3,292 | **P0** | god object | **DELETE** - Replace with 12 domain stores |
-| `stores/actions/keyframeActions.ts` | 2,023 | **P0** | keyframes | Move to keyframeStore |
-| `stores/actions/layerActions.ts` | 1,847 | P1 | layers | Move to layerStore |
+| File | Documented Lines | **Verified Lines** | Priority | Domain | Strategy |
+|------|-----------------|-------------------|----------|--------|----------|
+| `stores/compositorStore.ts` | 3,292 | **2,683** | **P0** | god object | **DELETE** - Replace with 12 domain stores |
+| `stores/actions/keyframeActions.ts` | 2,023 | **TBD** | **P0** | keyframes | Move to keyframeStore |
+| `stores/actions/layerActions.ts` | 1,847 | **TBD** | P1 | layers | Move to layerStore |
 | `stores/actions/audioActions.ts` | 1,170 | P2 | audio | Move to audioStore |
 | `stores/actions/textAnimatorActions.ts` | 1,134 | P2 | animation | Move to animationStore |
 | `stores/assetStore.ts` | 1,015 | P2 | assets | Already domain store, needs internal split |
@@ -859,7 +891,48 @@ compositorStore:           audioStore:
 
 ---
 
-### Phase 6: P0 Files (Weeks 43-48) - CAN RUN PARALLEL WITH PHASE 3-5
+### Phase 5.5: Lazy Code Cleanup (Weeks 43-48) - MUST COMPLETE BEFORE PHASE 6
+
+**Goal:** Fix ~4,929 remaining lazy code patterns BEFORE modularization
+
+**CRITICAL:** This phase MUST happen AFTER Phase 5 (compositorStore deleted) and BEFORE Phase 6 (file modularization). If we modularize files with lazy code patterns, we'll copy those patterns into new modules.
+
+| Week | Tasks |
+|------|-------|
+| 43-44 | Automated detection: Find all lazy code patterns<br>- `as any`, `as unknown as`<br>- `!` non-null assertions<br>- `??`, `|| 0`, `|| []`, `|| {}` fallbacks<br>- `?.` optional chaining abuse<br>- `@ts-ignore`, `@ts-expect-error`<br>- NaN, Infinity, null handling<br>- `isFinite`, `isNaN` checks |
+| 45-46 | Systematic fixes: Fix by pattern type, verify with tests<br>- Fix type assertions first<br>- Fix defensive guards<br>- Fix NaN/Infinity handling<br>- Replace with proper types/validation |
+| 47-48 | Verification & cleanup<br>- TypeScript strict mode enabled<br>- All tests pass<br>- No new patterns introduced<br>- Document justified exceptions |
+
+**Patterns to Fix:**
+- `as any`, `as unknown as` type assertions
+- `!` non-null assertions
+- `??`, `|| 0`, `|| []`, `|| {}` fallbacks
+- `?.` optional chaining abuse
+- `@ts-ignore`, `@ts-expect-error`
+- NaN, Infinity, null handling
+- `isFinite`, `isNaN` checks
+- And other lazy code patterns
+
+**Why Before Phase 6:**
+- Prevents spreading bad patterns into new modules
+- Clean foundation for modularization
+- Easier to fix in existing files than after splitting
+- Prevents regression during modularization
+
+**Exit Criteria:**
+- [ ] ~4,929 patterns fixed (or justified exceptions documented)
+- [ ] TypeScript strict mode enabled
+- [ ] No `as any` in production code
+- [ ] Proper NaN/Infinity handling everywhere
+- [ ] All defensive guards replaced with proper types
+- [ ] All tests pass
+- [ ] No new patterns introduced
+
+**Rollback Checkpoint:** Git tag `refactor/phase5.5-complete`
+
+---
+
+### Phase 6: P0 Files (Weeks 49-54) - NOW RUNS AFTER LAZY CODE CLEANUP
 
 **Goal:** Modularize all P0 files (>2000 lines) - NOT compositorStore (handled in Phase 5)
 
@@ -938,6 +1011,7 @@ Files: 45 total
 | Camera/physics complete | `refactor/phase4-complete` | Phase 4 exit criteria met |
 | **Pre-deletion** | `refactor/phase5-pre-delete` | Before compositorStore.ts deleted |
 | compositorStore deleted | `refactor/phase5-complete` | compositorStore.ts successfully deleted |
+| Lazy code cleanup complete | `refactor/phase5.5-complete` | All lazy code patterns fixed |
 
 ### Rollback Procedures
 
@@ -1031,7 +1105,18 @@ If during any phase we discover additional cross-domain actions not in CROSS_DOM
 | All consumers migrated | Verified via grep |
 | Full app functional | Manual smoke test |
 
-### Checkpoint 5: Final (Week 48)
+### Checkpoint 4.5: After Phase 5.5 (Week 48)
+
+| Test | Expected |
+|------|----------|
+| `grep "as any"` | 0 results in production code |
+| `grep "as unknown as"` | 0 results (or justified exceptions) |
+| TypeScript strict mode | Enabled |
+| NaN/Infinity handling | Proper validation everywhere |
+| All tests pass | Verified |
+| No new lazy patterns | Verified via automated checks |
+
+### Checkpoint 5: Final (Week 54)
 
 | Test | Expected |
 |------|----------|
@@ -1063,7 +1148,8 @@ If during any phase we discover additional cross-domain actions not in CROSS_DOM
 ### Realistic 10-Month Schedule
 
 **Store migration (Phases 0-5):** 42 weeks = 10.5 months
-**File modularization (Phases 6+):** Runs in parallel with phases 3-5
+**Lazy code cleanup (Phase 5.5):** 6 weeks = 1.5 months
+**File modularization (Phases 6+):** Runs AFTER Phase 5.5 (prevents pattern spreading)
 
 | Month | Main Track (Sequential) | Parallel Track |
 |-------|-------------------------|----------------|
@@ -1076,7 +1162,10 @@ If during any phase we discover additional cross-domain actions not in CROSS_DOM
 | 7 | Phase 3 finish + Phase 4 start | Phase 7: P1 services |
 | 8 | Phase 4: camera/physics (Weeks 27-34) | Phase 7: P1 components |
 | 9 | Phase 5: project/ui (Weeks 35-42) | Phase 7: P1 engine |
-| 10 | Phase 5: DELETE compositorStore | Remaining P2/P3 |
+| 10 | Phase 5: DELETE compositorStore | - |
+| 11 | Phase 5.5: Lazy code cleanup (Weeks 43-48) | - |
+| 12 | Phase 6: P0 files (Weeks 49-54) | - |
+| 13+ | Phase 7+: P1/P2/P3 files | - |
 
 **Why 10 months, not 9:**
 - Phase 0 (bug fixes) adds 2 weeks
@@ -1132,7 +1221,62 @@ These bugs are now scheduled in **Phase 0 (Weeks 1-2)** and must be completed be
 
 ---
 
-## Appendix D: Document Change Log
+## Appendix D: COMPLETE LAZY CODE PATTERN ANALYSIS (Verified 2026-01-13)
+
+### Production Code Issues (~7,071 total)
+
+| Category | Pattern | Count | Files | Priority |
+|----------|---------|-------|-------|----------|
+| **TYPE ESCAPES** | `as any` | **216** | 78 | 🔴 HIGH |
+| | `: any` | **196** | 70 | 🔴 HIGH |
+| | `as unknown` | **67** | 27 | 🟡 MEDIUM |
+| | `as [Type]` | **1,589** | 362 | 🟡 MEDIUM |
+| **LAZY DEFAULTS** | `\|\| 0` | **205** | 64 | 🔴 HIGH (hides NaN) |
+| | `\|\| []` | **105** | 50 | 🟡 MEDIUM |
+| | `\|\| {}`, `''`, etc. | **30** | 23 | 🟡 MEDIUM |
+| **NULLISH GUARDS** | `??` | **2,377** | 256 | 🟡 REVIEW |
+| | `?.` | **2,136** | 280 | 🟡 REVIEW |
+| **NON-NULL ASSERT** | `variable!` | **~100** | 98 | 🔴 HIGH |
+| **NaN/INFINITY** | Unguarded uses | **~645** | ~200 | 🔴 HIGH |
+| | `isFinite()` guards | **~1,933** | 164 | ✅ GOOD |
+
+### Top 10 Files to Fix First
+
+| Rank | File | Issues | Key Patterns |
+|------|------|--------|--------------|
+| 1 | `services/expressions/expressionEvaluator.ts` | **81** | 81 `??` |
+| 2 | `engine/particles/GPUParticleSystem.ts` | **67** | 65 `??` |
+| 3 | `components/properties/ParticleProperties.vue` | **58** | 18 `\|\| 0`, 15 `: any` |
+| 4 | `engine/layers/TextLayer.ts` | **58** | 15 `as any`, 42 `??` |
+| 5 | `engine/layers/LightLayer.ts` | **54** | 9 `as any`, 45 `??` |
+| 6 | `services/ai/actionExecutor.ts` | **38** | 16 `as any`, 17 `??` |
+| 7 | `services/particleSystem.ts` | **29** | 9 `as any`, 16 `??` |
+| 8 | `composables/useSplineInteraction.ts` | **23** | 11 `: any` |
+| 9 | `components/canvas/MaskEditor.vue` | **19** | 12 `\|\| 0` |
+| 10 | `engine/TransformControlsManager.ts` | **12** | 9 `as any` |
+
+### Phase-Specific Fix Targets
+
+| Phase | Target Patterns | Count |
+|-------|----------------|-------|
+| **Phase 1 (Layer Store)** | 50 `as any`, 10 `\|\| 0`, 20 `: any` in layer code | ~80 |
+| **Phase 2 (Keyframe/Expression)** | 100 `\|\| 0`, 30 `: any`, 20 `as any` in keyframe/expression code | ~150 |
+| **Phase 3 (Effects)** | 50 `: any`, 30 `as any`, 20 unnecessary `??`/`?.` in effect code | ~100 |
+| **Phase 4 (Export)** | 30 `\|\| 0`, 20 `as any`, 10 `: any` in export code | ~60 |
+| **Incremental** | Remaining ~5,500 patterns fixed as code is touched | ~5,500 |
+
+### Type Suppression Status (✅ EXCELLENT)
+
+| Pattern | Count | Status |
+|---------|-------|--------|
+| `@ts-ignore` | **0** | ✅ None |
+| `@ts-expect-error` | **1** | ✅ Minimal |
+| `@ts-nocheck` | **0** | ✅ None |
+| `eslint-disable` | **2** | ✅ Test setup only |
+
+---
+
+## Appendix E: Document Change Log
 
 | Date | Change |
 |------|--------|
@@ -1143,8 +1287,12 @@ These bugs are now scheduled in **Phase 0 (Weeks 1-2)** and must be completed be
 | 2026-01-10 | Added audio state deduplication to Phase 3 |
 | 2026-01-10 | Added rollback checkpoints to each phase |
 | 2026-01-10 | Linked to STORE_MIGRATION_CONSUMERS.md and CROSS_DOMAIN_ACTIONS.md |
+| 2026-01-13 | **VERIFIED STATUS:** Added complete lazy code pattern analysis |
+| 2026-01-13 | Updated file sizes with verified counts (5 P0 files, not 12) |
+| 2026-01-13 | Added Top 10 files to fix first |
+| 2026-01-13 | Added phase-specific fix targets |
 
 ---
 
-*Document Version: 1.1*
-*Last Updated: 2026-01-10*
+*Document Version: 1.3*
+*Last Updated: 2026-01-13 (Complete lazy code analysis verified against codebase)*

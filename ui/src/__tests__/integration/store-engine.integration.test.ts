@@ -16,6 +16,7 @@
 import { describe, test, expect, beforeEach, afterEach } from 'vitest';
 import { setActivePinia, createPinia } from 'pinia';
 import { useCompositorStore } from '@/stores/compositorStore';
+import { useLayerStore } from '@/stores/layerStore';
 import { motionEngine } from '@/engine/MotionEngine';
 
 describe('Store → Engine Integration', () => {
@@ -30,9 +31,10 @@ describe('Store → Engine Integration', () => {
   describe('keyframe changes propagate correctly', () => {
     test('adding keyframe updates engine evaluation', () => {
       const store = useCompositorStore();
+      const layerStore = useLayerStore();
       
       // Create layer with opacity keyframes
-      const layer = store.createLayer('solid', 'Test Layer');
+      const layer = layerStore.createLayer(store, 'solid', 'Test Layer');
       store.setFrame(0);
       store.addKeyframe(layer.id, 'opacity', 0);
       store.setFrame(30);
@@ -53,8 +55,9 @@ describe('Store → Engine Integration', () => {
 
     test('modifying keyframe updates engine evaluation', () => {
       const store = useCompositorStore();
+      const layerStore = useLayerStore();
       
-      const layer = store.createLayer('solid', 'Test Layer');
+      const layer = layerStore.createLayer(store, 'solid', 'Test Layer');
       store.setFrame(0);
       const kf1 = store.addKeyframe(layer.id, 'opacity', 0);
       store.setFrame(30);
@@ -74,8 +77,9 @@ describe('Store → Engine Integration', () => {
 
     test('deleting keyframe updates engine evaluation', () => {
       const store = useCompositorStore();
+      const layerStore = useLayerStore();
       
-      const layer = store.createLayer('solid', 'Test Layer');
+      const layer = layerStore.createLayer(store, 'solid', 'Test Layer');
       store.setFrame(0);
       const kf1 = store.addKeyframe(layer.id, 'opacity', 0);
       store.setFrame(30);
@@ -97,10 +101,11 @@ describe('Store → Engine Integration', () => {
   describe('layer changes propagate correctly', () => {
     test('layer visibility affects engine output', () => {
       const store = useCompositorStore();
+      const layerStore = useLayerStore();
 
-      const layer = store.createLayer('solid', 'Test Layer');
+      const layer = layerStore.createLayer(store, 'solid', 'Test Layer');
       // Use updateLayer to set visibility (setLayerVisible doesn't exist)
-      store.updateLayer(layer.id, { visible: false });
+      layerStore.updateLayer(store, layer.id, { visible: false });
 
       const project = store.project;
       const frame0 = motionEngine.evaluate(0, project);
@@ -112,9 +117,10 @@ describe('Store → Engine Integration', () => {
 
     test('layer order affects compositing', () => {
       const store = useCompositorStore();
+      const layerStore = useLayerStore();
 
-      const layer1 = store.createLayer('solid', 'Layer 1');
-      const layer2 = store.createLayer('solid', 'Layer 2');
+      const layer1 = layerStore.createLayer(store, 'solid', 'Layer 1');
+      const layer2 = layerStore.createLayer(store, 'solid', 'Layer 2');
 
       const project = store.project;
       const frame0 = motionEngine.evaluate(0, project);
@@ -131,13 +137,14 @@ describe('Store → Engine Integration', () => {
     test('nested compositions evaluate correctly via groups', () => {
       // Nested compositions in Lattice are implemented via group layers
       const store = useCompositorStore();
+      const layerStore = useLayerStore();
 
       // Create a group layer (which acts like a nested composition)
-      const groupLayer = store.createLayer('group', 'Nested Group');
-      const childLayer = store.createLayer('solid', 'Child');
+      const groupLayer = layerStore.createLayer(store, 'group', 'Nested Group');
+      const childLayer = layerStore.createLayer(store, 'solid', 'Child');
 
       // Move child into group (via updateLayer parentId)
-      store.updateLayer(childLayer.id, { parentId: groupLayer.id });
+      layerStore.updateLayer(store, childLayer.id, { parentId: groupLayer.id });
 
       // Evaluate
       const project = store.project;
@@ -157,8 +164,9 @@ describe('Store → Engine Integration', () => {
   describe('effect changes propagate correctly', () => {
     test('adding effect is reflected in evaluated layer', () => {
       const store = useCompositorStore();
+      const layerStore = useLayerStore();
 
-      const layer = store.createLayer('solid', 'Test Layer');
+      const layer = layerStore.createLayer(store, 'solid', 'Test Layer');
       store.addEffectToLayer(layer.id, 'gaussian-blur');
 
       const project = store.project;
@@ -171,11 +179,12 @@ describe('Store → Engine Integration', () => {
 
     test('effect parameter changes are reflected', () => {
       const store = useCompositorStore();
+      const layerStore = useLayerStore();
 
-      const layer = store.createLayer('solid', 'Test Layer');
+      const layer = layerStore.createLayer(store, 'solid', 'Test Layer');
       store.addEffectToLayer(layer.id, 'gaussian-blur');
 
-      const layerData = store.getLayerById(layer.id);
+      const layerData = layerStore.getLayerById(store, layer.id);
       const effectId = layerData?.effects?.[0]?.id;
       store.updateEffectParameter(layer.id, effectId!, 'blurriness', 25);
 
@@ -189,11 +198,12 @@ describe('Store → Engine Integration', () => {
 
     test('removing effect is reflected in evaluation', () => {
       const store = useCompositorStore();
+      const layerStore = useLayerStore();
 
-      const layer = store.createLayer('solid', 'Test Layer');
+      const layer = layerStore.createLayer(store, 'solid', 'Test Layer');
       store.addEffectToLayer(layer.id, 'gaussian-blur');
 
-      const layerData = store.getLayerById(layer.id);
+      const layerData = layerStore.getLayerById(store, layer.id);
       const effectId = layerData?.effects?.[0]?.id;
       store.removeEffectFromLayer(layer.id, effectId!);
 
@@ -208,8 +218,9 @@ describe('Store → Engine Integration', () => {
   describe('determinism', () => {
     test('same state produces identical evaluation', () => {
       const store = useCompositorStore();
+      const layerStore = useLayerStore();
       
-      const layer = store.createLayer('solid', 'Test Layer');
+      const layer = layerStore.createLayer(store, 'solid', 'Test Layer');
       store.setFrame(0);
       store.addKeyframe(layer.id, 'opacity', 0);
       store.setFrame(30);
@@ -231,8 +242,9 @@ describe('Store → Engine Integration', () => {
     test('scrubbing produces same result as sequential evaluation', () => {
       // Jumping directly to frame 50 should produce same result as evaluating 0→50 sequentially
       const store = useCompositorStore();
+      const layerStore = useLayerStore();
 
-      const layer = store.createLayer('solid', 'Test Layer');
+      const layer = layerStore.createLayer(store, 'solid', 'Test Layer');
       store.setFrame(0);
       store.addKeyframe(layer.id, 'opacity', 0);
       store.setFrame(100);
@@ -266,9 +278,10 @@ describe('Engine → Export Integration', () => {
   describe('evaluated frames export correctly', () => {
     test('camera data can be exported from evaluated frame', () => {
       const store = useCompositorStore();
+      const layerStore = useLayerStore();
 
       // Create a camera layer
-      const cameraLayer = store.createLayer('camera', 'Main Camera');
+      const cameraLayer = layerStore.createLayer(store, 'camera', 'Main Camera');
 
       // Evaluate the frame
       const project = store.project;
@@ -284,9 +297,10 @@ describe('Engine → Export Integration', () => {
 
     test('composition has frame range for export', () => {
       const store = useCompositorStore();
+      const layerStore = useLayerStore();
 
       // Create layer with animation spanning frames
-      const layer = store.createLayer('solid', 'Test Layer');
+      const layer = layerStore.createLayer(store, 'solid', 'Test Layer');
       store.setFrame(0);
       store.addKeyframe(layer.id, 'opacity', 0);
       store.setFrame(90);
@@ -306,8 +320,9 @@ describe('Engine → Export Integration', () => {
 
     test('all frames can be evaluated for export', () => {
       const store = useCompositorStore();
+      const layerStore = useLayerStore();
 
-      const layer = store.createLayer('solid', 'Test Layer');
+      const layer = layerStore.createLayer(store, 'solid', 'Test Layer');
       store.setFrame(0);
       store.addKeyframe(layer.id, 'opacity', 0);
       store.setFrame(30);
@@ -343,9 +358,10 @@ describe('Store → Persistence Integration', () => {
   describe('save/load roundtrip', () => {
     test('project serializes and deserializes correctly', () => {
       const store = useCompositorStore();
+      const layerStore = useLayerStore();
       
       // Create a project with layers and keyframes
-      const layer = store.createLayer('solid', 'Test Layer');
+      const layer = layerStore.createLayer(store, 'solid', 'Test Layer');
       store.setFrame(0);
       store.addKeyframe(layer.id, 'opacity', 0);
       store.setFrame(30);
@@ -365,11 +381,12 @@ describe('Store → Persistence Integration', () => {
 
     test('all layer types survive roundtrip', () => {
       const store = useCompositorStore();
+      const layerStore = useLayerStore();
       
       // Create different layer types
-      const solidLayer = store.createLayer('solid', 'Solid');
-      const textLayer = store.createLayer('text', 'Text');
-      const shapeLayer = store.createLayer('shape', 'Shape');
+      const solidLayer = layerStore.createLayer(store, 'solid', 'Solid');
+      const textLayer = layerStore.createLayer(store, 'text', 'Text');
+      const shapeLayer = layerStore.createLayer(store, 'shape', 'Shape');
       
       // Serialize and deserialize
       const json = JSON.stringify(store.project);
@@ -384,8 +401,9 @@ describe('Store → Persistence Integration', () => {
 
     test('keyframes survive roundtrip', () => {
       const store = useCompositorStore();
+      const layerStore = useLayerStore();
       
-      const layer = store.createLayer('solid', 'Test Layer');
+      const layer = layerStore.createLayer(store, 'solid', 'Test Layer');
       store.setFrame(0);
       store.addKeyframe(layer.id, 'opacity', 0);
       store.setFrame(30);
@@ -402,11 +420,12 @@ describe('Store → Persistence Integration', () => {
 
     test('effects survive roundtrip', () => {
       const store = useCompositorStore();
+      const layerStore = useLayerStore();
 
-      const layer = store.createLayer('solid', 'Test Layer');
+      const layer = layerStore.createLayer(store, 'solid', 'Test Layer');
       store.addEffectToLayer(layer.id, 'gaussian-blur');
 
-      const layerData = store.getLayerById(layer.id);
+      const layerData = layerStore.getLayerById(store, layer.id);
       const effectId = layerData?.effects?.[0]?.id;
       store.updateEffectParameter(layer.id, effectId!, 'blurriness', 42);
 

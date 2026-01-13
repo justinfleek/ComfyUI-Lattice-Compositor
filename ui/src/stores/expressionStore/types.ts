@@ -29,18 +29,18 @@ export interface PropertyDriverSystemAccess {
 /**
  * Interface for accessing compositor store from expression actions.
  * Uses dependency injection to avoid circular imports.
+ *
+ * NOTE: propertyDriverSystem and propertyDrivers are now stored in expressionStore state,
+ * not in compositorStore. Expression store methods access them via useExpressionStore().
  */
 export interface ExpressionStoreAccess {
   /** Project metadata */
   project: {
+    composition: { width: number; height: number };
     meta: { modified: string };
   };
-  /** Property driver system instance */
-  propertyDriverSystem: PropertyDriverSystemAccess | null;
-  /** Serializable driver configs */
-  propertyDrivers: PropertyDriver[];
   /** Get the currently active composition */
-  getActiveComp(): { currentFrame: number; settings: { fps: number; frameCount: number }; layers: Layer[] } | null;
+  getActiveComp(): { currentFrame: number; settings: { fps: number; frameCount: number; duration: number; width: number; height: number }; layers: Layer[] } | null;
   /** Get all layers in active composition */
   getActiveCompLayers(): Layer[];
   /** Get layer by ID */
@@ -63,7 +63,8 @@ export interface ExpressionStoreAccess {
  * State for expression store
  */
 export interface ExpressionState {
-  // Expression store doesn't own state - expressions are stored on keyframes
-  // and drivers are stored on compositorStore.propertyDrivers
-  // This is a thin wrapper that coordinates these systems
+  /** Property driver system instance */
+  propertyDriverSystem: PropertyDriverSystemAccess | null;
+  /** Serializable driver configs */
+  propertyDrivers: PropertyDriver[];
 }

@@ -143,11 +143,13 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 import { useCompositorStore } from "@/stores/compositorStore";
+import { useLayerStore } from "@/stores/layerStore";
 import type { Layer, PathLayerData } from "@/types/project";
 
 const props = defineProps<{ layer: Layer }>();
 const emit = defineEmits(["update"]);
 const store = useCompositorStore();
+const layerStore = useLayerStore();
 
 const expandedSections = ref<string[]>(["guide", "path"]);
 
@@ -249,7 +251,7 @@ function toggleSection(section: string) {
 
 // Update layer data
 function update(key: keyof PathLayerData | string, value: any) {
-  store.updateLayer(props.layer.id, {
+  layerStore.updateLayer(store, props.layer.id, {
     data: { ...pathData.value, [key]: value },
   });
   emit("update");
@@ -309,7 +311,7 @@ function getLayerIcon(type: string): string {
 
 // Select attached layer
 function selectLayer(layerId: string) {
-  store.selectLayer(layerId);
+  layerStore.selectLayer(store, layerId);
 }
 </script>
 

@@ -95,6 +95,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, ref } from "vue";
 import { useCompositorStore } from "@/stores/compositorStore";
+import { useCompositionStore } from "@/stores/compositionStore";
 import type { Composition } from "@/types/project";
 
 const emit = defineEmits<{
@@ -103,6 +104,7 @@ const emit = defineEmits<{
 }>();
 
 const store = useCompositorStore();
+const compositionStore = useCompositionStore();
 
 // Computed from store
 const breadcrumbPath = computed(() => store.breadcrumbPath);
@@ -210,7 +212,8 @@ function renameFromMenu() {
 function duplicateComposition() {
   if (contextMenu.value.comp) {
     const original = contextMenu.value.comp;
-    const newComp = store.createComposition(
+    const newComp = compositionStore.createComposition(
+      store,
       `${original.name} Copy`,
       original.settings,
       original.isNestedComp,
@@ -273,7 +276,7 @@ function deleteComposition() {
     contextMenu.value.comp &&
     contextMenu.value.comp.id !== mainCompositionId.value
   ) {
-    store.deleteComposition(contextMenu.value.comp.id);
+    compositionStore.deleteComposition(store, contextMenu.value.comp.id);
   }
   hideContextMenu();
 }

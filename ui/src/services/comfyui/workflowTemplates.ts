@@ -12,6 +12,10 @@ import type {
   Uni3CTrajType,
   Wan22CameraMotion,
 } from "@/types/export";
+import {
+  safeValidateWanMoveMotionData,
+  safeValidateATIMotionData,
+} from "@/schemas/exports/workflow-params-schema";
 
 // ============================================================================
 // Types
@@ -93,9 +97,23 @@ const MAX_FPS = 120;
 /**
  * Validates WorkflowParams before generating a workflow.
  * Throws an error if any required parameter is invalid.
+ * CRITICAL: Validates motionData property names match model requirements.
  */
 export function validateWorkflowParams(params: WorkflowParams): void {
   const errors: string[] = [];
+
+  // Validate motionData structure for targets that require it
+  if (params.motionData) {
+    // Validate both formats - workflow generation will use the correct one
+    const wanMoveValidation = safeValidateWanMoveMotionData(params.motionData);
+    const atiValidation = safeValidateATIMotionData(params.motionData);
+
+    if (!wanMoveValidation.success && !atiValidation.success) {
+      errors.push(
+        `Invalid motionData structure. Expected either WanMove format (tracks: Array<Array<{x, y}>>) or ATI format (trajectories: Array<Array<{x, y}>>). Errors: ${wanMoveValidation.error.message || atiValidation.error.message}`,
+      );
+    }
+  }
 
   // Validate dimensions have both lower and upper bounds to prevent
   // memory exhaustion from unreasonably large canvas allocations

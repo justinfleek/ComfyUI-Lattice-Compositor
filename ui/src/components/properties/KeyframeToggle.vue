@@ -24,7 +24,7 @@ import type {
 } from "@/types/project";
 
 interface Props {
-  property: AnimatableProperty<any>;
+  property: AnimatableProperty;
   layerId: string;
   propertyPath?: string; // Optional path for identifying the property
 }
@@ -32,18 +32,19 @@ interface Props {
 const props = defineProps<Props>();
 
 const emit = defineEmits<{
-  (e: "keyframeAdded", keyframe: Keyframe<any>): void;
+  (e: "keyframeAdded", keyframe: Keyframe): void;
   (e: "keyframeRemoved", keyframeId: string): void;
   (e: "animationToggled", animated: boolean): void;
 }>();
 
 const store = useCompositorStore();
+const animationStore = useAnimationStore();
 const expressionEditor = useExpressionEditor();
 
 // Check if there's a keyframe at current frame
 const hasKeyframeAtCurrentFrame = computed(() => {
   if (!props.property.animated) return false;
-  return props.property.keyframes.some((k) => k.frame === store.currentFrame);
+  return props.property.keyframes.some((k) => k.frame === animationStore.getCurrentFrame(store));
 });
 
 // Check if property has an expression
@@ -55,7 +56,7 @@ const hasExpression = computed(() => {
 const keyframeAtCurrentFrame = computed(() => {
   if (!props.property.animated) return null;
   return (
-    props.property.keyframes.find((k) => k.frame === store.currentFrame) || null
+    props.property.keyframes.find((k) => k.frame === animationStore.getCurrentFrame(store)) || null
   );
 });
 
@@ -114,9 +115,9 @@ function toggleKeyframe(): void {
 function addKeyframe(): void {
   const defaultHandle: BezierHandle = { frame: 0, value: 0, enabled: false };
 
-  const newKeyframe: Keyframe<any> = {
+  const newKeyframe: Keyframe = {
     id: `kf_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`,
-    frame: store.currentFrame,
+    frame: animationStore.getCurrentFrame(store),
     value: props.property.value,
     interpolation: "linear",
     inHandle: { ...defaultHandle },

@@ -209,9 +209,13 @@
 import { computed, onMounted, onUnmounted, ref } from "vue";
 import { findNearestSnap } from "@/services/timelineSnap";
 import { useCompositorStore } from "@/stores/compositorStore";
+import { useLayerStore } from "@/stores/layerStore";
 import { useAudioStore } from "@/stores/audioStore";
+import { useKeyframeStore } from "@/stores/keyframeStore";
+import { useAnimationStore } from "@/stores/animationStore";
+import { useProjectStore } from "@/stores/projectStore";
 import { getShapeForEasing, KEYFRAME_SHAPES } from "@/styles/keyframe-shapes";
-import type { Keyframe } from "@/types/project";
+import type { Keyframe, PropertyValue } from "@/types/project";
 
 // Get keyframe shape path for a given interpolation type
 function getKeyframeShapePath(interpolation: string = "linear"): string {
@@ -241,7 +245,11 @@ const props = defineProps([
 ]);
 const emit = defineEmits(["selectKeyframe", "deleteKeyframe", "moveKeyframe"]);
 const store = useCompositorStore();
+const layerStore = useLayerStore();
 const audioStore = useAudioStore();
+const keyframeStore = useKeyframeStore();
+const animationStore = useAnimationStore();
+const projectStore = useProjectStore();
 
 const selectedKeyframeIds = ref<Set<string>>(new Set());
 const trackRef = ref<HTMLElement | null>(null);
@@ -256,7 +264,7 @@ const contextMenu = ref<{
   visible: boolean;
   x: number;
   y: number;
-  keyframe: Keyframe<any> | null;
+  keyframe: Keyframe<PropertyValue> | null;
 }>({
   visible: false,
   x: 0,
@@ -309,7 +317,7 @@ const selectionBoxStyle = computed(() => {
 });
 
 const hasKeyframeAtCurrent = computed(() =>
-  props.property.keyframes?.some((k: any) => k.frame === store.currentFrame),
+  props.property.keyframes?.some((k: Keyframe<PropertyValue>) => k.frame === store.currentFrame),
 );
 const isSelected = computed(
   () => store.selectedPropertyPath === props.propertyPath,
@@ -318,15 +326,15 @@ const isSelected = computed(
 // Keyframe navigator computed properties
 const sortedKeyframes = computed(() => {
   const kfs = props.property.keyframes || [];
-  return [...kfs].sort((a: any, b: any) => a.frame - b.frame);
+  return [...kfs].sort((a: Keyframe<PropertyValue>, b: Keyframe<PropertyValue>) => a.frame - b.frame);
 });
 
 const hasPrevKeyframe = computed(() => {
-  return sortedKeyframes.value.some((kf: any) => kf.frame < store.currentFrame);
+  return sortedKeyframes.value.some((kf: Keyframe<PropertyValue>) => kf.frame < store.currentFrame);
 });
 
 const hasNextKeyframe = computed(() => {
-  return sortedKeyframes.value.some((kf: any) => kf.frame > store.currentFrame);
+  return sortedKeyframes.value.some((kf: Keyframe<PropertyValue>) => kf.frame > store.currentFrame);
 });
 
 // Check if multiple keyframes are selected (for reverse/scale operations)
@@ -336,7 +344,7 @@ const hasMultipleSelected = computed(() => selectedKeyframeIds.value.size >= 2);
 const hasBezierSelected = computed(() => {
   const keyframes = props.property?.keyframes || [];
   return keyframes.some(
-    (kf: any) => selectedKeyframeIds.value.has(kf.id) && kf.interpolation === "bezier"
+    (kf: Keyframe<PropertyValue>) => selectedKeyframeIds.value.has(kf.id) && kf.interpolation === "bezier"
   );
 });
 
@@ -348,45 +356,46 @@ const canApplyRoving = computed(() => {
 // Keyframe navigator functions
 function goToPrevKeyframe() {
   const prevKfs = sortedKeyframes.value.filter(
-    (kf: any) => kf.frame < store.currentFrame,
+    (kf: Keyframe<PropertyValue>) => kf.frame < store.currentFrame,
   );
   if (prevKfs.length > 0) {
     const prevKf = prevKfs[prevKfs.length - 1];
-    store.setFrame(prevKf.frame);
+    animationStore.setFrame(store, prevKf.frame);
   }
 }
 
 function goToNextKeyframe() {
   const nextKf = sortedKeyframes.value.find(
-    (kf: any) => kf.frame > store.currentFrame,
+    (kf: Keyframe<PropertyValue>) => kf.frame > store.currentFrame,
   );
   if (nextKf) {
-    store.setFrame(nextKf.frame);
+    animationStore.setFrame(store, nextKf.frame);
   }
 }
 
 function toggleAnim() {
-  store.setPropertyAnimated(
+  keyframeStore.setPropertyAnimated(
+    store,
     props.layerId,
     props.propertyPath,
     !props.property.animated,
   );
 }
 function addKeyframeAtCurrent() {
-  store.addKeyframe(props.layerId, props.propertyPath, props.property.value);
+  keyframeStore.addKeyframe(store, props.layerId, props.propertyPath, props.property.value);
 }
-function updateValDirect(v: any) {
+function updateValDirect(v: PropertyValue) {
   // Handle data.* properties differently - they're stored directly on layer.data
   if (props.propertyPath.startsWith("data.")) {
     const dataKey = props.propertyPath.replace("data.", "");
-    store.updateLayerData(props.layerId, { [dataKey]: v });
+    layerStore.updateLayerData(store, props.layerId, { [dataKey]: v });
   } else {
-    store.setPropertyValue(props.layerId, props.propertyPath, v);
+    keyframeStore.setPropertyValue(store, props.layerId, props.propertyPath, v);
   }
 }
 function updateValByIndex(axis: string, v: number) {
   const newVal = { ...props.property.value, [axis]: v };
-  store.setPropertyValue(props.layerId, props.propertyPath, newVal);
+  keyframeStore.setPropertyValue(store, props.layerId, props.propertyPath, newVal);
 }
 function selectProp() {
   store.selectProperty(props.propertyPath);
@@ -462,7 +471,7 @@ function handleTrackMouseDown(e: MouseEvent) {
     const dragDistance = Math.abs(boxCurrentX.value - boxStartX.value);
     if (dragDistance < 5) {
       const frame = Math.round(boxStartX.value / props.pixelsPerFrame);
-      store.setFrame(Math.max(0, Math.min(store.frameCount - 1, frame)));
+      animationStore.setFrame(store, Math.max(0, Math.min(projectStore.getFrameCount(store) - 1, frame)));
     }
 
     window.removeEventListener("mousemove", onMove);
@@ -474,7 +483,7 @@ function handleTrackMouseDown(e: MouseEvent) {
 }
 
 // Keyframe selection and dragging
-function startKeyframeDrag(e: MouseEvent, kf: Keyframe<any>) {
+function startKeyframeDrag(e: MouseEvent, kf: Keyframe<PropertyValue>) {
   // Toggle selection with Shift, otherwise single select
   if (e.shiftKey) {
     if (selectedKeyframeIds.value.has(kf.id)) {
@@ -556,7 +565,8 @@ function startKeyframeDrag(e: MouseEvent, kf: Keyframe<any>) {
               (k: { id: string }) => k.id === orig.id,
             );
             if (currentKf && currentKf.frame !== newFrame) {
-              store.moveKeyframe(
+              keyframeStore.moveKeyframe(
+                store,
                 props.layerId,
                 props.propertyPath,
                 orig.id,
@@ -587,7 +597,7 @@ function startKeyframeDrag(e: MouseEvent, kf: Keyframe<any>) {
         const deltaDiff = frameDelta - lastAppliedDelta;
 
         // Use bulk moveKeyframes for all selected keyframes
-        store.moveKeyframes(keyframesToMove, deltaDiff);
+        keyframeStore.moveKeyframes(store, keyframesToMove, deltaDiff);
         lastAppliedDelta = frameDelta;
       }
       return;
@@ -596,14 +606,14 @@ function startKeyframeDrag(e: MouseEvent, kf: Keyframe<any>) {
     // Single keyframe drag mode
     let newFrame = Math.max(
       0,
-      Math.min(store.frameCount - 1, startFrame + frameDelta),
+      Math.min(projectStore.getFrameCount(store) - 1, startFrame + frameDelta),
     );
 
     // Apply snapping if enabled (hold Alt/Option to disable temporarily)
-    if (!ev.altKey && store.snapConfig.enabled) {
+    if (!ev.altKey && animationStore.snapConfig.enabled) {
       const snap = findNearestSnap(
         newFrame,
-        store.snapConfig,
+        animationStore.snapConfig,
         props.pixelsPerFrame,
         {
           layers: store.layers,
@@ -619,7 +629,7 @@ function startKeyframeDrag(e: MouseEvent, kf: Keyframe<any>) {
     }
 
     if (newFrame !== kf.frame) {
-      store.moveKeyframe(props.layerId, props.propertyPath, kf.id, newFrame);
+      keyframeStore.moveKeyframe(store, props.layerId, props.propertyPath, kf.id, newFrame);
     }
   };
 
@@ -634,12 +644,12 @@ function startKeyframeDrag(e: MouseEvent, kf: Keyframe<any>) {
 
 // Delete keyframe
 function deleteKeyframe(kfId: string) {
-  store.removeKeyframe(props.layerId, props.propertyPath, kfId);
+  keyframeStore.removeKeyframe(store, props.layerId, props.propertyPath, kfId);
   selectedKeyframeIds.value.delete(kfId);
 }
 
 // Context menu functions
-function showContextMenu(e: MouseEvent, kf: Keyframe<any>) {
+function showContextMenu(e: MouseEvent, kf: Keyframe<PropertyValue>) {
   // Select the keyframe if not already selected
   if (!selectedKeyframeIds.value.has(kf.id)) {
     selectedKeyframeIds.value.clear();
@@ -687,7 +697,7 @@ function showTrackContextMenu(e: MouseEvent) {
     visible: true,
     x: x,
     y: e.clientY - rect.top,
-    frame: Math.max(0, Math.min(store.frameCount - 1, frame)),
+    frame: Math.max(0, Math.min(projectStore.getFrameCount(store) - 1, frame)),
   };
 }
 
@@ -695,14 +705,14 @@ function showTrackContextMenu(e: MouseEvent) {
 function addKeyframeAtFrame() {
   const frame = trackContextMenu.value.frame;
   const currentValue = props.property?.value ?? 0;
-  store.addKeyframe(props.layerId, props.propertyPath, currentValue, frame);
+  keyframeStore.addKeyframe(store, props.layerId, props.propertyPath, currentValue, frame);
   hideTrackContextMenu();
 }
 
 // Insert keyframe by interpolating the position motion path
 function insertKeyframeOnPath() {
   const frame = trackContextMenu.value.frame;
-  const newKfId = store.insertKeyframeOnPath(props.layerId, frame);
+  const newKfId = keyframeStore.insertKeyframeOnPath(store, props.layerId, frame);
   if (newKfId) {
     console.log(`[Lattice] Inserted keyframe on path at frame ${frame}`);
   }
@@ -711,14 +721,15 @@ function insertKeyframeOnPath() {
 
 // Navigate to the clicked frame
 function goToClickedFrame() {
-  store.setFrame(trackContextMenu.value.frame);
+  animationStore.setFrame(store, trackContextMenu.value.frame);
   hideTrackContextMenu();
 }
 
 function setInterpolation(type: "linear" | "bezier" | "hold") {
   // Apply to all selected keyframes
   for (const kfId of selectedKeyframeIds.value) {
-    store.setKeyframeInterpolation(
+    keyframeStore.setKeyframeInterpolation(
+      store,
       props.layerId,
       props.propertyPath,
       kfId,
@@ -730,14 +741,14 @@ function setInterpolation(type: "linear" | "bezier" | "hold") {
 
 function goToKeyframe() {
   if (contextMenu.value.keyframe) {
-    store.setFrame(contextMenu.value.keyframe.frame);
+    animationStore.setFrame(store, contextMenu.value.keyframe.frame);
   }
   hideContextMenu();
 }
 
 function deleteSelectedKeyframes() {
   for (const kfId of selectedKeyframeIds.value) {
-    store.removeKeyframe(props.layerId, props.propertyPath, kfId);
+    keyframeStore.removeKeyframe(store, props.layerId, props.propertyPath, kfId);
   }
   selectedKeyframeIds.value.clear();
   hideContextMenu();
@@ -750,7 +761,7 @@ function autoCalculateTangents() {
 
   // Call the store action for each selected keyframe
   for (const kfId of selectedIds) {
-    store.autoCalculateBezierTangents(props.layerId, props.propertyPath, kfId);
+    keyframeStore.autoCalculateBezierTangents(store, props.layerId, props.propertyPath, kfId);
   }
 
   console.log(`[Lattice] Auto-calculated tangents for ${selectedIds.length} keyframes`);
@@ -759,14 +770,14 @@ function autoCalculateTangents() {
 
 // Reverse the timing of selected keyframes
 function reverseSelectedKeyframes() {
-  const count = store.timeReverseKeyframes(props.layerId, props.propertyPath);
+  const count = keyframeStore.timeReverseKeyframes(store, props.layerId, props.propertyPath);
   console.log(`[Lattice] Reversed ${count} keyframes for ${props.propertyPath}`);
   hideContextMenu();
 }
 
 // Clear all keyframes from this property (single undo entry)
 function clearAllKeyframes() {
-  store.clearKeyframes(props.layerId, props.propertyPath);
+  keyframeStore.clearKeyframes(store, props.layerId, props.propertyPath);
   selectedKeyframeIds.value.clear();
   console.log(`[Lattice] Cleared all keyframes from ${props.propertyPath}`);
   hideContextMenu();
@@ -775,7 +786,7 @@ function clearAllKeyframes() {
 // Apply roving keyframes (constant-speed motion)
 function applyRovingKeyframes() {
   // Check if roving would have impact before applying
-  const wouldChange = store.checkRovingImpact(props.layerId);
+  const wouldChange = keyframeStore.checkRovingImpact(store, props.layerId);
 
   if (!wouldChange) {
     console.log("[Lattice] Roving keyframes: no changes needed (already uniform speed)");
@@ -783,7 +794,7 @@ function applyRovingKeyframes() {
     return;
   }
 
-  const success = store.applyRovingToPosition(props.layerId);
+  const success = keyframeStore.applyRovingToPosition(store, props.layerId);
   if (success) {
     console.log("[Lattice] Applied roving keyframes to position");
   } else {
@@ -814,7 +825,8 @@ function scaleKeyframeTiming() {
 
   // Use current frame as anchor point
   const anchorFrame = store.currentFrame;
-  const count = store.scaleKeyframeTiming(
+  const count = keyframeStore.scaleKeyframeTiming(
+    store,
     props.layerId,
     props.propertyPath,
     scaleFactor,

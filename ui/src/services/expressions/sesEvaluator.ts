@@ -1,3 +1,5 @@
+import type { SESCompartment } from "@/types/ses-ambient";
+
 /**
  * SES (Secure ECMAScript) Expression Evaluator
  *
@@ -83,13 +85,18 @@ export function getSESError(): Error | null {
   return sesError;
 }
 
+// SES types are provided by the 'ses' package's types.d.ts
+// which declares Compartment and harden on globalThis
+
 /**
  * Create a safe evaluation compartment with expression context
  *
  * This creates a new Compartment with only the allowed globals,
  * preventing access to dangerous APIs.
  */
-export function createExpressionCompartment(ctx: ExpressionContext): any {
+export function createExpressionCompartment(
+  ctx: ExpressionContext,
+): SESCompartment {
   if (!sesInitialized) {
     throw new Error(
       "[SES] Not initialized. Call initializeSES() at app startup.",
@@ -97,13 +104,15 @@ export function createExpressionCompartment(ctx: ExpressionContext): any {
   }
 
   // Import Compartment from SES (available after lockdown)
-  const { Compartment, harden } = globalThis as any;
-
-  if (!Compartment) {
+  // SES injects these globals at runtime - types declared via `declare global`
+  if (!globalThis.Compartment || !globalThis.harden) {
     throw new Error(
       "[SES] Compartment not available. Ensure lockdown() was called.",
     );
   }
+
+  const { Compartment, harden } = globalThis;
+
 
   // Create safe Math object (harden to prevent modification)
   // NOTE: Math.random is intentionally EXCLUDED for determinism
@@ -215,7 +224,7 @@ export function createExpressionCompartment(ctx: ExpressionContext): any {
       const arrB = Array.isArray(b) ? b : [b];
       let sum = 0;
       for (let i = 0; i < Math.max(arrA.length, arrB.length); i++) {
-        const diff = (arrA[i] || 0) - (arrB[i] || 0);
+        const diff = (arrA[i] ?? 0) - (arrB[i] ?? 0);
         sum += diff * diff;
       }
       return Math.sqrt(sum);
@@ -229,7 +238,7 @@ export function createExpressionCompartment(ctx: ExpressionContext): any {
       const len = Math.max(arrA.length, arrB.length);
       const result = [];
       for (let i = 0; i < len; i++) {
-        result.push((arrA[i] || 0) + (arrB[i] || 0));
+        result.push((arrA[i] ?? 0) + (arrB[i] ?? 0));
       }
       return result;
     },
@@ -242,7 +251,7 @@ export function createExpressionCompartment(ctx: ExpressionContext): any {
       const len = Math.max(arrA.length, arrB.length);
       const result = [];
       for (let i = 0; i < len; i++) {
-        result.push((arrA[i] || 0) - (arrB[i] || 0));
+        result.push((arrA[i] ?? 0) - (arrB[i] ?? 0));
       }
       return result;
     },
@@ -261,26 +270,29 @@ export function createExpressionCompartment(ctx: ExpressionContext): any {
       const len = Math.max(arrA.length, arrB.length);
       const result = [];
       for (let i = 0; i < len; i++) {
-        result.push((arrA[i] || 0) * (arrB[i] || 0));
+        result.push((arrA[i] ?? 0) * (arrB[i] ?? 0));
       }
       return result;
     },
 
     // Vector divide
     div: (a: number | number[], b: number | number[]): number | number[] => {
-      if (typeof a === "number" && typeof b === "number") return a / (b || 1);
+      if (typeof a === "number" && typeof b === "number") {
+        return b !== 0 ? a / b : 0; // Guard against division by zero
+      }
       if (typeof b === "number" && Array.isArray(a)) {
-        return a.map((v) => v / (b || 1));
+        return b !== 0 ? a.map((v) => v / b) : a.map(() => 0);
       }
       if (typeof a === "number" && Array.isArray(b)) {
-        return b.map((v) => a / (v || 1));
+        return b.map((v) => (v !== 0 ? a / v : 0));
       }
       const arrA = a as number[];
       const arrB = b as number[];
       const len = Math.max(arrA.length, arrB.length);
       const result = [];
       for (let i = 0; i < len; i++) {
-        result.push((arrA[i] || 0) / (arrB[i] || 1));
+        const divisor = arrB[i] ?? 1;
+        result.push(divisor !== 0 ? (arrA[i] ?? 0) / divisor : 0);
       }
       return result;
     },
@@ -329,8 +341,8 @@ export function createExpressionCompartment(ctx: ExpressionContext): any {
 
     // Console for debugging (limited)
     console: harden({
-      log: (...args: any[]) => console.log("[Expression]", ...args),
-      warn: (...args: any[]) => console.warn("[Expression]", ...args),
+      log: (...args: unknown[]) => console.log("[Expression]", ...args),
+      warn: (...args: unknown[]) => console.warn("[Expression]", ...args),
     }),
 
     // SECURITY: Explicitly block dangerous intrinsics
@@ -484,14 +496,13 @@ export function evaluateSimpleExpression(
   // WARNING: This is SYNC evaluation - no timeout protection.
   // For DoS protection, use evaluateWithTimeout() which runs in a Worker with 100ms timeout.
 
-  // Get SES globals
-  const { Compartment, harden } = globalThis as any;
-
-  // SECURITY: Both Compartment AND harden must exist
-  if (!Compartment || !harden) {
+  // Get SES globals - types declared via `declare global`
+  if (!globalThis.Compartment || !globalThis.harden) {
     console.error("[SECURITY] SES Compartment or harden not available");
     return null;
   }
+
+  const { Compartment, harden } = globalThis;
 
   try {
     // Create safe Math subset (hardened)

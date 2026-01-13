@@ -146,6 +146,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { useCompositorStore } from "@/stores/compositorStore";
+import { useLayerStore } from "@/stores/layerStore";
 import type { Layer } from "@/types/project";
 
 interface LightData {
@@ -165,6 +166,7 @@ interface LightData {
 const props = defineProps<{ layer: Layer }>();
 const emit = defineEmits(["update"]);
 const store = useCompositorStore();
+const layerStore = useLayerStore();
 
 const lightData = computed<LightData>(() => {
   return (
@@ -185,7 +187,7 @@ const lightData = computed<LightData>(() => {
 });
 
 function update(key: keyof LightData, value: any) {
-  store.updateLayer(props.layer.id, {
+  layerStore.updateLayer(store, props.layer.id, {
     data: {
       ...lightData.value,
       [key]: value,

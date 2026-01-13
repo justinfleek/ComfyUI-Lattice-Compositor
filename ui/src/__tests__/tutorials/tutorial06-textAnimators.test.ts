@@ -19,14 +19,17 @@
 import { describe, test, expect, beforeEach } from 'vitest';
 import { setActivePinia, createPinia } from 'pinia';
 import { useCompositorStore } from '@/stores/compositorStore';
+import { useLayerStore } from '@/stores/layerStore';
 import type { ControlPoint } from '@/types/spline';
 
 describe('Tutorial 06: Text Animators - E2E Tests', () => {
   let store: ReturnType<typeof useCompositorStore>;
+  let layerStore: ReturnType<typeof useLayerStore>;
 
   beforeEach(() => {
     setActivePinia(createPinia());
     store = useCompositorStore();
+    layerStore = useLayerStore();
     store.createComposition('Text Test', {
       width: 1920,
       height: 1080,
@@ -41,14 +44,14 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
 
   describe('Section 1: Text Layer Foundation', () => {
     test('Step 1-5: createTextLayer creates layer with correct text', () => {
-      const layer = store.createTextLayer('HELLO');
+      const layer = layerStore.createTextLayer(store,'HELLO');
 
       expect(layer.type).toBe('text');
       expect(store.getTextContent(layer.id)).toBe('HELLO');
     });
 
     test('Step 6-10: Text layer has 5 characters for "HELLO"', () => {
-      const layer = store.createTextLayer('HELLO');
+      const layer = layerStore.createTextLayer(store,'HELLO');
       const transforms = store.getCharacterTransforms(layer.id, 0);
 
       expect(transforms.length).toBe(5);
@@ -57,7 +60,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
     });
 
     test('Step 11-15: Initial transforms are neutral', () => {
-      const layer = store.createTextLayer('ABCDE');
+      const layer = layerStore.createTextLayer(store,'ABCDE');
       const transforms = store.getCharacterTransforms(layer.id, 0);
 
       // All characters should have neutral transforms
@@ -78,7 +81,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
 
   describe('Section 2: Animator Group Structure', () => {
     test('Step 16-20: addTextAnimator creates animator with ID', () => {
-      const layer = store.createTextLayer('TEST');
+      const layer = layerStore.createTextLayer(store,'TEST');
       const animator = store.addTextAnimator(layer.id, { name: 'Position Animator' });
 
       expect(animator).not.toBeNull();
@@ -88,7 +91,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
     });
 
     test('Step 21-25: Multiple animators can be added', () => {
-      const layer = store.createTextLayer('ABC');
+      const layer = layerStore.createTextLayer(store,'ABC');
       store.addTextAnimator(layer.id, { name: 'Animator 1' });
       store.addTextAnimator(layer.id, { name: 'Animator 2' });
 
@@ -99,7 +102,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
     });
 
     test('Step 26-28: removeTextAnimator removes animator', () => {
-      const layer = store.createTextLayer('ABC');
+      const layer = layerStore.createTextLayer(store,'ABC');
       const animator = store.addTextAnimator(layer.id, { name: 'ToRemove' });
 
       expect(store.getTextAnimators(layer.id).length).toBe(1);
@@ -116,7 +119,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
 
   describe('Section 3: Range Selectors - Basic', () => {
     test('Step 29-35: Range Start=0 End=100 selects ALL characters at 100%', () => {
-      const layer = store.createTextLayer('ABCDEFGHIJ'); // 10 chars
+      const layer = layerStore.createTextLayer(store,'ABCDEFGHIJ'); // 10 chars
       const animator = store.addTextAnimator(layer.id);
       store.setAnimatorPropertyValue(layer.id, animator!.id, 'position', { x: 0, y: -50 });
 
@@ -135,7 +138,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
     });
 
     test('Step 36-42: Range Start=0 End=50 selects first HALF (chars 0-4)', () => {
-      const layer = store.createTextLayer('ABCDEFGHIJ'); // 10 chars
+      const layer = layerStore.createTextLayer(store,'ABCDEFGHIJ'); // 10 chars
       const animator = store.addTextAnimator(layer.id);
       store.setAnimatorPropertyValue(layer.id, animator!.id, 'position', { x: 0, y: -50 });
 
@@ -163,7 +166,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
     });
 
     test('Step 43-49: Range Start=50 End=100 selects second HALF (chars 5-9)', () => {
-      const layer = store.createTextLayer('ABCDEFGHIJ'); // 10 chars
+      const layer = layerStore.createTextLayer(store,'ABCDEFGHIJ'); // 10 chars
       const animator = store.addTextAnimator(layer.id);
       store.setAnimatorPropertyValue(layer.id, animator!.id, 'position', { x: 0, y: -50 });
 
@@ -191,7 +194,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
     });
 
     test('Step 50-56: Range Start=25 End=75 selects middle (chars 2-7)', () => {
-      const layer = store.createTextLayer('ABCDEFGHIJ'); // 10 chars
+      const layer = layerStore.createTextLayer(store,'ABCDEFGHIJ'); // 10 chars
       const animator = store.addTextAnimator(layer.id);
       store.setAnimatorPropertyValue(layer.id, animator!.id, 'position', { x: 0, y: -50 });
 
@@ -231,7 +234,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
 
   describe('Section 4: Range Selector Shapes', () => {
     test('Step 57-63: Shape "ramp_up" - linear increase from 0% to 100%', () => {
-      const layer = store.createTextLayer('ABCDEFGHIJK'); // 11 chars for clean percentages
+      const layer = layerStore.createTextLayer(store,'ABCDEFGHIJK'); // 11 chars for clean percentages
       const animator = store.addTextAnimator(layer.id);
       store.setAnimatorPropertyValue(layer.id, animator!.id, 'position', { x: 0, y: -100 });
 
@@ -254,7 +257,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
     });
 
     test('Step 64-70: Shape "ramp_down" - linear decrease from 100% to 0%', () => {
-      const layer = store.createTextLayer('ABCDEFGHIJK'); // 11 chars
+      const layer = layerStore.createTextLayer(store,'ABCDEFGHIJK'); // 11 chars
       const animator = store.addTextAnimator(layer.id);
       store.setAnimatorPropertyValue(layer.id, animator!.id, 'position', { x: 0, y: -100 });
 
@@ -277,7 +280,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
     });
 
     test('Step 71-77: Shape "triangle" - peaks in middle', () => {
-      const layer = store.createTextLayer('ABCDEFGHIJK'); // 11 chars
+      const layer = layerStore.createTextLayer(store,'ABCDEFGHIJK'); // 11 chars
       const animator = store.addTextAnimator(layer.id);
       store.setAnimatorPropertyValue(layer.id, animator!.id, 'position', { x: 0, y: -100 });
 
@@ -298,7 +301,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
     });
 
     test('Step 78-84: Shape "round" - smooth sine curve', () => {
-      const layer = store.createTextLayer('ABCDEFGHIJK'); // 11 chars
+      const layer = layerStore.createTextLayer(store,'ABCDEFGHIJK'); // 11 chars
       const animator = store.addTextAnimator(layer.id);
       store.setAnimatorPropertyValue(layer.id, animator!.id, 'position', { x: 0, y: -100 });
 
@@ -319,7 +322,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
     });
 
     test('Step 85-91: Shape "smooth" - ease in-out curve', () => {
-      const layer = store.createTextLayer('ABCDEFGHIJK'); // 11 chars
+      const layer = layerStore.createTextLayer(store,'ABCDEFGHIJK'); // 11 chars
       const animator = store.addTextAnimator(layer.id);
       store.setAnimatorPropertyValue(layer.id, animator!.id, 'position', { x: 0, y: -100 });
 
@@ -348,7 +351,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
 
   describe('Section 5: Selection Values API', () => {
     test('Step 92-96: getSelectionValues returns per-character percentages', () => {
-      const layer = store.createTextLayer('ABCDEFGHIJ'); // 10 chars
+      const layer = layerStore.createTextLayer(store,'ABCDEFGHIJ'); // 10 chars
       const animator = store.addTextAnimator(layer.id);
 
       store.configureRangeSelector(layer.id, animator!.id, {
@@ -367,7 +370,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
     });
 
     test('Step 97-101: getSelectionValues with Start=0 End=50', () => {
-      const layer = store.createTextLayer('ABCDEFGHIJ'); // 10 chars
+      const layer = layerStore.createTextLayer(store,'ABCDEFGHIJ'); // 10 chars
       const animator = store.addTextAnimator(layer.id);
 
       store.configureRangeSelector(layer.id, animator!.id, {
@@ -388,7 +391,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
     });
 
     test('Step 102-106: getRangeSelectionValue for specific character', () => {
-      const layer = store.createTextLayer('ABCDEFGHIJ'); // 10 chars
+      const layer = layerStore.createTextLayer(store,'ABCDEFGHIJ'); // 10 chars
       const animator = store.addTextAnimator(layer.id);
 
       store.configureRangeSelector(layer.id, animator!.id, {
@@ -413,7 +416,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
 
   describe('Section 6: Animator Properties', () => {
     test('Step 107-112: Position property offsets characters', () => {
-      const layer = store.createTextLayer('ABCDE');
+      const layer = layerStore.createTextLayer(store,'ABCDE');
       const animator = store.addTextAnimator(layer.id);
       store.setAnimatorPropertyValue(layer.id, animator!.id, 'position', { x: 100, y: -50 });
 
@@ -432,7 +435,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
     });
 
     test('Step 113-118: Rotation property rotates characters', () => {
-      const layer = store.createTextLayer('ABCDE');
+      const layer = layerStore.createTextLayer(store,'ABCDE');
       const animator = store.addTextAnimator(layer.id);
       store.setAnimatorPropertyValue(layer.id, animator!.id, 'rotation', 45);
 
@@ -450,7 +453,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
     });
 
     test('Step 119-124: Scale property scales characters', () => {
-      const layer = store.createTextLayer('ABCDE');
+      const layer = layerStore.createTextLayer(store,'ABCDE');
       const animator = store.addTextAnimator(layer.id);
       store.setAnimatorPropertyValue(layer.id, animator!.id, 'scale', { x: 150, y: 200 });
 
@@ -469,7 +472,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
     });
 
     test('Step 125-130: Opacity property sets character opacity', () => {
-      const layer = store.createTextLayer('ABCDE');
+      const layer = layerStore.createTextLayer(store,'ABCDE');
       const animator = store.addTextAnimator(layer.id);
       store.setAnimatorPropertyValue(layer.id, animator!.id, 'opacity', 0);
 
@@ -493,7 +496,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
 
   describe('Section 7: Range Selector Offset', () => {
     test('Step 131-137: Offset=25 shifts selection by 25%', () => {
-      const layer = store.createTextLayer('ABCDEFGHIJ'); // 10 chars
+      const layer = layerStore.createTextLayer(store,'ABCDEFGHIJ'); // 10 chars
       const animator = store.addTextAnimator(layer.id);
       store.setAnimatorPropertyValue(layer.id, animator!.id, 'position', { x: 0, y: -50 });
 
@@ -534,7 +537,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
 
   describe('Section 8: Expression Selector', () => {
     test('Step 138-144: Expression "textIndex * 10" - linear gradient', async () => {
-      const layer = store.createTextLayer('ABCDEFGHIJ'); // 10 chars
+      const layer = layerStore.createTextLayer(store,'ABCDEFGHIJ'); // 10 chars
       const animator = store.addTextAnimator(layer.id);
       store.setAnimatorPropertyValue(layer.id, animator!.id, 'position', { x: 0, y: -100 });
 
@@ -559,7 +562,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
     });
 
     test('Step 145-150: Expression "100 - textIndex * 10" - reverse gradient', async () => {
-      const layer = store.createTextLayer('ABCDEFGHIJ'); // 10 chars
+      const layer = layerStore.createTextLayer(store,'ABCDEFGHIJ'); // 10 chars
       const animator = store.addTextAnimator(layer.id);
 
       store.configureRangeSelector(layer.id, animator!.id, {
@@ -587,7 +590,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
 
   describe('Section 9: Wiggly Selector Determinism', () => {
     test('Step 151-158: Wiggly selector produces deterministic values', () => {
-      const layer = store.createTextLayer('ABCDEFGHIJ');
+      const layer = layerStore.createTextLayer(store,'ABCDEFGHIJ');
       const animator = store.addTextAnimator(layer.id);
       store.setAnimatorPropertyValue(layer.id, animator!.id, 'position', { x: 0, y: -100 });
 
@@ -617,7 +620,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
     });
 
     test('Step 159-164: Scrub backward/forward returns same values', () => {
-      const layer = store.createTextLayer('ABCDEFGHIJ');
+      const layer = layerStore.createTextLayer(store,'ABCDEFGHIJ');
       const animator = store.addTextAnimator(layer.id);
 
       store.configureRangeSelector(layer.id, animator!.id, {
@@ -655,7 +658,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
 
   describe('Section 10: Multiple Animators Stack', () => {
     test('Step 165-172: Two animators with different ranges', () => {
-      const layer = store.createTextLayer('ABCDEFGHIJ'); // 10 chars
+      const layer = layerStore.createTextLayer(store,'ABCDEFGHIJ'); // 10 chars
 
       // Animator 1: Position Y for first half
       const anim1 = store.addTextAnimator(layer.id, { name: 'First Half' });
@@ -697,7 +700,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
 
   describe('Section 11: Undo/Redo', () => {
     test('Step 173-180: addTextAnimator can be undone', () => {
-      const layer = store.createTextLayer('TEST');
+      const layer = layerStore.createTextLayer(store,'TEST');
       store.pushHistory();
 
       const animator = store.addTextAnimator(layer.id, { name: 'To Undo' });
@@ -709,7 +712,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
     });
 
     test('Step 181-186: configureRangeSelector can be undone', () => {
-      const layer = store.createTextLayer('TEST');
+      const layer = layerStore.createTextLayer(store,'TEST');
       const animator = store.addTextAnimator(layer.id);
       store.pushHistory();
 
@@ -732,7 +735,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
 
   describe('Section 12: Amount Modifier', () => {
     test('Step 187-193: Amount=50 reduces influence by half', () => {
-      const layer = store.createTextLayer('ABCDE');
+      const layer = layerStore.createTextLayer(store,'ABCDE');
       const animator = store.addTextAnimator(layer.id);
       store.setAnimatorPropertyValue(layer.id, animator!.id, 'position', { x: 0, y: -100 });
 
@@ -752,7 +755,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
     });
 
     test('Step 194-198: Amount=0 produces no effect', () => {
-      const layer = store.createTextLayer('ABCDE');
+      const layer = layerStore.createTextLayer(store,'ABCDE');
       const animator = store.addTextAnimator(layer.id);
       store.setAnimatorPropertyValue(layer.id, animator!.id, 'position', { x: 0, y: -100 });
 
@@ -777,7 +780,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
 
   describe('Section 13: Disabled Animator', () => {
     test('Step 199-205: Disabled animator has no effect', () => {
-      const layer = store.createTextLayer('ABCDE');
+      const layer = layerStore.createTextLayer(store,'ABCDE');
       const animator = store.addTextAnimator(layer.id);
       store.setAnimatorPropertyValue(layer.id, animator!.id, 'position', { x: 0, y: -100 });
 
@@ -799,7 +802,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
     });
 
     test('Step 206-210: Re-enabling animator restores effect', () => {
-      const layer = store.createTextLayer('ABCDE');
+      const layer = layerStore.createTextLayer(store,'ABCDE');
       const animator = store.addTextAnimator(layer.id);
       store.setAnimatorPropertyValue(layer.id, animator!.id, 'position', { x: 0, y: -100 });
 
@@ -828,7 +831,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
 
   describe('Section 14: Opacity Clamping', () => {
     test('Step 211-215: Opacity cannot go below 0', () => {
-      const layer = store.createTextLayer('ABCDE');
+      const layer = layerStore.createTextLayer(store,'ABCDE');
       const animator = store.addTextAnimator(layer.id);
       store.setAnimatorPropertyValue(layer.id, animator!.id, 'opacity', -50); // Try to set below 0
 
@@ -847,7 +850,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
     });
 
     test('Step 216-220: Opacity cannot go above 100', () => {
-      const layer = store.createTextLayer('ABCDE');
+      const layer = layerStore.createTextLayer(store,'ABCDE');
       const animator = store.addTextAnimator(layer.id);
       store.setAnimatorPropertyValue(layer.id, animator!.id, 'opacity', 200); // Try to set above 100
 
@@ -872,7 +875,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
 
   describe('Section 15: Scale Clamping', () => {
     test('Step 221-225: Scale cannot go below 0', () => {
-      const layer = store.createTextLayer('ABCDE');
+      const layer = layerStore.createTextLayer(store,'ABCDE');
       const animator = store.addTextAnimator(layer.id);
       store.setAnimatorPropertyValue(layer.id, animator!.id, 'scale', { x: -50, y: -50 });
 
@@ -898,7 +901,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
 
   describe('Section 16: Selector Modes', () => {
     test('Step 94-96: Mode Add - combines two range selectors', () => {
-      const layer = store.createTextLayer('ABCDEFGHIJ'); // 10 chars
+      const layer = layerStore.createTextLayer(store,'ABCDEFGHIJ'); // 10 chars
       const animator = store.addTextAnimator(layer.id);
       store.setAnimatorPropertyValue(layer.id, animator!.id, 'position', { x: 0, y: -50 });
 
@@ -922,7 +925,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
     });
 
     test('Step 97-101: Smoothness reduces sharpness', () => {
-      const layer = store.createTextLayer('ABCDEFGHIJ'); // 10 chars
+      const layer = layerStore.createTextLayer(store,'ABCDEFGHIJ'); // 10 chars
       const animator = store.addTextAnimator(layer.id);
       store.setAnimatorPropertyValue(layer.id, animator!.id, 'position', { x: 0, y: -100 });
 
@@ -950,7 +953,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
 
   describe('Section 17: Randomize Order', () => {
     test('Step 112-114: Randomize Order is deterministic with seed', () => {
-      const layer = store.createTextLayer('ABCDEFGHIJ'); // 10 chars
+      const layer = layerStore.createTextLayer(store,'ABCDEFGHIJ'); // 10 chars
       const animator = store.addTextAnimator(layer.id);
       store.setAnimatorPropertyValue(layer.id, animator!.id, 'position', { x: 0, y: -50 });
 
@@ -977,7 +980,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
 
   describe('Section 18: Save/Load', () => {
     test('Step 372-375: Project can be exported with text layer', () => {
-      const layer = store.createTextLayer('HELLO');
+      const layer = layerStore.createTextLayer(store,'HELLO');
       const animator = store.addTextAnimator(layer.id);
       store.setAnimatorPropertyValue(layer.id, animator!.id, 'position', { x: 25, y: -50 });
       store.configureRangeSelector(layer.id, animator!.id, {
@@ -1007,7 +1010,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
 
   describe('Section 19: Determinism Verification', () => {
     test('Step 389-394: Same frame produces identical values', () => {
-      const layer = store.createTextLayer('DETERMINISTIC');
+      const layer = layerStore.createTextLayer(store,'DETERMINISTIC');
       const animator = store.addTextAnimator(layer.id);
       store.setAnimatorPropertyValue(layer.id, animator!.id, 'position', { x: 10, y: -30 });
       store.setAnimatorPropertyValue(layer.id, animator!.id, 'rotation', 45);
@@ -1031,7 +1034,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
     });
 
     test('Step 395-398: Wiggly selector is deterministic per frame', () => {
-      const layer = store.createTextLayer('WIGGLE');
+      const layer = layerStore.createTextLayer(store,'WIGGLE');
       const animator = store.addTextAnimator(layer.id);
       store.setAnimatorPropertyValue(layer.id, animator!.id, 'position', { x: 0, y: -100 });
 
@@ -1062,7 +1065,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
     });
 
     test('Step 399-402: Expression selector is deterministic', async () => {
-      const layer = store.createTextLayer('EXPRESSION');
+      const layer = layerStore.createTextLayer(store,'EXPRESSION');
       const animator = store.addTextAnimator(layer.id);
       store.setAnimatorPropertyValue(layer.id, animator!.id, 'position', { x: 0, y: -100 });
 
@@ -1087,7 +1090,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
 
   describe('Section 20: Tracking Property', () => {
     test('Step 56: Tracking property offsets characters', () => {
-      const layer = store.createTextLayer('TRACKING');
+      const layer = layerStore.createTextLayer(store,'TRACKING');
       const animator = store.addTextAnimator(layer.id);
       store.setAnimatorPropertyValue(layer.id, animator!.id, 'tracking', 50);
 
@@ -1112,18 +1115,18 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
 
   describe('Section 21: Character Count', () => {
     test('Character count matches text length', () => {
-      const layer1 = store.createTextLayer('A'); // 1 char
+      const layer1 = layerStore.createTextLayer(store,'A'); // 1 char
       expect(store.getCharacterTransforms(layer1.id, 0).length).toBe(1);
 
-      const layer2 = store.createTextLayer('Hello World'); // 11 chars (includes space)
+      const layer2 = layerStore.createTextLayer(store,'Hello World'); // 11 chars (includes space)
       expect(store.getCharacterTransforms(layer2.id, 0).length).toBe(11);
 
-      const layer3 = store.createTextLayer(''); // 0 chars
+      const layer3 = layerStore.createTextLayer(store,''); // 0 chars
       expect(store.getCharacterTransforms(layer3.id, 0).length).toBe(0);
     });
 
     test('Empty text returns empty transforms', () => {
-      const layer = store.createTextLayer('');
+      const layer = layerStore.createTextLayer(store,'');
       const transforms = store.getCharacterTransforms(layer.id, 0);
       expect(transforms).toEqual([]);
     });
@@ -1135,7 +1138,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
 
   describe('Section 22: Multiple Property Combination', () => {
     test('Step 230-234: Single animator with multiple properties', () => {
-      const layer = store.createTextLayer('MULTI');
+      const layer = layerStore.createTextLayer(store,'MULTI');
       const animator = store.addTextAnimator(layer.id);
 
       // Set multiple properties
@@ -1167,7 +1170,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
 
   describe('Section 23: Edge Cases', () => {
     test('Step 265: Start > End (inverted range)', () => {
-      const layer = store.createTextLayer('INVERT');
+      const layer = layerStore.createTextLayer(store,'INVERT');
       const animator = store.addTextAnimator(layer.id);
       store.setAnimatorPropertyValue(layer.id, animator!.id, 'position', { x: 0, y: -50 });
 
@@ -1189,13 +1192,13 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
     });
 
     test('Step 270: Zero-length text has no transforms', () => {
-      const layer = store.createTextLayer('');
+      const layer = layerStore.createTextLayer(store,'');
       const transforms = store.getCharacterTransforms(layer.id, 0);
       expect(transforms.length).toBe(0);
     });
 
     test('Step 271: Single character text', () => {
-      const layer = store.createTextLayer('X');
+      const layer = layerStore.createTextLayer(store,'X');
       const animator = store.addTextAnimator(layer.id);
       store.setAnimatorPropertyValue(layer.id, animator!.id, 'position', { x: 0, y: -100 });
 
@@ -1213,7 +1216,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
     test('Step 272: Long text performance', () => {
       // Create 100 character text
       const longText = 'A'.repeat(100);
-      const layer = store.createTextLayer(longText);
+      const layer = layerStore.createTextLayer(store,longText);
       const animator = store.addTextAnimator(layer.id);
       store.setAnimatorPropertyValue(layer.id, animator!.id, 'position', { x: 0, y: -50 });
 
@@ -1239,7 +1242,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
 
   describe('Section 24: API Completeness', () => {
     test('Step 408-412: Animator has required properties', () => {
-      const layer = store.createTextLayer('API TEST');
+      const layer = layerStore.createTextLayer(store,'API TEST');
       const animator = store.addTextAnimator(layer.id);
 
       expect(animator).not.toBeNull();
@@ -1252,7 +1255,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
     });
 
     test('Step 417-428: Range selector has required properties', () => {
-      const layer = store.createTextLayer('RANGE API');
+      const layer = layerStore.createTextLayer(store,'RANGE API');
       const animator = store.addTextAnimator(layer.id);
       const rangeSelector = animator!.rangeSelector;
 
@@ -1268,7 +1271,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
     });
 
     test('Step 440-442: getCharacterTransform returns correct structure', () => {
-      const layer = store.createTextLayer('STRUCTURE');
+      const layer = layerStore.createTextLayer(store,'STRUCTURE');
       const transforms = store.getCharacterTransforms(layer.id, 0);
 
       expect(transforms.length).toBe(9); // 'STRUCTURE' has 9 chars
@@ -1288,7 +1291,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
     });
 
     test('Step 443-444: getSelectionValues returns percentages', () => {
-      const layer = store.createTextLayer('SELECTION');
+      const layer = layerStore.createTextLayer(store,'SELECTION');
       const animator = store.addTextAnimator(layer.id);
 
       store.configureRangeSelector(layer.id, animator!.id, {
@@ -1313,7 +1316,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
 
   describe('Section 25: Per-Character 3D', () => {
     test('Step 173-175: Z rotation with full selection', () => {
-      const layer = store.createTextLayer('3D TEXT');
+      const layer = layerStore.createTextLayer(store,'3D TEXT');
       const animator = store.addTextAnimator(layer.id);
 
       // Set Z rotation (primary rotation axis)
@@ -1334,7 +1337,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
     });
 
     test('Step 176-177: Position XY with full selection', () => {
-      const layer = store.createTextLayer('DEPTH');
+      const layer = layerStore.createTextLayer(store,'DEPTH');
       const animator = store.addTextAnimator(layer.id);
 
       // Position with X and Y
@@ -1355,7 +1358,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
     });
 
     test('Step 178-180: Z rotation with ramp_up (falling dominoes)', () => {
-      const layer = store.createTextLayer('DOMINOES');
+      const layer = layerStore.createTextLayer(store,'DOMINOES');
       const animator = store.addTextAnimator(layer.id);
 
       // Z rotation varies by character position (ramp_up shape)
@@ -1375,7 +1378,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
     });
 
     test('Step 181-183: Z rotation (spin effect)', () => {
-      const layer = store.createTextLayer('SPIN');
+      const layer = layerStore.createTextLayer(store,'SPIN');
       const animator = store.addTextAnimator(layer.id);
 
       store.setAnimatorPropertyValue(layer.id, animator!.id, 'rotation', 180);
@@ -1394,7 +1397,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
     });
 
     test('Step 185-188: Y position stagger (simulating depth)', () => {
-      const layer = store.createTextLayer('STAGGER');
+      const layer = layerStore.createTextLayer(store,'STAGGER');
       const animator = store.addTextAnimator(layer.id);
 
       // Use Y position with ramp to simulate depth stagger
@@ -1426,7 +1429,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
 
   describe('Section 26: Animated Range Selectors', () => {
     test('Step 118-119: Full range selects all characters', () => {
-      const layer = store.createTextLayer('REVEAL');
+      const layer = layerStore.createTextLayer(store,'REVEAL');
       const animator = store.addTextAnimator(layer.id);
       store.setAnimatorPropertyValue(layer.id, animator!.id, 'opacity', 0);
 
@@ -1443,7 +1446,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
     });
 
     test('Step 120-121: Opacity with full selection', () => {
-      const layer = store.createTextLayer('TYPEWRITER');
+      const layer = layerStore.createTextLayer(store,'TYPEWRITER');
       const animator = store.addTextAnimator(layer.id);
       store.setAnimatorPropertyValue(layer.id, animator!.id, 'opacity', 0);
 
@@ -1460,7 +1463,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
     });
 
     test('Step 122-124: Animate Offset for traveling selection', () => {
-      const layer = store.createTextLayer('ABCDEFGHIJ'); // 10 chars
+      const layer = layerStore.createTextLayer(store,'ABCDEFGHIJ'); // 10 chars
       const animator = store.addTextAnimator(layer.id);
       store.setAnimatorPropertyValue(layer.id, animator!.id, 'position', { x: 0, y: -50 });
 
@@ -1493,7 +1496,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
     });
 
     test('Step 125-128: Range with expression-driven offset', async () => {
-      const layer = store.createTextLayer('EXPRESSION');
+      const layer = layerStore.createTextLayer(store,'EXPRESSION');
       const animator = store.addTextAnimator(layer.id);
       store.setAnimatorPropertyValue(layer.id, animator!.id, 'position', { x: 0, y: -100 });
 
@@ -1525,7 +1528,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
 
   describe('Section 27: Advanced Combinations', () => {
     test('Step 225-228: Stacked animators with overlapping ranges', () => {
-      const layer = store.createTextLayer('OVERLAP');
+      const layer = layerStore.createTextLayer(store,'OVERLAP');
 
       // Animator 1: Position Y for 0-60%
       const anim1 = store.addTextAnimator(layer.id, { name: 'Position' });
@@ -1564,7 +1567,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
     });
 
     test('Step 230-232: Position + Scale + Opacity cascade', () => {
-      const layer = store.createTextLayer('CASCADE');
+      const layer = layerStore.createTextLayer(store,'CASCADE');
       const animator = store.addTextAnimator(layer.id);
 
       store.setAnimatorPropertyValue(layer.id, animator!.id, 'position', { x: 0, y: -30 });
@@ -1592,7 +1595,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
     });
 
     test('Step 235-237: Fade in cascade (opacity 0→100 with animated range)', () => {
-      const layer = store.createTextLayer('FADE IN');
+      const layer = layerStore.createTextLayer(store,'FADE IN');
       const animator = store.addTextAnimator(layer.id);
 
       // Set opacity to 0 (invisible when selected)
@@ -1615,7 +1618,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
     });
 
     test('Step 238-240: Rise up and fade in effect', () => {
-      const layer = store.createTextLayer('RISE UP');
+      const layer = layerStore.createTextLayer(store,'RISE UP');
       const animator = store.addTextAnimator(layer.id);
 
       // Characters start below and invisible, animate to normal position and visible
@@ -1641,7 +1644,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
     });
 
     test('Step 241-243: Scale pop with overshoot effect', () => {
-      const layer = store.createTextLayer('POP');
+      const layer = layerStore.createTextLayer(store,'POP');
       const animator = store.addTextAnimator(layer.id);
 
       // Scale up to 150% (overshoot)
@@ -1665,7 +1668,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
     });
 
     test('Step 244-246: Tracking reveal (wide→normal)', () => {
-      const layer = store.createTextLayer('TRACKING');
+      const layer = layerStore.createTextLayer(store,'TRACKING');
       const animator = store.addTextAnimator(layer.id);
 
       // Wide tracking that decreases
@@ -1687,7 +1690,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
     });
 
     test('Step 247-250: Wave effect with expression selector', async () => {
-      const layer = store.createTextLayer('WAVE WAVE');
+      const layer = layerStore.createTextLayer(store,'WAVE WAVE');
       const animator = store.addTextAnimator(layer.id);
 
       store.setAnimatorPropertyValue(layer.id, animator!.id, 'position', { x: 0, y: -50 });
@@ -1713,7 +1716,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
     });
 
     test('Step 251-253: Expression selector modifies selection', async () => {
-      const layer = store.createTextLayer('SUBTRACT');
+      const layer = layerStore.createTextLayer(store,'SUBTRACT');
       const animator = store.addTextAnimator(layer.id);
 
       store.setAnimatorPropertyValue(layer.id, animator!.id, 'position', { x: 0, y: -100 });
@@ -1750,7 +1753,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
 
   describe('Section 28: Text Animator Property Behavior', () => {
     test('Step 309-313: Static position property value', () => {
-      const layer = store.createTextLayer('KEYFRAME');
+      const layer = layerStore.createTextLayer(store,'KEYFRAME');
       const animator = store.addTextAnimator(layer.id);
 
       // Set static position value
@@ -1773,7 +1776,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
     });
 
     test('Step 314-316: Range selector Start=100 selects nothing', () => {
-      const layer = store.createTextLayer('REVEAL');
+      const layer = layerStore.createTextLayer(store,'REVEAL');
       const animator = store.addTextAnimator(layer.id);
       store.setAnimatorPropertyValue(layer.id, animator!.id, 'opacity', 0);
 
@@ -1789,7 +1792,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
     });
 
     test('Step 318-320: Full selection applies effect', () => {
-      const layer = store.createTextLayer('HOLD');
+      const layer = layerStore.createTextLayer(store,'HOLD');
       const animator = store.addTextAnimator(layer.id);
 
       store.setAnimatorPropertyValue(layer.id, animator!.id, 'position', { x: 0, y: -100 });
@@ -1805,7 +1808,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
     });
 
     test('Step 321-323: Multiple properties on same animator', () => {
-      const layer = store.createTextLayer('TIMING');
+      const layer = layerStore.createTextLayer(store,'TIMING');
       const animator = store.addTextAnimator(layer.id);
 
       // Set multiple properties
@@ -1824,7 +1827,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
     });
 
     test('Step 324-328: Stagger with ramp_up shape', () => {
-      const layer = store.createTextLayer('STAGGER');
+      const layer = layerStore.createTextLayer(store,'STAGGER');
       const animator = store.addTextAnimator(layer.id);
 
       store.setAnimatorPropertyValue(layer.id, animator!.id, 'position', { x: 0, y: -50 });
@@ -1855,7 +1858,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
 
   describe('Section 29: Expression-Driven Properties', () => {
     test('Step 281-283: Expression on position property', async () => {
-      const layer = store.createTextLayer('EXPR POS');
+      const layer = layerStore.createTextLayer(store,'EXPR POS');
       const animator = store.addTextAnimator(layer.id);
 
       // Position based on textIndex
@@ -1881,7 +1884,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
     });
 
     test('Step 284-286: Expression on rotation with time', async () => {
-      const layer = store.createTextLayer('ROTATE');
+      const layer = layerStore.createTextLayer(store,'ROTATE');
       const animator = store.addTextAnimator(layer.id);
 
       store.setAnimatorPropertyValue(layer.id, animator!.id, 'rotation', 360);
@@ -1908,7 +1911,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
     });
 
     test('Step 289-292: Time-varying expression produces different values', async () => {
-      const layer = store.createTextLayer('OSCILLATE');
+      const layer = layerStore.createTextLayer(store,'OSCILLATE');
       const animator = store.addTextAnimator(layer.id);
 
       store.setAnimatorPropertyValue(layer.id, animator!.id, 'position', { x: 0, y: -100 });
@@ -1937,7 +1940,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
     });
 
     test('Step 293-296: Per-character phase offset', async () => {
-      const layer = store.createTextLayer('PHASE');
+      const layer = layerStore.createTextLayer(store,'PHASE');
       const animator = store.addTextAnimator(layer.id);
 
       store.setAnimatorPropertyValue(layer.id, animator!.id, 'position', { x: 0, y: -50 });
@@ -1968,7 +1971,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
 
   describe('Section 30: Based On Modes', () => {
     test('Step 71-72: Based On Characters (default)', () => {
-      const layer = store.createTextLayer('A B C D E'); // 9 chars including spaces
+      const layer = layerStore.createTextLayer(store,'A B C D E'); // 9 chars including spaces
       const animator = store.addTextAnimator(layer.id);
 
       store.setAnimatorPropertyValue(layer.id, animator!.id, 'position', { x: 0, y: -50 });
@@ -1992,7 +1995,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
     });
 
     test('Step 73-75: Based On Words (defaults to characters)', () => {
-      const layer = store.createTextLayer('ONE TWO THREE'); // 3 words, 13 chars
+      const layer = layerStore.createTextLayer(store,'ONE TWO THREE'); // 3 words, 13 chars
       const animator = store.addTextAnimator(layer.id);
 
       store.setAnimatorPropertyValue(layer.id, animator!.id, 'position', { x: 0, y: -50 });
@@ -2014,7 +2017,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
     });
 
     test('Step 76-78: Multi-line text character count', () => {
-      const layer = store.createTextLayer('LINE ONE\nLINE TWO'); // 2 lines
+      const layer = layerStore.createTextLayer(store,'LINE ONE\nLINE TWO'); // 2 lines
       const animator = store.addTextAnimator(layer.id);
 
       store.setAnimatorPropertyValue(layer.id, animator!.id, 'position', { x: 0, y: -50 });
@@ -2045,7 +2048,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
 
   describe('Section 31: Fill/Stroke Color', () => {
     test('Step 53-54: Fill color animator property', () => {
-      const layer = store.createTextLayer('COLOR');
+      const layer = layerStore.createTextLayer(store,'COLOR');
       const animator = store.addTextAnimator(layer.id);
 
       // Set fill color offset (adds to base color)
@@ -2067,7 +2070,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
     });
 
     test('Step 55: Stroke width animator property', () => {
-      const layer = store.createTextLayer('STROKE');
+      const layer = layerStore.createTextLayer(store,'STROKE');
       const animator = store.addTextAnimator(layer.id);
 
       store.setAnimatorPropertyValue(layer.id, animator!.id, 'strokeWidth', 5);
@@ -2093,18 +2096,18 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
 
   describe('Section 32: Text Metrics', () => {
     test('Step 17-19: Get character count', () => {
-      const layer1 = store.createTextLayer('Hello');
+      const layer1 = layerStore.createTextLayer(store,'Hello');
       expect(store.getCharacterTransforms(layer1.id, 0).length).toBe(5);
 
-      const layer2 = store.createTextLayer('Hello World');
+      const layer2 = layerStore.createTextLayer(store,'Hello World');
       expect(store.getCharacterTransforms(layer2.id, 0).length).toBe(11);
 
-      const layer3 = store.createTextLayer('');
+      const layer3 = layerStore.createTextLayer(store,'');
       expect(store.getCharacterTransforms(layer3.id, 0).length).toBe(0);
     });
 
     test('Step 20-21: Multi-word and multi-line text', () => {
-      const layer = store.createTextLayer('Word One\nWord Two\nWord Three');
+      const layer = layerStore.createTextLayer(store,'Word One\nWord Two\nWord Three');
       const transforms = store.getCharacterTransforms(layer.id, 0);
 
       // Total chars including spaces and newlines
@@ -2112,7 +2115,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
     });
 
     test('Step 22-26: Unicode characters', () => {
-      const layer = store.createTextLayer('ABC123!@#');
+      const layer = layerStore.createTextLayer(store,'ABC123!@#');
       const transforms = store.getCharacterTransforms(layer.id, 0);
       expect(transforms.length).toBe(9);
 
@@ -2129,7 +2132,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
 
   describe('Section 33: Performance', () => {
     test('Step 353: 100 character performance', () => {
-      const layer = store.createTextLayer('A'.repeat(100));
+      const layer = layerStore.createTextLayer(store,'A'.repeat(100));
       const animator = store.addTextAnimator(layer.id);
       store.setAnimatorPropertyValue(layer.id, animator!.id, 'position', { x: 10, y: -20 });
       store.configureRangeSelector(layer.id, animator!.id, {
@@ -2147,7 +2150,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
     });
 
     test('Step 354: 500 character performance', () => {
-      const layer = store.createTextLayer('B'.repeat(500));
+      const layer = layerStore.createTextLayer(store,'B'.repeat(500));
       const animator = store.addTextAnimator(layer.id);
       store.setAnimatorPropertyValue(layer.id, animator!.id, 'rotation', 45);
       store.configureRangeSelector(layer.id, animator!.id, {
@@ -2165,7 +2168,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
     });
 
     test('Step 355-356: Multiple animators performance', () => {
-      const layer = store.createTextLayer('C'.repeat(200));
+      const layer = layerStore.createTextLayer(store,'C'.repeat(200));
 
       // Add 5 animators
       for (let i = 0; i < 5; i++) {
@@ -2193,7 +2196,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
 
   describe('Section 34: Integration', () => {
     test('Step 361-363: Text animator on layer with effects', () => {
-      const layer = store.createTextLayer('EFFECTS');
+      const layer = layerStore.createTextLayer(store,'EFFECTS');
 
       // Add an effect to the layer (if available)
       // For now, just verify animator works
@@ -2215,7 +2218,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
     });
 
     test('Step 382-384: Undo/redo animator property changes', () => {
-      const layer = store.createTextLayer('UNDO');
+      const layer = layerStore.createTextLayer(store,'UNDO');
       const animator = store.addTextAnimator(layer.id);
 
       store.pushHistory();
@@ -2239,7 +2242,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
     });
 
     test('Step 387-388: Animator on duplicated layer', () => {
-      const layer = store.createTextLayer('DUPLICATE');
+      const layer = layerStore.createTextLayer(store,'DUPLICATE');
       const animator = store.addTextAnimator(layer.id);
       store.setAnimatorPropertyValue(layer.id, animator!.id, 'rotation', 45);
       store.configureRangeSelector(layer.id, animator!.id, {
@@ -2253,7 +2256,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
       expect(origTransforms[0].rotation.z).toBe(45);
 
       // Duplicate layer
-      const dupLayer = store.duplicateLayer(layer.id);
+      const dupLayer = layerStore.duplicateLayer(store,layer.id);
       expect(dupLayer).not.toBeNull();
 
       // Verify duplicate has same animator effect
@@ -2301,7 +2304,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
 
     describe('Section 7.1: Path Options (Steps 189-194)', () => {
       test('Step 189-190: setTextPath configures path on text layer', () => {
-        const layer = store.createTextLayer('PATH');
+        const layer = layerStore.createTextLayer(store,'PATH');
         const path = createHorizontalPath();
 
         const result = store.setTextPath(layer.id, { pathPoints: path });
@@ -2311,7 +2314,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
       });
 
       test('Step 191-192: getTextPathConfig returns path configuration', () => {
-        const layer = store.createTextLayer('TEST');
+        const layer = layerStore.createTextLayer(store,'TEST');
         const path = createHorizontalPath();
 
         store.setTextPath(layer.id, {
@@ -2329,7 +2332,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
       });
 
       test('Step 193-194: Text flows along path - characters have positions', () => {
-        const layer = store.createTextLayer('ABC');
+        const layer = layerStore.createTextLayer(store,'ABC');
         const path = createHorizontalPath();
 
         store.setTextPath(layer.id, { pathPoints: path });
@@ -2352,7 +2355,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
 
     describe('Section 7.2: Path Properties (Steps 195-200)', () => {
       test('Step 195: Reversed path - text flows in opposite direction', () => {
-        const layer = store.createTextLayer('ABC');
+        const layer = layerStore.createTextLayer(store,'ABC');
         const path = createHorizontalPath();
 
         // Normal direction
@@ -2369,7 +2372,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
       });
 
       test('Step 196: Perpendicular to path - characters rotate with path', () => {
-        const layer = store.createTextLayer('AB');
+        const layer = layerStore.createTextLayer(store,'AB');
         const path = createCurvedPath();
 
         store.setTextPath(layer.id, {
@@ -2388,7 +2391,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
       });
 
       test('Step 197-198: First/Last margin offsets text from path ends', () => {
-        const layer = store.createTextLayer('XY');
+        const layer = layerStore.createTextLayer(store,'XY');
         const path = createHorizontalPath();
 
         // No margins
@@ -2404,7 +2407,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
       });
 
       test('Step 199-200: First and Last margin animated via updateTextPath', () => {
-        const layer = store.createTextLayer('TEXT');
+        const layer = layerStore.createTextLayer(store,'TEXT');
         const path = createHorizontalPath();
 
         store.setTextPath(layer.id, { pathPoints: path, firstMargin: 0 });
@@ -2425,7 +2428,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
 
     describe('Section 7.3: Path Geometry (Steps 201-207)', () => {
       test('Step 201: Text on straight line path', () => {
-        const layer = store.createTextLayer('LINE');
+        const layer = layerStore.createTextLayer(store,'LINE');
         const path = createHorizontalPath();
 
         store.setTextPath(layer.id, { pathPoints: path });
@@ -2438,7 +2441,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
       });
 
       test('Step 202: Text on curved bezier path', () => {
-        const layer = store.createTextLayer('CURVE');
+        const layer = layerStore.createTextLayer(store,'CURVE');
         const path = createCurvedPath();
 
         store.setTextPath(layer.id, { pathPoints: path });
@@ -2454,7 +2457,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
       });
 
       test('Step 203: Text on closed circular path', () => {
-        const layer = store.createTextLayer('LOOP');
+        const layer = layerStore.createTextLayer(store,'LOOP');
         const path = createCirclePath();
 
         store.setTextPath(layer.id, {
@@ -2473,7 +2476,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
       });
 
       test('Step 204-205: Path with multiple segments', () => {
-        const layer = store.createTextLayer('MULTI');
+        const layer = layerStore.createTextLayer(store,'MULTI');
         // Multi-segment path
         const path: ControlPoint[] = [
           { id: `cp_${Date.now()}_0_${Math.random().toString(36).slice(2, 7)}`, x: 0, y: 0, handleIn: null, handleOut: { x: 50, y: 0 }, type: 'smooth' as const },
@@ -2490,7 +2493,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
       });
 
       test('Step 206: getPathLength returns arc length', () => {
-        const layer = store.createTextLayer('LEN');
+        const layer = layerStore.createTextLayer(store,'LEN');
         const path = createHorizontalPath(); // 500px straight line
 
         store.setTextPath(layer.id, { pathPoints: path });
@@ -2508,7 +2511,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
           { id: `cp_${Date.now()}_0_${Math.random().toString(36).slice(2, 7)}`, x: 0, y: 0, handleIn: null, handleOut: { x: 0, y: 0 }, type: 'smooth' as const },
           { id: `cp_${Date.now()}_1_${Math.random().toString(36).slice(2, 7)}`, x: 50, y: 0, handleIn: { x: 0, y: 0 }, handleOut: null, type: 'smooth' as const }
         ];
-        const layer = store.createTextLayer('OVERFLOW');
+        const layer = layerStore.createTextLayer(store,'OVERFLOW');
 
         store.setTextPath(layer.id, { pathPoints: shortPath });
         const placements = store.getCharacterPathPlacements(layer.id, 0);
@@ -2520,7 +2523,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
 
     describe('Section 7.4: Path Animation (Steps 208-214)', () => {
       test('Step 208: Animate First Margin for text traveling along path', () => {
-        const layer = store.createTextLayer('TRAVEL');
+        const layer = layerStore.createTextLayer(store,'TRAVEL');
         const path = createHorizontalPath();
 
         store.setTextPath(layer.id, { pathPoints: path, firstMargin: 0 });
@@ -2541,7 +2544,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
       });
 
       test('Step 209-210: Path offset animation (0-100%)', () => {
-        const layer = store.createTextLayer('OFFSET');
+        const layer = layerStore.createTextLayer(store,'OFFSET');
         const path = createHorizontalPath();
 
         store.setTextPath(layer.id, { pathPoints: path, offset: 0 });
@@ -2555,7 +2558,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
       });
 
       test('Step 211-212: Path combined with Range selector reveal', () => {
-        const layer = store.createTextLayer('REVEAL');
+        const layer = layerStore.createTextLayer(store,'REVEAL');
         const path = createHorizontalPath();
 
         // Set up path
@@ -2578,7 +2581,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
       });
 
       test('Step 213-214: Path with per-character rotation animator', () => {
-        const layer = store.createTextLayer('SPIN');
+        const layer = layerStore.createTextLayer(store,'SPIN');
         const path = createHorizontalPath();
 
         store.setTextPath(layer.id, { pathPoints: path });
@@ -2601,7 +2604,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
 
     describe('Section 7.5: Path and Animators Interaction (Steps 215-224)', () => {
       test('Step 215-216: Position animator offset perpendicular to path', () => {
-        const layer = store.createTextLayer('PERP');
+        const layer = layerStore.createTextLayer(store,'PERP');
         const path = createHorizontalPath();
 
         store.setTextPath(layer.id, { pathPoints: path });
@@ -2621,7 +2624,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
       });
 
       test('Step 217: Rotation relative to path direction', () => {
-        const layer = store.createTextLayer('ROT');
+        const layer = layerStore.createTextLayer(store,'ROT');
         const path = createCurvedPath();
 
         store.setTextPath(layer.id, {
@@ -2637,7 +2640,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
       });
 
       test('Step 218: Scale along path (larger at start, smaller at end)', () => {
-        const layer = store.createTextLayer('SCALE');
+        const layer = layerStore.createTextLayer(store,'SCALE');
         const path = createHorizontalPath();
 
         store.setTextPath(layer.id, { pathPoints: path });
@@ -2658,7 +2661,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
       });
 
       test('Step 219: Tracking changes along path', () => {
-        const layer = store.createTextLayer('TRACK');
+        const layer = layerStore.createTextLayer(store,'TRACK');
         const path = createHorizontalPath();
 
         store.setTextPath(layer.id, { pathPoints: path });
@@ -2679,7 +2682,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
       });
 
       test('Step 220: Opacity fade along path', () => {
-        const layer = store.createTextLayer('FADE');
+        const layer = layerStore.createTextLayer(store,'FADE');
         const path = createHorizontalPath();
 
         store.setTextPath(layer.id, { pathPoints: path });
@@ -2701,7 +2704,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
       });
 
       test('Step 221: Multiple animators on path-based text', () => {
-        const layer = store.createTextLayer('MULTI');
+        const layer = layerStore.createTextLayer(store,'MULTI');
         const path = createHorizontalPath();
 
         store.setTextPath(layer.id, { pathPoints: path });
@@ -2733,7 +2736,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
       });
 
       test('Step 222: Expression selector with path text', async () => {
-        const layer = store.createTextLayer('EXPR');
+        const layer = layerStore.createTextLayer(store,'EXPR');
         const path = createHorizontalPath();
 
         store.setTextPath(layer.id, { pathPoints: path });
@@ -2755,7 +2758,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
       });
 
       test('Step 223: Wiggly selector on path text', () => {
-        const layer = store.createTextLayer('WIGG');
+        const layer = layerStore.createTextLayer(store,'WIGG');
         const path = createHorizontalPath();
 
         store.setTextPath(layer.id, { pathPoints: path });
@@ -2789,7 +2792,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
       });
 
       test('Step 224: Cascade reveal along path', () => {
-        const layer = store.createTextLayer('CASCADE');
+        const layer = layerStore.createTextLayer(store,'CASCADE');
         const path = createHorizontalPath();
 
         store.setTextPath(layer.id, { pathPoints: path });
@@ -2819,7 +2822,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
 
     describe('Section 7: Undo/Redo and Save/Load', () => {
       test('Path config updates via updateTextPath', () => {
-        const layer = store.createTextLayer('UPDATE');
+        const layer = layerStore.createTextLayer(store,'UPDATE');
         const path = createHorizontalPath();
 
         store.setTextPath(layer.id, { pathPoints: path, firstMargin: 50 });
@@ -2840,7 +2843,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
       });
 
       test('clearTextPath removes path configuration', () => {
-        const layer = store.createTextLayer('CLEAR');
+        const layer = layerStore.createTextLayer(store,'CLEAR');
         const path = createHorizontalPath();
 
         store.setTextPath(layer.id, { pathPoints: path });
@@ -2852,7 +2855,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
       });
 
       test('Path config is stored in layer data', () => {
-        const layer = store.createTextLayer('STORE');
+        const layer = layerStore.createTextLayer(store,'STORE');
         const path = createHorizontalPath();
 
         store.setTextPath(layer.id, {
@@ -2876,7 +2879,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
       });
 
       test('Text alignment options on path', () => {
-        const layer = store.createTextLayer('ALIGN');
+        const layer = layerStore.createTextLayer(store,'ALIGN');
         const path = createHorizontalPath();
 
         // Left align (default)
@@ -2906,7 +2909,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
 
     describe('Section 8.1: Stacked Animators (Steps 225-229)', () => {
       test('Step 225: Two animators with different ranges', () => {
-        const layer = store.createTextLayer('ABCDEFGHIJ'); // 10 chars
+        const layer = layerStore.createTextLayer(store,'ABCDEFGHIJ'); // 10 chars
 
         // Animator 1: affects first half with position Y
         const anim1 = store.addTextAnimator(layer.id);
@@ -2938,7 +2941,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
       });
 
       test('Step 226: Animator 1: 0-50%, Animator 2: 50-100% - clean split', () => {
-        const layer = store.createTextLayer('ABCDEFGHIJ'); // 10 chars
+        const layer = layerStore.createTextLayer(store,'ABCDEFGHIJ'); // 10 chars
 
         // Animator 1: scale up first half
         const anim1 = store.addTextAnimator(layer.id);
@@ -2967,7 +2970,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
       });
 
       test('Step 227: Overlapping ranges combine effects additively', () => {
-        const layer = store.createTextLayer('ABCDE'); // 5 chars
+        const layer = layerStore.createTextLayer(store,'ABCDE'); // 5 chars
 
         // Animator 1: Y offset for all
         const anim1 = store.addTextAnimator(layer.id);
@@ -2995,7 +2998,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
       });
 
       test('Step 228: Non-overlapping ranges for segmented effects', () => {
-        const layer = store.createTextLayer('ABCDEF'); // 6 chars
+        const layer = layerStore.createTextLayer(store,'ABCDEF'); // 6 chars
 
         // Animator 1: first third - move up
         const anim1 = store.addTextAnimator(layer.id);
@@ -3026,7 +3029,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
       });
 
       test('Step 229: Animator order matters - processed top to bottom', () => {
-        const layer = store.createTextLayer('ABC');
+        const layer = layerStore.createTextLayer(store,'ABC');
 
         // Animator 1 (first): sets position
         const anim1 = store.addTextAnimator(layer.id);
@@ -3055,7 +3058,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
 
     describe('Section 8.2: Multi-Property Animation (Steps 230-234)', () => {
       test('Step 230: Single animator with Position + Rotation', () => {
-        const layer = store.createTextLayer('TEST');
+        const layer = layerStore.createTextLayer(store,'TEST');
 
         const animator = store.addTextAnimator(layer.id);
         store.setAnimatorPropertyValue(layer.id, animator!.id, 'position', { x: 25, y: -25 });
@@ -3075,7 +3078,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
       });
 
       test('Step 231: Single animator with Position + Scale + Opacity', () => {
-        const layer = store.createTextLayer('MULTI');
+        const layer = layerStore.createTextLayer(store,'MULTI');
 
         const animator = store.addTextAnimator(layer.id);
         store.setAnimatorPropertyValue(layer.id, animator!.id, 'position', { x: 0, y: -40 });
@@ -3095,7 +3098,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
       });
 
       test('Step 232: Position + Rotation + Scale combined', () => {
-        const layer = store.createTextLayer('COMBO');
+        const layer = layerStore.createTextLayer(store,'COMBO');
 
         const animator = store.addTextAnimator(layer.id);
         store.setAnimatorPropertyValue(layer.id, animator!.id, 'position', { x: 15, y: -15 });
@@ -3117,7 +3120,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
       });
 
       test('Step 233: All properties animate together within range', () => {
-        const layer = store.createTextLayer('ABCDEFGH'); // 8 chars
+        const layer = layerStore.createTextLayer(store,'ABCDEFGH'); // 8 chars
 
         const animator = store.addTextAnimator(layer.id);
         store.setAnimatorPropertyValue(layer.id, animator!.id, 'position', { x: 0, y: -30 });
@@ -3146,7 +3149,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
       });
 
       test('Step 234: Multiple properties with different animators', () => {
-        const layer = store.createTextLayer('TEST');
+        const layer = layerStore.createTextLayer(store,'TEST');
 
         // Animator 1: position only
         const anim1 = store.addTextAnimator(layer.id);
@@ -3176,7 +3179,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
 
     describe('Section 8.3: Reveal/Conceal Effects (Steps 235-240)', () => {
       test('Step 235: Fade in cascade - Opacity with animated range', () => {
-        const layer = store.createTextLayer('FADE IN');
+        const layer = layerStore.createTextLayer(store,'FADE IN');
 
         // Animator: opacity 0 (invisible) for selected range
         const animator = store.addTextAnimator(layer.id);
@@ -3198,7 +3201,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
       });
 
       test('Step 236: Rise up and fade in - Position Y + Opacity', () => {
-        const layer = store.createTextLayer('RISE');
+        const layer = layerStore.createTextLayer(store,'RISE');
 
         // Animator: characters start below and invisible
         const animator = store.addTextAnimator(layer.id);
@@ -3222,7 +3225,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
       });
 
       test('Step 237: Pop in effect - Scale 0 to 100', () => {
-        const layer = store.createTextLayer('POP');
+        const layer = layerStore.createTextLayer(store,'POP');
 
         // Animator: characters start at 0 scale
         const animator = store.addTextAnimator(layer.id);
@@ -3244,7 +3247,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
       });
 
       test('Step 238: Tumble in - Rotation + Position', () => {
-        const layer = store.createTextLayer('TUMBLE');
+        const layer = layerStore.createTextLayer(store,'TUMBLE');
 
         // Animator: characters rotated and offset
         const animator = store.addTextAnimator(layer.id);
@@ -3268,7 +3271,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
       });
 
       test('Step 239: Tracking reveal - Wide to normal spacing', () => {
-        const layer = store.createTextLayer('TRACK');
+        const layer = layerStore.createTextLayer(store,'TRACK');
 
         // Animator: wide tracking for selected range
         const animator = store.addTextAnimator(layer.id);
@@ -3288,7 +3291,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
       });
 
       test('Step 240: Focus in effect - Scale + Opacity', () => {
-        const layer = store.createTextLayer('FOCUS');
+        const layer = layerStore.createTextLayer(store,'FOCUS');
 
         // Animator: slightly scaled and semi-transparent (simulating blur focus)
         const animator = store.addTextAnimator(layer.id);
@@ -3314,7 +3317,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
 
     describe('Section 8.4: Kinetic Typography Presets (Steps 241-250)', () => {
       test('Step 241: Typewriter effect - Range End reveals chars', () => {
-        const layer = store.createTextLayer('TYPE');
+        const layer = layerStore.createTextLayer(store,'TYPE');
 
         // Animator: invisible characters
         const animator = store.addTextAnimator(layer.id);
@@ -3339,7 +3342,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
       });
 
       test('Step 242: Bounce in - Position Y + Scale with overshoot', () => {
-        const layer = store.createTextLayer('BOUNCE');
+        const layer = layerStore.createTextLayer(store,'BOUNCE');
 
         // Characters start above and small
         const animator = store.addTextAnimator(layer.id);
@@ -3363,7 +3366,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
       });
 
       test('Step 243: Fade up - Position Y + Opacity staggered', () => {
-        const layer = store.createTextLayer('FADEUP');
+        const layer = layerStore.createTextLayer(store,'FADEUP');
 
         const animator = store.addTextAnimator(layer.id);
         store.setAnimatorPropertyValue(layer.id, animator!.id, 'position', { x: 0, y: 30 });
@@ -3386,7 +3389,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
       });
 
       test('Step 244: Spin in - Rotation with range sweep', () => {
-        const layer = store.createTextLayer('SPIN');
+        const layer = layerStore.createTextLayer(store,'SPIN');
 
         // Characters start rotated
         const animator = store.addTextAnimator(layer.id);
@@ -3407,7 +3410,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
       });
 
       test('Step 245: Scale pop - Overshoot scale effect', () => {
-        const layer = store.createTextLayer('SCALE');
+        const layer = layerStore.createTextLayer(store,'SCALE');
 
         // Characters scaled larger than normal (overshoot state)
         const animator = store.addTextAnimator(layer.id);
@@ -3428,7 +3431,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
       });
 
       test('Step 246: Tracking reveal - Wide to normal', () => {
-        const layer = store.createTextLayer('REVEAL');
+        const layer = layerStore.createTextLayer(store,'REVEAL');
 
         const animator = store.addTextAnimator(layer.id);
         store.setAnimatorPropertyValue(layer.id, animator!.id, 'tracking', 300);
@@ -3448,7 +3451,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
       });
 
       test('Step 247: Random fade - Wiggly + Opacity', () => {
-        const layer = store.createTextLayer('RANDOM');
+        const layer = layerStore.createTextLayer(store,'RANDOM');
 
         const animator = store.addTextAnimator(layer.id);
         store.setAnimatorPropertyValue(layer.id, animator!.id, 'opacity', 0);
@@ -3473,7 +3476,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
       });
 
       test('Step 248: Wave effect - Expression selector with sin', async () => {
-        const layer = store.createTextLayer('WAVE');
+        const layer = layerStore.createTextLayer(store,'WAVE');
 
         const animator = store.addTextAnimator(layer.id);
         store.setAnimatorPropertyValue(layer.id, animator!.id, 'position', { x: 0, y: -30 });
@@ -3494,7 +3497,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
       });
 
       test('Step 249: Character scramble effect', () => {
-        const layer = store.createTextLayer('SCRAMBLE');
+        const layer = layerStore.createTextLayer(store,'SCRAMBLE');
 
         // Randomize order simulates scramble
         const animator = store.addTextAnimator(layer.id);
@@ -3514,7 +3517,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
       });
 
       test('Step 250: Glitch effect - Random position/rotation spikes', () => {
-        const layer = store.createTextLayer('GLITCH');
+        const layer = layerStore.createTextLayer(store,'GLITCH');
 
         // Position offset for glitch
         const anim1 = store.addTextAnimator(layer.id);
@@ -3557,7 +3560,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
 
     describe('Section 8.5: Complex Combinations (Steps 251-256)', () => {
       test('Step 251: Path + Animator + Expression Selector', async () => {
-        const layer = store.createTextLayer('COMBO');
+        const layer = layerStore.createTextLayer(store,'COMBO');
 
         // Set up path
         store.setTextPath(layer.id, {
@@ -3584,7 +3587,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
       });
 
       test('Step 252: Multiple Range Selectors with different modes', () => {
-        const layer = store.createTextLayer('MODES');
+        const layer = layerStore.createTextLayer(store,'MODES');
 
         // Animator with range selector
         const animator = store.addTextAnimator(layer.id);
@@ -3603,7 +3606,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
       });
 
       test('Step 253: Wiggly + Range combined', () => {
-        const layer = store.createTextLayer('WIGGLE');
+        const layer = layerStore.createTextLayer(store,'WIGGLE');
 
         const animator = store.addTextAnimator(layer.id);
         store.setAnimatorPropertyValue(layer.id, animator!.id, 'position', { x: 0, y: -30 });
@@ -3633,7 +3636,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
       });
 
       test('Step 254: Per-character 3D rotation + Path', () => {
-        const layer = store.createTextLayer('3D');
+        const layer = layerStore.createTextLayer(store,'3D');
 
         // Set up path
         store.setTextPath(layer.id, {
@@ -3664,7 +3667,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
 
       test('Step 255: Nested compositions preserve text animators', () => {
         // Create text layer with animator
-        const layer = store.createTextLayer('NESTED');
+        const layer = layerStore.createTextLayer(store,'NESTED');
 
         const animator = store.addTextAnimator(layer.id);
         store.setAnimatorPropertyValue(layer.id, animator!.id, 'scale', { x: 75, y: 75 });
@@ -3685,7 +3688,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
       });
 
       test('Step 256: Text animator with multiple expression effects', async () => {
-        const layer = store.createTextLayer('EXPRESS');
+        const layer = layerStore.createTextLayer(store,'EXPRESS');
 
         // Animator 1: wave Y position
         const anim1 = store.addTextAnimator(layer.id);

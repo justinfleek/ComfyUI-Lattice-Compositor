@@ -30,6 +30,7 @@ import type {
   Keyframe,
 } from "@/types/project";
 import type { BezierPath } from "@/types/shapes";
+import type { Vec2, Vec3 } from "@/types/transform";
 import { validateFps } from "@/utils/fpsUtils";
 import { renderLogger } from "@/utils/logger";
 import { createFootageAccessor } from "./dataImport";
@@ -205,9 +206,13 @@ function getValueDelta<T>(v1: T, v2: T): number {
     "x" in v2 &&
     "y" in v2
   ) {
-    const dx = (v2 as any).x - (v1 as any).x;
-    const dy = (v2 as any).y - (v1 as any).y;
-    return Math.sqrt(dx * dx + dy * dy) || 1;
+    const v1Vec = v1 as Vec2;
+    const v2Vec = v2 as Vec2;
+    const dx = v2Vec.x - v1Vec.x;
+    const dy = v2Vec.y - v1Vec.y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+    // Return 1 as fallback if distance is 0 or invalid (prevents division by zero)
+    return Number.isFinite(distance) && distance > 0 ? distance : 1;
   }
   return 1; // Default for non-numeric types
 }
@@ -341,7 +346,8 @@ function applyPropertyExpression<T>(
     value: value as number | number[],
     velocity,
     numKeys: property.keyframes.length,
-    keyframes: property.keyframes,
+    // Type assertion: expressions only work with numeric keyframes (number or number[])
+    keyframes: property.keyframes as Keyframe<number | number[]>[],
     // Data-driven animation support: footage() function for CSV/JSON access
     footage: createFootageAccessor,
   };
@@ -378,9 +384,16 @@ function calculateVelocity<T>(
   }
 
   if (typeof valueBefore === "object" && typeof valueAfter === "object") {
-    const vb = valueBefore as any;
-    const va = valueAfter as any;
-    if ("x" in vb && "y" in vb) {
+    if (
+      valueBefore !== null &&
+      valueAfter !== null &&
+      "x" in valueBefore &&
+      "y" in valueBefore &&
+      "x" in valueAfter &&
+      "y" in valueAfter
+    ) {
+      const vb = valueBefore as Vec2 | Vec3;
+      const va = valueAfter as Vec2 | Vec3;
       const result = [(va.x - vb.x) * fps, (va.y - vb.y) * fps];
       if ("z" in vb && "z" in va) {
         result.push((va.z - vb.z) * fps);
@@ -552,24 +565,24 @@ function interpolateValue<T>(v1: T, v2: T, t: number): T {
     "x" in v2 &&
     "y" in v2
   ) {
-    const val1 = v1 as any;
-    const val2 = v2 as any;
+    const val1 = v1 as Vec2 | Vec3;
+    const val2 = v2 as Vec2 | Vec3;
 
     // Use safeLerp for each component to handle extreme values
-    const result: any = {
+    const result: Vec2 | Vec3 = {
       x: safeLerp(val1.x, val2.x, t),
       y: safeLerp(val1.y, val2.y, t),
     };
 
     // Handle Z if present in both
     if ("z" in val1 && "z" in val2) {
-      result.z = safeLerp(val1.z, val2.z, t);
+      (result as Vec3).z = safeLerp(val1.z, val2.z, t);
     } else if ("z" in val1) {
       // Transitioning from 3D to 2D (rare, but handle it)
-      result.z = safeLerp(val1.z, 0, t);
+      (result as Vec3).z = safeLerp(val1.z, 0, t);
     } else if ("z" in val2) {
       // Transitioning from 2D to 3D
-      result.z = safeLerp(0, val2.z, t);
+      (result as Vec3).z = safeLerp(0, val2.z, t);
     }
 
     return result as T;
@@ -785,8 +798,8 @@ export function createHandlesForPreset(
  * Apply an easing preset to a keyframe (legacy function - prefer named easings)
  * @deprecated Use interpolation type with named easings instead
  */
-export function applyEasingPreset(
-  keyframe: Keyframe<any>,
+export function applyEasingPreset<T>(
+  keyframe: Keyframe<T>,
   presetName: keyof typeof EASING_PRESETS_NORMALIZED,
   _direction: "in" | "out" | "both" = "both",
 ): void {

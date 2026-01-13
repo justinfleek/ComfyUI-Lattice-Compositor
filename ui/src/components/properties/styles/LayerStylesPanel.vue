@@ -209,18 +209,8 @@
 
 <script setup lang="ts">
 import { computed, reactive } from "vue";
-import {
-  applyStylePreset,
-  clearLayerStyles,
-  copyLayerStyles,
-  getStylePresetNames,
-  hasStylesInClipboard,
-  pasteLayerStyles,
-  setLayerStylesEnabled,
-  setStyleEnabled,
-  updateStyleProperty,
-} from "@/stores/actions/layerStyleActions";
 import { useCompositorStore } from "@/stores/compositorStore";
+import { useEffectStore } from "@/stores/effectStore";
 import type {
   BevelEmbossUpdate,
   ColorOverlayUpdate,
@@ -282,9 +272,11 @@ const stylesEnabled = computed(() => layerStyles.value?.enabled ?? false);
 
 const hasStyles = computed(() => !!layerStyles.value);
 
-const canPaste = computed(() => hasStylesInClipboard());
+const effectStore = useEffectStore();
 
-const presetNames = computed(() => getStylePresetNames());
+const canPaste = computed(() => effectStore.hasStylesInClipboard());
+
+const presetNames = computed(() => effectStore.getStylePresetNames());
 
 // Individual style enabled states
 const dropShadowEnabled = computed(
@@ -321,12 +313,12 @@ const blendingOptionsEnabled = computed(
 // Actions
 function toggleStyles() {
   if (!selectedLayer.value) return;
-  setLayerStylesEnabled(store, selectedLayer.value.id, !stylesEnabled.value);
+  effectStore.setLayerStylesEnabled(selectedLayer.value.id, !stylesEnabled.value);
 }
 
 function toggleStyle(styleType: keyof LayerStyles, enabled: boolean) {
   if (!selectedLayer.value) return;
-  setStyleEnabled(store, selectedLayer.value.id, styleType, enabled);
+  effectStore.setStyleEnabled(selectedLayer.value.id, styleType, enabled);
 
   // Auto-expand when enabling
   if (enabled && isExpandableStyleType(styleType)) {
@@ -336,8 +328,7 @@ function toggleStyle(styleType: keyof LayerStyles, enabled: boolean) {
 
 function toggleBlendingOptions() {
   if (!selectedLayer.value) return;
-  setStyleEnabled(
-    store,
+  effectStore.setStyleEnabled(
     selectedLayer.value.id,
     "blendingOptions",
     !blendingOptionsEnabled.value,
@@ -346,17 +337,17 @@ function toggleBlendingOptions() {
 
 function copyStyles() {
   if (!selectedLayer.value) return;
-  copyLayerStyles(store, selectedLayer.value.id);
+  effectStore.copyLayerStyles(selectedLayer.value.id);
 }
 
 function pasteStyles() {
   if (!selectedLayer.value) return;
-  pasteLayerStyles(store, selectedLayer.value.id);
+  effectStore.pasteLayerStyles(selectedLayer.value.id);
 }
 
 function clearStyles() {
   if (!selectedLayer.value) return;
-  clearLayerStyles(store, selectedLayer.value.id);
+  effectStore.clearLayerStyles(selectedLayer.value.id);
 }
 
 function applyPreset(event: Event) {
@@ -364,7 +355,7 @@ function applyPreset(event: Event) {
   const preset = select.value;
   if (!preset || !selectedLayer.value) return;
 
-  applyStylePreset(store, selectedLayer.value.id, preset);
+  effectStore.applyStylePreset(selectedLayer.value.id, preset);
   select.value = "";
 }
 
@@ -385,8 +376,7 @@ function applyStyleUpdates<T extends keyof LayerStyles>(
   for (const [key, value] of Object.entries(updates)) {
     // Type assertion needed because Object.entries loses key type info
     // The updateStyleProperty function validates keys at runtime
-    updateStyleProperty(
-      store,
+    effectStore.updateStyleProperty(
       layerId,
       styleType,
       key as keyof NonNullable<LayerStyles[T]>,

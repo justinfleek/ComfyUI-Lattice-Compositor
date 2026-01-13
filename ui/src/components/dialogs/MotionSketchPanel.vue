@@ -189,6 +189,8 @@ import {
   smoothMotion,
 } from "@/services/motionRecording";
 import { useCompositorStore } from "@/stores/compositorStore";
+import { useLayerStore } from "@/stores/layerStore";
+import { useKeyframeStore } from "@/stores/keyframeStore";
 
 const props = defineProps<{
   visible: boolean;
@@ -198,10 +200,11 @@ const emit = defineEmits<{
   close: [];
   startCapture: [];
   stopCapture: [];
-  apply: [keyframes: any[]];
+  apply: [keyframes: Array<{ id: string; frame: number; value: unknown }>];
 }>();
 
 const store = useCompositorStore();
+const layerStore = useLayerStore();
 
 // Settings
 const captureSpeed = ref(1.0);
@@ -217,7 +220,7 @@ let recorder: MotionRecorder | null = null;
 const targetLayerName = computed(() => {
   const layers = store.selectedLayerIds;
   if (layers.length === 0) return null;
-  const layer = store.getLayerById(layers[0]);
+  const layer = layerStore.getLayerById(store, layers[0]);
   return layer?.name || "Unknown Layer";
 });
 
@@ -337,7 +340,7 @@ function applyMotion() {
 
   // Apply keyframes to layer position
   simplified.forEach((kf) => {
-    store.addKeyframe(layerId, "transform.position", kf.value, kf.frame);
+    keyframeStore.addKeyframe(store, layerId, "transform.position", kf.value, kf.frame);
   });
 
   emit("apply", simplified);

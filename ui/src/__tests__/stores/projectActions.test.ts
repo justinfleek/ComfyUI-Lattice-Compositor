@@ -89,7 +89,7 @@ function createMockStore(overrides: Partial<ProjectStore> = {}): ProjectStore {
     historyStack: [createMockProject()],
     historyIndex: 0,
     lastSaveProjectId: null,
-    lastSaveTime: null,
+    lastSaveTime: 0, // 0 = never saved
     hasUnsavedChanges: false,
     autosaveEnabled: false,
     autosaveIntervalMs: 60000,

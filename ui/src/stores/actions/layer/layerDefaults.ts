@@ -50,16 +50,48 @@ export interface CompositionContext {
   height: number;
 }
 
+import type {
+  TextData,
+  SolidLayerData,
+  NullLayerData,
+  SplineData as SplineLayerData,
+  PathLayerData,
+  ParticleLayerData,
+  DepthflowLayerData,
+  LightLayerData,
+  CameraLayerData,
+  ImageLayerData,
+  VideoData,
+  NestedCompData,
+  MatteLayerData,
+  ModelLayerData,
+  PointCloudLayerData,
+  ControlLayerData,
+  PoseLayerData,
+  DepthLayerData,
+  NormalLayerData,
+  AudioLayerData,
+  GeneratedMapData,
+  GroupLayerData,
+  LegacyParticleLayerData,
+  EffectLayerData,
+} from "@/types/project";
+
 /**
- * Get default layer data for a specific layer type
+ * Get default layer data for a specific layer type.
+ * Returns properly typed data for each layer type.
+ *
+ * NOTE: The `as AnyLayerData` casts are necessary because TypeScript
+ * cannot narrow union types in switch statements. Each branch returns
+ * a properly structured object that satisfies the specific layer data type.
  */
 export function getDefaultLayerData(
   type: LayerType,
   context: CompositionContext,
 ): AnyLayerData {
   switch (type) {
-    case "text":
-      return {
+    case "text": {
+      const data: TextData = {
         text: "Text",
         fontFamily: "Arial",
         fontSize: 72,
@@ -85,17 +117,23 @@ export function getDefaultLayerData(
         pathLastMargin: 0,
         pathOffset: 0,
         pathAlign: "left",
-      } as unknown as AnyLayerData;
+      };
+      return data;
+    }
 
-    case "solid":
-      return {
+    case "solid": {
+      const data: SolidLayerData = {
         color: "#808080",
         width: context.width,
         height: context.height,
-      } as AnyLayerData;
+      };
+      return data;
+    }
 
-    case "null":
-      return { size: 40 } as AnyLayerData;
+    case "null": {
+      const data: NullLayerData = { size: 40 };
+      return data;
+    }
 
     case "spline":
       return {

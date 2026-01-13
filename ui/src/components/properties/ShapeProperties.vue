@@ -466,6 +466,7 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 import { useCompositorStore } from "@/stores/compositorStore";
+import { useLayerStore } from "@/stores/layerStore";
 import type {
   AnimatableProperty,
   Layer,
@@ -617,12 +618,12 @@ function getLayerIcon(type: string): string {
 
 // Select attached layer
 function selectLayer(layerId: string) {
-  store.selectLayer(layerId);
+  layerStore.selectLayer(store, layerId);
 }
 
 // Update layer data
 function update(key: keyof SplineData | string, value: any) {
-  store.updateLayer(props.layer.id, {
+  layerStore.updateLayer(store, props.layer.id, {
     data: { ...shapeData.value, [key]: value },
   });
   emit("update");
@@ -702,7 +703,7 @@ function updateAnimatable(propName: string, value: number, dataKey: string) {
     const updatedProperties = (props.layer.properties || []).map((p) =>
       p.name === propName ? { ...p, value } : p,
     );
-    store.updateLayer(props.layer.id, { properties: updatedProperties });
+    layerStore.updateLayer(store, props.layer.id, { properties: updatedProperties });
   }
 }
 
@@ -746,7 +747,7 @@ function toggleKeyframe(propName: string, dataKey: string) {
         ? { ...p, keyframes: updatedKeyframes, animated: updatedAnimated }
         : p,
     );
-    store.updateLayer(props.layer.id, { properties: updatedProperties });
+    layerStore.updateLayer(store, props.layer.id, { properties: updatedProperties });
     emit("update");
   }
 }
@@ -775,7 +776,7 @@ function ensureProperty(propName: string, dataKey: string) {
     } as AnimatableProperty<number>;
 
     // Update via store to track in history
-    store.updateLayer(props.layer.id, {
+    layerStore.updateLayer(store, props.layer.id, {
       properties: [...existingProperties, newProperty],
     });
   }

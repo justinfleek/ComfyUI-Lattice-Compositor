@@ -117,6 +117,8 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { useCompositorStore } from "@/stores/compositorStore";
+import { useProjectStore } from "@/stores/projectStore";
+import { useLayerStore } from "@/stores/layerStore";
 import type { Layer, NestedCompData, VideoData } from "@/types/project";
 
 const props = defineProps<{
@@ -130,6 +132,8 @@ const emit = defineEmits<{
 }>();
 
 const store = useCompositorStore();
+const projectStore = useProjectStore();
+const layerStore = useLayerStore();
 
 // State
 const stretchFactor = ref(100);
@@ -178,8 +182,8 @@ function initializeFromLayer() {
 
   // Calculate original duration from layer
   const startFrame = layer.value.startFrame ?? 0;
-  const endFrame = layer.value.endFrame ?? store.frameCount;
-  const fps = store.fps || 30;
+  const endFrame = layer.value.endFrame ?? projectStore.getFrameCount(store);
+  const fps = projectStore.getFps(store) || 30;
   originalDuration.value = (endFrame - startFrame) / fps;
 
   // Get current speed/stretch factor
@@ -212,11 +216,11 @@ function apply() {
   if (!layer.value) return;
 
   const speed = (reversePlayback.value ? -1 : 1) * (100 / stretchFactor.value);
-  const fps = store.fps || 30;
+  const fps = projectStore.getFps(store) || 30;
 
   // Calculate new layer bounds based on hold in place
   let newStartFrame = layer.value.startFrame ?? 0;
-  let newEndFrame = layer.value.endFrame ?? store.frameCount;
+  let newEndFrame = layer.value.endFrame ?? projectStore.getFrameCount(store);
   const currentDurationFrames = newEndFrame - newStartFrame;
   const newDurationFrames = Math.round(
     currentDurationFrames * (stretchFactor.value / currentStretchFactor.value),
@@ -242,7 +246,7 @@ function apply() {
   }
 
   // Apply time stretch
-  store.timeStretchLayer(props.layerId, {
+  layerStore.timeStretchLayer(store, props.layerId, {
     stretchFactor: stretchFactor.value,
     holdInPlace: holdInPlace.value,
     reverse: reversePlayback.value,
@@ -258,7 +262,7 @@ function apply() {
 function formatDuration(seconds: number): string {
   const mins = Math.floor(seconds / 60);
   const secs = Math.floor(seconds % 60);
-  const frames = Math.floor((seconds % 1) * (store.fps || 30));
+  const frames = Math.floor((seconds % 1) * (projectStore.getFps(store) || 30));
   return `${mins}:${secs.toString().padStart(2, "0")}:${frames.toString().padStart(2, "0")}`;
 }
 

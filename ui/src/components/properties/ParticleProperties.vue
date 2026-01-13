@@ -1972,9 +1972,9 @@ function hexToRgb(hex: string): [number, number, number] {
 // ============================================================================
 
 import {
-  exportTrajectoriesToJSON,
+  useParticleStore,
   type ParticleBakeResult,
-} from "@/stores/actions/particleLayerActions";
+} from "@/stores/particleStore";
 
 // Bake state
 const bakeStartFrame = ref(0);
@@ -2073,7 +2073,8 @@ async function bakeToTrajectories(): Promise<void> {
     lastBakeResult.value = result;
 
     // Export as JSON file
-    const json = exportTrajectoriesToJSON(result);
+    const particleStore = useParticleStore();
+    const json = particleStore.exportTrajectoriesToJSON(result);
     const blob = new Blob([json], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");

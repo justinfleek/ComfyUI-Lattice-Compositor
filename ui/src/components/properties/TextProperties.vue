@@ -831,6 +831,8 @@ import {
   TEXT_ANIMATOR_PRESET_LIST,
 } from "@/services/textAnimator";
 import { useCompositorStore } from "@/stores/compositorStore";
+import { useLayerStore } from "@/stores/layerStore";
+import { useKeyframeStore } from "@/stores/keyframeStore";
 import type {
   TextAnimator,
   TextAnimatorPresetType,
@@ -839,9 +841,11 @@ import type {
   TextWigglySelector,
 } from "@/types/project";
 
-const props = defineProps<{ layer: any }>();
+const props = defineProps<{ layer: Layer & { type: "text" } }>();
 const emit = defineEmits(["update"]);
 const store = useCompositorStore();
+const layerStore = useLayerStore();
+const keyframeStore = useKeyframeStore();
 
 // Font loading state
 const fontCategories = ref<FontCategory[]>([]);
@@ -899,14 +903,14 @@ function addAnimator(presetType?: TextAnimatorPresetType) {
     : createTextAnimator(`Animator ${animators.value.length + 1}`);
 
   const currentAnimators = [...animators.value, newAnimator];
-  store.updateLayerData(props.layer.id, { animators: currentAnimators });
+  layerStore.updateLayerData(store, props.layer.id, { animators: currentAnimators });
   expandedAnimators.value.add(newAnimator.id);
   emit("update");
 }
 
 function removeAnimator(animatorId: string) {
   const currentAnimators = animators.value.filter((a) => a.id !== animatorId);
-  store.updateLayerData(props.layer.id, { animators: currentAnimators });
+  layerStore.updateLayerData(store, props.layer.id, { animators: currentAnimators });
   expandedAnimators.value.delete(animatorId);
   emit("update");
 }
@@ -920,7 +924,7 @@ function duplicateAnimator(animatorId: string) {
   duplicated.name = `${source.name} (Copy)`;
 
   const currentAnimators = [...animators.value, duplicated];
-  store.updateLayerData(props.layer.id, { animators: currentAnimators });
+  layerStore.updateLayerData(store, props.layer.id, { animators: currentAnimators });
   expandedAnimators.value.add(duplicated.id);
   emit("update");
 }
@@ -932,7 +936,7 @@ function toggleAnimatorEnabled(animatorId: string) {
   const currentAnimators = animators.value.map((a) =>
     a.id === animatorId ? { ...a, enabled: !a.enabled } : a,
   );
-  store.updateLayerData(props.layer.id, { animators: currentAnimators });
+  layerStore.updateLayerData(store, props.layer.id, { animators: currentAnimators });
   emit("update");
 }
 
@@ -940,14 +944,14 @@ function updateAnimatorName(animatorId: string, name: string) {
   const currentAnimators = animators.value.map((a) =>
     a.id === animatorId ? { ...a, name } : a,
   );
-  store.updateLayerData(props.layer.id, { animators: currentAnimators });
+  layerStore.updateLayerData(store, props.layer.id, { animators: currentAnimators });
   emit("update");
 }
 
 function updateRangeSelector(
   animatorId: string,
   key: keyof TextRangeSelector,
-  value: any,
+  value: PropertyValue,
 ) {
   const currentAnimators = animators.value.map((a) => {
     if (a.id !== animatorId) return a;
@@ -969,14 +973,14 @@ function updateRangeSelector(
     }
     return updated;
   });
-  store.updateLayerData(props.layer.id, { animators: currentAnimators });
+  layerStore.updateLayerData(store, props.layer.id, { animators: currentAnimators });
   emit("update");
 }
 
 function updateAnimatorProperty(
   animatorId: string,
   propKey: string,
-  value: any,
+  value: PropertyValue,
 ) {
   const currentAnimators = animators.value.map((a) => {
     if (a.id !== animatorId) return a;
@@ -1009,14 +1013,14 @@ function updateAnimatorProperty(
     }
     return updated;
   });
-  store.updateLayerData(props.layer.id, { animators: currentAnimators });
+  layerStore.updateLayerData(store, props.layer.id, { animators: currentAnimators });
   emit("update");
 }
 
 function getAnimatorPropertyValue(
   animator: TextAnimator,
   propKey: string,
-): any {
+): PropertyValue | undefined {
   return animator.properties[propKey]?.value;
 }
 
@@ -1043,14 +1047,14 @@ function toggleWigglySelector(animatorId: string) {
     }
     return updated;
   });
-  store.updateLayerData(props.layer.id, { animators: currentAnimators });
+  layerStore.updateLayerData(store, props.layer.id, { animators: currentAnimators });
   emit("update");
 }
 
 function updateWigglySelector(
   animatorId: string,
   key: keyof TextWigglySelector,
-  value: any,
+  value: PropertyValue,
 ) {
   const currentAnimators = animators.value.map((a) => {
     if (a.id !== animatorId) return a;
@@ -1061,7 +1065,7 @@ function updateWigglySelector(
     };
     return updated;
   });
-  store.updateLayerData(props.layer.id, { animators: currentAnimators });
+  layerStore.updateLayerData(store, props.layer.id, { animators: currentAnimators });
   emit("update");
 }
 
@@ -1084,14 +1088,14 @@ function toggleExpressionSelector(animatorId: string) {
     }
     return updated;
   });
-  store.updateLayerData(props.layer.id, { animators: currentAnimators });
+  layerStore.updateLayerData(store, props.layer.id, { animators: currentAnimators });
   emit("update");
 }
 
 async function updateExpressionSelector(
   animatorId: string,
   key: keyof TextExpressionSelector,
-  value: any,
+  value: PropertyValue | string,
 ) {
   // SECURITY: Validate amountExpression before applying (DoS protection)
   if (key === "amountExpression" && typeof value === "string" && value.trim()) {
@@ -1116,7 +1120,7 @@ async function updateExpressionSelector(
     };
     return updated;
   });
-  store.updateLayerData(props.layer.id, { animators: currentAnimators });
+  layerStore.updateLayerData(store, props.layer.id, { animators: currentAnimators });
   emit("update");
 }
 
@@ -1140,7 +1144,7 @@ const expressionPresetList = Object.entries(EXPRESSION_PRESETS).map(
 );
 
 function getProperty(name: string) {
-  return props.layer.properties?.find((p: any) => p.name === name);
+  return props.layer.properties?.find((p) => p.name === name);
 }
 
 function getPropertyValue(name: string) {
@@ -1150,15 +1154,15 @@ function getPropertyValue(name: string) {
 
 function updateText(val: string) {
   // Use store action to update text property
-  store.setPropertyValue(props.layer.id, "Source Text", val);
+  keyframeStore.setPropertyValue(store, props.layer.id, "Source Text", val);
   // Also update the layer data directly for immediate render
-  store.updateLayerData(props.layer.id, { text: val });
+  layerStore.updateLayerData(store, props.layer.id, { text: val });
   emit("update");
 }
 
-function updateData(key: string, val: any) {
+function updateData(key: string, val: PropertyValue) {
   // Use store action to update layer data
-  store.updateLayerData(props.layer.id, { [key]: val });
+  layerStore.updateLayerData(store, props.layer.id, { [key]: val });
 
   // Sync to animatable property via store
   const map: Record<string, string> = {
@@ -1168,14 +1172,14 @@ function updateData(key: string, val: any) {
     strokeWidth: "Stroke Width",
   };
   if (map[key]) {
-    store.setPropertyValue(props.layer.id, map[key], val);
+    keyframeStore.setPropertyValue(store, props.layer.id, map[key], val);
   }
   emit("update");
 }
 
 function updateAnimatable(name: string, val: number) {
   // Use store action to update property value
-  store.setPropertyValue(props.layer.id, name, val);
+  keyframeStore.setPropertyValue(store, props.layer.id, name, val);
 
   // Also update static data for immediate render via store
   const keyMap: Record<string, string> = {
@@ -1190,7 +1194,7 @@ function updateAnimatable(name: string, val: number) {
     "Last Margin": "pathLastMargin",
   };
   if (keyMap[name]) {
-    store.updateLayerData(props.layer.id, { [keyMap[name]]: val });
+    layerStore.updateLayerData(store, props.layer.id, { [keyMap[name]]: val });
   }
   emit("update");
 }
@@ -1208,15 +1212,15 @@ function toggleKeyframe(name: string) {
 
   // Check if keyframe exists at current frame
   const existingKf = prop.keyframes?.find(
-    (kf: any) => kf.frame === currentFrame,
+    (kf: Keyframe) => kf.frame === currentFrame,
   );
 
   if (existingKf) {
     // Remove keyframe via store
-    store.removeKeyframe(props.layer.id, name, existingKf.id);
+    keyframeStore.removeKeyframe(store, props.layer.id, name, existingKf.id);
   } else {
     // Add keyframe at current frame via store
-    store.addKeyframe(props.layer.id, name, prop.value, currentFrame);
+    keyframeStore.addKeyframe(store, props.layer.id, name, prop.value, currentFrame);
   }
 
   emit("update");
@@ -1224,20 +1228,20 @@ function toggleKeyframe(name: string) {
 
 function updateTransform(propName: string, axis: string | null, val: number) {
   const prop = transform.value[propName];
-  let newValue: any;
+  let newValue: PropertyValue;
   if (axis) {
     newValue = { ...prop.value, [axis]: val };
   } else {
     newValue = val;
   }
   // Use store action to update transform property
-  store.setPropertyValue(props.layer.id, `transform.${propName}`, newValue);
+  keyframeStore.setPropertyValue(store, props.layer.id, `transform.${propName}`, newValue);
   emit("update");
 }
 
 function updateOpacity(val: number) {
   // Use store action to update opacity
-  store.setPropertyValue(props.layer.id, "opacity", val);
+  keyframeStore.setPropertyValue(store, props.layer.id, "opacity", val);
   emit("update");
 }
 

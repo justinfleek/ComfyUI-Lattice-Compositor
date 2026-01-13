@@ -23,17 +23,25 @@ import {
   getVectorizeService,
   normalizeControlPoints,
 } from "@/services/vectorize";
-import * as effectActions from "@/stores/actions/effectActions";
+import { useEffectStore } from "@/stores/effectStore";
 import { useCompositorStore } from "@/stores/compositorStore";
+import { useLayerStore } from "@/stores/layerStore";
 import { useKeyframeStore, findPropertyByPath } from "@/stores/keyframeStore";
 import { usePlaybackStore } from "@/stores/playbackStore";
 import { useSelectionStore } from "@/stores/selectionStore";
+import { useAnimationStore } from "@/stores/animationStore";
 import type {
   CameraLayerData,
   ControlPoint,
+  ImageLayerData,
   InterpolationType,
+  Layer,
   LayerType,
+  ParticleLayerData,
+  SplineData,
+  TextData,
 } from "@/types/project";
+import { isLayerOfType } from "@/types/project";
 import type { ToolCall } from "./toolDefinitions";
 
 // ============================================================================
@@ -42,8 +50,25 @@ import type { ToolCall } from "./toolDefinitions";
 
 export interface ExecutionContext {
   store: ReturnType<typeof useCompositorStore>;
+  layerStore?: ReturnType<typeof useLayerStore>;
   playbackStore: ReturnType<typeof usePlaybackStore>;
   selectionStore: ReturnType<typeof useSelectionStore>;
+  animationStore?: ReturnType<typeof useAnimationStore>;
+}
+
+/**
+ * Ensure a layer has data, initializing it if needed.
+ * This is type-safe because camera layers always have CameraLayerData.
+ */
+function ensureCameraLayerData(layer: Layer): CameraLayerData {
+  if (!layer.data) {
+    // Initialize minimal camera data structure
+    layer.data = {
+      cameraId: null,
+      isActiveCamera: false,
+    };
+  }
+  return layer.data as CameraLayerData;
 }
 
 // ============================================================================
@@ -56,10 +81,12 @@ export interface ExecutionContext {
  */
 export async function executeToolCall(toolCall: ToolCall): Promise<any> {
   const store = useCompositorStore();
+  const layerStore = useLayerStore();
+  const animationStore = useAnimationStore();
   const playbackStore = usePlaybackStore();
   const selectionStore = useSelectionStore();
 
-  const context: ExecutionContext = { store, playbackStore, selectionStore };
+  const context: ExecutionContext = { store, playbackStore, selectionStore, layerStore, animationStore };
   const { name, arguments: args } = toolCall;
 
   // Route to appropriate handler
@@ -209,7 +236,11 @@ function executeCreateLayer(
   context: ExecutionContext,
   args: Record<string, any>,
 ): { layerId: string; message: string } {
-  const { store } = context;
+  const { store, layerStore } = context;
+  if (!layerStore) {
+    const layerStoreInstance = useLayerStore();
+    return executeCreateLayer({ ...context, layerStore: layerStoreInstance }, args);
+  }
 
   // Validate arguments
   const validation = validateArgs(args, {
@@ -269,7 +300,8 @@ function executeCreateLayer(
   };
 
   const internalType = typeMap[type] || type;
-  const layer = store.createLayer(
+  const layer = layerStore.createLayer(
+    store,
     internalType as LayerType,
     name,
   );
@@ -298,7 +330,11 @@ function executeDeleteLayer(
   context: ExecutionContext,
   args: Record<string, any>,
 ): { success: boolean; message: string } {
-  const { store } = context;
+  const { store, layerStore } = context;
+  if (!layerStore) {
+    const layerStoreInstance = useLayerStore();
+    return executeDeleteLayer({ ...context, layerStore: layerStoreInstance }, args);
+  }
   const { layerId } = args;
 
   const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
@@ -307,7 +343,7 @@ function executeDeleteLayer(
   }
 
   const layerName = layer.name;
-  store.deleteLayer(layerId);
+  layerStore.deleteLayer(store, layerId);
 
   return {
     success: true,
@@ -319,10 +355,14 @@ function executeDuplicateLayer(
   context: ExecutionContext,
   args: Record<string, any>,
 ): { layerId: string | null; message: string } {
-  const { store } = context;
+  const { store, layerStore } = context;
+  if (!layerStore) {
+    const layerStoreInstance = useLayerStore();
+    return executeDuplicateLayer({ ...context, layerStore: layerStoreInstance }, args);
+  }
   const { layerId, newName } = args;
 
-  const duplicate = store.duplicateLayer(layerId);
+  const duplicate = layerStore.duplicateLayer(store, layerId);
   if (!duplicate) {
     return { layerId: null, message: `Failed to duplicate layer ${layerId}` };
   }
@@ -366,10 +406,14 @@ function executeSetLayerParent(
   context: ExecutionContext,
   args: Record<string, any>,
 ): { success: boolean; message: string } {
-  const { store } = context;
+  const { store, layerStore } = context;
+  if (!layerStore) {
+    const layerStoreInstance = useLayerStore();
+    return executeSetLayerParent({ ...context, layerStore: layerStoreInstance }, args);
+  }
   const { layerId, parentId } = args;
 
-  store.setLayerParent(layerId, parentId || null);
+  layerStore.setLayerParent(store, layerId, parentId || null);
 
   return {
     success: true,
@@ -383,10 +427,14 @@ function executeReorderLayers(
   context: ExecutionContext,
   args: Record<string, any>,
 ): { success: boolean; message: string } {
-  const { store } = context;
+  const { store, layerStore } = context;
+  if (!layerStore) {
+    const layerStoreInstance = useLayerStore();
+    return executeReorderLayers({ ...context, layerStore: layerStoreInstance }, args);
+  }
   const { layerId, newIndex } = args;
 
-  store.moveLayer(layerId, newIndex);
+  layerStore.moveLayer(store, layerId, newIndex);
 
   return {
     success: true,
@@ -417,10 +465,11 @@ function executeSetLayerProperty(
     // Layer-specific data (e.g., data.text, data.color)
     setNestedProperty(layer.data, parts.slice(1), value);
   } else if (parts[0] === "transform") {
-    // Transform properties
-    const prop = (layer.transform as any)[parts[1]];
-    if (prop && "value" in prop) {
-      prop.value = value;
+    // Transform properties - use type-safe property access
+    const transformKey = parts[1] as keyof typeof layer.transform;
+    const prop = layer.transform[transformKey];
+    if (prop && typeof prop === "object" && "value" in prop) {
+      (prop as { value: unknown }).value = value;
     }
   } else if (propertyPath === "opacity") {
     layer.opacity.value = value;
@@ -731,7 +780,8 @@ function executeAddEffect(
   const { store } = context;
   const { layerId, effectType, params } = args;
 
-  effectActions.addEffectToLayer(store, layerId, effectType);
+  const effectStore = useEffectStore();
+  effectStore.addEffectToLayer(store, layerId, effectType);
 
   // Get the newly added effect (last in array)
   const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
@@ -744,7 +794,7 @@ function executeAddEffect(
   // Apply initial parameters
   if (params) {
     for (const [key, value] of Object.entries(params)) {
-      effectActions.updateEffectParameter(
+      effectStore.updateEffectParameter(
         store,
         layerId,
         effect.id,
@@ -780,8 +830,9 @@ function executeUpdateEffect(
     return { success: false, message: `Effect ${effectId} not found` };
   }
 
+  const effectStore = useEffectStore();
   for (const [key, value] of Object.entries(params)) {
-    effectActions.updateEffectParameter(store, layerId, effectId, key, value);
+    effectStore.updateEffectParameter(store, layerId, effectId, key, value);
   }
 
   return {
@@ -797,7 +848,8 @@ function executeRemoveEffect(
   const { store } = context;
   const { layerId, effectId } = args;
 
-  effectActions.removeEffectFromLayer(store, layerId, effectId);
+  const effectStore = useEffectStore();
+  effectStore.removeEffectFromLayer(store, layerId, effectId);
 
   return {
     success: true,
@@ -821,11 +873,11 @@ function executeConfigureParticles(
     return { success: false, message: `Particle layer ${layerId} not found` };
   }
 
-  if (!layer.data) {
-    return { success: false, message: `Particle layer has no data` };
+  if (!isLayerOfType(layer, "particles")) {
+    return { success: false, message: `Layer ${layerId} is not a particles layer` };
   }
 
-  const particleData = layer.data as any;
+  const particleData = layer.data as ParticleLayerData;
 
   // Update emitter configuration
   if (emitter && particleData.emitters?.[0]) {
@@ -927,10 +979,7 @@ function executeApplyCameraTrajectory(
   );
 
   // Apply keyframes to layer's camera data
-  if (!layer.data) {
-    (layer as any).data = {};
-  }
-  const cameraData = layer.data as CameraLayerData;
+  const cameraData = ensureCameraLayerData(layer);
 
   // Initialize or update camera settings
   if (!cameraData.camera) {
@@ -1034,10 +1083,7 @@ function executeAddCameraShake(
   };
 
   // Store shake configuration in layer data
-  if (!layer.data) {
-    (layer as any).data = {};
-  }
-  const cameraData = layer.data as CameraLayerData;
+  const cameraData = ensureCameraLayerData(layer);
 
   cameraData.shake = {
     enabled: true,
@@ -1104,10 +1150,7 @@ function executeApplyRackFocus(
   const focusKeyframes = generateRackFocusKeyframes(rackFocusConfig, 2);
 
   // Store in layer data
-  if (!layer.data) {
-    (layer as any).data = {};
-  }
-  const cameraData = layer.data as CameraLayerData;
+  const cameraData = ensureCameraLayerData(layer);
 
   // Enable depth of field
   if (cameraData.camera) {
@@ -1178,10 +1221,7 @@ function executeSetCameraPathFollowing(
   }
 
   // Store path following config in layer data
-  if (!layer.data) {
-    (layer as any).data = {};
-  }
-  const cameraData = layer.data as CameraLayerData;
+  const cameraData = ensureCameraLayerData(layer);
 
   cameraData.pathFollowingConfig = {
     enabled: !!splineLayerId,
@@ -1228,10 +1268,7 @@ function executeSetCameraAutoFocus(
   }
 
   // Store autofocus config in layer data
-  if (!layer.data) {
-    (layer as any).data = {};
-  }
-  const cameraData = layer.data as CameraLayerData;
+  const cameraData = ensureCameraLayerData(layer);
 
   // Enable depth of field if enabling autofocus
   if (enabled && cameraData.camera) {
@@ -1284,11 +1321,11 @@ function executeSetTextContent(
     return { success: false, message: `Text layer ${layerId} not found` };
   }
 
-  if (!layer.data) {
-    return { success: false, message: `Text layer has no data` };
+  if (!isLayerOfType(layer, "text")) {
+    return { success: false, message: `Layer ${layerId} is not a text layer` };
   }
 
-  const textData = layer.data as any;
+  const textData = layer.data as TextData;
 
   if (text !== undefined) textData.text = text;
   if (fontSize !== undefined) textData.fontSize = fontSize;
@@ -1321,11 +1358,11 @@ function executeSetTextPath(
     return { success: false, message: `Text layer ${textLayerId} not found` };
   }
 
-  if (!layer.data) {
-    return { success: false, message: `Text layer has no data` };
+  if (!isLayerOfType(layer, "text")) {
+    return { success: false, message: `Layer ${textLayerId} is not a text layer` };
   }
 
-  const textData = layer.data as any;
+  const textData = layer.data as TextData;
   textData.pathLayerId = splineLayerId || null;
   if (startOffset !== undefined) {
     textData.pathOffset = startOffset;
@@ -1359,14 +1396,14 @@ function executeSetSplinePoints(
     return { success: false, message: `Spline layer ${layerId} not found` };
   }
 
-  if (!layer.data) {
-    return { success: false, message: `Spline layer has no data` };
+  if (!isLayerOfType(layer, "spline")) {
+    return { success: false, message: `Layer ${layerId} is not a spline layer` };
   }
 
-  const splineData = layer.data as any;
+  const splineData = layer.data as SplineData;
 
   // Convert points to control points format
-  splineData.controlPoints = points.map((p: any, index: number) => ({
+  splineData.controlPoints = points.map((p: { x: number; y: number; handleIn?: { x: number; y: number } | null; handleOut?: { x: number; y: number } | null }, index: number) => ({
     id: `cp_${Date.now()}_${index}`,
     x: p.x,
     y: p.y,
@@ -1406,16 +1443,15 @@ function executeSetSpeedMap(
   }
 
   // Speed map stored in layer data (with backwards compatibility)
-  if (!layer.data) {
-    (layer as any).data = {};
+  // Speed maps apply to video/nested comp layers - if no data exists, just modify existing
+  if (layer.data) {
+    const speedMapData = {
+      enabled: enabled !== false,
+      keyframes: keyframes || [],
+    };
+    // Use Object.assign for dynamic property assignment on existing data
+    Object.assign(layer.data, { speedMap: speedMapData, timeRemap: speedMapData });
   }
-
-  // Set both new and legacy properties for backwards compatibility
-  (layer.data as any).speedMap = {
-    enabled: enabled !== false,
-    keyframes: keyframes || [],
-  };
-  (layer.data as any).timeRemap = (layer.data as any).speedMap;
 
   // Record modification and save to undo history
   store.project.meta.modified = new Date().toISOString();
@@ -1443,14 +1479,15 @@ function executeSetCurrentFrame(
   context: ExecutionContext,
   args: Record<string, any>,
 ): { frame: number; message: string } {
-  const { store, playbackStore } = context;
+  const { store, playbackStore, animationStore } = context;
   const { frame } = args;
 
   const comp = store.getActiveComp();
   const frameCount = comp?.settings.frameCount || 81;
   const clampedFrame = Math.max(0, Math.min(frame, frameCount - 1));
 
-  store.setFrame(clampedFrame);
+  const animStore = animationStore || useAnimationStore();
+  animStore.setFrame(store, clampedFrame);
 
   return {
     frame: clampedFrame,
@@ -1462,17 +1499,18 @@ function executePlayPreview(
   context: ExecutionContext,
   args: Record<string, any>,
 ): { playing: boolean; message: string } {
-  const { store, playbackStore } = context;
+  const { store, playbackStore, animationStore } = context;
   const { play } = args;
 
   if (play) {
     const comp = store.getActiveComp();
     if (comp) {
+      const animStore = animationStore || useAnimationStore();
       playbackStore.play(
         comp.settings.fps,
         comp.settings.frameCount,
         comp.currentFrame,
-        (frame) => store.setFrame(frame),
+        (frame) => animStore.setFrame(store, frame),
       );
     }
   } else {
@@ -1509,8 +1547,11 @@ async function executeDecomposeImage(
   }
 
   // Get the source image URL
-  const layerData = sourceLayer.data as any;
-  const sourceUrl = layerData?.source || layerData?.url || layerData?.assetId;
+  if (!isLayerOfType(sourceLayer, "image")) {
+    throw new Error(`Source layer is not an image layer`);
+  }
+  const imageData = sourceLayer.data as ImageLayerData;
+  const sourceUrl = imageData?.assetId;
   if (!sourceUrl) {
     throw new Error(`Source layer has no image source`);
   }
@@ -1548,12 +1589,14 @@ async function executeDecomposeImage(
   );
 
   // Create layers from result (reverse order so Background is at bottom)
+  const layerStoreInstance = useLayerStore();
   const createdLayerIds: string[] = [];
   for (let i = decomposedLayers.length - 1; i >= 0; i--) {
     const decomposed = decomposedLayers[i];
-    const layer = store.createLayer("image", decomposed.label);
-    if (layer.data) {
-      (layer.data as any).source = decomposed.image;
+    const layer = layerStoreInstance.createLayer(store, "image", decomposed.label);
+    if (layer.data && isLayerOfType(layer, "image")) {
+      // Store decomposed image - ImageLayerData uses assetId, but we can store temp data
+      Object.assign(layer.data, { assetId: decomposed.image });
     }
     createdLayerIds.push(layer.id);
   }
@@ -1599,18 +1642,19 @@ async function executeVectorizeImage(
     );
   }
 
-  // Get the source image URL
-  const layerData = sourceLayer.data as any;
+  // Get the source image URL from layer data
+  // Support image, video, and solid layers with different data structures
+  const layerData = sourceLayer.data;
   let imageDataUrl: string;
 
-  if (layerData?.source) {
-    imageDataUrl = layerData.source;
-  } else if (layerData?.assetId) {
-    const asset = store.project?.assets[layerData.assetId];
+  if (isLayerOfType(sourceLayer, "image") && sourceLayer.data?.assetId) {
+    const asset = store.project?.assets[sourceLayer.data.assetId];
     if (!asset?.data) throw new Error("Asset data not found");
     imageDataUrl = asset.data;
-  } else if (layerData?.url) {
-    imageDataUrl = layerData.url;
+  } else if (layerData && "assetId" in layerData && layerData.assetId) {
+    const asset = store.project?.assets[layerData.assetId as string];
+    if (!asset?.data) throw new Error("Asset data not found");
+    imageDataUrl = asset.data;
   } else {
     throw new Error("Source layer has no image source");
   }
@@ -1673,10 +1717,9 @@ async function executeVectorizeImage(
       }
 
       // Create the spline layer
-      const layer = store.createLayer(
-        "spline",
-        `Vector Path ${i + 1}`,
-      );
+      const layerStoreInstance = useLayerStore();
+      const layer = layerStoreInstance.createSplineLayer(store);
+      layerStoreInstance.renameLayer(store, layer.id, `Vector Path ${i + 1}`);
 
       // Update with control points
       if (layer.data) {
@@ -1714,7 +1757,9 @@ async function executeVectorizeImage(
       controlPoints = autoGroupPoints(allPoints, { method: "quadrant" });
     }
 
-    const layer = store.createLayer("spline", "Vectorized Paths");
+    const layerStore = useLayerStore();
+    const layer = layerStore.createSplineLayer(store);
+    layerStore.renameLayer(store, layer.id, "Vectorized Paths");
 
     if (layer.data) {
       Object.assign(layer.data, {

@@ -15,6 +15,7 @@ import { interpolateWithEasing, applyEasing } from '@/services/easing';
 import { multiplyMat4, identityMat4, translateMat4, scaleMat4, type Mat4 } from '@/services/math3d';
 import { motionEngine } from '@/engine/MotionEngine';
 import { useCompositorStore } from '@/stores/compositorStore';
+import { useLayerStore } from '@/stores/layerStore';
 import { createAnimatableProperty } from '@/types/animation';
 import { SeededRandom } from '@/services/particles/SeededRandom';
 import type { AnimatableProperty } from '@/types/project';
@@ -143,10 +144,11 @@ describe('Performance: Frame Evaluation', () => {
 
   test('MotionEngine.evaluate() meets target (per layer)', () => {
     const store = useCompositorStore();
+    const layerStore = useLayerStore();
     
     // Create 10 layers
     for (let i = 0; i < 10; i++) {
-      const layer = store.createLayer('solid', `Layer ${i}`);
+      const layer = layerStore.createLayer(store, 'solid', `Layer ${i}`);
       store.setFrame(0);
       store.addKeyframe(layer.id, 'opacity', 0);
       store.setFrame(100);
@@ -172,10 +174,11 @@ describe('Performance: Serialization', () => {
 
   test('project serialization meets target', () => {
     const store = useCompositorStore();
+    const layerStore = useLayerStore();
     
     // Create a project with 100 layers
     for (let i = 0; i < 100; i++) {
-      store.createLayer('solid', `Layer ${i}`);
+      layerStore.createLayer(store, 'solid', `Layer ${i}`);
     }
     
     const project = store.project;
@@ -190,10 +193,11 @@ describe('Performance: Serialization', () => {
 
   test('project deserialization meets target', () => {
     const store = useCompositorStore();
+    const layerStore = useLayerStore();
     
     // Create a project with 100 layers
     for (let i = 0; i < 100; i++) {
-      store.createLayer('solid', `Layer ${i}`);
+      layerStore.createLayer(store, 'solid', `Layer ${i}`);
     }
     
     const project = store.project;

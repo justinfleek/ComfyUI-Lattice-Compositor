@@ -10,6 +10,7 @@ import type {
   Keyframe,
   Layer,
 } from "@/types/project";
+import type { PropertyValue } from "@/types/animation";
 import { storeLogger } from "@/utils/logger";
 import { findPropertyByPath, safeFrame } from "./helpers";
 import type { KeyframeStoreAccess } from "./types";
@@ -465,7 +466,7 @@ export function setKeyframeValue(
   layerId: string,
   propertyPath: string,
   keyframeId: string,
-  newValue: any,
+  newValue: PropertyValue,
 ): void {
   const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
   if (!layer) return;
@@ -502,7 +503,7 @@ export function updateKeyframe(
   layerId: string,
   propertyPath: string,
   keyframeId: string,
-  updates: { frame?: number; value?: any },
+  updates: { frame?: number; value?: PropertyValue },
 ): void {
   const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
   if (!layer) return;

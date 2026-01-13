@@ -8,16 +8,20 @@
  */
 
 import type {
+  CameraLayerData,
   ImageLayerData,
   Layer,
   NestedCompData,
   SplineData,
   VideoData,
 } from "@/types/project";
-import { createAnimatableProperty, isLayerOfType } from "@/types/project";
+import { createAnimatableProperty, isLayerOfType, createDefaultTransform } from "@/types/project";
+import type { Camera3D } from "@/types/camera";
+import { createDefaultCamera } from "@/types/camera";
 import { storeLogger } from "@/utils/logger";
 import { markLayerDirty } from "@/services/layerEvaluationCache";
 import { createLayer } from "./crud";
+import { selectLayer } from "./hierarchy";
 import type { CompositorStoreAccess, LayerSourceReplacement } from "./types";
 
 // ============================================================================
@@ -275,4 +279,159 @@ export function createShapeLayer(
   name: string = "Shape Layer",
 ): Layer {
   return createLayer(compositorStore, "shape", name);
+}
+
+// ============================================================================
+// CAMERA LAYER CREATION (delegates to cameraStore)
+// ============================================================================
+
+/**
+ * Create a camera layer
+ * NOTE: Camera layer creation requires camera store access (cameras Map, activeCameraId).
+ * This function creates both the camera object and the layer, managing camera state.
+ *
+ * @param compositorStore - The compositor store instance (must have camera store access)
+ * @param name - Optional camera name
+ * @returns The created camera layer
+ */
+export function createCameraLayer(
+  compositorStore: CompositorStoreAccess & {
+    cameras: Map<string, Camera3D>;
+    activeCameraId: string | null;
+    selectLayer: (layerId: string) => void;
+  },
+  name?: string,
+): Layer {
+  const comp = compositorStore.getActiveComp();
+  const layers = compositorStore.getActiveCompLayers();
+
+  const cameraId = `camera_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
+  const cameraName = name || `Camera ${compositorStore.cameras.size + 1}`;
+
+  // Create the camera object
+  const camera = createDefaultCamera(
+    cameraId,
+    comp?.settings.width || 1024,
+    comp?.settings.height || 1024,
+  );
+  camera.name = cameraName;
+
+  // Add to cameras map
+  compositorStore.cameras.set(cameraId, camera);
+
+  // If this is the first camera, make it active
+  if (!compositorStore.activeCameraId) {
+    compositorStore.activeCameraId = cameraId;
+  }
+
+  // Create the layer using generic createLayer
+  const layer = createLayer(compositorStore, "camera", cameraName);
+  
+  // Update layer data with camera-specific info
+  layer.data = {
+    cameraId,
+    isActiveCamera: !compositorStore.activeCameraId || compositorStore.activeCameraId === cameraId,
+  } as CameraLayerData;
+  
+  layer.threeD = true; // Camera layers are always 3D
+
+  // Auto-select the new camera layer
+  selectLayer(compositorStore, layer.id);
+
+  compositorStore.project.meta.modified = new Date().toISOString();
+  compositorStore.pushHistory();
+
+  return layer;
+}
+
+// ============================================================================
+// VIDEO LAYER CREATION (delegates to videoActions)
+// ============================================================================
+
+/**
+ * Create a video layer from a file
+ * NOTE: Video layer creation requires video metadata extraction and asset management.
+ * This function delegates to videoActions.createVideoLayer() which handles the complex
+ * video import workflow (metadata extraction, fps handling, composition resizing).
+ *
+ * @param compositorStore - The compositor store instance (must have video store access)
+ * @param file - Video file to import
+ * @param autoResizeComposition - Whether to auto-resize composition to match video
+ * @returns Promise resolving to video import result
+ */
+export async function createVideoLayer(
+  compositorStore: CompositorStoreAccess & {
+    assets: Record<string, any>;
+  },
+  file: File,
+  autoResizeComposition: boolean = true,
+): Promise<{ status: string; layer?: Layer; error?: string; [key: string]: any }> {
+  // Import videoStore to delegate video import logic
+  const { useVideoStore } = await import("@/stores/videoStore");
+  const videoStore = useVideoStore();
+  
+  // Delegate to videoStore which handles metadata extraction and asset creation
+  return videoStore.createVideoLayer(compositorStore as any, file, autoResizeComposition);
+}
+
+// ============================================================================
+// NESTED COMP LAYER CREATION
+// ============================================================================
+
+/**
+ * Create a nested comp layer referencing another composition
+ * @param compositorStore - The compositor store instance
+ * @param compositionId - ID of the composition to reference
+ * @param name - Optional layer name (defaults to "Nested Comp")
+ * @returns The created nested comp layer
+ */
+export function createNestedCompLayer(
+  compositorStore: CompositorStoreAccess,
+  compositionId: string,
+  name?: string,
+): Layer {
+  const layer = createLayer(compositorStore, "nestedComp", name || "Nested Comp");
+
+  const nestedCompData: NestedCompData = {
+    compositionId,
+    // Speed map (new naming)
+    speedMapEnabled: false,
+    speedMap: undefined,
+    // Backwards compatibility
+    timeRemapEnabled: false,
+    timeRemap: undefined,
+    flattenTransform: false,
+    overrideFrameRate: false,
+    frameRate: undefined,
+  };
+
+  layer.data = nestedCompData;
+  compositorStore.project.meta.modified = new Date().toISOString();
+  compositorStore.pushHistory();
+
+  return layer;
+}
+
+// ============================================================================
+// NESTED COMP LAYER UPDATE
+// ============================================================================
+
+/**
+ * Update nested comp layer data
+ * @param compositorStore - The compositor store instance
+ * @param layerId - ID of the nested comp layer to update
+ * @param updates - Partial nested comp data updates
+ */
+export function updateNestedCompLayerData(
+  compositorStore: CompositorStoreAccess,
+  layerId: string,
+  updates: Partial<NestedCompData>,
+): void {
+  const layer = compositorStore.getActiveCompLayers().find((l) => l.id === layerId);
+  if (!layer || layer.type !== "nestedComp") return;
+
+  const data = layer.data as NestedCompData;
+  Object.assign(data, updates);
+  compositorStore.project.meta.modified = new Date().toISOString();
+  compositorStore.pushHistory(); // Fixed: was missing in original implementation
 }

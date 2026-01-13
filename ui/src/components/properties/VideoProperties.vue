@@ -212,6 +212,8 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { useCompositorStore } from "@/stores/compositorStore";
+import { useProjectStore } from "@/stores/projectStore";
+import { useLayerStore } from "@/stores/layerStore";
 import type {
   AnimatableProperty,
   AssetReference,
@@ -222,6 +224,7 @@ import type {
 const props = defineProps<{ layer: Layer }>();
 const emit = defineEmits(["update"]);
 const store = useCompositorStore();
+const projectStore = useProjectStore();
 
 const videoData = computed<VideoData>(() => {
   return (
@@ -407,9 +410,9 @@ function applyTimewarpPreset(
   // Import the preset creator
   import("@/services/timewarp").then(({ createSpeedRampPreset }) => {
     const layerStart = props.layer.startFrame ?? 0;
-    const layerEnd = props.layer.endFrame ?? store.frameCount;
+    const layerEnd = props.layer.endFrame ?? projectStore.getFrameCount(store);
     const duration = layerEnd - layerStart;
-    const fps = store.fps || 30;
+    const fps = projectStore.getFps(store) || 30;
 
     const presetProperty = createSpeedRampPreset(
       preset,
@@ -441,7 +444,7 @@ function updateAudioLevel(val: number) {
 function updateLevel(val: number) {
   // Use store method to ensure history tracking
   if (props.layer.audio?.level) {
-    store.updateLayer(props.layer.id, {
+    layerStore.updateLayer(store, props.layer.id, {
       audio: {
         ...props.layer.audio,
         level: { ...props.layer.audio.level, value: val },

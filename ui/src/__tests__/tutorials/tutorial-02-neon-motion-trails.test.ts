@@ -15,18 +15,21 @@
 import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest';
 import { setActivePinia, createPinia } from 'pinia';
 import { useCompositorStore } from '@/stores/compositorStore';
+import { useLayerStore } from '@/stores/layerStore';
 import { useSelectionStore } from '@/stores/selectionStore';
 import type { Layer, EffectInstance, SolidLayerData, AudioLayerData } from '@/types/project';
 import type { SplineData, ControlPoint } from '@/types/spline';
 
 describe('Tutorial 02: Neon Motion Trails', () => {
   let store: ReturnType<typeof useCompositorStore>;
+  let layerStore: ReturnType<typeof useLayerStore>;
   let selectionStore: ReturnType<typeof useSelectionStore>;
 
   beforeEach(() => {
     const pinia = createPinia();
     setActivePinia(pinia);
     store = useCompositorStore();
+    layerStore = useLayerStore();
     selectionStore = useSelectionStore();
   });
 
@@ -147,14 +150,14 @@ describe('Tutorial 02: Neon Motion Trails', () => {
 
     describe('Steps 4-6: Creating Gradient Background', () => {
       test('Step 4: Create solid layer BG_Gradient', () => {
-        const layer = store.createLayer('solid', 'BG_Gradient');
+        const layer = layerStore.createLayer(store,'solid', 'BG_Gradient');
         expect(layer).toBeDefined();
         expect(layer!.name).toBe('BG_Gradient');
         expect(layer!.type).toBe('solid');
       });
 
       test('Step 5: Add Gradient Ramp effect', () => {
-        const layer = store.createLayer('solid', 'BG_Gradient');
+        const layer = layerStore.createLayer(store,'solid', 'BG_Gradient');
         expect(layer).toBeDefined();
 
         store.addEffectToLayer(layer!.id, 'gradient-ramp');
@@ -166,7 +169,7 @@ describe('Tutorial 02: Neon Motion Trails', () => {
       });
 
       test('Step 6: Configure Gradient Ramp effect properties', () => {
-        const layer = store.createLayer('solid', 'BG_Gradient');
+        const layer = layerStore.createLayer(store,'solid', 'BG_Gradient');
         store.addEffectToLayer(layer!.id, 'gradient-ramp');
 
         const updatedLayer = getLayer(layer!.id);
@@ -196,10 +199,10 @@ describe('Tutorial 02: Neon Motion Trails', () => {
 
     describe('Steps 7-12: Alternative Radial Gradient & Finalize', () => {
       test('Step 7: Duplicate background layer', () => {
-        const layer = store.createLayer('solid', 'BG_Gradient');
+        const layer = layerStore.createLayer(store,'solid', 'BG_Gradient');
         store.addEffectToLayer(layer!.id, 'gradient-ramp');
 
-        const duplicated = store.duplicateLayer(layer!.id);
+        const duplicated = layerStore.duplicateLayer(store, layer!.id);
         expect(duplicated).toBeDefined();
         expect(duplicated!.name).toContain('BG_Gradient');
         expect(duplicated!.effects!.length).toBe(1);
@@ -207,7 +210,7 @@ describe('Tutorial 02: Neon Motion Trails', () => {
       });
 
       test('Step 8: Change Gradient Ramp shape to radial', () => {
-        const layer = store.createLayer('solid', 'BG_Radial');
+        const layer = layerStore.createLayer(store,'solid', 'BG_Radial');
         store.addEffectToLayer(layer!.id, 'gradient-ramp');
         const effect = getLayer(layer!.id)!.effects![0];
 
@@ -218,7 +221,7 @@ describe('Tutorial 02: Neon Motion Trails', () => {
       });
 
       test('Step 9: Set Start Point to center for radial', () => {
-        const layer = store.createLayer('solid', 'BG_Radial');
+        const layer = layerStore.createLayer(store,'solid', 'BG_Radial');
         store.addEffectToLayer(layer!.id, 'gradient-ramp');
         const effect = getLayer(layer!.id)!.effects![0];
 
@@ -230,36 +233,36 @@ describe('Tutorial 02: Neon Motion Trails', () => {
 
       test('Step 10: Toggle visibility between linear and radial versions', () => {
         // Create linear version
-        const linearLayer = store.createLayer('solid', 'BG_Linear');
+        const linearLayer = layerStore.createLayer(store,'solid', 'BG_Linear');
         store.addEffectToLayer(linearLayer!.id, 'gradient-ramp');
 
         // Create radial version
-        const radialLayer = store.createLayer('solid', 'BG_Radial');
+        const radialLayer = layerStore.createLayer(store,'solid', 'BG_Radial');
         store.addEffectToLayer(radialLayer!.id, 'gradient-ramp');
         const radialEffect = getLayer(radialLayer!.id)!.effects![0];
         store.updateEffectParameter(radialLayer!.id, radialEffect.id, 'ramp_shape', 'radial');
 
         // Toggle visibility - hide radial
-        store.updateLayer(radialLayer!.id, { visible: false });
+        layerStore.updateLayer(store,radialLayer!.id, { visible: false });
         expect(getLayer(radialLayer!.id)!.visible).toBe(false);
         expect(getLayer(linearLayer!.id)!.visible).toBe(true);
 
         // Toggle visibility - show radial, hide linear
-        store.updateLayer(radialLayer!.id, { visible: true });
-        store.updateLayer(linearLayer!.id, { visible: false });
+        layerStore.updateLayer(store,radialLayer!.id, { visible: true });
+        layerStore.updateLayer(store,linearLayer!.id, { visible: false });
         expect(getLayer(radialLayer!.id)!.visible).toBe(true);
         expect(getLayer(linearLayer!.id)!.visible).toBe(false);
       });
 
       test('Step 11: Delete unused variant', () => {
         // Create both versions
-        const linearLayer = store.createLayer('solid', 'BG_Linear');
-        const radialLayer = store.createLayer('solid', 'BG_Radial');
+        const linearLayer = layerStore.createLayer(store,'solid', 'BG_Linear');
+        const radialLayer = layerStore.createLayer(store,'solid', 'BG_Radial');
 
         const initialCount = store.getActiveCompLayers().length;
 
         // Delete the radial variant (keeping linear)
-        store.deleteLayer(radialLayer!.id);
+        layerStore.deleteLayer(store,radialLayer!.id);
 
         expect(store.getActiveCompLayers().length).toBe(initialCount - 1);
         expect(getLayer(radialLayer!.id)).toBeUndefined();
@@ -267,9 +270,9 @@ describe('Tutorial 02: Neon Motion Trails', () => {
       });
 
       test('Step 12: Lock background layer', () => {
-        const layer = store.createLayer('solid', 'BG_Gradient');
+        const layer = layerStore.createLayer(store,'solid', 'BG_Gradient');
 
-        store.updateLayer(layer!.id, { locked: true });
+        layerStore.updateLayer(store,layer!.id, { locked: true });
 
         const lockedLayer = getLayer(layer!.id);
         expect(lockedLayer!.locked).toBe(true);
@@ -284,7 +287,7 @@ describe('Tutorial 02: Neon Motion Trails', () => {
         expect(store.getActiveComp()!.name).toBe('Neon_Trails_Main');
 
         // Step 4: Create solid layer
-        const layer = store.createLayer('solid', 'BG_Gradient');
+        const layer = layerStore.createLayer(store,'solid', 'BG_Gradient');
         const layerId = layer!.id;
 
         // Step 5: Add effect
@@ -296,7 +299,7 @@ describe('Tutorial 02: Neon Motion Trails', () => {
         store.updateEffectParameter(layerId, effect.id, 'ramp_shape', 'linear');
 
         // Step 12: Lock layer
-        store.updateLayer(layerId, { locked: true });
+        layerStore.updateLayer(store,layerId, { locked: true });
         expect(getLayer(layerId)!.locked).toBe(true);
 
         // Undo lock
@@ -325,12 +328,12 @@ describe('Tutorial 02: Neon Motion Trails', () => {
         const comp = store.getActiveComp();
         store.renameComposition(comp!.id, 'Neon_Trails_Main');
 
-        const layer = store.createLayer('solid', 'BG_Gradient');
+        const layer = layerStore.createLayer(store,'solid', 'BG_Gradient');
         store.addEffectToLayer(layer!.id, 'gradient-ramp');
         const effect = getLayer(layer!.id)!.effects![0];
         store.updateEffectParameter(layer!.id, effect.id, 'start_of_ramp', { x: 960, y: 0 });
         store.updateEffectParameter(layer!.id, effect.id, 'ramp_shape', 'linear');
-        store.updateLayer(layer!.id, { locked: true });
+        layerStore.updateLayer(store,layer!.id, { locked: true });
 
         // Serialize project
         const projectData = store.exportProject();
@@ -368,8 +371,8 @@ describe('Tutorial 02: Neon Motion Trails', () => {
 
       test('Step 15: Rename layer to Silhouette_Source', () => {
         // Create a placeholder layer to rename
-        const layer = store.createLayer('solid', 'Placeholder');
-        store.updateLayer(layer!.id, { name: 'Silhouette_Source' });
+        const layer = layerStore.createLayer(store,'solid', 'Placeholder');
+        layerStore.updateLayer(store,layer!.id, { name: 'Silhouette_Source' });
 
         expect(getLayer(layer!.id)!.name).toBe('Silhouette_Source');
       });
@@ -377,7 +380,7 @@ describe('Tutorial 02: Neon Motion Trails', () => {
 
     describe('Steps 16-18: Creating Solid Silhouette with Fill Effect', () => {
       test('Step 16-17: Add Fill effect and set color to black', () => {
-        const layer = store.createLayer('solid', 'Silhouette_Source');
+        const layer = layerStore.createLayer(store,'solid', 'Silhouette_Source');
 
         store.addEffectToLayer(layer!.id, 'fill');
 
@@ -396,7 +399,7 @@ describe('Tutorial 02: Neon Motion Trails', () => {
 
     describe('Steps 19-23: Alternative Tint Method', () => {
       test('Step 19: Remove Fill effect', () => {
-        const layer = store.createLayer('solid', 'Silhouette_Source');
+        const layer = layerStore.createLayer(store,'solid', 'Silhouette_Source');
         store.addEffectToLayer(layer!.id, 'fill');
         const fillEffect = getLayer(layer!.id)!.effects![0];
 
@@ -406,7 +409,7 @@ describe('Tutorial 02: Neon Motion Trails', () => {
       });
 
       test('Steps 20-23: Add Tint effect and configure', () => {
-        const layer = store.createLayer('solid', 'Silhouette_Source');
+        const layer = layerStore.createLayer(store,'solid', 'Silhouette_Source');
 
         store.addEffectToLayer(layer!.id, 'tint');
 
@@ -429,7 +432,7 @@ describe('Tutorial 02: Neon Motion Trails', () => {
 
     describe('Steps 24-26: Positioning Silhouette', () => {
       test('Step 24: Position silhouette in lower third', () => {
-        const layer = store.createLayer('solid', 'Silhouette_Source');
+        const layer = layerStore.createLayer(store,'solid', 'Silhouette_Source');
 
         // Position in lower third (y = 720 for 1080p)
         store.updateLayerTransform(layer!.id, { position: { x: 960, y: 720 } });
@@ -440,7 +443,7 @@ describe('Tutorial 02: Neon Motion Trails', () => {
       });
 
       test('Step 25: Scale to 70%', () => {
-        const layer = store.createLayer('solid', 'Silhouette_Source');
+        const layer = layerStore.createLayer(store,'solid', 'Silhouette_Source');
 
         store.updateLayerTransform(layer!.id, { scale: { x: 70, y: 70 } });
 
@@ -450,7 +453,7 @@ describe('Tutorial 02: Neon Motion Trails', () => {
       });
 
       test('Step 26: Center horizontally', () => {
-        const layer = store.createLayer('solid', 'Silhouette_Source');
+        const layer = layerStore.createLayer(store,'solid', 'Silhouette_Source');
         const comp = store.getActiveComp();
         const centerX = comp!.settings.width / 2;
 
@@ -463,7 +466,7 @@ describe('Tutorial 02: Neon Motion Trails', () => {
 
     describe('Phase 2: Undo/Redo Verification', () => {
       test('Steps 13-26: Undo/Redo effect operations', () => {
-        const layer = store.createLayer('solid', 'Silhouette_Source');
+        const layer = layerStore.createLayer(store,'solid', 'Silhouette_Source');
 
         // Add fill
         store.addEffectToLayer(layer!.id, 'fill');
@@ -501,14 +504,14 @@ describe('Tutorial 02: Neon Motion Trails', () => {
         expect(selectionStore.selectedLayerIds.length).toBe(0);
 
         // Create spline layer (for neon motion trails - visible path with stroke)
-        const layer = store.createLayer('spline', 'Light_Streak_01');
+        const layer = layerStore.createLayer(store,'spline', 'Light_Streak_01');
         expect(layer).toBeDefined();
         expect(layer!.type).toBe('spline');
         expect(layer!.name).toBe('Light_Streak_01');
       });
 
       test('Step 29-31: Spline layer has proper structure', () => {
-        const layer = store.createLayer('spline', 'Light_Streak_01');
+        const layer = layerStore.createLayer(store,'spline', 'Light_Streak_01');
 
         // Spline layers should have SplineData with controlPoints and pathData
         expect(layer!.data).toBeDefined();
@@ -521,7 +524,7 @@ describe('Tutorial 02: Neon Motion Trails', () => {
 
     describe('Steps 32-34: Configuring Path', () => {
       test('Steps 32-34: Define curved S-path', () => {
-        const layer = store.createLayer('spline', 'Light_Streak_01');
+        const layer = layerStore.createLayer(store,'spline', 'Light_Streak_01');
 
         // Define an S-curve path (simplified format)
         const sCurvePoints = [
@@ -550,7 +553,7 @@ describe('Tutorial 02: Neon Motion Trails', () => {
 
     describe('Steps 35-38: Removing Fill, Adding Stroke', () => {
       test('Step 35-36: Remove fill from spline', () => {
-        const layer = store.createLayer('spline', 'Light_Streak_01');
+        const layer = layerStore.createLayer(store,'spline', 'Light_Streak_01');
 
         // Set spline to have no fill (empty string = no fill in SplineData)
         store.updateLayerData(layer!.id, {
@@ -563,7 +566,7 @@ describe('Tutorial 02: Neon Motion Trails', () => {
       });
 
       test('Steps 37-38: Add and configure stroke', () => {
-        const layer = store.createLayer('spline', 'Light_Streak_01');
+        const layer = layerStore.createLayer(store,'spline', 'Light_Streak_01');
 
         // Enable stroke with cyan color (hex string in SplineData)
         const cyanHex = rgbaToHex({ r: 0, g: 255, b: 255, a: 1 });
@@ -581,7 +584,7 @@ describe('Tutorial 02: Neon Motion Trails', () => {
 
     describe('Steps 39-42: Stroke Properties', () => {
       test('Step 39: Set line cap to round', () => {
-        const layer = store.createLayer('spline', 'Light_Streak_01');
+        const layer = layerStore.createLayer(store,'spline', 'Light_Streak_01');
 
         store.updateLayerData(layer!.id, { lineCap: 'round' });
 
@@ -590,7 +593,7 @@ describe('Tutorial 02: Neon Motion Trails', () => {
       });
 
       test('Step 40: Set line join to round', () => {
-        const layer = store.createLayer('spline', 'Light_Streak_01');
+        const layer = layerStore.createLayer(store,'spline', 'Light_Streak_01');
 
         store.updateLayerData(layer!.id, { lineJoin: 'round' });
 
@@ -599,7 +602,7 @@ describe('Tutorial 02: Neon Motion Trails', () => {
       });
 
       test('Step 41-42: Verify stroke renders correctly', () => {
-        const layer = store.createLayer('spline', 'Light_Streak_01');
+        const layer = layerStore.createLayer(store,'spline', 'Light_Streak_01');
 
         // Full stroke configuration (SplineData format)
         const cyanHex = rgbaToHex({ r: 0, g: 255, b: 255, a: 1 });
@@ -622,7 +625,7 @@ describe('Tutorial 02: Neon Motion Trails', () => {
 
     describe('Phase 3: Undo/Redo Verification', () => {
       test('Steps 27-42: Undo/Redo spline layer operations', () => {
-        const layer = store.createLayer('spline', 'Light_Streak_01');
+        const layer = layerStore.createLayer(store,'spline', 'Light_Streak_01');
 
         // Configure stroke
         store.updateLayerData(layer!.id, { strokeWidth: 8 });
@@ -648,7 +651,7 @@ describe('Tutorial 02: Neon Motion Trails', () => {
 
     describe('Phase 3: Save/Load Verification', () => {
       test('Steps 27-42: Save/Load preserves spline data', () => {
-        const layer = store.createLayer('spline', 'Light_Streak_01');
+        const layer = layerStore.createLayer(store,'spline', 'Light_Streak_01');
         const cyanHex = rgbaToHex({ r: 0, g: 255, b: 255, a: 1 });
         store.updateLayerData(layer!.id, {
           stroke: cyanHex,
@@ -684,7 +687,7 @@ describe('Tutorial 02: Neon Motion Trails', () => {
 
     describe('Steps 43-47: Adding Trim Paths', () => {
       test('Step 43-45: Add Trim Paths to spline layer', () => {
-        const layer = store.createLayer('spline', 'Light_Streak_01');
+        const layer = layerStore.createLayer(store,'spline', 'Light_Streak_01');
 
         // Trim Paths in SplineData are direct properties: trimStart, trimEnd, trimOffset
         store.updateLayerData(layer!.id, {
@@ -702,7 +705,7 @@ describe('Tutorial 02: Neon Motion Trails', () => {
       });
 
       test('Step 46-47: Configure initial Trim Paths state', () => {
-        const layer = store.createLayer('spline', 'Light_Streak_01');
+        const layer = layerStore.createLayer(store,'spline', 'Light_Streak_01');
 
         // Initial state: Start at 0%, End at 10% (short trail)
         store.updateLayerData(layer!.id, {
@@ -719,7 +722,7 @@ describe('Tutorial 02: Neon Motion Trails', () => {
 
     describe('Steps 48-54: Animating Trim Paths', () => {
       test('Steps 48-50: Enable animation on Start', () => {
-        const layer = store.createLayer('spline', 'Light_Streak_01');
+        const layer = layerStore.createLayer(store,'spline', 'Light_Streak_01');
         store.updateLayerData(layer!.id, {
           trimStart: 0,
           trimEnd: 100,
@@ -739,7 +742,7 @@ describe('Tutorial 02: Neon Motion Trails', () => {
       });
 
       test('Steps 51-54: Add keyframes for Start animation', () => {
-        const layer = store.createLayer('spline', 'Light_Streak_01');
+        const layer = layerStore.createLayer(store,'spline', 'Light_Streak_01');
         store.updateLayerData(layer!.id, {
           trimStart: 0,
           trimEnd: 20,
@@ -772,7 +775,7 @@ describe('Tutorial 02: Neon Motion Trails', () => {
 
     describe('Steps 55-60: Timing Adjustments', () => {
       test('Steps 55-57: Adjust End keyframes for trailing effect', () => {
-        const layer = store.createLayer('spline', 'Light_Streak_01');
+        const layer = layerStore.createLayer(store,'spline', 'Light_Streak_01');
         store.updateLayerData(layer!.id, {
           trimStart: 0,
           trimEnd: 20,
@@ -801,7 +804,7 @@ describe('Tutorial 02: Neon Motion Trails', () => {
       });
 
       test('Steps 58-60: Preview animation at different frames', () => {
-        const layer = store.createLayer('spline', 'Light_Streak_01');
+        const layer = layerStore.createLayer(store,'spline', 'Light_Streak_01');
         store.updateLayerData(layer!.id, {
           trimStart: 0,
           trimEnd: 20
@@ -829,7 +832,7 @@ describe('Tutorial 02: Neon Motion Trails', () => {
 
     describe('Phase 4: Undo/Redo Verification', () => {
       test('Steps 43-60: Undo/Redo trim paths changes', () => {
-        const layer = store.createLayer('spline', 'Light_Streak_01');
+        const layer = layerStore.createLayer(store,'spline', 'Light_Streak_01');
 
         store.updateLayerData(layer!.id, {
           trimStart: 0,
@@ -863,7 +866,7 @@ describe('Tutorial 02: Neon Motion Trails', () => {
 
     describe('Steps 61-66: Adding First Glow', () => {
       test('Steps 61-62: Add Glow effect to shape layer', () => {
-        const layer = store.createLayer('spline', 'Light_Streak_01');
+        const layer = layerStore.createLayer(store,'spline', 'Light_Streak_01');
 
         store.addEffectToLayer(layer!.id, 'glow');
 
@@ -872,7 +875,7 @@ describe('Tutorial 02: Neon Motion Trails', () => {
       });
 
       test('Steps 63-66: Configure first glow (tight, bright)', () => {
-        const layer = store.createLayer('spline', 'Light_Streak_01');
+        const layer = layerStore.createLayer(store,'spline', 'Light_Streak_01');
         store.addEffectToLayer(layer!.id, 'glow');
         const glow = getLayer(layer!.id)!.effects![0];
 
@@ -890,7 +893,7 @@ describe('Tutorial 02: Neon Motion Trails', () => {
 
     describe('Steps 67-74: Adding Second and Third Glow', () => {
       test('Steps 67-70: Add second glow (medium spread)', () => {
-        const layer = store.createLayer('spline', 'Light_Streak_01');
+        const layer = layerStore.createLayer(store,'spline', 'Light_Streak_01');
 
         // First glow
         store.addEffectToLayer(layer!.id, 'glow');
@@ -907,7 +910,7 @@ describe('Tutorial 02: Neon Motion Trails', () => {
       });
 
       test('Steps 71-74: Add third glow (wide, soft)', () => {
-        const layer = store.createLayer('spline', 'Light_Streak_01');
+        const layer = layerStore.createLayer(store,'spline', 'Light_Streak_01');
 
         store.addEffectToLayer(layer!.id, 'glow');
         store.addEffectToLayer(layer!.id, 'glow');
@@ -926,7 +929,7 @@ describe('Tutorial 02: Neon Motion Trails', () => {
 
     describe('Steps 75-82: Glow Color and Fine-tuning', () => {
       test('Steps 75-78: Set glow colors', () => {
-        const layer = store.createLayer('spline', 'Light_Streak_01');
+        const layer = layerStore.createLayer(store,'spline', 'Light_Streak_01');
 
         store.addEffectToLayer(layer!.id, 'glow');
         const glow = getLayer(layer!.id)!.effects![0];
@@ -943,7 +946,7 @@ describe('Tutorial 02: Neon Motion Trails', () => {
       });
 
       test('Steps 79-82: Toggle and compare glows', () => {
-        const layer = store.createLayer('spline', 'Light_Streak_01');
+        const layer = layerStore.createLayer(store,'spline', 'Light_Streak_01');
 
         store.addEffectToLayer(layer!.id, 'glow');
         store.addEffectToLayer(layer!.id, 'glow');
@@ -963,7 +966,7 @@ describe('Tutorial 02: Neon Motion Trails', () => {
 
     describe('Phase 5: Undo/Redo Verification', () => {
       test('Steps 61-82: Undo/Redo effect stacking', () => {
-        const layer = store.createLayer('spline', 'Light_Streak_01');
+        const layer = layerStore.createLayer(store,'spline', 'Light_Streak_01');
 
         store.addEffectToLayer(layer!.id, 'glow');
         expect(getLayer(layer!.id)!.effects!.length).toBe(1);
@@ -997,7 +1000,7 @@ describe('Tutorial 02: Neon Motion Trails', () => {
 
     describe('Steps 83-90: Duplicating Streak Layers', () => {
       test('Steps 83-85: Duplicate Light_Streak_01 to create 02', () => {
-        const layer1 = store.createLayer('spline', 'Light_Streak_01');
+        const layer1 = layerStore.createLayer(store,'spline', 'Light_Streak_01');
         const cyanHex = rgbaToHex({ r: 0, g: 255, b: 255, a: 1 });
         store.updateLayerData(layer1!.id, {
           stroke: cyanHex,
@@ -1005,31 +1008,31 @@ describe('Tutorial 02: Neon Motion Trails', () => {
         });
         store.addEffectToLayer(layer1!.id, 'glow');
 
-        const layer2 = store.duplicateLayer(layer1!.id);
+        const layer2 = layerStore.duplicateLayer(store, layer1!.id);
         expect(layer2).toBeDefined();
         const splineData2 = layer2!.data as SplineData;
         expect(splineData2.stroke).toBe(cyanHex);
         expect(layer2!.effects!.length).toBe(1);
 
         // Rename
-        store.updateLayer(layer2!.id, { name: 'Light_Streak_02' });
+        layerStore.updateLayer(store,layer2!.id, { name: 'Light_Streak_02' });
         expect(getLayer(layer2!.id)!.name).toBe('Light_Streak_02');
       });
 
       test('Steps 86-90: Create streaks 03, 04, 05', () => {
-        const layer1 = store.createLayer('spline', 'Light_Streak_01');
+        const layer1 = layerStore.createLayer(store,'spline', 'Light_Streak_01');
 
-        const layer2 = store.duplicateLayer(layer1!.id);
-        store.updateLayer(layer2!.id, { name: 'Light_Streak_02' });
+        const layer2 = layerStore.duplicateLayer(store, layer1!.id);
+        layerStore.updateLayer(store,layer2!.id, { name: 'Light_Streak_02' });
 
-        const layer3 = store.duplicateLayer(layer1!.id);
-        store.updateLayer(layer3!.id, { name: 'Light_Streak_03' });
+        const layer3 = layerStore.duplicateLayer(store, layer1!.id);
+        layerStore.updateLayer(store,layer3!.id, { name: 'Light_Streak_03' });
 
-        const layer4 = store.duplicateLayer(layer1!.id);
-        store.updateLayer(layer4!.id, { name: 'Light_Streak_04' });
+        const layer4 = layerStore.duplicateLayer(store, layer1!.id);
+        layerStore.updateLayer(store,layer4!.id, { name: 'Light_Streak_04' });
 
-        const layer5 = store.duplicateLayer(layer1!.id);
-        store.updateLayer(layer5!.id, { name: 'Light_Streak_05' });
+        const layer5 = layerStore.duplicateLayer(store, layer1!.id);
+        layerStore.updateLayer(store,layer5!.id, { name: 'Light_Streak_05' });
 
         const layers = store.getActiveCompLayers();
         const streakLayers = layers.filter(l => l.name.startsWith('Light_Streak_'));
@@ -1048,7 +1051,7 @@ describe('Tutorial 02: Neon Motion Trails', () => {
         ];
 
         colors.forEach((color, i) => {
-          const layer = store.createLayer('spline', `Light_Streak_0${i + 1}`);
+          const layer = layerStore.createLayer(store,'spline', `Light_Streak_0${i + 1}`);
           const colorHex = rgbaToHex(color);
           store.updateLayerData(layer!.id, { stroke: colorHex });
           const splineData = getLayer(layer!.id)!.data as SplineData;
@@ -1057,7 +1060,7 @@ describe('Tutorial 02: Neon Motion Trails', () => {
       });
 
       test('Steps 95-98: Modify paths for variety', () => {
-        const layer = store.createLayer('spline', 'Light_Streak_02');
+        const layer = layerStore.createLayer(store,'spline', 'Light_Streak_02');
 
         // Modify path - different curve
         const newPathPoints = [
@@ -1078,7 +1081,7 @@ describe('Tutorial 02: Neon Motion Trails', () => {
       test('Steps 99-102: Offset animation timing for each streak', () => {
         // Create 5 streaks with staggered timing
         for (let i = 0; i < 5; i++) {
-          const layer = store.createLayer('spline', `Light_Streak_0${i + 1}`);
+          const layer = layerStore.createLayer(store,'spline', `Light_Streak_0${i + 1}`);
           const offset = i * 5; // 5 frame offset each
 
           store.updateLayerData(layer!.id, {
@@ -1111,13 +1114,13 @@ describe('Tutorial 02: Neon Motion Trails', () => {
 
     describe('Phase 6: Undo/Redo Verification', () => {
       test('Steps 83-102: Undo/Redo multiple duplications', () => {
-        const layer1 = store.createLayer('spline', 'Light_Streak_01');
+        const layer1 = layerStore.createLayer(store,'spline', 'Light_Streak_01');
         const initialCount = store.getActiveCompLayers().length;
 
-        store.duplicateLayer(layer1!.id);
+        layerStore.duplicateLayer(store, layer1!.id);
         expect(store.getActiveCompLayers().length).toBe(initialCount + 1);
 
-        store.duplicateLayer(layer1!.id);
+        layerStore.duplicateLayer(store, layer1!.id);
         expect(store.getActiveCompLayers().length).toBe(initialCount + 2);
 
         store.undo();
@@ -1140,7 +1143,7 @@ describe('Tutorial 02: Neon Motion Trails', () => {
 
     describe('Steps 103-108: Enabling Gradient Stroke', () => {
       test('Steps 103-105: Enable gradient on stroke', () => {
-        const layer = store.createLayer('spline', 'Light_Streak_01');
+        const layer = layerStore.createLayer(store,'spline', 'Light_Streak_01');
 
         store.updateLayerData(layer!.id, {
           strokeType: 'gradient',
@@ -1163,7 +1166,7 @@ describe('Tutorial 02: Neon Motion Trails', () => {
       });
 
       test('Steps 106-108: Configure gradient colors', () => {
-        const layer = store.createLayer('spline', 'Light_Streak_01');
+        const layer = layerStore.createLayer(store,'spline', 'Light_Streak_01');
 
         // Cyan to magenta gradient
         store.updateLayerData(layer!.id, {
@@ -1191,7 +1194,7 @@ describe('Tutorial 02: Neon Motion Trails', () => {
 
     describe('Steps 109-115: Gradient Along Path', () => {
       test('Steps 109-112: Set gradient to follow path', () => {
-        const layer = store.createLayer('spline', 'Light_Streak_01');
+        const layer = layerStore.createLayer(store,'spline', 'Light_Streak_01');
 
         store.updateLayerData(layer!.id, {
           strokeType: 'gradient',
@@ -1214,7 +1217,7 @@ describe('Tutorial 02: Neon Motion Trails', () => {
       });
 
       test('Steps 113-115: Adjust gradient spread', () => {
-        const layer = store.createLayer('spline', 'Light_Streak_01');
+        const layer = layerStore.createLayer(store,'spline', 'Light_Streak_01');
 
         store.updateLayerData(layer!.id, {
           strokeGradient: {
@@ -1239,7 +1242,7 @@ describe('Tutorial 02: Neon Motion Trails', () => {
 
     describe('Steps 116-120: Animating Gradient', () => {
       test('Steps 116-120: Animate gradient offset', () => {
-        const layer = store.createLayer('spline', 'Light_Streak_01');
+        const layer = layerStore.createLayer(store,'spline', 'Light_Streak_01');
 
         store.updateLayerData(layer!.id, {
           strokeGradient: {
@@ -1269,7 +1272,7 @@ describe('Tutorial 02: Neon Motion Trails', () => {
 
     describe('Phase 7: Undo/Redo Verification', () => {
       test('Steps 103-120: Undo/Redo gradient changes', () => {
-        const layer = store.createLayer('spline', 'Light_Streak_01');
+        const layer = layerStore.createLayer(store,'spline', 'Light_Streak_01');
 
         store.updateLayerData(layer!.id, { strokeType: 'solid' });
         let updatedLayer = getLayer(layer!.id);
@@ -1309,7 +1312,7 @@ describe('Tutorial 02: Neon Motion Trails', () => {
       // These involve clicking canvas to create points
 
       test('Steps 126-130: Create path programmatically (simulating pen tool)', () => {
-        const layer = store.createLayer('spline', 'Custom_Path_01');
+        const layer = layerStore.createLayer(store,'spline', 'Custom_Path_01');
 
         // Define a complex path with bezier handles
         const pathPoints = [
@@ -1335,7 +1338,7 @@ describe('Tutorial 02: Neon Motion Trails', () => {
 
     describe('Steps 131-140: Editing Path Points', () => {
       test('Steps 131-135: Adjust bezier handles', () => {
-        const layer = store.createLayer('spline', 'Custom_Path_01');
+        const layer = layerStore.createLayer(store,'spline', 'Custom_Path_01');
         const initialPoints = [
           { x: 100, y: 500, handleIn: { x: 0, y: 0 }, handleOut: { x: 50, y: 0 } },
           { x: 300, y: 500, handleIn: { x: -50, y: 0 }, handleOut: { x: 0, y: 0 } }
@@ -1357,7 +1360,7 @@ describe('Tutorial 02: Neon Motion Trails', () => {
       });
 
       test('Steps 136-140: Add and remove path points', () => {
-        const layer = store.createLayer('spline', 'Custom_Path_01');
+        const layer = layerStore.createLayer(store,'spline', 'Custom_Path_01');
         const initialPoints = [
           { x: 100, y: 500, handleIn: { x: 0, y: 0 }, handleOut: { x: 50, y: 0 } },
           { x: 500, y: 500, handleIn: { x: -50, y: 0 }, handleOut: { x: 0, y: 0 } }
@@ -1391,7 +1394,7 @@ describe('Tutorial 02: Neon Motion Trails', () => {
     describe('Steps 141-145: Converting to Shape Layer', () => {
       test('Steps 141-145: Path can be used in spline layer', () => {
         // Create spline/path
-        const pathLayer = store.createLayer('spline', 'Source_Path');
+        const pathLayer = layerStore.createLayer(store,'spline', 'Source_Path');
         const pathPoints = [
           { x: 100, y: 500, handleIn: { x: 0, y: 0 }, handleOut: { x: 100, y: -100 } },
           { x: 400, y: 200, handleIn: { x: -100, y: 100 }, handleOut: { x: 0, y: 0 } }
@@ -1400,7 +1403,7 @@ describe('Tutorial 02: Neon Motion Trails', () => {
         store.updateLayerData(pathLayer!.id, { controlPoints: cp1, pathData: pd1 });
 
         // Create spline layer and copy path
-        const shapeLayer = store.createLayer('spline', 'Shape_From_Path');
+        const shapeLayer = layerStore.createLayer(store,'spline', 'Shape_From_Path');
         const { controlPoints: cp2, pathData: pd2 } = convertPointsToControlPoints(pathPoints, false);
         const cyanHex = rgbaToHex({ r: 0, g: 255, b: 255, a: 1 });
         store.updateLayerData(shapeLayer!.id, {
@@ -1418,7 +1421,7 @@ describe('Tutorial 02: Neon Motion Trails', () => {
 
     describe('Phase 8: Undo/Redo Verification', () => {
       test('Steps 121-145: Undo/Redo path edits', () => {
-        const layer = store.createLayer('spline', 'Custom_Path');
+        const layer = layerStore.createLayer(store,'spline', 'Custom_Path');
 
         const points1 = [{ x: 100, y: 100, handleIn: { x: 0, y: 0 }, handleOut: { x: 0, y: 0 } }];
         const { controlPoints: cp1, pathData: pd1 } = convertPointsToControlPoints(points1, false);
@@ -1457,7 +1460,7 @@ describe('Tutorial 02: Neon Motion Trails', () => {
         // Animated paths use animatedControlPoints (AnimatableControlPoint[]) which requires
         // AnimatableProperty<number> for x/y coordinates. This is complex to set up programmatically.
         // TODO: Update to use actual animatedControlPoints API or test through UI interactions.
-        const layer = store.createLayer('spline', 'Animated_Path');
+        const layer = layerStore.createLayer(store,'spline', 'Animated_Path');
 
         // Basic test: verify animated flag can be set
         store.updateLayerData(layer!.id, {
@@ -1476,7 +1479,7 @@ describe('Tutorial 02: Neon Motion Trails', () => {
 
     describe('Steps 156-165: Motion Path', () => {
       test('Steps 156-160: Use path as motion path for position', () => {
-        const layer = store.createLayer('solid', 'Moving_Element');
+        const layer = layerStore.createLayer(store,'solid', 'Moving_Element');
 
         // Enable position animation along a path
         store.updateLayerData(layer!.id, {
@@ -1504,7 +1507,7 @@ describe('Tutorial 02: Neon Motion Trails', () => {
       });
 
       test('Steps 161-165: Orient along path', () => {
-        const layer = store.createLayer('solid', 'Moving_Element');
+        const layer = layerStore.createLayer(store,'solid', 'Moving_Element');
 
         store.updateLayerData(layer!.id, {
           motionPath: {
@@ -1534,7 +1537,7 @@ describe('Tutorial 02: Neon Motion Trails', () => {
       });
 
       test('Steps 171-178: Speed graph adjustments', () => {
-        const layer = store.createLayer('solid', 'Speed_Adjusted');
+        const layer = layerStore.createLayer(store,'solid', 'Speed_Adjusted');
 
         // Motion path with speed keyframes
         store.updateLayerData(layer!.id, {
@@ -1576,9 +1579,9 @@ describe('Tutorial 02: Neon Motion Trails', () => {
     describe('Steps 179-182: Pre-Composing Streaks', () => {
       test('Steps 179-182: Nest shape layers into composition', () => {
         // Create multiple streak layers
-        const layer1 = store.createLayer('spline', 'Light_Streak_01');
-        const layer2 = store.createLayer('spline', 'Light_Streak_02');
-        const layer3 = store.createLayer('spline', 'Light_Streak_03');
+        const layer1 = layerStore.createLayer(store,'spline', 'Light_Streak_01');
+        const layer2 = layerStore.createLayer(store,'spline', 'Light_Streak_02');
+        const layer3 = layerStore.createLayer(store,'spline', 'Light_Streak_03');
 
         // Select all
         selectionStore.selectLayers([layer1!.id, layer2!.id, layer3!.id]);
@@ -1598,7 +1601,7 @@ describe('Tutorial 02: Neon Motion Trails', () => {
 
     describe('Steps 183-188: Adding Echo Effect', () => {
       test('Steps 183-185: Add Echo effect', () => {
-        const layer = store.createLayer('solid', 'Streaks_Layer');
+        const layer = layerStore.createLayer(store,'solid', 'Streaks_Layer');
 
         store.addEffectToLayer(layer!.id, 'echo');
 
@@ -1607,7 +1610,7 @@ describe('Tutorial 02: Neon Motion Trails', () => {
       });
 
       test('Steps 186-188: Configure Echo parameters', () => {
-        const layer = store.createLayer('solid', 'Streaks_Layer');
+        const layer = layerStore.createLayer(store,'solid', 'Streaks_Layer');
         store.addEffectToLayer(layer!.id, 'echo');
         const echo = getLayer(layer!.id)!.effects![0];
 
@@ -1630,7 +1633,7 @@ describe('Tutorial 02: Neon Motion Trails', () => {
 
     describe('Steps 189-196: Echo Operator Modes', () => {
       test('Steps 189-192: Test different operators', () => {
-        const layer = store.createLayer('solid', 'Echo_Test');
+        const layer = layerStore.createLayer(store,'solid', 'Echo_Test');
         store.addEffectToLayer(layer!.id, 'echo');
         const echo = getLayer(layer!.id)!.effects![0];
 
@@ -1654,7 +1657,7 @@ describe('Tutorial 02: Neon Motion Trails', () => {
 
     describe('Steps 197-205: Fine-tuning Echo', () => {
       test('Steps 197-200: Adjust echo count and decay', () => {
-        const layer = store.createLayer('solid', 'Echo_Final');
+        const layer = layerStore.createLayer(store,'solid', 'Echo_Final');
         store.addEffectToLayer(layer!.id, 'echo');
         const echo = getLayer(layer!.id)!.effects![0];
 
@@ -1667,7 +1670,7 @@ describe('Tutorial 02: Neon Motion Trails', () => {
       });
 
       test('Steps 201-205: Echo time variation', () => {
-        const layer = store.createLayer('solid', 'Echo_Varied');
+        const layer = layerStore.createLayer(store,'solid', 'Echo_Varied');
         store.addEffectToLayer(layer!.id, 'echo');
         const echo = getLayer(layer!.id)!.effects![0];
 
@@ -1683,7 +1686,7 @@ describe('Tutorial 02: Neon Motion Trails', () => {
 
     describe('Phase 10: Undo/Redo Verification', () => {
       test('Steps 179-205: Undo/Redo echo configuration', () => {
-        const layer = store.createLayer('solid', 'Echo_Test');
+        const layer = layerStore.createLayer(store,'solid', 'Echo_Test');
         store.addEffectToLayer(layer!.id, 'echo');
         const echo = getLayer(layer!.id)!.effects![0];
 
@@ -1709,9 +1712,9 @@ describe('Tutorial 02: Neon Motion Trails', () => {
 
     describe('Steps 206-212: Enabling Motion Blur', () => {
       test('Steps 206-208: Enable motion blur on layer', () => {
-        const layer = store.createLayer('spline', 'Light_Streak_01');
+        const layer = layerStore.createLayer(store,'spline', 'Light_Streak_01');
 
-        store.updateLayer(layer!.id, { motionBlur: true });
+        layerStore.updateLayer(store,layer!.id, { motionBlur: true });
 
         expect(getLayer(layer!.id)!.motionBlur).toBe(true);
       });
@@ -1764,18 +1767,18 @@ describe('Tutorial 02: Neon Motion Trails', () => {
 
     describe('Steps 221-225: Per-Layer Motion Blur', () => {
       test('Steps 221-225: Toggle motion blur per layer', () => {
-        const layer1 = store.createLayer('spline', 'Blur_On');
-        const layer2 = store.createLayer('spline', 'Blur_Off');
+        const layer1 = layerStore.createLayer(store,'spline', 'Blur_On');
+        const layer2 = layerStore.createLayer(store,'spline', 'Blur_Off');
 
-        store.updateLayer(layer1!.id, { motionBlur: true });
-        store.updateLayer(layer2!.id, { motionBlur: false });
+        layerStore.updateLayer(store,layer1!.id, { motionBlur: true });
+        layerStore.updateLayer(store,layer2!.id, { motionBlur: false });
 
         expect(getLayer(layer1!.id)!.motionBlur).toBe(true);
         expect(getLayer(layer2!.id)!.motionBlur).toBe(false);
 
         // Toggle
-        store.updateLayer(layer1!.id, { motionBlur: false });
-        store.updateLayer(layer2!.id, { motionBlur: true });
+        layerStore.updateLayer(store,layer1!.id, { motionBlur: false });
+        layerStore.updateLayer(store,layer2!.id, { motionBlur: true });
 
         expect(getLayer(layer1!.id)!.motionBlur).toBe(false);
         expect(getLayer(layer2!.id)!.motionBlur).toBe(true);
@@ -1784,12 +1787,12 @@ describe('Tutorial 02: Neon Motion Trails', () => {
 
     describe('Phase 11: Undo/Redo Verification', () => {
       test('Steps 206-225: Undo/Redo motion blur settings', () => {
-        const layer = store.createLayer('spline', 'MB_Layer');
+        const layer = layerStore.createLayer(store,'spline', 'MB_Layer');
 
-        store.updateLayer(layer!.id, { motionBlur: false });
+        layerStore.updateLayer(store,layer!.id, { motionBlur: false });
         expect(getLayer(layer!.id)!.motionBlur).toBe(false);
 
-        store.updateLayer(layer!.id, { motionBlur: true });
+        layerStore.updateLayer(store,layer!.id, { motionBlur: true });
         expect(getLayer(layer!.id)!.motionBlur).toBe(true);
 
         store.undo();
@@ -1808,7 +1811,7 @@ describe('Tutorial 02: Neon Motion Trails', () => {
 
     describe('Steps 226-235: Hue/Saturation Effect', () => {
       test('Steps 226-228: Add Hue/Saturation effect', () => {
-        const layer = store.createLayer('spline', 'Light_Streak_01');
+        const layer = layerStore.createLayer(store,'spline', 'Light_Streak_01');
 
         store.addEffectToLayer(layer!.id, 'hue-saturation');
 
@@ -1817,7 +1820,7 @@ describe('Tutorial 02: Neon Motion Trails', () => {
       });
 
       test('Steps 229-235: Adjust hue rotation', () => {
-        const layer = store.createLayer('spline', 'Light_Streak_01');
+        const layer = layerStore.createLayer(store,'spline', 'Light_Streak_01');
         store.addEffectToLayer(layer!.id, 'hue-saturation');
         const effect = getLayer(layer!.id)!.effects![0];
 
@@ -1837,7 +1840,7 @@ describe('Tutorial 02: Neon Motion Trails', () => {
 
     describe('Steps 236-245: Curves Effect', () => {
       test('Steps 236-238: Add Curves effect', () => {
-        const layer = store.createLayer('solid', 'Color_Grade');
+        const layer = layerStore.createLayer(store,'solid', 'Color_Grade');
 
         store.addEffectToLayer(layer!.id, 'curves');
 
@@ -1846,7 +1849,7 @@ describe('Tutorial 02: Neon Motion Trails', () => {
       });
 
       test('Steps 239-245: Adjust curves channel', () => {
-        const layer = store.createLayer('solid', 'Color_Grade');
+        const layer = layerStore.createLayer(store,'solid', 'Color_Grade');
         store.addEffectToLayer(layer!.id, 'curves');
         const effect = getLayer(layer!.id)!.effects![0];
 
@@ -1862,7 +1865,7 @@ describe('Tutorial 02: Neon Motion Trails', () => {
 
     describe('Steps 246-250: Color Balance', () => {
       test('Steps 246-250: Add and configure Color Balance', () => {
-        const layer = store.createLayer('solid', 'Color_Grade');
+        const layer = layerStore.createLayer(store,'solid', 'Color_Grade');
 
         store.addEffectToLayer(layer!.id, 'color-balance');
 
@@ -1880,7 +1883,7 @@ describe('Tutorial 02: Neon Motion Trails', () => {
 
     describe('Phase 12: Undo/Redo Verification', () => {
       test('Steps 226-250: Undo/Redo color adjustments', () => {
-        const layer = store.createLayer('solid', 'Color_Test');
+        const layer = layerStore.createLayer(store,'solid', 'Color_Test');
         store.addEffectToLayer(layer!.id, 'hue-saturation');
         const effect = getLayer(layer!.id)!.effects![0];
 
@@ -1904,36 +1907,36 @@ describe('Tutorial 02: Neon Motion Trails', () => {
 
     describe('Steps 251-260: Blend Modes', () => {
       test('Steps 251-255: Set layer blend modes', () => {
-        const layer = store.createLayer('spline', 'Light_Streak_01');
+        const layer = layerStore.createLayer(store,'spline', 'Light_Streak_01');
 
         // Test various blend modes
-        store.updateLayer(layer!.id, { blendMode: 'add' });
+        layerStore.updateLayer(store,layer!.id, { blendMode: 'add' });
         expect(getLayer(layer!.id)!.blendMode).toBe('add');
 
-        store.updateLayer(layer!.id, { blendMode: 'screen' });
+        layerStore.updateLayer(store,layer!.id, { blendMode: 'screen' });
         expect(getLayer(layer!.id)!.blendMode).toBe('screen');
 
-        store.updateLayer(layer!.id, { blendMode: 'overlay' });
+        layerStore.updateLayer(store,layer!.id, { blendMode: 'overlay' });
         expect(getLayer(layer!.id)!.blendMode).toBe('overlay');
       });
 
       test('Steps 256-260: Blend mode for neon effect', () => {
-        const layer = store.createLayer('spline', 'Neon_Streak');
+        const layer = layerStore.createLayer(store,'spline', 'Neon_Streak');
 
         // Add blend mode is ideal for neon/glow effects
-        store.updateLayer(layer!.id, { blendMode: 'add' });
+        layerStore.updateLayer(store,layer!.id, { blendMode: 'add' });
         expect(getLayer(layer!.id)!.blendMode).toBe('add');
 
         // Screen is also good for light effects
-        const layer2 = store.createLayer('spline', 'Soft_Glow');
-        store.updateLayer(layer2!.id, { blendMode: 'screen' });
+        const layer2 = layerStore.createLayer(store,'spline', 'Soft_Glow');
+        layerStore.updateLayer(store,layer2!.id, { blendMode: 'screen' });
         expect(getLayer(layer2!.id)!.blendMode).toBe('screen');
       });
     });
 
     describe('Steps 261-270: Layer Opacity', () => {
       test('Steps 261-265: Adjust layer opacity', () => {
-        const layer = store.createLayer('spline', 'Subtle_Streak');
+        const layer = layerStore.createLayer(store,'spline', 'Subtle_Streak');
 
         // Set opacity to 75%
         store.updateLayerTransform(layer!.id, { opacity: 75 });
@@ -1943,7 +1946,7 @@ describe('Tutorial 02: Neon Motion Trails', () => {
       });
 
       test('Steps 266-270: Animate opacity', () => {
-        const layer = store.createLayer('spline', 'Fading_Streak');
+        const layer = layerStore.createLayer(store,'spline', 'Fading_Streak');
 
         // Add keyframes for fade (this enables animation)
         store.addKeyframe(layer!.id, 'opacity', 0, 100);  // Full opacity at start
@@ -1958,15 +1961,15 @@ describe('Tutorial 02: Neon Motion Trails', () => {
 
     describe('Steps 271-275: Layer Stacking', () => {
       test('Steps 271-275: Reorder layers', () => {
-        const layer1 = store.createLayer('spline', 'Bottom_Layer');
-        const layer2 = store.createLayer('spline', 'Middle_Layer');
-        const layer3 = store.createLayer('spline', 'Top_Layer');
+        const layer1 = layerStore.createLayer(store,'spline', 'Bottom_Layer');
+        const layer2 = layerStore.createLayer(store,'spline', 'Middle_Layer');
+        const layer3 = layerStore.createLayer(store,'spline', 'Top_Layer');
 
         // Get initial order
         const initialLayers = store.getActiveCompLayers();
 
         // Move top layer to bottom
-        store.moveLayer(layer3!.id, initialLayers.length - 1);
+        layerStore.moveLayer(store, layer3!.id, initialLayers.length - 1);
 
         // Verify order changed
         const newLayers = store.getActiveCompLayers();
@@ -1976,12 +1979,12 @@ describe('Tutorial 02: Neon Motion Trails', () => {
 
     describe('Phase 13: Undo/Redo Verification', () => {
       test('Steps 251-275: Undo/Redo blend mode changes', () => {
-        const layer = store.createLayer('spline', 'Blend_Test');
+        const layer = layerStore.createLayer(store,'spline', 'Blend_Test');
 
-        store.updateLayer(layer!.id, { blendMode: 'normal' });
+        layerStore.updateLayer(store,layer!.id, { blendMode: 'normal' });
         expect(getLayer(layer!.id)!.blendMode).toBe('normal');
 
-        store.updateLayer(layer!.id, { blendMode: 'add' });
+        layerStore.updateLayer(store,layer!.id, { blendMode: 'add' });
         expect(getLayer(layer!.id)!.blendMode).toBe('add');
 
         store.undo();
@@ -2002,7 +2005,7 @@ describe('Tutorial 02: Neon Motion Trails', () => {
       // Steps 276-280: Audio import UI - Skip
 
       test('Steps 281-285: Create audio layer', () => {
-        const layer = store.createLayer('audio', 'Music_Track');
+        const layer = layerStore.createLayer(store,'audio', 'Music_Track');
 
         expect(layer).toBeDefined();
         expect(layer!.type).toBe('audio');
@@ -2012,7 +2015,7 @@ describe('Tutorial 02: Neon Motion Trails', () => {
 
     describe('Steps 286-295: Audio Analysis', () => {
       test('Steps 286-290: Store audio data', () => {
-        const layer = store.createLayer('audio', 'Beat_Track');
+        const layer = layerStore.createLayer(store,'audio', 'Beat_Track');
 
         // Store waveform/analysis data
         store.updateLayerData(layer!.id, {
@@ -2033,7 +2036,7 @@ describe('Tutorial 02: Neon Motion Trails', () => {
       });
 
       test('Steps 291-295: Audio markers', () => {
-        const layer = store.createLayer('audio', 'Music_Track');
+        const layer = layerStore.createLayer(store,'audio', 'Music_Track');
 
         // Add markers at beat points
         store.updateLayerData(layer!.id, {
@@ -2056,8 +2059,8 @@ describe('Tutorial 02: Neon Motion Trails', () => {
 
     describe('Steps 296-300: Audio-Reactive Animation', () => {
       test('Steps 296-300: Link property to audio', () => {
-        const audioLayer = store.createLayer('audio', 'Music_Track');
-        const shapeLayer = store.createLayer('spline', 'Reactive_Shape');
+        const audioLayer = layerStore.createLayer(store,'audio', 'Music_Track');
+        const shapeLayer = layerStore.createLayer(store,'spline', 'Reactive_Shape');
 
         // Store audio amplitude data
         store.updateLayerData(audioLayer!.id, {
@@ -2088,7 +2091,7 @@ describe('Tutorial 02: Neon Motion Trails', () => {
 
     describe('Phase 14: Undo/Redo Verification', () => {
       test('Steps 276-300: Undo/Redo audio configuration', () => {
-        const layer = store.createLayer('audio', 'Audio_Test');
+        const layer = layerStore.createLayer(store,'audio', 'Audio_Test');
 
         store.updateLayerData(layer!.id, { tempo: 120 });
         let updatedLayer = getLayer(layer!.id);
@@ -2185,16 +2188,16 @@ describe('Tutorial 02: Neon Motion Trails', () => {
         store.renameComposition(comp!.id, 'Neon_Trails_Final');
 
         // Create all layers from tutorial
-        const bgLayer = store.createLayer('solid', 'BG_Gradient');
+        const bgLayer = layerStore.createLayer(store,'solid', 'BG_Gradient');
         store.addEffectToLayer(bgLayer!.id, 'gradient-ramp');
 
-        const streak1 = store.createLayer('spline', 'Light_Streak_01');
+        const streak1 = layerStore.createLayer(store,'spline', 'Light_Streak_01');
         store.updateLayerData(streak1!.id, {
           strokeEnabled: true,
           strokeColor: { r: 0, g: 255, b: 255, a: 1 }
         });
         store.addEffectToLayer(streak1!.id, 'glow');
-        store.updateLayer(streak1!.id, { blendMode: 'add' });
+        layerStore.updateLayer(store,streak1!.id, { blendMode: 'add' });
 
         // Serialize
         const projectData = store.exportProject();
@@ -2228,7 +2231,7 @@ describe('Tutorial 02: Neon Motion Trails', () => {
     describe('Phase 15: Determinism Verification', () => {
       test('Frame evaluation is reproducible', () => {
         // Create animated layer
-        const layer = store.createLayer('spline', 'Animated_Shape');
+        const layer = layerStore.createLayer(store,'spline', 'Animated_Shape');
         // Add keyframes (this enables animation automatically)
         store.addKeyframe(layer!.id, 'opacity', 0, 100);
         store.addKeyframe(layer!.id, 'opacity', 60, 50);

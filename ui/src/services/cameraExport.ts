@@ -5,6 +5,8 @@
 
 import type { Camera3D, CameraKeyframe } from "../types/camera";
 import { focalLengthToFOV } from "./math3d";
+import { parseAndSanitize } from "@/services/security/jsonSanitizer";
+import { CameraImportDataSchema } from "@/schemas/imports/camera-schema";
 
 /**
  * Uni3C Camera Track Format
@@ -352,18 +354,20 @@ export function exportCameraJSON(
 export function importCameraJSON(
   json: string,
 ): { camera: Camera3D; keyframes: CameraKeyframe[] } | null {
-  try {
-    const data = JSON.parse(json);
-    if (data.camera && data.keyframes) {
-      return {
-        camera: data.camera,
-        keyframes: data.keyframes,
-      };
-    }
-    return null;
-  } catch {
+  const sanitizeResult = parseAndSanitize(json);
+  if (!sanitizeResult.valid) {
     return null;
   }
+
+  const parseResult = CameraImportDataSchema.safeParse(sanitizeResult.data);
+  if (!parseResult.success) {
+    return null;
+  }
+
+  return {
+    camera: parseResult.data.camera,
+    keyframes: parseResult.data.keyframes,
+  };
 }
 
 /**

@@ -11,6 +11,7 @@ import {
   separatePositionDimensions,
   separateScaleDimensions,
 } from "@/types/transform";
+import { useLayerStore } from "@/stores/layerStore";
 import type { KeyframeStoreAccess } from "./types";
 
 // ============================================================================
@@ -102,7 +103,8 @@ export function hasPositionSeparated(
   store: KeyframeStoreAccess,
   layerId: string,
 ): boolean {
-  const layer = store.getLayerById(layerId);
+  const layerStore = useLayerStore();
+  const layer = layerStore.getLayerById(store, layerId);
   if (!layer) return false;
   return layer.transform.separateDimensions?.position === true;
 }
@@ -114,7 +116,8 @@ export function hasScaleSeparated(
   store: KeyframeStoreAccess,
   layerId: string,
 ): boolean {
-  const layer = store.getLayerById(layerId);
+  const layerStore = useLayerStore();
+  const layer = layerStore.getLayerById(store, layerId);
   if (!layer) return false;
   return layer.transform.separateDimensions?.scale === true;
 }

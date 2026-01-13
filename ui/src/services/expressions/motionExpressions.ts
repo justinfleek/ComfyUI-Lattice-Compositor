@@ -16,7 +16,7 @@ import type { Keyframe } from "@/types/project";
 export interface MotionExpressionContext {
   time: number;
   fps: number;
-  keyframes: Keyframe<any>[];
+  keyframes: Keyframe<number | number[]>[];
   value: number | number[];
   velocity: number | number[];
 }
@@ -100,10 +100,10 @@ export function inertia(
   if (keyframes.length === 0) return value;
 
   // Find nearest keyframe before current time
-  const fps = ctx.fps || 16;
+  const fps = ctx.fps ?? 16;
   const currentFrame = time * fps;
 
-  let nearestKey: Keyframe<any> | null = null;
+  let nearestKey: Keyframe<number | number[]> | null = null;
   for (let i = keyframes.length - 1; i >= 0; i--) {
     if (keyframes[i].frame <= currentFrame) {
       nearestKey = keyframes[i];
@@ -124,7 +124,7 @@ export function inertia(
 
   // Apply oscillation to each component
   const resultArr = valueArr.map((v, i) => {
-    const componentVel = velocityArr[i] || 0;
+    const componentVel = velocityArr[i] ?? 0;
     const oscillation =
       (componentVel * safeAmplitude * Math.sin(safeFrequency * t * 2 * Math.PI)) /
       Math.exp(safeDecay * t);
@@ -154,11 +154,11 @@ export function bounce(
 
   if (keyframes.length === 0) return value;
 
-  const fps = ctx.fps || 16;
+  const fps = ctx.fps ?? 16;
   const currentFrame = time * fps;
 
   // Find last keyframe
-  let lastKey: Keyframe<any> | null = null;
+  let lastKey: Keyframe<number | number[]> | null = null;
   for (let i = keyframes.length - 1; i >= 0; i--) {
     if (keyframes[i].frame <= currentFrame) {
       lastKey = keyframes[i];
@@ -219,10 +219,10 @@ export function elastic(
 
   if (keyframes.length === 0) return value;
 
-  const fps = ctx.fps || 16;
+  const fps = ctx.fps ?? 16;
   const currentFrame = time * fps;
 
-  let lastKey: Keyframe<any> | null = null;
+  let lastKey: Keyframe<number | number[]> | null = null;
   for (let i = keyframes.length - 1; i >= 0; i--) {
     if (keyframes[i].frame <= currentFrame) {
       lastKey = keyframes[i];

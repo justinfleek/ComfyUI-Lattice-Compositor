@@ -31,7 +31,7 @@ import type {
   PeakDetectionConfig,
 } from "@/services/audioFeatures";
 import type { PathAnimatorConfig } from "@/services/audioPathAnimator";
-import type { PathAnimatorAccess } from "./actions/audioActions";
+import type { PathAnimatorAccess } from "./audioKeyframeStore";
 import type {
   AudioMapping,
   TargetParameter,
@@ -86,11 +86,11 @@ import type {
 } from "@/types/project";
 import { createEmptyProject } from "@/types/project";
 import { storeLogger } from "@/utils/logger";
-import * as audioActions from "./actions/audioActions";
-import * as cacheActions from "./actions/cacheActions";
-import * as cameraActions from "./actions/cameraActions";
-import * as compositionActions from "./actions/compositionActions";
-import * as depthflowActions from "./actions/depthflowActions";
+import { useAudioKeyframeStore, type FrequencyBandName } from "./audioKeyframeStore";
+import { useCacheStore } from "./cacheStore";
+import { useCameraStore } from "./cameraStore";
+import { useCompositionStore } from "./compositionStore";
+import { useDepthflowStore } from "./depthflowStore";
 // Domain stores
 import {
   useLayerStore,
@@ -99,6 +99,7 @@ import {
   type TimeStretchOptions,
   type SequenceLayersOptions,
   type ExponentialScaleOptions,
+  type CompositorStoreAccess,
 } from "./layerStore";
 import {
   useKeyframeStore,
@@ -106,18 +107,26 @@ import {
   type VelocitySettings,
   type BakeExpressionStoreAccess,
 } from "./keyframeStore";
-import * as markerActions from "./actions/markerActions";
-import * as particleLayerActions from "./actions/particleLayerActions";
-import * as projectActions from "./actions/projectActions";
+import { useMarkerStore } from "./markerStore";
+import { useParticleStore } from "./particleStore";
 import { useAnimationStore } from "./animationStore";
 import { useExpressionStore } from "./expressionStore";
-import * as segmentationActions from "./actions/segmentationActions";
-import * as textAnimatorActions from "./actions/textAnimatorActions";
-import type { VideoImportResult } from "./actions/videoActions";
-import * as videoActions from "./actions/videoActions";
+import { useSegmentationStore } from "./segmentationStore";
+import {
+  useTextAnimatorStore,
+  type AddTextAnimatorConfig,
+  type RangeSelectorConfig,
+  type ExpressionSelectorConfig,
+  type WigglySelectorConfig,
+  type CharacterTransform,
+  type TextPathConfig,
+} from "./textAnimatorStore";
+import { useVideoStore, type VideoImportResult } from "./videoStore";
 import { useAudioStore } from "./audioStore";
 import { useEffectStore } from "./effectStore";
 import { useSelectionStore } from "./selectionStore";
+import { useUIStore } from "./uiStore";
+import { useProjectStore } from "./projectStore";
 
 interface CompositorState {
   // Project data
@@ -135,8 +144,7 @@ interface CompositorState {
   sourceImage: string | null;
   depthMap: string | null;
 
-  // Playback state (delegated to playbackStore, kept here for backwards compat)
-  isPlaying: boolean;
+  // Playback state (isPlaying migrated to playbackStore, accessed via getter)
 
   // Selection state is now in selectionStore (accessed via getters)
   // Tool 'segment' is compositor-specific, handled separately
@@ -153,18 +161,7 @@ interface CompositorState {
   segmentBoxStart: { x: number; y: number } | null;
   segmentIsLoading: boolean;
 
-  // Shape tool options
-  shapeToolOptions: {
-    fromCenter: boolean;
-    constrain: boolean;
-    polygonSides: number;
-    starPoints: number;
-    starInnerRadius: number;
-  };
-
-  // UI state
-  curveEditorVisible: boolean;
-  hideMinimizedLayers: boolean; // Toggle to hide layers marked as minimized
+  // UI state (migrated to uiStore - accessed via getters/delegation)
 
   // History for undo/redo
   historyStack: LatticeProject[];
@@ -180,12 +177,9 @@ interface CompositorState {
   viewportState: ViewportState; // Multi-view layout state
   viewOptions: ViewOptions; // Display options (wireframes, etc.)
 
-  // Property driver system (expressions/links)
-  propertyDriverSystem: PropertyDriverSystem | null;
-  propertyDrivers: PropertyDriver[]; // Serializable driver configs
+  // Property driver system (propertyDriverSystem and propertyDrivers migrated to expressionStore)
 
-  // Timeline snapping
-  snapConfig: SnapConfig;
+  // Timeline snapping (snapConfig migrated to animationStore)
 
   // Clipboard for copy/paste
   clipboard: {
@@ -197,7 +191,7 @@ interface CompositorState {
   autosaveEnabled: boolean;
   autosaveIntervalMs: number;
   autosaveTimerId: number | null;
-  lastSaveTime: number | null;
+  lastSaveTime: number; // 0 = never saved, Date.now() = last save time
   lastSaveProjectId: string | null;
   hasUnsavedChanges: boolean;
 
@@ -205,8 +199,7 @@ interface CompositorState {
   frameCacheEnabled: boolean;
   projectStateHash: string;
 
-  // Timeline UI state
-  timelineZoom: number;
+  // Timeline UI state (timelineZoom migrated to animationStore)
   selectedAssetId: string | null;
 }
 
@@ -223,21 +216,13 @@ export const useCompositorStore = defineStore("compositor", {
       comfyuiNodeId: null,
       sourceImage: null,
       depthMap: null,
-      isPlaying: false,
+      // isPlaying migrated to playbackStore (accessed via getter)
       segmentToolActive: false,
       segmentMode: "point",
       segmentPendingMask: null,
       segmentBoxStart: null,
       segmentIsLoading: false,
-      shapeToolOptions: {
-        fromCenter: false,
-        constrain: false,
-        polygonSides: 6,
-        starPoints: 5,
-        starInnerRadius: 0.5,
-      },
-      curveEditorVisible: false,
-      hideMinimizedLayers: false,
+      // UI state migrated to uiStore (curveEditorVisible, hideMinimizedLayers, shapeToolOptions)
       // Initialize history with initial project state so first action can be undone
       historyStack: [structuredClone(initialProject)],
       historyIndex: 0,
@@ -250,12 +235,9 @@ export const useCompositorStore = defineStore("compositor", {
       viewportState: createDefaultViewportState(),
       viewOptions: createDefaultViewOptions(),
 
-      // Property driver system
-      propertyDriverSystem: null,
-      propertyDrivers: [],
+      // Property driver system (migrated to expressionStore)
 
-      // Timeline snapping
-      snapConfig: { ...DEFAULT_SNAP_CONFIG },
+      // Timeline snapping (snapConfig migrated to animationStore)
 
       // Clipboard
       clipboard: {
@@ -267,7 +249,7 @@ export const useCompositorStore = defineStore("compositor", {
       autosaveEnabled: true,
       autosaveIntervalMs: 60000,
       autosaveTimerId: null,
-      lastSaveTime: null,
+      lastSaveTime: 0, // 0 = never saved
       lastSaveProjectId: null,
       hasUnsavedChanges: false,
 
@@ -275,8 +257,7 @@ export const useCompositorStore = defineStore("compositor", {
       frameCacheEnabled: true,
       projectStateHash: "",
 
-      // Timeline UI state
-      timelineZoom: 1,
+      // Timeline UI state (timelineZoom migrated to animationStore)
       selectedAssetId: null,
     };
   },
@@ -287,31 +268,42 @@ export const useCompositorStore = defineStore("compositor", {
       return state.project.compositions[state.activeCompositionId] || null;
     },
 
-    // Project info - now uses active composition
-    hasProject: (state): boolean => state.sourceImage !== null,
-    width(state): number {
-      const comp = state.project.compositions[state.activeCompositionId];
-      return comp?.settings.width || 1024;
+    // Project info - computed from active composition
+    hasProject(): boolean {
+      return this.sourceImage !== null;
     },
-    height(state): number {
-      const comp = state.project.compositions[state.activeCompositionId];
-      return comp?.settings.height || 1024;
+    width(): number {
+      return this.activeComposition?.settings.width || 1024;
     },
-    frameCount(state): number {
-      const comp = state.project.compositions[state.activeCompositionId];
-      return comp?.settings.frameCount || 81;
+    height(): number {
+      return this.activeComposition?.settings.height || 1024;
     },
-    fps(state): number {
-      const comp = state.project.compositions[state.activeCompositionId];
-      return comp?.settings.fps || 16;
+    frameCount(): number {
+      return this.activeComposition?.settings.frameCount || 81;
     },
-    duration(state): number {
-      const comp = state.project.compositions[state.activeCompositionId];
-      return comp?.settings.duration || 5;
+    fps(): number {
+      return this.activeComposition?.settings.fps || 16;
     },
-    backgroundColor(state): string {
-      const comp = state.project.compositions[state.activeCompositionId];
-      return comp?.settings.backgroundColor || "#050505";
+    duration(): number {
+      return this.activeComposition?.settings.duration || 5;
+    },
+    backgroundColor(): string {
+      return this.activeComposition?.settings.backgroundColor || "#050505";
+    },
+
+    // Timeline zoom (delegated to animationStore)
+    timelineZoom(): number {
+      return useAnimationStore().timelineZoom;
+    },
+
+    // Snap config (delegated to animationStore)
+    snapConfig(): SnapConfig {
+      return useAnimationStore().snapConfig;
+    },
+
+    // Playback state (delegated to animationStore -> playbackStore)
+    isPlaying(): boolean {
+      return useAnimationStore().isPlaying;
     },
 
     // Current frame - per composition
@@ -319,8 +311,8 @@ export const useCompositorStore = defineStore("compositor", {
       const comp = state.project.compositions[state.activeCompositionId];
       return comp?.currentFrame || 0;
     },
-    currentTime(state): number {
-      const comp = state.project.compositions[state.activeCompositionId];
+    currentTime(): number {
+      const comp = this.activeComposition;
       if (!comp) return 0;
       return comp.currentFrame / comp.settings.fps;
     },
@@ -332,16 +324,18 @@ export const useCompositorStore = defineStore("compositor", {
     },
     visibleLayers(state): Layer[] {
       const comp = state.project.compositions[state.activeCompositionId];
-      return (comp?.layers || []).filter((l: Layer) => l.visible);
+      const layers = comp?.layers || [];
+      return layers.filter((l: Layer) => l.visible);
     },
     // Layers displayed in timeline (respects minimized filter)
     displayedLayers(state): Layer[] {
       const comp = state.project.compositions[state.activeCompositionId];
-      const allLayers = comp?.layers || [];
-      if (state.hideMinimizedLayers) {
-        return allLayers.filter((l: Layer) => !l.minimized);
+      const layers = comp?.layers || [];
+      const uiStore = useUIStore();
+      if (uiStore.hideMinimizedLayers) {
+        return layers.filter((l: Layer) => !l.minimized);
       }
-      return allLayers;
+      return layers;
     },
 
     // Selection (delegated to selectionStore)
@@ -382,20 +376,18 @@ export const useCompositorStore = defineStore("compositor", {
     allCompositions: (state): Composition[] => {
       return Object.values(state.project.compositions);
     },
-    openCompositions(state): Composition[] {
-      return state.openCompositionIds
-        .map((id: string) => state.project.compositions[id])
-        .filter(Boolean);
+    openCompositions(): Composition[] {
+      return this.openCompositionIds
+        .map((id: string) => this.project.compositions[id])
+        .filter((comp): comp is Composition => comp !== undefined);
     },
 
     // Breadcrumb navigation path for nested compositions
-    breadcrumbPath(state): Array<{ id: string; name: string }> {
-      return state.compositionBreadcrumbs
-        .map((id: string) => {
-          const comp = state.project.compositions[id];
-          return comp ? { id, name: comp.name } : null;
-        })
-        .filter(Boolean) as Array<{ id: string; name: string }>;
+    breadcrumbPath(): Array<{ id: string; name: string }> {
+      return this.compositionBreadcrumbs.map((id: string) => {
+        const comp = this.project.compositions[id];
+        return { id, name: comp?.name || "Unknown" };
+      });
     },
 
     // Assets
@@ -414,7 +406,19 @@ export const useCompositorStore = defineStore("compositor", {
     allCameras: (state): Camera3D[] => Array.from(state.cameras.values()),
     cameraLayers(state): Layer[] {
       const comp = state.project.compositions[state.activeCompositionId];
-      return (comp?.layers || []).filter((l: Layer) => l.type === "camera");
+      const layers = comp?.layers || [];
+      return layers.filter((l: Layer) => l.type === "camera");
+    },
+
+    // UI State (delegated to uiStore)
+    hideMinimizedLayers(): boolean {
+      return useUIStore().hideMinimizedLayers;
+    },
+    curveEditorVisible(): boolean {
+      return useUIStore().curveEditorVisible;
+    },
+    shapeToolOptions() {
+      return useUIStore().shapeToolOptions;
     },
   },
 
@@ -446,71 +450,66 @@ export const useCompositorStore = defineStore("compositor", {
       settings?: Partial<CompositionSettings>,
       isNestedComp: boolean = false,
     ): Composition {
-      return compositionActions.createComposition(
-        this,
-        name,
-        settings,
-        isNestedComp,
-      );
+      return useCompositionStore().createComposition(this, name, settings, isNestedComp);
     },
 
     deleteComposition(compId: string): boolean {
-      return compositionActions.deleteComposition(this, compId);
+      return useCompositionStore().deleteComposition(this, compId);
     },
 
     switchComposition(compId: string): void {
-      compositionActions.switchComposition(this, compId);
+      useCompositionStore().switchComposition(this, compId);
     },
 
     closeCompositionTab(compId: string): void {
-      compositionActions.closeCompositionTab(this, compId);
+      useCompositionStore().closeCompositionTab(this, compId);
     },
 
     enterNestedComp(compId: string): void {
-      compositionActions.enterNestedComp(this, compId);
+      useCompositionStore().enterNestedComp(this, compId);
     },
 
     navigateBack(): void {
-      compositionActions.navigateBack(this);
+      useCompositionStore().navigateBack(this);
     },
 
     navigateToBreadcrumb(index: number): void {
-      compositionActions.navigateToBreadcrumb(this, index);
+      useCompositionStore().navigateToBreadcrumb(this, index);
     },
 
     resetBreadcrumbs(): void {
-      compositionActions.resetBreadcrumbs(this);
+      useCompositionStore().resetBreadcrumbs(this);
     },
 
     renameComposition(compId: string, newName: string): void {
-      compositionActions.renameComposition(this, compId, newName);
+      useCompositionStore().renameComposition(this, compId, newName);
     },
 
     updateCompositionSettings(
       compId: string,
       settings: Partial<CompositionSettings>,
     ): void {
-      compositionActions.updateCompositionSettings(this, compId, settings);
+      useCompositionStore().updateCompositionSettings(this, compId, settings);
     },
 
     getComposition(compId: string): Composition | null {
-      return compositionActions.getComposition(this, compId);
+      return useCompositionStore().getComposition(this, compId);
     },
 
     enableFrameBlending(compId: string): void {
-      compositionActions.enableFrameBlending(this, compId);
+      useCompositionStore().enableFrameBlending(this, compId);
     },
 
     disableFrameBlending(compId: string): void {
-      compositionActions.disableFrameBlending(this, compId);
+      useCompositionStore().disableFrameBlending(this, compId);
     },
 
     toggleFrameBlending(compId: string): void {
-      compositionActions.toggleFrameBlending(this, compId);
+      useCompositionStore().toggleFrameBlending(this, compId);
     },
 
     nestSelectedLayers(name?: string): Composition | null {
-      return compositionActions.nestSelectedLayers(this, name);
+      return useCompositionStore().nestSelectedLayers(this, name);
     },
 
     // ============================================================
@@ -528,71 +527,7 @@ export const useCompositorStore = defineStore("compositor", {
       height: number;
       frame_count: number;
     }): void {
-      this.comfyuiNodeId = inputs.node_id;
-      this.sourceImage = inputs.source_image;
-      this.depthMap = inputs.depth_map;
-
-      // Update active composition
-      const comp = this.project.compositions[this.activeCompositionId];
-      if (!comp) return;
-
-      const oldFrameCount = comp.settings.frameCount;
-
-      // Update composition settings
-      comp.settings.width = inputs.width;
-      comp.settings.height = inputs.height;
-      comp.settings.frameCount = inputs.frame_count;
-      comp.settings.duration = inputs.frame_count / comp.settings.fps;
-
-      // Keep legacy alias in sync
-      this.project.composition.width = inputs.width;
-      this.project.composition.height = inputs.height;
-      this.project.composition.frameCount = inputs.frame_count;
-      this.project.composition.duration =
-        inputs.frame_count / this.project.composition.fps;
-
-      // Extend layer outPoints if frameCount increased
-      if (inputs.frame_count > oldFrameCount) {
-        for (const layer of comp.layers) {
-          if (layer.outPoint === oldFrameCount - 1) {
-            layer.outPoint = inputs.frame_count - 1;
-          }
-        }
-      }
-
-      // Store as assets
-      if (inputs.source_image) {
-        this.project.assets.source_image = {
-          id: "source_image",
-          type: "image",
-          source: "comfyui_node",
-          nodeId: inputs.node_id,
-          width: inputs.width,
-          height: inputs.height,
-          data: inputs.source_image,
-        };
-      }
-
-      if (inputs.depth_map) {
-        this.project.assets.depth_map = {
-          id: "depth_map",
-          type: "depth_map",
-          source: "comfyui_node",
-          nodeId: inputs.node_id,
-          width: inputs.width,
-          height: inputs.height,
-          data: inputs.depth_map,
-        };
-      }
-
-      if (comp) comp.currentFrame = 0;
-      this.project.meta.modified = new Date().toISOString();
-
-      storeLogger.debug("Loaded inputs from ComfyUI:", {
-        width: inputs.width,
-        height: inputs.height,
-        frameCount: inputs.frame_count,
-      });
+      useProjectStore().loadInputs(this, inputs);
 
       // Save initial state to history
       this.pushHistory();
@@ -662,38 +597,21 @@ export const useCompositorStore = defineStore("compositor", {
      * Select all layers in the active composition
      */
     selectAllLayers(): void {
-      const layers = this.getActiveCompLayers();
-      const selection = useSelectionStore();
-      selection.selectLayers(layers.map((l) => l.id));
+      useLayerStore().selectAllLayers(this);
     },
 
     /**
      * Delete all selected layers
      */
     deleteSelectedLayers(): void {
-      const selection = useSelectionStore();
-      const layerIds = [...selection.selectedLayerIds];
-      layerIds.forEach((id) => this.deleteLayer(id));
-      selection.clearLayerSelection();
+      useLayerStore().deleteSelectedLayers(this);
     },
 
     /**
      * Duplicate all selected layers
      */
-    duplicateSelectedLayers(): void {
-      const selection = useSelectionStore();
-      const newLayerIds: string[] = [];
-      const layerStore = useLayerStore();
-      selection.selectedLayerIds.forEach((id) => {
-        const newLayer = layerStore.duplicateLayer(this, id);
-        if (newLayer) {
-          newLayerIds.push(newLayer.id);
-        }
-      });
-      // Select the duplicated layers
-      if (newLayerIds.length > 0) {
-        selection.selectLayers(newLayerIds);
-      }
+    duplicateSelectedLayers(): string[] {
+      return useLayerStore().duplicateSelectedLayers(this);
     },
 
     /**
@@ -934,6 +852,55 @@ export const useCompositorStore = defineStore("compositor", {
     },
 
     /**
+     * Toggle locked state for selected layers
+     */
+    toggleLayerLock(): void {
+      useLayerStore().toggleLayerLock(this);
+    },
+
+    /**
+     * Toggle visibility for selected layers
+     */
+    toggleLayerVisibility(): void {
+      useLayerStore().toggleLayerVisibility(this);
+    },
+
+    /**
+     * Toggle solo state for selected layers
+     */
+    toggleLayerSolo(): void {
+      useLayerStore().toggleLayerSolo(this);
+    },
+
+    /**
+     * Move selected layers to the front (top of stack)
+     */
+    bringToFront(): void {
+      useLayerStore().bringToFront(this);
+    },
+
+    /**
+     * Move selected layers to the back (bottom of stack)
+     */
+    sendToBack(): void {
+      useLayerStore().sendToBack(this);
+    },
+
+    /**
+     * Move selected layers forward by one position
+     */
+    bringForward(): void {
+      useLayerStore().bringForward(this);
+    },
+
+    /**
+     * Move selected layers backward by one position
+     */
+    sendBackward(): void {
+      useLayerStore().sendBackward(this);
+    },
+
+    /**
      * Selection
      */
     selectLayer(layerId: string, addToSelection = false): void {
@@ -1011,8 +978,7 @@ export const useCompositorStore = defineStore("compositor", {
     },
 
     clearSelection(): void {
-      const selection = useSelectionStore();
-      selection.clearAll();
+      useLayerStore().clearSelection(this);
     },
 
     /**
@@ -1036,27 +1002,7 @@ export const useCompositorStore = defineStore("compositor", {
      * @returns Immutable FrameState snapshot
      */
     getFrameState(frame?: number): FrameState {
-      const comp = this.getActiveComp();
-      const targetFrame = frame ?? comp?.currentFrame ?? 0;
-
-      // Get audio reactive data from audioStore
-      const audioStore = useAudioStore();
-      const audioReactive =
-        audioStore.audioAnalysis && audioStore.reactiveMappings.length > 0
-          ? {
-              analysis: audioStore.audioAnalysis,
-              mappings: audioStore.reactiveMappings,
-            }
-          : null;
-
-      return motionEngine.evaluate(
-        targetFrame,
-        this.project,
-        audioStore.audioAnalysis,
-        this.activeCameraId,
-        true, // useCache
-        audioReactive,
-      );
+      return useAnimationStore().getFrameState(this, frame);
     },
 
     // ============================================================
@@ -1161,7 +1107,7 @@ export const useCompositorStore = defineStore("compositor", {
         return null;
       }
 
-      const layer = await segmentationActions.createLayerFromMask(
+      const layer = await useSegmentationStore().createLayerFromMask(
         this,
         this.sourceImage,
         this.segmentPendingMask,
@@ -1178,41 +1124,41 @@ export const useCompositorStore = defineStore("compositor", {
     /**
      * Set shape tool options (from toolbar)
      */
-    setShapeToolOptions(options: CompositorState["shapeToolOptions"]): void {
-      this.shapeToolOptions = { ...options };
+    setShapeToolOptions(options: Parameters<ReturnType<typeof useUIStore>["setShapeToolOptions"]>[0]): void {
+      useUIStore().setShapeToolOptions(options);
     },
 
     /**
-     * History management
+     * History management (delegated to projectStore)
      */
     pushHistory(): void {
-      projectActions.pushHistory(this);
+      useProjectStore().pushHistory(this);
     },
 
     undo(): void {
-      projectActions.undo(this);
+      useProjectStore().undo(this);
     },
 
     redo(): void {
-      projectActions.redo(this);
+      useProjectStore().redo(this);
     },
 
     /**
-     * Project serialization
+     * Project serialization (delegated to projectStore)
      */
     exportProject(): string {
-      return projectActions.exportProject(this);
+      return useProjectStore().exportProject(this);
     },
 
     importProject(json: string): boolean {
-      return projectActions.importProject(this, json, () => this.pushHistory());
+      return useProjectStore().importProject(this, json, () => this.pushHistory());
     },
 
     /**
      * Load project from a File object (e.g., from file input or drag-drop)
      */
     async loadProjectFromFile(file: File): Promise<boolean> {
-      return projectActions.loadProjectFromFile(this, file, () =>
+      return useProjectStore().loadProjectFromFile(this, file, () =>
         this.pushHistory(),
       );
     },
@@ -1221,14 +1167,14 @@ export const useCompositorStore = defineStore("compositor", {
      * Save project to server (ComfyUI backend)
      */
     async saveProjectToServer(projectId?: string): Promise<string | null> {
-      return projectActions.saveProjectToServer(this, projectId);
+      return useProjectStore().saveProjectToServer(this, projectId);
     },
 
     /**
      * Load project from server (ComfyUI backend)
      */
     async loadProjectFromServer(projectId: string): Promise<boolean> {
-      return projectActions.loadProjectFromServer(this, projectId, () =>
+      return useProjectStore().loadProjectFromServer(this, projectId, () =>
         this.pushHistory(),
       );
     },
@@ -1239,14 +1185,14 @@ export const useCompositorStore = defineStore("compositor", {
     async listServerProjects(): Promise<
       Array<{ id: string; name: string; modified?: string }>
     > {
-      return projectActions.listServerProjects();
+      return useProjectStore().listServerProjects();
     },
 
     /**
      * Delete a project from server
      */
     async deleteServerProject(projectId: string): Promise<boolean> {
-      return projectActions.deleteServerProject(projectId);
+      return useProjectStore().deleteServerProject(projectId);
     },
 
     /**
@@ -1254,7 +1200,7 @@ export const useCompositorStore = defineStore("compositor", {
      * Returns info about removed assets
      */
     removeUnusedAssets(): { removed: number; assetNames: string[] } {
-      return projectActions.removeUnusedAssets(this);
+      return useProjectStore().removeUnusedAssets(this);
     },
 
     /**
@@ -1266,7 +1212,7 @@ export const useCompositorStore = defineStore("compositor", {
       unused: number;
       unusedNames: string[];
     } {
-      return projectActions.getAssetUsageStats(this);
+      return useProjectStore().getAssetUsageStats(this);
     },
 
     /**
@@ -1276,45 +1222,45 @@ export const useCompositorStore = defineStore("compositor", {
     async collectFiles(
       options: { includeUnused?: boolean } = {},
     ): Promise<void> {
-      return projectActions.downloadCollectedFiles(this, options);
+      return useProjectStore().downloadCollectedFiles(this, options);
     },
 
     /**
      * Toggle curve editor visibility
      */
     toggleCurveEditor(): void {
-      this.curveEditorVisible = !this.curveEditorVisible;
+      useUIStore().toggleCurveEditorVisible();
     },
 
     /**
      * Set curve editor visibility directly
      */
     setCurveEditorVisible(visible: boolean): void {
-      this.curveEditorVisible = visible;
+      useUIStore().setCurveEditorVisible(visible);
     },
 
     /**
      * Toggle hide minimized layers in timeline
      */
     toggleHideMinimizedLayers(): void {
-      this.hideMinimizedLayers = !this.hideMinimizedLayers;
+      useUIStore().toggleHideMinimizedLayers();
     },
 
     /** @deprecated Use toggleHideMinimizedLayers instead */
     toggleHideShyLayers(): void {
-      this.toggleHideMinimizedLayers();
+      useUIStore().toggleHideMinimizedLayers();
     },
 
     /**
      * Set hide minimized layers state
      */
     setHideMinimizedLayers(hide: boolean): void {
-      this.hideMinimizedLayers = hide;
+      useUIStore().setHideMinimizedLayers(hide);
     },
 
     /** @deprecated Use setHideMinimizedLayers instead */
     setHideShyLayers(hide: boolean): void {
-      this.setHideMinimizedLayers(hide);
+      useUIStore().setHideMinimizedLayers(hide);
     },
 
     /**
@@ -1322,13 +1268,7 @@ export const useCompositorStore = defineStore("compositor", {
      * Passes fps and duration from composition settings.
      */
     getInterpolatedValue<T>(property: AnimatableProperty<T>): T {
-      const comp = this.getActiveComp();
-      const frame = comp?.currentFrame ?? 0;
-      const fps = this.fps;
-      const duration = comp
-        ? comp.settings.frameCount / comp.settings.fps
-        : undefined;
-      return interpolateProperty(property, frame, fps, "", duration);
+      return useKeyframeStore().getInterpolatedValue(this, property);
     },
 
     /**
@@ -1775,11 +1715,7 @@ export const useCompositorStore = defineStore("compositor", {
      * Rename a layer by ID
      */
     renameLayer(layerId: string, newName: string): void {
-      const layer = this.getActiveCompLayers().find((l) => l.id === layerId);
-      if (layer) {
-        layer.name = newName;
-        this.pushHistory();
-      }
+      return useLayerStore().renameLayer(this, layerId, newName);
     },
 
     // ============================================================
@@ -1787,18 +1723,18 @@ export const useCompositorStore = defineStore("compositor", {
     // ============================================================
 
     createParticleLayer(): Layer {
-      return particleLayerActions.createParticleLayer(this);
+      return useParticleStore().createParticleLayer(this);
     },
 
     updateParticleLayerData(
       layerId: string,
       updates: Partial<ParticleLayerData>,
     ): void {
-      particleLayerActions.updateParticleLayerData(this, layerId, updates);
+      useParticleStore().updateParticleLayerData(this, layerId, updates);
     },
 
     addParticleEmitter(layerId: string, config: ParticleEmitterConfig): void {
-      particleLayerActions.addParticleEmitter(this, layerId, config);
+      useParticleStore().addParticleEmitter(this, layerId, config);
     },
 
     updateParticleEmitter(
@@ -1806,57 +1742,48 @@ export const useCompositorStore = defineStore("compositor", {
       emitterId: string,
       updates: Partial<ParticleEmitterConfig>,
     ): void {
-      particleLayerActions.updateParticleEmitter(
-        this,
-        layerId,
-        emitterId,
-        updates,
-      );
+      useParticleStore().updateParticleEmitter(this, layerId, emitterId, updates);
     },
 
     removeParticleEmitter(layerId: string, emitterId: string): void {
-      particleLayerActions.removeParticleEmitter(this, layerId, emitterId);
+      useParticleStore().removeParticleEmitter(this, layerId, emitterId);
     },
 
     // ============================================================
-    // DEPTHFLOW LAYER ACTIONS (delegated to depthflowActions)
+    // DEPTHFLOW LAYER ACTIONS (delegated to depthflowStore)
     // ============================================================
 
     createDepthflowLayer(
       sourceLayerId: string = "",
       depthLayerId: string = "",
     ): Layer {
-      return depthflowActions.createDepthflowLayer(
-        this,
-        sourceLayerId,
-        depthLayerId,
-      );
+      return useDepthflowStore().createDepthflowLayer(this, sourceLayerId, depthLayerId);
     },
 
     updateDepthflowConfig(
       layerId: string,
       updates: Partial<DepthflowLayerData["config"]>,
     ): void {
-      depthflowActions.updateDepthflowConfig(this, layerId, updates);
+      useDepthflowStore().updateDepthflowConfig(this, layerId, updates);
     },
 
     // ============================================================
-    // VIDEO LAYER ACTIONS (delegated to videoActions)
+    // VIDEO LAYER ACTIONS (delegated to videoStore)
     // ============================================================
 
     async createVideoLayer(
       file: File,
       autoResizeComposition: boolean = true,
     ): Promise<VideoImportResult> {
-      return videoActions.createVideoLayer(this, file, autoResizeComposition);
+      return useVideoStore().createVideoLayer(this, file, autoResizeComposition);
     },
 
     updateVideoLayerData(layerId: string, updates: Partial<VideoData>): void {
-      videoActions.updateVideoLayerData(this, layerId, updates);
+      useVideoStore().updateVideoLayerData(this, layerId, updates);
     },
 
     onVideoMetadataLoaded(layerId: string, metadata: VideoMetadata): void {
-      videoActions.onVideoMetadataLoaded(this, layerId, metadata);
+      useVideoStore().onVideoMetadataLoaded(this, layerId, metadata);
     },
 
     resizeComposition(
@@ -1864,37 +1791,17 @@ export const useCompositorStore = defineStore("compositor", {
       height: number,
       frameCount?: number,
     ): void {
-      videoActions.resizeComposition(this, width, height, frameCount);
+      useVideoStore().resizeComposition(this, width, height, frameCount);
     },
 
-    // NESTED COMP LAYER ACTIONS
+    // NESTED COMP LAYER ACTIONS (delegated to layerStore)
     // ============================================================
 
     /**
      * Create a nested comp layer referencing another composition
      */
     createNestedCompLayer(compositionId: string, name?: string): Layer {
-      const layer = this.createLayer("nestedComp", name || "Nested Comp");
-
-      const nestedCompData: NestedCompData = {
-        compositionId,
-        // Speed map (new naming)
-        speedMapEnabled: false,
-        speedMap: undefined,
-        // Backwards compatibility
-        timeRemapEnabled: false,
-        timeRemap: undefined,
-        flattenTransform: false,
-        overrideFrameRate: false,
-        frameRate: undefined,
-      };
-
-      layer.data = nestedCompData;
-
-      this.project.meta.modified = new Date().toISOString();
-      this.pushHistory();
-
-      return layer;
+      return useLayerStore().createNestedCompLayer(this, compositionId, name);
     },
 
     /**
@@ -1904,12 +1811,7 @@ export const useCompositorStore = defineStore("compositor", {
       layerId: string,
       updates: Partial<NestedCompData>,
     ): void {
-      const layer = this.getActiveCompLayers().find((l) => l.id === layerId);
-      if (!layer || layer.type !== "nestedComp") return;
-
-      const data = layer.data as NestedCompData;
-      Object.assign(data, updates);
-      this.project.meta.modified = new Date().toISOString();
+      useLayerStore().updateNestedCompLayerData(this, layerId, updates);
     },
 
     // ============================================================
@@ -1924,7 +1826,7 @@ export const useCompositorStore = defineStore("compositor", {
         positionAtCenter?: boolean;
       } = {},
     ): Promise<Layer | null> {
-      return segmentationActions.segmentToLayerByPoint(this, point, options);
+      return useSegmentationStore().segmentToLayerByPoint(this, point, options);
     },
     async segmentToLayerByBox(
       box: [number, number, number, number],
@@ -1934,7 +1836,7 @@ export const useCompositorStore = defineStore("compositor", {
         positionAtCenter?: boolean;
       } = {},
     ): Promise<Layer | null> {
-      return segmentationActions.segmentToLayerByBox(this, box, options);
+      return useSegmentationStore().segmentToLayerByBox(this, box, options);
     },
     async segmentToLayerByMultiplePoints(
       foregroundPoints: SegmentationPoint[],
@@ -1945,7 +1847,7 @@ export const useCompositorStore = defineStore("compositor", {
         positionAtCenter?: boolean;
       } = {},
     ): Promise<Layer | null> {
-      return segmentationActions.segmentToLayerByMultiplePoints(
+      return useSegmentationStore().segmentToLayerByMultiplePoints(
         this,
         foregroundPoints,
         backgroundPoints,
@@ -1960,7 +1862,7 @@ export const useCompositorStore = defineStore("compositor", {
         namePrefix?: string;
       } = {},
     ): Promise<Layer[]> {
-      return segmentationActions.autoSegmentToLayers(this, options);
+      return useSegmentationStore().autoSegmentToLayers(this, options);
     },
 
     // ============================================================
@@ -2023,214 +1925,171 @@ export const useCompositorStore = defineStore("compositor", {
     },
 
     // ============================================================
-    // TEXT ANIMATOR ACTIONS (Tutorial 06)
+    // TEXT ANIMATOR ACTIONS (delegated to textAnimatorStore)
     // ============================================================
 
     addTextAnimator(
       layerId: string,
-      config: textAnimatorActions.AddTextAnimatorConfig = {},
+      config: AddTextAnimatorConfig = {},
     ) {
-      return textAnimatorActions.addTextAnimator(this, layerId, config);
+      return useTextAnimatorStore().addTextAnimator(this, layerId, config);
     },
     removeTextAnimator(layerId: string, animatorId: string): boolean {
-      return textAnimatorActions.removeTextAnimator(this, layerId, animatorId);
+      return useTextAnimatorStore().removeTextAnimator(this, layerId, animatorId);
     },
     updateTextAnimator(
       layerId: string,
       animatorId: string,
       updates: Partial<import("@/types/text").TextAnimator>,
     ): boolean {
-      return textAnimatorActions.updateTextAnimator(
-        this,
-        layerId,
-        animatorId,
-        updates,
-      );
+      return useTextAnimatorStore().updateTextAnimator(this, layerId, animatorId, updates);
     },
     getTextAnimator(layerId: string, animatorId: string) {
-      return textAnimatorActions.getTextAnimator(this, layerId, animatorId);
+      return useTextAnimatorStore().getTextAnimator(this, layerId, animatorId);
     },
     getTextAnimators(layerId: string) {
-      return textAnimatorActions.getTextAnimators(this, layerId);
+      return useTextAnimatorStore().getTextAnimators(this, layerId);
     },
     configureRangeSelector(
       layerId: string,
       animatorId: string,
-      config: textAnimatorActions.RangeSelectorConfig,
+      config: RangeSelectorConfig,
     ): boolean {
-      return textAnimatorActions.configureRangeSelector(
-        this,
-        layerId,
-        animatorId,
-        config,
-      );
+      return useTextAnimatorStore().configureRangeSelector(this, layerId, animatorId, config);
     },
     configureExpressionSelector(
       layerId: string,
       animatorId: string,
-      config: textAnimatorActions.ExpressionSelectorConfig,
+      config: ExpressionSelectorConfig,
     ): Promise<boolean> {
-      return textAnimatorActions.configureExpressionSelector(
-        this,
-        layerId,
-        animatorId,
-        config,
-      );
+      return useTextAnimatorStore().configureExpressionSelector(this, layerId, animatorId, config);
     },
     removeExpressionSelector(layerId: string, animatorId: string): boolean {
-      return textAnimatorActions.removeExpressionSelector(
-        this,
-        layerId,
-        animatorId,
-      );
+      return useTextAnimatorStore().removeExpressionSelector(this, layerId, animatorId);
     },
     configureWigglySelector(
       layerId: string,
       animatorId: string,
-      config: textAnimatorActions.WigglySelectorConfig,
+      config: WigglySelectorConfig,
     ): boolean {
-      return textAnimatorActions.configureWigglySelector(
-        this,
-        layerId,
-        animatorId,
-        config,
-      );
+      return useTextAnimatorStore().configureWigglySelector(this, layerId, animatorId, config);
     },
     removeWigglySelector(layerId: string, animatorId: string): boolean {
-      return textAnimatorActions.removeWigglySelector(
-        this,
-        layerId,
-        animatorId,
-      );
+      return useTextAnimatorStore().removeWigglySelector(this, layerId, animatorId);
     },
     getCharacterTransforms(
       layerId: string,
-      frame: number,
-    ): textAnimatorActions.CharacterTransform[] {
-      return textAnimatorActions.getCharacterTransforms(this, layerId, frame);
+      frame?: number,
+    ): CharacterTransform[] {
+      return useTextAnimatorStore().getCharacterTransforms(this, layerId, frame ?? this.currentFrame);
     },
     getSelectionValues(
       layerId: string,
       animatorId: string,
-      frame: number,
+      frame?: number,
     ): number[] {
-      return textAnimatorActions.getSelectionValues(
-        this,
-        layerId,
-        animatorId,
-        frame,
-      );
+      return useTextAnimatorStore().getSelectionValues(this, layerId, animatorId, frame ?? this.currentFrame);
     },
     getRangeSelectionValue(
       layerId: string,
       animatorId: string,
       charIndex: number,
-      frame: number,
+      frame?: number,
     ): number {
-      return textAnimatorActions.getRangeSelectionValue(
-        this,
-        layerId,
-        animatorId,
-        charIndex,
-        frame,
-      );
+      return useTextAnimatorStore().getRangeSelectionValue(this, layerId, animatorId, charIndex, frame ?? this.currentFrame);
     },
     setAnimatorPropertyValue(
       layerId: string,
       animatorId: string,
       propertyName: string,
-      value: any,
+      value: number,
     ): boolean {
-      return textAnimatorActions.setAnimatorPropertyValue(
+      return useTextAnimatorStore().setAnimatorPropertyValue(
         this,
         layerId,
         animatorId,
-        propertyName as any,
+        propertyName as keyof import("@/types/text").TextAnimatorProperties,
         value,
       );
     },
     hasTextAnimators(layerId: string): boolean {
-      return textAnimatorActions.hasTextAnimators(this, layerId);
+      return useTextAnimatorStore().hasTextAnimators(this, layerId);
     },
-    getTextContent(layerId: string): string {
-      return textAnimatorActions.getTextContent(this, layerId);
+    getTextContent(layerId: string): string | null {
+      return useTextAnimatorStore().getTextContent(this, layerId);
     },
     setTextContent(layerId: string, text: string): boolean {
-      return textAnimatorActions.setTextContent(this, layerId, text);
+      return useTextAnimatorStore().setTextContent(this, layerId, text);
     },
 
-    // TEXT ON PATH ACTIONS (Tutorial 06: Section 7)
+    // TEXT ON PATH ACTIONS (delegated to textAnimatorStore)
     setTextPath(
       layerId: string,
-      config: textAnimatorActions.TextPathConfig,
+      config: TextPathConfig,
     ): boolean {
-      return textAnimatorActions.setTextPath(this, layerId, config);
+      return useTextAnimatorStore().setTextPath(this, layerId, config);
     },
     getTextPathConfig(layerId: string) {
-      return textAnimatorActions.getTextPathConfig(this, layerId);
+      return useTextAnimatorStore().getTextPathConfig(this, layerId);
     },
     updateTextPath(
       layerId: string,
-      updates: Partial<textAnimatorActions.TextPathConfig>,
+      updates: Partial<TextPathConfig>,
     ): boolean {
-      return textAnimatorActions.updateTextPath(this, layerId, updates);
+      return useTextAnimatorStore().updateTextPath(this, layerId, updates);
     },
-    getCharacterPathPlacements(layerId: string, frame: number) {
-      return textAnimatorActions.getCharacterPathPlacements(
-        this,
-        layerId,
-        frame,
-      );
+    getCharacterPathPlacements(layerId: string, frame?: number) {
+      return useTextAnimatorStore().getCharacterPathPlacements(this, layerId, frame ?? this.currentFrame);
     },
     getPathLength(layerId: string): number {
-      return textAnimatorActions.getPathLength(this, layerId);
+      return useTextAnimatorStore().getPathLength(this, layerId);
     },
     hasTextPath(layerId: string): boolean {
-      return textAnimatorActions.hasTextPath(this, layerId);
+      return useTextAnimatorStore().hasTextPath(this, layerId);
     },
     clearTextPath(layerId: string): boolean {
-      return textAnimatorActions.clearTextPath(this, layerId);
+      return useTextAnimatorStore().clearTextPath(this, layerId);
     },
 
     // ============================================================
-    // CAMERA ACTIONS (delegated to cameraActions module)
+    // CAMERA ACTIONS (delegated to cameraStore)
     // ============================================================
 
     createCameraLayer(name?: string): { camera: Camera3D; layer: Layer } {
-      return cameraActions.createCameraLayer(this, name);
+      return useCameraStore().createCameraLayer(this, name);
     },
     getCamera(cameraId: string): Camera3D | null {
-      return cameraActions.getCamera(this, cameraId);
+      return useCameraStore().getCamera(this, cameraId);
     },
     updateCamera(cameraId: string, updates: Partial<Camera3D>): void {
-      cameraActions.updateCamera(this, cameraId, updates);
+      useCameraStore().updateCamera(this, cameraId, updates);
     },
     setActiveCamera(cameraId: string): void {
-      cameraActions.setActiveCamera(this, cameraId);
+      useCameraStore().setActiveCamera(this, cameraId);
     },
     deleteCamera(cameraId: string): void {
-      cameraActions.deleteCamera(this, cameraId);
+      useCameraStore().deleteCamera(this, cameraId);
     },
     getCameraKeyframes(cameraId: string): CameraKeyframe[] {
-      return cameraActions.getCameraKeyframes(this, cameraId);
+      return useCameraStore().getCameraKeyframes(this, cameraId);
     },
     addCameraKeyframe(cameraId: string, keyframe: CameraKeyframe): void {
-      cameraActions.addCameraKeyframe(this, cameraId, keyframe);
+      useCameraStore().addCameraKeyframe(this, cameraId, keyframe);
     },
     removeCameraKeyframe(cameraId: string, frame: number): void {
-      cameraActions.removeCameraKeyframe(this, cameraId, frame);
+      useCameraStore().removeCameraKeyframe(this, cameraId, frame);
     },
     getCameraAtFrame(cameraId: string, frame: number): Camera3D | null {
-      return cameraActions.getCameraAtFrame(this, cameraId, frame);
+      return useCameraStore().getCameraAtFrame(this, cameraId, frame);
     },
     getActiveCameraAtFrame(frame?: number): Camera3D | null {
-      return cameraActions.getActiveCameraAtFrame(this, frame);
+      return useCameraStore().getActiveCameraAtFrame(this, frame ?? this.currentFrame);
     },
     updateViewportState(updates: Partial<ViewportState>): void {
-      cameraActions.updateViewportState(this, updates);
+      useCameraStore().updateViewportState(this, updates);
     },
     updateViewOptions(updates: Partial<ViewOptions>): void {
-      cameraActions.updateViewOptions(this, updates);
+      useCameraStore().updateViewOptions(this, updates);
     },
 
     // ============================================================
@@ -2238,19 +2097,13 @@ export const useCompositorStore = defineStore("compositor", {
     // ============================================================
 
     async loadAudio(file: File): Promise<void> {
-      const audioStore = useAudioStore();
-      await audioStore.loadAudio(file, this.project.composition.fps);
-      // Update property driver system with new audio analysis
-      if (this.propertyDriverSystem && audioStore.audioAnalysis) {
-        this.propertyDriverSystem.setAudioAnalysis(audioStore.audioAnalysis);
-      }
+      await useAudioStore().loadAudio(file, this.project.composition.fps);
     },
     cancelAudioLoad(): void {
       useAudioStore().cancelLoad();
     },
     clearAudio(): void {
       useAudioStore().clear();
-      // Clear path animators (still managed locally)
       this.pathAnimators.clear();
     },
     setAudioVolume(volume: number): void {
@@ -2263,8 +2116,7 @@ export const useCompositorStore = defineStore("compositor", {
       useAudioStore().toggleMuted();
     },
     getAudioFeatureAtFrame(feature: string, frame?: number): number {
-      const targetFrame = frame ?? this.getActiveComp()?.currentFrame ?? 0;
-      return useAudioStore().getFeatureAtFrame(feature, targetFrame);
+      return useAudioStore().getFeatureAtFrame(this, feature, frame);
     },
     applyAudioToParticles(
       layerId: string,
@@ -2326,50 +2178,43 @@ export const useCompositorStore = defineStore("compositor", {
         smoothing?: number;
       } = {},
     ) {
-      return audioActions.convertAudioToKeyframes(this, options);
+      return useAudioKeyframeStore().convertAudioToKeyframes(this, options);
     },
     getAudioAmplitudeAtFrame(
       channel: "both" | "left" | "right",
       frame: number,
     ): number {
-      return audioActions.getAudioAmplitudeAtFrame(this, channel, frame);
+      return useAudioKeyframeStore().getAudioAmplitudeAtFrame(this, channel, frame);
     },
     convertFrequencyBandsToKeyframes(
       options: {
         name?: string;
         scale?: number;
         smoothing?: number;
-        bands?: audioActions.FrequencyBandName[];
+        bands?: FrequencyBandName[];
       } = {},
     ) {
-      return audioActions.convertFrequencyBandsToKeyframes(this, options);
+      return useAudioKeyframeStore().convertFrequencyBandsToKeyframes(this, options);
     },
     convertAllAudioFeaturesToKeyframes(
       options: { name?: string; scale?: number; smoothing?: number } = {},
     ) {
-      return audioActions.convertAllAudioFeaturesToKeyframes(this, options);
+      return useAudioKeyframeStore().convertAllAudioFeaturesToKeyframes(this, options);
     },
     getFrequencyBandAtFrame(
-      band: audioActions.FrequencyBandName,
+      band: FrequencyBandName,
       frame: number,
     ): number {
-      return audioActions.getFrequencyBandAtFrame(this, band, frame);
+      return useAudioKeyframeStore().getFrequencyBandAtFrame(this, band, frame);
     },
 
-    // Timeline snapping (simple inline - no need for delegation)
+    // Timeline snapping (delegated to animationStore)
     findSnapPoint(
       frame: number,
       pixelsPerFrame: number,
       selectedLayerId?: string | null,
     ): SnapResult | null {
-      const audioStore = useAudioStore();
-      return findNearestSnap(frame, this.snapConfig, pixelsPerFrame, {
-        layers: this.layers,
-        selectedLayerId,
-        currentFrame: this.getActiveComp()?.currentFrame ?? 0,
-        audioAnalysis: audioStore.audioAnalysis,
-        peakData: audioStore.peakData,
-      });
+      return useAnimationStore().findSnapPoint(this, frame, pixelsPerFrame, selectedLayerId);
     },
     getAudioBeatFrames(): number[] {
       return getBeatFrames(useAudioStore().audioAnalysis);
@@ -2378,10 +2223,10 @@ export const useCompositorStore = defineStore("compositor", {
       return getPeakFrames(useAudioStore().peakData);
     },
     setSnapConfig(config: Partial<SnapConfig>): void {
-      this.snapConfig = { ...this.snapConfig, ...config };
+      useAnimationStore().setSnapConfig(config);
     },
     toggleSnapping(): void {
-      this.snapConfig.enabled = !this.snapConfig.enabled;
+      useAnimationStore().toggleSnapping();
     },
     toggleSnapType(
       type:
@@ -2392,121 +2237,99 @@ export const useCompositorStore = defineStore("compositor", {
         | "layerBounds"
         | "playhead",
     ): void {
-      // Type-safe snap toggle mapping
-      type BooleanSnapKey =
-        | "snapToGrid"
-        | "snapToKeyframes"
-        | "snapToBeats"
-        | "snapToPeaks"
-        | "snapToLayerBounds"
-        | "snapToPlayhead";
-      const typeMap: Record<typeof type, BooleanSnapKey> = {
-        grid: "snapToGrid",
-        keyframes: "snapToKeyframes",
-        beats: "snapToBeats",
-        peaks: "snapToPeaks",
-        layerBounds: "snapToLayerBounds",
-        playhead: "snapToPlayhead",
-      };
-      const key = typeMap[type];
-      this.snapConfig[key] = !this.snapConfig[key];
+      useAnimationStore().toggleSnapType(type);
     },
 
-    // Path animator (delegated to audioActions module)
+    // Path animator (delegated to audioKeyframeStore)
     createPathAnimator(
       layerId: string,
       config: Partial<PathAnimatorConfig> = {},
     ): void {
-      audioActions.createPathAnimator(this, layerId, config);
+      useAudioKeyframeStore().createPathAnimator(this, layerId, config);
     },
     setPathAnimatorPath(layerId: string, pathData: string): void {
-      audioActions.setPathAnimatorPath(this, layerId, pathData);
+      useAudioKeyframeStore().setPathAnimatorPath(this, layerId, pathData);
     },
     updatePathAnimatorConfig(
       layerId: string,
       config: Partial<PathAnimatorConfig>,
     ): void {
-      audioActions.updatePathAnimatorConfig(this, layerId, config);
+      useAudioKeyframeStore().updatePathAnimatorConfig(this, layerId, config);
     },
     removePathAnimator(layerId: string): void {
-      audioActions.removePathAnimator(this, layerId);
+      useAudioKeyframeStore().removePathAnimator(this, layerId);
     },
     getPathAnimator(layerId: string): PathAnimatorAccess | undefined {
-      return audioActions.getPathAnimator(this, layerId);
+      return useAudioKeyframeStore().getPathAnimator(this, layerId);
     },
     updatePathAnimators(): void {
-      audioActions.updatePathAnimators(this);
+      useAudioKeyframeStore().updatePathAnimators(this);
     },
     resetPathAnimators(): void {
-      audioActions.resetPathAnimators(this);
+      useAudioKeyframeStore().resetPathAnimators(this);
     },
     initializeAudioReactiveMapper(): void {
       useAudioStore().initializeReactiveMapper();
     },
 
     // ============================================================
-    // TIMELINE MARKERS (delegated to markerActions)
+    // TIMELINE MARKERS (delegated to markerStore)
     // ============================================================
 
     addMarker(
       marker: Omit<import("@/types/project").Marker, "id"> & { id?: string },
     ): import("@/types/project").Marker | null {
-      return markerActions.addMarker(this, marker);
+      return useMarkerStore().addMarker(this, marker);
     },
     removeMarker(markerId: string): boolean {
-      return markerActions.removeMarker(this, markerId);
+      return useMarkerStore().removeMarker(this, markerId);
     },
     removeMarkerAtFrame(frame: number): boolean {
-      return markerActions.removeMarkerAtFrame(this, frame);
+      return useMarkerStore().removeMarkerAtFrame(this, frame);
     },
     updateMarker(
       markerId: string,
       updates: Partial<Omit<import("@/types/project").Marker, "id">>,
     ): boolean {
-      return markerActions.updateMarker(this, markerId, updates);
+      return useMarkerStore().updateMarker(this, markerId, updates);
     },
     clearMarkers(): void {
-      markerActions.clearMarkers(this);
+      useMarkerStore().clearMarkers(this);
     },
     getMarkers(): import("@/types/project").Marker[] {
-      return markerActions.getMarkers(this);
+      return useMarkerStore().getMarkers(this);
     },
     getMarker(markerId: string): import("@/types/project").Marker | null {
-      return markerActions.getMarker(this, markerId);
+      return useMarkerStore().getMarker(this, markerId);
     },
     getMarkerAtFrame(frame: number): import("@/types/project").Marker | null {
-      return markerActions.getMarkerAtFrame(this, frame);
+      return useMarkerStore().getMarkerAtFrame(this, frame);
     },
     getMarkersInRange(
       startFrame: number,
       endFrame: number,
     ): import("@/types/project").Marker[] {
-      return markerActions.getMarkersInRange(this, startFrame, endFrame);
+      return useMarkerStore().getMarkersInRange(this, startFrame, endFrame);
     },
     getNextMarker(frame: number): import("@/types/project").Marker | null {
-      return markerActions.getNextMarker(this, frame);
+      return useMarkerStore().getNextMarker(this, frame);
     },
     getPreviousMarker(frame: number): import("@/types/project").Marker | null {
-      return markerActions.getPreviousMarker(this, frame);
+      return useMarkerStore().getPreviousMarker(this, frame);
     },
     jumpToNextMarker(): void {
-      const nextFrame = markerActions.jumpToNextMarker(this, this.currentFrame);
-      if (nextFrame !== null) this.setFrame(nextFrame);
+      useMarkerStore().jumpToNextMarker(this);
     },
     jumpToPreviousMarker(): void {
-      const prevFrame = markerActions.jumpToPreviousMarker(
-        this,
-        this.currentFrame,
-      );
-      if (prevFrame !== null) this.setFrame(prevFrame);
+      useMarkerStore().jumpToPreviousMarker(this);
     },
     addMarkers(
       markers: Array<Omit<import("@/types/project").Marker, "id">>,
     ): import("@/types/project").Marker[] {
-      return markerActions.addMarkers(this, markers);
+      return useMarkerStore().addMarkers(this, markers);
     },
     removeMarkersByColor(color: string): number {
-      return markerActions.removeMarkersByColor(this, color);
+      return useMarkerStore().removeMarkersByColor(this, color);
     },
 
     // ============================================================
@@ -2519,79 +2342,15 @@ export const useCompositorStore = defineStore("compositor", {
     // Evaluates property at frame, using composition's fps and duration for expressions
     getPropertyValueAtFrame(
       layerId: string,
-      propertyPath: PropertyPath,
+      propertyPath: string,
       frame: number,
     ): number | null {
-      const layer = this.getActiveCompLayers().find((l) => l.id === layerId);
-      if (!layer) return null;
-
-      // Get composition context for expressions
-      const comp = this.getActiveComp();
-      const fps = this.fps;
-      const duration = comp
-        ? comp.settings.frameCount / comp.settings.fps
-        : undefined;
-
-      const parts = propertyPath.split(".");
-      if (parts[0] === "transform") {
-        const t = layer.transform;
-        if (parts[1] === "position") {
-          const p = interpolateProperty(
-            t.position,
-            frame,
-            fps,
-            layerId,
-            duration,
-          );
-          return parts[2] === "x" ? p.x : parts[2] === "y" ? p.y : (p.z ?? 0);
-        }
-        if (parts[1] === "anchorPoint" || parts[1] === "origin") {
-          // Use origin (new name) with fallback to anchorPoint
-          const originProp = t.origin || t.anchorPoint;
-          if (!originProp) return 0;
-          const a = interpolateProperty(
-            originProp,
-            frame,
-            fps,
-            layerId,
-            duration,
-          );
-          return parts[2] === "x" ? a.x : parts[2] === "y" ? a.y : (a.z ?? 0);
-        }
-        if (parts[1] === "scale") {
-          const s = interpolateProperty(t.scale, frame, fps, layerId, duration);
-          return parts[2] === "x" ? s.x : parts[2] === "y" ? s.y : (s.z ?? 100);
-        }
-        if (parts[1] === "rotation")
-          return interpolateProperty(t.rotation, frame, fps, layerId, duration);
-        if (parts[1] === "rotationX" && t.rotationX)
-          return interpolateProperty(
-            t.rotationX,
-            frame,
-            fps,
-            layerId,
-            duration,
-          );
-        if (parts[1] === "rotationY" && t.rotationY)
-          return interpolateProperty(
-            t.rotationY,
-            frame,
-            fps,
-            layerId,
-            duration,
-          );
-        if (parts[1] === "rotationZ" && t.rotationZ)
-          return interpolateProperty(
-            t.rotationZ,
-            frame,
-            fps,
-            layerId,
-            duration,
-          );
-      }
-      return parts[0] === "opacity"
-        ? interpolateProperty(layer.opacity, frame, fps, layerId, duration)
-        : null;
+      return useKeyframeStore().getPropertyValueAtFrame(
+        this,
+        layerId,
+        propertyPath,
+        frame,
+      );
     },
 
     /**
@@ -2606,116 +2365,12 @@ export const useCompositorStore = defineStore("compositor", {
       propertyPath: string,
       frame: number,
     ): number[] | number | null {
-      const layer = this.getActiveCompLayers().find((l) => l.id === layerId);
-      if (!layer) return null;
-
-      // Get composition context for expressions
-      const comp = this.getActiveComp();
-      const fps = this.fps;
-      const duration = comp
-        ? comp.settings.frameCount / comp.settings.fps
-        : undefined;
-
-      // Normalize path
-      const normalizedPath = propertyPath.replace(/^transform\./, "");
-
-      // Handle transform properties
-      const t = layer.transform;
-
-      if (normalizedPath === "position" && t.position) {
-        const p = interpolateProperty(
-          t.position,
-          frame,
-          fps,
-          layerId,
-          duration,
-        );
-        return [p.x, p.y, p.z ?? 0];
-      }
-
-      if (
-        (normalizedPath === "anchorPoint" || normalizedPath === "origin") &&
-        (t.origin || t.anchorPoint)
-      ) {
-        const originProp = t.origin || t.anchorPoint;
-        if (!originProp) return null;
-        const a = interpolateProperty(
-          originProp,
-          frame,
-          fps,
-          layerId,
-          duration,
-        );
-        return [a.x, a.y, a.z ?? 0];
-      }
-
-      if (normalizedPath === "scale" && t.scale) {
-        const s = interpolateProperty(t.scale, frame, fps, layerId, duration);
-        return [s.x, s.y, s.z ?? 100];
-      }
-
-      if (normalizedPath === "rotation" && t.rotation) {
-        return interpolateProperty(t.rotation, frame, fps, layerId, duration);
-      }
-
-      if (normalizedPath === "rotationX" && t.rotationX) {
-        return interpolateProperty(t.rotationX, frame, fps, layerId, duration);
-      }
-
-      if (normalizedPath === "rotationY" && t.rotationY) {
-        return interpolateProperty(t.rotationY, frame, fps, layerId, duration);
-      }
-
-      if (normalizedPath === "rotationZ" && t.rotationZ) {
-        return interpolateProperty(t.rotationZ, frame, fps, layerId, duration);
-      }
-
-      if (normalizedPath === "orientation" && t.orientation) {
-        const o = interpolateProperty(
-          t.orientation,
-          frame,
-          fps,
-          layerId,
-          duration,
-        );
-        return [o.x, o.y, o.z ?? 0];
-      }
-
-      if (propertyPath === "opacity" && layer.opacity) {
-        return interpolateProperty(
-          layer.opacity,
-          frame,
-          fps,
-          layerId,
-          duration,
-        );
-      }
-
-      // Check custom properties
-      const customProp = layer.properties.find(
-        (p) => p.name === propertyPath || p.id === propertyPath,
+      return useKeyframeStore().evaluatePropertyAtFrame(
+        this,
+        layerId,
+        propertyPath,
+        frame,
       );
-      if (customProp) {
-        const value = interpolateProperty(
-          customProp,
-          frame,
-          fps,
-          layerId,
-          duration,
-        );
-        // If it's a position-like value with x/y, return as array
-        if (
-          value &&
-          typeof value === "object" &&
-          "x" in value &&
-          "y" in value
-        ) {
-          return [(value as any).x, (value as any).y, (value as any).z ?? 0];
-        }
-        return value;
-      }
-
-      return null;
     },
 
     getDrivenValuesForLayer(layerId: string): Map<PropertyPath, number> {
@@ -2828,40 +2483,40 @@ export const useCompositorStore = defineStore("compositor", {
     },
 
     // ============================================================
-    // AUTOSAVE/PROJECT ACTIONS (delegated to projectActions)
+    // AUTOSAVE/PROJECT ACTIONS (delegated to projectStore)
     // ============================================================
 
     enableAutosave(intervalMs?: number): void {
-      projectActions.configureAutosave(
+      useProjectStore().configureAutosave(
         this,
         { enabled: true, intervalMs },
         () => this.performAutosave(),
       );
     },
     disableAutosave(): void {
-      projectActions.stopAutosave(this);
+      useProjectStore().stopAutosave(this);
       this.autosaveEnabled = false;
     },
     startAutosaveTimer(): void {
-      projectActions.startAutosave(this, () => this.performAutosave());
+      useProjectStore().startAutosave(this, () => this.performAutosave());
     },
     stopAutosaveTimer(): void {
-      projectActions.stopAutosave(this);
+      useProjectStore().stopAutosave(this);
     },
     async performAutosave(): Promise<void> {
-      return projectActions.performAutosave(this);
+      return useProjectStore().performAutosave(this);
     },
     markUnsavedChanges(): void {
-      projectActions.markUnsavedChanges(this);
+      useProjectStore().markUnsavedChanges(this);
       this.invalidateFrameCache();
     },
     async saveProjectToBackend(): Promise<string> {
-      const result = await projectActions.saveProjectToServer(this);
+      const result = await useProjectStore().saveProjectToServer(this);
       if (!result) throw new Error("Save failed");
       return result;
     },
     async loadProjectFromBackend(projectId: string): Promise<void> {
-      const success = await projectActions.loadProjectFromServer(
+      const success = await useProjectStore().loadProjectFromServer(
         this,
         projectId,
         () => this.pushHistory(),
@@ -2871,45 +2526,45 @@ export const useCompositorStore = defineStore("compositor", {
     async listSavedProjects(): Promise<
       Array<{ id: string; name: string; modified?: string }>
     > {
-      return projectActions.listServerProjects();
+      return useProjectStore().listServerProjects();
     },
 
     // ============================================================
-    // FRAME CACHE ACTIONS (delegated to cacheActions)
+    // FRAME CACHE ACTIONS (delegated to cacheStore)
     // ============================================================
 
     async initializeFrameCache(): Promise<void> {
-      return cacheActions.initializeCache(this);
+      return useCacheStore().initializeCache(this);
     },
     setFrameCacheEnabled(enabled: boolean): void {
-      cacheActions.setFrameCacheEnabled(this, enabled);
+      useCacheStore().setFrameCacheEnabled(this, enabled);
     },
     getCachedFrame(frame: number): ImageData | null {
-      return cacheActions.getCachedFrame(this, frame);
+      return useCacheStore().getCachedFrame(this, frame);
     },
     async cacheFrame(frame: number, imageData: ImageData): Promise<void> {
-      return cacheActions.cacheFrame(this, frame, imageData);
+      return useCacheStore().cacheFrame(this, frame, imageData);
     },
     isFrameCached(frame: number): boolean {
-      return cacheActions.isFrameCached(this, frame);
+      return useCacheStore().isFrameCached(this, frame);
     },
     async startPreCache(
       currentFrame: number,
       direction: "forward" | "backward" | "both" = "both",
     ): Promise<void> {
-      return cacheActions.startPreCache(this, currentFrame, direction);
+      return useCacheStore().startPreCache(this, currentFrame, direction);
     },
     invalidateFrameCache(): void {
-      cacheActions.invalidateFrameCache(this);
+      useCacheStore().invalidateFrameCache(this);
     },
     clearFrameCache(): void {
-      cacheActions.clearFrameCache();
+      useCacheStore().clearFrameCache();
     },
     getFrameCacheStats(): CacheStats {
-      return cacheActions.getFrameCacheStats();
+      return useCacheStore().getFrameCacheStats();
     },
     computeProjectHash(): string {
-      return cacheActions.computeProjectHash(this);
+      return useCacheStore().computeProjectHash(this);
     },
 
     // ============================================================
@@ -2920,14 +2575,14 @@ export const useCompositorStore = defineStore("compositor", {
      * Set timeline zoom level
      */
     setTimelineZoom(zoom: number): void {
-      this.timelineZoom = Math.max(0.1, Math.min(10, zoom));
+      useAnimationStore().setTimelineZoom(zoom);
     },
 
     /**
      * Select an asset by ID
      */
     selectAsset(assetId: string | null): void {
-      this.selectedAssetId = assetId;
+      useProjectStore().selectAsset(this, assetId);
     },
 
     /**
@@ -3122,8 +2777,8 @@ export const useCompositorStore = defineStore("compositor", {
      * Check if clipboard has keyframes
      */
     hasKeyframesInClipboard(): boolean {
-      // Check compositorStore's own clipboard since copyKeyframes writes there
-      return this.clipboard.keyframes.length > 0;
+      const keyframeStore = useKeyframeStore();
+      return keyframeStore.clipboard.keyframes.length > 0;
     },
 
     // ============================================================
@@ -3247,37 +2902,7 @@ export const useCompositorStore = defineStore("compositor", {
         anchor?: { x: number; y: number; z?: number }; // Alias for origin
       },
     ): void {
-      const layer = this.getLayerById(layerId);
-      if (!layer?.transform) return;
-
-      if (updates.position !== undefined && layer.transform.position) {
-        layer.transform.position.value = updates.position;
-      }
-      if (updates.scale !== undefined && layer.transform.scale) {
-        layer.transform.scale.value = updates.scale;
-      }
-      if (updates.rotation !== undefined && layer.transform.rotation) {
-        layer.transform.rotation.value = updates.rotation;
-      }
-      if (updates.opacity !== undefined) {
-        // Opacity is at layer level (layer.opacity), not transform level
-        if (
-          layer.opacity &&
-          typeof layer.opacity === "object" &&
-          "value" in layer.opacity
-        ) {
-          layer.opacity.value = updates.opacity;
-        }
-      }
-      // Handle origin/anchor (anchor is alias for origin)
-      const originUpdate = updates.origin ?? updates.anchor;
-      if (originUpdate !== undefined && layer.transform.origin) {
-        layer.transform.origin.value = originUpdate;
-      }
-
-      markLayerDirty(layerId);
-      this.project.meta.modified = new Date().toISOString();
-      this.pushHistory();
+      return useLayerStore().updateLayerTransform(this, layerId, updates);
     },
   },
 });

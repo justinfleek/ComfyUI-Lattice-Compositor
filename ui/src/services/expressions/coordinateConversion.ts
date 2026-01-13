@@ -36,9 +36,9 @@ export interface LayerTransform {
  * @returns Rotation angles [rx, ry, rz] in degrees
  */
 export function lookAt(fromPoint: number[], toPoint: number[]): number[] {
-  const dx = (toPoint[0] || 0) - (fromPoint[0] || 0);
-  const dy = (toPoint[1] || 0) - (fromPoint[1] || 0);
-  const dz = (toPoint[2] || 0) - (fromPoint[2] || 0);
+  const dx = (toPoint[0] ?? 0) - (fromPoint[0] ?? 0);
+  const dy = (toPoint[1] ?? 0) - (fromPoint[1] ?? 0);
+  const dz = (toPoint[2] ?? 0) - (fromPoint[2] ?? 0);
 
   // Calculate yaw (Y rotation) and pitch (X rotation)
   const yaw = (Math.atan2(dx, dz) * 180) / Math.PI;
@@ -60,20 +60,23 @@ export function orientToPath(
   // If tangent provided, use it directly
   if (tangentVector) {
     const [dx, dy, dz] = tangentVector;
-    const yaw = (Math.atan2(dx || 0, dz || 1) * 180) / Math.PI;
-    const dist = Math.sqrt((dx || 0) ** 2 + (dz || 1) ** 2);
-    const pitch = (-Math.atan2(dy || 0, dist) * 180) / Math.PI;
+    const dxVal = dx ?? 0;
+    const dyVal = dy ?? 0;
+    const dzVal = dz ?? 1;
+    const yaw = (Math.atan2(dxVal, dzVal) * 180) / Math.PI;
+    const dist = Math.sqrt(dxVal ** 2 + dzVal ** 2);
+    const pitch = (-Math.atan2(dyVal, dist) * 180) / Math.PI;
     return [pitch, yaw, 0];
   }
 
   // Calculate tangent from velocity
   const vel = ctx.velocity;
   if (Array.isArray(vel) && vel.length >= 2) {
-    const dx = vel[0] || 0;
-    const dy = vel[1] || 0;
-    const dz = vel[2] || 0;
-    const yaw = (Math.atan2(dx, dz || 1) * 180) / Math.PI;
-    const dist = Math.sqrt(dx ** 2 + (dz || 1) ** 2);
+    const dx = vel[0] ?? 0;
+    const dy = vel[1] ?? 0;
+    const dz = vel[2] ?? 1;
+    const yaw = (Math.atan2(dx, dz) * 180) / Math.PI;
+    const dist = Math.sqrt(dx ** 2 + dz ** 2);
     const pitch = (-Math.atan2(dy, dist) * 180) / Math.PI;
     return [pitch, yaw, 0];
   }
@@ -113,9 +116,9 @@ export function toComp(
   const { position, scale, rotation, anchor } = layerTransform;
 
   // Apply anchor offset
-  let x = px - (anchor[0] || 0);
-  let y = py - (anchor[1] || 0);
-  let z = pz - (anchor[2] || 0);
+  let x = px - (anchor[0] ?? 0);
+  let y = py - (anchor[1] ?? 0);
+  let z = pz - (anchor[2] ?? 0);
 
   // Apply scale (use ?? to preserve intentional 0)
   x *= (scale[0] ?? 100) / 100;
@@ -123,9 +126,9 @@ export function toComp(
   z *= (scale[2] ?? 100) / 100;
 
   // Apply rotation (Z, then Y, then X - matching AE order)
-  const rz = ((rotation[2] || rotation[0] || 0) * Math.PI) / 180;
-  const ry = ((rotation[1] || 0) * Math.PI) / 180;
-  const rx = ((rotation[0] || 0) * Math.PI) / 180;
+  const rz = ((rotation[2] ?? rotation[0] ?? 0) * Math.PI) / 180;
+  const ry = ((rotation[1] ?? 0) * Math.PI) / 180;
+  const rx = ((rotation[0] ?? 0) * Math.PI) / 180;
 
   // Rotate around Z
   const x1 = x * Math.cos(rz) - y * Math.sin(rz);
@@ -143,9 +146,9 @@ export function toComp(
   let z3 = y2 * Math.sin(rx) + z2 * Math.cos(rx);
 
   // Apply position offset
-  x3 += position[0] || 0;
-  y3 += position[1] || 0;
-  z3 += position[2] || 0;
+  x3 += position[0] ?? 0;
+  y3 += position[1] ?? 0;
+  z3 += position[2] ?? 0;
 
   // Recursively apply parent transforms
   if (layerTransform.parent) {
@@ -186,14 +189,14 @@ export function fromComp(
   const { position, scale, rotation, anchor } = layerTransform;
 
   // Subtract position
-  const x = px - (position[0] || 0);
-  const y = py - (position[1] || 0);
-  const z = pz - (position[2] || 0);
+  const x = px - (position[0] ?? 0);
+  const y = py - (position[1] ?? 0);
+  const z = pz - (position[2] ?? 0);
 
   // Inverse rotation (X, then Y, then Z - reverse order)
-  const rz = (-(rotation[2] || rotation[0] || 0) * Math.PI) / 180;
-  const ry = (-(rotation[1] || 0) * Math.PI) / 180;
-  const rx = (-(rotation[0] || 0) * Math.PI) / 180;
+  const rz = (-(rotation[2] ?? rotation[0] ?? 0) * Math.PI) / 180;
+  const ry = (-(rotation[1] ?? 0) * Math.PI) / 180;
+  const rx = (-(rotation[0] ?? 0) * Math.PI) / 180;
 
   // Rotate around X (inverse)
   const x1 = x;
@@ -224,9 +227,9 @@ export function fromComp(
   z3 /= sz || 1;
 
   // Add anchor
-  x3 += anchor[0] || 0;
-  y3 += anchor[1] || 0;
-  z3 += anchor[2] || 0;
+  x3 += anchor[0] ?? 0;
+  y3 += anchor[1] ?? 0;
+  z3 += anchor[2] ?? 0;
 
   return point.length === 2 ? [x3, y3] : [x3, y3, z3];
 }

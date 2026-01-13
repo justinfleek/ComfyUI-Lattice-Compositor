@@ -15,18 +15,21 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { createPinia, setActivePinia } from 'pinia';
 import { useCompositorStore } from '@/stores/compositorStore';
+import { useLayerStore } from '@/stores/layerStore';
 import { useSelectionStore } from '@/stores/selectionStore';
 import { usePlaybackStore } from '@/stores/playbackStore';
 import type { AssetReference, Composition } from '@/types/project';
 
 describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
   let store: ReturnType<typeof useCompositorStore>;
+  let layerStore: ReturnType<typeof useLayerStore>;
 
   beforeEach(() => {
     // Fresh store for each test
     const pinia = createPinia();
     setActivePinia(pinia);
     store = useCompositorStore();
+    layerStore = useLayerStore();
   });
 
   // ============================================================================
@@ -239,7 +242,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
         // This test verifies the history system works.
 
         // Create a layer (this pushes history)
-        const layer = store.createLayer('solid', 'Test Solid');
+        const layer = layerStore.createLayer(store,'solid', 'Test Solid');
         expect(layer).toBeDefined();
 
         // Verify we can undo
@@ -288,7 +291,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
         };
 
         // Create a layer
-        const layer = store.createLayer('solid', 'Background');
+        const layer = layerStore.createLayer(store,'solid', 'Background');
         expect(layer).toBeDefined();
 
         // Serialize (this uses the store's correct export format)
@@ -481,7 +484,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
         const comp1 = store.createComposition('Comp_1', { width: 1920, height: 1080 });
 
         // Add layer to comp1
-        const layer1 = store.createLayer('solid', 'Solid in Comp1');
+        const layer1 = layerStore.createLayer(store,'solid', 'Solid in Comp1');
         expect(layer1).toBeDefined();
 
         // Create comp2 and switch to it
@@ -491,7 +494,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
         expect(store.getActiveCompLayers().length).toBe(0);
 
         // Add layer to comp2
-        const layer2 = store.createLayer('solid', 'Solid in Comp2');
+        const layer2 = layerStore.createLayer(store, 'solid', 'Solid in Comp2');
         expect(layer2).toBeDefined();
         expect(store.getActiveCompLayers().length).toBe(1);
 
@@ -561,14 +564,14 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
           height: 1080,
           fps: 16
         });
-        store.createLayer('solid', 'Background');
+        layerStore.createLayer(store,'solid', 'Background');
 
         const comp2 = store.createComposition('Secondary_Comp', {
           width: 1280,
           height: 720,
           fps: 24
         });
-        store.createLayer('text', 'Title');
+        layerStore.createLayer(store,'text', 'Title');
 
         // Save
         const savedJson = store.exportProject();
@@ -616,7 +619,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
     describe('Steps 31-38: Adding Layers and Stacking Order', () => {
       it('can add layers to composition (Steps 32-34)', () => {
         // Step 32-33: Add a layer (simulating drag from Project Panel)
-        const layer1 = store.createLayer('solid', 'Background');
+        const layer1 = layerStore.createLayer(store,'solid', 'Background');
         expect(layer1).toBeDefined();
 
         // Step 33: Layer appears in Timeline
@@ -630,10 +633,10 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
 
       it('layer stacking order - new layers appear at top (Steps 35-37)', () => {
         // Step 35: Add first layer
-        const layer1 = store.createLayer('solid', 'Layer_1');
+        const layer1 = layerStore.createLayer(store,'solid', 'Layer_1');
 
         // Step 36: Add second layer - appears ABOVE Layer 1 (at index 0)
-        const layer2 = store.createLayer('solid', 'Layer_2');
+        const layer2 = layerStore.createLayer(store,'solid', 'Layer_2');
 
         const layers = store.getActiveCompLayers();
         expect(layers.length).toBe(2);
@@ -645,8 +648,8 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
 
       it('can reorder layers (Step 38)', () => {
-        const layer1 = store.createLayer('solid', 'First');
-        const layer2 = store.createLayer('solid', 'Second');
+        const layer1 = layerStore.createLayer(store,'solid', 'First');
+        const layer2 = layerStore.createLayer(store,'solid', 'Second');
 
         // After creation: [Second, First] - Second is at top (index 0)
         let layers = store.getActiveCompLayers();
@@ -654,7 +657,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
         expect(layers[1].name).toBe('First');
 
         // Reorder: move First to index 0 (move it to the top)
-        store.moveLayer(layer1!.id, 0);
+        layerStore.moveLayer(store,layer1!.id, 0);
 
         layers = store.getActiveCompLayers();
         expect(layers[0].name).toBe('First');   // Now at top
@@ -670,7 +673,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
      */
     describe('Steps 39-41: Layer Property Structure', () => {
       it('layer has transform properties with correct defaults (Step 41)', () => {
-        const layer = store.createLayer('solid', 'Test Layer');
+        const layer = layerStore.createLayer(store,'solid', 'Test Layer');
         expect(layer).toBeDefined();
 
         // Verify transform group exists with all properties and correct defaults
@@ -685,7 +688,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
 
       it('can modify transform properties directly', () => {
-        const layer = store.createLayer('solid', 'Transform Test');
+        const layer = layerStore.createLayer(store,'solid', 'Transform Test');
 
         // Modify position
         layer!.transform.position.value = { x: 100, y: 200, z: 0 };
@@ -705,14 +708,14 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
 
       it('transform changes persist through getLayerById', () => {
-        const layer = store.createLayer('solid', 'Persist Test');
+        const layer = layerStore.createLayer(store,'solid', 'Persist Test');
 
         // Modify transform
         layer!.transform.position.value = { x: 999, y: 888, z: 0 };
         layer!.opacity.value = 25;
 
         // Retrieve layer again and verify changes persist
-        const retrieved = store.getLayerById(layer!.id);
+        const retrieved = layerStore.getLayerById(store,layer!.id);
         expect(retrieved!.transform.position.value).toEqual({ x: 999, y: 888, z: 0 });
         expect(retrieved!.opacity.value).toBe(25);
       });
@@ -728,7 +731,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
     describe('Steps 42-48: Creating Layer Types', () => {
       it('can create Solid layer (Steps 42-44)', () => {
         // Step 42-43: Create solid with settings
-        const solid = store.createLayer('solid', 'Red Background');
+        const solid = layerStore.createLayer(store,'solid', 'Red Background');
         expect(solid).toBeDefined();
         expect(solid!.type).toBe('solid');
 
@@ -739,14 +742,14 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
 
       it('can create EffectLayer/adjustment layer (Step 45)', () => {
         // EffectLayer affects all layers below it
-        const effectLayer = store.createLayer('adjustment', 'Color Grade');
+        const effectLayer = layerStore.createLayer(store,'adjustment', 'Color Grade');
         expect(effectLayer).toBeDefined();
         expect(effectLayer!.type).toBe('adjustment');
       });
 
       it('can create Control (null) layer (Steps 46-48)', () => {
         // Control layers are invisible in render but useful for parenting
-        const control = store.createLayer('control', 'Camera Control');
+        const control = layerStore.createLayer(store,'control', 'Camera Control');
         expect(control).toBeDefined();
         expect(control!.type).toBe('control');
 
@@ -756,9 +759,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
 
       it('supports all basic layer types', () => {
         // Test that the common layer types can be created
-        const solid = store.createLayer('solid', 'Solid');
-        const text = store.createLayer('text', 'Text');
-        const control = store.createLayer('control', 'Null');
+        const solid = layerStore.createLayer(store,'solid', 'Solid');
+        const text = layerStore.createLayer(store,'text', 'Text');
+        const control = layerStore.createLayer(store,'control', 'Null');
 
         expect(solid!.type).toBe('solid');
         expect(text!.type).toBe('text');
@@ -775,25 +778,25 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
      */
     describe('Steps 49-54: Layer Commands', () => {
       it('can rename layer (Steps 49-50)', () => {
-        const layer = store.createLayer('solid', 'Original Name');
+        const layer = layerStore.createLayer(store,'solid', 'Original Name');
         expect(layer!.name).toBe('Original Name');
 
         // Rename
-        store.renameLayer(layer!.id, 'New Name');
+        layerStore.renameLayer(store,layer!.id, 'New Name');
 
-        const updated = store.getLayerById(layer!.id);
+        const updated = layerStore.getLayerById(store,layer!.id);
         expect(updated!.name).toBe('New Name');
       });
 
       it('can duplicate layer (Steps 51-52)', () => {
-        const original = store.createLayer('solid', 'Original');
+        const original = layerStore.createLayer(store,'solid', 'Original');
 
         // Add a keyframe to verify it's copied
         store.setFrame(10);
         store.addKeyframe(original!.id, 'position', { x: 100, y: 100 });
 
         // Duplicate
-        const duplicate = store.duplicateLayer(original!.id);
+        const duplicate = layerStore.duplicateLayer(store,original!.id);
         expect(duplicate).toBeDefined();
 
         // Verify duplicate exists
@@ -806,18 +809,18 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
 
       it('can delete layer (Step 53)', () => {
-        const layer = store.createLayer('solid', 'To Delete');
+        const layer = layerStore.createLayer(store,'solid', 'To Delete');
         expect(store.getActiveCompLayers().length).toBe(1);
 
-        store.deleteLayer(layer!.id);
+        layerStore.deleteLayer(store,layer!.id);
         expect(store.getActiveCompLayers().length).toBe(0);
       });
 
       it('can undo layer deletion (Step 54)', () => {
-        const layer = store.createLayer('solid', 'Will Be Restored');
+        const layer = layerStore.createLayer(store,'solid', 'Will Be Restored');
         const layerId = layer!.id;
 
-        store.deleteLayer(layerId);
+        layerStore.deleteLayer(store,layerId);
         expect(store.getActiveCompLayers().length).toBe(0);
 
         // Undo
@@ -839,8 +842,8 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
      */
     describe('Steps 55-60: Layer Selection', () => {
       it('can select a single layer (Step 55)', () => {
-        const layer1 = store.createLayer('solid', 'Layer 1');
-        const layer2 = store.createLayer('solid', 'Layer 2');
+        const layer1 = layerStore.createLayer(store,'solid', 'Layer 1');
+        const layer2 = layerStore.createLayer(store,'solid', 'Layer 2');
         const selectionStore = useSelectionStore();
 
         // Initially no selection
@@ -853,9 +856,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
 
       it('can add to selection with addToSelection (Step 56 - Shift+click)', () => {
-        const layer1 = store.createLayer('solid', 'Layer 1');
-        const layer2 = store.createLayer('solid', 'Layer 2');
-        const layer3 = store.createLayer('solid', 'Layer 3');
+        const layer1 = layerStore.createLayer(store,'solid', 'Layer 1');
+        const layer2 = layerStore.createLayer(store,'solid', 'Layer 2');
+        const layer3 = layerStore.createLayer(store,'solid', 'Layer 3');
         const selectionStore = useSelectionStore();
 
         // Select first layer
@@ -870,8 +873,8 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
 
       it('can toggle selection with toggleLayerSelection (Step 57 - Ctrl+click)', () => {
-        const layer1 = store.createLayer('solid', 'Layer 1');
-        const layer2 = store.createLayer('solid', 'Layer 2');
+        const layer1 = layerStore.createLayer(store,'solid', 'Layer 1');
+        const layer2 = layerStore.createLayer(store,'solid', 'Layer 2');
         const selectionStore = useSelectionStore();
 
         // Select both layers
@@ -891,9 +894,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
 
       it('can select all layers with selectLayers (Step 58 - Ctrl+A)', () => {
-        const layer1 = store.createLayer('solid', 'Layer 1');
-        const layer2 = store.createLayer('solid', 'Layer 2');
-        const layer3 = store.createLayer('solid', 'Layer 3');
+        const layer1 = layerStore.createLayer(store,'solid', 'Layer 1');
+        const layer2 = layerStore.createLayer(store,'solid', 'Layer 2');
+        const layer3 = layerStore.createLayer(store,'solid', 'Layer 3');
         const selectionStore = useSelectionStore();
 
         // Get all layer IDs
@@ -909,7 +912,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
 
       it('can clear selection', () => {
-        const layer1 = store.createLayer('solid', 'Layer 1');
+        const layer1 = layerStore.createLayer(store,'solid', 'Layer 1');
         const selectionStore = useSelectionStore();
 
         selectionStore.selectLayer(layer1!.id);
@@ -922,9 +925,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
 
       // Steps 59-60: Select layer above/below (Ctrl+Up/Down)
       it('selectLayerAbove and selectLayerBelow navigate stack (Steps 59-60)', () => {
-        const layer1 = store.createLayer('solid', 'Bottom');
-        const layer2 = store.createLayer('solid', 'Middle');
-        const layer3 = store.createLayer('solid', 'Top');
+        const layer1 = layerStore.createLayer(store,'solid', 'Bottom');
+        const layer2 = layerStore.createLayer(store,'solid', 'Middle');
+        const layer3 = layerStore.createLayer(store,'solid', 'Top');
         const selectionStore = useSelectionStore();
 
         // Layer order after creation: [Top, Middle, Bottom] (newest at index 0)
@@ -951,8 +954,8 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
 
       it('selectLayerAbove at top stays at top, selectLayerBelow at bottom stays at bottom', () => {
-        const layer1 = store.createLayer('solid', 'Bottom');
-        const layer2 = store.createLayer('solid', 'Top');
+        const layer1 = layerStore.createLayer(store,'solid', 'Bottom');
+        const layer2 = layerStore.createLayer(store,'solid', 'Top');
         const selectionStore = useSelectionStore();
 
         const layers = store.getActiveCompLayers();
@@ -978,7 +981,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       it('can undo/redo layer creation', () => {
         expect(store.getActiveCompLayers().length).toBe(0);
 
-        const layer = store.createLayer('solid', 'Test');
+        const layer = layerStore.createLayer(store,'solid', 'Test');
         expect(store.getActiveCompLayers().length).toBe(1);
 
         store.undo();
@@ -989,21 +992,21 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
 
       it('can undo/redo layer rename', () => {
-        const layer = store.createLayer('solid', 'Original');
+        const layer = layerStore.createLayer(store,'solid', 'Original');
 
-        store.renameLayer(layer!.id, 'Renamed');
-        expect(store.getLayerById(layer!.id)!.name).toBe('Renamed');
+        layerStore.renameLayer(store,layer!.id, 'Renamed');
+        expect(layerStore.getLayerById(store,layer!.id)!.name).toBe('Renamed');
 
         store.undo();
-        expect(store.getLayerById(layer!.id)!.name).toBe('Original');
+        expect(layerStore.getLayerById(store,layer!.id)!.name).toBe('Original');
 
         store.redo();
-        expect(store.getLayerById(layer!.id)!.name).toBe('Renamed');
+        expect(layerStore.getLayerById(store,layer!.id)!.name).toBe('Renamed');
       });
 
       it('can undo/redo layer reorder', () => {
-        const layer1 = store.createLayer('solid', 'First');
-        const layer2 = store.createLayer('solid', 'Second');
+        const layer1 = layerStore.createLayer(store,'solid', 'First');
+        const layer2 = layerStore.createLayer(store,'solid', 'Second');
 
         // After creation: [Second, First] - Second at top (index 0)
         let layers = store.getActiveCompLayers();
@@ -1011,7 +1014,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
         expect(layers[1].name).toBe('First');
 
         // Reorder: move First to top (index 0)
-        store.moveLayer(layer1!.id, 0);
+        layerStore.moveLayer(store,layer1!.id, 0);
         layers = store.getActiveCompLayers();
         expect(layers[0].name).toBe('First');
         expect(layers[1].name).toBe('Second');
@@ -1030,10 +1033,10 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
 
       it('can undo/redo layer duplication', () => {
-        const original = store.createLayer('solid', 'Original');
+        const original = layerStore.createLayer(store,'solid', 'Original');
         expect(store.getActiveCompLayers().length).toBe(1);
 
-        store.duplicateLayer(original!.id);
+        layerStore.duplicateLayer(store,original!.id);
         expect(store.getActiveCompLayers().length).toBe(2);
 
         store.undo();
@@ -1051,9 +1054,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
     describe('Phase 3: Save/Load State Preservation', () => {
       it('preserves layers through save/load', () => {
         // Create various layers
-        const solid = store.createLayer('solid', 'Background');
-        const text = store.createLayer('text', 'Title');
-        const control = store.createLayer('control', 'Null Parent');
+        const solid = layerStore.createLayer(store,'solid', 'Background');
+        const text = layerStore.createLayer(store,'text', 'Title');
+        const control = layerStore.createLayer(store,'control', 'Null Parent');
 
         // Add keyframes to solid
         store.setFrame(30);
@@ -1061,7 +1064,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
         store.addKeyframe(solid!.id, 'opacity', 50);
 
         // Rename one layer
-        store.renameLayer(text!.id, 'Main Title');
+        layerStore.renameLayer(store,text!.id, 'Main Title');
 
         // Save
         const savedJson = store.exportProject();
@@ -1097,14 +1100,14 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
 
       it('preserves layer order through save/load', () => {
-        const layer1 = store.createLayer('solid', 'Bottom');
-        const layer2 = store.createLayer('solid', 'Middle');
-        const layer3 = store.createLayer('solid', 'Top');
+        const layer1 = layerStore.createLayer(store,'solid', 'Bottom');
+        const layer2 = layerStore.createLayer(store,'solid', 'Middle');
+        const layer3 = layerStore.createLayer(store,'solid', 'Top');
 
         // Initial order: Bottom, Middle, Top
         // Move Top to index 0, then move Bottom to index 1
-        store.moveLayer(layer3!.id, 0);  // Now: Top, Bottom, Middle
-        store.moveLayer(layer1!.id, 1);  // Now: Top, Bottom, Middle (no change since already at 1)
+        layerStore.moveLayer(store,layer3!.id, 0);  // Now: Top, Bottom, Middle
+        layerStore.moveLayer(store,layer1!.id, 1);  // Now: Top, Bottom, Middle (no change since already at 1)
 
         // Verify reorder worked
         let layers = store.getActiveCompLayers();
@@ -1340,7 +1343,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
         store.setFrame(25);
         expect(store.currentFrame).toBe(25);
 
-        store.createLayer('solid', 'Test Layer');
+        layerStore.createLayer(store,'solid', 'Test Layer');
 
         expect(store.currentFrame).toBe(25); // Still at frame 25
       });
@@ -1373,7 +1376,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
         // createLayer() pushes history - undo reverts to state BEFORE that action
         store.setFrame(10);
 
-        store.createLayer('solid', 'Test');  // Pushes history (first push)
+        layerStore.createLayer(store,'solid', 'Test');  // Pushes history (first push)
         store.setFrame(50);
 
         // Undo the layer creation - reverts to initial state (before ANY pushHistory)
@@ -1387,7 +1390,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       it('frame position from before first action is restored', () => {
         // To preserve a specific frame through undo, it must be set before a push,
         // then another action must push, then undo goes to the intermediate state
-        const layer = store.createLayer('solid', 'First Layer');  // Push #1: saves initial state
+        const layer = layerStore.createLayer(store,'solid', 'First Layer');  // Push #1: saves initial state
         store.setFrame(25);  // Frame=25, no push
         store.addKeyframe(layer!.id, 'position', { x: 0, y: 0 });  // Push #2: saves state with frame=25
 
@@ -1404,7 +1407,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
 
       it('keyframes created at specific frames can be undone', () => {
-        const layer = store.createLayer('solid', 'Keyframe Test');
+        const layer = layerStore.createLayer(store,'solid', 'Keyframe Test');
 
         // Add keyframe at frame 30
         store.setFrame(30);
@@ -1415,12 +1418,12 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
 
         // Undo keyframe
         store.undo();
-        expect(store.getLayerById(layer!.id)!.transform.position.keyframes.length).toBe(0);
+        expect(layerStore.getLayerById(store,layer!.id)!.transform.position.keyframes.length).toBe(0);
 
         // Redo keyframe
         store.redo();
-        expect(store.getLayerById(layer!.id)!.transform.position.keyframes.length).toBe(1);
-        expect(store.getLayerById(layer!.id)!.transform.position.keyframes[0].frame).toBe(30);
+        expect(layerStore.getLayerById(store,layer!.id)!.transform.position.keyframes.length).toBe(1);
+        expect(layerStore.getLayerById(store,layer!.id)!.transform.position.keyframes[0].frame).toBe(30);
       });
     });
 
@@ -1518,7 +1521,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
      */
     describe('Steps 86-89: Layer Timing Properties', () => {
       it('layer has startFrame and endFrame properties', () => {
-        const layer = store.createLayer('solid', 'Timed Layer');
+        const layer = layerStore.createLayer(store,'solid', 'Timed Layer');
         expect(layer).toBeDefined();
 
         // Default timing spans full composition
@@ -1527,36 +1530,36 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
 
       it('can navigate to layer startFrame (Step 87 - I key)', () => {
-        const layer = store.createLayer('solid', 'Test Layer');
+        const layer = layerStore.createLayer(store,'solid', 'Test Layer');
 
         // Modify layer timing
-        store.updateLayer(layer!.id, { startFrame: 20, endFrame: 60 });
+        layerStore.updateLayer(store,layer!.id, { startFrame: 20, endFrame: 60 });
 
         // Navigate to layer's startFrame
-        const updatedLayer = store.getLayerById(layer!.id);
+        const updatedLayer = layerStore.getLayerById(store,layer!.id);
         store.setFrame(updatedLayer!.startFrame);
 
         expect(store.currentFrame).toBe(20);
       });
 
       it('can navigate to layer endFrame (Step 88 - O key)', () => {
-        const layer = store.createLayer('solid', 'Test Layer');
+        const layer = layerStore.createLayer(store,'solid', 'Test Layer');
 
         // Modify layer timing
-        store.updateLayer(layer!.id, { startFrame: 10, endFrame: 50 });
+        layerStore.updateLayer(store,layer!.id, { startFrame: 10, endFrame: 50 });
 
         // Navigate to layer's endFrame
-        const updatedLayer = store.getLayerById(layer!.id);
+        const updatedLayer = layerStore.getLayerById(store,layer!.id);
         store.setFrame(updatedLayer!.endFrame);
 
         expect(store.currentFrame).toBe(50);
       });
 
       it('layer is only visible within startFrame-endFrame range', () => {
-        const layer = store.createLayer('solid', 'Bounded Layer');
-        store.updateLayer(layer!.id, { startFrame: 30, endFrame: 70 });
+        const layer = layerStore.createLayer(store,'solid', 'Bounded Layer');
+        layerStore.updateLayer(store,layer!.id, { startFrame: 30, endFrame: 70 });
 
-        const updatedLayer = store.getLayerById(layer!.id);
+        const updatedLayer = layerStore.getLayerById(store,layer!.id);
 
         // Verify timing boundaries
         expect(updatedLayer!.startFrame).toBe(30);
@@ -1581,7 +1584,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
      */
     describe('Steps 90-94: Moving Layers in Time', () => {
       it('can move layer startFrame to playhead (Step 91 - [ key)', () => {
-        const layer = store.createLayer('solid', 'Move Test');
+        const layer = layerStore.createLayer(store,'solid', 'Move Test');
 
         // Layer starts at 0, ends at 80
         expect(layer!.startFrame).toBe(0);
@@ -1592,49 +1595,49 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
 
         // Move layer's startFrame to playhead (shift layer in time)
         const duration = layer!.endFrame - layer!.startFrame;
-        store.updateLayer(layer!.id, {
+        layerStore.updateLayer(store,layer!.id, {
           startFrame: store.currentFrame,
           endFrame: store.currentFrame + duration
         });
 
-        const updated = store.getLayerById(layer!.id);
+        const updated = layerStore.getLayerById(store,layer!.id);
         expect(updated!.startFrame).toBe(20);
         expect(updated!.endFrame).toBe(20 + originalDuration);
       });
 
       it('can move layer endFrame to playhead (Step 92 - ] key)', () => {
-        const layer = store.createLayer('solid', 'Move Test');
-        store.updateLayer(layer!.id, { startFrame: 10, endFrame: 50 });
+        const layer = layerStore.createLayer(store,'solid', 'Move Test');
+        layerStore.updateLayer(store,layer!.id, { startFrame: 10, endFrame: 50 });
 
         // Move playhead to frame 70
         store.setFrame(70);
 
         // Move layer's endFrame to playhead (shift layer in time)
-        const updated = store.getLayerById(layer!.id);
+        const updated = layerStore.getLayerById(store,layer!.id);
         const duration = updated!.endFrame - updated!.startFrame;
-        store.updateLayer(layer!.id, {
+        layerStore.updateLayer(store,layer!.id, {
           startFrame: store.currentFrame - duration,
           endFrame: store.currentFrame
         });
 
-        const final = store.getLayerById(layer!.id);
+        const final = layerStore.getLayerById(store,layer!.id);
         expect(final!.endFrame).toBe(70);
         expect(final!.startFrame).toBe(70 - (50 - 10)); // 30
       });
 
       it('can slide layer timing while preserving duration', () => {
-        const layer = store.createLayer('solid', 'Slide Test');
-        store.updateLayer(layer!.id, { startFrame: 0, endFrame: 30 });
+        const layer = layerStore.createLayer(store,'solid', 'Slide Test');
+        layerStore.updateLayer(store,layer!.id, { startFrame: 0, endFrame: 30 });
 
         const originalDuration = 30 - 0; // 30 frames
 
         // Slide layer to start at frame 40
-        store.updateLayer(layer!.id, {
+        layerStore.updateLayer(store,layer!.id, {
           startFrame: 40,
           endFrame: 40 + originalDuration
         });
 
-        const updated = store.getLayerById(layer!.id);
+        const updated = layerStore.getLayerById(store,layer!.id);
         expect(updated!.startFrame).toBe(40);
         expect(updated!.endFrame).toBe(70);
         expect(updated!.endFrame - updated!.startFrame).toBe(originalDuration);
@@ -1653,7 +1656,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
      */
     describe('Steps 95-101: Trimming Layers', () => {
       it('can trim layer startFrame to playhead (Steps 95-96 - Alt+[)', () => {
-        const layer = store.createLayer('solid', 'Trim Start Test');
+        const layer = layerStore.createLayer(store,'solid', 'Trim Start Test');
         expect(layer!.startFrame).toBe(0);
         expect(layer!.endFrame).toBe(store.frameCount - 1);
 
@@ -1661,15 +1664,15 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
         store.setFrame(25);
 
         // Trim startFrame to playhead (changes duration)
-        store.updateLayer(layer!.id, { startFrame: store.currentFrame });
+        layerStore.updateLayer(store,layer!.id, { startFrame: store.currentFrame });
 
-        const updated = store.getLayerById(layer!.id);
+        const updated = layerStore.getLayerById(store,layer!.id);
         expect(updated!.startFrame).toBe(25);
         expect(updated!.endFrame).toBe(store.frameCount - 1); // endFrame unchanged
       });
 
       it('can trim layer endFrame to playhead (Steps 97-98 - Alt+])', () => {
-        const layer = store.createLayer('solid', 'Trim End Test');
+        const layer = layerStore.createLayer(store,'solid', 'Trim End Test');
         expect(layer!.startFrame).toBe(0);
         expect(layer!.endFrame).toBe(store.frameCount - 1);
 
@@ -1677,33 +1680,33 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
         store.setFrame(40);
 
         // Trim endFrame to playhead (changes duration)
-        store.updateLayer(layer!.id, { endFrame: store.currentFrame });
+        layerStore.updateLayer(store,layer!.id, { endFrame: store.currentFrame });
 
-        const updated = store.getLayerById(layer!.id);
+        const updated = layerStore.getLayerById(store,layer!.id);
         expect(updated!.startFrame).toBe(0); // startFrame unchanged
         expect(updated!.endFrame).toBe(40);
       });
 
       it('can trim both ends independently', () => {
-        const layer = store.createLayer('solid', 'Double Trim');
+        const layer = layerStore.createLayer(store,'solid', 'Double Trim');
 
         // Trim start
-        store.updateLayer(layer!.id, { startFrame: 15 });
+        layerStore.updateLayer(store,layer!.id, { startFrame: 15 });
 
         // Trim end
-        store.updateLayer(layer!.id, { endFrame: 65 });
+        layerStore.updateLayer(store,layer!.id, { endFrame: 65 });
 
-        const updated = store.getLayerById(layer!.id);
+        const updated = layerStore.getLayerById(store,layer!.id);
         expect(updated!.startFrame).toBe(15);
         expect(updated!.endFrame).toBe(65);
         expect(updated!.endFrame - updated!.startFrame).toBe(50);
       });
 
       it('trimming respects minimum layer length (at least 1 frame)', () => {
-        const layer = store.createLayer('solid', 'Min Length Test');
-        store.updateLayer(layer!.id, { startFrame: 30, endFrame: 30 });
+        const layer = layerStore.createLayer(store,'solid', 'Min Length Test');
+        layerStore.updateLayer(store,layer!.id, { startFrame: 30, endFrame: 30 });
 
-        const updated = store.getLayerById(layer!.id);
+        const updated = layerStore.getLayerById(store,layer!.id);
         // Layer can be 1 frame (startFrame === endFrame)
         expect(updated!.endFrame).toBeGreaterThanOrEqual(updated!.startFrame);
       });
@@ -1721,38 +1724,38 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
      */
     describe('Steps 102-107: Splitting Layers', () => {
       it('can split layer at playhead (Steps 104-105)', () => {
-        const layer = store.createLayer('solid', 'Split Me');
-        store.updateLayer(layer!.id, { startFrame: 0, endFrame: 80 });
+        const layer = layerStore.createLayer(store,'solid', 'Split Me');
+        layerStore.updateLayer(store,layer!.id, { startFrame: 0, endFrame: 80 });
 
         // Position playhead at split point (frame 40)
         store.setFrame(40);
 
         // Split the layer
-        const newLayer = store.splitLayerAtPlayhead(layer!.id);
+        const newLayer = layerStore.splitLayerAtPlayhead(store,layer!.id);
 
         expect(newLayer).toBeDefined();
         expect(newLayer!.name).toBe('Split Me (split)');
       });
 
       it('original layer ends at playhead after split', () => {
-        const layer = store.createLayer('solid', 'Original');
-        store.updateLayer(layer!.id, { startFrame: 10, endFrame: 70 });
+        const layer = layerStore.createLayer(store,'solid', 'Original');
+        layerStore.updateLayer(store,layer!.id, { startFrame: 10, endFrame: 70 });
 
         store.setFrame(40);
-        store.splitLayerAtPlayhead(layer!.id);
+        layerStore.splitLayerAtPlayhead(store,layer!.id);
 
         // Original layer now ends at playhead
-        const original = store.getLayerById(layer!.id);
+        const original = layerStore.getLayerById(store,layer!.id);
         expect(original!.endFrame).toBe(40);
         expect(original!.startFrame).toBe(10); // Unchanged
       });
 
       it('new layer starts at playhead after split', () => {
-        const layer = store.createLayer('solid', 'To Split');
-        store.updateLayer(layer!.id, { startFrame: 5, endFrame: 75 });
+        const layer = layerStore.createLayer(store,'solid', 'To Split');
+        layerStore.updateLayer(store,layer!.id, { startFrame: 5, endFrame: 75 });
 
         store.setFrame(50);
-        const newLayer = store.splitLayerAtPlayhead(layer!.id);
+        const newLayer = layerStore.splitLayerAtPlayhead(store,layer!.id);
 
         // New layer starts at playhead, ends where original ended
         expect(newLayer!.startFrame).toBe(50);
@@ -1760,46 +1763,46 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
 
       it('split creates two layers in timeline', () => {
-        const layer = store.createLayer('solid', 'Will Become Two');
-        store.updateLayer(layer!.id, { startFrame: 0, endFrame: 60 });
+        const layer = layerStore.createLayer(store,'solid', 'Will Become Two');
+        layerStore.updateLayer(store,layer!.id, { startFrame: 0, endFrame: 60 });
 
         const layerCountBefore = store.getActiveCompLayers().length;
         expect(layerCountBefore).toBe(1);
 
         store.setFrame(30);
-        store.splitLayerAtPlayhead(layer!.id);
+        layerStore.splitLayerAtPlayhead(store,layer!.id);
 
         const layerCountAfter = store.getActiveCompLayers().length;
         expect(layerCountAfter).toBe(2);
       });
 
       it('cannot split at layer boundaries', () => {
-        const layer = store.createLayer('solid', 'Edge Case');
-        store.updateLayer(layer!.id, { startFrame: 20, endFrame: 60 });
+        const layer = layerStore.createLayer(store,'solid', 'Edge Case');
+        layerStore.updateLayer(store,layer!.id, { startFrame: 20, endFrame: 60 });
 
         // Try to split at startFrame
         store.setFrame(20);
-        const result1 = store.splitLayerAtPlayhead(layer!.id);
+        const result1 = layerStore.splitLayerAtPlayhead(store,layer!.id);
         expect(result1).toBeNull();
 
         // Try to split at endFrame
         store.setFrame(60);
-        const result2 = store.splitLayerAtPlayhead(layer!.id);
+        const result2 = layerStore.splitLayerAtPlayhead(store,layer!.id);
         expect(result2).toBeNull();
       });
 
       it('cannot split outside layer bounds', () => {
-        const layer = store.createLayer('solid', 'Bounded');
-        store.updateLayer(layer!.id, { startFrame: 30, endFrame: 50 });
+        const layer = layerStore.createLayer(store,'solid', 'Bounded');
+        layerStore.updateLayer(store,layer!.id, { startFrame: 30, endFrame: 50 });
 
         // Try to split before layer starts
         store.setFrame(10);
-        const result1 = store.splitLayerAtPlayhead(layer!.id);
+        const result1 = layerStore.splitLayerAtPlayhead(store,layer!.id);
         expect(result1).toBeNull();
 
         // Try to split after layer ends
         store.setFrame(70);
-        const result2 = store.splitLayerAtPlayhead(layer!.id);
+        const result2 = layerStore.splitLayerAtPlayhead(store,layer!.id);
         expect(result2).toBeNull();
       });
     });
@@ -1856,11 +1859,11 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
 
       it('findSnapPoint returns snap result when near target', () => {
         // Create layers to provide snap targets
-        const layer1 = store.createLayer('solid', 'Snap Target 1');
-        store.updateLayer(layer1!.id, { startFrame: 0, endFrame: 30 });
+        const layer1 = layerStore.createLayer(store,'solid', 'Snap Target 1');
+        layerStore.updateLayer(store,layer1!.id, { startFrame: 0, endFrame: 30 });
 
-        const layer2 = store.createLayer('solid', 'Snap Target 2');
-        store.updateLayer(layer2!.id, { startFrame: 40, endFrame: 70 });
+        const layer2 = layerStore.createLayer(store,'solid', 'Snap Target 2');
+        layerStore.updateLayer(store,layer2!.id, { startFrame: 40, endFrame: 70 });
 
         // Enable layer bounds snapping
         store.setSnapConfig({
@@ -1888,8 +1891,8 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
 
       it('findSnapPoint returns null when snapping disabled', () => {
-        const layer = store.createLayer('solid', 'Snap Target');
-        store.updateLayer(layer!.id, { startFrame: 0, endFrame: 30 });
+        const layer = layerStore.createLayer(store,'solid', 'Snap Target');
+        layerStore.updateLayer(store,layer!.id, { startFrame: 0, endFrame: 30 });
 
         // Disable snapping
         store.setSnapConfig({ enabled: false });
@@ -1899,7 +1902,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
 
       it('findSnapPoint snaps to playhead when enabled', () => {
-        store.createLayer('solid', 'Test Layer');
+        layerStore.createLayer(store,'solid', 'Test Layer');
 
         // Enable playhead snapping
         store.setSnapConfig({
@@ -1927,53 +1930,53 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
 
     describe('Phase 5: Undo/Redo Verification', () => {
       it('can undo/redo layer timing change', () => {
-        const layer = store.createLayer('solid', 'Timing Undo Test');
+        const layer = layerStore.createLayer(store,'solid', 'Timing Undo Test');
         const originalEnd = layer!.endFrame;
 
         // Change timing
-        store.updateLayer(layer!.id, { startFrame: 20, endFrame: 60 });
-        expect(store.getLayerById(layer!.id)!.startFrame).toBe(20);
-        expect(store.getLayerById(layer!.id)!.endFrame).toBe(60);
+        layerStore.updateLayer(store,layer!.id, { startFrame: 20, endFrame: 60 });
+        expect(layerStore.getLayerById(store,layer!.id)!.startFrame).toBe(20);
+        expect(layerStore.getLayerById(store,layer!.id)!.endFrame).toBe(60);
 
         // Undo
         store.undo();
-        expect(store.getLayerById(layer!.id)!.startFrame).toBe(0);
-        expect(store.getLayerById(layer!.id)!.endFrame).toBe(originalEnd);
+        expect(layerStore.getLayerById(store,layer!.id)!.startFrame).toBe(0);
+        expect(layerStore.getLayerById(store,layer!.id)!.endFrame).toBe(originalEnd);
 
         // Redo
         store.redo();
-        expect(store.getLayerById(layer!.id)!.startFrame).toBe(20);
-        expect(store.getLayerById(layer!.id)!.endFrame).toBe(60);
+        expect(layerStore.getLayerById(store,layer!.id)!.startFrame).toBe(20);
+        expect(layerStore.getLayerById(store,layer!.id)!.endFrame).toBe(60);
       });
 
       it('can undo layer split', () => {
         // Create layer with default timing
-        const layer = store.createLayer('solid', 'Split Undo Test');
+        const layer = layerStore.createLayer(store,'solid', 'Split Undo Test');
         const originalEndFrame = layer!.endFrame;
 
         expect(store.getActiveCompLayers().length).toBe(1);
 
         // Split layer at frame 40
         store.setFrame(40);
-        store.splitLayerAtPlayhead(layer!.id);
+        layerStore.splitLayerAtPlayhead(store,layer!.id);
         expect(store.getActiveCompLayers().length).toBe(2);
 
         // Verify split modified original layer
-        expect(store.getLayerById(layer!.id)!.endFrame).toBe(40);
+        expect(layerStore.getLayerById(store,layer!.id)!.endFrame).toBe(40);
 
         // Undo split - should restore to 1 layer with original timing
         store.undo();
         expect(store.getActiveCompLayers().length).toBe(1);
-        expect(store.getLayerById(layer!.id)!.endFrame).toBe(originalEndFrame);
+        expect(layerStore.getLayerById(store,layer!.id)!.endFrame).toBe(originalEndFrame);
       });
 
       it('split can be re-done after undo by splitting again', () => {
         // Note: Redo after split undo has a known limitation where the new layer
         // isn't properly restored. Workaround: split again.
-        const layer = store.createLayer('solid', 'Split Again Test');
+        const layer = layerStore.createLayer(store,'solid', 'Split Again Test');
 
         store.setFrame(40);
-        store.splitLayerAtPlayhead(layer!.id);
+        layerStore.splitLayerAtPlayhead(store,layer!.id);
         expect(store.getActiveCompLayers().length).toBe(2);
 
         // Undo split
@@ -1982,26 +1985,26 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
 
         // Can split again at same point
         store.setFrame(40);
-        const newSplitLayer = store.splitLayerAtPlayhead(layer!.id);
+        const newSplitLayer = layerStore.splitLayerAtPlayhead(store,layer!.id);
         expect(newSplitLayer).toBeDefined();
         expect(store.getActiveCompLayers().length).toBe(2);
       });
 
       it('can undo/redo trim operation', () => {
-        const layer = store.createLayer('solid', 'Trim Undo Test');
+        const layer = layerStore.createLayer(store,'solid', 'Trim Undo Test');
         const originalEnd = layer!.endFrame;
 
         // Trim end
-        store.updateLayer(layer!.id, { endFrame: 45 });
-        expect(store.getLayerById(layer!.id)!.endFrame).toBe(45);
+        layerStore.updateLayer(store,layer!.id, { endFrame: 45 });
+        expect(layerStore.getLayerById(store,layer!.id)!.endFrame).toBe(45);
 
         // Undo
         store.undo();
-        expect(store.getLayerById(layer!.id)!.endFrame).toBe(originalEnd);
+        expect(layerStore.getLayerById(store,layer!.id)!.endFrame).toBe(originalEnd);
 
         // Redo
         store.redo();
-        expect(store.getLayerById(layer!.id)!.endFrame).toBe(45);
+        expect(layerStore.getLayerById(store,layer!.id)!.endFrame).toBe(45);
       });
     });
 
@@ -2011,8 +2014,8 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
 
     describe('Phase 5: Save/Load State Preservation', () => {
       it('preserves layer timing through save/load', () => {
-        const layer = store.createLayer('solid', 'Timed Layer');
-        store.updateLayer(layer!.id, { startFrame: 15, endFrame: 55 });
+        const layer = layerStore.createLayer(store,'solid', 'Timed Layer');
+        layerStore.updateLayer(store,layer!.id, { startFrame: 15, endFrame: 55 });
 
         const savedJson = store.exportProject();
 
@@ -2030,14 +2033,14 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
 
       it('preserves multiple layers with different timing', () => {
-        const layer1 = store.createLayer('solid', 'Early Layer');
-        store.updateLayer(layer1!.id, { startFrame: 0, endFrame: 30 });
+        const layer1 = layerStore.createLayer(store,'solid', 'Early Layer');
+        layerStore.updateLayer(store,layer1!.id, { startFrame: 0, endFrame: 30 });
 
-        const layer2 = store.createLayer('solid', 'Middle Layer');
-        store.updateLayer(layer2!.id, { startFrame: 25, endFrame: 55 });
+        const layer2 = layerStore.createLayer(store,'solid', 'Middle Layer');
+        layerStore.updateLayer(store,layer2!.id, { startFrame: 25, endFrame: 55 });
 
-        const layer3 = store.createLayer('solid', 'Late Layer');
-        store.updateLayer(layer3!.id, { startFrame: 50, endFrame: 80 });
+        const layer3 = layerStore.createLayer(store,'solid', 'Late Layer');
+        layerStore.updateLayer(store,layer3!.id, { startFrame: 50, endFrame: 80 });
 
         const savedJson = store.exportProject();
 
@@ -2063,11 +2066,11 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
 
       it('preserves split layers through save/load', () => {
-        const layer = store.createLayer('solid', 'Pre-Split');
-        store.updateLayer(layer!.id, { startFrame: 0, endFrame: 60 });
+        const layer = layerStore.createLayer(store,'solid', 'Pre-Split');
+        layerStore.updateLayer(store,layer!.id, { startFrame: 0, endFrame: 60 });
 
         store.setFrame(30);
-        const newLayer = store.splitLayerAtPlayhead(layer!.id);
+        const newLayer = layerStore.splitLayerAtPlayhead(store,layer!.id);
 
         // Verify split worked
         expect(store.getActiveCompLayers().length).toBe(2);
@@ -2130,52 +2133,52 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
      */
     describe('Steps 113-115: Visibility Switch', () => {
       it('layer is visible by default', () => {
-        const layer = store.createLayer('solid', 'Visibility Test');
+        const layer = layerStore.createLayer(store,'solid', 'Visibility Test');
         expect(layer!.visible).toBe(true);
       });
 
       it('can hide layer by setting visible to false (Step 113)', () => {
-        const layer = store.createLayer('solid', 'Hide Me');
+        const layer = layerStore.createLayer(store,'solid', 'Hide Me');
 
-        store.updateLayer(layer!.id, { visible: false });
+        layerStore.updateLayer(store,layer!.id, { visible: false });
 
-        const updated = store.getLayerById(layer!.id);
+        const updated = layerStore.getLayerById(store,layer!.id);
         expect(updated!.visible).toBe(false);
       });
 
       it('can show layer by setting visible to true (Step 114)', () => {
-        const layer = store.createLayer('solid', 'Show Me');
-        store.updateLayer(layer!.id, { visible: false });
-        expect(store.getLayerById(layer!.id)!.visible).toBe(false);
+        const layer = layerStore.createLayer(store,'solid', 'Show Me');
+        layerStore.updateLayer(store,layer!.id, { visible: false });
+        expect(layerStore.getLayerById(store,layer!.id)!.visible).toBe(false);
 
-        store.updateLayer(layer!.id, { visible: true });
-        expect(store.getLayerById(layer!.id)!.visible).toBe(true);
+        layerStore.updateLayer(store,layer!.id, { visible: true });
+        expect(layerStore.getLayerById(store,layer!.id)!.visible).toBe(true);
       });
 
       it('visibility can be toggled multiple times', () => {
-        const layer = store.createLayer('solid', 'Toggle Visibility');
+        const layer = layerStore.createLayer(store,'solid', 'Toggle Visibility');
 
         // Hide
-        store.updateLayer(layer!.id, { visible: false });
-        expect(store.getLayerById(layer!.id)!.visible).toBe(false);
+        layerStore.updateLayer(store,layer!.id, { visible: false });
+        expect(layerStore.getLayerById(store,layer!.id)!.visible).toBe(false);
 
         // Show
-        store.updateLayer(layer!.id, { visible: true });
-        expect(store.getLayerById(layer!.id)!.visible).toBe(true);
+        layerStore.updateLayer(store,layer!.id, { visible: true });
+        expect(layerStore.getLayerById(store,layer!.id)!.visible).toBe(true);
 
         // Hide again
-        store.updateLayer(layer!.id, { visible: false });
-        expect(store.getLayerById(layer!.id)!.visible).toBe(false);
+        layerStore.updateLayer(store,layer!.id, { visible: false });
+        expect(layerStore.getLayerById(store,layer!.id)!.visible).toBe(false);
       });
 
       it('multiple layers can have independent visibility (Step 115)', () => {
-        const layer1 = store.createLayer('solid', 'Visible Layer');
-        const layer2 = store.createLayer('solid', 'Hidden Layer');
+        const layer1 = layerStore.createLayer(store,'solid', 'Visible Layer');
+        const layer2 = layerStore.createLayer(store,'solid', 'Hidden Layer');
 
-        store.updateLayer(layer2!.id, { visible: false });
+        layerStore.updateLayer(store,layer2!.id, { visible: false });
 
-        expect(store.getLayerById(layer1!.id)!.visible).toBe(true);
-        expect(store.getLayerById(layer2!.id)!.visible).toBe(false);
+        expect(layerStore.getLayerById(store,layer1!.id)!.visible).toBe(true);
+        expect(layerStore.getLayerById(store,layer2!.id)!.visible).toBe(false);
       });
     });
 
@@ -2190,53 +2193,53 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
      */
     describe('Steps 116-120: Isolate Switch', () => {
       it('layer is not isolated by default', () => {
-        const layer = store.createLayer('solid', 'Isolate Test');
+        const layer = layerStore.createLayer(store,'solid', 'Isolate Test');
         expect(layer!.isolate).toBe(false);
       });
 
       it('can isolate layer (Step 116)', () => {
-        const layer = store.createLayer('solid', 'Solo Me');
+        const layer = layerStore.createLayer(store,'solid', 'Solo Me');
 
-        store.updateLayer(layer!.id, { isolate: true });
+        layerStore.updateLayer(store,layer!.id, { isolate: true });
 
-        const updated = store.getLayerById(layer!.id);
+        const updated = layerStore.getLayerById(store,layer!.id);
         expect(updated!.isolate).toBe(true);
       });
 
       it('multiple layers can be isolated simultaneously (Step 118)', () => {
-        const layer1 = store.createLayer('solid', 'Solo 1');
-        const layer2 = store.createLayer('solid', 'Solo 2');
-        const layer3 = store.createLayer('solid', 'Not Solo');
+        const layer1 = layerStore.createLayer(store,'solid', 'Solo 1');
+        const layer2 = layerStore.createLayer(store,'solid', 'Solo 2');
+        const layer3 = layerStore.createLayer(store,'solid', 'Not Solo');
 
-        store.updateLayer(layer1!.id, { isolate: true });
-        store.updateLayer(layer2!.id, { isolate: true });
+        layerStore.updateLayer(store,layer1!.id, { isolate: true });
+        layerStore.updateLayer(store,layer2!.id, { isolate: true });
 
-        expect(store.getLayerById(layer1!.id)!.isolate).toBe(true);
-        expect(store.getLayerById(layer2!.id)!.isolate).toBe(true);
-        expect(store.getLayerById(layer3!.id)!.isolate).toBe(false);
+        expect(layerStore.getLayerById(store,layer1!.id)!.isolate).toBe(true);
+        expect(layerStore.getLayerById(store,layer2!.id)!.isolate).toBe(true);
+        expect(layerStore.getLayerById(store,layer3!.id)!.isolate).toBe(false);
       });
 
       it('can un-isolate layer (Step 120)', () => {
-        const layer = store.createLayer('solid', 'Un-Solo Me');
-        store.updateLayer(layer!.id, { isolate: true });
-        expect(store.getLayerById(layer!.id)!.isolate).toBe(true);
+        const layer = layerStore.createLayer(store,'solid', 'Un-Solo Me');
+        layerStore.updateLayer(store,layer!.id, { isolate: true });
+        expect(layerStore.getLayerById(store,layer!.id)!.isolate).toBe(true);
 
-        store.updateLayer(layer!.id, { isolate: false });
-        expect(store.getLayerById(layer!.id)!.isolate).toBe(false);
+        layerStore.updateLayer(store,layer!.id, { isolate: false });
+        expect(layerStore.getLayerById(store,layer!.id)!.isolate).toBe(false);
       });
 
       it('isolate is independent of visibility', () => {
-        const layer = store.createLayer('solid', 'Isolate vs Visible');
+        const layer = layerStore.createLayer(store,'solid', 'Isolate vs Visible');
 
         // Layer can be isolated and visible
-        store.updateLayer(layer!.id, { isolate: true, visible: true });
-        let updated = store.getLayerById(layer!.id);
+        layerStore.updateLayer(store,layer!.id, { isolate: true, visible: true });
+        let updated = layerStore.getLayerById(store,layer!.id);
         expect(updated!.isolate).toBe(true);
         expect(updated!.visible).toBe(true);
 
         // Layer can be isolated but hidden
-        store.updateLayer(layer!.id, { isolate: true, visible: false });
-        updated = store.getLayerById(layer!.id);
+        layerStore.updateLayer(store,layer!.id, { isolate: true, visible: false });
+        updated = layerStore.getLayerById(store,layer!.id);
         expect(updated!.isolate).toBe(true);
         expect(updated!.visible).toBe(false);
       });
@@ -2253,24 +2256,24 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
      */
     describe('Steps 121-125: Lock Switch', () => {
       it('layer is unlocked by default', () => {
-        const layer = store.createLayer('solid', 'Lock Test');
+        const layer = layerStore.createLayer(store,'solid', 'Lock Test');
         expect(layer!.locked).toBe(false);
       });
 
       it('can lock layer (Step 121)', () => {
-        const layer = store.createLayer('solid', 'Lock Me');
+        const layer = layerStore.createLayer(store,'solid', 'Lock Me');
 
-        store.updateLayer(layer!.id, { locked: true });
+        layerStore.updateLayer(store,layer!.id, { locked: true });
 
-        const updated = store.getLayerById(layer!.id);
+        const updated = layerStore.getLayerById(store,layer!.id);
         expect(updated!.locked).toBe(true);
       });
 
       // Step 123: Locked layer cannot be edited (but CAN be selected)
       // Note: Like professional animation software, locked layers can be selected but not edited.
       it('locked layer can be selected but cannot be edited (Step 123)', () => {
-        const layer = store.createLayer('solid', 'Locked Layer');
-        store.updateLayer(layer!.id, { locked: true });
+        const layer = layerStore.createLayer(store,'solid', 'Locked Layer');
+        layerStore.updateLayer(store,layer!.id, { locked: true });
 
         // Selection still works on locked layers (like professional animation software)
         const selectionStore = useSelectionStore();
@@ -2278,50 +2281,50 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
         expect(selectionStore.selectedLayerIds).toContain(layer!.id);
 
         // But editing is blocked - visible should remain true
-        const beforeVisible = store.getLayerById(layer!.id)!.visible;
-        store.updateLayer(layer!.id, { visible: false });
-        const afterVisible = store.getLayerById(layer!.id)!.visible;
+        const beforeVisible = layerStore.getLayerById(store,layer!.id)!.visible;
+        layerStore.updateLayer(store,layer!.id, { visible: false });
+        const afterVisible = layerStore.getLayerById(store,layer!.id)!.visible;
         expect(afterVisible).toBe(beforeVisible); // Should be unchanged
 
         // Can still unlock the layer (locked property is always changeable)
-        store.updateLayer(layer!.id, { locked: false });
-        expect(store.getLayerById(layer!.id)!.locked).toBe(false);
+        layerStore.updateLayer(store,layer!.id, { locked: false });
+        expect(layerStore.getLayerById(store,layer!.id)!.locked).toBe(false);
 
         // Now editing works
-        store.updateLayer(layer!.id, { visible: false });
-        expect(store.getLayerById(layer!.id)!.visible).toBe(false);
+        layerStore.updateLayer(store,layer!.id, { visible: false });
+        expect(layerStore.getLayerById(store,layer!.id)!.visible).toBe(false);
 
         // Clear selection for other tests
         selectionStore.clearLayerSelection();
       });
 
       it('locked layer is still visible (Step 124)', () => {
-        const layer = store.createLayer('solid', 'Locked but Visible');
+        const layer = layerStore.createLayer(store,'solid', 'Locked but Visible');
 
-        store.updateLayer(layer!.id, { locked: true });
+        layerStore.updateLayer(store,layer!.id, { locked: true });
 
-        const updated = store.getLayerById(layer!.id);
+        const updated = layerStore.getLayerById(store,layer!.id);
         expect(updated!.locked).toBe(true);
         expect(updated!.visible).toBe(true); // Still renders
       });
 
       it('can unlock layer (Step 125)', () => {
-        const layer = store.createLayer('solid', 'Unlock Me');
-        store.updateLayer(layer!.id, { locked: true });
-        expect(store.getLayerById(layer!.id)!.locked).toBe(true);
+        const layer = layerStore.createLayer(store,'solid', 'Unlock Me');
+        layerStore.updateLayer(store,layer!.id, { locked: true });
+        expect(layerStore.getLayerById(store,layer!.id)!.locked).toBe(true);
 
-        store.updateLayer(layer!.id, { locked: false });
-        expect(store.getLayerById(layer!.id)!.locked).toBe(false);
+        layerStore.updateLayer(store,layer!.id, { locked: false });
+        expect(layerStore.getLayerById(store,layer!.id)!.locked).toBe(false);
       });
 
       it('multiple layers can have independent lock state', () => {
-        const layer1 = store.createLayer('solid', 'Unlocked');
-        const layer2 = store.createLayer('solid', 'Locked');
+        const layer1 = layerStore.createLayer(store,'solid', 'Unlocked');
+        const layer2 = layerStore.createLayer(store,'solid', 'Locked');
 
-        store.updateLayer(layer2!.id, { locked: true });
+        layerStore.updateLayer(store,layer2!.id, { locked: true });
 
-        expect(store.getLayerById(layer1!.id)!.locked).toBe(false);
-        expect(store.getLayerById(layer2!.id)!.locked).toBe(true);
+        expect(layerStore.getLayerById(store,layer1!.id)!.locked).toBe(false);
+        expect(layerStore.getLayerById(store,layer2!.id)!.locked).toBe(true);
       });
     });
 
@@ -2337,16 +2340,16 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
      */
     describe('Steps 126-131: Shy Switch (Minimized)', () => {
       it('layer is not shy/minimized by default', () => {
-        const layer = store.createLayer('solid', 'Shy Test');
+        const layer = layerStore.createLayer(store,'solid', 'Shy Test');
         expect(layer!.minimized).toBeFalsy(); // undefined or false
       });
 
       it('can mark layer as shy/minimized (Step 126)', () => {
-        const layer = store.createLayer('solid', 'Shy Layer');
+        const layer = layerStore.createLayer(store,'solid', 'Shy Layer');
 
-        store.updateLayer(layer!.id, { minimized: true });
+        layerStore.updateLayer(store,layer!.id, { minimized: true });
 
-        const updated = store.getLayerById(layer!.id);
+        const updated = layerStore.getLayerById(store,layer!.id);
         expect(updated!.minimized).toBe(true);
       });
 
@@ -2365,11 +2368,11 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
 
       it('displayedLayers hides shy layers when master switch is on (Step 128)', () => {
-        const layer1 = store.createLayer('solid', 'Normal Layer');
-        const layer2 = store.createLayer('solid', 'Shy Layer');
+        const layer1 = layerStore.createLayer(store,'solid', 'Normal Layer');
+        const layer2 = layerStore.createLayer(store,'solid', 'Shy Layer');
 
         // Mark layer2 as shy/minimized
-        store.updateLayer(layer2!.id, { minimized: true });
+        layerStore.updateLayer(store,layer2!.id, { minimized: true });
 
         // With shy master off, both layers appear
         store.setHideMinimizedLayers(false);
@@ -2384,27 +2387,27 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
 
       it('shy layers still exist and render (Step 129)', () => {
-        const layer = store.createLayer('solid', 'Shy but Renders');
-        store.updateLayer(layer!.id, { minimized: true });
+        const layer = layerStore.createLayer(store,'solid', 'Shy but Renders');
+        layerStore.updateLayer(store,layer!.id, { minimized: true });
 
         // Layer is shy
-        expect(store.getLayerById(layer!.id)!.minimized).toBe(true);
+        expect(layerStore.getLayerById(store,layer!.id)!.minimized).toBe(true);
 
         // But still in the actual layers array
         const allLayers = store.getActiveCompLayers();
         expect(allLayers.find(l => l.id === layer!.id)).toBeDefined();
 
         // And still visible (for rendering)
-        expect(store.getLayerById(layer!.id)!.visible).toBe(true);
+        expect(layerStore.getLayerById(store,layer!.id)!.visible).toBe(true);
       });
 
       it('can un-shy layer', () => {
-        const layer = store.createLayer('solid', 'Un-Shy Me');
-        store.updateLayer(layer!.id, { minimized: true });
-        expect(store.getLayerById(layer!.id)!.minimized).toBe(true);
+        const layer = layerStore.createLayer(store,'solid', 'Un-Shy Me');
+        layerStore.updateLayer(store,layer!.id, { minimized: true });
+        expect(layerStore.getLayerById(store,layer!.id)!.minimized).toBe(true);
 
-        store.updateLayer(layer!.id, { minimized: false });
-        expect(store.getLayerById(layer!.id)!.minimized).toBe(false);
+        layerStore.updateLayer(store,layer!.id, { minimized: false });
+        expect(layerStore.getLayerById(store,layer!.id)!.minimized).toBe(false);
       });
     });
 
@@ -2418,54 +2421,54 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
      */
     describe('Steps 132-135: Layer Labels/Colors', () => {
       it('layer has no label color by default', () => {
-        const layer = store.createLayer('solid', 'No Label');
+        const layer = layerStore.createLayer(store,'solid', 'No Label');
         expect(layer!.labelColor).toBeUndefined();
       });
 
       it('can set layer label color (Steps 133-134)', () => {
-        const layer = store.createLayer('solid', 'Colored Layer');
+        const layer = layerStore.createLayer(store,'solid', 'Colored Layer');
 
-        store.updateLayer(layer!.id, { labelColor: '#FF0000' }); // Red
+        layerStore.updateLayer(store,layer!.id, { labelColor: '#FF0000' }); // Red
 
-        const updated = store.getLayerById(layer!.id);
+        const updated = layerStore.getLayerById(store,layer!.id);
         expect(updated!.labelColor).toBe('#FF0000');
       });
 
       it('can change layer label color', () => {
-        const layer = store.createLayer('solid', 'Change Color');
+        const layer = layerStore.createLayer(store,'solid', 'Change Color');
 
         // Set to blue
-        store.updateLayer(layer!.id, { labelColor: '#0000FF' });
-        expect(store.getLayerById(layer!.id)!.labelColor).toBe('#0000FF');
+        layerStore.updateLayer(store,layer!.id, { labelColor: '#0000FF' });
+        expect(layerStore.getLayerById(store,layer!.id)!.labelColor).toBe('#0000FF');
 
         // Change to green
-        store.updateLayer(layer!.id, { labelColor: '#00FF00' });
-        expect(store.getLayerById(layer!.id)!.labelColor).toBe('#00FF00');
+        layerStore.updateLayer(store,layer!.id, { labelColor: '#00FF00' });
+        expect(layerStore.getLayerById(store,layer!.id)!.labelColor).toBe('#00FF00');
       });
 
       it('multiple layers can have different label colors (Step 135)', () => {
-        const bgLayer = store.createLayer('solid', 'Background');
-        const textLayer = store.createLayer('text', 'Title');
-        const effectLayer = store.createLayer('adjustment', 'Effects');
+        const bgLayer = layerStore.createLayer(store,'solid', 'Background');
+        const textLayer = layerStore.createLayer(store,'text', 'Title');
+        const effectLayer = layerStore.createLayer(store,'adjustment', 'Effects');
 
         // Organize with colors
-        store.updateLayer(bgLayer!.id, { labelColor: '#0066FF' });    // Blue for backgrounds
-        store.updateLayer(textLayer!.id, { labelColor: '#FFFF00' });  // Yellow for text
-        store.updateLayer(effectLayer!.id, { labelColor: '#FF00FF' }); // Purple for effects
+        layerStore.updateLayer(store,bgLayer!.id, { labelColor: '#0066FF' });    // Blue for backgrounds
+        layerStore.updateLayer(store,textLayer!.id, { labelColor: '#FFFF00' });  // Yellow for text
+        layerStore.updateLayer(store,effectLayer!.id, { labelColor: '#FF00FF' }); // Purple for effects
 
-        expect(store.getLayerById(bgLayer!.id)!.labelColor).toBe('#0066FF');
-        expect(store.getLayerById(textLayer!.id)!.labelColor).toBe('#FFFF00');
-        expect(store.getLayerById(effectLayer!.id)!.labelColor).toBe('#FF00FF');
+        expect(layerStore.getLayerById(store,bgLayer!.id)!.labelColor).toBe('#0066FF');
+        expect(layerStore.getLayerById(store,textLayer!.id)!.labelColor).toBe('#FFFF00');
+        expect(layerStore.getLayerById(store,effectLayer!.id)!.labelColor).toBe('#FF00FF');
       });
 
       it('can remove label color', () => {
-        const layer = store.createLayer('solid', 'Remove Color');
-        store.updateLayer(layer!.id, { labelColor: '#FF0000' });
-        expect(store.getLayerById(layer!.id)!.labelColor).toBe('#FF0000');
+        const layer = layerStore.createLayer(store,'solid', 'Remove Color');
+        layerStore.updateLayer(store,layer!.id, { labelColor: '#FF0000' });
+        expect(layerStore.getLayerById(store,layer!.id)!.labelColor).toBe('#FF0000');
 
         // Remove by setting to undefined
-        store.updateLayer(layer!.id, { labelColor: undefined });
-        expect(store.getLayerById(layer!.id)!.labelColor).toBeUndefined();
+        layerStore.updateLayer(store,layer!.id, { labelColor: undefined });
+        expect(layerStore.getLayerById(store,layer!.id)!.labelColor).toBeUndefined();
       });
     });
 
@@ -2475,82 +2478,82 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
 
     describe('Phase 6: Undo/Redo Verification', () => {
       it('can undo/redo visibility change', () => {
-        const layer = store.createLayer('solid', 'Visibility Undo');
+        const layer = layerStore.createLayer(store,'solid', 'Visibility Undo');
 
-        store.updateLayer(layer!.id, { visible: false });
-        expect(store.getLayerById(layer!.id)!.visible).toBe(false);
+        layerStore.updateLayer(store,layer!.id, { visible: false });
+        expect(layerStore.getLayerById(store,layer!.id)!.visible).toBe(false);
 
         store.undo();
-        expect(store.getLayerById(layer!.id)!.visible).toBe(true);
+        expect(layerStore.getLayerById(store,layer!.id)!.visible).toBe(true);
 
         store.redo();
-        expect(store.getLayerById(layer!.id)!.visible).toBe(false);
+        expect(layerStore.getLayerById(store,layer!.id)!.visible).toBe(false);
       });
 
       it('can undo/redo lock change', () => {
-        const layer = store.createLayer('solid', 'Lock Undo');
+        const layer = layerStore.createLayer(store,'solid', 'Lock Undo');
 
-        store.updateLayer(layer!.id, { locked: true });
-        expect(store.getLayerById(layer!.id)!.locked).toBe(true);
+        layerStore.updateLayer(store,layer!.id, { locked: true });
+        expect(layerStore.getLayerById(store,layer!.id)!.locked).toBe(true);
 
         store.undo();
-        expect(store.getLayerById(layer!.id)!.locked).toBe(false);
+        expect(layerStore.getLayerById(store,layer!.id)!.locked).toBe(false);
 
         store.redo();
-        expect(store.getLayerById(layer!.id)!.locked).toBe(true);
+        expect(layerStore.getLayerById(store,layer!.id)!.locked).toBe(true);
       });
 
       it('can undo/redo isolate change', () => {
-        const layer = store.createLayer('solid', 'Isolate Undo');
+        const layer = layerStore.createLayer(store,'solid', 'Isolate Undo');
 
-        store.updateLayer(layer!.id, { isolate: true });
-        expect(store.getLayerById(layer!.id)!.isolate).toBe(true);
+        layerStore.updateLayer(store,layer!.id, { isolate: true });
+        expect(layerStore.getLayerById(store,layer!.id)!.isolate).toBe(true);
 
         store.undo();
-        expect(store.getLayerById(layer!.id)!.isolate).toBe(false);
+        expect(layerStore.getLayerById(store,layer!.id)!.isolate).toBe(false);
 
         store.redo();
-        expect(store.getLayerById(layer!.id)!.isolate).toBe(true);
+        expect(layerStore.getLayerById(store,layer!.id)!.isolate).toBe(true);
       });
 
       it('can undo/redo shy/minimized change', () => {
-        const layer = store.createLayer('solid', 'Shy Undo');
+        const layer = layerStore.createLayer(store,'solid', 'Shy Undo');
 
-        store.updateLayer(layer!.id, { minimized: true });
-        expect(store.getLayerById(layer!.id)!.minimized).toBe(true);
+        layerStore.updateLayer(store,layer!.id, { minimized: true });
+        expect(layerStore.getLayerById(store,layer!.id)!.minimized).toBe(true);
 
         store.undo();
-        expect(store.getLayerById(layer!.id)!.minimized).toBeFalsy();
+        expect(layerStore.getLayerById(store,layer!.id)!.minimized).toBeFalsy();
 
         store.redo();
-        expect(store.getLayerById(layer!.id)!.minimized).toBe(true);
+        expect(layerStore.getLayerById(store,layer!.id)!.minimized).toBe(true);
       });
 
       it('can undo/redo label color change', () => {
-        const layer = store.createLayer('solid', 'Color Undo');
+        const layer = layerStore.createLayer(store,'solid', 'Color Undo');
 
-        store.updateLayer(layer!.id, { labelColor: '#FF0000' });
-        expect(store.getLayerById(layer!.id)!.labelColor).toBe('#FF0000');
+        layerStore.updateLayer(store,layer!.id, { labelColor: '#FF0000' });
+        expect(layerStore.getLayerById(store,layer!.id)!.labelColor).toBe('#FF0000');
 
         store.undo();
-        expect(store.getLayerById(layer!.id)!.labelColor).toBeUndefined();
+        expect(layerStore.getLayerById(store,layer!.id)!.labelColor).toBeUndefined();
 
         store.redo();
-        expect(store.getLayerById(layer!.id)!.labelColor).toBe('#FF0000');
+        expect(layerStore.getLayerById(store,layer!.id)!.labelColor).toBe('#FF0000');
       });
 
       it('can undo/redo multiple switch changes', () => {
-        const layer = store.createLayer('solid', 'Multi Switch');
+        const layer = layerStore.createLayer(store,'solid', 'Multi Switch');
 
         // Change multiple switches
-        store.updateLayer(layer!.id, {
+        layerStore.updateLayer(store,layer!.id, {
           visible: false,
           locked: true,
           isolate: true,
           labelColor: '#00FF00'
         });
 
-        let updated = store.getLayerById(layer!.id);
+        let updated = layerStore.getLayerById(store,layer!.id);
         expect(updated!.visible).toBe(false);
         expect(updated!.locked).toBe(true);
         expect(updated!.isolate).toBe(true);
@@ -2559,7 +2562,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
         // Undo all at once
         store.undo();
 
-        updated = store.getLayerById(layer!.id);
+        updated = layerStore.getLayerById(store,layer!.id);
         expect(updated!.visible).toBe(true);
         expect(updated!.locked).toBe(false);
         expect(updated!.isolate).toBe(false);
@@ -2573,8 +2576,8 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
 
     describe('Phase 6: Save/Load State Preservation', () => {
       it('preserves visibility through save/load', () => {
-        const layer = store.createLayer('solid', 'Hidden Layer');
-        store.updateLayer(layer!.id, { visible: false });
+        const layer = layerStore.createLayer(store,'solid', 'Hidden Layer');
+        layerStore.updateLayer(store,layer!.id, { visible: false });
 
         const savedJson = store.exportProject();
 
@@ -2588,8 +2591,8 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
 
       it('preserves lock state through save/load', () => {
-        const layer = store.createLayer('solid', 'Locked Layer');
-        store.updateLayer(layer!.id, { locked: true });
+        const layer = layerStore.createLayer(store,'solid', 'Locked Layer');
+        layerStore.updateLayer(store,layer!.id, { locked: true });
 
         const savedJson = store.exportProject();
 
@@ -2603,8 +2606,8 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
 
       it('preserves isolate state through save/load', () => {
-        const layer = store.createLayer('solid', 'Isolated Layer');
-        store.updateLayer(layer!.id, { isolate: true });
+        const layer = layerStore.createLayer(store,'solid', 'Isolated Layer');
+        layerStore.updateLayer(store,layer!.id, { isolate: true });
 
         const savedJson = store.exportProject();
 
@@ -2618,8 +2621,8 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
 
       it('preserves shy/minimized state through save/load', () => {
-        const layer = store.createLayer('solid', 'Shy Layer');
-        store.updateLayer(layer!.id, { minimized: true });
+        const layer = layerStore.createLayer(store,'solid', 'Shy Layer');
+        layerStore.updateLayer(store,layer!.id, { minimized: true });
 
         const savedJson = store.exportProject();
 
@@ -2633,8 +2636,8 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
 
       it('preserves label color through save/load', () => {
-        const layer = store.createLayer('solid', 'Colored Layer');
-        store.updateLayer(layer!.id, { labelColor: '#FF5500' });
+        const layer = layerStore.createLayer(store,'solid', 'Colored Layer');
+        layerStore.updateLayer(store,layer!.id, { labelColor: '#FF5500' });
 
         const savedJson = store.exportProject();
 
@@ -2648,8 +2651,8 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
 
       it('preserves all layer switches through save/load', () => {
-        const layer = store.createLayer('solid', 'All Switches');
-        store.updateLayer(layer!.id, {
+        const layer = layerStore.createLayer(store,'solid', 'All Switches');
+        layerStore.updateLayer(store,layer!.id, {
           visible: false,
           locked: true,
           isolate: true,
@@ -2715,7 +2718,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
 
     describe('Position Property (Steps 149-151)', () => {
       it('layer has default position at composition center (Step 150)', () => {
-        const layer = store.createLayer('solid', 'Position Test');
+        const layer = layerStore.createLayer(store,'solid', 'Position Test');
 
         // Solid layers are positioned at composition center
         const pos = layer!.transform.position.value;
@@ -2724,32 +2727,32 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
 
       it('can update position via updateLayerTransform (Step 151)', () => {
-        const layer = store.createLayer('solid', 'Move Me');
+        const layer = layerStore.createLayer(store,'solid', 'Move Me');
 
         store.updateLayerTransform(layer!.id, {
           position: { x: 400, y: 540 }
         });
 
-        const updated = store.getLayerById(layer!.id);
+        const updated = layerStore.getLayerById(store,layer!.id);
         expect(updated!.transform.position.value.x).toBe(400);
         expect(updated!.transform.position.value.y).toBe(540);
       });
 
       it('position can have z component for 3D layers', () => {
-        const layer = store.createLayer('solid', '3D Layer');
+        const layer = layerStore.createLayer(store,'solid', '3D Layer');
 
         store.updateLayerTransform(layer!.id, {
           position: { x: 100, y: 200, z: 50 }
         });
 
-        const updated = store.getLayerById(layer!.id);
+        const updated = layerStore.getLayerById(store,layer!.id);
         expect(updated!.transform.position.value.z).toBe(50);
       });
     });
 
     describe('Scale Property (Steps 152-156)', () => {
       it('layer has default scale of 100% (Step 153)', () => {
-        const layer = store.createLayer('solid', 'Scale Test');
+        const layer = layerStore.createLayer(store,'solid', 'Scale Test');
 
         const scale = layer!.transform.scale.value;
         expect(scale.x).toBe(100);
@@ -2757,26 +2760,26 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
 
       it('can update scale via updateLayerTransform (Step 154)', () => {
-        const layer = store.createLayer('solid', 'Scale Me');
+        const layer = layerStore.createLayer(store,'solid', 'Scale Me');
 
         store.updateLayerTransform(layer!.id, {
           scale: { x: 50, y: 50 }
         });
 
-        const updated = store.getLayerById(layer!.id);
+        const updated = layerStore.getLayerById(store,layer!.id);
         expect(updated!.transform.scale.value.x).toBe(50);
         expect(updated!.transform.scale.value.y).toBe(50);
       });
 
       it('can set non-uniform scale (Step 156)', () => {
-        const layer = store.createLayer('solid', 'Non-Uniform');
+        const layer = layerStore.createLayer(store,'solid', 'Non-Uniform');
 
         // With constraint off, can have different X and Y scale
         store.updateLayerTransform(layer!.id, {
           scale: { x: 75, y: 100 }
         });
 
-        const updated = store.getLayerById(layer!.id);
+        const updated = layerStore.getLayerById(store,layer!.id);
         expect(updated!.transform.scale.value.x).toBe(75);
         expect(updated!.transform.scale.value.y).toBe(100);
       });
@@ -2787,64 +2790,64 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
 
     describe('Rotation Property (Steps 157-160)', () => {
       it('layer has default rotation of 0 (Step 158)', () => {
-        const layer = store.createLayer('solid', 'Rotation Test');
+        const layer = layerStore.createLayer(store,'solid', 'Rotation Test');
 
         expect(layer!.transform.rotation.value).toBe(0);
       });
 
       it('can update rotation via updateLayerTransform (Step 159)', () => {
-        const layer = store.createLayer('solid', 'Rotate Me');
+        const layer = layerStore.createLayer(store,'solid', 'Rotate Me');
 
         store.updateLayerTransform(layer!.id, {
           rotation: 45
         });
 
-        const updated = store.getLayerById(layer!.id);
+        const updated = layerStore.getLayerById(store,layer!.id);
         expect(updated!.transform.rotation.value).toBe(45);
       });
 
       it('rotation supports negative values and full rotations', () => {
-        const layer = store.createLayer('solid', 'Multi-Rotate');
+        const layer = layerStore.createLayer(store,'solid', 'Multi-Rotate');
 
         // Negative rotation
         store.updateLayerTransform(layer!.id, { rotation: -90 });
-        expect(store.getLayerById(layer!.id)!.transform.rotation.value).toBe(-90);
+        expect(layerStore.getLayerById(store,layer!.id)!.transform.rotation.value).toBe(-90);
 
         // Multiple rotations (720 = 2 full rotations)
         store.updateLayerTransform(layer!.id, { rotation: 720 });
-        expect(store.getLayerById(layer!.id)!.transform.rotation.value).toBe(720);
+        expect(layerStore.getLayerById(store,layer!.id)!.transform.rotation.value).toBe(720);
       });
     });
 
     describe('Opacity Property (Steps 161-164)', () => {
       it('layer has default opacity of 100% (Step 162)', () => {
-        const layer = store.createLayer('solid', 'Opacity Test');
+        const layer = layerStore.createLayer(store,'solid', 'Opacity Test');
 
         expect(layer!.opacity.value).toBe(100);
       });
 
       it('can update opacity via updateLayerTransform (Step 163)', () => {
-        const layer = store.createLayer('solid', 'Fade Me');
+        const layer = layerStore.createLayer(store,'solid', 'Fade Me');
 
         store.updateLayerTransform(layer!.id, {
           opacity: 50
         });
 
-        const updated = store.getLayerById(layer!.id);
+        const updated = layerStore.getLayerById(store,layer!.id);
         expect(updated!.opacity.value).toBe(50);
       });
 
       it('opacity can be set to 0 (fully transparent)', () => {
-        const layer = store.createLayer('solid', 'Invisible');
+        const layer = layerStore.createLayer(store,'solid', 'Invisible');
 
         store.updateLayerTransform(layer!.id, { opacity: 0 });
-        expect(store.getLayerById(layer!.id)!.opacity.value).toBe(0);
+        expect(layerStore.getLayerById(store,layer!.id)!.opacity.value).toBe(0);
       });
     });
 
     describe('Origin Property (Steps 165-171)', () => {
       it('layer has default origin at center of layer (Step 166)', () => {
-        const layer = store.createLayer('solid', 'Origin Test');
+        const layer = layerStore.createLayer(store,'solid', 'Origin Test');
 
         // Default origin is (0, 0) in local coordinates.
         // Since Three.js PlaneGeometry is centered at (0, 0), this means
@@ -2856,20 +2859,20 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
 
       it('can update origin via updateLayerTransform (Step 167)', () => {
-        const layer = store.createLayer('solid', 'Move Origin');
+        const layer = layerStore.createLayer(store,'solid', 'Move Origin');
 
         // Move origin away from center (positive values move pivot toward bottom-right)
         store.updateLayerTransform(layer!.id, {
           origin: { x: 100, y: 100 }
         });
 
-        const updated = store.getLayerById(layer!.id);
+        const updated = layerStore.getLayerById(store,layer!.id);
         expect(updated!.transform.origin.value.x).toBe(100);
         expect(updated!.transform.origin.value.y).toBe(100);
       });
 
       it('origin affects rotation pivot point (Step 168-169)', () => {
-        const layer = store.createLayer('solid', 'Pivot Test');
+        const layer = layerStore.createLayer(store,'solid', 'Pivot Test');
 
         // Set origin offset and rotate
         store.updateLayerTransform(layer!.id, {
@@ -2877,7 +2880,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
           rotation: 45
         });
 
-        const updated = store.getLayerById(layer!.id);
+        const updated = layerStore.getLayerById(store,layer!.id);
         expect(updated!.transform.origin.value.x).toBe(50);
         expect(updated!.transform.rotation.value).toBe(45);
 
@@ -2894,16 +2897,16 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
        * Workaround: Manually set origin to { x: 0, y: 0 } to center it.
        */
       it('can manually reset origin to center (Step 170 workaround)', () => {
-        const layer = store.createLayer('solid', 'Center Origin');
+        const layer = layerStore.createLayer(store,'solid', 'Center Origin');
 
         // Move origin away from center
         store.updateLayerTransform(layer!.id, { origin: { x: 200, y: 150 } });
-        expect(store.getLayerById(layer!.id)!.transform.origin.value.x).toBe(200);
+        expect(layerStore.getLayerById(store,layer!.id)!.transform.origin.value.x).toBe(200);
 
         // Manual reset to center (0, 0 in local coords = layer center)
         store.updateLayerTransform(layer!.id, { origin: { x: 0, y: 0 } });
-        expect(store.getLayerById(layer!.id)!.transform.origin.value.x).toBe(0);
-        expect(store.getLayerById(layer!.id)!.transform.origin.value.y).toBe(0);
+        expect(layerStore.getLayerById(store,layer!.id)!.transform.origin.value.x).toBe(0);
+        expect(layerStore.getLayerById(store,layer!.id)!.transform.origin.value.y).toBe(0);
       });
 
       it('documents centerOrigin API gap (Step 170)', () => {
@@ -2914,14 +2917,14 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
 
       it('anchor is alias for origin', () => {
-        const layer = store.createLayer('solid', 'Anchor Test');
+        const layer = layerStore.createLayer(store,'solid', 'Anchor Test');
 
         // Both origin and anchor work
         store.updateLayerTransform(layer!.id, {
           anchor: { x: 25, y: 75 }
         });
 
-        const updated = store.getLayerById(layer!.id);
+        const updated = layerStore.getLayerById(store,layer!.id);
         expect(updated!.transform.origin.value.x).toBe(25);
         expect(updated!.transform.origin.value.y).toBe(75);
       });
@@ -2941,48 +2944,48 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
        */
 
       it('can manually reset position to default (Step 172-174 workaround)', () => {
-        const layer = store.createLayer('solid', 'Reset Position');
+        const layer = layerStore.createLayer(store,'solid', 'Reset Position');
         const defaultPos = { x: 640, y: 360 }; // Composition center
 
         // Modify position
         store.updateLayerTransform(layer!.id, { position: { x: 100, y: 200 } });
-        expect(store.getLayerById(layer!.id)!.transform.position.value.x).toBe(100);
+        expect(layerStore.getLayerById(store,layer!.id)!.transform.position.value.x).toBe(100);
 
         // Manual reset to default
         store.updateLayerTransform(layer!.id, { position: defaultPos });
-        expect(store.getLayerById(layer!.id)!.transform.position.value.x).toBe(640);
+        expect(layerStore.getLayerById(store,layer!.id)!.transform.position.value.x).toBe(640);
       });
 
       it('can manually reset scale to default', () => {
-        const layer = store.createLayer('solid', 'Reset Scale');
+        const layer = layerStore.createLayer(store,'solid', 'Reset Scale');
 
         store.updateLayerTransform(layer!.id, { scale: { x: 50, y: 75 } });
-        expect(store.getLayerById(layer!.id)!.transform.scale.value.x).toBe(50);
+        expect(layerStore.getLayerById(store,layer!.id)!.transform.scale.value.x).toBe(50);
 
         // Manual reset
         store.updateLayerTransform(layer!.id, { scale: { x: 100, y: 100 } });
-        expect(store.getLayerById(layer!.id)!.transform.scale.value.x).toBe(100);
-        expect(store.getLayerById(layer!.id)!.transform.scale.value.y).toBe(100);
+        expect(layerStore.getLayerById(store,layer!.id)!.transform.scale.value.x).toBe(100);
+        expect(layerStore.getLayerById(store,layer!.id)!.transform.scale.value.y).toBe(100);
       });
 
       it('can manually reset rotation to default', () => {
-        const layer = store.createLayer('solid', 'Reset Rotation');
+        const layer = layerStore.createLayer(store,'solid', 'Reset Rotation');
 
         store.updateLayerTransform(layer!.id, { rotation: 180 });
         store.updateLayerTransform(layer!.id, { rotation: 0 });
-        expect(store.getLayerById(layer!.id)!.transform.rotation.value).toBe(0);
+        expect(layerStore.getLayerById(store,layer!.id)!.transform.rotation.value).toBe(0);
       });
 
       it('can manually reset opacity to default', () => {
-        const layer = store.createLayer('solid', 'Reset Opacity');
+        const layer = layerStore.createLayer(store,'solid', 'Reset Opacity');
 
         store.updateLayerTransform(layer!.id, { opacity: 25 });
         store.updateLayerTransform(layer!.id, { opacity: 100 });
-        expect(store.getLayerById(layer!.id)!.opacity.value).toBe(100);
+        expect(layerStore.getLayerById(store,layer!.id)!.opacity.value).toBe(100);
       });
 
       it('reset removes keyframes (Step 175)', () => {
-        const layer = store.createLayer('solid', 'Reset Removes KF');
+        const layer = layerStore.createLayer(store,'solid', 'Reset Removes KF');
 
         // Add keyframes to position
         store.setFrame(0);
@@ -2991,21 +2994,21 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
         store.addKeyframe(layer!.id, 'position', { x: 500, y: 300 });
 
         // Verify keyframes exist
-        const beforeReset = store.getLayerById(layer!.id)!;
+        const beforeReset = layerStore.getLayerById(store,layer!.id)!;
         expect(beforeReset.transform.position.keyframes!.length).toBe(2);
 
         // Manual reset: set to default value AND clear keyframes
         store.updateLayerTransform(layer!.id, { position: { x: 640, y: 360 } });
 
         // Clear keyframes on that property
-        const updated = store.getLayerById(layer!.id)!;
+        const updated = layerStore.getLayerById(store,layer!.id)!;
         const keyframeIds = updated.transform.position.keyframes?.map(kf => kf.id) || [];
         for (const kfId of keyframeIds) {
           store.removeKeyframe(layer!.id, 'position', kfId);
         }
 
         // Verify keyframes removed
-        const afterReset = store.getLayerById(layer!.id)!;
+        const afterReset = layerStore.getLayerById(store,layer!.id)!;
         expect(afterReset.transform.position.keyframes?.length ?? 0).toBe(0);
         expect(afterReset.transform.position.value.x).toBe(640);
       });
@@ -3021,7 +3024,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
 
     describe('Update Multiple Transform Properties At Once', () => {
       it('can update multiple properties in single call', () => {
-        const layer = store.createLayer('solid', 'Multi Update');
+        const layer = layerStore.createLayer(store,'solid', 'Multi Update');
 
         store.updateLayerTransform(layer!.id, {
           position: { x: 200, y: 300 },
@@ -3030,7 +3033,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
           opacity: 80
         });
 
-        const updated = store.getLayerById(layer!.id);
+        const updated = layerStore.getLayerById(store,layer!.id);
         expect(updated!.transform.position.value.x).toBe(200);
         expect(updated!.transform.scale.value.x).toBe(75);
         expect(updated!.transform.rotation.value).toBe(30);
@@ -3044,73 +3047,73 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
 
     describe('Phase 7: Undo/Redo Verification', () => {
       it('can undo/redo position change', () => {
-        const layer = store.createLayer('solid', 'Undo Position');
+        const layer = layerStore.createLayer(store,'solid', 'Undo Position');
         const originalX = layer!.transform.position.value.x;
 
         store.updateLayerTransform(layer!.id, { position: { x: 999, y: 888 } });
-        expect(store.getLayerById(layer!.id)!.transform.position.value.x).toBe(999);
+        expect(layerStore.getLayerById(store,layer!.id)!.transform.position.value.x).toBe(999);
 
         store.undo();
-        expect(store.getLayerById(layer!.id)!.transform.position.value.x).toBe(originalX);
+        expect(layerStore.getLayerById(store,layer!.id)!.transform.position.value.x).toBe(originalX);
 
         store.redo();
-        expect(store.getLayerById(layer!.id)!.transform.position.value.x).toBe(999);
+        expect(layerStore.getLayerById(store,layer!.id)!.transform.position.value.x).toBe(999);
       });
 
       it('can undo/redo scale change', () => {
-        const layer = store.createLayer('solid', 'Undo Scale');
+        const layer = layerStore.createLayer(store,'solid', 'Undo Scale');
 
         store.updateLayerTransform(layer!.id, { scale: { x: 25, y: 25 } });
-        expect(store.getLayerById(layer!.id)!.transform.scale.value.x).toBe(25);
+        expect(layerStore.getLayerById(store,layer!.id)!.transform.scale.value.x).toBe(25);
 
         store.undo();
-        expect(store.getLayerById(layer!.id)!.transform.scale.value.x).toBe(100);
+        expect(layerStore.getLayerById(store,layer!.id)!.transform.scale.value.x).toBe(100);
 
         store.redo();
-        expect(store.getLayerById(layer!.id)!.transform.scale.value.x).toBe(25);
+        expect(layerStore.getLayerById(store,layer!.id)!.transform.scale.value.x).toBe(25);
       });
 
       it('can undo/redo rotation change', () => {
-        const layer = store.createLayer('solid', 'Undo Rotation');
+        const layer = layerStore.createLayer(store,'solid', 'Undo Rotation');
 
         store.updateLayerTransform(layer!.id, { rotation: 270 });
-        expect(store.getLayerById(layer!.id)!.transform.rotation.value).toBe(270);
+        expect(layerStore.getLayerById(store,layer!.id)!.transform.rotation.value).toBe(270);
 
         store.undo();
-        expect(store.getLayerById(layer!.id)!.transform.rotation.value).toBe(0);
+        expect(layerStore.getLayerById(store,layer!.id)!.transform.rotation.value).toBe(0);
 
         store.redo();
-        expect(store.getLayerById(layer!.id)!.transform.rotation.value).toBe(270);
+        expect(layerStore.getLayerById(store,layer!.id)!.transform.rotation.value).toBe(270);
       });
 
       it('can undo/redo opacity change', () => {
-        const layer = store.createLayer('solid', 'Undo Opacity');
+        const layer = layerStore.createLayer(store,'solid', 'Undo Opacity');
 
         store.updateLayerTransform(layer!.id, { opacity: 10 });
-        expect(store.getLayerById(layer!.id)!.opacity.value).toBe(10);
+        expect(layerStore.getLayerById(store,layer!.id)!.opacity.value).toBe(10);
 
         store.undo();
-        expect(store.getLayerById(layer!.id)!.opacity.value).toBe(100);
+        expect(layerStore.getLayerById(store,layer!.id)!.opacity.value).toBe(100);
 
         store.redo();
-        expect(store.getLayerById(layer!.id)!.opacity.value).toBe(10);
+        expect(layerStore.getLayerById(store,layer!.id)!.opacity.value).toBe(10);
       });
 
       it('can undo/redo origin change', () => {
-        const layer = store.createLayer('solid', 'Undo Origin');
+        const layer = layerStore.createLayer(store,'solid', 'Undo Origin');
 
         store.updateLayerTransform(layer!.id, { origin: { x: 200, y: 150 } });
-        expect(store.getLayerById(layer!.id)!.transform.origin.value.x).toBe(200);
+        expect(layerStore.getLayerById(store,layer!.id)!.transform.origin.value.x).toBe(200);
 
         store.undo();
-        expect(store.getLayerById(layer!.id)!.transform.origin.value.x).toBe(0);
+        expect(layerStore.getLayerById(store,layer!.id)!.transform.origin.value.x).toBe(0);
 
         store.redo();
-        expect(store.getLayerById(layer!.id)!.transform.origin.value.x).toBe(200);
+        expect(layerStore.getLayerById(store,layer!.id)!.transform.origin.value.x).toBe(200);
       });
 
       it('can undo/redo multiple property changes at once', () => {
-        const layer = store.createLayer('solid', 'Undo Multi');
+        const layer = layerStore.createLayer(store,'solid', 'Undo Multi');
 
         store.updateLayerTransform(layer!.id, {
           position: { x: 111, y: 222 },
@@ -3120,7 +3123,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
         });
 
         store.undo();
-        const restored = store.getLayerById(layer!.id);
+        const restored = layerStore.getLayerById(store,layer!.id);
         expect(restored!.transform.position.value.x).toBe(640); // Back to center
         expect(restored!.transform.scale.value.x).toBe(100);
         expect(restored!.transform.rotation.value).toBe(0);
@@ -3134,7 +3137,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
 
     describe('Phase 7: Save/Load State Preservation', () => {
       it('preserves position through save/load', () => {
-        const layer = store.createLayer('solid', 'Save Position');
+        const layer = layerStore.createLayer(store,'solid', 'Save Position');
         store.updateLayerTransform(layer!.id, { position: { x: 123, y: 456 } });
 
         const savedJson = store.exportProject();
@@ -3150,7 +3153,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
 
       it('preserves scale through save/load', () => {
-        const layer = store.createLayer('solid', 'Save Scale');
+        const layer = layerStore.createLayer(store,'solid', 'Save Scale');
         store.updateLayerTransform(layer!.id, { scale: { x: 55, y: 77 } });
 
         const savedJson = store.exportProject();
@@ -3166,7 +3169,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
 
       it('preserves rotation through save/load', () => {
-        const layer = store.createLayer('solid', 'Save Rotation');
+        const layer = layerStore.createLayer(store,'solid', 'Save Rotation');
         store.updateLayerTransform(layer!.id, { rotation: 135 });
 
         const savedJson = store.exportProject();
@@ -3181,7 +3184,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
 
       it('preserves opacity through save/load', () => {
-        const layer = store.createLayer('solid', 'Save Opacity');
+        const layer = layerStore.createLayer(store,'solid', 'Save Opacity');
         store.updateLayerTransform(layer!.id, { opacity: 42 });
 
         const savedJson = store.exportProject();
@@ -3196,7 +3199,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
 
       it('preserves origin through save/load', () => {
-        const layer = store.createLayer('solid', 'Save Origin');
+        const layer = layerStore.createLayer(store,'solid', 'Save Origin');
         store.updateLayerTransform(layer!.id, { origin: { x: 88, y: 99 } });
 
         const savedJson = store.exportProject();
@@ -3212,7 +3215,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
 
       it('preserves all transform properties together through save/load', () => {
-        const layer = store.createLayer('solid', 'Save All Transform');
+        const layer = layerStore.createLayer(store,'solid', 'Save All Transform');
         store.updateLayerTransform(layer!.id, {
           position: { x: 111, y: 222, z: 333 },
           scale: { x: 44, y: 55, z: 66 },
@@ -3264,7 +3267,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
 
     describe('Animated Property Detection (Steps 176-180)', () => {
       it('property.animated is false by default', () => {
-        const layer = store.createLayer('solid', 'Anim Test');
+        const layer = layerStore.createLayer(store,'solid', 'Anim Test');
 
         expect(layer!.transform.position.animated).toBe(false);
         expect(layer!.transform.scale.animated).toBe(false);
@@ -3273,33 +3276,33 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
 
       it('property.animated becomes true when keyframe is added (Step 176)', () => {
-        const layer = store.createLayer('solid', 'Anim Test');
+        const layer = layerStore.createLayer(store,'solid', 'Anim Test');
 
         // Add keyframe to position
         store.setFrame(0);
         store.addKeyframe(layer!.id, 'position', { x: 100, y: 100 });
 
-        const updated = store.getLayerById(layer!.id);
+        const updated = layerStore.getLayerById(store,layer!.id);
         expect(updated!.transform.position.animated).toBe(true);
         expect(updated!.transform.position.keyframes.length).toBe(1);
       });
 
       it('property.animated becomes false when all keyframes removed', () => {
-        const layer = store.createLayer('solid', 'Anim Test');
+        const layer = layerStore.createLayer(store,'solid', 'Anim Test');
 
         // Add and then remove keyframe
         store.setFrame(0);
         const kf = store.addKeyframe(layer!.id, 'position', { x: 100, y: 100 });
-        expect(store.getLayerById(layer!.id)!.transform.position.animated).toBe(true);
+        expect(layerStore.getLayerById(store,layer!.id)!.transform.position.animated).toBe(true);
 
         store.removeKeyframe(layer!.id, 'position', kf!.id);
-        expect(store.getLayerById(layer!.id)!.transform.position.animated).toBe(false);
+        expect(layerStore.getLayerById(store,layer!.id)!.transform.position.animated).toBe(false);
       });
     });
 
     describe('Modified Property Detection (Steps 181-184)', () => {
       it('can detect position differs from default', () => {
-        const layer = store.createLayer('solid', 'Modified Test');
+        const layer = layerStore.createLayer(store,'solid', 'Modified Test');
         const defaultPos = { x: 640, y: 360 }; // Composition center
 
         // Initially at default
@@ -3308,37 +3311,37 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
         // Modify position
         store.updateLayerTransform(layer!.id, { position: { x: 100, y: 200 } });
 
-        const updated = store.getLayerById(layer!.id);
+        const updated = layerStore.getLayerById(store,layer!.id);
         expect(updated!.transform.position.value.x).not.toBe(defaultPos.x);
         // UI would use this to show property in "UU" reveal
       });
 
       it('can detect scale differs from default', () => {
-        const layer = store.createLayer('solid', 'Modified Scale');
+        const layer = layerStore.createLayer(store,'solid', 'Modified Scale');
 
         // Default is 100
         expect(layer!.transform.scale.value.x).toBe(100);
 
         store.updateLayerTransform(layer!.id, { scale: { x: 75, y: 75 } });
-        expect(store.getLayerById(layer!.id)!.transform.scale.value.x).not.toBe(100);
+        expect(layerStore.getLayerById(store,layer!.id)!.transform.scale.value.x).not.toBe(100);
       });
 
       it('can detect rotation differs from default', () => {
-        const layer = store.createLayer('solid', 'Modified Rotation');
+        const layer = layerStore.createLayer(store,'solid', 'Modified Rotation');
 
         expect(layer!.transform.rotation.value).toBe(0);
 
         store.updateLayerTransform(layer!.id, { rotation: 45 });
-        expect(store.getLayerById(layer!.id)!.transform.rotation.value).not.toBe(0);
+        expect(layerStore.getLayerById(store,layer!.id)!.transform.rotation.value).not.toBe(0);
       });
 
       it('can detect opacity differs from default', () => {
-        const layer = store.createLayer('solid', 'Modified Opacity');
+        const layer = layerStore.createLayer(store,'solid', 'Modified Opacity');
 
         expect(layer!.opacity.value).toBe(100);
 
         store.updateLayerTransform(layer!.id, { opacity: 50 });
-        expect(store.getLayerById(layer!.id)!.opacity.value).not.toBe(100);
+        expect(layerStore.getLayerById(store,layer!.id)!.opacity.value).not.toBe(100);
       });
     });
   });
@@ -3351,7 +3354,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
 
     describe('Creating Keyframes (Steps 196-206)', () => {
       it('can add first keyframe at frame 0 (Steps 196-200)', () => {
-        const layer = store.createLayer('solid', 'Keyframe Test');
+        const layer = layerStore.createLayer(store,'solid', 'Keyframe Test');
 
         // Move to frame 0
         store.setFrame(0);
@@ -3365,13 +3368,13 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
         expect(kf!.value).toEqual({ x: 400, y: 540 });
 
         // Property is now animated
-        const updated = store.getLayerById(layer!.id);
+        const updated = layerStore.getLayerById(store,layer!.id);
         expect(updated!.transform.position.animated).toBe(true);
         expect(updated!.transform.position.keyframes.length).toBe(1);
       });
 
       it('can add second keyframe at different frame (Steps 202-204)', () => {
-        const layer = store.createLayer('solid', 'Two Keyframes');
+        const layer = layerStore.createLayer(store,'solid', 'Two Keyframes');
 
         // First keyframe at frame 0
         store.setFrame(0);
@@ -3384,12 +3387,12 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
         expect(kf2).toBeDefined();
         expect(kf2!.frame).toBe(24);
 
-        const updated = store.getLayerById(layer!.id);
+        const updated = layerStore.getLayerById(store,layer!.id);
         expect(updated!.transform.position.keyframes.length).toBe(2);
       });
 
       it('keyframes are ordered by frame', () => {
-        const layer = store.createLayer('solid', 'Ordered KFs');
+        const layer = layerStore.createLayer(store,'solid', 'Ordered KFs');
 
         // Add out of order
         store.setFrame(30);
@@ -3399,7 +3402,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
         store.setFrame(20);
         store.addKeyframe(layer!.id, 'position', { x: 200, y: 200 });
 
-        const kfs = store.getLayerById(layer!.id)!.transform.position.keyframes;
+        const kfs = layerStore.getLayerById(store,layer!.id)!.transform.position.keyframes;
         expect(kfs[0].frame).toBe(10);
         expect(kfs[1].frame).toBe(20);
         expect(kfs[2].frame).toBe(30);
@@ -3408,7 +3411,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
 
     describe('Adding More Animated Properties (Steps 207-213)', () => {
       it('can animate multiple properties on same layer (Steps 207-212)', () => {
-        const layer = store.createLayer('solid', 'Multi Anim');
+        const layer = layerStore.createLayer(store,'solid', 'Multi Anim');
 
         // Animate position
         store.setFrame(0);
@@ -3428,7 +3431,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
         store.setFrame(24);
         store.addKeyframe(layer!.id, 'rotation', 360);
 
-        const updated = store.getLayerById(layer!.id);
+        const updated = layerStore.getLayerById(store,layer!.id);
         expect(updated!.transform.position.animated).toBe(true);
         expect(updated!.transform.scale.animated).toBe(true);
         expect(updated!.transform.rotation.animated).toBe(true);
@@ -3438,14 +3441,14 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
 
       it('can animate opacity (Step 213 - see all animated)', () => {
-        const layer = store.createLayer('solid', 'Opacity Anim');
+        const layer = layerStore.createLayer(store,'solid', 'Opacity Anim');
 
         store.setFrame(0);
         store.addKeyframe(layer!.id, 'opacity', 100);
         store.setFrame(24);
         store.addKeyframe(layer!.id, 'opacity', 0);
 
-        const updated = store.getLayerById(layer!.id);
+        const updated = layerStore.getLayerById(store,layer!.id);
         expect(updated!.opacity.animated).toBe(true);
         expect(updated!.opacity.keyframes.length).toBe(2);
       });
@@ -3453,7 +3456,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
 
     describe('Keyframe Navigation (Steps 214-218)', () => {
       it('getAllKeyframeFrames returns sorted unique frames across all properties', () => {
-        const layer = store.createLayer('solid', 'Nav Test');
+        const layer = layerStore.createLayer(store,'solid', 'Nav Test');
 
         // Add keyframes on position
         store.setFrame(0);
@@ -3475,7 +3478,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
 
       it('jumpToNextKeyframe jumps to next keyframe (Step 216 - K key)', () => {
-        const layer = store.createLayer('solid', 'Jump Next');
+        const layer = layerStore.createLayer(store,'solid', 'Jump Next');
 
         store.setFrame(0);
         store.addKeyframe(layer!.id, 'position', { x: 0, y: 0 });
@@ -3495,7 +3498,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
 
       it('jumpToPrevKeyframe jumps to previous keyframe (Step 215 - J key)', () => {
-        const layer = store.createLayer('solid', 'Jump Prev');
+        const layer = layerStore.createLayer(store,'solid', 'Jump Prev');
 
         store.setFrame(0);
         store.addKeyframe(layer!.id, 'position', { x: 0, y: 0 });
@@ -3515,7 +3518,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
 
       it('jumpToNextKeyframe at last keyframe stays in place', () => {
-        const layer = store.createLayer('solid', 'At End');
+        const layer = layerStore.createLayer(store,'solid', 'At End');
 
         store.setFrame(0);
         store.addKeyframe(layer!.id, 'position', { x: 0, y: 0 });
@@ -3529,7 +3532,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
 
       it('jumpToPrevKeyframe at first keyframe stays in place', () => {
-        const layer = store.createLayer('solid', 'At Start');
+        const layer = layerStore.createLayer(store,'solid', 'At Start');
 
         store.setFrame(0);
         store.addKeyframe(layer!.id, 'position', { x: 0, y: 0 });
@@ -3543,7 +3546,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
 
       it('jump methods work with no keyframes (stay in place)', () => {
-        const layer = store.createLayer('solid', 'No KFs');
+        const layer = layerStore.createLayer(store,'solid', 'No KFs');
 
         store.setFrame(10);
         store.jumpToNextKeyframe(layer!.id);
@@ -3554,8 +3557,8 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
 
       it('jump without layerId uses selected layers (Step 217)', () => {
-        const layer1 = store.createLayer('solid', 'Layer 1');
-        const layer2 = store.createLayer('solid', 'Layer 2');
+        const layer1 = layerStore.createLayer(store,'solid', 'Layer 1');
+        const layer2 = layerStore.createLayer(store,'solid', 'Layer 2');
 
         // Layer 1 keyframes at 0, 20
         store.setFrame(0);
@@ -3590,7 +3593,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
 
     describe('Selecting Keyframes (Steps 219-223)', () => {
       it('can select a keyframe (Step 219)', () => {
-        const layer = store.createLayer('solid', 'Select KF');
+        const layer = layerStore.createLayer(store,'solid', 'Select KF');
         store.setFrame(10);
         const kf = store.addKeyframe(layer!.id, 'position', { x: 100, y: 100 });
 
@@ -3602,7 +3605,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
 
       it('can multi-select keyframes (Step 220)', () => {
-        const layer = store.createLayer('solid', 'Multi Select KF');
+        const layer = layerStore.createLayer(store,'solid', 'Multi Select KF');
         store.setFrame(0);
         const kf1 = store.addKeyframe(layer!.id, 'position', { x: 0, y: 0 });
         store.setFrame(10);
@@ -3625,7 +3628,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
 
       it('can select all keyframes on a property (Step 221)', () => {
-        const layer = store.createLayer('solid', 'Select All KFs');
+        const layer = layerStore.createLayer(store,'solid', 'Select All KFs');
         store.setFrame(0);
         store.addKeyframe(layer!.id, 'position', { x: 0, y: 0 });
         store.setFrame(10);
@@ -3634,7 +3637,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
         store.addKeyframe(layer!.id, 'position', { x: 200, y: 200 });
 
         // Get all keyframe IDs for the property and select them
-        const allKfIds = store.getLayerById(layer!.id)!.transform.position.keyframes.map(kf => kf.id);
+        const allKfIds = layerStore.getLayerById(store,layer!.id)!.transform.position.keyframes.map(kf => kf.id);
 
         const selectionStore = useSelectionStore();
         selectionStore.selectKeyframes(allKfIds);
@@ -3652,7 +3655,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
        * For store-level testing, we verify the underlying selection mechanism works.
        */
       it('can select all keyframes across multiple properties (Step 222 workaround)', () => {
-        const layer = store.createLayer('solid', 'Select All Visible');
+        const layer = layerStore.createLayer(store,'solid', 'Select All Visible');
 
         // Add keyframes on multiple properties
         store.setFrame(0);
@@ -3665,7 +3668,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
         store.addKeyframe(layer!.id, 'scale', { x: 100, y: 100 });
 
         // Collect all keyframe IDs across properties (simulating "select all visible")
-        const layerData = store.getLayerById(layer!.id)!;
+        const layerData = layerStore.getLayerById(store,layer!.id)!;
         const allKfIds = [
           ...layerData.transform.position.keyframes.map(kf => kf.id),
           ...layerData.transform.scale.keyframes.map(kf => kf.id)
@@ -3685,7 +3688,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
 
       it('can toggle keyframe selection', () => {
-        const layer = store.createLayer('solid', 'Toggle KF');
+        const layer = layerStore.createLayer(store,'solid', 'Toggle KF');
         store.setFrame(10);
         const kf = store.addKeyframe(layer!.id, 'position', { x: 100, y: 100 });
 
@@ -3699,7 +3702,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
 
       it('can clear keyframe selection', () => {
-        const layer = store.createLayer('solid', 'Clear KF');
+        const layer = layerStore.createLayer(store,'solid', 'Clear KF');
         store.setFrame(10);
         const kf = store.addKeyframe(layer!.id, 'position', { x: 100, y: 100 });
 
@@ -3714,7 +3717,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
 
     describe('Moving Keyframes (Steps 224-230)', () => {
       it('can move a keyframe to a new frame (Steps 224-225)', () => {
-        const layer = store.createLayer('solid', 'Move KF');
+        const layer = layerStore.createLayer(store,'solid', 'Move KF');
         store.setFrame(10);
         const kf = store.addKeyframe(layer!.id, 'position', { x: 100, y: 100 });
 
@@ -3723,13 +3726,13 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
         // Move keyframe to frame 30
         store.moveKeyframe(layer!.id, 'position', kf!.id, 30);
 
-        const updated = store.getLayerById(layer!.id);
+        const updated = layerStore.getLayerById(store,layer!.id);
         const movedKf = updated!.transform.position.keyframes.find(k => k.id === kf!.id);
         expect(movedKf!.frame).toBe(30);
       });
 
       it('can change keyframe value (not just position in time)', () => {
-        const layer = store.createLayer('solid', 'Change KF Value');
+        const layer = layerStore.createLayer(store,'solid', 'Change KF Value');
         store.setFrame(10);
         const kf = store.addKeyframe(layer!.id, 'rotation', 45);
 
@@ -3738,7 +3741,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
         // Change the value
         store.setKeyframeValue(layer!.id, 'rotation', kf!.id, 90);
 
-        const updated = store.getLayerById(layer!.id);
+        const updated = layerStore.getLayerById(store,layer!.id);
         const changedKf = updated!.transform.rotation.keyframes.find(k => k.id === kf!.id);
         expect(changedKf!.value).toBe(90);
       });
@@ -3747,7 +3750,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
 
     describe('Copy/Paste Keyframes (Steps 226-230)', () => {
       it('can copy a single keyframe (Step 226)', () => {
-        const layer = store.createLayer('solid', 'Copy KF');
+        const layer = layerStore.createLayer(store,'solid', 'Copy KF');
         store.setFrame(10);
         const kf = store.addKeyframe(layer!.id, 'position', { x: 100, y: 200 });
 
@@ -3762,7 +3765,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
 
       it('can paste keyframe at current frame (Step 227)', () => {
-        const layer = store.createLayer('solid', 'Paste KF');
+        const layer = layerStore.createLayer(store,'solid', 'Paste KF');
         store.setFrame(10);
         const kf = store.addKeyframe(layer!.id, 'position', { x: 100, y: 200 });
 
@@ -3780,12 +3783,12 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
         expect(pasted[0].value).toEqual({ x: 100, y: 200 });
 
         // Should have 2 keyframes now
-        const updated = store.getLayerById(layer!.id);
+        const updated = layerStore.getLayerById(store,layer!.id);
         expect(updated!.transform.position.keyframes.length).toBe(2);
       });
 
       it('can copy multiple keyframes and paste maintaining timing (Step 228)', () => {
-        const layer = store.createLayer('solid', 'Multi Copy');
+        const layer = layerStore.createLayer(store,'solid', 'Multi Copy');
 
         // Create animation: frames 10, 20, 30
         store.setFrame(10);
@@ -3803,7 +3806,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
         ]);
 
         // Create a new layer to paste onto
-        const layer2 = store.createLayer('solid', 'Paste Target');
+        const layer2 = layerStore.createLayer(store,'solid', 'Paste Target');
 
         // Paste at frame 50
         store.setFrame(50);
@@ -3818,7 +3821,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
 
       it('pasted keyframes preserve interpolation (Step 229)', () => {
-        const layer = store.createLayer('solid', 'Interp Copy');
+        const layer = layerStore.createLayer(store,'solid', 'Interp Copy');
         store.setFrame(10);
         const kf = store.addKeyframe(layer!.id, 'position', { x: 100, y: 100 });
         store.setKeyframeInterpolation(layer!.id, 'position', kf!.id, 'easeInOutQuad');
@@ -3836,7 +3839,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
 
       it('can paste keyframes to different layer (Step 230)', () => {
-        const layer1 = store.createLayer('solid', 'Source Layer');
+        const layer1 = layerStore.createLayer(store,'solid', 'Source Layer');
         store.setFrame(10);
         const kf = store.addKeyframe(layer1!.id, 'position', { x: 50, y: 75 });
 
@@ -3846,7 +3849,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
         ]);
 
         // Create different layer and paste
-        const layer2 = store.createLayer('solid', 'Target Layer');
+        const layer2 = layerStore.createLayer(store,'solid', 'Target Layer');
         store.setFrame(0);
         const pasted = store.pasteKeyframes(layer2!.id, 'position');
 
@@ -3854,13 +3857,13 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
         expect(pasted[0].value).toEqual({ x: 50, y: 75 });
 
         // Target layer should have the keyframe
-        const updated = store.getLayerById(layer2!.id);
+        const updated = layerStore.getLayerById(store,layer2!.id);
         expect(updated!.transform.position.keyframes.length).toBe(1);
         expect(updated!.transform.position.animated).toBe(true);
       });
 
       it('returns empty array when pasting with empty clipboard', () => {
-        const layer = store.createLayer('solid', 'Empty Clipboard');
+        const layer = layerStore.createLayer(store,'solid', 'Empty Clipboard');
         store.setFrame(0);
 
         // Don't copy anything, just try to paste
@@ -3870,7 +3873,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
 
       it('copy/paste undo restores original state', () => {
-        const layer = store.createLayer('solid', 'Undo Paste');
+        const layer = layerStore.createLayer(store,'solid', 'Undo Paste');
         store.setFrame(10);
         const kf = store.addKeyframe(layer!.id, 'position', { x: 100, y: 100 });
 
@@ -3882,20 +3885,20 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
         store.pasteKeyframes(layer!.id, 'position');
 
         // Should have 2 keyframes
-        expect(store.getLayerById(layer!.id)!.transform.position.keyframes.length).toBe(2);
+        expect(layerStore.getLayerById(store,layer!.id)!.transform.position.keyframes.length).toBe(2);
 
         // Undo the paste
         store.undo();
 
         // Should be back to 1 keyframe
-        expect(store.getLayerById(layer!.id)!.transform.position.keyframes.length).toBe(1);
-        expect(store.getLayerById(layer!.id)!.transform.position.keyframes[0].frame).toBe(10);
+        expect(layerStore.getLayerById(store,layer!.id)!.transform.position.keyframes.length).toBe(1);
+        expect(layerStore.getLayerById(store,layer!.id)!.transform.position.keyframes[0].frame).toBe(10);
       });
     });
 
     describe('Keyframe Interpolation Types (Steps 231-235)', () => {
       it('default interpolation is linear (Step 231)', () => {
-        const layer = store.createLayer('solid', 'Interp Test');
+        const layer = layerStore.createLayer(store,'solid', 'Interp Test');
         store.setFrame(0);
         const kf = store.addKeyframe(layer!.id, 'position', { x: 0, y: 0 });
 
@@ -3903,54 +3906,54 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
 
       it('can set interpolation to hold (Steps 232-234)', () => {
-        const layer = store.createLayer('solid', 'Hold Test');
+        const layer = layerStore.createLayer(store,'solid', 'Hold Test');
         store.setFrame(0);
         const kf = store.addKeyframe(layer!.id, 'position', { x: 0, y: 0 });
 
         store.setKeyframeInterpolation(layer!.id, 'position', kf!.id, 'hold');
 
-        const updated = store.getLayerById(layer!.id);
+        const updated = layerStore.getLayerById(store,layer!.id);
         const holdKf = updated!.transform.position.keyframes.find(k => k.id === kf!.id);
         expect(holdKf!.interpolation).toBe('hold');
       });
 
       it('can set interpolation to easeIn', () => {
-        const layer = store.createLayer('solid', 'EaseIn Test');
+        const layer = layerStore.createLayer(store,'solid', 'EaseIn Test');
         store.setFrame(0);
         const kf = store.addKeyframe(layer!.id, 'position', { x: 0, y: 0 });
 
         store.setKeyframeInterpolation(layer!.id, 'position', kf!.id, 'easeInQuad');
 
-        const updated = store.getLayerById(layer!.id);
+        const updated = layerStore.getLayerById(store,layer!.id);
         expect(updated!.transform.position.keyframes[0].interpolation).toBe('easeInQuad');
       });
 
       it('can set interpolation to easeOut', () => {
-        const layer = store.createLayer('solid', 'EaseOut Test');
+        const layer = layerStore.createLayer(store,'solid', 'EaseOut Test');
         store.setFrame(0);
         const kf = store.addKeyframe(layer!.id, 'position', { x: 0, y: 0 });
 
         store.setKeyframeInterpolation(layer!.id, 'position', kf!.id, 'easeOutQuad');
 
-        const updated = store.getLayerById(layer!.id);
+        const updated = layerStore.getLayerById(store,layer!.id);
         expect(updated!.transform.position.keyframes[0].interpolation).toBe('easeOutQuad');
       });
 
       it('can set interpolation to easeInOut', () => {
-        const layer = store.createLayer('solid', 'EaseInOut Test');
+        const layer = layerStore.createLayer(store,'solid', 'EaseInOut Test');
         store.setFrame(0);
         const kf = store.addKeyframe(layer!.id, 'position', { x: 0, y: 0 });
 
         store.setKeyframeInterpolation(layer!.id, 'position', kf!.id, 'easeInOutQuad');
 
-        const updated = store.getLayerById(layer!.id);
+        const updated = layerStore.getLayerById(store,layer!.id);
         expect(updated!.transform.position.keyframes[0].interpolation).toBe('easeInOutQuad');
       });
     });
 
     describe('Reverse Keyframes (Steps 236-240)', () => {
       it('can time-reverse keyframes on a property (Steps 237-239)', () => {
-        const layer = store.createLayer('solid', 'Reverse Test');
+        const layer = layerStore.createLayer(store,'solid', 'Reverse Test');
 
         // Create animation: 0->100->200 at frames 0, 15, 30
         store.setFrame(0);
@@ -3961,7 +3964,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
         store.addKeyframe(layer!.id, 'rotation', 200);
 
         // Get initial values
-        const beforeKfs = store.getLayerById(layer!.id)!.transform.rotation.keyframes;
+        const beforeKfs = layerStore.getLayerById(store,layer!.id)!.transform.rotation.keyframes;
         expect(beforeKfs[0].value).toBe(0);
         expect(beforeKfs[1].value).toBe(100);
         expect(beforeKfs[2].value).toBe(200);
@@ -3971,7 +3974,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
         expect(count).toBe(3);
 
         // After reverse: values should be swapped (200->100->0)
-        const afterKfs = store.getLayerById(layer!.id)!.transform.rotation.keyframes;
+        const afterKfs = layerStore.getLayerById(store,layer!.id)!.transform.rotation.keyframes;
         expect(afterKfs[0].value).toBe(200);
         expect(afterKfs[1].value).toBe(100);
         expect(afterKfs[2].value).toBe(0);
@@ -3984,31 +3987,31 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
 
     describe('Delete Keyframes', () => {
       it('can delete a single keyframe', () => {
-        const layer = store.createLayer('solid', 'Delete KF');
+        const layer = layerStore.createLayer(store,'solid', 'Delete KF');
         store.setFrame(0);
         const kf1 = store.addKeyframe(layer!.id, 'position', { x: 0, y: 0 });
         store.setFrame(10);
         const kf2 = store.addKeyframe(layer!.id, 'position', { x: 100, y: 100 });
 
-        expect(store.getLayerById(layer!.id)!.transform.position.keyframes.length).toBe(2);
+        expect(layerStore.getLayerById(store,layer!.id)!.transform.position.keyframes.length).toBe(2);
 
         store.removeKeyframe(layer!.id, 'position', kf1!.id);
 
-        const updated = store.getLayerById(layer!.id);
+        const updated = layerStore.getLayerById(store,layer!.id);
         expect(updated!.transform.position.keyframes.length).toBe(1);
         expect(updated!.transform.position.keyframes[0].id).toBe(kf2!.id);
       });
 
       it('deleting last keyframe sets animated to false', () => {
-        const layer = store.createLayer('solid', 'Delete Last KF');
+        const layer = layerStore.createLayer(store,'solid', 'Delete Last KF');
         store.setFrame(0);
         const kf = store.addKeyframe(layer!.id, 'position', { x: 0, y: 0 });
 
-        expect(store.getLayerById(layer!.id)!.transform.position.animated).toBe(true);
+        expect(layerStore.getLayerById(store,layer!.id)!.transform.position.animated).toBe(true);
 
         store.removeKeyframe(layer!.id, 'position', kf!.id);
 
-        expect(store.getLayerById(layer!.id)!.transform.position.animated).toBe(false);
+        expect(layerStore.getLayerById(store,layer!.id)!.transform.position.animated).toBe(false);
       });
     });
 
@@ -4018,82 +4021,82 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
 
     describe('Phase 9: Undo/Redo Verification', () => {
       it('can undo/redo keyframe addition', () => {
-        const layer = store.createLayer('solid', 'Undo Add KF');
+        const layer = layerStore.createLayer(store,'solid', 'Undo Add KF');
 
         store.setFrame(10);
         store.addKeyframe(layer!.id, 'position', { x: 100, y: 100 });
 
-        expect(store.getLayerById(layer!.id)!.transform.position.keyframes.length).toBe(1);
+        expect(layerStore.getLayerById(store,layer!.id)!.transform.position.keyframes.length).toBe(1);
 
         store.undo();
-        expect(store.getLayerById(layer!.id)!.transform.position.keyframes.length).toBe(0);
+        expect(layerStore.getLayerById(store,layer!.id)!.transform.position.keyframes.length).toBe(0);
 
         store.redo();
-        expect(store.getLayerById(layer!.id)!.transform.position.keyframes.length).toBe(1);
+        expect(layerStore.getLayerById(store,layer!.id)!.transform.position.keyframes.length).toBe(1);
       });
 
       it('can undo/redo keyframe deletion', () => {
-        const layer = store.createLayer('solid', 'Undo Delete KF');
+        const layer = layerStore.createLayer(store,'solid', 'Undo Delete KF');
         store.setFrame(10);
         const kf = store.addKeyframe(layer!.id, 'position', { x: 100, y: 100 });
 
         store.removeKeyframe(layer!.id, 'position', kf!.id);
-        expect(store.getLayerById(layer!.id)!.transform.position.keyframes.length).toBe(0);
+        expect(layerStore.getLayerById(store,layer!.id)!.transform.position.keyframes.length).toBe(0);
 
         store.undo();
-        expect(store.getLayerById(layer!.id)!.transform.position.keyframes.length).toBe(1);
+        expect(layerStore.getLayerById(store,layer!.id)!.transform.position.keyframes.length).toBe(1);
 
         store.redo();
-        expect(store.getLayerById(layer!.id)!.transform.position.keyframes.length).toBe(0);
+        expect(layerStore.getLayerById(store,layer!.id)!.transform.position.keyframes.length).toBe(0);
       });
 
       it('can undo/redo keyframe move', () => {
-        const layer = store.createLayer('solid', 'Undo Move KF');
+        const layer = layerStore.createLayer(store,'solid', 'Undo Move KF');
         store.setFrame(10);
         const kf = store.addKeyframe(layer!.id, 'position', { x: 100, y: 100 });
 
         store.moveKeyframe(layer!.id, 'position', kf!.id, 30);
-        expect(store.getLayerById(layer!.id)!.transform.position.keyframes[0].frame).toBe(30);
+        expect(layerStore.getLayerById(store,layer!.id)!.transform.position.keyframes[0].frame).toBe(30);
 
         store.undo();
-        expect(store.getLayerById(layer!.id)!.transform.position.keyframes[0].frame).toBe(10);
+        expect(layerStore.getLayerById(store,layer!.id)!.transform.position.keyframes[0].frame).toBe(10);
 
         store.redo();
-        expect(store.getLayerById(layer!.id)!.transform.position.keyframes[0].frame).toBe(30);
+        expect(layerStore.getLayerById(store,layer!.id)!.transform.position.keyframes[0].frame).toBe(30);
       });
 
       it('can undo/redo keyframe value change', () => {
-        const layer = store.createLayer('solid', 'Undo KF Value');
+        const layer = layerStore.createLayer(store,'solid', 'Undo KF Value');
         store.setFrame(10);
         const kf = store.addKeyframe(layer!.id, 'rotation', 45);
 
         store.setKeyframeValue(layer!.id, 'rotation', kf!.id, 90);
-        expect(store.getLayerById(layer!.id)!.transform.rotation.keyframes[0].value).toBe(90);
+        expect(layerStore.getLayerById(store,layer!.id)!.transform.rotation.keyframes[0].value).toBe(90);
 
         store.undo();
-        expect(store.getLayerById(layer!.id)!.transform.rotation.keyframes[0].value).toBe(45);
+        expect(layerStore.getLayerById(store,layer!.id)!.transform.rotation.keyframes[0].value).toBe(45);
 
         store.redo();
-        expect(store.getLayerById(layer!.id)!.transform.rotation.keyframes[0].value).toBe(90);
+        expect(layerStore.getLayerById(store,layer!.id)!.transform.rotation.keyframes[0].value).toBe(90);
       });
 
       it('can undo/redo interpolation change', () => {
-        const layer = store.createLayer('solid', 'Undo Interp');
+        const layer = layerStore.createLayer(store,'solid', 'Undo Interp');
         store.setFrame(10);
         const kf = store.addKeyframe(layer!.id, 'position', { x: 100, y: 100 });
 
         store.setKeyframeInterpolation(layer!.id, 'position', kf!.id, 'hold');
-        expect(store.getLayerById(layer!.id)!.transform.position.keyframes[0].interpolation).toBe('hold');
+        expect(layerStore.getLayerById(store,layer!.id)!.transform.position.keyframes[0].interpolation).toBe('hold');
 
         store.undo();
-        expect(store.getLayerById(layer!.id)!.transform.position.keyframes[0].interpolation).toBe('linear');
+        expect(layerStore.getLayerById(store,layer!.id)!.transform.position.keyframes[0].interpolation).toBe('linear');
 
         store.redo();
-        expect(store.getLayerById(layer!.id)!.transform.position.keyframes[0].interpolation).toBe('hold');
+        expect(layerStore.getLayerById(store,layer!.id)!.transform.position.keyframes[0].interpolation).toBe('hold');
       });
 
       it('can undo/redo time-reverse keyframes', () => {
-        const layer = store.createLayer('solid', 'Undo Reverse');
+        const layer = layerStore.createLayer(store,'solid', 'Undo Reverse');
 
         store.setFrame(0);
         store.addKeyframe(layer!.id, 'rotation', 0);
@@ -4101,20 +4104,20 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
         store.addKeyframe(layer!.id, 'rotation', 180);
 
         // Initial: 0 at frame 0, 180 at frame 30
-        expect(store.getLayerById(layer!.id)!.transform.rotation.keyframes[0].value).toBe(0);
-        expect(store.getLayerById(layer!.id)!.transform.rotation.keyframes[1].value).toBe(180);
+        expect(layerStore.getLayerById(store,layer!.id)!.transform.rotation.keyframes[0].value).toBe(0);
+        expect(layerStore.getLayerById(store,layer!.id)!.transform.rotation.keyframes[1].value).toBe(180);
 
         store.timeReverseKeyframes(layer!.id, 'rotation');
 
         // After reverse: 180 at frame 0, 0 at frame 30
-        expect(store.getLayerById(layer!.id)!.transform.rotation.keyframes[0].value).toBe(180);
-        expect(store.getLayerById(layer!.id)!.transform.rotation.keyframes[1].value).toBe(0);
+        expect(layerStore.getLayerById(store,layer!.id)!.transform.rotation.keyframes[0].value).toBe(180);
+        expect(layerStore.getLayerById(store,layer!.id)!.transform.rotation.keyframes[1].value).toBe(0);
 
         store.undo();
 
         // Back to original
-        expect(store.getLayerById(layer!.id)!.transform.rotation.keyframes[0].value).toBe(0);
-        expect(store.getLayerById(layer!.id)!.transform.rotation.keyframes[1].value).toBe(180);
+        expect(layerStore.getLayerById(store,layer!.id)!.transform.rotation.keyframes[0].value).toBe(0);
+        expect(layerStore.getLayerById(store,layer!.id)!.transform.rotation.keyframes[1].value).toBe(180);
       });
     });
 
@@ -4124,7 +4127,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
 
     describe('Phase 9: Save/Load State Preservation', () => {
       it('preserves keyframes through save/load', () => {
-        const layer = store.createLayer('solid', 'Save KFs');
+        const layer = layerStore.createLayer(store,'solid', 'Save KFs');
 
         store.setFrame(0);
         store.addKeyframe(layer!.id, 'position', { x: 100, y: 100 });
@@ -4148,7 +4151,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
 
       it('preserves keyframe interpolation through save/load', () => {
-        const layer = store.createLayer('solid', 'Save Interp');
+        const layer = layerStore.createLayer(store,'solid', 'Save Interp');
 
         store.setFrame(0);
         const kf = store.addKeyframe(layer!.id, 'position', { x: 0, y: 0 });
@@ -4166,7 +4169,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
 
       it('preserves multiple animated properties through save/load', () => {
-        const layer = store.createLayer('solid', 'Save Multi');
+        const layer = layerStore.createLayer(store,'solid', 'Save Multi');
 
         // Animate position
         store.setFrame(0);
@@ -4211,7 +4214,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
 
       it('preserves keyframe values accurately through save/load', () => {
-        const layer = store.createLayer('solid', 'Accurate Values');
+        const layer = layerStore.createLayer(store,'solid', 'Accurate Values');
 
         store.setFrame(0);
         store.addKeyframe(layer!.id, 'rotation', 123.456);
@@ -4249,7 +4252,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
     // ========================================================================
     describe('Smooth Ease Shortcuts (Steps 241-246)', () => {
       it('can set interpolation to bezier (F9 smooth ease) (Steps 241-244)', () => {
-        const layer = store.createLayer('solid', 'Smooth Ease');
+        const layer = layerStore.createLayer(store,'solid', 'Smooth Ease');
         store.setFrame(0);
         const kf1 = store.addKeyframe(layer!.id, 'position', { x: 0, y: 0 });
         store.setFrame(30);
@@ -4258,45 +4261,45 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
         // Apply bezier (smooth ease) to first keyframe
         store.setKeyframeInterpolation(layer!.id, 'position', kf1!.id, 'bezier');
 
-        const updated = store.getLayerById(layer!.id);
+        const updated = layerStore.getLayerById(store,layer!.id);
         expect(updated!.transform.position.keyframes[0].interpolation).toBe('bezier');
       });
 
       it('can set interpolation to easeIn (Shift+F9) (Steps 245)', () => {
-        const layer = store.createLayer('solid', 'EaseIn');
+        const layer = layerStore.createLayer(store,'solid', 'EaseIn');
         store.setFrame(0);
         const kf = store.addKeyframe(layer!.id, 'position', { x: 0, y: 0 });
 
         store.setKeyframeInterpolation(layer!.id, 'position', kf!.id, 'easeInQuad');
 
-        const updated = store.getLayerById(layer!.id);
+        const updated = layerStore.getLayerById(store,layer!.id);
         expect(updated!.transform.position.keyframes[0].interpolation).toBe('easeInQuad');
       });
 
       it('can set interpolation to easeOut (Ctrl+Shift+F9) (Step 246)', () => {
-        const layer = store.createLayer('solid', 'EaseOut');
+        const layer = layerStore.createLayer(store,'solid', 'EaseOut');
         store.setFrame(0);
         const kf = store.addKeyframe(layer!.id, 'position', { x: 0, y: 0 });
 
         store.setKeyframeInterpolation(layer!.id, 'position', kf!.id, 'easeOutQuad');
 
-        const updated = store.getLayerById(layer!.id);
+        const updated = layerStore.getLayerById(store,layer!.id);
         expect(updated!.transform.position.keyframes[0].interpolation).toBe('easeOutQuad');
       });
 
       it('can set interpolation to easeInOut', () => {
-        const layer = store.createLayer('solid', 'EaseInOut');
+        const layer = layerStore.createLayer(store,'solid', 'EaseInOut');
         store.setFrame(0);
         const kf = store.addKeyframe(layer!.id, 'position', { x: 0, y: 0 });
 
         store.setKeyframeInterpolation(layer!.id, 'position', kf!.id, 'easeInOutQuad');
 
-        const updated = store.getLayerById(layer!.id);
+        const updated = layerStore.getLayerById(store,layer!.id);
         expect(updated!.transform.position.keyframes[0].interpolation).toBe('easeInOutQuad');
       });
 
       it('can apply easing preset to multiple keyframes at once', () => {
-        const layer = store.createLayer('solid', 'Batch Ease');
+        const layer = layerStore.createLayer(store,'solid', 'Batch Ease');
 
         // Create multiple keyframes
         store.setFrame(0);
@@ -4307,7 +4310,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
         const kf3 = store.addKeyframe(layer!.id, 'position', { x: 100, y: 100 });
 
         // All should be linear by default
-        const before = store.getLayerById(layer!.id);
+        const before = layerStore.getLayerById(store,layer!.id);
         expect(before!.transform.position.keyframes[0].interpolation).toBe('linear');
         expect(before!.transform.position.keyframes[1].interpolation).toBe('linear');
         expect(before!.transform.position.keyframes[2].interpolation).toBe('linear');
@@ -4321,14 +4324,14 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
 
         expect(count).toBe(3);
 
-        const after = store.getLayerById(layer!.id);
+        const after = layerStore.getLayerById(store,layer!.id);
         expect(after!.transform.position.keyframes[0].interpolation).toBe('easeInOutQuad');
         expect(after!.transform.position.keyframes[1].interpolation).toBe('easeInOutQuad');
         expect(after!.transform.position.keyframes[2].interpolation).toBe('easeInOutQuad');
       });
 
       it('applyEasingPresetToKeyframes works across multiple properties', () => {
-        const layer = store.createLayer('solid', 'Multi Prop Ease');
+        const layer = layerStore.createLayer(store,'solid', 'Multi Prop Ease');
 
         store.setFrame(0);
         const posKf = store.addKeyframe(layer!.id, 'position', { x: 0, y: 0 });
@@ -4343,7 +4346,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
 
         expect(count).toBe(3);
 
-        const after = store.getLayerById(layer!.id);
+        const after = layerStore.getLayerById(store,layer!.id);
         expect(after!.transform.position.keyframes[0].interpolation).toBe('bezier');
         expect(after!.transform.scale.keyframes[0].interpolation).toBe('bezier');
         expect(after!.transform.rotation.keyframes[0].interpolation).toBe('bezier');
@@ -4396,7 +4399,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
     // ========================================================================
     describe('Editing Curves / Bezier Handles (Steps 255-260)', () => {
       it('can set keyframe bezier in handle (Steps 255-257)', () => {
-        const layer = store.createLayer('solid', 'Handle Test');
+        const layer = layerStore.createLayer(store,'solid', 'Handle Test');
         store.setFrame(0);
         const kf = store.addKeyframe(layer!.id, 'position', { x: 0, y: 0 });
 
@@ -4407,7 +4410,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
           enabled: true
         });
 
-        const updated = store.getLayerById(layer!.id);
+        const updated = layerStore.getLayerById(store,layer!.id);
         const updatedKf = updated!.transform.position.keyframes[0];
         expect(updatedKf.inHandle.enabled).toBe(true);
         expect(updatedKf.inHandle.frame).toBe(-5);
@@ -4415,7 +4418,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
 
       it('can set keyframe bezier out handle (Steps 258-259)', () => {
-        const layer = store.createLayer('solid', 'Out Handle');
+        const layer = layerStore.createLayer(store,'solid', 'Out Handle');
         store.setFrame(0);
         const kf = store.addKeyframe(layer!.id, 'position', { x: 0, y: 0 });
 
@@ -4426,7 +4429,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
           enabled: true
         });
 
-        const updated = store.getLayerById(layer!.id);
+        const updated = layerStore.getLayerById(store,layer!.id);
         const updatedKf = updated!.transform.position.keyframes[0];
         expect(updatedKf.outHandle.enabled).toBe(true);
         expect(updatedKf.outHandle.frame).toBe(5);
@@ -4434,12 +4437,12 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
 
       it('setting handle enables bezier interpolation (Step 260)', () => {
-        const layer = store.createLayer('solid', 'Auto Bezier');
+        const layer = layerStore.createLayer(store,'solid', 'Auto Bezier');
         store.setFrame(0);
         const kf = store.addKeyframe(layer!.id, 'position', { x: 0, y: 0 });
 
         // Default is linear
-        expect(store.getLayerById(layer!.id)!.transform.position.keyframes[0].interpolation).toBe('linear');
+        expect(layerStore.getLayerById(store,layer!.id)!.transform.position.keyframes[0].interpolation).toBe('linear');
 
         // Setting enabled handle should switch to bezier
         store.setKeyframeHandle(layer!.id, 'position', kf!.id, 'out', {
@@ -4448,12 +4451,12 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
           enabled: true
         });
 
-        const updated = store.getLayerById(layer!.id);
+        const updated = layerStore.getLayerById(store,layer!.id);
         expect(updated!.transform.position.keyframes[0].interpolation).toBe('bezier');
       });
 
       it('can update both handles at once', () => {
-        const layer = store.createLayer('solid', 'Both Handles');
+        const layer = layerStore.createLayer(store,'solid', 'Both Handles');
         store.setFrame(0);
         const kf = store.addKeyframe(layer!.id, 'position', { x: 0, y: 0 });
 
@@ -4462,7 +4465,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
           outHandle: { x: 0.42, y: 0 }
         });
 
-        const updated = store.getLayerById(layer!.id);
+        const updated = layerStore.getLayerById(store,layer!.id);
         const updatedKf = updated!.transform.position.keyframes[0];
         expect(updatedKf.inHandle.enabled).toBe(true);
         expect(updatedKf.outHandle.enabled).toBe(true);
@@ -4474,35 +4477,35 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
     // ========================================================================
     describe('Keyframe Control Mode', () => {
       it('can set keyframe control mode to smooth', () => {
-        const layer = store.createLayer('solid', 'Control Mode');
+        const layer = layerStore.createLayer(store,'solid', 'Control Mode');
         store.setFrame(0);
         const kf = store.addKeyframe(layer!.id, 'position', { x: 0, y: 0 });
 
         store.setKeyframeControlMode(layer!.id, 'position', kf!.id, 'smooth');
 
-        const updated = store.getLayerById(layer!.id);
+        const updated = layerStore.getLayerById(store,layer!.id);
         expect(updated!.transform.position.keyframes[0].controlMode).toBe('smooth');
       });
 
       it('can set keyframe control mode to corner', () => {
-        const layer = store.createLayer('solid', 'Corner Mode');
+        const layer = layerStore.createLayer(store,'solid', 'Corner Mode');
         store.setFrame(0);
         const kf = store.addKeyframe(layer!.id, 'position', { x: 0, y: 0 });
 
         store.setKeyframeControlMode(layer!.id, 'position', kf!.id, 'corner');
 
-        const updated = store.getLayerById(layer!.id);
+        const updated = layerStore.getLayerById(store,layer!.id);
         expect(updated!.transform.position.keyframes[0].controlMode).toBe('corner');
       });
 
       it('can set keyframe control mode to symmetric', () => {
-        const layer = store.createLayer('solid', 'Symmetric Mode');
+        const layer = layerStore.createLayer(store,'solid', 'Symmetric Mode');
         store.setFrame(0);
         const kf = store.addKeyframe(layer!.id, 'position', { x: 0, y: 0 });
 
         store.setKeyframeControlMode(layer!.id, 'position', kf!.id, 'symmetric');
 
-        const updated = store.getLayerById(layer!.id);
+        const updated = layerStore.getLayerById(store,layer!.id);
         expect(updated!.transform.position.keyframes[0].controlMode).toBe('symmetric');
       });
     });
@@ -4521,18 +4524,18 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
        * properties or using expressions.
        */
       it('position property has x and y values', () => {
-        const layer = store.createLayer('solid', 'Position XY');
+        const layer = layerStore.createLayer(store,'solid', 'Position XY');
         store.setFrame(0);
         store.addKeyframe(layer!.id, 'position', { x: 50, y: 75 });
 
-        const updated = store.getLayerById(layer!.id);
+        const updated = layerStore.getLayerById(store,layer!.id);
         const kfValue = updated!.transform.position.keyframes[0].value as { x: number; y: number };
         expect(kfValue.x).toBe(50);
         expect(kfValue.y).toBe(75);
       });
 
       it('can animate x and y independently using value object', () => {
-        const layer = store.createLayer('solid', 'Independent XY');
+        const layer = layerStore.createLayer(store,'solid', 'Independent XY');
 
         // Create animation with different x/y movements
         store.setFrame(0);
@@ -4540,7 +4543,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
         store.setFrame(30);
         store.addKeyframe(layer!.id, 'position', { x: 200, y: 100 }); // End: x=200, y stays at 100
 
-        const updated = store.getLayerById(layer!.id);
+        const updated = layerStore.getLayerById(store,layer!.id);
         const kfs = updated!.transform.position.keyframes;
 
         const kf0 = kfs[0].value as { x: number; y: number };
@@ -4559,33 +4562,33 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
     // ========================================================================
     describe('Phase 10: Undo/Redo Verification', () => {
       it('can undo/redo interpolation change', () => {
-        const layer = store.createLayer('solid', 'Undo Interp');
+        const layer = layerStore.createLayer(store,'solid', 'Undo Interp');
         store.setFrame(0);
         const kf = store.addKeyframe(layer!.id, 'position', { x: 0, y: 0 });
 
         // Default is linear
-        expect(store.getLayerById(layer!.id)!.transform.position.keyframes[0].interpolation).toBe('linear');
+        expect(layerStore.getLayerById(store,layer!.id)!.transform.position.keyframes[0].interpolation).toBe('linear');
 
         // Change to bezier
         store.setKeyframeInterpolation(layer!.id, 'position', kf!.id, 'bezier');
-        expect(store.getLayerById(layer!.id)!.transform.position.keyframes[0].interpolation).toBe('bezier');
+        expect(layerStore.getLayerById(store,layer!.id)!.transform.position.keyframes[0].interpolation).toBe('bezier');
 
         // Undo
         store.undo();
-        expect(store.getLayerById(layer!.id)!.transform.position.keyframes[0].interpolation).toBe('linear');
+        expect(layerStore.getLayerById(store,layer!.id)!.transform.position.keyframes[0].interpolation).toBe('linear');
 
         // Redo
         store.redo();
-        expect(store.getLayerById(layer!.id)!.transform.position.keyframes[0].interpolation).toBe('bezier');
+        expect(layerStore.getLayerById(store,layer!.id)!.transform.position.keyframes[0].interpolation).toBe('bezier');
       });
 
       it('can undo/redo bezier handle change', () => {
-        const layer = store.createLayer('solid', 'Undo Handle');
+        const layer = layerStore.createLayer(store,'solid', 'Undo Handle');
         store.setFrame(0);
         const kf = store.addKeyframe(layer!.id, 'position', { x: 0, y: 0 });
 
         // Default handle is disabled
-        expect(store.getLayerById(layer!.id)!.transform.position.keyframes[0].outHandle.enabled).toBe(false);
+        expect(layerStore.getLayerById(store,layer!.id)!.transform.position.keyframes[0].outHandle.enabled).toBe(false);
 
         // Set handle
         store.setKeyframeHandle(layer!.id, 'position', kf!.id, 'out', {
@@ -4594,41 +4597,41 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
           enabled: true
         });
 
-        const afterSet = store.getLayerById(layer!.id)!.transform.position.keyframes[0];
+        const afterSet = layerStore.getLayerById(store,layer!.id)!.transform.position.keyframes[0];
         expect(afterSet.outHandle.enabled).toBe(true);
         expect(afterSet.outHandle.frame).toBe(10);
 
         // Undo
         store.undo();
-        const afterUndo = store.getLayerById(layer!.id)!.transform.position.keyframes[0];
+        const afterUndo = layerStore.getLayerById(store,layer!.id)!.transform.position.keyframes[0];
         expect(afterUndo.outHandle.enabled).toBe(false);
 
         // Redo
         store.redo();
-        const afterRedo = store.getLayerById(layer!.id)!.transform.position.keyframes[0];
+        const afterRedo = layerStore.getLayerById(store,layer!.id)!.transform.position.keyframes[0];
         expect(afterRedo.outHandle.enabled).toBe(true);
         expect(afterRedo.outHandle.frame).toBe(10);
       });
 
       it('can undo/redo control mode change', () => {
-        const layer = store.createLayer('solid', 'Undo Mode');
+        const layer = layerStore.createLayer(store,'solid', 'Undo Mode');
         store.setFrame(0);
         const kf = store.addKeyframe(layer!.id, 'position', { x: 0, y: 0 });
 
         // Default is smooth
-        expect(store.getLayerById(layer!.id)!.transform.position.keyframes[0].controlMode).toBe('smooth');
+        expect(layerStore.getLayerById(store,layer!.id)!.transform.position.keyframes[0].controlMode).toBe('smooth');
 
         // Change to corner
         store.setKeyframeControlMode(layer!.id, 'position', kf!.id, 'corner');
-        expect(store.getLayerById(layer!.id)!.transform.position.keyframes[0].controlMode).toBe('corner');
+        expect(layerStore.getLayerById(store,layer!.id)!.transform.position.keyframes[0].controlMode).toBe('corner');
 
         // Undo
         store.undo();
-        expect(store.getLayerById(layer!.id)!.transform.position.keyframes[0].controlMode).toBe('smooth');
+        expect(layerStore.getLayerById(store,layer!.id)!.transform.position.keyframes[0].controlMode).toBe('smooth');
 
         // Redo
         store.redo();
-        expect(store.getLayerById(layer!.id)!.transform.position.keyframes[0].controlMode).toBe('corner');
+        expect(layerStore.getLayerById(store,layer!.id)!.transform.position.keyframes[0].controlMode).toBe('corner');
       });
 
       it('curve editor toggle does not push history', () => {
@@ -4647,7 +4650,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
     // ========================================================================
     describe('Phase 10: Save/Load State Preservation', () => {
       it('preserves interpolation type through save/load', () => {
-        const layer = store.createLayer('solid', 'Save Interp');
+        const layer = layerStore.createLayer(store,'solid', 'Save Interp');
         store.setFrame(0);
         const kf = store.addKeyframe(layer!.id, 'position', { x: 0, y: 0 });
         store.setKeyframeInterpolation(layer!.id, 'position', kf!.id, 'easeInOutQuad');
@@ -4664,7 +4667,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
 
       it('preserves bezier handles through save/load', () => {
-        const layer = store.createLayer('solid', 'Save Handles');
+        const layer = layerStore.createLayer(store,'solid', 'Save Handles');
         store.setFrame(0);
         const kf = store.addKeyframe(layer!.id, 'position', { x: 0, y: 0 });
 
@@ -4699,7 +4702,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
 
       it('preserves control mode through save/load', () => {
-        const layer = store.createLayer('solid', 'Save Mode');
+        const layer = layerStore.createLayer(store,'solid', 'Save Mode');
         store.setFrame(0);
         const kf = store.addKeyframe(layer!.id, 'position', { x: 0, y: 0 });
         store.setKeyframeControlMode(layer!.id, 'position', kf!.id, 'corner');
@@ -4731,7 +4734,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
 
       it('preserves complex easing setup through save/load', () => {
-        const layer = store.createLayer('solid', 'Complex Easing');
+        const layer = layerStore.createLayer(store,'solid', 'Complex Easing');
 
         // Create animation with different easing on each keyframe
         store.setFrame(0);
@@ -4797,7 +4800,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
     // ========================================================================
     describe('Fade In (Steps 276-286)', () => {
       it('can create fade in with opacity keyframes (Steps 281-286)', () => {
-        const layer = store.createLayer('solid', 'Fade In Layer');
+        const layer = layerStore.createLayer(store,'solid', 'Fade In Layer');
 
         // Frame 0: Opacity 0%
         store.setFrame(0);
@@ -4807,7 +4810,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
         store.setFrame(15);
         store.addKeyframe(layer!.id, 'opacity', 100);
 
-        const updated = store.getLayerById(layer!.id);
+        const updated = layerStore.getLayerById(store,layer!.id);
         expect(updated!.opacity.animated).toBe(true);
         expect(updated!.opacity.keyframes.length).toBe(2);
         expect(updated!.opacity.keyframes[0].frame).toBe(0);
@@ -4818,14 +4821,14 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
 
       it('video layers can have opacity animation', () => {
         // Video layer is just a layer type - opacity works the same
-        const layer = store.createLayer('video', 'Video Fade');
+        const layer = layerStore.createLayer(store,'video', 'Video Fade');
 
         store.setFrame(0);
         store.addKeyframe(layer!.id, 'opacity', 0);
         store.setFrame(15);
         store.addKeyframe(layer!.id, 'opacity', 100);
 
-        const updated = store.getLayerById(layer!.id);
+        const updated = layerStore.getLayerById(store,layer!.id);
         expect(updated!.opacity.animated).toBe(true);
         expect(updated!.opacity.keyframes.length).toBe(2);
       });
@@ -4836,7 +4839,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
     // ========================================================================
     describe('Fade Out (Steps 287-291)', () => {
       it('can create fade out with opacity keyframes (Steps 287-291)', () => {
-        const layer = store.createLayer('solid', 'Fade Out Layer');
+        const layer = layerStore.createLayer(store,'solid', 'Fade Out Layer');
 
         // Frame 65: Opacity 100% (hold value)
         store.setFrame(65);
@@ -4846,7 +4849,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
         store.setFrame(80);
         store.addKeyframe(layer!.id, 'opacity', 0);
 
-        const updated = store.getLayerById(layer!.id);
+        const updated = layerStore.getLayerById(store,layer!.id);
         expect(updated!.opacity.keyframes.length).toBe(2);
         expect(updated!.opacity.keyframes[0].frame).toBe(65);
         expect(updated!.opacity.keyframes[0].value).toBe(100);
@@ -4855,7 +4858,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
 
       it('can create combined fade in and fade out', () => {
-        const layer = store.createLayer('solid', 'Full Fade');
+        const layer = layerStore.createLayer(store,'solid', 'Full Fade');
 
         // Fade in: 0 -> 15 frames
         store.setFrame(0);
@@ -4869,7 +4872,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
         store.setFrame(80);
         store.addKeyframe(layer!.id, 'opacity', 0);
 
-        const updated = store.getLayerById(layer!.id);
+        const updated = layerStore.getLayerById(store,layer!.id);
         expect(updated!.opacity.keyframes.length).toBe(4);
       });
     });
@@ -4879,7 +4882,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
     // ========================================================================
     describe('Apply Easing to Fade (Steps 292-295)', () => {
       it('can apply smooth ease to fade keyframes (Steps 292-294)', () => {
-        const layer = store.createLayer('solid', 'Eased Fade');
+        const layer = layerStore.createLayer(store,'solid', 'Eased Fade');
 
         store.setFrame(0);
         const kf1 = store.addKeyframe(layer!.id, 'opacity', 0);
@@ -4892,7 +4895,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
           { layerId: layer!.id, propertyPath: 'opacity', keyframeId: kf2!.id }
         ], 'easeInOutQuad');
 
-        const updated = store.getLayerById(layer!.id);
+        const updated = layerStore.getLayerById(store,layer!.id);
         expect(updated!.opacity.keyframes[0].interpolation).toBe('easeInOutQuad');
         expect(updated!.opacity.keyframes[1].interpolation).toBe('easeInOutQuad');
       });
@@ -4903,27 +4906,27 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
     // ========================================================================
     describe('Phase 11: Undo/Redo Verification', () => {
       it('can undo/redo fade in creation', () => {
-        const layer = store.createLayer('solid', 'Undo Fade');
+        const layer = layerStore.createLayer(store,'solid', 'Undo Fade');
 
         store.setFrame(0);
         store.addKeyframe(layer!.id, 'opacity', 0);
         store.setFrame(15);
         store.addKeyframe(layer!.id, 'opacity', 100);
 
-        expect(store.getLayerById(layer!.id)!.opacity.keyframes.length).toBe(2);
+        expect(layerStore.getLayerById(store,layer!.id)!.opacity.keyframes.length).toBe(2);
 
         // Undo last keyframe
         store.undo();
-        expect(store.getLayerById(layer!.id)!.opacity.keyframes.length).toBe(1);
+        expect(layerStore.getLayerById(store,layer!.id)!.opacity.keyframes.length).toBe(1);
 
         // Undo first keyframe
         store.undo();
-        expect(store.getLayerById(layer!.id)!.opacity.keyframes.length).toBe(0);
+        expect(layerStore.getLayerById(store,layer!.id)!.opacity.keyframes.length).toBe(0);
 
         // Redo both
         store.redo();
         store.redo();
-        expect(store.getLayerById(layer!.id)!.opacity.keyframes.length).toBe(2);
+        expect(layerStore.getLayerById(store,layer!.id)!.opacity.keyframes.length).toBe(2);
       });
     });
 
@@ -4932,7 +4935,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
     // ========================================================================
     describe('Phase 11: Save/Load State Preservation', () => {
       it('preserves fade animation through save/load', () => {
-        const layer = store.createLayer('solid', 'Save Fade');
+        const layer = layerStore.createLayer(store,'solid', 'Save Fade');
 
         store.setFrame(0);
         const kf1 = store.addKeyframe(layer!.id, 'opacity', 0);
@@ -4981,7 +4984,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
     // ========================================================================
     describe('Creating Text (Steps 296-300)', () => {
       it('can create a text layer (Steps 298-300)', () => {
-        const layer = store.createTextLayer('LATTICE COMPOSITOR');
+        const layer = layerStore.createTextLayer(store,'LATTICE COMPOSITOR');
 
         expect(layer).toBeDefined();
         expect(layer.type).toBe('text');
@@ -4989,7 +4992,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
 
       it('text layer has proper data structure', () => {
-        const layer = store.createTextLayer('Test Text');
+        const layer = layerStore.createTextLayer(store,'Test Text');
 
         expect(layer.data).toBeDefined();
         const textData = layer.data as any;
@@ -5001,7 +5004,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
 
       it('text layer truncates long names', () => {
         const longText = 'This is a very long text that should be truncated in the layer name';
-        const layer = store.createTextLayer(longText);
+        const layer = layerStore.createTextLayer(store,longText);
 
         // Layer name should be truncated to 20 chars
         expect(layer.name.length).toBeLessThanOrEqual(20);
@@ -5015,47 +5018,47 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
     // ========================================================================
     describe('Character Panel Properties (Steps 301-307)', () => {
       it('can update font family (Step 303)', () => {
-        const layer = store.createTextLayer('Font Test');
+        const layer = layerStore.createTextLayer(store,'Font Test');
 
         store.updateLayerData(layer.id, { fontFamily: 'Helvetica' });
 
-        const updated = store.getLayerById(layer.id);
+        const updated = layerStore.getLayerById(store,layer.id);
         expect((updated!.data as any).fontFamily).toBe('Helvetica');
       });
 
       it('can update font size (Step 304)', () => {
-        const layer = store.createTextLayer('Size Test');
+        const layer = layerStore.createTextLayer(store,'Size Test');
 
         store.updateLayerData(layer.id, { fontSize: 48 });
 
-        const updated = store.getLayerById(layer.id);
+        const updated = layerStore.getLayerById(store,layer.id);
         expect((updated!.data as any).fontSize).toBe(48);
       });
 
       it('can update fill color (Step 305)', () => {
-        const layer = store.createTextLayer('Color Test');
+        const layer = layerStore.createTextLayer(store,'Color Test');
 
         store.updateLayerData(layer.id, { fill: '#ff0000' });
 
-        const updated = store.getLayerById(layer.id);
+        const updated = layerStore.getLayerById(store,layer.id);
         expect((updated!.data as any).fill).toBe('#ff0000');
       });
 
       it('can update tracking/letter spacing (Step 306)', () => {
-        const layer = store.createTextLayer('Tracking Test');
+        const layer = layerStore.createTextLayer(store,'Tracking Test');
 
         store.updateLayerData(layer.id, { tracking: 50 });
 
-        const updated = store.getLayerById(layer.id);
+        const updated = layerStore.getLayerById(store,layer.id);
         expect((updated!.data as any).tracking).toBe(50);
       });
 
       it('can update line height/leading (Step 307)', () => {
-        const layer = store.createTextLayer('Leading Test');
+        const layer = layerStore.createTextLayer(store,'Leading Test');
 
         store.updateLayerData(layer.id, { lineHeight: 1.5 });
 
-        const updated = store.getLayerById(layer.id);
+        const updated = layerStore.getLayerById(store,layer.id);
         expect((updated!.data as any).lineHeight).toBe(1.5);
       });
     });
@@ -5065,29 +5068,29 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
     // ========================================================================
     describe('Paragraph Panel Properties (Steps 308-310)', () => {
       it('can set text alignment to center (Step 309)', () => {
-        const layer = store.createTextLayer('Align Test');
+        const layer = layerStore.createTextLayer(store,'Align Test');
 
         store.updateLayerData(layer.id, { textAlign: 'center' });
 
-        const updated = store.getLayerById(layer.id);
+        const updated = layerStore.getLayerById(store,layer.id);
         expect((updated!.data as any).textAlign).toBe('center');
       });
 
       it('can set text alignment to left (Step 310)', () => {
-        const layer = store.createTextLayer('Left Align');
+        const layer = layerStore.createTextLayer(store,'Left Align');
 
         store.updateLayerData(layer.id, { textAlign: 'left' });
 
-        const updated = store.getLayerById(layer.id);
+        const updated = layerStore.getLayerById(store,layer.id);
         expect((updated!.data as any).textAlign).toBe('left');
       });
 
       it('can set text alignment to right (Step 310)', () => {
-        const layer = store.createTextLayer('Right Align');
+        const layer = layerStore.createTextLayer(store,'Right Align');
 
         store.updateLayerData(layer.id, { textAlign: 'right' });
 
-        const updated = store.getLayerById(layer.id);
+        const updated = layerStore.getLayerById(store,layer.id);
         expect((updated!.data as any).textAlign).toBe('right');
       });
     });
@@ -5097,7 +5100,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
     // ========================================================================
     describe('Positioning Text (Steps 311-314)', () => {
       it('text layer has transform properties like other layers (Steps 311-312)', () => {
-        const layer = store.createTextLayer('Position Test');
+        const layer = layerStore.createTextLayer(store,'Position Test');
 
         expect(layer.transform).toBeDefined();
         expect(layer.transform.position).toBeDefined();
@@ -5106,13 +5109,13 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
 
       it('can set text position (Steps 313-314)', () => {
-        const layer = store.createTextLayer('Move Text');
+        const layer = layerStore.createTextLayer(store,'Move Text');
 
         store.updateLayerTransform(layer.id, {
           position: { x: 960, y: 200 }
         });
 
-        const updated = store.getLayerById(layer.id);
+        const updated = layerStore.getLayerById(store,layer.id);
         expect(updated!.transform.position.value).toEqual({ x: 960, y: 200 });
       });
     });
@@ -5122,8 +5125,8 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
     // ========================================================================
     describe('Animating Text (Steps 315-318)', () => {
       it('text layers have same transform properties as other layers (Step 315)', () => {
-        const textLayer = store.createTextLayer('Animated Text');
-        const solidLayer = store.createLayer('solid', 'Solid');
+        const textLayer = layerStore.createTextLayer(store,'Animated Text');
+        const solidLayer = layerStore.createLayer(store,'solid', 'Solid');
 
         // Both should have the same transform properties
         expect(textLayer.transform.position).toBeDefined();
@@ -5133,39 +5136,39 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
 
       it('can create position keyframes to slide text in (Step 316)', () => {
-        const layer = store.createTextLayer('Slide Text');
+        const layer = layerStore.createTextLayer(store,'Slide Text');
 
         store.setFrame(0);
         store.addKeyframe(layer.id, 'position', { x: -200, y: 540 }); // Off screen left
         store.setFrame(30);
         store.addKeyframe(layer.id, 'position', { x: 960, y: 540 }); // Center
 
-        const updated = store.getLayerById(layer.id);
+        const updated = layerStore.getLayerById(store,layer.id);
         expect(updated!.transform.position.animated).toBe(true);
         expect(updated!.transform.position.keyframes.length).toBe(2);
       });
 
       it('can create opacity keyframes to fade text (Step 317)', () => {
-        const layer = store.createTextLayer('Fade Text');
+        const layer = layerStore.createTextLayer(store,'Fade Text');
 
         store.setFrame(0);
         store.addKeyframe(layer.id, 'opacity', 0);
         store.setFrame(20);
         store.addKeyframe(layer.id, 'opacity', 100);
 
-        const updated = store.getLayerById(layer.id);
+        const updated = layerStore.getLayerById(store,layer.id);
         expect(updated!.opacity.animated).toBe(true);
       });
 
       it('can create scale keyframes to grow/shrink text (Step 318)', () => {
-        const layer = store.createTextLayer('Scale Text');
+        const layer = layerStore.createTextLayer(store,'Scale Text');
 
         store.setFrame(0);
         store.addKeyframe(layer.id, 'scale', { x: 0, y: 0 });
         store.setFrame(20);
         store.addKeyframe(layer.id, 'scale', { x: 100, y: 100 });
 
-        const updated = store.getLayerById(layer.id);
+        const updated = layerStore.getLayerById(store,layer.id);
         expect(updated!.transform.scale.animated).toBe(true);
       });
     });
@@ -5188,7 +5191,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
        */
 
       it('text layer is created as point text by default (Step 319)', () => {
-        const layer = store.createTextLayer('Point Text');
+        const layer = layerStore.createTextLayer(store,'Point Text');
 
         // Current behavior: no text type distinction
         // Point text = no bounding box, text doesn't wrap
@@ -5209,7 +5212,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
         expect(typeof (store as any).createParagraphText).toBe('undefined');
 
         // No bounding box property to enable text wrapping
-        const layer = store.createTextLayer('No Wrap');
+        const layer = layerStore.createTextLayer(store,'No Wrap');
         expect((layer.data as any).boundingBox).toBeUndefined();
       });
 
@@ -5223,7 +5226,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
 
       it('long text does not wrap (current behavior)', () => {
         const longText = 'This is a very long piece of text that would wrap in paragraph mode but does not wrap in point text mode because there are no boundaries defined.';
-        const layer = store.createTextLayer(longText);
+        const layer = layerStore.createTextLayer(store,longText);
 
         const textData = layer.data as any;
         expect(textData.text).toBe(longText);
@@ -5239,16 +5242,16 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
     // ========================================================================
     describe('Text Content (Steps 323-325)', () => {
       it('can update text content (Step 323)', () => {
-        const layer = store.createTextLayer('Original Text');
+        const layer = layerStore.createTextLayer(store,'Original Text');
 
         store.updateLayerData(layer.id, { text: 'Updated Text Content' });
 
-        const updated = store.getLayerById(layer.id);
+        const updated = layerStore.getLayerById(store,layer.id);
         expect((updated!.data as any).text).toBe('Updated Text Content');
       });
 
       it('text layer has animatable properties', () => {
-        const layer = store.createTextLayer('Props Test');
+        const layer = layerStore.createTextLayer(store,'Props Test');
 
         // Text layers have special properties
         expect(layer.properties.length).toBeGreaterThan(0);
@@ -5268,7 +5271,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       it('can undo/redo text layer creation', () => {
         const initialCount = store.getActiveCompLayers().length;
 
-        const layer = store.createTextLayer('Undo Text');
+        const layer = layerStore.createTextLayer(store,'Undo Text');
         expect(store.getActiveCompLayers().length).toBe(initialCount + 1);
 
         store.undo();
@@ -5279,31 +5282,31 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
 
       it('can undo/redo text data update', () => {
-        const layer = store.createTextLayer('Undo Data');
+        const layer = layerStore.createTextLayer(store,'Undo Data');
 
         store.updateLayerData(layer.id, { fontSize: 96 });
-        expect((store.getLayerById(layer.id)!.data as any).fontSize).toBe(96);
+        expect((layerStore.getLayerById(store,layer.id)!.data as any).fontSize).toBe(96);
 
         store.undo();
-        expect((store.getLayerById(layer.id)!.data as any).fontSize).toBe(72); // Default
+        expect((layerStore.getLayerById(store,layer.id)!.data as any).fontSize).toBe(72); // Default
 
         store.redo();
-        expect((store.getLayerById(layer.id)!.data as any).fontSize).toBe(96);
+        expect((layerStore.getLayerById(store,layer.id)!.data as any).fontSize).toBe(96);
       });
 
       it('can undo/redo text animation', () => {
-        const layer = store.createTextLayer('Undo Anim');
+        const layer = layerStore.createTextLayer(store,'Undo Anim');
 
         store.setFrame(0);
         store.addKeyframe(layer.id, 'position', { x: 0, y: 0 });
 
-        expect(store.getLayerById(layer.id)!.transform.position.keyframes.length).toBe(1);
+        expect(layerStore.getLayerById(store,layer.id)!.transform.position.keyframes.length).toBe(1);
 
         store.undo();
-        expect(store.getLayerById(layer.id)!.transform.position.keyframes.length).toBe(0);
+        expect(layerStore.getLayerById(store,layer.id)!.transform.position.keyframes.length).toBe(0);
 
         store.redo();
-        expect(store.getLayerById(layer.id)!.transform.position.keyframes.length).toBe(1);
+        expect(layerStore.getLayerById(store,layer.id)!.transform.position.keyframes.length).toBe(1);
       });
     });
 
@@ -5312,7 +5315,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
     // ========================================================================
     describe('Phase 12: Save/Load State Preservation', () => {
       it('preserves text layer through save/load', () => {
-        const layer = store.createTextLayer('Save Text');
+        const layer = layerStore.createTextLayer(store,'Save Text');
 
         const savedJson = store.exportProject();
 
@@ -5327,7 +5330,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
 
       it('preserves text data through save/load', () => {
-        const layer = store.createTextLayer('Save Data');
+        const layer = layerStore.createTextLayer(store,'Save Data');
 
         store.updateLayerData(layer.id, {
           text: 'Custom Text Content',
@@ -5357,7 +5360,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
 
       it('preserves text animation through save/load', () => {
-        const layer = store.createTextLayer('Save Anim Text');
+        const layer = layerStore.createTextLayer(store,'Save Anim Text');
 
         // Add position animation
         store.setFrame(0);
@@ -5416,7 +5419,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
        */
 
       it('workaround: can center layer horizontally in composition (Steps 329-330)', () => {
-        const layer = store.createLayer('solid', 'Center H');
+        const layer = layerStore.createLayer(store,'solid', 'Center H');
 
         // Move layer off-center
         store.updateLayerTransform(layer!.id, { position: { x: 100, y: 200 } });
@@ -5430,12 +5433,12 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
           position: { x: compWidth / 2, y: 200 }
         });
 
-        const updated = store.getLayerById(layer!.id);
+        const updated = layerStore.getLayerById(store,layer!.id);
         expect(updated!.transform.position.value.x).toBe(compWidth / 2);
       });
 
       it('workaround: can center layer vertically in composition (Steps 331-332)', () => {
-        const layer = store.createLayer('solid', 'Center V');
+        const layer = layerStore.createLayer(store,'solid', 'Center V');
 
         store.updateLayerTransform(layer!.id, { position: { x: 100, y: 50 } });
 
@@ -5447,12 +5450,12 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
           position: { x: 100, y: compHeight / 2 }
         });
 
-        const updated = store.getLayerById(layer!.id);
+        const updated = layerStore.getLayerById(store,layer!.id);
         expect(updated!.transform.position.value.y).toBe(compHeight / 2);
       });
 
       it('workaround: can center layer both horizontally and vertically (Step 333)', () => {
-        const layer = store.createLayer('solid', 'Center Both');
+        const layer = layerStore.createLayer(store,'solid', 'Center Both');
 
         store.updateLayerTransform(layer!.id, { position: { x: 10, y: 20 } });
 
@@ -5465,7 +5468,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
           position: { x: centerX, y: centerY }
         });
 
-        const updated = store.getLayerById(layer!.id);
+        const updated = layerStore.getLayerById(store,layer!.id);
         expect(updated!.transform.position.value.x).toBe(centerX);
         expect(updated!.transform.position.value.y).toBe(centerY);
       });
@@ -5490,9 +5493,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
        */
 
       it('workaround: can align multiple layers to same x position (Step 336)', () => {
-        const layer1 = store.createLayer('solid', 'Align 1');
-        const layer2 = store.createLayer('solid', 'Align 2');
-        const layer3 = store.createLayer('solid', 'Align 3');
+        const layer1 = layerStore.createLayer(store,'solid', 'Align 1');
+        const layer2 = layerStore.createLayer(store,'solid', 'Align 2');
+        const layer3 = layerStore.createLayer(store,'solid', 'Align 3');
 
         // Position layers at different x values
         store.updateLayerTransform(layer1!.id, { position: { x: 100, y: 100 } });
@@ -5504,15 +5507,15 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
         store.updateLayerTransform(layer2!.id, { position: { x: targetX, y: 200 } });
         store.updateLayerTransform(layer3!.id, { position: { x: targetX, y: 300 } });
 
-        expect(store.getLayerById(layer1!.id)!.transform.position.value.x).toBe(targetX);
-        expect(store.getLayerById(layer2!.id)!.transform.position.value.x).toBe(targetX);
-        expect(store.getLayerById(layer3!.id)!.transform.position.value.x).toBe(targetX);
+        expect(layerStore.getLayerById(store,layer1!.id)!.transform.position.value.x).toBe(targetX);
+        expect(layerStore.getLayerById(store,layer2!.id)!.transform.position.value.x).toBe(targetX);
+        expect(layerStore.getLayerById(store,layer3!.id)!.transform.position.value.x).toBe(targetX);
       });
 
       it('workaround: can distribute layers horizontally (Step 337)', () => {
-        const layer1 = store.createLayer('solid', 'Dist 1');
-        const layer2 = store.createLayer('solid', 'Dist 2');
-        const layer3 = store.createLayer('solid', 'Dist 3');
+        const layer1 = layerStore.createLayer(store,'solid', 'Dist 1');
+        const layer2 = layerStore.createLayer(store,'solid', 'Dist 2');
+        const layer3 = layerStore.createLayer(store,'solid', 'Dist 3');
 
         // Manual distribute: space evenly between x=100 and x=500
         const startX = 100;
@@ -5523,15 +5526,15 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
         store.updateLayerTransform(layer2!.id, { position: { x: startX + spacing, y: 300 } });
         store.updateLayerTransform(layer3!.id, { position: { x: endX, y: 300 } });
 
-        expect(store.getLayerById(layer1!.id)!.transform.position.value.x).toBe(100);
-        expect(store.getLayerById(layer2!.id)!.transform.position.value.x).toBe(300);
-        expect(store.getLayerById(layer3!.id)!.transform.position.value.x).toBe(500);
+        expect(layerStore.getLayerById(store,layer1!.id)!.transform.position.value.x).toBe(100);
+        expect(layerStore.getLayerById(store,layer2!.id)!.transform.position.value.x).toBe(300);
+        expect(layerStore.getLayerById(store,layer3!.id)!.transform.position.value.x).toBe(500);
       });
 
       it('workaround: can distribute layers vertically (Step 338)', () => {
-        const layer1 = store.createLayer('solid', 'VDist 1');
-        const layer2 = store.createLayer('solid', 'VDist 2');
-        const layer3 = store.createLayer('solid', 'VDist 3');
+        const layer1 = layerStore.createLayer(store,'solid', 'VDist 1');
+        const layer2 = layerStore.createLayer(store,'solid', 'VDist 2');
+        const layer3 = layerStore.createLayer(store,'solid', 'VDist 3');
 
         // Manual distribute vertically
         const startY = 50;
@@ -5542,9 +5545,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
         store.updateLayerTransform(layer2!.id, { position: { x: 640, y: startY + spacing } });
         store.updateLayerTransform(layer3!.id, { position: { x: 640, y: endY } });
 
-        expect(store.getLayerById(layer1!.id)!.transform.position.value.y).toBe(50);
-        expect(store.getLayerById(layer2!.id)!.transform.position.value.y).toBe(350);
-        expect(store.getLayerById(layer3!.id)!.transform.position.value.y).toBe(650);
+        expect(layerStore.getLayerById(store,layer1!.id)!.transform.position.value.y).toBe(50);
+        expect(layerStore.getLayerById(store,layer2!.id)!.transform.position.value.y).toBe(350);
+        expect(layerStore.getLayerById(store,layer3!.id)!.transform.position.value.y).toBe(650);
       });
     });
 
@@ -5601,7 +5604,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
        */
 
       it('workaround: can manually center layer (Ctrl+Home) (Step 349)', () => {
-        const layer = store.createLayer('solid', 'Ctrl Home');
+        const layer = layerStore.createLayer(store,'solid', 'Ctrl Home');
 
         store.updateLayerTransform(layer!.id, { position: { x: 50, y: 50 } });
 
@@ -5613,13 +5616,13 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
 
         store.updateLayerTransform(layer!.id, { position: centerPos });
 
-        const updated = store.getLayerById(layer!.id);
+        const updated = layerStore.getLayerById(store,layer!.id);
         expect(updated!.transform.position.value.x).toBe(centerPos.x);
         expect(updated!.transform.position.value.y).toBe(centerPos.y);
       });
 
       it('workaround: can manually fit layer to composition width (Step 351)', () => {
-        const layer = store.createLayer('solid', 'Fit Width');
+        const layer = layerStore.createLayer(store,'solid', 'Fit Width');
 
         // Assuming solid has a width in data
         const layerData = layer!.data as { width?: number; height?: number };
@@ -5635,12 +5638,12 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
           scale: { x: scaleToFit, y: scaleToFit }
         });
 
-        const updated = store.getLayerById(layer!.id);
+        const updated = layerStore.getLayerById(store,layer!.id);
         expect(updated!.transform.scale.value.x).toBe(scaleToFit);
       });
 
       it('workaround: can manually fit layer to composition height (Step 352)', () => {
-        const layer = store.createLayer('solid', 'Fit Height');
+        const layer = layerStore.createLayer(store,'solid', 'Fit Height');
 
         const layerData = layer!.data as { width?: number; height?: number };
         const layerHeight = layerData.height || 100;
@@ -5655,7 +5658,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
           scale: { x: scaleToFit, y: scaleToFit }
         });
 
-        const updated = store.getLayerById(layer!.id);
+        const updated = layerStore.getLayerById(store,layer!.id);
         expect(updated!.transform.scale.value.x).toBe(scaleToFit);
       });
     });
@@ -5684,8 +5687,8 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
     // ========================================================================
     describe('Phase 13: Undo/Redo Verification', () => {
       it('can undo/redo layer centering', () => {
-        const layer = store.createLayer('solid', 'Undo Center');
-        const originalPos = { ...store.getLayerById(layer!.id)!.transform.position.value };
+        const layer = layerStore.createLayer(store,'solid', 'Undo Center');
+        const originalPos = { ...layerStore.getLayerById(store,layer!.id)!.transform.position.value };
 
         const comp = store.project.compositions[store.activeCompositionId];
         store.updateLayerTransform(layer!.id, {
@@ -5693,30 +5696,30 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
         });
 
         store.undo();
-        expect(store.getLayerById(layer!.id)!.transform.position.value.x).toBe(originalPos.x);
+        expect(layerStore.getLayerById(store,layer!.id)!.transform.position.value.x).toBe(originalPos.x);
 
         store.redo();
-        expect(store.getLayerById(layer!.id)!.transform.position.value.x).toBe(comp.settings.width / 2);
+        expect(layerStore.getLayerById(store,layer!.id)!.transform.position.value.x).toBe(comp.settings.width / 2);
       });
 
       it('can undo/redo multiple layer alignment', () => {
-        const layer1 = store.createLayer('solid', 'Undo Align 1');
-        const layer2 = store.createLayer('solid', 'Undo Align 2');
+        const layer1 = layerStore.createLayer(store,'solid', 'Undo Align 1');
+        const layer2 = layerStore.createLayer(store,'solid', 'Undo Align 2');
 
         store.updateLayerTransform(layer1!.id, { position: { x: 100, y: 100 } });
         store.updateLayerTransform(layer2!.id, { position: { x: 200, y: 200 } });
 
-        const layer2OriginalX = store.getLayerById(layer2!.id)!.transform.position.value.x;
+        const layer2OriginalX = layerStore.getLayerById(store,layer2!.id)!.transform.position.value.x;
 
         // Align layer2 to layer1's x
         store.updateLayerTransform(layer2!.id, { position: { x: 100, y: 200 } });
-        expect(store.getLayerById(layer2!.id)!.transform.position.value.x).toBe(100);
+        expect(layerStore.getLayerById(store,layer2!.id)!.transform.position.value.x).toBe(100);
 
         store.undo();
-        expect(store.getLayerById(layer2!.id)!.transform.position.value.x).toBe(layer2OriginalX);
+        expect(layerStore.getLayerById(store,layer2!.id)!.transform.position.value.x).toBe(layer2OriginalX);
 
         store.redo();
-        expect(store.getLayerById(layer2!.id)!.transform.position.value.x).toBe(100);
+        expect(layerStore.getLayerById(store,layer2!.id)!.transform.position.value.x).toBe(100);
       });
     });
 
@@ -5725,8 +5728,8 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
     // ========================================================================
     describe('Phase 13: Save/Load State Preservation', () => {
       it('preserves layer positions through save/load', () => {
-        const layer1 = store.createLayer('solid', 'Save Align 1');
-        const layer2 = store.createLayer('solid', 'Save Align 2');
+        const layer1 = layerStore.createLayer(store,'solid', 'Save Align 1');
+        const layer2 = layerStore.createLayer(store,'solid', 'Save Align 2');
 
         // Center both layers
         const comp = store.project.compositions[store.activeCompositionId];
@@ -5838,12 +5841,12 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
     // ========================================================================
     describe('Applying Effects (Steps 359-375)', () => {
       it('can add an effect to a layer (Steps 359-361)', () => {
-        const layer = store.createLayer('solid', 'Effect Target');
+        const layer = layerStore.createLayer(store,'solid', 'Effect Target');
 
         // Add a Gaussian Blur effect
         store.addEffectToLayer(layer!.id, 'gaussian-blur');
 
-        const updated = store.getLayerById(layer!.id);
+        const updated = layerStore.getLayerById(store,layer!.id);
         expect(updated!.effects).toBeDefined();
         expect(updated!.effects!.length).toBe(1);
         expect(updated!.effects![0].effectKey).toBe('gaussian-blur');
@@ -5851,11 +5854,11 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
 
       it('effect has default parameter values (Step 362)', () => {
-        const layer = store.createLayer('solid', 'Param Test');
+        const layer = layerStore.createLayer(store,'solid', 'Param Test');
 
         store.addEffectToLayer(layer!.id, 'gaussian-blur');
 
-        const updated = store.getLayerById(layer!.id);
+        const updated = layerStore.getLayerById(store,layer!.id);
         const effect = updated!.effects![0];
 
         // Gaussian blur should have 'blurriness' parameter with default value of 10
@@ -5865,11 +5868,11 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
 
       it('can add Glow effect (Steps 363-365)', () => {
-        const layer = store.createLayer('solid', 'Glow Test');
+        const layer = layerStore.createLayer(store,'solid', 'Glow Test');
 
         store.addEffectToLayer(layer!.id, 'glow');
 
-        const updated = store.getLayerById(layer!.id);
+        const updated = layerStore.getLayerById(store,layer!.id);
         const effect = updated!.effects![0];
 
         expect(effect.effectKey).toBe('glow');
@@ -5880,11 +5883,11 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
 
       it('can add Drop Shadow effect (Steps 366-368)', () => {
-        const layer = store.createLayer('solid', 'Shadow Test');
+        const layer = layerStore.createLayer(store,'solid', 'Shadow Test');
 
         store.addEffectToLayer(layer!.id, 'drop-shadow');
 
-        const updated = store.getLayerById(layer!.id);
+        const updated = layerStore.getLayerById(store,layer!.id);
         const effect = updated!.effects![0];
 
         expect(effect.effectKey).toBe('drop-shadow');
@@ -5895,26 +5898,26 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
 
       it('can update effect parameter value (Steps 369-371)', () => {
-        const layer = store.createLayer('solid', 'Update Effect');
+        const layer = layerStore.createLayer(store,'solid', 'Update Effect');
 
         store.addEffectToLayer(layer!.id, 'gaussian-blur');
-        const effect = store.getLayerById(layer!.id)!.effects![0];
+        const effect = layerStore.getLayerById(store,layer!.id)!.effects![0];
 
         // Change blur amount
         store.updateEffectParameter(layer!.id, effect.id, 'blurriness', 50);
 
-        const updated = store.getLayerById(layer!.id);
+        const updated = layerStore.getLayerById(store,layer!.id);
         expect(updated!.effects![0].parameters['blurriness'].value).toBe(50);
       });
 
       it('can add multiple effects to same layer (Steps 372-374)', () => {
-        const layer = store.createLayer('solid', 'Multi Effect');
+        const layer = layerStore.createLayer(store,'solid', 'Multi Effect');
 
         store.addEffectToLayer(layer!.id, 'gaussian-blur');
         store.addEffectToLayer(layer!.id, 'glow');
         store.addEffectToLayer(layer!.id, 'drop-shadow');
 
-        const updated = store.getLayerById(layer!.id);
+        const updated = layerStore.getLayerById(store,layer!.id);
         expect(updated!.effects!.length).toBe(3);
         expect(updated!.effects![0].effectKey).toBe('gaussian-blur');
         expect(updated!.effects![1].effectKey).toBe('glow');
@@ -5922,12 +5925,12 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
 
       it('effects are applied in order (Step 375)', () => {
-        const layer = store.createLayer('solid', 'Order Test');
+        const layer = layerStore.createLayer(store,'solid', 'Order Test');
 
         store.addEffectToLayer(layer!.id, 'gaussian-blur');
         store.addEffectToLayer(layer!.id, 'glow');
 
-        const updated = store.getLayerById(layer!.id);
+        const updated = layerStore.getLayerById(store,layer!.id);
         // First effect added is first in stack (index 0)
         // Effects are processed top to bottom
         expect(updated!.effects![0].name).toBe('Gaussian Blur');
@@ -5940,38 +5943,38 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
     // ========================================================================
     describe('Animating Effects (Steps 376-379)', () => {
       it('can enable animation on effect parameter (Step 376)', () => {
-        const layer = store.createLayer('solid', 'Animate Effect');
+        const layer = layerStore.createLayer(store,'solid', 'Animate Effect');
 
         store.addEffectToLayer(layer!.id, 'gaussian-blur');
-        const effect = store.getLayerById(layer!.id)!.effects![0];
+        const effect = layerStore.getLayerById(store,layer!.id)!.effects![0];
 
         // Enable animation on blurriness parameter
         store.setEffectParamAnimated(layer!.id, effect.id, 'blurriness', true);
 
-        const updated = store.getLayerById(layer!.id);
+        const updated = layerStore.getLayerById(store,layer!.id);
         expect(updated!.effects![0].parameters['blurriness'].animated).toBe(true);
       });
 
       it('enabling animation creates initial keyframe (Step 377)', () => {
-        const layer = store.createLayer('solid', 'Initial KF');
+        const layer = layerStore.createLayer(store,'solid', 'Initial KF');
 
         store.setFrame(10); // Set frame first
         store.addEffectToLayer(layer!.id, 'gaussian-blur');
-        const effect = store.getLayerById(layer!.id)!.effects![0];
+        const effect = layerStore.getLayerById(store,layer!.id)!.effects![0];
 
         store.setEffectParamAnimated(layer!.id, effect.id, 'blurriness', true);
 
-        const updated = store.getLayerById(layer!.id);
+        const updated = layerStore.getLayerById(store,layer!.id);
         const param = updated!.effects![0].parameters['blurriness'];
         expect(param.animated).toBe(true);
         expect(param.keyframes.length).toBeGreaterThanOrEqual(1);
       });
 
       it('can get effect parameter value at frame (Step 378)', () => {
-        const layer = store.createLayer('solid', 'Frame Value');
+        const layer = layerStore.createLayer(store,'solid', 'Frame Value');
 
         store.addEffectToLayer(layer!.id, 'gaussian-blur');
-        const effect = store.getLayerById(layer!.id)!.effects![0];
+        const effect = layerStore.getLayerById(store,layer!.id)!.effects![0];
 
         // Set a specific value
         store.updateEffectParameter(layer!.id, effect.id, 'blurriness', 25);
@@ -5982,16 +5985,16 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
 
       it('animated effect parameter interpolates between keyframes (Step 379)', () => {
-        const layer = store.createLayer('solid', 'Interpolate Effect');
+        const layer = layerStore.createLayer(store,'solid', 'Interpolate Effect');
 
         store.addEffectToLayer(layer!.id, 'gaussian-blur');
-        const effect = store.getLayerById(layer!.id)!.effects![0];
+        const effect = layerStore.getLayerById(store,layer!.id)!.effects![0];
 
         // Enable animation and set keyframes manually
         store.setEffectParamAnimated(layer!.id, effect.id, 'blurriness', true);
 
         // The parameter should now have animation support
-        const param = store.getLayerById(layer!.id)!.effects![0].parameters['blurriness'];
+        const param = layerStore.getLayerById(store,layer!.id)!.effects![0].parameters['blurriness'];
         expect(param.animated).toBe(true);
         // Keyframes are managed via the param's keyframes array
       });
@@ -6002,39 +6005,39 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
     // ========================================================================
     describe('Disable/Remove Effects (Steps 380-382)', () => {
       it('can toggle effect enabled state (Step 380)', () => {
-        const layer = store.createLayer('solid', 'Toggle Effect');
+        const layer = layerStore.createLayer(store,'solid', 'Toggle Effect');
 
         store.addEffectToLayer(layer!.id, 'gaussian-blur');
-        const effect = store.getLayerById(layer!.id)!.effects![0];
+        const effect = layerStore.getLayerById(store,layer!.id)!.effects![0];
 
         expect(effect.enabled).toBe(true); // Default is enabled
 
         store.toggleEffect(layer!.id, effect.id);
 
-        const updated = store.getLayerById(layer!.id);
+        const updated = layerStore.getLayerById(store,layer!.id);
         expect(updated!.effects![0].enabled).toBe(false);
 
         store.toggleEffect(layer!.id, effect.id);
-        expect(store.getLayerById(layer!.id)!.effects![0].enabled).toBe(true);
+        expect(layerStore.getLayerById(store,layer!.id)!.effects![0].enabled).toBe(true);
       });
 
       it('can remove effect from layer (Step 381)', () => {
-        const layer = store.createLayer('solid', 'Remove Effect');
+        const layer = layerStore.createLayer(store,'solid', 'Remove Effect');
 
         store.addEffectToLayer(layer!.id, 'gaussian-blur');
         store.addEffectToLayer(layer!.id, 'glow');
-        expect(store.getLayerById(layer!.id)!.effects!.length).toBe(2);
+        expect(layerStore.getLayerById(store,layer!.id)!.effects!.length).toBe(2);
 
-        const blurEffect = store.getLayerById(layer!.id)!.effects![0];
+        const blurEffect = layerStore.getLayerById(store,layer!.id)!.effects![0];
         store.removeEffectFromLayer(layer!.id, blurEffect.id);
 
-        const updated = store.getLayerById(layer!.id);
+        const updated = layerStore.getLayerById(store,layer!.id);
         expect(updated!.effects!.length).toBe(1);
         expect(updated!.effects![0].effectKey).toBe('glow');
       });
 
       it('can reorder effects in stack (Step 382)', () => {
-        const layer = store.createLayer('solid', 'Reorder Effects');
+        const layer = layerStore.createLayer(store,'solid', 'Reorder Effects');
 
         store.addEffectToLayer(layer!.id, 'gaussian-blur');
         store.addEffectToLayer(layer!.id, 'glow');
@@ -6043,7 +6046,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
         // Move glow (index 1) to top (index 0)
         store.reorderEffects(layer!.id, 1, 0);
 
-        const updated = store.getLayerById(layer!.id);
+        const updated = layerStore.getLayerById(store,layer!.id);
         expect(updated!.effects![0].effectKey).toBe('glow');
         expect(updated!.effects![1].effectKey).toBe('gaussian-blur');
         expect(updated!.effects![2].effectKey).toBe('drop-shadow');
@@ -6055,26 +6058,26 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
     // ========================================================================
     describe('EffectLayers / Adjustment Layers (Steps 383-387)', () => {
       it('can create an effectLayer (Step 383-384)', () => {
-        const layer = store.createLayer('effectLayer', 'Adjustment');
+        const layer = layerStore.createLayer(store,'effectLayer', 'Adjustment');
 
         expect(layer).toBeDefined();
         expect(layer!.type).toBe('effectLayer');
       });
 
       it('effectLayer has effects array (Step 385)', () => {
-        const layer = store.createLayer('effectLayer', 'FX Layer');
+        const layer = layerStore.createLayer(store,'effectLayer', 'FX Layer');
 
         expect(layer!.effects).toBeDefined();
         expect(Array.isArray(layer!.effects)).toBe(true);
       });
 
       it('can add effects to effectLayer (Step 386)', () => {
-        const layer = store.createLayer('effectLayer', 'Color Adjust');
+        const layer = layerStore.createLayer(store,'effectLayer', 'Color Adjust');
 
         store.addEffectToLayer(layer!.id, 'brightness-contrast');
         store.addEffectToLayer(layer!.id, 'hue-saturation');
 
-        const updated = store.getLayerById(layer!.id);
+        const updated = layerStore.getLayerById(store,layer!.id);
         expect(updated!.effects!.length).toBe(2);
         expect(updated!.effects![0].effectKey).toBe('brightness-contrast');
         expect(updated!.effects![1].effectKey).toBe('hue-saturation');
@@ -6082,11 +6085,11 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
 
       it('effectLayer affects layers below it (Step 387)', () => {
         // Create a solid layer first
-        const solidLayer = store.createLayer('solid', 'Base Layer');
+        const solidLayer = layerStore.createLayer(store,'solid', 'Base Layer');
         expect(solidLayer).toBeDefined();
 
         // Create effectLayer on top
-        const effectLayer = store.createLayer('effectLayer', 'Adjustment');
+        const effectLayer = layerStore.createLayer(store,'effectLayer', 'Adjustment');
 
         // Add color correction effect
         store.addEffectToLayer(effectLayer!.id, 'brightness-contrast');
@@ -6107,66 +6110,66 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
     // ========================================================================
     describe('Available Effect Types', () => {
       it('has blur & sharpen effects', () => {
-        const layer = store.createLayer('solid', 'Blur Test');
+        const layer = layerStore.createLayer(store,'solid', 'Blur Test');
 
         // Test various blur effects
         store.addEffectToLayer(layer!.id, 'gaussian-blur');
-        expect(store.getLayerById(layer!.id)!.effects!.length).toBe(1);
+        expect(layerStore.getLayerById(store,layer!.id)!.effects!.length).toBe(1);
 
         store.addEffectToLayer(layer!.id, 'directional-blur');
-        expect(store.getLayerById(layer!.id)!.effects!.length).toBe(2);
+        expect(layerStore.getLayerById(store,layer!.id)!.effects!.length).toBe(2);
       });
 
       it('has color correction effects', () => {
-        const layer = store.createLayer('solid', 'Color Test');
+        const layer = layerStore.createLayer(store,'solid', 'Color Test');
 
         store.addEffectToLayer(layer!.id, 'brightness-contrast');
         store.addEffectToLayer(layer!.id, 'hue-saturation');
         store.addEffectToLayer(layer!.id, 'levels');
 
-        const effects = store.getLayerById(layer!.id)!.effects!;
+        const effects = layerStore.getLayerById(store,layer!.id)!.effects!;
         expect(effects.length).toBe(3);
         expect(effects[0].category).toBe('color-correction');
       });
 
       it('has stylize effects', () => {
-        const layer = store.createLayer('solid', 'Style Test');
+        const layer = layerStore.createLayer(store,'solid', 'Style Test');
 
         store.addEffectToLayer(layer!.id, 'glow');
         store.addEffectToLayer(layer!.id, 'drop-shadow');
 
-        const effects = store.getLayerById(layer!.id)!.effects!;
+        const effects = layerStore.getLayerById(store,layer!.id)!.effects!;
         expect(effects.length).toBe(2);
         expect(effects[0].category).toBe('stylize');
       });
 
       it('has distort effects', () => {
-        const layer = store.createLayer('solid', 'Distort Test');
+        const layer = layerStore.createLayer(store,'solid', 'Distort Test');
 
         store.addEffectToLayer(layer!.id, 'warp');
         store.addEffectToLayer(layer!.id, 'displacement-map');
         store.addEffectToLayer(layer!.id, 'turbulent-displace');
 
-        expect(store.getLayerById(layer!.id)!.effects!.length).toBe(3);
+        expect(layerStore.getLayerById(store,layer!.id)!.effects!.length).toBe(3);
       });
 
       it('has generate effects', () => {
-        const layer = store.createLayer('solid', 'Generate Test');
+        const layer = layerStore.createLayer(store,'solid', 'Generate Test');
 
         store.addEffectToLayer(layer!.id, 'fill');
         store.addEffectToLayer(layer!.id, 'gradient-ramp');
 
-        expect(store.getLayerById(layer!.id)!.effects!.length).toBe(2);
+        expect(layerStore.getLayerById(store,layer!.id)!.effects!.length).toBe(2);
       });
 
       it('has utility/expression control effects', () => {
-        const layer = store.createLayer('solid', 'Controls Test');
+        const layer = layerStore.createLayer(store,'solid', 'Controls Test');
 
         store.addEffectToLayer(layer!.id, 'slider-control');
         store.addEffectToLayer(layer!.id, 'color-control');
         store.addEffectToLayer(layer!.id, 'point-control');
 
-        const effects = store.getLayerById(layer!.id)!.effects!;
+        const effects = layerStore.getLayerById(store,layer!.id)!.effects!;
         expect(effects.length).toBe(3);
         expect(effects[0].category).toBe('utility');
       });
@@ -6177,90 +6180,90 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
     // ========================================================================
     describe('Phase 14: Undo/Redo Verification', () => {
       it('can undo/redo adding effect', () => {
-        const layer = store.createLayer('solid', 'Undo Add Effect');
+        const layer = layerStore.createLayer(store,'solid', 'Undo Add Effect');
         const initialEffectsCount = layer!.effects?.length || 0;
 
         store.addEffectToLayer(layer!.id, 'gaussian-blur');
-        expect(store.getLayerById(layer!.id)!.effects!.length).toBe(initialEffectsCount + 1);
+        expect(layerStore.getLayerById(store,layer!.id)!.effects!.length).toBe(initialEffectsCount + 1);
 
         store.undo();
-        expect(store.getLayerById(layer!.id)!.effects?.length || 0).toBe(initialEffectsCount);
+        expect(layerStore.getLayerById(store,layer!.id)!.effects?.length || 0).toBe(initialEffectsCount);
 
         store.redo();
-        expect(store.getLayerById(layer!.id)!.effects!.length).toBe(initialEffectsCount + 1);
+        expect(layerStore.getLayerById(store,layer!.id)!.effects!.length).toBe(initialEffectsCount + 1);
       });
 
       it('can undo/redo removing effect', () => {
-        const layer = store.createLayer('solid', 'Undo Remove Effect');
+        const layer = layerStore.createLayer(store,'solid', 'Undo Remove Effect');
 
         store.addEffectToLayer(layer!.id, 'gaussian-blur');
-        const effectId = store.getLayerById(layer!.id)!.effects![0].id;
+        const effectId = layerStore.getLayerById(store,layer!.id)!.effects![0].id;
 
         store.removeEffectFromLayer(layer!.id, effectId);
-        expect(store.getLayerById(layer!.id)!.effects!.length).toBe(0);
+        expect(layerStore.getLayerById(store,layer!.id)!.effects!.length).toBe(0);
 
         store.undo();
-        expect(store.getLayerById(layer!.id)!.effects!.length).toBe(1);
+        expect(layerStore.getLayerById(store,layer!.id)!.effects!.length).toBe(1);
 
         store.redo();
-        expect(store.getLayerById(layer!.id)!.effects!.length).toBe(0);
+        expect(layerStore.getLayerById(store,layer!.id)!.effects!.length).toBe(0);
       });
 
       it('can undo/redo effect parameter change', () => {
-        const layer = store.createLayer('solid', 'Undo Param');
+        const layer = layerStore.createLayer(store,'solid', 'Undo Param');
 
         store.addEffectToLayer(layer!.id, 'gaussian-blur');
-        const effectId = store.getLayerById(layer!.id)!.effects![0].id;
+        const effectId = layerStore.getLayerById(store,layer!.id)!.effects![0].id;
 
         // Get original value
-        const originalValue = store.getLayerById(layer!.id)!.effects![0].parameters['blurriness'].value;
+        const originalValue = layerStore.getLayerById(store,layer!.id)!.effects![0].parameters['blurriness'].value;
 
         // Change value
         store.updateEffectParameter(layer!.id, effectId, 'blurriness', 100);
-        expect(store.getLayerById(layer!.id)!.effects![0].parameters['blurriness'].value).toBe(100);
+        expect(layerStore.getLayerById(store,layer!.id)!.effects![0].parameters['blurriness'].value).toBe(100);
 
         store.undo();
-        expect(store.getLayerById(layer!.id)!.effects![0].parameters['blurriness'].value).toBe(originalValue);
+        expect(layerStore.getLayerById(store,layer!.id)!.effects![0].parameters['blurriness'].value).toBe(originalValue);
 
         store.redo();
-        expect(store.getLayerById(layer!.id)!.effects![0].parameters['blurriness'].value).toBe(100);
+        expect(layerStore.getLayerById(store,layer!.id)!.effects![0].parameters['blurriness'].value).toBe(100);
       });
 
       it('can undo/redo effect reorder', () => {
-        const layer = store.createLayer('solid', 'Undo Reorder');
+        const layer = layerStore.createLayer(store,'solid', 'Undo Reorder');
 
         store.addEffectToLayer(layer!.id, 'gaussian-blur');
         store.addEffectToLayer(layer!.id, 'glow');
 
         // Verify initial order
-        expect(store.getLayerById(layer!.id)!.effects![0].effectKey).toBe('gaussian-blur');
-        expect(store.getLayerById(layer!.id)!.effects![1].effectKey).toBe('glow');
+        expect(layerStore.getLayerById(store,layer!.id)!.effects![0].effectKey).toBe('gaussian-blur');
+        expect(layerStore.getLayerById(store,layer!.id)!.effects![1].effectKey).toBe('glow');
 
         // Reorder
         store.reorderEffects(layer!.id, 1, 0);
-        expect(store.getLayerById(layer!.id)!.effects![0].effectKey).toBe('glow');
+        expect(layerStore.getLayerById(store,layer!.id)!.effects![0].effectKey).toBe('glow');
 
         store.undo();
-        expect(store.getLayerById(layer!.id)!.effects![0].effectKey).toBe('gaussian-blur');
+        expect(layerStore.getLayerById(store,layer!.id)!.effects![0].effectKey).toBe('gaussian-blur');
 
         store.redo();
-        expect(store.getLayerById(layer!.id)!.effects![0].effectKey).toBe('glow');
+        expect(layerStore.getLayerById(store,layer!.id)!.effects![0].effectKey).toBe('glow');
       });
 
       it('can undo/redo enabling effect animation', () => {
-        const layer = store.createLayer('solid', 'Undo Anim');
+        const layer = layerStore.createLayer(store,'solid', 'Undo Anim');
 
         store.addEffectToLayer(layer!.id, 'gaussian-blur');
-        const effectId = store.getLayerById(layer!.id)!.effects![0].id;
+        const effectId = layerStore.getLayerById(store,layer!.id)!.effects![0].id;
 
         store.setEffectParamAnimated(layer!.id, effectId, 'blurriness', true);
-        expect(store.getLayerById(layer!.id)!.effects![0].parameters['blurriness'].animated).toBe(true);
+        expect(layerStore.getLayerById(store,layer!.id)!.effects![0].parameters['blurriness'].animated).toBe(true);
 
         store.undo();
-        expect(store.getLayerById(layer!.id)!.effects![0].parameters['blurriness'].animated).toBe(false);
+        expect(layerStore.getLayerById(store,layer!.id)!.effects![0].parameters['blurriness'].animated).toBe(false);
 
         store.redo();
-        expect(store.getLayerById(layer!.id)!.effects![0].parameters['blurriness'].animated).toBe(true);
+        expect(layerStore.getLayerById(store,layer!.id)!.effects![0].parameters['blurriness'].animated).toBe(true);
       });
     });
 
@@ -6269,7 +6272,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
     // ========================================================================
     describe('Phase 14: Save/Load State Preservation', () => {
       it('preserves effects through save/load', () => {
-        const layer = store.createLayer('solid', 'Save Effects');
+        const layer = layerStore.createLayer(store,'solid', 'Save Effects');
 
         store.addEffectToLayer(layer!.id, 'gaussian-blur');
         store.addEffectToLayer(layer!.id, 'glow');
@@ -6289,10 +6292,10 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
 
       it('preserves effect parameter values through save/load', () => {
-        const layer = store.createLayer('solid', 'Save Params');
+        const layer = layerStore.createLayer(store,'solid', 'Save Params');
 
         store.addEffectToLayer(layer!.id, 'gaussian-blur');
-        const effectId = store.getLayerById(layer!.id)!.effects![0].id;
+        const effectId = layerStore.getLayerById(store,layer!.id)!.effects![0].id;
         store.updateEffectParameter(layer!.id, effectId, 'blurriness', 75);
 
         const savedJson = store.exportProject();
@@ -6307,10 +6310,10 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
 
       it('preserves effect enabled state through save/load', () => {
-        const layer = store.createLayer('solid', 'Save Enabled');
+        const layer = layerStore.createLayer(store,'solid', 'Save Enabled');
 
         store.addEffectToLayer(layer!.id, 'gaussian-blur');
-        const effectId = store.getLayerById(layer!.id)!.effects![0].id;
+        const effectId = layerStore.getLayerById(store,layer!.id)!.effects![0].id;
         store.toggleEffect(layer!.id, effectId); // Disable
 
         const savedJson = store.exportProject();
@@ -6325,10 +6328,10 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
 
       it('preserves effect animation state through save/load', () => {
-        const layer = store.createLayer('solid', 'Save Effect Anim');
+        const layer = layerStore.createLayer(store,'solid', 'Save Effect Anim');
 
         store.addEffectToLayer(layer!.id, 'gaussian-blur');
-        const effectId = store.getLayerById(layer!.id)!.effects![0].id;
+        const effectId = layerStore.getLayerById(store,layer!.id)!.effects![0].id;
         store.setEffectParamAnimated(layer!.id, effectId, 'blurriness', true);
 
         const savedJson = store.exportProject();
@@ -6344,7 +6347,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
 
       it('preserves effectLayer through save/load', () => {
-        const layer = store.createLayer('effectLayer', 'Save Adjustment');
+        const layer = layerStore.createLayer(store,'effectLayer', 'Save Adjustment');
 
         store.addEffectToLayer(layer!.id, 'brightness-contrast');
 
@@ -6363,7 +6366,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
 
       it('preserves effect order through save/load', () => {
-        const layer = store.createLayer('solid', 'Save Order');
+        const layer = layerStore.createLayer(store,'solid', 'Save Order');
 
         store.addEffectToLayer(layer!.id, 'gaussian-blur');
         store.addEffectToLayer(layer!.id, 'glow');
@@ -6402,20 +6405,20 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
        */
 
       it('workaround: manually copy effects from one layer to another', () => {
-        const sourceLayer = store.createLayer('solid', 'Source Layer');
-        const targetLayer = store.createLayer('solid', 'Target Layer');
+        const sourceLayer = layerStore.createLayer(store,'solid', 'Source Layer');
+        const targetLayer = layerStore.createLayer(store,'solid', 'Target Layer');
 
         // Add effects to source
         store.addEffectToLayer(sourceLayer!.id, 'gaussian-blur');
         store.addEffectToLayer(sourceLayer!.id, 'glow');
 
         // Manual copy: read source effects and add same types to target
-        const sourceEffects = store.getLayerById(sourceLayer!.id)!.effects!;
+        const sourceEffects = layerStore.getLayerById(store,sourceLayer!.id)!.effects!;
         for (const effect of sourceEffects) {
           store.addEffectToLayer(targetLayer!.id, effect.effectKey);
         }
 
-        const targetEffects = store.getLayerById(targetLayer!.id)!.effects!;
+        const targetEffects = layerStore.getLayerById(store,targetLayer!.id)!.effects!;
         expect(targetEffects.length).toBe(2);
         expect(targetEffects[0].effectKey).toBe('gaussian-blur');
         expect(targetEffects[1].effectKey).toBe('glow');
@@ -6462,29 +6465,29 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
     // ========================================================================
     describe('Understanding Parenting (Steps 391-394)', () => {
       it('can set a parent layer (Step 391)', () => {
-        const parent = store.createLayer('solid', 'Parent');
-        const child = store.createLayer('solid', 'Child');
+        const parent = layerStore.createLayer(store,'solid', 'Parent');
+        const child = layerStore.createLayer(store,'solid', 'Child');
 
-        store.setLayerParent(child!.id, parent!.id);
+        layerStore.setLayerParent(store,child!.id, parent!.id);
 
-        const childLayer = store.getLayerById(child!.id);
+        const childLayer = layerStore.getLayerById(store,child!.id);
         expect(childLayer!.parentId).toBe(parent!.id);
       });
 
       it('child inherits parent transforms conceptually (Steps 392-394)', () => {
-        const parent = store.createLayer('solid', 'Parent');
-        const child = store.createLayer('solid', 'Child');
+        const parent = layerStore.createLayer(store,'solid', 'Parent');
+        const child = layerStore.createLayer(store,'solid', 'Child');
 
-        store.setLayerParent(child!.id, parent!.id);
+        layerStore.setLayerParent(store,child!.id, parent!.id);
 
         // Move parent
         store.updateLayerTransform(parent!.id, { position: { x: 100, y: 100 } });
 
         // Parent position changed
-        expect(store.getLayerById(parent!.id)!.transform.position.value.x).toBe(100);
+        expect(layerStore.getLayerById(store,parent!.id)!.transform.position.value.x).toBe(100);
 
         // Child still has its own position (inheritance applied at render time)
-        const childLayer = store.getLayerById(child!.id);
+        const childLayer = layerStore.getLayerById(store,child!.id);
         expect(childLayer!.parentId).toBe(parent!.id);
       });
     });
@@ -6496,23 +6499,23 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
     // ========================================================================
     describe('PropertyLink / Setting Parent (Steps 397-404)', () => {
       it('can link child to parent via setLayerParent (Steps 397-400)', () => {
-        const parent = store.createLayer('solid', 'Parent Layer');
-        const child = store.createLayer('solid', 'Child Layer');
+        const parent = layerStore.createLayer(store,'solid', 'Parent Layer');
+        const child = layerStore.createLayer(store,'solid', 'Child Layer');
 
-        store.setLayerParent(child!.id, parent!.id);
+        layerStore.setLayerParent(store,child!.id, parent!.id);
 
-        expect(store.getLayerById(child!.id)!.parentId).toBe(parent!.id);
+        expect(layerStore.getLayerById(store,child!.id)!.parentId).toBe(parent!.id);
       });
 
       it('can remove parent by setting to null (Step 404)', () => {
-        const parent = store.createLayer('solid', 'Parent');
-        const child = store.createLayer('solid', 'Child');
+        const parent = layerStore.createLayer(store,'solid', 'Parent');
+        const child = layerStore.createLayer(store,'solid', 'Child');
 
-        store.setLayerParent(child!.id, parent!.id);
-        expect(store.getLayerById(child!.id)!.parentId).toBe(parent!.id);
+        layerStore.setLayerParent(store,child!.id, parent!.id);
+        expect(layerStore.getLayerById(store,child!.id)!.parentId).toBe(parent!.id);
 
-        store.setLayerParent(child!.id, null);
-        expect(store.getLayerById(child!.id)!.parentId).toBeNull();
+        layerStore.setLayerParent(store,child!.id, null);
+        expect(layerStore.getLayerById(store,child!.id)!.parentId).toBeNull();
       });
     });
 
@@ -6521,7 +6524,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
     // ========================================================================
     describe('Control Layers (Steps 405-409)', () => {
       it('can create a Control layer (Step 405)', () => {
-        const control = store.createLayer('control', 'Character_Control');
+        const control = layerStore.createLayer(store,'control', 'Character_Control');
 
         expect(control).toBeDefined();
         expect(control!.type).toBe('control');
@@ -6529,7 +6532,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
 
       it('Control layers have transform properties (Step 408)', () => {
-        const control = store.createLayer('control', 'Control');
+        const control = layerStore.createLayer(store,'control', 'Control');
 
         expect(control!.transform).toBeDefined();
         expect(control!.transform.position).toBeDefined();
@@ -6538,35 +6541,35 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
 
       it('can parent multiple layers to single Control (Steps 407-408)', () => {
-        const control = store.createLayer('control', 'Group_Control');
-        const layer1 = store.createLayer('solid', 'Arm Left');
-        const layer2 = store.createLayer('solid', 'Arm Right');
-        const layer3 = store.createLayer('solid', 'Body');
+        const control = layerStore.createLayer(store,'control', 'Group_Control');
+        const layer1 = layerStore.createLayer(store,'solid', 'Arm Left');
+        const layer2 = layerStore.createLayer(store,'solid', 'Arm Right');
+        const layer3 = layerStore.createLayer(store,'solid', 'Body');
 
-        store.setLayerParent(layer1!.id, control!.id);
-        store.setLayerParent(layer2!.id, control!.id);
-        store.setLayerParent(layer3!.id, control!.id);
+        layerStore.setLayerParent(store,layer1!.id, control!.id);
+        layerStore.setLayerParent(store,layer2!.id, control!.id);
+        layerStore.setLayerParent(store,layer3!.id, control!.id);
 
-        expect(store.getLayerById(layer1!.id)!.parentId).toBe(control!.id);
-        expect(store.getLayerById(layer2!.id)!.parentId).toBe(control!.id);
-        expect(store.getLayerById(layer3!.id)!.parentId).toBe(control!.id);
+        expect(layerStore.getLayerById(store,layer1!.id)!.parentId).toBe(control!.id);
+        expect(layerStore.getLayerById(store,layer2!.id)!.parentId).toBe(control!.id);
+        expect(layerStore.getLayerById(store,layer3!.id)!.parentId).toBe(control!.id);
       });
 
       it('can animate Control to affect all children (Step 409)', () => {
-        const control = store.createLayer('control', 'Anim_Control');
-        const child = store.createLayer('solid', 'Child');
+        const control = layerStore.createLayer(store,'control', 'Anim_Control');
+        const child = layerStore.createLayer(store,'solid', 'Child');
 
-        store.setLayerParent(child!.id, control!.id);
+        layerStore.setLayerParent(store,child!.id, control!.id);
 
         store.setFrame(0);
         store.addKeyframe(control!.id, 'position', { x: 0, y: 0 });
         store.setFrame(30);
         store.addKeyframe(control!.id, 'position', { x: 500, y: 300 });
 
-        const updated = store.getLayerById(control!.id);
+        const updated = layerStore.getLayerById(store,control!.id);
         expect(updated!.transform.position.animated).toBe(true);
         expect(updated!.transform.position.keyframes.length).toBe(2);
-        expect(store.getLayerById(child!.id)!.parentId).toBe(control!.id);
+        expect(layerStore.getLayerById(store,child!.id)!.parentId).toBe(control!.id);
       });
     });
 
@@ -6575,23 +6578,23 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
     // ========================================================================
     describe('Parenting Example (Steps 410-415)', () => {
       it('complete parenting workflow', () => {
-        const armLeft = store.createLayer('solid', 'Arm_Left');
-        const armRight = store.createLayer('solid', 'Arm_Right');
-        const body = store.createLayer('solid', 'Body');
-        const control = store.createLayer('control', 'Character_Control');
+        const armLeft = layerStore.createLayer(store,'solid', 'Arm_Left');
+        const armRight = layerStore.createLayer(store,'solid', 'Arm_Right');
+        const body = layerStore.createLayer(store,'solid', 'Body');
+        const control = layerStore.createLayer(store,'control', 'Character_Control');
 
-        store.setLayerParent(armLeft!.id, control!.id);
-        store.setLayerParent(armRight!.id, control!.id);
-        store.setLayerParent(body!.id, control!.id);
+        layerStore.setLayerParent(store,armLeft!.id, control!.id);
+        layerStore.setLayerParent(store,armRight!.id, control!.id);
+        layerStore.setLayerParent(store,body!.id, control!.id);
 
         store.setFrame(0);
         store.addKeyframe(control!.id, 'position', { x: 200, y: 400 });
         store.setFrame(30);
         store.addKeyframe(control!.id, 'position', { x: 800, y: 400 });
 
-        expect(store.getLayerById(armLeft!.id)!.parentId).toBe(control!.id);
-        expect(store.getLayerById(armRight!.id)!.parentId).toBe(control!.id);
-        expect(store.getLayerById(body!.id)!.parentId).toBe(control!.id);
+        expect(layerStore.getLayerById(store,armLeft!.id)!.parentId).toBe(control!.id);
+        expect(layerStore.getLayerById(store,armRight!.id)!.parentId).toBe(control!.id);
+        expect(layerStore.getLayerById(store,body!.id)!.parentId).toBe(control!.id);
 
         // Child can have own animation
         store.setFrame(0);
@@ -6599,7 +6602,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
         store.setFrame(15);
         store.addKeyframe(armLeft!.id, 'rotation', 45);
 
-        expect(store.getLayerById(armLeft!.id)!.transform.rotation.animated).toBe(true);
+        expect(layerStore.getLayerById(store,armLeft!.id)!.transform.rotation.animated).toBe(true);
       });
     });
 
@@ -6608,36 +6611,36 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
     // ========================================================================
     describe('Hierarchy (Steps 416-420)', () => {
       it('parenting can be nested (Step 416)', () => {
-        const grandparent = store.createLayer('control', 'Grandparent');
-        const parent = store.createLayer('control', 'Parent');
-        const child = store.createLayer('solid', 'Child');
+        const grandparent = layerStore.createLayer(store,'control', 'Grandparent');
+        const parent = layerStore.createLayer(store,'control', 'Parent');
+        const child = layerStore.createLayer(store,'solid', 'Child');
 
-        store.setLayerParent(parent!.id, grandparent!.id);
-        store.setLayerParent(child!.id, parent!.id);
+        layerStore.setLayerParent(store,parent!.id, grandparent!.id);
+        layerStore.setLayerParent(store,child!.id, parent!.id);
 
-        expect(store.getLayerById(parent!.id)!.parentId).toBe(grandparent!.id);
-        expect(store.getLayerById(child!.id)!.parentId).toBe(parent!.id);
+        expect(layerStore.getLayerById(store,parent!.id)!.parentId).toBe(grandparent!.id);
+        expect(layerStore.getLayerById(store,child!.id)!.parentId).toBe(parent!.id);
       });
 
       it('prevents circular parenting (self-parenting)', () => {
-        const layer = store.createLayer('solid', 'Self');
+        const layer = layerStore.createLayer(store,'solid', 'Self');
 
-        store.setLayerParent(layer!.id, layer!.id);
+        layerStore.setLayerParent(store,layer!.id, layer!.id);
 
-        expect(store.getLayerById(layer!.id)!.parentId).toBeNull();
+        expect(layerStore.getLayerById(store,layer!.id)!.parentId).toBeNull();
       });
 
       it('prevents circular parenting (A->B->A)', () => {
-        const layerA = store.createLayer('solid', 'A');
-        const layerB = store.createLayer('solid', 'B');
+        const layerA = layerStore.createLayer(store,'solid', 'A');
+        const layerB = layerStore.createLayer(store,'solid', 'B');
 
-        store.setLayerParent(layerB!.id, layerA!.id);
-        expect(store.getLayerById(layerB!.id)!.parentId).toBe(layerA!.id);
+        layerStore.setLayerParent(store,layerB!.id, layerA!.id);
+        expect(layerStore.getLayerById(store,layerB!.id)!.parentId).toBe(layerA!.id);
 
-        store.setLayerParent(layerA!.id, layerB!.id);
+        layerStore.setLayerParent(store,layerA!.id, layerB!.id);
 
         // Should prevent cycle
-        expect(store.getLayerById(layerA!.id)!.parentId).toBeNull();
+        expect(layerStore.getLayerById(store,layerA!.id)!.parentId).toBeNull();
       });
     });
 
@@ -6646,17 +6649,17 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
     // ========================================================================
     describe('Phase 15: Undo/Redo Verification', () => {
       it('can undo/redo setLayerParent', () => {
-        const parent = store.createLayer('solid', 'Parent');
-        const child = store.createLayer('solid', 'Child');
+        const parent = layerStore.createLayer(store,'solid', 'Parent');
+        const child = layerStore.createLayer(store,'solid', 'Child');
 
-        store.setLayerParent(child!.id, parent!.id);
-        expect(store.getLayerById(child!.id)!.parentId).toBe(parent!.id);
+        layerStore.setLayerParent(store,child!.id, parent!.id);
+        expect(layerStore.getLayerById(store,child!.id)!.parentId).toBe(parent!.id);
 
         store.undo();
-        expect(store.getLayerById(child!.id)!.parentId).toBeNull();
+        expect(layerStore.getLayerById(store,child!.id)!.parentId).toBeNull();
 
         store.redo();
-        expect(store.getLayerById(child!.id)!.parentId).toBe(parent!.id);
+        expect(layerStore.getLayerById(store,child!.id)!.parentId).toBe(parent!.id);
       });
     });
 
@@ -6665,10 +6668,10 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
     // ========================================================================
     describe('Phase 15: Save/Load State Preservation', () => {
       it('preserves parent relationships through save/load', () => {
-        const parent = store.createLayer('control', 'Save Parent');
-        const child = store.createLayer('solid', 'Save Child');
+        const parent = layerStore.createLayer(store,'control', 'Save Parent');
+        const child = layerStore.createLayer(store,'solid', 'Save Child');
 
-        store.setLayerParent(child!.id, parent!.id);
+        layerStore.setLayerParent(store,child!.id, parent!.id);
 
         const savedJson = store.exportProject();
 
@@ -6687,7 +6690,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
 
       it('preserves Control layer type through save/load', () => {
-        const control = store.createLayer('control', 'Saved Control');
+        const control = layerStore.createLayer(store,'control', 'Saved Control');
 
         const savedJson = store.exportProject();
 
@@ -6714,7 +6717,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
     describe('Steps 421-423: Expression System Exists', () => {
       it('expression methods work end-to-end', () => {
         // Step 421-423: Expressions exist and function correctly
-        const layer = store.createLayer('solid', 'Expr System Test');
+        const layer = layerStore.createLayer(store,'solid', 'Expr System Test');
 
         // enablePropertyExpression - creates expression
         const enabled = store.enablePropertyExpression(layer!.id, 'transform.position', 'wiggle');
@@ -6749,7 +6752,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
     describe('Steps 424-428: Enabling Expressions', () => {
       it('Steps 424-426: enables expression on position property', () => {
         // Step 424: Select layer (create one)
-        const layer = store.createLayer('solid', 'Expr Test');
+        const layer = layerStore.createLayer(store,'solid', 'Expr Test');
         expect(layer).toBeDefined();
 
         // Step 425-426: Enable expression on position (Alt+click stopwatch)
@@ -6761,7 +6764,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
 
       it('Step 427-428: expression is enabled by default', () => {
-        const layer = store.createLayer('solid', 'Enabled Test');
+        const layer = layerStore.createLayer(store,'solid', 'Enabled Test');
         store.enablePropertyExpression(layer!.id, 'transform.position');
 
         const expr = store.getPropertyExpression(layer!.id, 'transform.position');
@@ -6778,8 +6781,8 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       // Steps 431-432 drag PropertyLink is UI-only - skip
       it('Steps 429-433: can set expression to link to another layer position', () => {
         // Step 429: Create two layers
-        const layer1 = store.createLayer('solid', 'Layer 1');
-        const layer2 = store.createLayer('solid', 'Layer 2');
+        const layer1 = layerStore.createLayer(store,'solid', 'Layer 1');
+        const layer2 = layerStore.createLayer(store,'solid', 'Layer 2');
         expect(layer1).toBeDefined();
         expect(layer2).toBeDefined();
 
@@ -6800,7 +6803,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
     // ========================================================================
     describe('Steps 434-438: Wiggle Expression', () => {
       it('Steps 434-436: can enable wiggle expression preset', () => {
-        const layer = store.createLayer('solid', 'Wiggle Layer');
+        const layer = layerStore.createLayer(store,'solid', 'Wiggle Layer');
 
         // Step 434-435: Enable wiggle expression
         const result = store.enablePropertyExpression(layer!.id, 'transform.position', 'wiggle', {
@@ -6816,7 +6819,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
 
       it('Step 438: wiggle params are stored correctly', () => {
-        const layer = store.createLayer('solid', 'Wiggle Params');
+        const layer = layerStore.createLayer(store,'solid', 'Wiggle Params');
         store.enablePropertyExpression(layer!.id, 'transform.position', 'wiggle', {
           frequency: 2,
           amplitude: 50
@@ -6833,7 +6836,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
     // ========================================================================
     describe('Steps 439-443: repeatAfter Expression (Loop)', () => {
       it('Steps 439-442: can enable repeatAfter cycle expression', () => {
-        const layer = store.createLayer('solid', 'Loop Layer');
+        const layer = layerStore.createLayer(store,'solid', 'Loop Layer');
 
         // First add some keyframes
         store.addKeyframe(layer!.id, 'transform.position', { x: 0, y: 0, z: 0 }, 0);
@@ -6851,8 +6854,8 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
 
       it('Step 443: repeatAfter supports pingpong and offset modes', () => {
-        const layer1 = store.createLayer('solid', 'Pingpong Layer');
-        const layer2 = store.createLayer('solid', 'Offset Layer');
+        const layer1 = layerStore.createLayer(store,'solid', 'Pingpong Layer');
+        const layer2 = layerStore.createLayer(store,'solid', 'Offset Layer');
 
         store.enablePropertyExpression(layer1!.id, 'transform.position', 'repeatAfter', {
           mode: 'pingpong'
@@ -6871,7 +6874,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
     // ========================================================================
     describe('Steps 444-448: Time Expression', () => {
       it('Steps 444-446: can enable time-based rotation expression', () => {
-        const layer = store.createLayer('solid', 'Time Layer');
+        const layer = layerStore.createLayer(store,'solid', 'Time Layer');
 
         // Step 444-445: Time expression on rotation
         const result = store.enablePropertyExpression(layer!.id, 'transform.rotation', 'time', {
@@ -6885,7 +6888,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
 
       it('Steps 447-448: time expression parameters are correct', () => {
-        const layer = store.createLayer('solid', 'Time Params');
+        const layer = layerStore.createLayer(store,'solid', 'Time Params');
         store.enablePropertyExpression(layer!.id, 'transform.rotation', 'time', {
           multiplier: 360  // One full rotation per second
         });
@@ -6911,7 +6914,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
     // ========================================================================
     describe('Steps 454-455: Disable Expression', () => {
       it('Step 454: can disable expression', () => {
-        const layer = store.createLayer('solid', 'Disable Test');
+        const layer = layerStore.createLayer(store,'solid', 'Disable Test');
         store.enablePropertyExpression(layer!.id, 'transform.position', 'wiggle');
 
         // Verify enabled first
@@ -6924,7 +6927,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
 
       it('Step 455: can re-enable expression', () => {
-        const layer = store.createLayer('solid', 'Re-enable Test');
+        const layer = layerStore.createLayer(store,'solid', 'Re-enable Test');
         store.enablePropertyExpression(layer!.id, 'transform.position', 'wiggle');
         store.disablePropertyExpression(layer!.id, 'transform.position');
 
@@ -6940,7 +6943,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
     // ========================================================================
     describe('Additional Expression Functionality', () => {
       it('can remove expression entirely', () => {
-        const layer = store.createLayer('solid', 'Remove Expr');
+        const layer = layerStore.createLayer(store,'solid', 'Remove Expr');
         store.enablePropertyExpression(layer!.id, 'transform.position', 'wiggle');
 
         expect(store.hasPropertyExpression(layer!.id, 'transform.position')).toBe(true);
@@ -6951,7 +6954,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
 
       it('can update expression parameters', () => {
-        const layer = store.createLayer('solid', 'Update Params');
+        const layer = layerStore.createLayer(store,'solid', 'Update Params');
         store.enablePropertyExpression(layer!.id, 'transform.position', 'wiggle', {
           frequency: 2,
           amplitude: 50
@@ -6970,7 +6973,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
 
       it('can set expression on multiple properties', () => {
-        const layer = store.createLayer('solid', 'Multi Expr');
+        const layer = layerStore.createLayer(store,'solid', 'Multi Expr');
 
         store.enablePropertyExpression(layer!.id, 'transform.position', 'wiggle');
         store.enablePropertyExpression(layer!.id, 'transform.rotation', 'time');
@@ -6982,7 +6985,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
 
       it('can set full expression object directly', () => {
-        const layer = store.createLayer('solid', 'Direct Expr');
+        const layer = layerStore.createLayer(store,'solid', 'Direct Expr');
 
         const result = store.setPropertyExpression(layer!.id, 'transform.position', {
           enabled: true,
@@ -7003,7 +7006,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
     // ========================================================================
     describe('Phase 16: Undo/Redo Verification', () => {
       it('can undo/redo enabling expression', () => {
-        const layer = store.createLayer('solid', 'Undo Enable');
+        const layer = layerStore.createLayer(store,'solid', 'Undo Enable');
         store.enablePropertyExpression(layer!.id, 'transform.position', 'wiggle');
 
         expect(store.hasPropertyExpression(layer!.id, 'transform.position')).toBe(true);
@@ -7016,7 +7019,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
 
       it('can undo/redo removing expression', () => {
-        const layer = store.createLayer('solid', 'Undo Remove');
+        const layer = layerStore.createLayer(store,'solid', 'Undo Remove');
         store.enablePropertyExpression(layer!.id, 'transform.position', 'wiggle');
         store.removePropertyExpression(layer!.id, 'transform.position');
 
@@ -7035,7 +7038,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
     // ========================================================================
     describe('Phase 16: Save/Load State Preservation', () => {
       it('preserves expressions through save/load', () => {
-        const layer = store.createLayer('solid', 'Save Expr');
+        const layer = layerStore.createLayer(store,'solid', 'Save Expr');
         store.enablePropertyExpression(layer!.id, 'transform.position', 'wiggle', {
           frequency: 3,
           amplitude: 60
@@ -7060,7 +7063,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
 
       it('preserves disabled expression state through save/load', () => {
-        const layer = store.createLayer('solid', 'Disabled Expr');
+        const layer = layerStore.createLayer(store,'solid', 'Disabled Expr');
         store.enablePropertyExpression(layer!.id, 'transform.position', 'wiggle');
         store.disablePropertyExpression(layer!.id, 'transform.position');
 
@@ -7098,7 +7101,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
 
         // Create layer and nest it
         store.switchComposition(store.project.mainCompositionId);
-        const layer = store.createLayer('solid', 'Nest Test Layer');
+        const layer = layerStore.createLayer(store,'solid', 'Nest Test Layer');
         store.selectLayers([layer!.id]);
 
         // nestSelectedLayers - creates nested composition from selection
@@ -7118,9 +7121,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
     describe('Steps 460-467: Creating NestedComp', () => {
       it('Steps 460-463: can create nestedComp from selected layers', () => {
         // Step 460: Create multiple layers to group
-        const layer1 = store.createLayer('solid', 'Group Layer 1');
-        const layer2 = store.createLayer('solid', 'Group Layer 2');
-        const layer3 = store.createLayer('solid', 'Group Layer 3');
+        const layer1 = layerStore.createLayer(store,'solid', 'Group Layer 1');
+        const layer2 = layerStore.createLayer(store,'solid', 'Group Layer 2');
+        const layer3 = layerStore.createLayer(store,'solid', 'Group Layer 3');
         expect(layer1).toBeDefined();
         expect(layer2).toBeDefined();
         expect(layer3).toBeDefined();
@@ -7137,8 +7140,8 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
 
       it('Step 466: selected layers replaced by single NestedComp layer', () => {
-        const layer1 = store.createLayer('solid', 'Nest Layer 1');
-        const layer2 = store.createLayer('solid', 'Nest Layer 2');
+        const layer1 = layerStore.createLayer(store,'solid', 'Nest Layer 1');
+        const layer2 = layerStore.createLayer(store,'solid', 'Nest Layer 2');
 
         const originalCompId = store.activeCompositionId;
         store.selectLayers([layer1!.id, layer2!.id]);
@@ -7162,7 +7165,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
 
       it('Step 467: new composition appears in project', () => {
-        const layer1 = store.createLayer('solid', 'Project Layer');
+        const layer1 = layerStore.createLayer(store,'solid', 'Project Layer');
         store.selectLayers([layer1!.id]);
 
         const nestedComp = store.nestSelectedLayers('Project NestedComp');
@@ -7180,7 +7183,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
     // ========================================================================
     describe('Steps 468-471: Editing NestedComp', () => {
       it('Step 468-469: can enter nestedComp to edit', () => {
-        const layer1 = store.createLayer('solid', 'Edit Layer');
+        const layer1 = layerStore.createLayer(store,'solid', 'Edit Layer');
         store.selectLayers([layer1!.id]);
 
         const nestedComp = store.nestSelectedLayers('Editable Comp');
@@ -7200,7 +7203,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
 
       it('Step 471: can return to parent comp via tab', () => {
         const originalCompId = store.activeCompositionId;
-        const layer1 = store.createLayer('solid', 'Return Layer');
+        const layer1 = layerStore.createLayer(store,'solid', 'Return Layer');
         store.selectLayers([layer1!.id]);
 
         const nestedComp = store.nestSelectedLayers('Return Comp');
@@ -7217,7 +7220,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
     // ========================================================================
     describe('Steps 472-475: NestedComp as Layer', () => {
       it('Step 472-473: nestedComp layer has transform properties', () => {
-        const layer1 = store.createLayer('solid', 'Transform Source');
+        const layer1 = layerStore.createLayer(store,'solid', 'Transform Source');
         const originalCompId = store.activeCompositionId;
         store.selectLayers([layer1!.id]);
 
@@ -7236,7 +7239,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       it('Step 473: nestedComp layer is animatable (transform.position has keyframes array)', () => {
         // Testing that nestedComp layer has keyframeable properties
         // Full animation testing is done in other phases
-        const layer1 = store.createLayer('solid', 'Animate Source');
+        const layer1 = layerStore.createLayer(store,'solid', 'Animate Source');
         const originalCompId = store.activeCompositionId;
         store.selectLayers([layer1!.id]);
 
@@ -7255,7 +7258,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       it('Step 475: nestedComp layer is duplicatable (has id and type)', () => {
         // Testing that nestedComp layers have the properties needed for duplication
         // Full duplication is covered by duplicateLayer tests
-        const layer1 = store.createLayer('solid', 'Duplicate Source');
+        const layer1 = layerStore.createLayer(store,'solid', 'Duplicate Source');
         const originalCompId = store.activeCompositionId;
         store.selectLayers([layer1!.id]);
 
@@ -7279,7 +7282,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
     describe('Steps 476-480: NestedComp Tips', () => {
       it('Step 476: changes to source nestedComp affect instances', () => {
         // Create a comp with a layer
-        const layer1 = store.createLayer('solid', 'Shared Layer');
+        const layer1 = layerStore.createLayer(store,'solid', 'Shared Layer');
         const originalCompId = store.activeCompositionId;
         store.selectLayers([layer1!.id]);
 
@@ -7319,7 +7322,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
 
       it('nestedComp layer references correct composition', () => {
-        const layer1 = store.createLayer('solid', 'Reference Layer');
+        const layer1 = layerStore.createLayer(store,'solid', 'Reference Layer');
         const originalCompId = store.activeCompositionId;
         store.selectLayers([layer1!.id]);
 
@@ -7340,7 +7343,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
     // ========================================================================
     describe('Phase 17: Undo/Redo Verification', () => {
       it('can undo/redo nestSelectedLayers', () => {
-        const layer1 = store.createLayer('solid', 'Undo Nest Layer');
+        const layer1 = layerStore.createLayer(store,'solid', 'Undo Nest Layer');
         const originalCompId = store.activeCompositionId;
         const initialLayerCount = store.getActiveCompLayers().length;
 
@@ -7370,7 +7373,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
     // ========================================================================
     describe('Phase 17: Save/Load State Preservation', () => {
       it('preserves nestedComp through save/load', () => {
-        const layer1 = store.createLayer('solid', 'Save Nest Layer');
+        const layer1 = layerStore.createLayer(store,'solid', 'Save Nest Layer');
         const originalCompId = store.activeCompositionId;
         store.selectLayers([layer1!.id]);
 
@@ -7397,7 +7400,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
 
       it('preserves layers inside nestedComp through save/load', () => {
-        const layer1 = store.createLayer('solid', 'Inner Layer');
+        const layer1 = layerStore.createLayer(store,'solid', 'Inner Layer');
         store.selectLayers([layer1!.id]);
 
         const nestedComp = store.nestSelectedLayers('Inner Test Comp');
@@ -7808,8 +7811,8 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
     describe('Project Export (Save/Load)', () => {
       it('can export project to JSON', () => {
         // Create some content
-        store.createLayer('solid', 'Export Test Layer');
-        store.createLayer('text', 'Export Test Text');
+        layerStore.createLayer(store,'solid', 'Export Test Layer');
+        layerStore.createLayer(store,'text', 'Export Test Text');
 
         const exported = store.exportProject();
         expect(typeof exported).toBe('string');
@@ -7822,10 +7825,10 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
 
       it('exported project contains all compositions', () => {
         // Create main comp content
-        store.createLayer('solid', 'Main Layer');
+        layerStore.createLayer(store,'solid', 'Main Layer');
 
         // Create a nested comp
-        const layer = store.createLayer('solid', 'Nest Source');
+        const layer = layerStore.createLayer(store,'solid', 'Nest Source');
         store.selectLayers([layer!.id]);
         const nestedComp = store.nestSelectedLayers('Export Nested');
 
@@ -7838,7 +7841,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
 
       it('exported project can be re-imported', () => {
-        store.createLayer('solid', 'Roundtrip Layer');
+        layerStore.createLayer(store,'solid', 'Roundtrip Layer');
         const exported = store.exportProject();
 
         const pinia2 = createPinia();
@@ -7860,8 +7863,8 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
         // This test verifies that all major features work together
 
         // 1. Create layers
-        const solid = store.createLayer('solid', 'Final Solid');
-        const text = store.createLayer('text', 'Final Text');
+        const solid = layerStore.createLayer(store,'solid', 'Final Solid');
+        const text = layerStore.createLayer(store,'text', 'Final Text');
         expect(solid).toBeDefined();
         expect(text).toBeDefined();
 
@@ -7874,8 +7877,8 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
         expect(store.hasPropertyExpression(text!.id, 'transform.rotation')).toBe(true);
 
         // 4. Set up parenting
-        store.setLayerParent(text!.id, solid!.id);
-        expect(store.getLayerById(text!.id)!.parentId).toBe(solid!.id);
+        layerStore.setLayerParent(store,text!.id, solid!.id);
+        expect(layerStore.getLayerById(store,text!.id)!.parentId).toBe(solid!.id);
 
         // 5. Set work area
         playbackStore.setWorkArea(0, 60);

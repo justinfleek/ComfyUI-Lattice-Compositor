@@ -211,12 +211,13 @@ import {
 } from "@/services/layerDecomposition";
 import {
   type DecompositionResult,
-  decomposeImageToLayers,
-  downloadDecompositionModel,
-} from "@/stores/actions/layerDecompositionActions";
+  useDecompositionStore,
+} from "@/stores/decompositionStore";
 import { useCompositorStore } from "@/stores/compositorStore";
+import { useLayerStore } from "@/stores/layerStore";
 
 const store = useCompositorStore();
+const layerStore = useLayerStore();
 const service = getLayerDecompositionService();
 
 // State
@@ -280,8 +281,9 @@ async function startDownload() {
   downloadStage.value = "Starting...";
   errorMessage.value = null;
 
+  const decompositionStore = useDecompositionStore();
   try {
-    await downloadDecompositionModel((progress) => {
+    await decompositionStore.downloadDecompositionModel((progress) => {
       downloadProgress.value = progress.percent;
       downloadStage.value = progress.stage;
     });
@@ -345,7 +347,8 @@ async function startDecomposition() {
     const imageDataUrl = await fileToDataUrl(selectedFile.value);
 
     // Run decomposition
-    const decompositionResult = await decomposeImageToLayers(
+    const decompositionStore = useDecompositionStore();
+    const decompositionResult = await decompositionStore.decomposeImageToLayers(
       store as any, // Type cast for simplified store interface
       imageDataUrl,
       {
@@ -388,7 +391,7 @@ function fileToDataUrl(file: File): Promise<string> {
 }
 
 function selectLayer(layerId: string) {
-  store.selectLayer(layerId, false);
+  layerStore.selectLayer(store, layerId, false);
 }
 
 function getLayerZ(layer: any): number {

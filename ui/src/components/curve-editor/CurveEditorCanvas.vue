@@ -146,7 +146,8 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import { useCompositorStore } from "@/stores/compositorStore";
-import type { Keyframe } from "@/types/project";
+import { useKeyframeStore } from "@/stores/keyframeStore";
+import type { Keyframe, PropertyValue } from "@/types/project";
 
 // ═══════════════════════════════════════════════════════════════════
 // CONSTANTS - Curve Colors
@@ -174,7 +175,7 @@ interface CurveData {
   propertyPath: string;
   name: string;
   color: string;
-  keyframes: Keyframe<any>[];
+  keyframes: Keyframe<PropertyValue>[];
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -194,6 +195,7 @@ const emit = defineEmits<{
 }>();
 
 const store = useCompositorStore();
+const keyframeStore = useKeyframeStore();
 
 // ═══════════════════════════════════════════════════════════════════
 // REFS
@@ -438,7 +440,7 @@ const yAxisLabels = computed(() => {
 
 interface SelectedKeyframeInfo {
   curve: CurveData;
-  keyframe: Keyframe<any>;
+  keyframe: Keyframe<PropertyValue>;
   frame: number;
   value: number;
 }
@@ -477,7 +479,8 @@ function updateSelectedKeyframeFrame(e: Event) {
     Math.min(props.frameCount - 1, parseInt(input.value, 10) || 0),
   );
 
-  store.moveKeyframe(
+  keyframeStore.moveKeyframe(
+    store,
     data.curve.layerId,
     data.curve.propertyPath,
     data.keyframe.id,
@@ -494,7 +497,8 @@ function updateSelectedKeyframeValue(e: Event) {
   const newValue = parseFloat(input.value) || 0;
 
   // Update the keyframe value
-  store.setKeyframeValue(
+  keyframeStore.setKeyframeValue(
+    store,
     data.curve.layerId,
     data.curve.propertyPath,
     data.keyframe.id,
@@ -749,7 +753,7 @@ function drawSpeedCurve(
 // POSITIONING HELPERS
 // ═══════════════════════════════════════════════════════════════════
 
-function getKeyframeStyle(_curve: CurveData, kf: Keyframe<any>) {
+function getKeyframeStyle(_curve: CurveData, kf: Keyframe<PropertyValue>) {
   const value = typeof kf.value === "number" ? kf.value : 0;
   const h = canvasRef.value?.height || 300;
   return {
@@ -760,7 +764,7 @@ function getKeyframeStyle(_curve: CurveData, kf: Keyframe<any>) {
 
 function getHandleStyle(
   curve: CurveData,
-  kf: Keyframe<any>,
+  kf: Keyframe<PropertyValue>,
   type: "in" | "out",
 ) {
   const handle = type === "in" ? kf.inHandle : kf.outHandle;
@@ -780,7 +784,7 @@ function getHandleStyle(
 
 function getHandleLineCoords(
   _curve: CurveData,
-  kf: Keyframe<any>,
+  kf: Keyframe<PropertyValue>,
   type: "in" | "out",
 ) {
   const handle = type === "in" ? kf.inHandle : kf.outHandle;
@@ -797,9 +801,9 @@ function getHandleLineCoords(
   };
 }
 
-function formatValue(value: any): string {
+function formatValue(value: PropertyValue): string {
   if (typeof value === "number") return value.toFixed(1);
-  if (typeof value === "object") return JSON.stringify(value);
+  if (typeof value === "object" && value !== null) return JSON.stringify(value);
   return String(value);
 }
 
@@ -859,7 +863,7 @@ function setGraphMode(mode: "value" | "speed") {
 let isDragging = false;
 let dragType: "keyframe" | "handle" | "pan" | null = null;
 let dragCurve: CurveData | null = null;
-let dragKeyframe: Keyframe<any> | null = null;
+let dragKeyframe: Keyframe<PropertyValue> | null = null;
 let dragHandleType: "in" | "out" | null = null;
 let dragStartPos = { x: 0, y: 0 };
 
@@ -877,7 +881,7 @@ function handleMouseDown(event: MouseEvent) {
 
 function startKeyframeDrag(
   curve: CurveData,
-  kf: Keyframe<any>,
+  kf: Keyframe<PropertyValue>,
   event: MouseEvent,
 ) {
   isDragging = true;
@@ -891,7 +895,7 @@ function startKeyframeDrag(
 
 function startHandleDrag(
   curve: CurveData,
-  kf: Keyframe<any>,
+  kf: Keyframe<PropertyValue>,
   handleType: "in" | "out",
   event: MouseEvent,
 ) {
@@ -921,7 +925,8 @@ function handleMouseMove(event: MouseEvent) {
   } else if (dragType === "keyframe" && dragCurve && dragKeyframe) {
     const newFrame = Math.round(pixelToFrame(x));
     const clampedFrame = Math.max(0, Math.min(props.frameCount - 1, newFrame));
-    store.moveKeyframe(
+    keyframeStore.moveKeyframe(
+      store,
       dragCurve.layerId,
       dragCurve.propertyPath,
       dragKeyframe.id,
@@ -944,7 +949,8 @@ function handleMouseMove(event: MouseEvent) {
     // Ctrl+drag breaks handles (sets controlMode to 'corner')
     const breakHandle = event.ctrlKey || event.metaKey;
 
-    store.setKeyframeHandleWithMode(
+    keyframeStore.setKeyframeHandleWithMode(
+      store,
       dragCurve.layerId,
       dragCurve.propertyPath,
       dragKeyframe.id,

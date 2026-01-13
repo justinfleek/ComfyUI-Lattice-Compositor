@@ -265,6 +265,7 @@ import { computed, onMounted, onUnmounted, ref, toRef } from "vue";
 import { useSplineInteraction } from "@/composables/useSplineInteraction";
 import { interpolateProperty } from "@/services/interpolation";
 import { useCompositorStore } from "@/stores/compositorStore";
+import { useLayerStore } from "@/stores/layerStore";
 import type {
   ControlPoint,
   EvaluatedControlPoint,
@@ -310,6 +311,7 @@ const emit = defineEmits<{
 }>();
 
 const store = useCompositorStore();
+const layerStore = useLayerStore();
 
 // Toolbar state
 const smoothTolerance = ref(10);
@@ -440,7 +442,7 @@ const rawControlPoints = computed<(ControlPoint | EvaluatedControlPoint)[]>(
     const layerData = layer.data as SplineData | PathLayerData;
 
     if (layerData.animated && layerData.animatedControlPoints) {
-      return store.getEvaluatedSplinePoints(props.layerId, props.currentFrame);
+      return layerStore.getEvaluatedSplinePoints(store, props.layerId, props.currentFrame);
     }
 
     return layerData.controlPoints || [];
@@ -553,6 +555,7 @@ const interaction = useSplineInteraction({
   transformPoint,
   inverseTransformPoint,
   store,
+  layerStore,
   emit: {
     pointAdded: (point) => emit("pointAdded", point),
     pointMoved: (pointId, x, y) => emit("pointMoved", pointId, x, y),
@@ -609,7 +612,7 @@ function updateSelectedPointDepth(event: Event) {
   if (!selectedPointId.value || !props.layerId) return;
   const input = event.target as HTMLInputElement;
   const newDepth = Math.max(0, parseFloat(input.value) || 0);
-  store.updateSplineControlPoint(props.layerId, selectedPointId.value, {
+  layerStore.updateSplineControlPoint(store, props.layerId, selectedPointId.value, {
     depth: newDepth,
   });
   emit("pathUpdated");
@@ -622,7 +625,7 @@ function adjustSelectedPointDepth(delta: number) {
   );
   const currentDepth = point?.depth ?? 0;
   const newDepth = Math.max(0, currentDepth + delta);
-  store.updateSplineControlPoint(props.layerId, selectedPointId.value, {
+  layerStore.updateSplineControlPoint(store, props.layerId, selectedPointId.value, {
     depth: newDepth,
   });
   emit("pathUpdated");
@@ -630,7 +633,7 @@ function adjustSelectedPointDepth(delta: number) {
 
 function toggleClosePath() {
   if (!props.layerId) return;
-  store.updateLayerData(props.layerId, { closed: !isClosed.value });
+  layerStore.updateLayerData(store, props.layerId, { closed: !isClosed.value });
   emit("pathUpdated");
 }
 
@@ -642,7 +645,7 @@ function smoothSelectedPoints() {
   } else if (selectedPointId.value) {
     smoothSpecificPoints([selectedPointId.value]);
   } else {
-    store.smoothSplineHandles(props.layerId, smoothTolerance.value * 2);
+    layerStore.smoothSplineHandles(store, props.layerId, smoothTolerance.value * 2);
   }
   emit("pathUpdated");
 }
@@ -694,7 +697,7 @@ function smoothSpecificPoints(pointIds: string[]) {
       y: cp.y + normalized.y * handleLength,
     };
 
-    store.updateSplineControlPoint(props.layerId!, pointId, {
+    layerStore.updateSplineControlPoint(store, props.layerId!, pointId, {
       type: "smooth",
       handleIn: {
         x: cp.handleIn
@@ -718,13 +721,13 @@ function smoothSpecificPoints(pointIds: string[]) {
 
 function simplifySpline() {
   if (!props.layerId) return;
-  store.simplifySpline(props.layerId, smoothTolerance.value);
+  layerStore.simplifySpline(store, props.layerId, smoothTolerance.value);
   emit("pathUpdated");
 }
 
 function toggleSplineAnimation() {
   if (!props.layerId) return;
-  store.enableSplineAnimation(props.layerId);
+  layerStore.enableSplineAnimation(store, props.layerId);
   emit("pathUpdated");
 }
 
@@ -732,14 +735,14 @@ function keyframeSelectedPoints() {
   if (!props.layerId || selectedPointIds.value.length === 0) return;
   const frame = props.currentFrame;
   for (const pointId of selectedPointIds.value) {
-    store.addSplinePointPositionKeyframe(props.layerId, pointId, frame);
+    layerStore.addSplinePointPositionKeyframe(store, props.layerId, pointId, frame);
   }
   emit("pathUpdated");
 }
 
 function pointHasKeyframes(pointId: string): boolean {
   if (!props.layerId) return false;
-  return store.hasSplinePointKeyframes(props.layerId, pointId);
+  return layerStore.hasSplinePointKeyframes(store, props.layerId, pointId);
 }
 
 function getPointDepth(point: ControlPoint | EvaluatedControlPoint): number {

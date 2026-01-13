@@ -188,15 +188,12 @@ import { exportLayers, exportSplineLayer } from "@/services/svgExport";
 import type {
   VideoImportFpsMismatch,
   VideoImportFpsUnknown,
-} from "@/stores/actions/videoActions";
-import {
-  cancelVideoImport,
-  completeVideoImportWithConform,
-  completeVideoImportWithMatch,
-  completeVideoImportWithUserFps,
-} from "@/stores/actions/videoActions";
+} from "@/stores/videoStore";
+import { useVideoStore } from "@/stores/videoStore";
 import { useAudioStore } from "@/stores/audioStore";
 import { useCompositorStore } from "@/stores/compositorStore";
+import { useProjectStore } from "@/stores/projectStore";
+import { useLayerStore } from "@/stores/layerStore";
 import { useSelectionStore } from "@/stores/selectionStore";
 import {
   getDataFileType,
@@ -226,6 +223,8 @@ interface Folder {
 }
 
 const store = useCompositorStore();
+const projectStore = useProjectStore();
+const layerStore = useLayerStore();
 const selectionStore = useSelectionStore();
 
 // Refs
@@ -267,8 +266,8 @@ const solidItems = computed<ProjectItem[]>(() => {
       id: l.id,
       name: l.name,
       type: "solid" as const,
-      width: (l.data as { width?: number })?.width || store.width,
-      height: (l.data as { height?: number })?.height || store.height,
+      width: (l.data as { width?: number })?.width || projectStore.getWidth(store),
+      height: (l.data as { height?: number })?.height || projectStore.getHeight(store),
       color: (l.data as { color?: string })?.color || "#808080",
     }));
 });
@@ -300,10 +299,10 @@ const folders = computed<Folder[]>(() => {
                 id: "comp-main",
                 name: store.activeComposition?.name || "Main Comp",
                 type: "composition" as const,
-                width: store.width,
-                height: store.height,
-                fps: store.fps,
-                duration: store.frameCount,
+                width: projectStore.getWidth(store),
+                height: projectStore.getHeight(store),
+                fps: projectStore.getFps(store),
+                duration: projectStore.getFrameCount(store),
               },
             ],
     },
@@ -475,10 +474,10 @@ function openItem(item: ProjectItem) {
     const asset = store.project.assets[item.id];
     if (asset) {
       const layerType = item.type === "solid" ? "solid" : "image";
-      const layer = store.createLayer(layerType, item.name);
+      const layer = layerStore.createLayer(store, layerType, item.name);
       if (layer && asset.data) {
         // Link the asset to the layer AND provide the source URL
-        store.updateLayerData(layer.id, {
+        layerStore.updateLayerData(store, layer.id, {
           assetId: item.id,
           source: asset.data, // The actual image/video URL
         });
@@ -532,37 +531,37 @@ function createNewFolder() {
 
 function createNewSolid() {
   showNewMenu.value = false;
-  const layer = store.createLayer("solid", "Solid");
+  const layer = layerStore.createLayer(store, "solid", "Solid");
   console.log("[ProjectPanel] Created solid layer:", layer.id);
 }
 
 function createNewText() {
   showNewMenu.value = false;
-  const layer = store.createTextLayer("Text");
+  const layer = layerStore.createTextLayer(store, "Text");
   console.log("[ProjectPanel] Created text layer:", layer.id);
 }
 
 function createNewControl() {
   showNewMenu.value = false;
-  const layer = store.createLayer("control", "Control");
+  const layer = layerStore.createLayer(store, "control", "Control");
   console.log("[ProjectPanel] Created control layer:", layer.id);
 }
 
 function createNewSpline() {
   showNewMenu.value = false;
-  const layer = store.createSplineLayer();
+  const layer = layerStore.createSplineLayer(store);
   console.log("[ProjectPanel] Created spline layer:", layer.id);
 }
 
 function createNewModel() {
   showNewMenu.value = false;
-  const layer = store.createLayer("model", "3D Model");
+  const layer = layerStore.createLayer(store, "model", "3D Model");
   console.log("[ProjectPanel] Created model layer:", layer.id);
 }
 
 function createNewPointCloud() {
   showNewMenu.value = false;
-  const layer = store.createLayer("pointcloud", "Point Cloud");
+  const layer = layerStore.createLayer(store, "pointcloud", "Point Cloud");
   console.log("[ProjectPanel] Created point cloud layer:", layer.id);
 }
 
@@ -599,7 +598,8 @@ async function handleFpsMismatchMatch() {
   );
 
   // Complete import with match (precomp existing, change comp fps)
-  const layer = await completeVideoImportWithMatch(
+  const videoStore = useVideoStore();
+  const layer = await videoStore.completeVideoImportWithMatch(
     store,
     result.pendingImport,
     result.fileName,
@@ -611,10 +611,10 @@ async function handleFpsMismatchMatch() {
       id: layer.id,
       name: result.fileName,
       type: "footage",
-      width: store.width,
-      height: store.height,
-      duration: store.frameCount,
-      fps: store.fps,
+      width: projectStore.getWidth(store),
+      height: projectStore.getHeight(store),
+      duration: projectStore.getFrameCount(store),
+      fps: projectStore.getFps(store),
     });
     console.log("[ProjectPanel] Video layer created after match:", layer.id);
   }
@@ -635,7 +635,8 @@ function handleFpsMismatchConform() {
   );
 
   // Complete import with conform (time-stretch video)
-  const layer = completeVideoImportWithConform(
+  const videoStore = useVideoStore();
+  const layer = videoStore.completeVideoImportWithConform(
     store,
     result.pendingImport,
     result.fileName,
@@ -647,10 +648,10 @@ function handleFpsMismatchConform() {
     id: layer.id,
     name: result.fileName,
     type: "footage",
-    width: store.width,
-    height: store.height,
-    duration: store.frameCount,
-    fps: store.fps,
+    width: projectStore.getWidth(store),
+    height: projectStore.getHeight(store),
+    duration: projectStore.getFrameCount(store),
+    fps: projectStore.getFps(store),
   });
   console.log("[ProjectPanel] Video layer created after conform:", layer.id);
 
@@ -665,7 +666,8 @@ function handleFpsMismatchCancel() {
   console.log("[ProjectPanel] FPS mismatch: User cancelled");
 
   // Clean up the pending import
-  cancelVideoImport(store, pendingFpsMismatch.value.pendingImport);
+  const videoStore = useVideoStore();
+  videoStore.cancelVideoImport(store, pendingFpsMismatch.value.pendingImport);
 
   // Close dialog and clear pending
   showFpsMismatchDialog.value = false;
@@ -688,7 +690,8 @@ async function handleFpsSelected(fps: number) {
   );
 
   // Complete import with user-specified fps
-  const result = await completeVideoImportWithUserFps(
+  const videoStore = useVideoStore();
+  const result = await videoStore.completeVideoImportWithUserFps(
     store,
     pending.pendingImport,
     pending.fileName,
@@ -720,10 +723,10 @@ async function handleFpsSelected(fps: number) {
       id: result.layer.id,
       name: pending.fileName,
       type: "footage",
-      width: store.width,
-      height: store.height,
-      duration: store.frameCount,
-      fps: store.fps,
+      width: projectStore.getWidth(store),
+      height: projectStore.getHeight(store),
+      duration: projectStore.getFrameCount(store),
+      fps: projectStore.getFps(store),
     });
     console.log(
       "[ProjectPanel] Video layer created after fps selection:",
@@ -738,7 +741,8 @@ function handleFpsSelectCancel() {
   console.log("[ProjectPanel] FPS select: User cancelled");
 
   // Clean up the pending import
-  cancelVideoImport(store, pendingFpsUnknown.value.pendingImport);
+  const videoStore = useVideoStore();
+  videoStore.cancelVideoImport(store, pendingFpsUnknown.value.pendingImport);
 
   // Close dialog and clear pending
   showFpsSelectDialog.value = false;
@@ -747,7 +751,7 @@ function handleFpsSelectCancel() {
 
 function cleanupUnusedAssets() {
   showNewMenu.value = false;
-  const result = store.removeUnusedAssets();
+  const result = projectStore.removeUnusedAssets(store);
   if (result.removed > 0) {
     console.log(
       `[ProjectPanel] Removed ${result.removed} unused assets:`,
@@ -965,7 +969,7 @@ async function handleFileImport(event: Event) {
     } else if (file.type.startsWith("video/")) {
       // Handle video import - creates video layer with auto-resize
       // May return fps_mismatch requiring user decision
-      const result = await store.createVideoLayer(file, true);
+      const result = await layerStore.createVideoLayer(store, file, true);
 
       if (result.status === "error") {
         console.error("[ProjectPanel] Failed to import video:", result.error);
@@ -1001,10 +1005,10 @@ async function handleFileImport(event: Event) {
       // Success - layer was created
       if (result.status === "success") {
         newItem.id = result.layer.id;
-        newItem.width = store.width;
-        newItem.height = store.height;
-        newItem.duration = store.frameCount;
-        newItem.fps = store.fps;
+        newItem.width = projectStore.getWidth(store);
+        newItem.height = projectStore.getHeight(store);
+        newItem.duration = projectStore.getFrameCount(store);
+        newItem.fps = projectStore.getFps(store);
         console.log(
           "[ProjectPanel] Video layer created:",
           result.layer.id,

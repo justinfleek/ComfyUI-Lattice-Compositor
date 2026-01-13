@@ -12,6 +12,7 @@ import { createAnimatableProperty } from "@/types/project";
 import { storeLogger } from "@/utils/logger";
 import { useSelectionStore } from "../selectionStore";
 import type { CompositorStoreAccess } from "./types";
+import { deleteLayer, duplicateLayer } from "./crud";
 
 // ============================================================================
 // PARENTING
@@ -179,6 +180,60 @@ export function clearSelection(_compositorStore: CompositorStoreAccess): void {
   useSelectionStore().clearLayerSelection();
 }
 
+/**
+ * Select all layers in the active composition
+ * @param compositorStore - The compositor store instance
+ */
+export function selectAllLayers(compositorStore: CompositorStoreAccess): void {
+  const layers = compositorStore.getActiveCompLayers?.() ?? [];
+  const selection = useSelectionStore();
+  selection.selectLayers(layers.map((l: Layer) => l.id));
+}
+
+/**
+ * Delete all selected layers
+ * @param compositorStore - The compositor store instance
+ */
+export function deleteSelectedLayers(compositorStore: CompositorStoreAccess): void {
+  const selection = useSelectionStore();
+  const layerIds = [...selection.selectedLayerIds];
+  
+  layerIds.forEach((id: string) => {
+    deleteLayer(compositorStore, id);
+  });
+  
+  selection.clearLayerSelection();
+  compositorStore.project.meta.modified = new Date().toISOString();
+  compositorStore.pushHistory();
+}
+
+/**
+ * Duplicate all selected layers
+ * @param compositorStore - The compositor store instance
+ * @returns Array of new layer IDs
+ */
+export function duplicateSelectedLayers(compositorStore: CompositorStoreAccess): string[] {
+  const selection = useSelectionStore();
+  const newLayerIds: string[] = [];
+  
+  selection.selectedLayerIds.forEach((id: string) => {
+    const newLayer = duplicateLayer(compositorStore, id);
+    if (newLayer) {
+      newLayerIds.push(newLayer.id);
+    }
+  });
+  
+  // Select the duplicated layers
+  if (newLayerIds.length > 0) {
+    selection.selectLayers(newLayerIds);
+  }
+  
+  compositorStore.project.meta.modified = new Date().toISOString();
+  compositorStore.pushHistory();
+  
+  return newLayerIds;
+}
+
 // ============================================================================
 // HIERARCHY QUERIES
 // ============================================================================
@@ -230,4 +285,89 @@ export function getLayerDescendants(
   }
 
   return descendants;
+}
+
+/**
+ * Get all visible layers from active composition
+ * @param compositorStore - The compositor store instance
+ * @returns Array of visible layers
+ */
+export function getVisibleLayers(
+  compositorStore: CompositorStoreAccess,
+): Layer[] {
+  const layers = compositorStore.getActiveCompLayers?.() ?? [];
+  return layers.filter((l: Layer) => l.visible);
+}
+
+/**
+ * Get layers displayed in timeline (respects minimized filter)
+ * @param compositorStore - The compositor store instance
+ * @param hideMinimized - Whether to hide minimized layers (default: false)
+ * @returns Array of displayed layers
+ */
+export function getDisplayedLayers(
+  compositorStore: CompositorStoreAccess,
+  hideMinimized = false,
+): Layer[] {
+  const layers = compositorStore.getActiveCompLayers?.() ?? [];
+  if (hideMinimized) {
+    return layers.filter((l: Layer) => !l.minimized);
+  }
+  return layers;
+}
+
+/**
+ * Get root layers (layers with no parent)
+ * @param compositorStore - The compositor store instance
+ * @returns Array of root layers
+ */
+export function getRootLayers(
+  compositorStore: CompositorStoreAccess,
+): Layer[] {
+  const layers = compositorStore.getActiveCompLayers?.() ?? [];
+  return layers.filter((l: Layer) => !l.parentId);
+}
+
+/**
+ * Get all camera layers in the active composition
+ * @param compositorStore - The compositor store instance
+ * @returns Array of camera layers
+ */
+export function getCameraLayers(
+  compositorStore: CompositorStoreAccess,
+): Layer[] {
+  const layers = compositorStore.getActiveCompLayers?.() ?? [];
+  return layers.filter((l: Layer) => l.type === "camera");
+}
+
+/**
+ * Get all selected layers in the active composition
+ * @param compositorStore - The compositor store instance
+ * @returns Array of selected layers
+ */
+export function getSelectedLayers(
+  compositorStore: CompositorStoreAccess,
+): Layer[] {
+  const layers = compositorStore.getActiveCompLayers?.() ?? [];
+  const selectionStore = useSelectionStore();
+  return layers.filter((l: Layer) =>
+    selectionStore.selectedLayerIds.includes(l.id),
+  );
+}
+
+/**
+ * Get the single selected layer (returns null if 0 or 2+ layers selected)
+ * @param compositorStore - The compositor store instance
+ * @returns The selected layer or null
+ */
+export function getSelectedLayer(
+  compositorStore: CompositorStoreAccess,
+): Layer | null {
+  const selectionStore = useSelectionStore();
+  if (selectionStore.selectedLayerIds.length !== 1) return null;
+  const layers = compositorStore.getActiveCompLayers?.() ?? [];
+  return (
+    layers.find((l: Layer) => l.id === selectionStore.selectedLayerIds[0]) ||
+    null
+  );
 }

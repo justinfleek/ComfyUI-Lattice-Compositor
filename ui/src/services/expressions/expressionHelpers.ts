@@ -17,7 +17,10 @@ import { EASING_FUNCTIONS } from "./easing";
 /**
  * Subtract two values (numbers or arrays)
  */
-export function subtractValues(a: any, b: any): number | number[] {
+export function subtractValues(
+  a: number | number[],
+  b: number | number[],
+): number | number[] {
   if (typeof a === "number" && typeof b === "number") {
     return a - b;
   }
@@ -30,7 +33,10 @@ export function subtractValues(a: any, b: any): number | number[] {
 /**
  * Add two values (numbers or arrays)
  */
-export function addValues(a: any, b: any): number | number[] {
+export function addValues(
+  a: number | number[],
+  b: number | number[],
+): number | number[] {
   if (typeof a === "number" && typeof b === "number") {
     return a + b;
   }
@@ -43,7 +49,7 @@ export function addValues(a: any, b: any): number | number[] {
 /**
  * Scale a value by a scalar
  */
-export function scaleValue(v: any, s: number): number | number[] {
+export function scaleValue(v: number | number[], s: number): number | number[] {
   if (typeof v === "number") {
     return v * s;
   }
@@ -56,7 +62,11 @@ export function scaleValue(v: any, s: number): number | number[] {
 /**
  * Linear interpolation between two values
  */
-export function lerpValues(a: any, b: any, t: number): number | number[] {
+export function lerpValues(
+  a: number | number[],
+  b: number | number[],
+  t: number,
+): number | number[] {
   if (typeof a === "number" && typeof b === "number") {
     return a + (b - a) * t;
   }
@@ -89,15 +99,15 @@ export function applyEasing(
  * Interpolate keyframes at a specific time
  */
 export function interpolateAtTime(
-  keyframes: Keyframe<any>[],
+  keyframes: Keyframe<number | number[]>[],
   time: number,
   fps: number,
 ): number | number[] {
   const frame = time * fps;
 
   // Find surrounding keyframes
-  let before: Keyframe<any> | null = null;
-  let after: Keyframe<any> | null = null;
+  let before: Keyframe<number | number[]> | null = null;
+  let after: Keyframe<number | number[]> | null = null;
 
   for (const kf of keyframes) {
     if (kf.frame <= frame) {

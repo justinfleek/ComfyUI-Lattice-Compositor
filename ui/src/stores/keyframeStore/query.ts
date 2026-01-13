@@ -4,7 +4,7 @@
  * Functions for querying keyframe state and navigation.
  */
 
-import type { AnimatableProperty, Keyframe } from "@/types/project";
+import type { AnimatableProperty, Keyframe, LayerTransform, PropertyValue } from "@/types/project";
 import type { KeyframeStoreAccess } from "./types";
 
 // ============================================================================
@@ -18,20 +18,21 @@ export function getKeyframesAtFrame(
   store: KeyframeStoreAccess,
   layerId: string,
   frame: number,
-): Array<{ propertyPath: string; keyframe: Keyframe<any> }> {
+): Array<{ propertyPath: string; keyframe: Keyframe<PropertyValue> }> {
   const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
   if (!layer) return [];
 
-  const results: Array<{ propertyPath: string; keyframe: Keyframe<any> }> = [];
+  const results: Array<{ propertyPath: string; keyframe: Keyframe<PropertyValue> }> = [];
 
   // Check transform properties
-  const transformProps = ["position", "scale", "rotation", "anchorPoint"];
+  const transformProps: Array<keyof LayerTransform> = ["position", "scale", "rotation", "anchorPoint"];
   for (const propName of transformProps) {
-    const prop = (layer.transform as any)[propName];
-    if (prop?.animated && prop.keyframes) {
-      const kf = prop.keyframes.find((k: Keyframe<any>) => k.frame === frame);
+    const prop = layer.transform[propName] as AnimatableProperty<unknown> | undefined;
+    if (prop && "animated" in prop && prop.animated && prop.keyframes) {
+      const kf = prop.keyframes.find((k) => k.frame === frame);
       if (kf) {
-        results.push({ propertyPath: propName, keyframe: kf });
+        // Cast: keyframe values are always PropertyValue-compatible
+        results.push({ propertyPath: propName, keyframe: kf as Keyframe<PropertyValue> });
       }
     }
   }
@@ -45,13 +46,14 @@ export function getKeyframesAtFrame(
   }
 
   // Check 3D rotations
-  const threeDProps = ["rotationX", "rotationY", "rotationZ", "orientation"];
+  const threeDProps: Array<keyof LayerTransform> = ["rotationX", "rotationY", "rotationZ", "orientation"];
   for (const propName of threeDProps) {
-    const prop = (layer.transform as any)[propName];
-    if (prop?.animated && prop.keyframes) {
-      const kf = prop.keyframes.find((k: Keyframe<any>) => k.frame === frame);
+    const prop = layer.transform[propName] as AnimatableProperty<unknown> | undefined;
+    if (prop && "animated" in prop && prop.animated && prop.keyframes) {
+      const kf = prop.keyframes.find((k) => k.frame === frame);
       if (kf) {
-        results.push({ propertyPath: propName, keyframe: kf });
+        // Cast: keyframe values are always PropertyValue-compatible
+        results.push({ propertyPath: propName, keyframe: kf as Keyframe<PropertyValue> });
       }
     }
   }
@@ -82,10 +84,10 @@ export function getAllKeyframeFrames(
   const frames = new Set<number>();
 
   // Collect frames from transform properties
-  const transformProps = ["position", "scale", "rotation", "anchorPoint"];
+  const transformProps: Array<keyof LayerTransform> = ["position", "scale", "rotation", "anchorPoint"];
   for (const propName of transformProps) {
-    const prop = (layer.transform as any)[propName];
-    if (prop?.animated && prop.keyframes) {
+    const prop = layer.transform[propName] as AnimatableProperty<unknown> | undefined;
+    if (prop && "animated" in prop && prop.animated && prop.keyframes) {
       for (const kf of prop.keyframes) {
         frames.add(kf.frame);
       }
@@ -100,10 +102,10 @@ export function getAllKeyframeFrames(
   }
 
   // Collect from 3D properties
-  const threeDProps = ["rotationX", "rotationY", "rotationZ", "orientation"];
+  const threeDProps: Array<keyof LayerTransform> = ["rotationX", "rotationY", "rotationZ", "orientation"];
   for (const propName of threeDProps) {
-    const prop = (layer.transform as any)[propName];
-    if (prop?.animated && prop.keyframes) {
+    const prop = layer.transform[propName] as AnimatableProperty<unknown> | undefined;
+    if (prop && "animated" in prop && prop.animated && prop.keyframes) {
       for (const kf of prop.keyframes) {
         frames.add(kf.frame);
       }

@@ -13,7 +13,7 @@ import {
   toWorld,
 } from "./coordinateConversion";
 import { jitter } from "./jitterExpressions";
-import { repeatAfter, repeatBefore } from "./loopExpressions";
+import { repeatAfter, repeatBefore, type LoopType } from "./loopExpressions";
 import { bounce, elastic, inertia } from "./motionExpressions";
 import { evaluateInSES } from "./sesEvaluator";
 import type { Expression, ExpressionContext } from "./types";
@@ -342,21 +342,47 @@ export function evaluateExpression(
 function evaluatePreset(
   name: string,
   ctx: ExpressionContext,
-  params: Record<string, any>,
+  params: Record<string, number | string | boolean>,
 ): number | number[] {
   switch (name) {
-    case "inertia":
-      return inertia(ctx, params.amplitude, params.frequency, params.decay);
-    case "bounce":
-      return bounce(ctx, params.elasticity, params.gravity);
-    case "elastic":
-      return elastic(ctx, params.amplitude, params.period);
-    case "jitter":
-      return jitter(ctx, params.frequency, params.amplitude, params.octaves);
-    case "repeatAfter":
-      return repeatAfter(ctx, params.type, params.numKeyframes);
-    case "repeatBefore":
-      return repeatBefore(ctx, params.type, params.numKeyframes);
+    case "inertia": {
+      const amplitude = typeof params.amplitude === "number" ? params.amplitude : 0.1;
+      const frequency = typeof params.frequency === "number" ? params.frequency : 2.0;
+      const decay = typeof params.decay === "number" ? params.decay : 2.0;
+      return inertia(ctx, amplitude, frequency, decay);
+    }
+    case "bounce": {
+      const elasticity = typeof params.elasticity === "number" ? params.elasticity : 0.7;
+      const gravity = typeof params.gravity === "number" ? params.gravity : 4000;
+      return bounce(ctx, elasticity, gravity);
+    }
+    case "elastic": {
+      const amplitude = typeof params.amplitude === "number" ? params.amplitude : 1;
+      const period = typeof params.period === "number" ? params.period : 0.3;
+      return elastic(ctx, amplitude, period);
+    }
+    case "jitter": {
+      const frequency = typeof params.frequency === "number" ? params.frequency : 10;
+      const amplitude = typeof params.amplitude === "number" ? params.amplitude : 5;
+      const octaves = typeof params.octaves === "number" ? params.octaves : 1;
+      return jitter(ctx, frequency, amplitude, octaves);
+    }
+    case "repeatAfter": {
+      const type = (typeof params.type === "string" && 
+        (params.type === "cycle" || params.type === "pingpong" || params.type === "offset" || params.type === "continue"))
+        ? params.type
+        : "cycle";
+      const numKeyframes = typeof params.numKeyframes === "number" ? params.numKeyframes : 0;
+      return repeatAfter(ctx, type, numKeyframes);
+    }
+    case "repeatBefore": {
+      const type = (typeof params.type === "string" && 
+        (params.type === "cycle" || params.type === "pingpong" || params.type === "offset" || params.type === "continue"))
+        ? params.type
+        : "cycle";
+      const numKeyframes = typeof params.numKeyframes === "number" ? params.numKeyframes : 0;
+      return repeatBefore(ctx, type, numKeyframes);
+    }
     default:
       return ctx.value;
   }
@@ -365,19 +391,31 @@ function evaluatePreset(
 function evaluateFunction(
   name: string,
   ctx: ExpressionContext,
-  params: Record<string, any>,
+  params: Record<string, number | string | boolean>,
 ): number | number[] {
   // Time functions
   if (name in timeExpressions) {
-    const fn = (timeExpressions as any)[name];
-    return fn(ctx.time, ...Object.values(params));
+    const timeExprs = timeExpressions as Record<
+      string,
+      (time: number, ...args: (number | string | boolean)[]) => number | number[]
+    >;
+    const fn = timeExprs[name];
+    if (fn) {
+      return fn(ctx.time, ...Object.values(params));
+    }
   }
 
   // Math functions
   if (name in mathExpressions) {
-    const fn = (mathExpressions as any)[name];
-    const val = typeof ctx.value === "number" ? ctx.value : ctx.value[0];
-    return fn(val, ...Object.values(params));
+    const mathExprs = mathExpressions as Record<
+      string,
+      (val: number, ...args: (number | string | boolean)[]) => number | number[]
+    >;
+    const fn = mathExprs[name];
+    if (fn) {
+      const val = typeof ctx.value === "number" ? ctx.value : ctx.value[0];
+      return fn(val, ...Object.values(params));
+    }
   }
 
   return ctx.value;

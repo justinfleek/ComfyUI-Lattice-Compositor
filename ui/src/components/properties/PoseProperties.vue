@@ -238,6 +238,7 @@
 <script setup lang="ts">
 import { computed, reactive } from "vue";
 import { useCompositorStore } from "@/stores/compositorStore";
+import { useLayerStore } from "@/stores/layerStore";
 import type { PoseFormat, PoseLayerData } from "@/types/project";
 
 const props = defineProps<{
@@ -247,6 +248,7 @@ const props = defineProps<{
 const emit = defineEmits<(e: "update", data: Partial<PoseLayerData>) => void>();
 
 const store = useCompositorStore();
+const layerStore = useLayerStore();
 
 // COCO 18 keypoint names
 const keypointNames = [
@@ -322,7 +324,7 @@ function updatePoseData<K extends keyof PoseLayerData>(
   key: K,
   value: PoseLayerData[K],
 ) {
-  store.updateLayerData(props.layerId, { [key]: value });
+  layerStore.updateLayerData(store, props.layerId, { [key]: value });
   emit("update", { [key]: value });
 }
 
@@ -353,7 +355,7 @@ function updateKeypointPosition(
   keypoints[kpIdx] = { ...keypoints[kpIdx], [axis]: value };
   poses[poseIdx] = { ...poses[poseIdx], keypoints };
 
-  store.updateLayerData(props.layerId, { poses });
+  layerStore.updateLayerData(store, props.layerId, { poses });
   emit("update", { poses });
 }
 
@@ -367,7 +369,7 @@ function addPose() {
       format: currentPose.format,
       keypoints: currentPose.keypoints.map((kp) => ({ ...kp })),
     });
-    store.updateLayerData(props.layerId, {
+    layerStore.updateLayerData(store, props.layerId, {
       poses,
       selectedPose: poses.length - 1,
     });
@@ -384,7 +386,7 @@ function removePose() {
   poses.splice(idx, 1);
   const newSelected = Math.min(idx, poses.length - 1);
 
-  store.updateLayerData(props.layerId, { poses, selectedPose: newSelected });
+  layerStore.updateLayerData(store, props.layerId, { poses, selectedPose: newSelected });
   emit("update", { poses, selectedPose: newSelected });
 }
 

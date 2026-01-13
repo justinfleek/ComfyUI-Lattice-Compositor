@@ -128,6 +128,7 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { useCompositorStore } from "@/stores/compositorStore";
+import { useLayerStore } from "@/stores/layerStore";
 import type { LayerMask, MaskPath, MaskVertex } from "@/types/project";
 
 interface Props {
@@ -149,6 +150,7 @@ const emit = defineEmits<{
 }>();
 
 const store = useCompositorStore();
+const layerStore = useLayerStore();
 
 // State
 const selectedMaskId = ref<string | null>(null);
@@ -165,7 +167,7 @@ const dragTarget = ref<{
 const visibleMasks = computed<LayerMask[]>(() => {
   if (!props.layerId) return [];
 
-  const layer = store.layers.find((l) => l.id === props.layerId);
+  const layer = layerStore.getLayerById(store, props.layerId);
   if (!layer) return [];
 
   return layer.masks ?? [];
@@ -460,10 +462,10 @@ function createNewMask(x: number, y: number) {
   };
 
   // Add mask to layer via store
-  const layer = store.layers.find((l) => l.id === props.layerId);
+  const layer = layerStore.getLayerById(store, props.layerId);
   if (layer) {
     const masks = [...(layer.masks ?? []), newMask];
-    store.updateLayer(props.layerId, { masks });
+    layerStore.updateLayer(store, props.layerId, { masks });
     selectedMaskId.value = maskId;
     selectedVertexIndex.value = 0;
     emit("maskSelected", maskId);
@@ -505,7 +507,7 @@ function updateMaskVertices(vertices: MaskVertex[]) {
     m.id === selectedMaskId.value ? updatedMask : m,
   );
 
-  store.updateLayer(props.layerId, { masks });
+  layerStore.updateLayer(store, props.layerId, { masks });
   emit("maskUpdated", selectedMaskId.value!);
 }
 
@@ -526,8 +528,8 @@ function closePath() {
     m.id === selectedMaskId.value ? updatedMask : m,
   );
 
-  store.updateLayer(props.layerId, { masks });
-  emit("pathClosed", selectedMaskId.value!);
+  layerStore.updateLayer(store, props.layerId, { masks });
+  emit("pathClosed", selectedMaskId.value.value!);
 }
 
 // Get next mask color from palette
@@ -568,7 +570,7 @@ function deleteMask(maskId: string) {
   if (!props.layerId) return;
 
   const masks = visibleMasks.value.filter((m) => m.id !== maskId);
-  store.updateLayer(props.layerId, { masks });
+  layerStore.updateLayer(store, props.layerId, { masks });
 
   if (selectedMaskId.value === maskId) {
     selectedMaskId.value = masks.length > 0 ? masks[0].id : null;

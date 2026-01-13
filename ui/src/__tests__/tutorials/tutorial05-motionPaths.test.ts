@@ -12,6 +12,7 @@
 import { describe, test, expect, beforeEach, vi } from 'vitest';
 import { setActivePinia, createPinia } from 'pinia';
 import { useCompositorStore } from '@/stores/compositorStore';
+import { useLayerStore } from '@/stores/layerStore';
 import type { Keyframe } from '@/types/animation';
 import type { VelocitySettings } from '@/stores/keyframeStore/types';
 import {
@@ -24,11 +25,13 @@ import {
 
 describe('Tutorial 05: Motion Paths & Graph Editor Mastery', () => {
   let store: ReturnType<typeof useCompositorStore>;
+  let layerStore: ReturnType<typeof useLayerStore>;
 
   beforeEach(() => {
     const pinia = createPinia();
     setActivePinia(pinia);
     store = useCompositorStore();
+    layerStore = useLayerStore();
     // Create a composition for testing
     store.createComposition('Test Comp', {
       width: 1920,
@@ -45,7 +48,7 @@ describe('Tutorial 05: Motion Paths & Graph Editor Mastery', () => {
 
   describe('Phase A: Keyframe Velocity', () => {
     test('applyKeyframeVelocity converts velocity to bezier handles', () => {
-      const layer = store.createLayer('solid', 'Test Layer');
+      const layer = layerStore.createLayer(store,'solid', 'Test Layer');
       store.addKeyframe(layer.id, 'transform.position', { x: 0, y: 0 }, 0);
       store.addKeyframe(layer.id, 'transform.position', { x: 100, y: 100 }, 30);
 
@@ -74,7 +77,7 @@ describe('Tutorial 05: Motion Paths & Graph Editor Mastery', () => {
     });
 
     test('getKeyframeVelocity returns velocity derived from handles', () => {
-      const layer = store.createLayer('solid', 'Test Layer');
+      const layer = layerStore.createLayer(store,'solid', 'Test Layer');
       store.addKeyframe(layer.id, 'transform.position', { x: 0, y: 0 }, 0);
       store.addKeyframe(layer.id, 'transform.position', { x: 100, y: 100 }, 30);
 
@@ -102,7 +105,7 @@ describe('Tutorial 05: Motion Paths & Graph Editor Mastery', () => {
     });
 
     test('velocity settings modify keyframe handle values proportionally', () => {
-      const layer = store.createLayer('solid', 'Test Layer');
+      const layer = layerStore.createLayer(store,'solid', 'Test Layer');
       store.addKeyframe(layer.id, 'opacity', 0, 0);
       store.addKeyframe(layer.id, 'opacity', 100, 30);
 
@@ -132,13 +135,13 @@ describe('Tutorial 05: Motion Paths & Graph Editor Mastery', () => {
 
   describe('Phase A: Convert Expression to Keyframes', () => {
     test('canBakeExpression returns false when no expression', () => {
-      const layer = store.createLayer('solid', 'Test Layer');
+      const layer = layerStore.createLayer(store,'solid', 'Test Layer');
       const canBake = store.canBakeExpression(layer.id, 'transform.position');
       expect(canBake).toBe(false);
     });
 
     test('convertExpressionToKeyframes requires enabled expression', () => {
-      const layer = store.createLayer('solid', 'Test Layer');
+      const layer = layerStore.createLayer(store,'solid', 'Test Layer');
 
       // Without an expression, should return 0
       const count = store.convertExpressionToKeyframes(layer.id, 'transform.position');
@@ -152,7 +155,7 @@ describe('Tutorial 05: Motion Paths & Graph Editor Mastery', () => {
 
   describe('Phase B: Auto Bezier Tangent Calculation', () => {
     test('autoCalculateBezierTangents calculates tangents for single keyframe', () => {
-      const layer = store.createLayer('solid', 'Test Layer');
+      const layer = layerStore.createLayer(store,'solid', 'Test Layer');
       store.addKeyframe(layer.id, 'opacity', 0, 0);
       store.addKeyframe(layer.id, 'opacity', 50, 15);
       store.addKeyframe(layer.id, 'opacity', 100, 30);
@@ -170,7 +173,7 @@ describe('Tutorial 05: Motion Paths & Graph Editor Mastery', () => {
     });
 
     test('autoCalculateAllBezierTangents calculates tangents for all keyframes', () => {
-      const layer = store.createLayer('solid', 'Test Layer');
+      const layer = layerStore.createLayer(store,'solid', 'Test Layer');
       store.addKeyframe(layer.id, 'opacity', 0, 0);
       store.addKeyframe(layer.id, 'opacity', 50, 15);
       store.addKeyframe(layer.id, 'opacity', 75, 22);
@@ -188,7 +191,7 @@ describe('Tutorial 05: Motion Paths & Graph Editor Mastery', () => {
     });
 
     test('autoCalculateBezierTangents respects keyframe values', () => {
-      const layer = store.createLayer('solid', 'Test Layer');
+      const layer = layerStore.createLayer(store,'solid', 'Test Layer');
       // Opacity goes from 0 to 100 over 30 frames
       // Slope = (100 - 0) / (30 - 0) = 3.33 per frame
       store.addKeyframe(layer.id, 'opacity', 0, 0);
@@ -217,7 +220,7 @@ describe('Tutorial 05: Motion Paths & Graph Editor Mastery', () => {
 
   describe('Phase B: Handle Control Mode (Break Handles)', () => {
     test('setKeyframeHandleWithMode without break maintains smooth mode', () => {
-      const layer = store.createLayer('solid', 'Test Layer');
+      const layer = layerStore.createLayer(store,'solid', 'Test Layer');
       store.addKeyframe(layer.id, 'opacity', 50, 15);
 
       const keyframes = layer.opacity.keyframes;
@@ -236,7 +239,7 @@ describe('Tutorial 05: Motion Paths & Graph Editor Mastery', () => {
     });
 
     test('setKeyframeHandleWithMode with break sets corner mode', () => {
-      const layer = store.createLayer('solid', 'Test Layer');
+      const layer = layerStore.createLayer(store,'solid', 'Test Layer');
       store.addKeyframe(layer.id, 'opacity', 50, 15);
 
       const keyframes = layer.opacity.keyframes;
@@ -255,7 +258,7 @@ describe('Tutorial 05: Motion Paths & Graph Editor Mastery', () => {
     });
 
     test('setKeyframeControlMode changes control mode', () => {
-      const layer = store.createLayer('solid', 'Test Layer');
+      const layer = layerStore.createLayer(store,'solid', 'Test Layer');
       store.addKeyframe(layer.id, 'opacity', 50, 15);
 
       const keyframes = layer.opacity.keyframes;
@@ -378,7 +381,7 @@ describe('Tutorial 05: Motion Paths & Graph Editor Mastery', () => {
     });
 
     test('store actions for separate dimensions work correctly', () => {
-      const layer = store.createLayer('solid', 'Test Layer');
+      const layer = layerStore.createLayer(store,'solid', 'Test Layer');
 
       // Initially not separated
       expect(store.hasPositionSeparated(layer.id)).toBe(false);
@@ -407,9 +410,9 @@ describe('Tutorial 05: Motion Paths & Graph Editor Mastery', () => {
 
   describe('Phase E: Sequence Layers', () => {
     test('sequenceLayers arranges layers in sequence', () => {
-      const layer1 = store.createLayer('solid', 'Layer 1');
-      const layer2 = store.createLayer('solid', 'Layer 2');
-      const layer3 = store.createLayer('solid', 'Layer 3');
+      const layer1 = layerStore.createLayer(store,'solid', 'Layer 1');
+      const layer2 = layerStore.createLayer(store,'solid', 'Layer 2');
+      const layer3 = layerStore.createLayer(store,'solid', 'Layer 3');
 
       // Set initial durations
       layer1.startFrame = 0;
@@ -419,7 +422,7 @@ describe('Tutorial 05: Motion Paths & Graph Editor Mastery', () => {
       layer3.startFrame = 0;
       layer3.endFrame = 30;
 
-      const count = store.sequenceLayers(
+      const count = layerStore.sequenceLayers(store,
         [layer1.id, layer2.id, layer3.id],
         { startFrame: 0, gapFrames: 0 }
       );
@@ -434,15 +437,15 @@ describe('Tutorial 05: Motion Paths & Graph Editor Mastery', () => {
     });
 
     test('sequenceLayers with gap adds space between layers', () => {
-      const layer1 = store.createLayer('solid', 'Layer 1');
-      const layer2 = store.createLayer('solid', 'Layer 2');
+      const layer1 = layerStore.createLayer(store,'solid', 'Layer 1');
+      const layer2 = layerStore.createLayer(store,'solid', 'Layer 2');
 
       layer1.startFrame = 0;
       layer1.endFrame = 20;
       layer2.startFrame = 0;
       layer2.endFrame = 20;
 
-      store.sequenceLayers(
+      layerStore.sequenceLayers(store,
         [layer1.id, layer2.id],
         { startFrame: 0, gapFrames: 10 }
       );
@@ -453,15 +456,15 @@ describe('Tutorial 05: Motion Paths & Graph Editor Mastery', () => {
     });
 
     test('sequenceLayers with negative gap creates overlap', () => {
-      const layer1 = store.createLayer('solid', 'Layer 1');
-      const layer2 = store.createLayer('solid', 'Layer 2');
+      const layer1 = layerStore.createLayer(store,'solid', 'Layer 1');
+      const layer2 = layerStore.createLayer(store,'solid', 'Layer 2');
 
       layer1.startFrame = 0;
       layer1.endFrame = 30;
       layer2.startFrame = 0;
       layer2.endFrame = 30;
 
-      store.sequenceLayers(
+      layerStore.sequenceLayers(store,
         [layer1.id, layer2.id],
         { startFrame: 0, gapFrames: -10 }
       );
@@ -471,15 +474,15 @@ describe('Tutorial 05: Motion Paths & Graph Editor Mastery', () => {
     });
 
     test('sequenceLayers with reverse option reverses order', () => {
-      const layer1 = store.createLayer('solid', 'Layer 1');
-      const layer2 = store.createLayer('solid', 'Layer 2');
+      const layer1 = layerStore.createLayer(store,'solid', 'Layer 1');
+      const layer2 = layerStore.createLayer(store,'solid', 'Layer 2');
 
       layer1.startFrame = 0;
       layer1.endFrame = 30;
       layer2.startFrame = 0;
       layer2.endFrame = 30;
 
-      store.sequenceLayers(
+      layerStore.sequenceLayers(store,
         [layer1.id, layer2.id],
         { startFrame: 0, gapFrames: 0, reverse: true }
       );
@@ -492,15 +495,15 @@ describe('Tutorial 05: Motion Paths & Graph Editor Mastery', () => {
     });
 
     test('sequenceLayers preserves layer durations', () => {
-      const layer1 = store.createLayer('solid', 'Layer 1');
-      const layer2 = store.createLayer('solid', 'Layer 2');
+      const layer1 = layerStore.createLayer(store,'solid', 'Layer 1');
+      const layer2 = layerStore.createLayer(store,'solid', 'Layer 2');
 
       layer1.startFrame = 10;
       layer1.endFrame = 25; // Duration: 15
       layer2.startFrame = 5;
       layer2.endFrame = 50; // Duration: 45
 
-      store.sequenceLayers(
+      layerStore.sequenceLayers(store,
         [layer1.id, layer2.id],
         { startFrame: 0, gapFrames: 0 }
       );
@@ -516,9 +519,9 @@ describe('Tutorial 05: Motion Paths & Graph Editor Mastery', () => {
 
   describe('Phase E: Exponential Scale', () => {
     test('applyExponentialScale creates keyframes with exponential values', () => {
-      const layer = store.createLayer('solid', 'Test Layer');
+      const layer = layerStore.createLayer(store,'solid', 'Test Layer');
 
-      const count = store.applyExponentialScale(layer.id, {
+      const count = layerStore.applyExponentialScale(store,layer.id, {
         startScale: 100,
         endScale: 400,
         startFrame: 0,
@@ -544,9 +547,9 @@ describe('Tutorial 05: Motion Paths & Graph Editor Mastery', () => {
     });
 
     test('exponential scale follows correct formula', () => {
-      const layer = store.createLayer('solid', 'Test Layer');
+      const layer = layerStore.createLayer(store,'solid', 'Test Layer');
 
-      store.applyExponentialScale(layer.id, {
+      layerStore.applyExponentialScale(store,layer.id, {
         startScale: 100,
         endScale: 200,
         startFrame: 0,
@@ -571,12 +574,12 @@ describe('Tutorial 05: Motion Paths & Graph Editor Mastery', () => {
     });
 
     test('exponential scale axis option works', () => {
-      const layer = store.createLayer('solid', 'Test Layer');
+      const layer = layerStore.createLayer(store,'solid', 'Test Layer');
 
       // Set initial scale
       layer.transform.scale.value = { x: 100, y: 100, z: 100 };
 
-      store.applyExponentialScale(layer.id, {
+      layerStore.applyExponentialScale(store,layer.id, {
         startScale: 100,
         endScale: 200,
         startFrame: 0,
@@ -603,8 +606,8 @@ describe('Tutorial 05: Motion Paths & Graph Editor Mastery', () => {
 
   describe('Undo/Redo', () => {
     test('sequenceLayers can be undone', () => {
-      const layer1 = store.createLayer('solid', 'Layer 1');
-      const layer2 = store.createLayer('solid', 'Layer 2');
+      const layer1 = layerStore.createLayer(store,'solid', 'Layer 1');
+      const layer2 = layerStore.createLayer(store,'solid', 'Layer 2');
 
       layer1.startFrame = 0;
       layer1.endFrame = 30;
@@ -617,7 +620,7 @@ describe('Tutorial 05: Motion Paths & Graph Editor Mastery', () => {
       const originalLayer2Start = 0;
       const layer2Id = layer2.id;
 
-      store.sequenceLayers([layer1.id, layer2.id], { startFrame: 0, gapFrames: 0 });
+      layerStore.sequenceLayers(store,[layer1.id, layer2.id], { startFrame: 0, gapFrames: 0 });
 
       // Re-fetch layer after modification using getActiveCompLayers
       const layer2AfterSequence = store.getActiveCompLayers().find((l: import('@/types/project').Layer) => l.id === layer2Id);
@@ -631,7 +634,7 @@ describe('Tutorial 05: Motion Paths & Graph Editor Mastery', () => {
     });
 
     test('separatePositionDimensions can be undone', () => {
-      const layer = store.createLayer('solid', 'Test Layer');
+      const layer = layerStore.createLayer(store,'solid', 'Test Layer');
 
       expect(store.hasPositionSeparated(layer.id)).toBe(false);
 
@@ -643,7 +646,7 @@ describe('Tutorial 05: Motion Paths & Graph Editor Mastery', () => {
     });
 
     test('applyExponentialScale can be undone', () => {
-      const layer = store.createLayer('solid', 'Test Layer');
+      const layer = layerStore.createLayer(store,'solid', 'Test Layer');
       const layerId = layer.id;
 
       expect(layer.transform.scale.keyframes.length).toBe(0);
@@ -651,7 +654,7 @@ describe('Tutorial 05: Motion Paths & Graph Editor Mastery', () => {
       // Push history to capture "before" state
       store.pushHistory();
 
-      store.applyExponentialScale(layerId, {
+      layerStore.applyExponentialScale(store,layerId, {
         startScale: 100,
         endScale: 200,
         startFrame: 0,
@@ -677,8 +680,8 @@ describe('Tutorial 05: Motion Paths & Graph Editor Mastery', () => {
 
   describe('Determinism', () => {
     test('exponential scale produces identical results', () => {
-      const layer1 = store.createLayer('solid', 'Layer 1');
-      const layer2 = store.createLayer('solid', 'Layer 2');
+      const layer1 = layerStore.createLayer(store,'solid', 'Layer 1');
+      const layer2 = layerStore.createLayer(store,'solid', 'Layer 2');
 
       const options = {
         startScale: 100,
@@ -688,8 +691,8 @@ describe('Tutorial 05: Motion Paths & Graph Editor Mastery', () => {
         keyframeCount: 10
       };
 
-      store.applyExponentialScale(layer1.id, options);
-      store.applyExponentialScale(layer2.id, options);
+      layerStore.applyExponentialScale(store,layer1.id, options);
+      layerStore.applyExponentialScale(store,layer2.id, options);
 
       const kf1 = layer1.transform.scale.keyframes;
       const kf2 = layer2.transform.scale.keyframes;
@@ -704,7 +707,7 @@ describe('Tutorial 05: Motion Paths & Graph Editor Mastery', () => {
     });
 
     test('auto bezier tangents produce deterministic results', () => {
-      const layer = store.createLayer('solid', 'Test Layer');
+      const layer = layerStore.createLayer(store,'solid', 'Test Layer');
       store.addKeyframe(layer.id, 'opacity', 0, 0);
       store.addKeyframe(layer.id, 'opacity', 50, 15);
       store.addKeyframe(layer.id, 'opacity', 100, 30);

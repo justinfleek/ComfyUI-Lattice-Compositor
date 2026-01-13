@@ -165,12 +165,14 @@ import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import type { LatticeEngine } from "@/engine/LatticeEngine";
 import type { ParticleLayer } from "@/engine/layers/ParticleLayer";
 import { useCompositorStore } from "@/stores/compositorStore";
+import { useAnimationStore } from "@/stores/animationStore";
 
 const props = defineProps<{
   engine?: LatticeEngine | null;
 }>();
 
 const store = useCompositorStore();
+const animationStore = useAnimationStore();
 const { currentFrame, fps, frameCount, layers, isPlaying } = storeToRefs(store);
 
 // Playback state
@@ -211,25 +213,25 @@ const particleLayers = computed(() => {
 
 // Methods
 function togglePlayback() {
-  store.togglePlayback();
+  animationStore.togglePlayback(store);
 }
 
 function goToStart() {
-  store.setFrame(renderRangeStart.value);
+  animationStore.setFrame(store, renderRangeStart.value);
 }
 
 function goToEnd() {
-  store.setFrame(renderRangeEnd.value - 1);
+  animationStore.setFrame(store, renderRangeEnd.value - 1);
 }
 
 function stepForward() {
   const next = Math.min(currentFrame.value + 1, frameCount.value - 1);
-  store.setFrame(next);
+  animationStore.setFrame(store, next);
 }
 
 function stepBackward() {
   const prev = Math.max(currentFrame.value - 1, 0);
-  store.setFrame(prev);
+  animationStore.setFrame(store, prev);
 }
 
 function getCacheCount(layerId: string): number {

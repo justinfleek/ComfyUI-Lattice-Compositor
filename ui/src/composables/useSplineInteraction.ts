@@ -59,8 +59,9 @@ export interface SplineInteractionOptions {
     x: number;
     y: number;
   };
-  // Store reference
+  // Store references
   store: any;
+  layerStore: any;
   // Callbacks
   emit: {
     pointAdded: (point: ControlPoint) => void;
@@ -100,6 +101,7 @@ export function useSplineInteraction(options: SplineInteractionOptions) {
     transformPoint,
     inverseTransformPoint,
     store,
+    layerStore,
     emit,
   } = options;
 
@@ -318,7 +320,7 @@ export function useSplineInteraction(options: SplineInteractionOptions) {
         type: "corner",
       };
 
-      store.addSplineControlPoint(layerId.value, newPoint);
+      options.layerStore.addSplineControlPoint(options.store, layerId.value, newPoint);
       selectedPointId.value = newPoint.id;
 
       dragTarget.value = {
@@ -348,7 +350,8 @@ export function useSplineInteraction(options: SplineInteractionOptions) {
           type: "corner",
         };
 
-        store.insertSplineControlPoint(
+        options.layerStore.insertSplineControlPoint(
+          options.store,
           layerId.value,
           newPoint,
           closest.segmentIndex + 1,
@@ -360,7 +363,7 @@ export function useSplineInteraction(options: SplineInteractionOptions) {
     } else if (penSubMode.value === "delete") {
       const clickedPoint = findClickedPoint(pos);
       if (clickedPoint) {
-        store.deleteSplineControlPoint(layerId.value, clickedPoint.id);
+        options.layerStore.deleteSplineControlPoint(options.store, layerId.value, clickedPoint.id);
         emit.pointDeleted(clickedPoint.id);
         emit.pathUpdated();
         selectedPointId.value = null;
@@ -370,14 +373,14 @@ export function useSplineInteraction(options: SplineInteractionOptions) {
       if (clickedPoint) {
         const newType = clickedPoint.type === "smooth" ? "corner" : "smooth";
         if (newType === "corner") {
-          store.updateSplineControlPoint(layerId.value, clickedPoint.id, {
+          options.layerStore.updateSplineControlPoint(options.store, layerId.value, clickedPoint.id, {
             type: "corner",
             handleIn: null,
             handleOut: null,
           });
         } else {
           const handleOffset = 30;
-          store.updateSplineControlPoint(layerId.value, clickedPoint.id, {
+          options.layerStore.updateSplineControlPoint(options.store, layerId.value, clickedPoint.id, {
             type: "smooth",
             handleIn: { x: clickedPoint.x - handleOffset, y: clickedPoint.y },
             handleOut: { x: clickedPoint.x + handleOffset, y: clickedPoint.y },
@@ -458,7 +461,7 @@ export function useSplineInteraction(options: SplineInteractionOptions) {
             const dx = layerPos.x - rawNewPointX;
             const dy = layerPos.y - rawNewPointY;
             if (Math.sqrt(dx * dx + dy * dy) > 5) {
-              store.updateSplineControlPoint(layerId.value, newPoint.id, {
+              options.layerStore.updateSplineControlPoint(options.store, layerId.value, newPoint.id, {
                 handleOut: { x: layerPos.x, y: layerPos.y },
                 handleIn: { x: rawNewPointX - dx, y: rawNewPointY - dy },
                 type: "smooth",
@@ -470,7 +473,7 @@ export function useSplineInteraction(options: SplineInteractionOptions) {
             const dx = layerPos.x - rawNewPointX;
             const dy = layerPos.y - rawNewPointY;
             if (Math.sqrt(dx * dx + dy * dy) > 5) {
-              store.updateSplineControlPoint(layerId.value, newPoint.id, {
+              options.layerStore.updateSplineControlPoint(options.store, layerId.value, newPoint.id, {
                 handleOut: { x: layerPos.x, y: layerPos.y },
                 handleIn: { x: rawNewPointX - dx, y: rawNewPointY - dy },
                 type: "smooth",
@@ -525,7 +528,7 @@ export function useSplineInteraction(options: SplineInteractionOptions) {
           };
         }
 
-        store.updateSplineControlPoint(layerId.value, point.id, updates);
+        options.layerStore.updateSplineControlPoint(options.store, layerId.value, point.id, updates);
         emit.pointMoved(point.id, layerPos.x, layerPos.y);
       } else if (dragTarget.value.type === "handleIn") {
         const updates: any = { handleIn: { x: layerPos.x, y: layerPos.y } };
@@ -536,7 +539,7 @@ export function useSplineInteraction(options: SplineInteractionOptions) {
           updates.handleOut = { x: point.x - dx, y: point.y - dy };
         }
 
-        store.updateSplineControlPoint(layerId.value, point.id, updates);
+        options.layerStore.updateSplineControlPoint(options.store, layerId.value, point.id, updates);
         emit.handleMoved(point.id, "in", layerPos.x, layerPos.y);
       } else if (dragTarget.value.type === "handleOut") {
         const updates: any = { handleOut: { x: layerPos.x, y: layerPos.y } };
@@ -547,7 +550,7 @@ export function useSplineInteraction(options: SplineInteractionOptions) {
           updates.handleIn = { x: point.x - dx, y: point.y - dy };
         }
 
-        store.updateSplineControlPoint(layerId.value, point.id, updates);
+        options.layerStore.updateSplineControlPoint(options.store, layerId.value, point.id, updates);
         emit.handleMoved(point.id, "out", layerPos.x, layerPos.y);
       } else if (dragTarget.value.type === "depth") {
         const screenDy =
@@ -558,7 +561,7 @@ export function useSplineInteraction(options: SplineInteractionOptions) {
           (dragTarget.value.startDepth ?? 0) - screenDy * depthScale,
         );
 
-        store.updateSplineControlPoint(layerId.value, point.id, {
+        options.layerStore.updateSplineControlPoint(options.store, layerId.value, point.id, {
           depth: newDepth,
         });
       } else if (dragTarget.value.type === "axisX") {
@@ -582,7 +585,7 @@ export function useSplineInteraction(options: SplineInteractionOptions) {
           };
         }
 
-        store.updateSplineControlPoint(layerId.value, point.id, updates);
+        options.layerStore.updateSplineControlPoint(options.store, layerId.value, point.id, updates);
         emit.pointMoved(point.id, newX, point.y);
       } else if (dragTarget.value.type === "axisY") {
         const screenDy =
@@ -605,7 +608,7 @@ export function useSplineInteraction(options: SplineInteractionOptions) {
           };
         }
 
-        store.updateSplineControlPoint(layerId.value, point.id, updates);
+        options.layerStore.updateSplineControlPoint(options.store, layerId.value, point.id, updates);
         emit.pointMoved(point.id, point.x, newY);
       }
 
@@ -636,12 +639,12 @@ export function useSplineInteraction(options: SplineInteractionOptions) {
           const dist = Math.sqrt(dx * dx + dy * dy);
 
           if (dist > 5) {
-            store.updateSplineControlPoint(layerId.value, point.id, {
+            options.layerStore.updateSplineControlPoint(options.store, layerId.value, point.id, {
               type: "smooth",
               handleIn: { x: point.x - dx, y: point.y - dy },
             });
           } else {
-            store.updateSplineControlPoint(layerId.value, point.id, {
+            options.layerStore.updateSplineControlPoint(options.store, layerId.value, point.id, {
               handleOut: null,
             });
           }
@@ -680,7 +683,7 @@ export function useSplineInteraction(options: SplineInteractionOptions) {
     if (isPenMode.value) {
       if (penSubMode.value === "delete") {
         if (layerId.value) {
-          store.deleteSplineControlPoint(layerId.value, pointId);
+          options.layerStore.deleteSplineControlPoint(options.store, layerId.value, pointId);
           emit.pointDeleted(pointId);
           emit.pathUpdated();
           selectedPointId.value = null;
@@ -692,14 +695,14 @@ export function useSplineInteraction(options: SplineInteractionOptions) {
         if (layerId.value) {
           const newType = point.type === "smooth" ? "corner" : "smooth";
           if (newType === "corner") {
-            store.updateSplineControlPoint(layerId.value, pointId, {
+            options.layerStore.updateSplineControlPoint(options.store, layerId.value, pointId, {
               type: "corner",
               handleIn: null,
               handleOut: null,
             });
           } else {
             const handleOffset = 30;
-            store.updateSplineControlPoint(layerId.value, pointId, {
+            options.layerStore.updateSplineControlPoint(options.store, layerId.value, pointId, {
               type: "smooth",
               handleIn: { x: point.x - handleOffset, y: point.y },
               handleOut: { x: point.x + handleOffset, y: point.y },
@@ -841,7 +844,7 @@ export function useSplineInteraction(options: SplineInteractionOptions) {
         const layer = store.layers.find((l: any) => l.id === layerId.value);
         if (layer && isSplineOrPathType(layer.type)) {
           const pointId = selectedPointId.value;
-          store.deleteSplineControlPoint(layerId.value, pointId);
+          options.layerStore.deleteSplineControlPoint(options.store, layerId.value, pointId);
           emit.pointDeleted(pointId);
           emit.pathUpdated();
           selectedPointId.value = null;

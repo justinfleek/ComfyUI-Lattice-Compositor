@@ -89,6 +89,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { useCompositorStore } from "@/stores/compositorStore";
+import { useLayerStore } from "@/stores/layerStore";
 import type { GroupLayerData, Layer, LayerType } from "@/types/project";
 
 const props = defineProps<{
@@ -99,6 +100,7 @@ const emit =
   defineEmits<(e: "update", data: Partial<GroupLayerData>) => void>();
 
 const store = useCompositorStore();
+const layerStore = useLayerStore();
 
 const groupData = computed(() => props.layer.data as GroupLayerData);
 
@@ -129,7 +131,7 @@ function updateData<K extends keyof GroupLayerData>(
 }
 
 function selectLayer(layerId: string) {
-  store.selectLayer(layerId);
+  layerStore.selectLayer(store, layerId);
 }
 
 function getLayerIcon(type: LayerType): string {

@@ -693,12 +693,16 @@ import {
   type TrajectoryType,
 } from "@/services/cameraTrajectory";
 import { useCompositorStore } from "@/stores/compositorStore";
+import { useCameraStore } from "@/stores/cameraStore";
+import { useLayerStore } from "@/stores/layerStore";
 import { focalLengthToFOV, fovToFocalLength } from "../../services/math3d";
 import { CAMERA_PRESETS } from "../../types/camera";
 import type { AutoOrientMode, Camera3D, CameraType, MeasureFilmSize } from "../../types/camera";
 
 // Store connection
 const store = useCompositorStore();
+const cameraStore = useCameraStore();
+const layerStore = useLayerStore();
 
 // Get camera from store (active camera or selected camera layer)
 const camera = computed<Camera3D | null>(() => {
@@ -802,7 +806,7 @@ function previewTrajectory() {
 
     // Update camera position live
     if (camera.value?.id) {
-      store.updateCamera(camera.value.id, {
+      cameraStore.updateCamera(store, camera.value.id, {
         position,
         pointOfInterest: target,
       });
@@ -839,7 +843,7 @@ function applyTrajectory() {
 
   // Apply position keyframes
   for (const kf of keyframes.position) {
-    store.addCameraKeyframe(camera.value.id, {
+    cameraStore.addCameraKeyframe(store, camera.value.id, {
       frame: kf.frame,
       position: kf.position,
       spatialInterpolation: kf.spatialInterpolation,
@@ -849,7 +853,7 @@ function applyTrajectory() {
 
   // Apply point of interest keyframes
   for (const kf of keyframes.pointOfInterest) {
-    store.addCameraKeyframe(camera.value.id, {
+    cameraStore.addCameraKeyframe(store, camera.value.id, {
       frame: kf.frame,
       pointOfInterest: kf.pointOfInterest,
       spatialInterpolation: kf.spatialInterpolation,
@@ -860,7 +864,7 @@ function applyTrajectory() {
   // Apply zoom keyframes if present
   if (keyframes.zoom) {
     for (const kf of keyframes.zoom) {
-      store.addCameraKeyframe(camera.value.id, {
+      cameraStore.addCameraKeyframe(store, camera.value.id, {
         frame: kf.frame,
         zoom: kf.zoom,
         temporalInterpolation: kf.temporalInterpolation,
@@ -909,7 +913,7 @@ function previewShake() {
       const offset = activeCameraShake.getOffset(frame);
 
       if (camera.value?.id) {
-        store.updateCamera(camera.value.id, {
+        cameraStore.updateCamera(store, camera.value.id, {
           position: {
             x: originalPosition.x + offset.position.x,
             y: originalPosition.y + offset.position.y,
@@ -927,7 +931,7 @@ function previewShake() {
     } else {
       // Restore original position
       if (camera.value?.id) {
-        store.updateCamera(camera.value.id, {
+        cameraStore.updateCamera(store, camera.value.id, {
           position: originalPosition,
           orientation: originalOrientation,
         });
@@ -958,7 +962,7 @@ function applyShakeKeyframes() {
 
   // Apply the shaken keyframes
   for (const kf of shakenKeyframes) {
-    store.addCameraKeyframe(camera.value.id, kf);
+    cameraStore.addCameraKeyframe(store, camera.value.id, kf);
   }
 
   console.log(`Applied ${shakenKeyframes.length} camera shake keyframes`);
@@ -970,26 +974,26 @@ function toggleSection(section: keyof typeof expandedSections) {
 
 function updateProperty<K extends keyof Camera3D>(key: K, value: Camera3D[K]) {
   if (!camera.value) return;
-  store.updateCamera(camera.value.id, { [key]: value });
+  cameraStore.updateCamera(store, camera.value.id, { [key]: value });
 }
 
 function updatePosition(axis: "x" | "y" | "z", value: number) {
   if (!camera.value) return;
-  store.updateCamera(camera.value.id, {
+  cameraStore.updateCamera(store, camera.value.id, {
     position: { ...camera.value.position, [axis]: value },
   });
 }
 
 function updatePOI(axis: "x" | "y" | "z", value: number) {
   if (!camera.value) return;
-  store.updateCamera(camera.value.id, {
+  cameraStore.updateCamera(store, camera.value.id, {
     pointOfInterest: { ...camera.value.pointOfInterest, [axis]: value },
   });
 }
 
 function updateOrientation(axis: "x" | "y" | "z", value: number) {
   if (!camera.value) return;
-  store.updateCamera(camera.value.id, {
+  cameraStore.updateCamera(store, camera.value.id, {
     orientation: { ...camera.value.orientation, [axis]: value },
   });
 }
@@ -999,7 +1003,7 @@ function updateFocalLength(value: number) {
   // Convert focal length to FOV: focalLengthToFOV returns radians, store as degrees
   const angleOfViewRadians = focalLengthToFOV(value, camera.value.filmSize);
   const angleOfView = angleOfViewRadians * (180 / Math.PI);
-  store.updateCamera(camera.value.id, {
+  cameraStore.updateCamera(store, camera.value.id, {
     focalLength: value,
     angleOfView,
   });
@@ -1010,7 +1014,7 @@ function updateAngleOfView(value: number) {
   // Convert FOV from degrees (UI) to radians (math functions)
   const valueRadians = value * (Math.PI / 180);
   const focalLength = fovToFocalLength(valueRadians, camera.value.filmSize);
-  store.updateCamera(camera.value.id, {
+  cameraStore.updateCamera(store, camera.value.id, {
     angleOfView: value,
     focalLength,
   });
@@ -1021,7 +1025,7 @@ function updateDOF<K extends keyof Camera3D["depthOfField"]>(
   value: Camera3D["depthOfField"][K],
 ) {
   if (!camera.value) return;
-  store.updateCamera(camera.value.id, {
+  cameraStore.updateCamera(store, camera.value.id, {
     depthOfField: { ...camera.value.depthOfField, [key]: value },
   });
 }
@@ -1031,7 +1035,7 @@ function updateIris<K extends keyof Camera3D["iris"]>(
   value: Camera3D["iris"][K],
 ) {
   if (!camera.value) return;
-  store.updateCamera(camera.value.id, {
+  cameraStore.updateCamera(store, camera.value.id, {
     iris: { ...camera.value.iris, [key]: value },
   });
 }
@@ -1041,14 +1045,14 @@ function updateHighlight<K extends keyof Camera3D["highlight"]>(
   value: Camera3D["highlight"][K],
 ) {
   if (!camera.value) return;
-  store.updateCamera(camera.value.id, {
+  cameraStore.updateCamera(store, camera.value.id, {
     highlight: { ...camera.value.highlight, [key]: value },
   });
 }
 
 function applyPreset(preset: (typeof CAMERA_PRESETS)[number]) {
   if (!camera.value) return;
-  store.updateCamera(camera.value.id, {
+  cameraStore.updateCamera(store, camera.value.id, {
     focalLength: preset.focalLength,
     angleOfView: preset.angleOfView,
     zoom: preset.zoom,
@@ -1056,7 +1060,7 @@ function applyPreset(preset: (typeof CAMERA_PRESETS)[number]) {
 }
 
 function createCamera() {
-  store.createCameraLayer();
+  layerStore.createCameraLayer(store);
 }
 </script>
 

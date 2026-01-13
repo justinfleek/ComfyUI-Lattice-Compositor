@@ -69,7 +69,7 @@
           <div class="icon-col" @mousedown.stop="toggleEffectLayer" :title="(layer.effectLayer || layer.adjustmentLayer) ? 'Disable Effect Layer' : 'Make Effect Layer'">
             <span :class="{ active: layer.effectLayer || layer.adjustmentLayer }">◐</span>
           </div>
-          <div class="icon-col" @mousedown.stop="store.toggleLayer3D(layer.id)" :title="layer.threeD ? 'Make 2D Layer' : 'Make 3D Layer'">
+          <div class="icon-col" @mousedown.stop="layerStore.toggleLayer3D(store, layer.id)" :title="layer.threeD ? 'Make 2D Layer' : 'Make 3D Layer'">
             <span :class="{ active: layer.threeD }">⬡</span>
           </div>
         </div>
@@ -185,6 +185,8 @@ import {
 } from "@/services/timelineWaveform";
 import { useAudioStore } from "@/stores/audioStore";
 import { useCompositorStore } from "@/stores/compositorStore";
+import { useLayerStore } from "@/stores/layerStore";
+import { useAnimationStore } from "@/stores/animationStore";
 
 const props = defineProps([
   "layer",
@@ -198,7 +200,9 @@ const props = defineProps([
 ]);
 const emit = defineEmits(["toggleExpand", "select", "updateLayer"]);
 const store = useCompositorStore();
+const layerStore = useLayerStore();
 const audioStore = useAudioStore();
+const animationStore = useAnimationStore();
 
 // Waveform state
 const waveformCanvasRef = ref<HTMLCanvasElement | null>(null);
@@ -265,7 +269,7 @@ function onDrop(event: DragEvent) {
         const item = JSON.parse(projectItemData);
         if (item && (item.type === "asset" || item.type === "composition")) {
           // Replace layer source with new asset
-          store.replaceLayerSource(props.layer.id, item);
+          layerStore.replaceLayerSource(store, props.layer.id, item);
           console.log(
             `[Lattice] Replaced layer source: ${props.layer.name} → ${item.name}`,
           );
@@ -296,7 +300,7 @@ function onDrop(event: DragEvent) {
     targetIndex !== -1 &&
     draggedIndex !== targetIndex
   ) {
-    store.moveLayer(draggedLayerId, targetIndex);
+    layerStore.moveLayer(store, draggedLayerId, targetIndex);
     console.log(
       `[Lattice] Moved layer from index ${draggedIndex} to ${targetIndex}`,
     );
@@ -651,7 +655,7 @@ function getSnapTargets(): number[] {
   const targets: number[] = [];
 
   // Add playhead position
-  targets.push(store.currentFrame);
+  targets.push(animationStore.getCurrentFrame(store));
 
   // Add all other layer in/out points
   const layers = props.allLayers || store.layers;
@@ -930,7 +934,7 @@ function hideContextMenu() {
 }
 
 function duplicateLayer() {
-  store.duplicateLayer(props.layer.id);
+  layerStore.duplicateLayer(store, props.layer.id);
   hideContextMenu();
 }
 
@@ -954,12 +958,12 @@ function toggleLayerLock() {
 }
 
 function toggleLayer3D() {
-  store.toggleLayer3D(props.layer.id);
+  layerStore.toggleLayer3D(store, props.layer.id);
   hideContextMenu();
 }
 
 function nestLayer() {
-  store.selectLayer(props.layer.id);
+  layerStore.selectLayer(store, props.layer.id);
   store.nestSelectedLayers(`${props.layer.name} Nested`);
   hideContextMenu();
 }
@@ -969,7 +973,7 @@ async function convertToSplines() {
   if (props.layer.type !== "text") return;
 
   try {
-    const result = await store.convertTextLayerToSplines(props.layer.id, {
+    const result = await layerStore.convertTextLayerToSplines(store, props.layer.id, {
       perCharacter: true,
       groupCharacters: true,
       keepOriginal: true,
@@ -987,7 +991,7 @@ async function convertToSplines() {
 }
 
 function deleteLayer() {
-  store.deleteLayer(props.layer.id);
+  layerStore.deleteLayer(store, props.layer.id);
   hideContextMenu();
 }
 

@@ -434,11 +434,9 @@
 
 <script setup lang="ts">
 import { onMounted, ref, watch } from "vue";
-import {
-  bakePhysicsToKeyframes,
-  resetPhysicsSimulation,
-} from "@/stores/actions/physicsActions";
+import { usePhysicsStore } from "@/stores/physicsStore";
 import { useCompositorStore } from "@/stores/compositorStore";
+import { useLayerStore } from "@/stores/layerStore";
 import { MATERIAL_PRESETS } from "@/types/physics";
 
 const props = defineProps<{
@@ -448,6 +446,7 @@ const props = defineProps<{
 const emit = defineEmits<(e: "update") => void>();
 
 const store = useCompositorStore();
+const layerStore = useLayerStore();
 
 // State
 const physicsEnabled = ref(false);
@@ -504,7 +503,7 @@ const bakeSettings = ref({
 
 // Load layer physics data
 function loadLayerPhysics() {
-  const layer = store.getLayerById(props.layerId);
+  const layer = layerStore.getLayerById(store, props.layerId);
   if (!layer) return;
 
   const data = (layer.data as any)?.physics;
@@ -532,7 +531,7 @@ function loadLayerPhysics() {
 
 // Save physics data to layer
 function saveLayerPhysics() {
-  const layer = store.getLayerById(props.layerId);
+  const layer = layerStore.getLayerById(store, props.layerId);
   if (!layer) return;
 
   const physicsData = {
@@ -546,7 +545,7 @@ function saveLayerPhysics() {
     world: { ...world.value },
   };
 
-  store.updateLayerData(props.layerId, { physics: physicsData });
+  layerStore.updateLayerData(store, props.layerId, { physics: physicsData });
   emit("update");
 }
 
@@ -597,8 +596,9 @@ function toggleCollisionMask(group: number) {
 }
 
 async function bakeToKeyframes() {
+  const physicsStore = usePhysicsStore();
   try {
-    await bakePhysicsToKeyframes(store, props.layerId, {
+    await physicsStore.bakePhysicsToKeyframes(store, props.layerId, {
       startFrame: bakeSettings.value.startFrame,
       endFrame: bakeSettings.value.endFrame,
       simplify: bakeSettings.value.simplify,
@@ -611,8 +611,9 @@ async function bakeToKeyframes() {
 }
 
 function resetSimulation() {
+  const physicsStore = usePhysicsStore();
   try {
-    resetPhysicsSimulation(store);
+    physicsStore.resetPhysicsSimulation(store);
     // Refresh layer data after reset
     loadLayerPhysics();
   } catch (error) {

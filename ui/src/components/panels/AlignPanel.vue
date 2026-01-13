@@ -164,8 +164,10 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 import { useCompositorStore } from "@/stores/compositorStore";
+import { useLayerStore } from "@/stores/layerStore";
 
 const store = useCompositorStore();
+const layerStore = useLayerStore();
 
 const alignTarget = ref<"composition" | "selection">("composition");
 
@@ -190,7 +192,7 @@ function alignLayers(direction: AlignDirection) {
   if (!comp) return;
 
   // Get layer bounds
-  const layers = layerIds.map((id) => store.getLayerById(id)).filter(Boolean);
+  const layers = layerIds.map((id) => layerStore.getLayerById(store, id)).filter(Boolean);
   if (layers.length === 0) return;
 
   let targetBounds: {
@@ -273,7 +275,7 @@ function distributeLayers(direction: DistributeDirection) {
   if (layerIds.length < 3) return;
 
   const layers = layerIds
-    .map((id) => store.getLayerById(id))
+    .map((id) => layerStore.getLayerById(store, id))
     .filter(Boolean)
     .filter((l) => l?.transform?.position);
 

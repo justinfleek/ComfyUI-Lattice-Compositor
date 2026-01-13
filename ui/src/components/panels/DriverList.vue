@@ -112,12 +112,14 @@
 import { computed, ref } from "vue";
 import type { DriverTransform, PropertyPath } from "@/services/propertyDriver";
 import { useCompositorStore } from "@/stores/compositorStore";
+import { useExpressionStore } from "@/stores/expressionStore";
 
 const props = defineProps<{
   layerId: string;
 }>();
 
 const store = useCompositorStore();
+const expressionStore = useExpressionStore();
 const expanded = ref(true);
 const showAddMenu = ref(false);
 
@@ -129,7 +131,7 @@ const newDriver = ref({
 });
 
 const drivers = computed(() => {
-  return store.getDriversForLayer(props.layerId);
+  return expressionStore.getDriversForLayer(store, props.layerId);
 });
 
 function formatProperty(prop?: PropertyPath | string): string {
@@ -173,15 +175,16 @@ function formatTransform(t: DriverTransform): string {
 }
 
 function toggleDriver(driverId: string) {
-  store.togglePropertyDriver(driverId);
+  expressionStore.togglePropertyDriver(store, driverId);
 }
 
 function removeDriver(driverId: string) {
-  store.removePropertyDriver(driverId);
+  expressionStore.removePropertyDriver(store, driverId);
 }
 
 function createAudioDriver() {
-  store.createAudioPropertyDriver(
+  expressionStore.createAudioPropertyDriver(
+    store,
     props.layerId,
     newDriver.value.targetProperty,
     newDriver.value.audioFeature,

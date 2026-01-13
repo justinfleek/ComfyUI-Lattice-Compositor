@@ -20,12 +20,19 @@ import type {
  */
 export interface KeyframeStoreAccess {
   project: {
+    composition: { width: number; height: number };
     meta: { modified: string };
   };
-  getActiveComp(): { currentFrame: number; layers: Layer[] } | null;
+  getActiveComp(): {
+    currentFrame: number;
+    layers: Layer[];
+    settings: { fps: number; frameCount: number; duration: number; width: number; height: number };
+  } | null;
   getActiveCompLayers(): Layer[];
   getLayerById(id: string): Layer | null;
   pushHistory(): void;
+  /** Get FPS from active composition */
+  readonly fps: number;
 }
 
 /**
@@ -62,6 +69,7 @@ export interface VelocityStoreAccess extends KeyframeStoreAccess {
 export interface BakeExpressionStoreAccess extends KeyframeStoreAccess {
   fps: number;
   frameCount: number;
+  currentFrame: number;
   /** Returns array for position/scale (x,y components), number for scalars, null if not found */
   evaluatePropertyAtFrame(
     layerId: string,

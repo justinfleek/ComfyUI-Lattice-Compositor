@@ -5,7 +5,7 @@
  */
 
 import { markLayerDirty } from "@/services/layerEvaluationCache";
-import type { Keyframe } from "@/types/project";
+import type { Keyframe, PropertyValue } from "@/types/project";
 import { findPropertyByPath } from "./helpers";
 import type { KeyframeStoreAccess } from "./types";
 
@@ -44,8 +44,13 @@ export function autoCalculateBezierTangents(
   const prevKf = kfIndex > 0 ? sorted[kfIndex - 1] : null;
   const nextKf = kfIndex < sorted.length - 1 ? sorted[kfIndex + 1] : null;
 
-  const getValue = (kf: Keyframe<any>) =>
-    typeof kf.value === "number" ? kf.value : 0;
+  const getValue = (kf: Keyframe<PropertyValue>) => {
+    if (typeof kf.value === "number") return kf.value;
+    if (Array.isArray(kf.value) && kf.value.length > 0 && typeof kf.value[0] === "number") {
+      return kf.value[0];
+    }
+    return 0;
+  };
   const currentValue = getValue(keyframe);
 
   // Calculate tangent direction (slope from prev to next)
@@ -124,8 +129,13 @@ export function autoCalculateAllBezierTangents(
     const prevKf = i > 0 ? sorted[i - 1] : null;
     const nextKf = i < sorted.length - 1 ? sorted[i + 1] : null;
 
-    const getValue = (kf: Keyframe<any>) =>
-      typeof kf.value === "number" ? kf.value : 0;
+    const getValue = (kf: Keyframe<PropertyValue>) => {
+      if (typeof kf.value === "number") return kf.value;
+      if (Array.isArray(kf.value) && kf.value.length > 0 && typeof kf.value[0] === "number") {
+        return kf.value[0];
+      }
+      return 0;
+    };
     const currentValue = getValue(keyframe);
 
     let slopeFrame = 0;

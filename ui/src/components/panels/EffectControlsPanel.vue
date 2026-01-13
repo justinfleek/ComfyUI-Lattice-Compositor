@@ -198,10 +198,12 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from "vue";
 import { useCompositorStore } from "@/stores/compositorStore";
+import { useEffectStore } from "@/stores/effectStore";
 import { EFFECT_CATEGORIES, EFFECT_DEFINITIONS } from "@/types/effects";
 import { hexToRgba, rgbaToHex } from "@/utils/colorUtils";
 
 const store = useCompositorStore();
+const effectStore = useEffectStore();
 const showAddMenu = ref(false);
 const menuRef = ref<HTMLDivElement | null>(null);
 
@@ -283,17 +285,17 @@ function getLayerIcon(type: string) {
 
 function addEffect(key: string) {
   if (layer.value) {
-    store.addEffectToLayer(layer.value.id, key);
+    effectStore.addEffectToLayer(store, layer.value.id, key);
     showAddMenu.value = false;
   }
 }
 
 function removeEffect(effect: any) {
-  if (layer.value) store.removeEffectFromLayer(layer.value.id, effect.id);
+  if (layer.value) effectStore.removeEffectFromLayer(store, layer.value.id, effect.id);
 }
 
 function toggleEffect(effect: any) {
-  if (layer.value) store.toggleEffect(layer.value.id, effect.id);
+  if (layer.value) effectStore.toggleEffect(store, layer.value.id, effect.id);
 }
 
 function toggleExpand(effect: any) {
@@ -302,7 +304,7 @@ function toggleExpand(effect: any) {
 
 function updateParam(effectId: string, paramKey: string, value: any) {
   if (layer.value)
-    store.updateEffectParameter(layer.value.id, effectId, paramKey, value);
+    effectStore.updateEffectParameter(store, layer.value.id, effectId, paramKey, value);
 }
 
 function updatePoint(
@@ -317,7 +319,7 @@ function updatePoint(
 
   const current = effect.parameters[paramKey].value;
   const newValue = { ...current, [axis]: val };
-  store.updateEffectParameter(layer.value.id, effectId, paramKey, newValue);
+  effectStore.updateEffectParameter(store, layer.value.id, effectId, paramKey, newValue);
 }
 
 // Color handling: Store uses RGBA object {r,g,b,a}, Picker uses Hex string
@@ -330,7 +332,7 @@ function updateColor(effectId: string, paramKey: string, hex: string) {
   const rgba = hexToRgba(hex);
   if (rgba && layer.value) {
     const val = { r: rgba[0], g: rgba[1], b: rgba[2], a: rgba[3] };
-    store.updateEffectParameter(layer.value.id, effectId, paramKey, val);
+    effectStore.updateEffectParameter(store, layer.value.id, effectId, paramKey, val);
   }
 }
 
@@ -339,7 +341,8 @@ function toggleParamAnim(effectId: string, paramKey: string) {
   const effect = layer.value.effects.find((e: any) => e.id === effectId);
   const param = effect?.parameters[paramKey];
   if (param) {
-    store.setEffectParamAnimated(
+    effectStore.setEffectParamAnimated(
+      store,
       layer.value.id,
       effectId,
       paramKey,
@@ -382,7 +385,7 @@ function onDrop(event: DragEvent, targetIndex: number) {
 
   const fromIndex = parseInt(fromIndexStr, 10);
   if (fromIndex !== targetIndex && !Number.isNaN(fromIndex)) {
-    store.reorderEffects(layer.value.id, fromIndex, targetIndex);
+    effectStore.reorderEffects(store, layer.value.id, fromIndex, targetIndex);
   }
 }
 

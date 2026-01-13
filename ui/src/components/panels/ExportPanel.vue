@@ -184,8 +184,10 @@ import {
   WebCodecsVideoEncoder,
 } from "@/services/export/videoEncoder";
 import { useCompositorStore } from "@/stores/compositorStore";
+import { useAnimationStore } from "@/stores/animationStore";
 
 const store = useCompositorStore();
+const animationStore = useAnimationStore();
 
 // State
 const exportMode = ref<"video" | "sequence">("video");
@@ -284,7 +286,7 @@ async function startFrameSequenceExport() {
     const result = await exportFrameSequence(
       async (frame: number) => {
         // Set frame in store (triggers render)
-        store.setFrame(frame);
+        animationStore.setFrame(store, frame);
 
         // Small delay to allow render
         await new Promise((resolve) => setTimeout(resolve, 10));
@@ -380,7 +382,7 @@ async function startVideoExport() {
       if (!isExporting.value) break; // User cancelled
 
       // Set frame in store (triggers render)
-      store.setFrame(frame);
+      animationStore.setFrame(store, frame);
 
       // Small delay to allow render
       await new Promise((resolve) => setTimeout(resolve, 10));

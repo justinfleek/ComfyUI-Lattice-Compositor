@@ -271,6 +271,7 @@
 import { computed, reactive, ref, watch } from "vue";
 import { useAssetStore } from "@/stores/assetStore";
 import { useCompositorStore } from "@/stores/compositorStore";
+import { useLayerStore } from "@/stores/layerStore";
 
 const props = defineProps<{
   layerId: string;
@@ -281,6 +282,7 @@ const emit = defineEmits<{
 }>();
 
 const store = useCompositorStore();
+const layerStore = useLayerStore();
 const assetStore = useAssetStore();
 
 // Section visibility
@@ -372,7 +374,7 @@ function toggleSection(section: keyof typeof sections) {
 function updatePosition(axis: "x" | "y" | "z", value: number) {
   const current = { ...position.value };
   current[axis] = value;
-  store.updateLayerTransform(props.layerId, { position: current });
+  layerStore.updateLayerTransform(store, props.layerId, { position: current });
 }
 
 function updateRotation(axis: "x" | "y" | "z", value: number) {
@@ -394,13 +396,13 @@ function updateRotation(axis: "x" | "y" | "z", value: number) {
 
 function updateScale(axis: "x" | "y" | "z", value: number) {
   if (uniformScale.value) {
-    store.updateLayerTransform(props.layerId, {
+    layerStore.updateLayerTransform(store, props.layerId, {
       scale: { x: value, y: value, z: value },
     });
   } else {
     const current = { ...scale.value };
     current[axis] = value;
-    store.updateLayerTransform(props.layerId, { scale: current });
+    layerStore.updateLayerTransform(store, props.layerId, { scale: current });
   }
 }
 
@@ -409,7 +411,7 @@ function toggleUniformScale() {
 }
 
 function assignMaterial() {
-  store.updateLayerData(props.layerId, {
+  layerStore.updateLayerData(store, props.layerId, {
     materialId: selectedMaterialId.value || null,
   });
 }
@@ -420,24 +422,24 @@ function openMaterialEditor() {
 
 function toggleWireframe() {
   showWireframe.value = !showWireframe.value;
-  store.updateLayerData(props.layerId, { wireframe: showWireframe.value });
+  layerStore.updateLayerData(store, props.layerId, { wireframe: showWireframe.value });
 }
 
 function toggleBoundingBox() {
   showBoundingBox.value = !showBoundingBox.value;
-  store.updateLayerData(props.layerId, {
+  layerStore.updateLayerData(store, props.layerId, {
     showBoundingBox: showBoundingBox.value,
   });
 }
 
 function toggleCastShadows() {
   castShadows.value = !castShadows.value;
-  store.updateLayerData(props.layerId, { castShadows: castShadows.value });
+  layerStore.updateLayerData(store, props.layerId, { castShadows: castShadows.value });
 }
 
 function toggleReceiveShadows() {
   receiveShadows.value = !receiveShadows.value;
-  store.updateLayerData(props.layerId, {
+  layerStore.updateLayerData(store, props.layerId, {
     receiveShadows: receiveShadows.value,
   });
 }
@@ -445,24 +447,24 @@ function toggleReceiveShadows() {
 // Point cloud methods
 function updatePointSize(value: number) {
   pointSize.value = value;
-  store.updateLayerData(props.layerId, { pointSize: value });
+  layerStore.updateLayerData(store, props.layerId, { pointSize: value });
 }
 
 function updatePointColor(value: string) {
   pointColor.value = value;
-  store.updateLayerData(props.layerId, { pointColor: value });
+  layerStore.updateLayerData(store, props.layerId, { pointColor: value });
 }
 
 function toggleVertexColors() {
   useVertexColors.value = !useVertexColors.value;
-  store.updateLayerData(props.layerId, {
+  layerStore.updateLayerData(store, props.layerId, {
     useVertexColors: useVertexColors.value,
   });
 }
 
 function toggleSizeAttenuation() {
   sizeAttenuation.value = !sizeAttenuation.value;
-  store.updateLayerData(props.layerId, {
+  layerStore.updateLayerData(store, props.layerId, {
     sizeAttenuation: sizeAttenuation.value,
   });
 }

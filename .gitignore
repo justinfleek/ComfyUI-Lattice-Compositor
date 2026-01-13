@@ -73,3 +73,6 @@ ui/test_particle_count.json
 
 # Deprecated docs folder
 _deprecated/
+
+# Backups directory
+.backups/

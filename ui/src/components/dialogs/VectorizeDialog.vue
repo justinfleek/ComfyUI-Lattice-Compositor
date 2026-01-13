@@ -237,6 +237,7 @@ import {
   type VTraceOptions,
 } from "@/services/vectorize";
 import { useCompositorStore } from "@/stores/compositorStore";
+import { useLayerStore } from "@/stores/layerStore";
 import type { ControlPoint, Layer } from "@/types/project";
 
 const props = defineProps<{
@@ -249,6 +250,7 @@ const emit = defineEmits<{
 }>();
 
 const store = useCompositorStore();
+const layerStore = useLayerStore();
 const vectorizeService = getVectorizeService();
 
 // Source selection
@@ -469,11 +471,11 @@ function createLayers() {
       }
 
       // Create the spline layer
-      const layer = store.createSplineLayer();
-      store.renameLayer(layer.id, `Vector Path ${i + 1}`);
+      const layer = layerStore.createSplineLayer(store);
+      layerStore.renameLayer(store, layer.id, `Vector Path ${i + 1}`);
 
       // Update with control points
-      store.updateLayerData(layer.id, {
+      layerStore.updateLayerData(store, layer.id, {
         controlPoints,
         closed: path.closed,
         stroke: path.stroke || "#00ff00",
@@ -507,10 +509,10 @@ function createLayers() {
       controlPoints = autoGroupPoints(allPoints, { method: "quadrant" });
     }
 
-    const layer = store.createSplineLayer();
-    store.renameLayer(layer.id, "Vectorized Paths");
+    const layer = layerStore.createSplineLayer(store);
+    layerStore.renameLayer(store, layer.id, "Vectorized Paths");
 
-    store.updateLayerData(layer.id, {
+    layerStore.updateLayerData(store, layer.id, {
       controlPoints,
       closed: false,
       stroke: "#00ff00",

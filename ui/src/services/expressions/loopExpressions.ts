@@ -26,7 +26,7 @@ export type LoopType = "cycle" | "pingpong" | "offset" | "continue";
 export interface LoopExpressionContext {
   time: number;
   fps: number;
-  keyframes: Keyframe<any>[];
+  keyframes: Keyframe<number | number[]>[];
   value: number | number[];
   velocity: number | number[];
 }

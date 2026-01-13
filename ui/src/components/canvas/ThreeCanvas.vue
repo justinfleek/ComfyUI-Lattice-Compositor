@@ -36,7 +36,7 @@
     <SplineEditor
       v-if="activeSplineLayerId || isPenMode"
       :layerId="activeSplineLayerId"
-      :currentFrame="store.currentFrame"
+      :currentFrame="animationStore.getCurrentFrame(store)"
       :canvasWidth="compositionWidth"
       :canvasHeight="compositionHeight"
       :containerWidth="canvasWidth"
@@ -54,7 +54,7 @@
     <MotionPathOverlay
       v-if="showMotionPath && store.selectedLayerIds.length === 1"
       :layerId="store.selectedLayerIds[0]"
-      :currentFrame="store.currentFrame"
+      :currentFrame="animationStore.getCurrentFrame(store)"
       :canvasWidth="compositionWidth"
       :canvasHeight="compositionHeight"
       :containerWidth="canvasWidth"
@@ -254,13 +254,21 @@ import { LatticeEngine } from "@/engine";
 import type { LayerTransformUpdate } from "@/engine/LatticeEngine";
 import { markLayerDirty } from "@/services/layerEvaluationCache";
 import { useCompositorStore } from "@/stores/compositorStore";
+import { useCameraStore } from "@/stores/cameraStore";
+import { useCompositionStore } from "@/stores/compositionStore";
+import { useLayerStore } from "@/stores/layerStore";
 import { useSelectionStore } from "@/stores/selectionStore";
-import type { ControlPoint, Layer } from "@/types/project";
+import { useAnimationStore } from "@/stores/animationStore";
+import type { ControlPoint, Layer, ImageLayerData, VideoLayerData, CameraLayerData, Vec3 } from "@/types/project";
 import type SplineEditor from "./SplineEditor.vue";
 
 // Store
 const store = useCompositorStore();
+const cameraStore = useCameraStore();
+const compositionStore = useCompositionStore();
+const layerStore = useLayerStore();
 const selection = useSelectionStore();
+const animationStore = useAnimationStore();
 
 // Refs
 const containerRef = ref<HTMLDivElement | null>(null);
@@ -550,18 +558,20 @@ function onDrop(event: DragEvent) {
             // Resize composition to match image dimensions
             const compId = store.activeCompositionId;
             if (compId) {
-              store.updateCompositionSettings(compId, {
+              compositionStore.updateCompositionSettings(store, compId, {
                 width: img.naturalWidth,
                 height: img.naturalHeight,
               });
             }
 
             // Create the layer after resizing
-            const layer = store.createLayer("image", item.name);
-            if (layer) {
-              (layer.data as any).assetId = item.id;
-              (layer.data as any).source = asset.data;
-              store.selectLayer(layer.id);
+            const layer = layerStore.createLayer(store, "image", item.name);
+            if (layer && layer.type === "image") {
+              const imageData = layer.data as ImageLayerData;
+              imageData.assetId = item.id;
+              // Note: ImageLayerData doesn't have 'source' property in schema
+              // If needed, store in a different way or extend the schema
+              layerStore.selectLayer(store, layer.id);
               console.log(
                 "[ThreeCanvas] Created image layer, resized comp to:",
                 img.naturalWidth,
@@ -572,10 +582,11 @@ function onDrop(event: DragEvent) {
           };
           img.src = asset.data;
         } else if (asset.type === "video") {
-          const layer = store.createLayer("video", item.name);
-          if (layer) {
-            (layer.data as any).assetId = item.id;
-            store.selectLayer(layer.id);
+          const layer = layerStore.createLayer(store, "video", item.name);
+          if (layer && layer.type === "video") {
+            const videoData = layer.data as VideoLayerData;
+            videoData.assetId = item.id;
+            layerStore.selectLayer(store, layer.id);
             console.log(
               "[ThreeCanvas] Created video layer from drop:",
               item.name,
@@ -584,9 +595,9 @@ function onDrop(event: DragEvent) {
         }
       }
     } else if (item.type === "solid") {
-      const layer = store.createLayer("solid", item.name);
+      const layer = layerStore.createLayer(store, "solid", item.name);
       if (layer) {
-        store.selectLayer(layer.id);
+        layerStore.selectLayer(store, layer.id);
         console.log("[ThreeCanvas] Created solid layer from drop:", item.name);
       }
     }
@@ -643,10 +654,10 @@ onMounted(async () => {
       store.onVideoMetadataLoaded(layerId, metadata);
     });
     engine.value.setCameraCallbacks(
-      (cameraId: string) => store.getCamera(cameraId),
-      (cameraId: string, updates) => store.updateCamera(cameraId, updates),
+      (cameraId: string) => cameraStore.getCamera(store, cameraId),
+      (cameraId: string, updates) => cameraStore.updateCamera(store, cameraId, updates),
       (cameraId: string, frame: number) =>
-        store.getCameraAtFrame(cameraId, frame),
+        cameraStore.getCameraAtFrame(store, cameraId, frame),
     );
 
     // Wire up nested comp rendering - allows nested comp layers to render nested compositions
@@ -725,7 +736,7 @@ onMounted(async () => {
     store.initializePropertyDriverSystem();
 
     // Apply initial frame state via MotionEngine
-    const initialFrameState = store.getFrameState(store.currentFrame);
+    const initialFrameState = animationStore.getFrameState(store, animationStore.getCurrentFrame(store));
     engine.value.applyFrameState(initialFrameState);
 
     // Setup event listeners
@@ -764,7 +775,7 @@ function setupWatchers() {
       syncLayersToEngine();
       // Re-evaluate frame to apply layer changes (like 3D toggle)
       if (engine.value) {
-        const frameState = store.getFrameState(store.currentFrame);
+        const frameState = animationStore.getFrameState(store, animationStore.getCurrentFrame(store));
         engine.value.applyFrameState(frameState);
       }
     },
@@ -773,14 +784,14 @@ function setupWatchers() {
 
   // Watch current frame - use MotionEngine as single source of truth
   watch(
-    () => store.currentFrame,
+    () => animationStore.getCurrentFrame(store),
     (frame) => {
       if (engine.value) {
         // Apply property drivers (sets driven values on layers for override)
         applyPropertyDrivers();
 
         // Get pre-evaluated frame state from MotionEngine (PURE, deterministic)
-        const frameState = store.getFrameState(frame);
+        const frameState = animationStore.getFrameState(store, frame);
 
         // Apply the evaluated state to the engine
         // This is the canonical path - no interpolation happens in the engine
@@ -853,7 +864,7 @@ function setupWatchers() {
       // Find the camera layer that references this camera
       const cameraLayer = store.layers.find(
         (l) =>
-          l.type === "camera" && (l.data as any)?.cameraId === activeCameraId,
+          l.type === "camera" && (l.data as CameraLayerData)?.cameraId === activeCameraId,
       );
 
       if (cameraLayer) {
@@ -1117,7 +1128,7 @@ function setupInputHandlers() {
         e.clientY - rect.top,
       );
 
-      const newLayer = store.createLayer("text");
+      const newLayer = layerStore.createTextLayer(store);
       if (newLayer.transform?.position) {
         newLayer.transform.position.value = {
           x: scenePos.x,
@@ -1125,7 +1136,7 @@ function setupInputHandlers() {
           z: 0,
         };
       }
-      store.updateLayer(newLayer.id, {
+      layerStore.updateLayer(store, newLayer.id, {
         transform: {
           ...newLayer.transform,
           position: {
@@ -1134,7 +1145,7 @@ function setupInputHandlers() {
           },
         },
       });
-      store.selectLayer(newLayer.id);
+      layerStore.selectLayer(store, newLayer.id);
       store.setTool("select");
       return;
     }
@@ -1190,7 +1201,7 @@ function setupInputHandlers() {
       if (engine.value) {
         const hitLayer = engine.value.raycastLayers(x, y);
         if (hitLayer) {
-          store.selectLayer(hitLayer);
+          layerStore.selectLayer(store, hitLayer);
           engine.value.selectLayer(hitLayer); // Attach transform controls
         } else {
           // Store click start - will clear selection on mouseup if no drag occurred
@@ -1386,8 +1397,9 @@ function handleTransformChange(
           y: transform.position.y,
           z:
             transform.position.z ??
-            (layer.transform.position?.value as any)?.z ??
-            0,
+            (typeof layer.transform.position?.value === "object" && layer.transform.position.value !== null && "z" in layer.transform.position.value
+              ? (layer.transform.position.value as Vec3).z
+              : 0),
         },
       },
     };
@@ -1447,14 +1459,16 @@ function handleTransformChange(
       value: {
         x: transform.scale.x,
         y: transform.scale.y,
-        z: transform.scale.z ?? (layer.transform.scale?.value as any)?.z ?? 100,
+        z: transform.scale.z ?? (typeof layer.transform.scale?.value === "object" && layer.transform.scale.value !== null && "z" in layer.transform.scale.value
+          ? (layer.transform.scale.value as Vec3).z
+          : 100),
       },
     };
   }
 
   // Update the store
   if (Object.keys(updates).length > 0) {
-    store.updateLayer(layerId, updates);
+    layerStore.updateLayer(store, layerId, updates);
   }
 }
 
@@ -1522,8 +1536,8 @@ function setRenderMode(mode: "color" | "depth" | "normal") {
 // Spline editor handlers
 function onPointAdded(_point: ControlPoint) {
   if (!activeSplineLayerId.value) {
-    const newLayer = store.createLayer("spline");
-    store.selectLayer(newLayer.id);
+    const newLayer = layerStore.createSplineLayer(store);
+    layerStore.selectLayer(store, newLayer.id);
   }
 }
 
@@ -1554,7 +1568,7 @@ function onMotionPathKeyframeSelected(
 
 function onMotionPathGoToFrame(frame: number) {
   // Go to the keyframe's frame
-  store.setFrame(frame);
+  animationStore.setFrame(store, frame);
 }
 
 function onMotionPathTangentUpdated(
@@ -1567,7 +1581,7 @@ function onMotionPathTangentUpdated(
   if (!layerId) return;
 
   // Get the layer and its position property
-  const layer = store.getLayerById?.(layerId);
+  const layer = layerStore.getLayerById(store, layerId);
   if (!layer) return;
 
   const positionProp = layer.transform?.position;

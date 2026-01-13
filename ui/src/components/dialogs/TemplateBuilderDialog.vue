@@ -340,6 +340,7 @@ import {
   validateTemplate,
 } from "@/services/templateBuilder";
 import { useCompositorStore } from "@/stores/compositorStore";
+import { useAnimationStore } from "@/stores/animationStore";
 import type { Layer } from "@/types/project";
 import type {
   ExposedProperty,
@@ -365,6 +366,7 @@ const captureFrame = inject<() => Promise<string | null>>("captureFrame");
 
 // Store
 const store = useCompositorStore();
+const animationStore = useAnimationStore();
 
 // State
 const activeTab = ref<"browse" | "edit">("edit");
@@ -841,7 +843,7 @@ async function capturePosterFrame() {
   try {
     // Set the frame to poster frame
     const originalFrame = store.currentFrame;
-    store.setFrame(posterFrame.value);
+    animationStore.setFrame(store, posterFrame.value);
 
     // Wait for render
     await new Promise((resolve) => setTimeout(resolve, 100));
@@ -860,7 +862,7 @@ async function capturePosterFrame() {
     }
 
     // Restore frame
-    store.setFrame(originalFrame);
+    animationStore.setFrame(store, originalFrame);
   } catch (error) {
     console.error("[TemplateBuilder] Failed to capture poster frame:", error);
   } finally {

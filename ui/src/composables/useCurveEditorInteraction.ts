@@ -5,7 +5,7 @@
  */
 
 import { type Ref, ref } from "vue";
-import type { AnimatableProperty, Keyframe } from "@/types/project";
+import type { AnimatableProperty, Keyframe, PropertyValue } from "@/types/project";
 import type { CurveMargin, CurveViewState } from "./useCurveEditorCoords";
 
 // Types
@@ -20,7 +20,7 @@ export interface DragTarget {
 export interface SelectedKeyframe {
   propId: string;
   index: number;
-  keyframe: Keyframe<any>;
+  keyframe: Keyframe<PropertyValue>;
 }
 
 export interface SelectionBox {
@@ -41,25 +41,26 @@ export interface CurveEditorInteractionOptions {
   margin: CurveMargin;
 
   // Properties
-  visibleProperties: Ref<AnimatableProperty<any>[]>;
-  animatableProperties: Ref<AnimatableProperty<any>[]>;
+  visibleProperties: Ref<AnimatableProperty<PropertyValue>[]>;
+  animatableProperties: Ref<AnimatableProperty<PropertyValue>[]>;
 
   // Coordinate transforms
   frameToScreenX: (frame: number) => number;
   screenXToFrame: (screenX: number) => number;
   valueToScreenY: (value: number) => number;
   screenYToValue: (screenY: number) => number;
-  getKeyframeScreenX: (kf: Keyframe<any>) => number;
+  getKeyframeScreenX: (kf: Keyframe<PropertyValue>) => number;
   getKeyframeScreenY: (
-    prop: AnimatableProperty<any>,
-    kf: Keyframe<any>,
+    prop: AnimatableProperty<PropertyValue>,
+    kf: Keyframe<PropertyValue>,
   ) => number;
-  getNumericValue: (value: any) => number;
-  getPropertyPath: (prop: AnimatableProperty<any>) => string;
+  getNumericValue: (value: PropertyValue) => number;
+  getPropertyPath: (prop: AnimatableProperty<PropertyValue>) => string;
 
   // Callbacks
   drawGraph: () => void;
-  store: any;
+  store: ReturnType<typeof import("@/stores/compositorStore").useCompositorStore>;
+  keyframeStore: ReturnType<typeof import("@/stores/keyframeStore").useKeyframeStore>;
 }
 
 export function useCurveEditorInteraction(
@@ -83,6 +84,7 @@ export function useCurveEditorInteraction(
     getPropertyPath,
     drawGraph,
     store,
+    keyframeStore,
   } = options;
 
   // State
@@ -91,7 +93,7 @@ export function useCurveEditorInteraction(
   const hoveredKeyframe = ref<{ propId: string; index: number } | null>(null);
   const selectionBox = ref<SelectionBox | null>(null);
   const contextMenu = ref<{ x: number; y: number } | null>(null);
-  const clipboard = ref<Keyframe<any>[] | null>(null);
+  const clipboard = ref<Keyframe<PropertyValue>[] | null>(null);
   const snapEnabled = ref(false);
   const autoSelectNearby = ref(true);
 
@@ -311,7 +313,7 @@ export function useCurveEditorInteraction(
       const propertyPath = getPropertyPath(prop);
 
       // Call store method to persist the change
-      store.updateKeyframe(layer.id, propertyPath, sk.keyframe.id, {
+      keyframeStore.updateKeyframe(store, layer.id, propertyPath, sk.keyframe.id, {
         frame,
         value: typeof sk.keyframe.value === "number" ? newValue : undefined,
       });
@@ -380,7 +382,7 @@ export function useCurveEditorInteraction(
       };
 
       // Call store method to persist
-      store.setKeyframeHandle(layer.id, propertyPath, kf.id, "out", newHandle);
+      keyframeStore.setKeyframeHandle(store, layer.id, propertyPath, kf.id, "out", newHandle);
 
       // Update local reference
       kf.outHandle = newHandle;
@@ -410,7 +412,7 @@ export function useCurveEditorInteraction(
       };
 
       // Call store method to persist
-      store.setKeyframeHandle(layer.id, propertyPath, kf.id, "in", newHandle);
+      keyframeStore.setKeyframeHandle(store, layer.id, propertyPath, kf.id, "in", newHandle);
 
       // Update local reference
       kf.inHandle = newHandle;
@@ -442,7 +444,7 @@ export function useCurveEditorInteraction(
     if (visibleProperties.value.length > 0) {
       const prop = visibleProperties.value[0];
       const propertyPath = getPropertyPath(prop);
-      store.addKeyframe(layer.id, propertyPath, value, frame);
+      keyframeStore.addKeyframe(store, layer.id, propertyPath, value, frame);
     }
 
     contextMenu.value = null;
@@ -457,7 +459,7 @@ export function useCurveEditorInteraction(
       const prop = animatableProperties.value.find((p) => p.id === sk.propId);
       if (prop) {
         const propertyPath = getPropertyPath(prop);
-        store.removeKeyframe(layer.id, propertyPath, sk.keyframe.id);
+        keyframeStore.removeKeyframe(store, layer.id, propertyPath, sk.keyframe.id);
       }
     }
 
@@ -489,7 +491,8 @@ export function useCurveEditorInteraction(
         const prop = visibleProperties.value[0];
         const propertyPath = getPropertyPath(prop);
 
-        const newKeyframe = store.addKeyframe(
+        const newKeyframe = keyframeStore.addKeyframe(
+          store,
           layer.id,
           propertyPath,
           kf.value,
@@ -498,7 +501,8 @@ export function useCurveEditorInteraction(
 
         if (newKeyframe) {
           if (kf.interpolation !== "linear") {
-            store.setKeyframeInterpolation(
+            keyframeStore.setKeyframeInterpolation(
+              store,
               layer.id,
               propertyPath,
               newKeyframe.id,
@@ -506,7 +510,8 @@ export function useCurveEditorInteraction(
             );
           }
           if (kf.inHandle?.enabled) {
-            store.setKeyframeHandle(
+            keyframeStore.setKeyframeHandle(
+              store,
               layer.id,
               propertyPath,
               newKeyframe.id,
@@ -515,7 +520,8 @@ export function useCurveEditorInteraction(
             );
           }
           if (kf.outHandle?.enabled) {
-            store.setKeyframeHandle(
+            keyframeStore.setKeyframeHandle(
+              store,
               layer.id,
               propertyPath,
               newKeyframe.id,

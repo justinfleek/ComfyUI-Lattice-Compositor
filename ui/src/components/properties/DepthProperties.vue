@@ -151,6 +151,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { useCompositorStore } from "@/stores/compositorStore";
+import { useKeyframeStore } from "@/stores/keyframeStore";
 import type {
   AnimatableProperty,
   DepthLayerData,
@@ -165,6 +166,7 @@ const emit =
   defineEmits<(e: "update", data: Partial<DepthLayerData>) => void>();
 
 const store = useCompositorStore();
+const keyframeStore = useKeyframeStore();
 
 const depthData = computed(() => props.layer.data as DepthLayerData);
 
@@ -204,11 +206,12 @@ function toggleKeyframe(propName: string) {
     propName as keyof DepthLayerData
   ] as AnimatableProperty<number>;
   if (prop) {
-    store.addKeyframe(
+    keyframeStore.addKeyframe(
+      store,
       props.layer.id,
       `data.${propName}`,
-      store.currentFrame,
       prop.value,
+      store.currentFrame,
     );
   }
 }

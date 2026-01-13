@@ -7,7 +7,11 @@
 
 import type { Ref } from "vue";
 import { useCompositorStore } from "@/stores/compositorStore";
+import { useLayerStore } from "@/stores/layerStore";
 import { useHistoryStore } from "@/stores/historyStore";
+import { useAnimationStore } from "@/stores/animationStore";
+import { useMarkerStore } from "@/stores/markerStore";
+import { useProjectStore } from "@/stores/projectStore";
 
 export interface MenuActionsOptions {
   // Dialog refs
@@ -42,10 +46,12 @@ export interface MenuActionsOptions {
 }
 
 export function useMenuActions(options: MenuActionsOptions) {
-  // Cast to any because Pinia store actions are spread from external modules
-  // and TypeScript can't infer their types correctly
-  const store = useCompositorStore() as any;
+  const store = useCompositorStore();
+  const layerStore = useLayerStore();
   const _historyStore = useHistoryStore();
+  const animationStore = useAnimationStore();
+  const markerStore = useMarkerStore();
+  const projectStore = useProjectStore();
 
   const {
     showExportDialog,
@@ -93,17 +99,23 @@ export function useMenuActions(options: MenuActionsOptions) {
       // File menu
       case "newProject":
         if (confirm("Create a new project? Unsaved changes will be lost.")) {
-          store.newProject();
+          projectStore.newProject(store);
         }
         break;
       case "openProject":
         triggerProjectOpen();
         break;
       case "saveProject":
-        store.saveProject();
+        projectStore.saveProject(store);
         break;
       case "saveProjectAs":
-        store.saveProjectAs();
+        projectStore.saveProjectAs(store).then((projectId: string | null) => {
+          if (projectId) {
+            alert(`Project saved with ID: ${projectId}`);
+          } else {
+            alert("Failed to save project");
+          }
+        });
         break;
       case "import":
         triggerAssetImport();
@@ -146,46 +158,46 @@ export function useMenuActions(options: MenuActionsOptions) {
         store.redo();
         break;
       case "cut":
-        store.cutSelected();
+        layerStore.cutSelectedLayers(store);
         break;
       case "copy":
-        store.copySelected();
+        layerStore.copySelectedLayers(store);
         break;
       case "paste":
-        store.paste();
+        layerStore.pasteLayers(store);
         break;
       case "duplicate":
-        store.duplicateSelectedLayers();
+        layerStore.duplicateSelectedLayers(store);
         break;
       case "delete":
-        store.deleteSelectedLayers();
+        layerStore.deleteSelectedLayers(store);
         break;
       case "selectAll":
-        store.selectAllLayers();
+        layerStore.selectAllLayers(store);
         break;
       case "deselectAll":
-        store.clearSelection();
+        layerStore.clearSelection(store);
         break;
 
       // Markers
       case "addMarkerAtPlayhead":
-        store.addMarkers([
+        markerStore.addMarkers(store, [
           {
-            frame: store.currentFrame,
-            label: `Marker ${store.getMarkers().length + 1}`,
+            frame: animationStore.getCurrentFrame(store),
+            label: `Marker ${markerStore.getMarkers(store).length + 1}`,
             color: "#FFFF00",
           },
         ]);
         break;
       case "jumpToNextMarker":
-        store.jumpToNextMarker();
+        markerStore.jumpToNextMarker(store);
         break;
       case "jumpToPreviousMarker":
-        store.jumpToPreviousMarker();
+        markerStore.jumpToPreviousMarker(store);
         break;
       case "clearMarkers":
         if (confirm("Clear all markers?")) {
-          store.clearMarkers();
+          markerStore.clearMarkers(store);
         }
         break;
 
@@ -196,46 +208,46 @@ export function useMenuActions(options: MenuActionsOptions) {
 
       // Create menu - layer types
       case "createSolid":
-        store.createLayer("solid");
+        layerStore.createLayer(store, "solid");
         break;
       case "createText":
-        store.createLayer("text");
+        layerStore.createTextLayer(store);
         break;
       case "createShape":
-        store.createLayer("spline");
+        layerStore.createSplineLayer(store);
         break;
       case "createPath":
-        store.createLayer("path");
+        layerStore.createLayer(store, "path");
         break;
       case "createCamera":
-        store.createLayer("camera");
+        layerStore.createCameraLayer(store);
         break;
       case "createLight":
-        store.createLayer("light");
+        layerStore.createLayer(store, "light");
         break;
       case "createControl":
-        store.createLayer("control");
+        layerStore.createLayer(store, "control");
         break;
       case "createParticle":
-        store.createLayer("particle");
+        layerStore.createLayer(store, "particle");
         break;
       case "createDepth":
-        store.createLayer("depth");
+        layerStore.createLayer(store, "depth");
         break;
       case "createNormal":
-        store.createLayer("normal");
+        layerStore.createLayer(store, "normal");
         break;
       case "createGenerated":
-        store.createLayer("generated");
+        layerStore.createLayer(store, "generated");
         break;
       case "createGroup":
-        store.createLayer("group");
+        layerStore.createLayer(store, "group");
         break;
       case "createEffectLayer":
-        store.createLayer("effectLayer");
+        layerStore.createLayer(store, "effectLayer");
         break;
       case "createMatte":
-        store.createLayer("matte");
+        layerStore.createLayer(store, "matte");
         break;
 
       // Layer menu
@@ -243,7 +255,12 @@ export function useMenuActions(options: MenuActionsOptions) {
         showPrecomposeDialog.value = true;
         break;
       case "splitLayer":
-        store.splitLayerAtPlayhead();
+        {
+          const selectedIds = store.selectedLayerIds;
+          if (selectedIds.length > 0) {
+            layerStore.splitLayerAtPlayhead(store, selectedIds[0]);
+          }
+        }
         break;
       case "timeStretch":
         showTimeStretchDialog.value = true;
@@ -252,31 +269,41 @@ export function useMenuActions(options: MenuActionsOptions) {
         showFrameInterpolationDialog.value = true;
         break;
       case "timeReverse":
-        store.reverseSelectedLayers();
+        {
+          const selectedIds = store.selectedLayerIds;
+          for (const id of selectedIds) {
+            layerStore.reverseLayer(store, id);
+          }
+        }
         break;
       case "freezeFrame":
-        store.freezeFrameAtPlayhead();
+        {
+          const selectedIds = store.selectedLayerIds;
+          if (selectedIds.length > 0) {
+            layerStore.freezeFrameAtPlayhead(store, selectedIds[0]);
+          }
+        }
         break;
       case "lockLayer":
-        store.toggleLayerLock();
+        layerStore.toggleLayerLock(store);
         break;
       case "toggleVisibility":
-        store.toggleLayerVisibility();
+        layerStore.toggleLayerVisibility(store);
         break;
       case "isolateLayer":
-        store.toggleLayerSolo();
+        layerStore.toggleLayerSolo(store);
         break;
       case "bringToFront":
-        store.bringToFront();
+        layerStore.bringToFront(store);
         break;
       case "sendToBack":
-        store.sendToBack();
+        layerStore.sendToBack(store);
         break;
       case "bringForward":
-        store.bringForward();
+        layerStore.bringForward(store);
         break;
       case "sendBackward":
-        store.sendBackward();
+        layerStore.sendBackward(store);
         break;
 
       // View menu

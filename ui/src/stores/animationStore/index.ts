@@ -10,13 +10,28 @@
  */
 
 import { defineStore } from "pinia";
+import {
+  DEFAULT_SNAP_CONFIG,
+  findNearestSnap,
+  type SnapConfig,
+  type SnapResult,
+} from "@/services/timelineSnap";
+import { usePlaybackStore } from "../playbackStore";
+import { motionEngine } from "@/engine/MotionEngine";
+import { useAudioStore } from "../audioStore";
+import type { FrameState } from "@/engine/MotionEngine";
 
 // ============================================================================
 // MODULE IMPORTS
 // ============================================================================
 
 // Types (re-export for consumers)
-export type { AnimationStoreAccess, AnimationState } from "./types";
+export type {
+  AnimationStoreAccess,
+  AnimationState,
+  FrameEvaluationAccess,
+  SnapPointAccess,
+} from "./types";
 
 // Playback operations
 import {
@@ -38,7 +53,12 @@ import {
 } from "./navigation";
 
 // Types for internal use
-import type { AnimationStoreAccess, AnimationState } from "./types";
+import type {
+  AnimationStoreAccess,
+  AnimationState,
+  FrameEvaluationAccess,
+  SnapPointAccess,
+} from "./types";
 
 // ============================================================================
 // STORE DEFINITION
@@ -49,6 +69,8 @@ export const useAnimationStore = defineStore("animation", {
     loopPlayback: true,
     workAreaStart: null,
     workAreaEnd: null,
+    timelineZoom: 1,
+    snapConfig: { ...DEFAULT_SNAP_CONFIG },
   }),
 
   getters: {
@@ -58,6 +80,11 @@ export const useAnimationStore = defineStore("animation", {
 
     /** Get effective start frame (work area or 0) */
     effectiveStartFrame: (state) => state.workAreaStart ?? 0,
+
+    /** Whether playback is currently active (delegated to playbackStore) */
+    isPlaying(): boolean {
+      return usePlaybackStore().isPlaying;
+    },
   },
 
   actions: {
@@ -203,6 +230,150 @@ export const useAnimationStore = defineStore("animation", {
      */
     getEffectiveEndFrame(store: AnimationStoreAccess): number {
       return this.workAreaEnd ?? store.frameCount - 1;
+    },
+
+    // ========================================================================
+    // SNAP CONFIGURATION
+    // ========================================================================
+
+    /**
+     * Set snap configuration
+     */
+    setSnapConfig(config: Partial<SnapConfig>): void {
+      this.snapConfig = { ...this.snapConfig, ...config };
+    },
+
+    /**
+     * Toggle snapping on/off
+     */
+    toggleSnapping(): void {
+      this.snapConfig.enabled = !this.snapConfig.enabled;
+    },
+
+    /**
+     * Toggle specific snap type
+     */
+    toggleSnapType(
+      type:
+        | "grid"
+        | "keyframes"
+        | "beats"
+        | "peaks"
+        | "layerBounds"
+        | "playhead",
+    ): void {
+      // Type-safe snap toggle mapping
+      type BooleanSnapKey =
+        | "snapToGrid"
+        | "snapToKeyframes"
+        | "snapToBeats"
+        | "snapToPeaks"
+        | "snapToLayerBounds"
+        | "snapToPlayhead";
+      const typeMap: Record<typeof type, BooleanSnapKey> = {
+        grid: "snapToGrid",
+        keyframes: "snapToKeyframes",
+        beats: "snapToBeats",
+        peaks: "snapToPeaks",
+        layerBounds: "snapToLayerBounds",
+        playhead: "snapToPlayhead",
+      };
+      const key = typeMap[type];
+      this.snapConfig[key] = !this.snapConfig[key];
+    },
+
+    // ========================================================================
+    // TIMELINE ZOOM
+    // ========================================================================
+
+    /**
+     * Set timeline zoom level
+     * @param zoom Zoom level (0.1 to 10, where 1.0 = 100%)
+     */
+    setTimelineZoom(zoom: number): void {
+      this.timelineZoom = Math.max(0.1, Math.min(10, zoom));
+    },
+
+    // ========================================================================
+    // FRAME EVALUATION
+    // ========================================================================
+
+    /**
+     * Get evaluated FrameState for a specific frame
+     *
+     * This is the CANONICAL way to get evaluated state for rendering.
+     * Uses MotionEngine.evaluate() which is PURE and deterministic.
+     *
+     * @param store - Store with full project and camera access
+     * @param frame - Optional frame override (defaults to currentFrame)
+     * @returns Immutable FrameState snapshot
+     */
+    getFrameState(store: FrameEvaluationAccess, frame?: number): FrameState {
+      const comp = store.getActiveComp();
+      const targetFrame = frame ?? comp?.currentFrame ?? 0;
+
+      // Get audio reactive data from audioStore
+      const audioStore = useAudioStore();
+      const audioReactive =
+        audioStore.audioAnalysis && audioStore.reactiveMappings.length > 0
+          ? {
+              analysis: audioStore.audioAnalysis,
+              mappings: audioStore.reactiveMappings,
+            }
+          : null;
+
+      return motionEngine.evaluate(
+        targetFrame,
+        store.project,
+        audioStore.audioAnalysis,
+        store.activeCameraId,
+        true, // useCache
+        audioReactive,
+      );
+    },
+
+    // ========================================================================
+    // TIMELINE SNAPPING
+    // ========================================================================
+
+    /**
+     * Get current time in seconds
+     * @param store - Store with composition access
+     * @returns Current time in seconds
+     */
+    getCurrentTime(store: { getActiveComp(): { currentFrame: number; settings: { fps: number } } | null }): number {
+      const comp = store.getActiveComp();
+      if (!comp) return 0;
+      return comp.currentFrame / comp.settings.fps;
+    },
+
+    /**
+     * Find nearest snap point for a given frame
+     * @param store - Store with layer and audio access
+     * @param frame - Frame to find snap point for
+     * @param pixelsPerFrame - Pixels per frame for snap tolerance calculation
+     * @param selectedLayerId - Optional selected layer ID for layer-bound snapping
+     * @returns Snap result or null if no snap point found
+     */
+    findSnapPoint(
+      store: SnapPointAccess,
+      frame: number,
+      pixelsPerFrame: number,
+      selectedLayerId?: string | null,
+    ): SnapResult | null {
+      const audioStore = useAudioStore();
+      return findNearestSnap(
+        frame,
+        this.snapConfig,
+        pixelsPerFrame,
+        {
+          layers: store.layers,
+          selectedLayerId,
+          currentFrame: store.currentFrame,
+          audioAnalysis: audioStore.audioAnalysis,
+          peakData: audioStore.peakData,
+        },
+      );
     },
   },
 });

@@ -58,7 +58,7 @@
                 :layerId="selectedLayer.id"
                 property="transform.position.x"
                 :linkedTo="getDriverForProperty('transform.position.x')"
-                @link="(target: any) => onPropertyLink('transform.position.x', target)"
+                @link="(target: { layerId: string; property: PropertyPath }) => onPropertyLink('transform.position.x', target)"
                 @unlink="() => onPropertyUnlink('transform.position.x')"
               />
               <label>Position</label>
@@ -558,6 +558,8 @@ import {
   watch,
 } from "vue";
 import { useCompositorStore } from "@/stores/compositorStore";
+import { useLayerStore } from "@/stores/layerStore";
+import { useExpressionStore } from "@/stores/expressionStore";
 
 // Inject soloedProperty from parent for P/S/R/T/A/U shortcuts
 type SoloedProperty =
@@ -593,10 +595,12 @@ import SolidProperties from "@/components/properties/SolidProperties.vue";
 import TextProperties from "@/components/properties/TextProperties.vue";
 import VideoProperties from "@/components/properties/VideoProperties.vue";
 import type { PropertyPath } from "@/services/propertyDriver";
-import type { BlendMode } from "@/types/project";
+import type { AudioPathAnimation, BlendMode } from "@/types/project";
 import { createAnimatableProperty } from "@/types/project";
 
 const store = useCompositorStore();
+const layerStore = useLayerStore();
+const expressionStore = useExpressionStore();
 
 // State
 const expandedSections = ref<string[]>(["transform"]);
@@ -985,7 +989,7 @@ function updateTransform() {
 
 function updateBlendMode() {
   if (selectedLayer.value) {
-    store.updateLayer(selectedLayer.value.id, {
+    layerStore.updateLayer(store, selectedLayer.value.id, {
       blendMode: blendMode.value as BlendMode,
     });
   }
@@ -994,7 +998,7 @@ function updateBlendMode() {
 function toggle3D(event: Event) {
   if (!selectedLayer.value) return;
   const threeD = (event.target as HTMLInputElement).checked;
-  store.updateLayer(selectedLayer.value.id, { threeD });
+  layerStore.updateLayer(store, selectedLayer.value.id, { threeD });
 
   // Initialize 3D properties when enabling 3D mode
   if (threeD && selectedLayer.value.transform) {
@@ -1112,12 +1116,12 @@ function updateAudioPathMode(event: Event) {
 }
 
 function updateAudioPathConfig(
-  key: keyof typeof audioPathAnimation.value,
+  key: keyof AudioPathAnimation,
   value: number | boolean,
 ) {
-  if (!selectedLayer.value?.audioPathAnimation) return;
-  (audioPathAnimation.value as any)[key] = value;
-  (selectedLayer.value.audioPathAnimation as any)[key] = value;
+  if (!selectedLayer.value?.audioPathAnimation || !audioPathAnimation.value) return;
+  audioPathAnimation.value[key] = value;
+  selectedLayer.value.audioPathAnimation[key] = value;
   onLayerUpdate();
 }
 
@@ -1142,7 +1146,7 @@ function onLayerUpdate(dataUpdates?: Record<string, any>) {
 
   // If data updates are provided, apply them via store
   if (dataUpdates && Object.keys(dataUpdates).length > 0) {
-    store.updateLayerData(selectedLayer.value.id, dataUpdates);
+    layerStore.updateLayerData(store, selectedLayer.value.id, dataUpdates);
   } else {
     store.project.meta.modified = new Date().toISOString();
   }
@@ -1151,7 +1155,7 @@ function onLayerUpdate(dataUpdates?: Record<string, any>) {
 function updateParent(event: Event) {
   if (!selectedLayer.value) return;
   const parentId = (event.target as HTMLSelectElement).value || null;
-  store.setLayerParent(selectedLayer.value.id, parentId);
+  layerStore.setLayerParent(store, selectedLayer.value.id, parentId);
 }
 
 // ============================================================
@@ -1166,7 +1170,7 @@ function getDriverForProperty(
 ): { layerId: string; property: PropertyPath } | null {
   if (!selectedLayer.value) return null;
 
-  const drivers = store.getDriversForLayer(selectedLayer.value.id);
+  const drivers = expressionStore.getDriversForLayer(store, selectedLayer.value.id);
   const driver = drivers.find(
     (d) => d.targetProperty === property && d.sourceType === "property",
   );
@@ -1190,7 +1194,8 @@ function onPropertyLink(
   if (!selectedLayer.value) return;
 
   // Create the property link
-  store.createPropertyLink(
+  expressionStore.createPropertyLinkDriver(
+    store,
     selectedLayer.value.id,
     targetProperty,
     source.layerId,
@@ -1210,13 +1215,13 @@ function onPropertyUnlink(targetProperty: PropertyPath) {
   if (!selectedLayer.value) return;
 
   // Find and remove the driver
-  const drivers = store.getDriversForLayer(selectedLayer.value.id);
+  const drivers = expressionStore.getDriversForLayer(store, selectedLayer.value.id);
   const driver = drivers.find(
     (d) => d.targetProperty === targetProperty && d.sourceType === "property",
   );
 
   if (driver) {
-    store.removePropertyDriver(driver.id);
+    expressionStore.removePropertyDriver(store, driver.id);
     console.log(
       `[PropertiesPanel] Unlinked ${selectedLayer.value.id}.${targetProperty}`,
     );
@@ -1273,7 +1278,7 @@ function resetTransform() {
  */
 function hasDriver(property: PropertyPath): boolean {
   if (!selectedLayer.value) return false;
-  const drivers = store.getDriversForLayer(selectedLayer.value.id);
+  const drivers = expressionStore.getDriversForLayer(store, selectedLayer.value.id);
   return drivers.some((d) => d.targetProperty === property && d.enabled);
 }
 </script>

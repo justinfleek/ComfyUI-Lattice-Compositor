@@ -28,7 +28,7 @@ export function play(store: AnimationStoreAccess): void {
     },
   );
 
-  store.isPlaying = true;
+  // Note: playbackStore.isPlaying is already set to true by playback.play()
 }
 
 /**
@@ -37,7 +37,7 @@ export function play(store: AnimationStoreAccess): void {
 export function pause(store: AnimationStoreAccess): void {
   const playback = usePlaybackStore();
   playback.stop();
-  store.isPlaying = false;
+  // Note: playbackStore.isPlaying is already set to false by playback.stop()
 }
 
 /**
