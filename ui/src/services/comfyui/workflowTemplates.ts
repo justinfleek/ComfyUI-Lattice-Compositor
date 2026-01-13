@@ -2677,13 +2677,15 @@ export function validateWorkflow(workflow: ComfyUIWorkflow): {
     }
 
     // Check connections reference valid nodes
-    for (const [inputName, inputValue] of Object.entries(node.inputs)) {
-      if (Array.isArray(inputValue) && inputValue.length === 2) {
-        const [refNodeId] = inputValue;
-        if (typeof refNodeId === "string" && !nodeIds.includes(refNodeId)) {
-          errors.push(
-            `Node ${nodeId}.${inputName}: references non-existent node ${refNodeId}`,
-          );
+    if (node.inputs && typeof node.inputs === "object") {
+      for (const [inputName, inputValue] of Object.entries(node.inputs)) {
+        if (Array.isArray(inputValue) && inputValue.length === 2) {
+          const [refNodeId] = inputValue;
+          if (typeof refNodeId === "string" && !nodeIds.includes(refNodeId)) {
+            errors.push(
+              `Node ${nodeId}.${inputName}: references non-existent node ${refNodeId}`,
+            );
+          }
         }
       }
     }

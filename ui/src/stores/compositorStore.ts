@@ -2777,8 +2777,7 @@ export const useCompositorStore = defineStore("compositor", {
      * Check if clipboard has keyframes
      */
     hasKeyframesInClipboard(): boolean {
-      const keyframeStore = useKeyframeStore();
-      return keyframeStore.clipboard.keyframes.length > 0;
+      return this.clipboard.keyframes.length > 0;
     },
 
     // ============================================================

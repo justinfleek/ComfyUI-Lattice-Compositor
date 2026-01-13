@@ -2851,7 +2851,7 @@ describe('Tutorial 06: Text Animators - E2E Tests', () => {
 
         store.clearTextPath(layer.id);
         expect(store.hasTextPath(layer.id)).toBe(false);
-        expect(store.getTextPathConfig(layer.id)).toBeUndefined();
+        expect(store.getTextPathConfig(layer.id)).toBeNull();
       });
 
       test('Path config is stored in layer data', () => {

@@ -7,7 +7,6 @@
 import { markLayerDirty } from "@/services/layerEvaluationCache";
 import type { Keyframe } from "@/types/project";
 import { storeLogger } from "@/utils/logger";
-import { useLayerStore } from "@/stores/layerStore";
 import { addKeyframe } from "./crud";
 import { findPropertyByPath } from "./helpers";
 import { findSurroundingKeyframes } from "./query";
@@ -43,8 +42,7 @@ export function scaleKeyframeTiming(
     return 0;
   }
 
-  const layerStore = useLayerStore();
-  const layer = layerStore.getLayerById(store, layerId);
+  const layer = store.getLayerById(layerId);
   if (!layer) return 0;
 
   // Determine which properties to scale
@@ -96,8 +94,7 @@ export function timeReverseKeyframes(
   layerId: string,
   propertyPath?: string,
 ): number {
-  const layerStore = useLayerStore();
-  const layer = layerStore.getLayerById(store, layerId);
+  const layer = store.getLayerById(layerId);
   if (!layer) return 0;
 
   // Determine which properties to reverse
@@ -150,8 +147,7 @@ export function insertKeyframeOnPath(
   layerId: string,
   frame: number,
 ): string | null {
-  const layerStore = useLayerStore();
-  const layer = layerStore.getLayerById(store, layerId);
+  const layer = store.getLayerById(layerId);
   if (!layer) return null;
 
   const positionProp = findPropertyByPath(layer, "transform.position");
@@ -215,8 +211,7 @@ export function applyRovingToPosition(
   store: RovingKeyframeStoreAccess,
   layerId: string,
 ): boolean {
-  const layerStore = useLayerStore();
-  const layer = layerStore.getLayerById(store, layerId);
+  const layer = store.getLayerById(layerId);
   if (!layer) {
     storeLogger.debug("applyRovingToPosition: layer not found");
     return false;
@@ -281,8 +276,7 @@ export function checkRovingImpact(
   store: RovingKeyframeStoreAccess,
   layerId: string,
 ): boolean {
-  const layerStore = useLayerStore();
-  const layer = layerStore.getLayerById(store, layerId);
+  const layer = store.getLayerById(layerId);
   if (!layer) return false;
 
   const positionProp = findPropertyByPath(layer, "transform.position");
