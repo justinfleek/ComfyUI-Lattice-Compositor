@@ -245,9 +245,12 @@ class TextShaper {
    * Extract font metrics from opentype.Font
    */
   private extractFontMetrics(font: opentype.Font): FontMetrics {
-    const hasGSUB = !!(font.tables as any).gsub;
-    const hasGPOS = !!(font.tables as any).gpos;
-    const fvar = (font.tables as any).fvar;
+    // Access internal OpenType tables - not fully typed in opentype.js definitions
+    type FvarAxis = { tag: string; name?: { en?: string }; minValue: number; defaultValue: number; maxValue: number };
+    const tables = font.tables as { gsub?: unknown; gpos?: unknown; fvar?: { axes?: FvarAxis[] } };
+    const hasGSUB = !!tables.gsub;
+    const hasGPOS = !!tables.gpos;
+    const fvar = tables.fvar;
     const isVariableFont = !!fvar;
 
     const variableAxes: VariableFontAxis[] = [];
@@ -267,9 +270,10 @@ class TextShaper {
       unitsPerEm: font.unitsPerEm,
       ascender: font.ascender,
       descender: font.descender,
-      lineGap: (font as any).tables?.hhea?.lineGap ?? 0,
-      capHeight: (font as any).tables?.os2?.sCapHeight ?? font.ascender * 0.7,
-      xHeight: (font as any).tables?.os2?.sxHeight ?? font.ascender * 0.5,
+      // Access internal OpenType tables - not fully typed in opentype.js definitions
+      lineGap: (font.tables as { hhea?: { lineGap?: number } })?.hhea?.lineGap ?? 0,
+      capHeight: (font.tables as { os2?: { sCapHeight?: number } })?.os2?.sCapHeight ?? font.ascender * 0.7,
+      xHeight: (font.tables as { os2?: { sxHeight?: number } })?.os2?.sxHeight ?? font.ascender * 0.5,
       hasKerning:
         font.kerningPairs !== undefined &&
         Object.keys(font.kerningPairs).length > 0,
