@@ -63,7 +63,12 @@ export const useDepthflowStore = defineStore("depthflow", {
       depthLayerId: string = "",
     ): Layer {
       const layerStore = useLayerStore();
-      const layer = layerStore.createLayer(store as any, "depthflow", "Depthflow");
+      // Type assertion: compositorStore passed at runtime implements required interface
+      const layer = layerStore.createLayer(
+        store as Parameters<typeof layerStore.createLayer>[0],
+        "depthflow",
+        "Depthflow"
+      );
 
       const depthflowData: DepthflowLayerData = {
         sourceLayerId,

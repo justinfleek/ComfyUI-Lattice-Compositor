@@ -105,7 +105,12 @@ export const useSegmentationStore = defineStore("segmentation", {
         store.project.assets[assetId] = asset;
 
         const layerStore = useLayerStore();
-        const layer = layerStore.createLayer(store as any, "image", name || "Segmented");
+        // Type assertion: compositorStore passed at runtime implements required interface
+        const layer = layerStore.createLayer(
+          store as Parameters<typeof layerStore.createLayer>[0],
+          "image",
+          name || "Segmented"
+        );
 
         const imageData: ImageLayerData = {
           assetId,

@@ -368,7 +368,8 @@ export const useAssetStore = defineStore("assets", {
       this.isLoadingMaterial = true;
       try {
         const url = URL.createObjectURL(file);
-        (stored.config as any)[textureType] = url;
+        // Dynamic property assignment for texture URL
+        (stored.config as unknown as Record<string, string>)[textureType] = url;
         stored.modifiedAt = Date.now();
         this.materials.set(materialId, stored);
       } catch (error) {
@@ -977,7 +978,8 @@ export const useAssetStore = defineStore("assets", {
       // Revoke all blob URLs
       for (const stored of this.materials.values()) {
         for (const key of Object.keys(stored.config)) {
-          const value = (stored.config as any)[key];
+          // Dynamic property access for cleanup
+          const value = (stored.config as unknown as Record<string, unknown>)[key];
           if (typeof value === "string" && value.startsWith("blob:")) {
             URL.revokeObjectURL(value);
           }

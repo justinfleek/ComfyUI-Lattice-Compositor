@@ -109,8 +109,7 @@ async function createLayerFromDecomposed(
 
     store.project.assets[assetId] = asset;
 
-    const layerStore = useLayerStore();
-    const layer = layerStore.createLayer(store as any, "image", name);
+    const layer = store.createLayer("image", name);
 
     const imageData: ImageLayerData = {
       assetId,
@@ -237,8 +236,7 @@ export const useDecompositionStore = defineStore("decomposition", {
         let groupLayerId: string | undefined;
         if (groupLayers) {
           onProgress?.("creating", "Creating layer group...", 70);
-          const layerStore = useLayerStore();
-          const groupLayer = layerStore.createLayer(store as any, "null", groupName);
+          const groupLayer = store.createLayer("null", groupName);
           groupLayerId = groupLayer.id;
         }
 
@@ -275,8 +273,7 @@ export const useDecompositionStore = defineStore("decomposition", {
 
           if (createdLayer) {
             if (groupLayerId) {
-              const layerStore = useLayerStore();
-              layerStore.setLayerParent(store as any, createdLayer.id, groupLayerId);
+              store.setLayerParent(createdLayer.id, groupLayerId);
             }
             createdLayers.push(createdLayer);
           }

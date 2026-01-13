@@ -148,7 +148,11 @@ export const useCameraStore = defineStore("camera", {
 
       // Auto-select the new camera layer
       const layerStore = useLayerStore();
-      layerStore.selectLayer(store as any, layerId);
+      // Type assertion: compositorStore passed at runtime implements required interface
+      layerStore.selectLayer(
+        store as Parameters<typeof layerStore.selectLayer>[0],
+        layerId
+      );
 
       return { camera, layer };
     },

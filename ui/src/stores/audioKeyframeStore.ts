@@ -343,7 +343,12 @@ export const useAudioKeyframeStore = defineStore("audioKeyframe", {
 
       // Create the null layer
       const layerStore = useLayerStore();
-      const layer = layerStore.createLayer(store as any, "null", name);
+      // Type assertion: compositorStore passed at runtime implements required interface
+      const layer = layerStore.createLayer(
+        store as Parameters<typeof layerStore.createLayer>[0],
+        "null",
+        name
+      );
 
       const frameCount = audioStore.audioAnalysis.frameCount;
       const fps = store.project.composition.fps;
@@ -481,7 +486,12 @@ export const useAudioKeyframeStore = defineStore("audioKeyframe", {
       store.pushHistory();
 
       const layerStore = useLayerStore();
-      const layer = layerStore.createLayer(store as any, "null", name);
+      // Type assertion: compositorStore passed at runtime implements required interface
+      const layer = layerStore.createLayer(
+        store as Parameters<typeof layerStore.createLayer>[0],
+        "null",
+        name
+      );
       const bandData = audioStore.audioAnalysis.frequencyBands;
 
       const propertyIds: Record<FrequencyBandName, string> = {
@@ -552,7 +562,12 @@ export const useAudioKeyframeStore = defineStore("audioKeyframe", {
       store.pushHistory();
 
       const layerStore = useLayerStore();
-      const layer = layerStore.createLayer(store as any, "null", name);
+      // Type assertion: compositorStore passed at runtime implements required interface
+      const layer = layerStore.createLayer(
+        store as Parameters<typeof layerStore.createLayer>[0],
+        "null",
+        name
+      );
       const analysis = audioStore.audioAnalysis;
       const buffer = audioStore.audioBuffer;
       const frameCount = analysis.frameCount;

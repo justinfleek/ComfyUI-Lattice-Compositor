@@ -166,8 +166,7 @@ export const usePhysicsStore = defineStore("physics", {
       layerId: string,
       config: Partial<RigidBodyConfig> = {},
     ): void {
-      const layerStore = useLayerStore();
-      const layer = layerStore.getLayerById(store as any, layerId);
+      const layer = store.getLayerById(layerId);
       if (!layer) {
         storeLogger.warn("Layer not found for physics:", layerId);
         return;
@@ -210,7 +209,7 @@ export const usePhysicsStore = defineStore("physics", {
         rigidBody: finalConfig,
       };
 
-      layerStore.updateLayerData(store as any, layerId, { physics: physicsData });
+      store.updateLayerData(layerId, { physics: physicsData });
       storeLogger.info("Physics enabled for layer:", layerId);
     },
 
@@ -221,8 +220,7 @@ export const usePhysicsStore = defineStore("physics", {
       const engine = this.getPhysicsEngine(store);
       engine.removeRigidBody(layerId);
 
-      const layerStore = useLayerStore();
-      layerStore.updateLayerData(store as any, layerId, {
+      store.updateLayerData(layerId, {
         physics: { physicsEnabled: false },
       });
       storeLogger.info("Physics disabled for layer:", layerId);
@@ -236,8 +234,7 @@ export const usePhysicsStore = defineStore("physics", {
       layerId: string,
       updates: Partial<RigidBodyConfig>,
     ): void {
-      const layerStore = useLayerStore();
-      const layer = layerStore.getLayerById(store as any, layerId);
+      const layer = store.getLayerById(layerId);
       if (!layer) return;
 
       const physicsData = (layer.data as unknown as Record<string, unknown>)?.physics as
@@ -255,7 +252,7 @@ export const usePhysicsStore = defineStore("physics", {
 
       engine.addRigidBody(newConfig);
 
-      layerStore.updateLayerData(store as any, layerId, {
+      store.updateLayerData(layerId, {
         physics: {
           ...physicsData,
           rigidBody: newConfig,
@@ -434,8 +431,7 @@ export const usePhysicsStore = defineStore("physics", {
       layerId: string,
       options: BakeOptions = {},
     ): Promise<BakeResult> {
-      const layerStore = useLayerStore();
-      const layer = layerStore.getLayerById(store as any, layerId);
+      const layer = store.getLayerById(layerId);
       if (!layer) {
         throw new Error(`Layer not found: ${layerId}`);
       }
@@ -546,8 +542,7 @@ export const usePhysicsStore = defineStore("physics", {
         pinnedCorners?: boolean;
       },
     ): void {
-      const layerStore = useLayerStore();
-      const layer = layerStore.getLayerById(store as any, layerId);
+      const layer = store.getLayerById(layerId);
       if (!layer) return;
 
       const engine = this.getPhysicsEngine(store);
@@ -568,7 +563,7 @@ export const usePhysicsStore = defineStore("physics", {
 
       engine.addCloth(clothConfig);
 
-      layerStore.updateLayerData(store as any, layerId, {
+      store.updateLayerData(layerId, {
         physics: {
           enabled: true,
           type: "cloth",
@@ -591,8 +586,7 @@ export const usePhysicsStore = defineStore("physics", {
       layerId: string,
       preset: "adult" | "child" | "cartoon" = "adult",
     ): void {
-      const layerStore = useLayerStore();
-      const layer = layerStore.getLayerById(store as any, layerId);
+      const layer = store.getLayerById(layerId);
       if (!layer || layer.type !== "pose") {
         storeLogger.warn("Ragdoll requires a pose layer");
         return;
@@ -629,7 +623,7 @@ export const usePhysicsStore = defineStore("physics", {
       }
       engine.addRagdoll(ragdoll.id, ragdoll.bones);
 
-      layerStore.updateLayerData(store as any, layerId, {
+      store.updateLayerData(layerId, {
         physics: {
           physicsEnabled: true,
           ragdoll: ragdoll,
@@ -652,8 +646,7 @@ export const usePhysicsStore = defineStore("physics", {
       group: number,
       mask: number = 0xffffffff,
     ): void {
-      const layerStore = useLayerStore();
-      const layer = layerStore.getLayerById(store as any, layerId);
+      const layer = store.getLayerById(layerId);
       if (!layer) return;
 
       this.updateLayerPhysicsConfig(store, layerId, {

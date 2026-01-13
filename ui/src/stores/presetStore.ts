@@ -257,14 +257,10 @@ export const usePresetStore = defineStore("presets", {
         isBuiltIn: false,
       };
 
-      // Remove id so a new one is generated
-      delete (duplicated as any).id;
-      delete (duplicated as any).createdAt;
-      delete (duplicated as any).updatedAt;
+      // Remove id and timestamps so new ones are generated
+      const { id: _id, createdAt: _createdAt, updatedAt: _updatedAt, ...presetData } = duplicated;
 
-      return this.addPreset(
-        duplicated as Omit<Preset, "id" | "createdAt" | "updatedAt">,
-      );
+      return this.addPreset(presetData);
     },
 
     /**

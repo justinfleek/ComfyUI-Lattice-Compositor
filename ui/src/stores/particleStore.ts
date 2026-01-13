@@ -100,7 +100,12 @@ export const useParticleStore = defineStore("particle", {
      */
     createParticleLayer(store: ParticleStoreAccess): Layer {
       const layerStore = useLayerStore();
-      const layer = layerStore.createLayer(store as any, "particles", "Particle System");
+      // Type assertion: compositorStore passed at runtime implements required interface
+      const layer = layerStore.createLayer(
+        store as Parameters<typeof layerStore.createLayer>[0],
+        "particles",
+        "Particle System"
+      );
 
       const activeComp = store.getActiveComp();
       const compWidth =
