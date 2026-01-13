@@ -14,7 +14,6 @@ import type {
   ParticleEmitterConfig,
   ParticleLayerData,
 } from "@/types/project";
-import { useLayerStore } from "@/stores/layerStore";
 
 // ============================================================================
 // STORE ACCESS INTERFACE
@@ -99,13 +98,8 @@ export const useParticleStore = defineStore("particle", {
      * @returns The created particle layer
      */
     createParticleLayer(store: ParticleStoreAccess): Layer {
-      const layerStore = useLayerStore();
-      // Type assertion: compositorStore passed at runtime implements required interface
-      const layer = layerStore.createLayer(
-        store as unknown as Parameters<typeof layerStore.createLayer>[0],
-        "particles",
-        "Particle System"
-      );
+      // Use store.createLayer directly - defined in ParticleStoreAccess interface
+      const layer = store.createLayer("particles", "Particle System");
 
       const activeComp = store.getActiveComp();
       const compWidth =

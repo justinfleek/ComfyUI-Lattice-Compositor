@@ -20,7 +20,6 @@ import type {
   VideoData,
 } from "@/types/project";
 import { storeLogger } from "@/utils/logger";
-import { useLayerStore } from "@/stores/layerStore";
 
 // ============================================================================
 // TYPES
@@ -254,13 +253,8 @@ export const useVideoStore = defineStore("video", {
       fileName: string,
       timeStretch: number = 100,
     ): Layer {
-      const layerStore = useLayerStore();
-      // Type assertion: compositorStore passed at runtime implements required interface
-      const layer = layerStore.createLayer(
-        store as unknown as Parameters<typeof layerStore.createLayer>[0],
-        "video",
-        fileName.replace(/\.[^.]+$/, "")
-      );
+      // Use store.createLayer directly - defined in VideoStoreAccess interface
+      const layer = store.createLayer("video", fileName.replace(/\.[^.]+$/, ""));
 
       const videoData: VideoData = {
         assetId,
@@ -318,9 +312,8 @@ export const useVideoStore = defineStore("video", {
 
       // Step 1: Precomp existing layers
       const existingLayers = store.getActiveCompLayers();
-      const layerStore = useLayerStore();
-      if (existingLayers.length > 0 && store.nestSelectedLayers) {
-        layerStore.selectAllLayers(store);
+      if (existingLayers.length > 0 && store.selectAllLayers && store.nestSelectedLayers) {
+        store.selectAllLayers();
         const precompName = `Original ${originalFps}fps Layers`;
         store.nestSelectedLayers(precompName);
       }

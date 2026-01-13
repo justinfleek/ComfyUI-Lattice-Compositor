@@ -10,7 +10,6 @@
 import { defineStore } from "pinia";
 import type { DepthflowLayerData, Layer } from "@/types/project";
 import { createAnimatableProperty } from "@/types/project";
-import { useLayerStore } from "@/stores/layerStore";
 
 // ============================================================================
 // STORE ACCESS INTERFACE
@@ -62,13 +61,8 @@ export const useDepthflowStore = defineStore("depthflow", {
       sourceLayerId: string = "",
       depthLayerId: string = "",
     ): Layer {
-      const layerStore = useLayerStore();
-      // Type assertion: compositorStore passed at runtime implements required interface
-      const layer = layerStore.createLayer(
-        store as unknown as Parameters<typeof layerStore.createLayer>[0],
-        "depthflow",
-        "Depthflow"
-      );
+      // Use store.createLayer directly - defined in DepthflowStoreAccess interface
+      const layer = store.createLayer("depthflow", "Depthflow");
 
       const depthflowData: DepthflowLayerData = {
         sourceLayerId,

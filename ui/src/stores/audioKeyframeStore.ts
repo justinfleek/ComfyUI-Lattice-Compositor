@@ -16,7 +16,6 @@ import {
 import type { AnimatableProperty, Keyframe, Layer } from "@/types/project";
 import { storeLogger } from "@/utils/logger";
 import { useAudioStore } from "@/stores/audioStore";
-import { useLayerStore } from "@/stores/layerStore";
 
 // ============================================================================
 // TYPES
@@ -341,14 +340,8 @@ export const useAudioKeyframeStore = defineStore("audioKeyframe", {
 
       store.pushHistory();
 
-      // Create the null layer
-      const layerStore = useLayerStore();
-      // Type assertion: compositorStore passed at runtime implements required interface
-      const layer = layerStore.createLayer(
-        store as unknown as Parameters<typeof layerStore.createLayer>[0],
-        "null",
-        name
-      );
+      // Create the null layer - use store.createLayer directly (defined in interface)
+      const layer = store.createLayer("null", name);
 
       const frameCount = audioStore.audioAnalysis.frameCount;
       const fps = store.project.composition.fps;
@@ -485,13 +478,8 @@ export const useAudioKeyframeStore = defineStore("audioKeyframe", {
 
       store.pushHistory();
 
-      const layerStore = useLayerStore();
-      // Type assertion: compositorStore passed at runtime implements required interface
-      const layer = layerStore.createLayer(
-        store as unknown as Parameters<typeof layerStore.createLayer>[0],
-        "null",
-        name
-      );
+      // Create the null layer - use store.createLayer directly (defined in interface)
+      const layer = store.createLayer("null", name);
       const bandData = audioStore.audioAnalysis.frequencyBands;
 
       const propertyIds: Record<FrequencyBandName, string> = {
@@ -561,13 +549,8 @@ export const useAudioKeyframeStore = defineStore("audioKeyframe", {
 
       store.pushHistory();
 
-      const layerStore = useLayerStore();
-      // Type assertion: compositorStore passed at runtime implements required interface
-      const layer = layerStore.createLayer(
-        store as unknown as Parameters<typeof layerStore.createLayer>[0],
-        "null",
-        name
-      );
+      // Create the null layer - use store.createLayer directly (defined in interface)
+      const layer = store.createLayer("null", name);
       const analysis = audioStore.audioAnalysis;
       const buffer = audioStore.audioBuffer;
       const frameCount = analysis.frameCount;
