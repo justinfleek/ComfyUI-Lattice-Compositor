@@ -198,18 +198,25 @@ export function validateNumberArray(
 // ============================================================================
 
 /**
+ * Generic object type for validation
+ */
+export interface ValidatedObject {
+  [key: string]: unknown;
+}
+
+/**
  * Validate that value is a non-null object
  */
 export function validateObject(
   value: unknown,
   name: string,
-): ValidationResult<Record<string, unknown>> {
+): ValidationResult<ValidatedObject> {
   if (typeof value !== "object" || value === null) {
     return fail(
       `${name} must be an object, got ${value === null ? "null" : typeof value}`,
     );
   }
-  return ok(value as Record<string, unknown>);
+  return ok(value as ValidatedObject);
 }
 
 /**
@@ -332,7 +339,7 @@ export function withDefault<T>(
  * Validate all fields of an object schema
  * Returns typed object if all validations pass
  */
-export function validateSchema<T extends Record<string, unknown>>(
+export function validateSchema<T extends ValidatedObject>(
   value: unknown,
   name: string,
   schema: {

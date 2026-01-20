@@ -295,7 +295,10 @@ const sections = reactive({
 
 // Get layer data
 const layer = computed(() => store.layers.find((l) => l.id === props.layerId));
-const layerData = computed(() => layer.value?.data as any);
+const layerData = computed(() => {
+  if (!layer.value?.data) return null;
+  return layer.value.data as import("@/types/project").ModelLayerData | import("@/types/project").PointCloudLayerData;
+});
 
 // Check if point cloud
 const isPointCloud = computed(() => layer.value?.type === "pointcloud");

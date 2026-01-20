@@ -11,20 +11,32 @@ import { defineConfig, devices } from '@playwright/test';
  * Tests Canvas, WebGL, WebGPU, Web Audio, and DOM operations
  * in a real Chromium browser environment connected to ComfyUI.
  */
+
+// Fix terminal size for proper test output formatting (WSL issue)
+if (process.env.COLUMNS && parseInt(process.env.COLUMNS) > 1000) {
+  process.env.COLUMNS = '120';
+}
+if (process.env.LINES && parseInt(process.env.LINES) < 2) {
+  process.env.LINES = '30';
+}
+
 export default defineConfig({
   testDir: './e2e',
   fullyParallel: false,  // Sequential for UI testing
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
-  workers: 1,  // Single worker for ComfyUI testing
-  reporter: 'html',
-  timeout: 60000,  // 60s per test
+  workers: parseInt(process.env.PLAYWRIGHT_WORKERS || '1'),  // Single worker for ComfyUI testing
+  reporter: process.env.CI ? [['html'], ['json', { outputFile: 'test-results/results.json' }]] : 'html',
+  timeout: parseInt(process.env.PLAYWRIGHT_TIMEOUT || '60000'),  // 60s per test
   
   use: {
-    baseURL: 'http://localhost:8188',  // ComfyUI default port
+    baseURL: process.env.COMFYUI_URL || 'http://localhost:8188',  // ComfyUI default port
     trace: 'on-first-retry',
-    screenshot: 'on',
+    screenshot: process.env.SCREENSHOT_ON_FAILURE !== 'false' ? 'on' : 'off',
   },
+  
+  // Output directory for test artifacts
+  outputDir: './test-results',
 
   projects: [
     {

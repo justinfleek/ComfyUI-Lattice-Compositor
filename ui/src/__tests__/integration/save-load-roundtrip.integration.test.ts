@@ -39,6 +39,45 @@ function createTestKeyframe<T>(
   };
 }
 
+/**
+ * Infer AnimatableProperty type from runtime value
+ * Production-grade type inference for test helpers
+ */
+function inferPropertyType<T>(value: T): "number" | "position" | "color" | "enum" | "vector3" {
+  if (typeof value === "number") {
+    return "number";
+  }
+  if (typeof value === "string") {
+    return "enum";
+  }
+  if (typeof value === "object" && value !== null) {
+    const obj = value as Record<string, unknown>;
+    // Check for RGBA color: { r, g, b, a }
+    if (
+      typeof obj.r === "number" &&
+      typeof obj.g === "number" &&
+      typeof obj.b === "number" &&
+      typeof obj.a === "number"
+    ) {
+      return "color";
+    }
+    // Check for Vec3: { x, y, z }
+    if (
+      typeof obj.x === "number" &&
+      typeof obj.y === "number" &&
+      typeof obj.z === "number"
+    ) {
+      return "vector3";
+    }
+    // Check for Vec2/Position: { x, y }
+    if (typeof obj.x === "number" && typeof obj.y === "number") {
+      return "position";
+    }
+  }
+  // Default fallback
+  return "number";
+}
+
 function createAnimatableProperty<T>(
   value: T,
   keyframes: Keyframe<T>[] = []
@@ -46,7 +85,7 @@ function createAnimatableProperty<T>(
   return {
     id: `prop-${Math.random().toString(36).slice(2, 8)}`,
     name: "test",
-    type: "number" as any,
+    type: inferPropertyType(value),
     value,
     animated: keyframes.length > 0,
     keyframes,
@@ -347,9 +386,10 @@ describe("Save/Load Roundtrip - Layer Types", () => {
       fontSize: 72,
       fill: "#ffffff",
     };
+    // Type assertion: TextData is part of LayerDataUnion when type is "text"
     const layer = createTestLayer({
       type: "text",
-      data: textData as any, // TextData is compatible with layer data union
+      data: textData as TextData,
     });
     const original = createTestProject([layer]);
 
@@ -481,10 +521,11 @@ describe("Save/Load Roundtrip - Special Values", () => {
       ...createDefaultTextData(),
       text: "",
     };
+    // Type assertion: TextData is part of LayerDataUnion when type is "text"
     const layer = createTestLayer({
       name: "",
       type: "text",
-      data: textData as any,
+      data: textData as TextData,
     });
     const original = createTestProject([layer]);
 
@@ -501,10 +542,11 @@ describe("Save/Load Roundtrip - Special Values", () => {
       ...createDefaultTextData(),
       text: "Hello 世界 🌍 مرحبا",
     };
+    // Type assertion: TextData is part of LayerDataUnion when type is "text"
     const layer = createTestLayer({
       name: "レイヤー 🎬",
       type: "text",
-      data: textData as any,
+      data: textData as TextData,
     });
     const original = createTestProject([layer]);
 

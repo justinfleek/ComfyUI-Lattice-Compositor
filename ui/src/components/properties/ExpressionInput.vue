@@ -310,16 +310,19 @@ watch(
   () => props.visible,
   (visible) => {
     if (visible && props.currentExpression) {
-      // Check if it's a data-driven expression by checking params
-      const params = props.currentExpression.params as any;
-      if (params?.dataAsset) {
+      // Type-safe access to expression params
+      // PropertyExpression.params is Record<string, number | string | boolean>
+      const params = props.currentExpression.params;
+      
+      // Type-safe property access with proper type narrowing
+      if (typeof params.dataAsset === "string") {
         // Restore data-driven state
         mode.value = "data";
-        selectedDataAsset.value = params.dataAsset || "";
-        selectedColumn.value = params.column || "";
-        jsonPropertyPath.value = params.jsonPath || "";
-        rowMappingMode.value = params.rowMapping || "frame";
-        manualRowOffset.value = params.rowOffset || 0;
+        selectedDataAsset.value = params.dataAsset;
+        selectedColumn.value = typeof params.column === "string" ? params.column : "";
+        jsonPropertyPath.value = typeof params.jsonPath === "string" ? params.jsonPath : "";
+        rowMappingMode.value = (typeof params.rowMapping === "string" && (params.rowMapping === "frame" || params.rowMapping === "time" || params.rowMapping === "manual")) ? params.rowMapping : "frame";
+        manualRowOffset.value = typeof params.rowOffset === "number" ? params.rowOffset : 0;
       } else if (props.currentExpression.type === "preset") {
         mode.value = "preset";
         // Find matching preset

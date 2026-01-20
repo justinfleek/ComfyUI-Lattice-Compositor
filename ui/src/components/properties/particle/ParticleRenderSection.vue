@@ -321,11 +321,11 @@ defineProps<Props>();
 
 const emit = defineEmits<{
   (e: "toggle"): void;
-  (e: "update", key: keyof ParticleRenderOptions, value: any): void;
-  (e: "updateConnection", key: keyof ConnectionRenderConfig, value: any): void;
+  (e: "update", key: keyof ParticleRenderOptions, value: ParticleRenderOptions[keyof ParticleRenderOptions]): void;
+  (e: "updateConnection", key: keyof ConnectionRenderConfig, value: ConnectionRenderConfig[keyof ConnectionRenderConfig]): void;
 }>();
 
-function update(key: keyof ParticleRenderOptions, value: any): void {
+function update(key: keyof ParticleRenderOptions, value: ParticleRenderOptions[keyof ParticleRenderOptions]): void {
   emit("update", key, value);
 }
 

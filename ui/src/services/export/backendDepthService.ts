@@ -45,6 +45,16 @@ export interface NormalGenerationOptions {
   depthModel?: "DA3-LARGE-1.1" | "DA3-GIANT-1.1" | "DA3NESTED-GIANT-LARGE-1.1";
 }
 
+/**
+ * Request body for normal map generation API
+ */
+interface NormalGenerationRequestBody {
+  method: "algebraic" | "normalcrafter";
+  depth_model: "DA3-LARGE-1.1" | "DA3-GIANT-1.1" | "DA3NESTED-GIANT-LARGE-1.1";
+  image?: string; // Base64 encoded image
+  depth?: string; // Base64 encoded depth map
+}
+
 export interface NormalGenerationResult {
   status: "success" | "error";
   normal: string; // base64 encoded PNG (RGB normal map)
@@ -154,17 +164,12 @@ export class BackendDepthService {
     try {
       logger.info(`Generating normal map using ${method} method`);
 
-      const requestBody: Record<string, unknown> = {
+      const requestBody: NormalGenerationRequestBody = {
         method,
         depth_model: depthModel,
+        ...(imageBase64 && { image: imageBase64 }),
+        ...(depthBase64 && { depth: depthBase64 }),
       };
-
-      if (imageBase64) {
-        requestBody.image = imageBase64;
-      }
-      if (depthBase64) {
-        requestBody.depth = depthBase64;
-      }
 
       const response = await fetch(`${this.baseUrl}/lattice/normal`, {
         method: "POST",
@@ -301,8 +306,8 @@ export function canvasToBase64(canvas: HTMLCanvasElement | OffscreenCanvas): str
   tempCanvas.width = canvas.width;
   tempCanvas.height = canvas.height;
   const ctx = tempCanvas.getContext("2d");
-  if (ctx) {
-    ctx.drawImage(canvas as unknown as CanvasImageSource, 0, 0);
+  if (ctx && canvas instanceof HTMLCanvasElement) {
+    ctx.drawImage(canvas, 0, 0);
   }
   const dataUrl = tempCanvas.toDataURL("image/png");
   return dataUrl.replace(/^data:image\/png;base64,/, "");

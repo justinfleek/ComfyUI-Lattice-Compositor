@@ -198,7 +198,7 @@ const props = defineProps<{
   snapIndicatorY: number | null;
   compWidth: number;
   compHeight: number;
-  gridOverlayStyle: Record<string, any>;
+  gridOverlayStyle: Record<string, string | number>;
   activeCamera: Camera3D;
   viewportState: ViewportState;
 }>();

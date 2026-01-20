@@ -29,6 +29,43 @@ import type { SceneManager } from "./SceneManager";
 type PostPass = Pass;
 
 // ============================================================================
+// TYPE EXTENSIONS FOR THREE.JS POST-PROCESSING
+// ============================================================================
+
+/**
+ * Extended BokehPass options interface
+ * BokehPass constructor accepts width/height but TypeScript types may not include them
+ */
+interface BokehPassOptions {
+  focus: number;
+  aperture: number;
+  maxblur: number;
+  width?: number;
+  height?: number;
+}
+
+/**
+ * Extended BokehPass interface with uniforms property
+ * BokehPass has uniforms but TypeScript types may not expose them
+ */
+interface BokehPassWithUniforms extends BokehPass {
+  uniforms?: {
+    focus?: { value: number };
+    aperture?: { value: number };
+    maxblur?: { value: number };
+  };
+}
+
+/**
+ * Extended EffectComposer interface with renderTarget properties
+ * EffectComposer has renderTarget1/renderTarget2 but TypeScript types may not expose them
+ */
+interface EffectComposerWithTargets extends EffectComposer {
+  renderTarget1?: THREE.WebGLRenderTarget;
+  renderTarget2?: THREE.WebGLRenderTarget;
+}
+
+// ============================================================================
 // DOF CONFIGURATION
 // ============================================================================
 
@@ -390,18 +427,23 @@ export class RenderPipeline {
    * Create the bokeh (DOF) pass
    */
   private createBokehPass(): void {
-    const _scaledWidth = Math.floor(this.width * this.pixelRatio);
-    const _scaledHeight = Math.floor(this.height * this.pixelRatio);
+    const scaledWidth = Math.floor(this.width * this.pixelRatio);
+    const scaledHeight = Math.floor(this.height * this.pixelRatio);
 
     // BokehPass needs the scene, camera, and focus parameters
+    // Type-safe options with width/height (may not be in TypeScript types but needed at runtime)
+    const bokehOptions: BokehPassOptions = {
+      focus: this.dofConfig.focusDistance,
+      aperture: this.dofConfig.aperture,
+      maxblur: this.dofConfig.maxBlur,
+      width: scaledWidth,
+      height: scaledHeight,
+    };
+    
     this.bokehPass = new BokehPass(
       this.scene.scene,
       this.camera.camera,
-      {
-        focus: this.dofConfig.focusDistance,
-        aperture: this.dofConfig.aperture,
-        maxblur: this.dofConfig.maxBlur,
-      } as any, // width/height are needed but not in types
+      bokehOptions,
     );
 
     // Insert before output pass
@@ -414,11 +456,18 @@ export class RenderPipeline {
   private updateBokehPass(): void {
     if (!this.bokehPass) return;
 
-    const uniforms = (this.bokehPass as any).uniforms;
-    if (uniforms) {
-      uniforms.focus.value = this.dofConfig.focusDistance;
-      uniforms.aperture.value = this.dofConfig.aperture;
-      uniforms.maxblur.value = this.dofConfig.maxBlur;
+    // Type-safe access to uniforms (may not be in TypeScript types but exists at runtime)
+    const bokehWithUniforms = this.bokehPass as BokehPassWithUniforms;
+    if (bokehWithUniforms.uniforms) {
+      if (bokehWithUniforms.uniforms.focus) {
+        bokehWithUniforms.uniforms.focus.value = this.dofConfig.focusDistance;
+      }
+      if (bokehWithUniforms.uniforms.aperture) {
+        bokehWithUniforms.uniforms.aperture.value = this.dofConfig.aperture;
+      }
+      if (bokehWithUniforms.uniforms.maxblur) {
+        bokehWithUniforms.uniforms.maxblur.value = this.dofConfig.maxBlur;
+      }
     }
   }
 
@@ -1046,11 +1095,17 @@ export class RenderPipeline {
     this.colorTarget = this.createColorTarget(scaledWidth, scaledHeight);
     this.depthTarget = this.createDepthTarget(scaledWidth, scaledHeight);
 
-    // Update composer's render target
-    this.composer.renderTarget1.dispose();
-    this.composer.renderTarget2.dispose();
-    (this.composer as any).renderTarget1 = this.colorTarget.clone();
-    (this.composer as any).renderTarget2 = this.colorTarget.clone();
+    // Update composer's render target (type-safe access)
+    // EffectComposerWithTargets interface defined at top of file
+    const composerWithTargets = this.composer as EffectComposerWithTargets;
+    if (composerWithTargets.renderTarget1) {
+      composerWithTargets.renderTarget1.dispose();
+    }
+    if (composerWithTargets.renderTarget2) {
+      composerWithTargets.renderTarget2.dispose();
+    }
+    composerWithTargets.renderTarget1 = this.colorTarget.clone();
+    composerWithTargets.renderTarget2 = this.colorTarget.clone();
 
     // Resize capture canvas
     this.captureCanvas.width = scaledWidth;

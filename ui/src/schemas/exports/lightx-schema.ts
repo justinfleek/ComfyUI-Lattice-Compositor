@@ -3,10 +3,18 @@
  *
  * Zod schemas for validating Light-X export data.
  * Matches the exact structure returned by LightXExport interface.
+ * Includes comprehensive validation constraints for security and data integrity.
  */
 
 import { z } from "zod";
 import { WanMoveTrajectorySchema } from "./wanmove-schema";
+import {
+  boundedArray,
+  base64OrDataUrl,
+  hexColor,
+  MAX_STRING_LENGTH,
+  MAX_PATH_LENGTH,
+} from "../shared-validation";
 
 // ============================================================================
 // Primitives
@@ -50,19 +58,26 @@ export type LightXRelightSource = z.infer<typeof LightXRelightSourceSchema>;
  * Matches CameraTrajectoryExport interface.
  */
 export const CameraTrajectoryExportSchema = z.object({
-  matrices: z.array(
+  matrices: boundedArray(
     z.array(z.array(finiteNumber).length(4)).length(4),
-  ), // [frame][4][4]
+    100000
+  ), // Max 100k frames, [frame][4][4]
   metadata: z.object({
-    frameCount: z.number().int().positive(),
-    fps: positiveFinite,
-    fov: positiveFinite,
-    nearClip: positiveFinite,
-    farClip: positiveFinite,
-    width: z.number().int().positive(),
-    height: z.number().int().positive(),
-  }),
-});
+    frameCount: z.number().int().positive().max(100000), // Max 100k frames
+    fps: positiveFinite.max(120), // Max 120 FPS
+    fov: positiveFinite.max(180), // Max 180 degrees FOV
+    nearClip: positiveFinite.max(100000), // Max 100k units
+    farClip: positiveFinite.max(100000), // Max 100k units
+    width: z.number().int().positive().max(16384), // Max reasonable dimension
+    height: z.number().int().positive().max(16384), // Max reasonable dimension
+  }).strict().refine(
+    (data) => {
+      // farClip should be > nearClip
+      return data.farClip > data.nearClip;
+    },
+    { message: "farClip must be greater than nearClip", path: ["farClip"] }
+  ),
+}).strict();
 
 export type CameraTrajectoryExport = z.infer<
   typeof CameraTrajectoryExportSchema
@@ -74,11 +89,11 @@ export type CameraTrajectoryExport = z.infer<
 
 export const LightXRelightingConfigSchema = z.object({
   source: LightXRelightSourceSchema,
-  textPrompt: z.string().optional(),
-  referenceImage: z.string().optional(), // Base64
-  hdrMap: z.string().optional(), // Base64 or path
-  backgroundColor: z.string().optional(), // Hex
-});
+  textPrompt: z.string().max(MAX_STRING_LENGTH).trim().optional(),
+  referenceImage: base64OrDataUrl.optional(), // Base64
+  hdrMap: z.union([base64OrDataUrl, z.string().max(MAX_PATH_LENGTH)]).optional(), // Base64 or path
+  backgroundColor: hexColor.optional(), // Hex
+}).strict();
 
 export type LightXRelightingConfig = z.infer<
   typeof LightXRelightingConfigSchema
@@ -96,7 +111,7 @@ export const LightXExportSchema = z.object({
   cameraTrajectory: CameraTrajectoryExportSchema,
   motionStyle: LightXMotionStyleSchema,
   relighting: LightXRelightingConfigSchema,
-});
+}).strict();
 
 export type LightXExport = z.infer<typeof LightXExportSchema>;
 

@@ -24,21 +24,51 @@ function getHeapUsed(): number {
     return process.memoryUsage().heapUsed;
   }
   // Browser fallback (less accurate)
-  if (typeof performance !== 'undefined' && (performance as any).memory) {
-    return (performance as any).memory.usedJSHeapSize;
+  if (typeof performance !== 'undefined') {
+    const perfWithMemory = performance as typeof performance & { memory?: { usedJSHeapSize: number } };
+    if (perfWithMemory.memory) {
+      return perfWithMemory.memory.usedJSHeapSize;
+    }
   }
   return 0;
 }
 
-// Check if GC is available (requires node --expose-gc)
+// ============================================================================
+// TYPE-SAFE GARBAGE COLLECTION HELPERS
+// ============================================================================
+
+/**
+ * Type-safe interface for Node.js global with exposed GC
+ * Node.js exposes gc() when run with --expose-gc flag
+ */
+type GlobalWithGC = typeof globalThis & {
+  gc?: () => void;
+};
+
+/**
+ * Check if GC is available (requires node --expose-gc)
+ * Production-grade type guard with runtime validation
+ */
 function isGCAvailable(): boolean {
-  return typeof global !== 'undefined' && typeof (global as any).gc === 'function';
+  if (typeof globalThis === "undefined") return false;
+  const globalWithGC = globalThis as GlobalWithGC;
+  return typeof globalWithGC.gc === "function";
 }
 
-// Helper to force garbage collection
+/**
+ * Helper to force garbage collection
+ * Production-grade error handling: gracefully handles missing GC
+ */
 function forceGC(): void {
-  if (isGCAvailable()) {
-    (global as any).gc();
+  if (!isGCAvailable()) {
+    // GC not available - this is expected in browser environments
+    // Test should be skipped or run with node --expose-gc
+    return;
+  }
+  const globalWithGC = globalThis as GlobalWithGC;
+  // Type guard ensures gc exists and is callable
+  if (typeof globalWithGC.gc === "function") {
+    globalWithGC.gc();
   }
 }
 
@@ -176,6 +206,10 @@ describe('Memory: Undo/Redo', () => {
    * See CLAUDE.md for full analysis.
    *
    * To fix: Implement proper deep clone or structural sharing in history system.
+   *
+   * ⚠️ CRITICAL: This MUST be fixed before implementing incremental state snapshots.
+   * See `docs/INCREMENTAL_STATE_SNAPSHOTS_PLAN.md` for full plan.
+   * NO SHORTCUTS OR HALF-MEASURES ACCEPTED.
    */
   test.fails('500 undo/redo cycles does not leak (KNOWN BUG)', async () => {
     const store = useCompositorStore();

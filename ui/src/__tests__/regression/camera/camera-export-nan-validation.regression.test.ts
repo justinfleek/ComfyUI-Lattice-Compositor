@@ -332,9 +332,10 @@ describe('Camera Export NaN Validation Regression', () => {
   describe('interpolateCameraAtFrame with corrupted keyframes', () => {
     const camera = createTestCamera();
 
-    test('handles keyframes with undefined position', () => {
+    test('handles keyframes with missing position property', () => {
+      // Test with keyframe that omits position (position is optional in CameraKeyframe)
       const keyframes: CameraKeyframe[] = [
-        { frame: 0, position: undefined as any },
+        { frame: 0 }, // Position omitted - function should use camera defaults
         { frame: 24, position: { x: 100, y: 100, z: -500 } },
       ];
 

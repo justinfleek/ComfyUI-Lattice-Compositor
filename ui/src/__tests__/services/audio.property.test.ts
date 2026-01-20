@@ -317,17 +317,20 @@ describe('STRICT: Beat Detection', () => {
 
 describe('STRICT: Audio Null Safety', () => {
   it('getFeatureAtFrame handles null analysis', () => {
-    const result = getFeatureAtFrame(null as any, 'amplitude', 0);
+    // Function signature accepts AudioAnalysis | null | undefined
+    const result = getFeatureAtFrame(null, 'amplitude', 0);
     expect(result).toBe(0);
   });
 
   it('getFeatureAtFrame handles undefined analysis', () => {
-    const result = getFeatureAtFrame(undefined as any, 'amplitude', 0);
+    // Function signature accepts AudioAnalysis | null | undefined
+    const result = getFeatureAtFrame(undefined, 'amplitude', 0);
     expect(result).toBe(0);
   });
 
   it('isBeatAtFrame handles null analysis', () => {
-    const result = isBeatAtFrame(null as any, 0);
+    // Function signature accepts AudioAnalysis | null | undefined
+    const result = isBeatAtFrame(null, 0);
     expect(result).toBe(false);
   });
 

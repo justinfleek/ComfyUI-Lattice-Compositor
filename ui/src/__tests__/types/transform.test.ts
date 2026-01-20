@@ -27,7 +27,7 @@ import {
   type AutoOrientMode,
   type FollowPathConstraint,
 } from '@/types/transform';
-import { createAnimatableProperty, createKeyframe } from '@/types/animation';
+import { createAnimatableProperty, createKeyframe, type AnimatableProperty } from '@/types/animation';
 
 // ============================================================================
 // HELPER: Create a transform with keyframes for testing
@@ -151,18 +151,27 @@ describe('createDefaultTransform', () => {
 
 describe('normalizeLayerTransform', () => {
   test('MUTATES input: copies anchorPoint to origin if origin missing', () => {
-    const transform = createDefaultTransform();
-    delete (transform as any).origin;
+    const baseTransform = createDefaultTransform();
+    // Create transform without origin for testing fallback behavior
+    const { origin, ...transformWithoutOrigin } = baseTransform;
+    const transform: Omit<LayerTransform, 'origin'> & { anchorPoint?: AnimatableProperty<{ x: number; y: number; z?: number }> } = {
+      ...transformWithoutOrigin,
+      anchorPoint: baseTransform.anchorPoint,
+    };
     
     const anchorPointValue = transform.anchorPoint;
-    normalizeLayerTransform(transform);
+    normalizeLayerTransform(transform as LayerTransform);
     
-    expect(transform.origin).toBe(anchorPointValue);
+    expect((transform as LayerTransform).origin).toBe(anchorPointValue);
   });
 
   test('MUTATES input: copies origin to anchorPoint if anchorPoint missing', () => {
-    const transform = createDefaultTransform();
-    delete (transform as any).anchorPoint;
+    const baseTransform = createDefaultTransform();
+    // Create transform without anchorPoint for testing fallback behavior
+    const { anchorPoint, ...transformWithoutAnchorPoint } = baseTransform;
+    const transform: Omit<LayerTransform, 'anchorPoint'> = {
+      ...transformWithoutAnchorPoint,
+    };
     
     const originValue = transform.origin;
     normalizeLayerTransform(transform);
@@ -189,12 +198,15 @@ describe('normalizeLayerTransform', () => {
   });
 
   test('handles transform with neither origin nor anchorPoint', () => {
-    const transform = createDefaultTransform();
-    delete (transform as any).origin;
-    delete (transform as any).anchorPoint;
+    const baseTransform = createDefaultTransform();
+    // Create transform without both origin and anchorPoint for testing edge case
+    const { origin, anchorPoint, ...transformWithoutBoth } = baseTransform;
+    const transform: Omit<LayerTransform, 'origin' | 'anchorPoint'> = {
+      ...transformWithoutBoth,
+    };
     
     // Should not throw
-    const result = normalizeLayerTransform(transform);
+    const result = normalizeLayerTransform(transform as LayerTransform);
     expect(result).toBe(transform);
   });
 });
@@ -300,7 +312,8 @@ describe('separatePositionDimensions', () => {
 
   test('handles position without z component', () => {
     const transform = createDefaultTransform();
-    transform.position.value = { x: 10, y: 20 } as any;
+    // Vec2 is valid for position (z is optional)
+    transform.position.value = { x: 10, y: 20 };
     
     separatePositionDimensions(transform);
     
@@ -515,7 +528,8 @@ describe('separateScaleDimensions', () => {
 
   test('handles scale without z component (defaults to 100)', () => {
     const transform = createDefaultTransform();
-    transform.scale.value = { x: 150, y: 200 } as any;
+    // Vec2 is valid for scale (z is optional)
+    transform.scale.value = { x: 150, y: 200 };
     
     separateScaleDimensions(transform);
     

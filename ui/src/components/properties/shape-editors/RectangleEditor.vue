@@ -102,8 +102,9 @@ function toggleKeyframe(prop: "position" | "size" | "roundness") {
       (k) => k.frame !== frame,
     ) as typeof animProp.keyframes;
   } else {
-    (animProp.keyframes as unknown[]).push(
-      createKeyframe(frame, animProp.value, "linear"),
+    // createKeyframe returns Keyframe<T> matching the value type
+    animProp.keyframes.push(
+      createKeyframe(frame, animProp.value, "linear") as typeof animProp.keyframes[0],
     );
   }
   animProp.animated = animProp.keyframes.length > 0;

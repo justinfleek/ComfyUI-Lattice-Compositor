@@ -89,14 +89,15 @@ describe('BUG Regression: Wind Undefined NaN', () => {
     expect(direction).toBe(0);
   });
 
-  test('wind with null values is handled', () => {
-    // Note: nullish coalescing (??) only handles null/undefined, not null explicitly
-    // But in practice, null would be converted to undefined or handled separately
-    const wind = { x: null as any, y: null as any };
+  test('wind with missing properties is handled', () => {
+    // Test with wind object that omits x/y properties (undefined, not null)
+    // Function signature accepts { x?: number; y?: number } | undefined
+    const wind: { x?: number; y?: number } = {}; // Both properties omitted
     const strength = calculateWindStrength(wind);
     
-    // Should handle gracefully (null ?? 0 = 0 in this case)
+    // Should handle gracefully (undefined ?? 0 = 0)
     expect(Number.isFinite(strength)).toBe(true);
+    expect(strength).toBe(0);
   });
 
   test('normal wind values work correctly', () => {

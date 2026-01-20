@@ -78,9 +78,25 @@ export class PerformanceMonitor {
     // Get WebGL info
     const info = renderer.info;
 
-    // Get memory usage (Chrome only)
-    const memory = (performance as any).memory;
-    const memoryUsed = memory?.usedJSHeapSize ?? 0;
+    // Extended Performance interface for Chrome's memory API
+    // performance.memory is available in Chrome but not in standard TypeScript DOM types
+    interface PerformanceWithMemory extends Performance {
+      memory?: {
+        usedJSHeapSize: number;
+        totalJSHeapSize: number;
+        jsHeapSizeLimit: number;
+      };
+    }
+
+    // Type guard to check if performance has memory API
+    function hasMemoryAPI(perf: Performance): perf is PerformanceWithMemory {
+      return "memory" in perf;
+    }
+
+    // Get memory usage (Chrome only) - type-safe access
+    const memoryUsed = hasMemoryAPI(performance) && performance.memory
+      ? performance.memory.usedJSHeapSize
+      : 0;
 
     // Calculate average frame time
     const avgFrameTime =

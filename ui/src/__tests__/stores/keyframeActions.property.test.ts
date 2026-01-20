@@ -86,15 +86,16 @@ function sortedKeyframesArb<T>(
 // TEST HELPERS
 // ============================================================================
 
-function createAnimatableProperty<T>(
+function createAnimatablePropertyWithKeyframes<T>(
   name: string,
   value: T,
+  type: "number" | "position" | "color" | "enum" | "vector3",
   keyframes: Keyframe<T>[] = [],
 ): AnimatableProperty<T> {
   return {
     id: `prop-${name}`,
     name,
-    type: "number" as any,
+    type,
     value,
     animated: keyframes.length > 0,
     keyframes,
@@ -106,34 +107,33 @@ function createMockLayer(
   positionKeyframes: Keyframe<{ x: number; y: number; z: number }>[] = [],
   scaleKeyframes: Keyframe<{ x: number; y: number; z: number }>[] = [],
 ): Layer {
-  // Use unknown intermediate to avoid TypeScript strict checks on optional fields
-  const layer = {
+  const layer: Layer = {
     id,
     name: `Layer ${id}`,
-    type: "solid" as const,
+    type: "solid",
     visible: true,
     locked: false,
-    solo: false,
-    shy: false,
+    isolate: false,
+    threeD: false,
+    motionBlur: false,
     startFrame: 0,
     endFrame: 1000,
     inPoint: 0,
     outPoint: 1000,
-    blendMode: "normal" as const,
-    threeD: false,
-    opacity: createAnimatableProperty("Opacity", 100),
+    blendMode: "normal",
+    opacity: createAnimatablePropertyWithKeyframes("Opacity", 100, "number"),
     transform: {
-      position: createAnimatableProperty("Position", { x: 0, y: 0, z: 0 }, positionKeyframes),
-      scale: createAnimatableProperty("Scale", { x: 100, y: 100, z: 100 }, scaleKeyframes),
-      rotation: createAnimatableProperty("Rotation", 0),
-      origin: createAnimatableProperty("Origin", { x: 0, y: 0, z: 0 }),
+      position: createAnimatablePropertyWithKeyframes("Position", { x: 0, y: 0, z: 0 }, "position", positionKeyframes),
+      scale: createAnimatablePropertyWithKeyframes("Scale", { x: 100, y: 100, z: 100 }, "position", scaleKeyframes),
+      rotation: createAnimatablePropertyWithKeyframes("Rotation", 0, "number"),
+      origin: createAnimatablePropertyWithKeyframes("Origin", { x: 0, y: 0, z: 0 }, "position"),
     },
     effects: [],
     properties: [],
     parentId: null,
     data: { color: "#ff0000", width: 1920, height: 1080 },
   };
-  return layer as unknown as Layer;
+  return layer;
 }
 
 function createMockStore(layers: Layer[]): KeyframeStore {

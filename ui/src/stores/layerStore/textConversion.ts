@@ -10,7 +10,7 @@ import type { ControlPoint, SplineData } from "@/types/project";
 import { createAnimatableProperty, createDefaultTransform } from "@/types/project";
 import { storeLogger } from "@/utils/logger";
 import { useSelectionStore } from "../selectionStore";
-import type { CompositorStoreAccess } from "./types";
+import { useProjectStore } from "../projectStore";
 import { createLayer, deleteLayer } from "./crud";
 
 // ============================================================================
@@ -31,17 +31,16 @@ export interface ConvertTextToSplinesOptions {
 /**
  * Convert a text layer to one or more spline layers
  *
- * @param compositorStore - The compositor store instance
  * @param layerId - ID of the text layer to convert
  * @param options - Conversion options
  * @returns Array of created spline layer IDs, or null on failure
  */
 export async function convertTextLayerToSplines(
-  compositorStore: CompositorStoreAccess,
   layerId: string,
   options: ConvertTextToSplinesOptions = {},
 ): Promise<string[] | null> {
-  const layers = compositorStore.getActiveCompLayers();
+  const projectStore = useProjectStore();
+  const layers = projectStore.getActiveCompLayers();
   const layer = layers.find((l) => l.id === layerId);
 
   if (!layer || layer.type !== "text") {
@@ -88,7 +87,7 @@ export async function convertTextLayerToSplines(
       return null;
     }
 
-    compositorStore.pushHistory();
+    projectStore.pushHistory();
 
     const createdLayerIds: string[] = [];
 
@@ -98,7 +97,7 @@ export async function convertTextLayerToSplines(
 
       if (options.groupCharacters) {
         // Use createLayer directly from crud module
-        const groupLayer = createLayer(compositorStore, "null", `${layer.name} (Group)`);
+        const groupLayer = createLayer("null", `${layer.name} (Group)`);
         groupLayer.transform = { ...layer.transform };
         parentId = groupLayer.id;
         createdLayerIds.push(groupLayer.id);
@@ -123,7 +122,7 @@ export async function convertTextLayerToSplines(
         if (allControlPoints.length === 0) continue;
 
         const charLayerName = `${layer.name} - "${charGroup.character}" [${i}]`;
-        const charLayer = createLayer(compositorStore, "spline", charLayerName);
+        const charLayer = createLayer("spline", charLayerName);
 
         // Set up spline data
         const splineData: SplineData = {
@@ -174,7 +173,6 @@ export async function convertTextLayerToSplines(
       }
 
       const splineLayer = createLayer(
-        compositorStore,
         "spline",
         `${layer.name} (Spline)`,
       );
@@ -199,7 +197,7 @@ export async function convertTextLayerToSplines(
 
     // Remove original layer if not keeping
     if (!options.keepOriginal) {
-      deleteLayer(compositorStore, layerId);
+      deleteLayer(layerId);
     }
 
     // Select the first created layer

@@ -43,7 +43,7 @@ import { createAnimatableProperty } from '@/types/animation';
 // HELPER: Create a minimal valid layer for testing
 // ============================================================================
 
-function createMinimalLayer(type: LayerType, data: any = null): Layer {
+function createMinimalLayer(type: LayerType, data: import("@/types/project").LayerDataUnion | null = null): Layer {
   return {
     id: 'test-layer-1',
     name: 'Test Layer',
@@ -390,20 +390,26 @@ describe('createDefaultProceduralMatteData', () => {
 describe('normalizeLayerTiming', () => {
   it('converts inPoint to startFrame', () => {
     const layer = createMinimalLayer('solid', null);
-    (layer as any).startFrame = undefined;
-    layer.inPoint = 10;
+    // Test migration: create layer with inPoint but no startFrame
+    // Using Partial<Layer> to create incomplete layer for testing migration path
+    const layerWithInPoint: Partial<Layer> = { ...layer };
+    delete layerWithInPoint.startFrame;
+    layerWithInPoint.inPoint = 10;
     
-    const result = normalizeLayerTiming(layer);
+    const result = normalizeLayerTiming(layerWithInPoint as Layer);
     
     expect(result.startFrame).toBe(10);
   });
 
   it('converts outPoint to endFrame', () => {
     const layer = createMinimalLayer('solid', null);
-    (layer as any).endFrame = undefined;
-    layer.outPoint = 200;
+    // Test migration: create layer with outPoint but no endFrame
+    // Using Partial<Layer> to create incomplete layer for testing migration path
+    const layerWithOutPoint: Partial<Layer> = { ...layer };
+    delete layerWithOutPoint.endFrame;
+    layerWithOutPoint.outPoint = 200;
     
-    const result = normalizeLayerTiming(layer);
+    const result = normalizeLayerTiming(layerWithOutPoint as Layer);
     
     expect(result.endFrame).toBe(200);
   });
@@ -439,13 +445,16 @@ describe('normalizeLayerTiming', () => {
 
   it('MUTATES the input layer (documented behavior)', () => {
     const layer = createMinimalLayer('solid', null);
-    (layer as any).startFrame = undefined;
-    layer.inPoint = 10;
+    // Test migration: create layer with inPoint but no startFrame
+    // Using Partial<Layer> to create incomplete layer for testing migration path
+    const layerWithInPoint: Partial<Layer> = { ...layer };
+    delete layerWithInPoint.startFrame;
+    layerWithInPoint.inPoint = 10;
     
-    normalizeLayerTiming(layer);
+    normalizeLayerTiming(layerWithInPoint as Layer);
     
     // The input layer should be modified
-    expect(layer.startFrame).toBe(10);
+    expect(layerWithInPoint.startFrame).toBe(10);
   });
 });
 

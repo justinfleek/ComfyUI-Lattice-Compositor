@@ -102,7 +102,7 @@ defineEmits<{
     e: "update",
     id: string,
     key: keyof ParticleModulationConfig,
-    value: any,
+    value: ParticleModulationConfig[keyof ParticleModulationConfig],
   ): void;
 }>();
 </script>

@@ -21,6 +21,7 @@ import {
 import { DEFAULT_FPS, validateFps } from "@/utils/fpsUtils";
 import { storeLogger } from "@/utils/logger";
 import { useSelectionStore } from "./selectionStore";
+import { useProjectStore } from "./projectStore";
 
 // ============================================================================
 // STORE ACCESS INTERFACE
@@ -60,13 +61,13 @@ export const useCompositionStore = defineStore("composition", {
      * Create a new composition.
      */
     createComposition(
-      store: CompositionStoreAccess,
       name: string,
       settings?: Partial<CompositionSettings>,
       isNestedComp: boolean = false,
     ): Composition {
+      const projectStore = useProjectStore();
       const id = `comp_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
-      const activeComp = store.project.compositions[store.activeCompositionId];
+      const activeComp = projectStore.project.compositions[projectStore.activeCompositionId];
 
       const rawFps = settings?.fps ?? activeComp?.settings.fps ?? DEFAULT_FPS;
       const validFps = validateFps(rawFps);
@@ -92,14 +93,14 @@ export const useCompositionStore = defineStore("composition", {
         isNestedComp,
       };
 
-      store.project.compositions[id] = composition;
+      projectStore.project.compositions[id] = composition;
 
-      if (!store.openCompositionIds.includes(id)) {
-        store.openCompositionIds.push(id);
+      if (!projectStore.openCompositionIds.includes(id)) {
+        projectStore.openCompositionIds.push(id);
       }
-      store.activeCompositionId = id;
+      projectStore.activeCompositionId = id;
 
-      store.pushHistory();
+      projectStore.pushHistory();
       storeLogger.debug("Created composition:", name, id);
       return composition;
     },
@@ -314,24 +315,26 @@ export const useCompositionStore = defineStore("composition", {
     /**
      * Nest selected layers into a new composition.
      */
-    nestSelectedLayers(store: CompositionStoreAccess, name?: string): Composition | null {
-      if (store.selectedLayerIds.length === 0) {
+    nestSelectedLayers(name?: string): Composition | null {
+      const projectStore = useProjectStore();
+      const selectionStore = useSelectionStore();
+
+      if (selectionStore.selectedLayerIds.length === 0) {
         storeLogger.warn("No layers selected for nesting");
         return null;
       }
 
-      const activeComp = store.project.compositions[store.activeCompositionId];
+      const activeComp = projectStore.project.compositions[projectStore.activeCompositionId];
       if (!activeComp) return null;
 
       const nestedComp = this.createComposition(
-        store,
         name || "Nested Comp",
         activeComp.settings,
         true,
       );
 
       const selectedLayers = activeComp.layers.filter((l) =>
-        store.selectedLayerIds.includes(l.id),
+        selectionStore.selectedLayerIds.includes(l.id),
       );
 
       if (selectedLayers.length === 0) {
@@ -393,8 +396,8 @@ export const useCompositionStore = defineStore("composition", {
 
       activeComp.layers.push(nestedCompLayer);
 
-      useSelectionStore().clearLayerSelection();
-      store.activeCompositionId = activeComp.id;
+      selectionStore.clearLayerSelection();
+      projectStore.activeCompositionId = activeComp.id;
 
       storeLogger.debug("Nested layers into:", nestedComp.name);
       return nestedComp;

@@ -25,6 +25,7 @@ import {
 import type { AssetReference, ImageLayerData, Layer } from "@/types/project";
 import { storeLogger } from "@/utils/logger";
 import { useLayerStore } from "@/stores/layerStore";
+import { useProjectStore } from "@/stores/projectStore";
 
 // ============================================================================
 // STORE ACCESS INTERFACE
@@ -37,7 +38,7 @@ export interface SegmentationStoreAccess {
     composition: { width: number; height: number };
     meta: { modified: string };
   };
-  createLayer(type: string, name: string): Layer;
+  createLayer(type: Layer["type"], name?: string): Layer;
   pushHistory(): void;
 }
 
@@ -62,23 +63,53 @@ export interface AutoSegmentOptions extends SegmentationOptions {
 // ============================================================================
 
 export const useSegmentationStore = defineStore("segmentation", {
-  state: () => ({}),
+  state: () => ({
+    segmentToolActive: false,
+    segmentMode: "point" as "point" | "box",
+    segmentPendingMask: null as {
+      mask: string;
+      bounds: { x: number; y: number; width: number; height: number };
+      area: number;
+      score: number;
+    } | null,
+    segmentBoxStart: null as { x: number; y: number } | null,
+    segmentIsLoading: false,
+  }),
 
   getters: {},
 
   actions: {
-    /**
-     * Create an image layer from a segmentation mask.
-     *
-     * @param store - Compositor store access
-     * @param sourceImageBase64 - Base64-encoded source image
-     * @param mask - Segmentation mask to apply
-     * @param name - Optional layer name
-     * @param positionAtCenter - If true, center in composition; otherwise use mask position
-     * @returns The created layer or null on failure
-     */
+    setSegmentToolActive(active: boolean): void {
+      this.segmentToolActive = active;
+    },
+
+    setSegmentMode(mode: "point" | "box"): void {
+      this.segmentMode = mode;
+    },
+
+    setSegmentPendingMask(mask: {
+      mask: string;
+      bounds: { x: number; y: number; width: number; height: number };
+      area: number;
+      score: number;
+    } | null): void {
+      this.segmentPendingMask = mask;
+    },
+
+    setSegmentBoxStart(point: { x: number; y: number } | null): void {
+      this.segmentBoxStart = point;
+    },
+
+    setSegmentIsLoading(loading: boolean): void {
+      this.segmentIsLoading = loading;
+    },
+
+    clearSegmentPendingMask(): void {
+      this.segmentPendingMask = null;
+      this.segmentBoxStart = null;
+    },
+
     async createLayerFromMask(
-      store: SegmentationStoreAccess,
       sourceImageBase64: string,
       mask: SegmentationMask,
       name?: string,
@@ -102,15 +133,11 @@ export const useSegmentationStore = defineStore("segmentation", {
           data: maskedImageBase64,
         };
 
-        store.project.assets[assetId] = asset;
+        const projectStore = useProjectStore();
+        projectStore.project.assets[assetId] = asset;
 
         const layerStore = useLayerStore();
-        // Type assertion: compositorStore passed at runtime implements required interface
-        const layer = layerStore.createLayer(
-          store as unknown as Parameters<typeof layerStore.createLayer>[0],
-          "image",
-          name || "Segmented"
-        );
+        const layer = layerStore.createLayer("image", name || "Segmented");
 
         const imageData: ImageLayerData = {
           assetId,
@@ -121,8 +148,8 @@ export const useSegmentationStore = defineStore("segmentation", {
 
         if (positionAtCenter) {
           layer.transform.position.value = {
-            x: store.project.composition.width / 2,
-            y: store.project.composition.height / 2,
+            x: projectStore.project.composition.width / 2,
+            y: projectStore.project.composition.height / 2,
           };
         } else {
           layer.transform.position.value = {
@@ -139,8 +166,8 @@ export const useSegmentationStore = defineStore("segmentation", {
           };
         }
 
-        store.project.meta.modified = new Date().toISOString();
-        store.pushHistory();
+        projectStore.project.meta.modified = new Date().toISOString();
+        projectStore.pushHistory();
 
         storeLogger.info(
           `Created segmented layer: ${layer.name} (${mask.bounds.width}x${mask.bounds.height})`,
@@ -152,21 +179,18 @@ export const useSegmentationStore = defineStore("segmentation", {
       }
     },
 
-    /**
-     * Segment source image by clicking a point and create a layer.
-     */
     async segmentToLayerByPoint(
-      store: SegmentationStoreAccess,
       point: SegmentationPoint,
       options: SegmentationOptions = {},
     ): Promise<Layer | null> {
-      if (!store.sourceImage) {
+      const projectStore = useProjectStore();
+      if (!projectStore.sourceImage) {
         storeLogger.warn("No source image for segmentation");
         return null;
       }
 
       try {
-        const result = await segmentByPoint(store.sourceImage, point, options.model);
+        const result = await segmentByPoint(projectStore.sourceImage, point, options.model);
 
         if (result.status !== "success" || !result.masks?.length) {
           storeLogger.warn("Segmentation returned no masks:", result.message);
@@ -175,8 +199,7 @@ export const useSegmentationStore = defineStore("segmentation", {
 
         const mask = result.masks[0];
         return this.createLayerFromMask(
-          store,
-          store.sourceImage,
+          projectStore.sourceImage,
           mask,
           options.layerName,
           options.positionAtCenter,
@@ -187,24 +210,19 @@ export const useSegmentationStore = defineStore("segmentation", {
       }
     },
 
-    /**
-     * Segment source image by multiple points and create a layer.
-     * @param foregroundPoints - Points indicating foreground objects
-     * @param backgroundPoints - Points indicating background (optional)
-     */
     async segmentToLayerByMultiplePoints(
-      store: SegmentationStoreAccess,
       foregroundPoints: SegmentationPoint[],
       backgroundPoints: SegmentationPoint[] = [],
       options: SegmentationOptions = {},
     ): Promise<Layer | null> {
-      if (!store.sourceImage) {
+      const projectStore = useProjectStore();
+      if (!projectStore.sourceImage) {
         storeLogger.warn("No source image for segmentation");
         return null;
       }
 
       try {
-        const result = await segmentByMultiplePoints(store.sourceImage, foregroundPoints, backgroundPoints, options.model);
+        const result = await segmentByMultiplePoints(projectStore.sourceImage, foregroundPoints, backgroundPoints, options.model);
 
         if (result.status !== "success" || !result.masks?.length) {
           storeLogger.warn("Segmentation returned no masks:", result.message);
@@ -213,8 +231,7 @@ export const useSegmentationStore = defineStore("segmentation", {
 
         const mask = result.masks[0];
         return this.createLayerFromMask(
-          store,
-          store.sourceImage,
+          projectStore.sourceImage,
           mask,
           options.layerName,
           options.positionAtCenter,
@@ -225,22 +242,18 @@ export const useSegmentationStore = defineStore("segmentation", {
       }
     },
 
-    /**
-     * Segment source image by bounding box and create a layer.
-     * @param box - Bounding box as [x1, y1, x2, y2] tuple
-     */
     async segmentToLayerByBox(
-      store: SegmentationStoreAccess,
       box: [number, number, number, number],
       options: SegmentationOptions = {},
     ): Promise<Layer | null> {
-      if (!store.sourceImage) {
+      const projectStore = useProjectStore();
+      if (!projectStore.sourceImage) {
         storeLogger.warn("No source image for segmentation");
         return null;
       }
 
       try {
-        const result = await segmentByBox(store.sourceImage, box, options.model);
+        const result = await segmentByBox(projectStore.sourceImage, box, options.model);
 
         if (result.status !== "success" || !result.masks?.length) {
           storeLogger.warn("Segmentation returned no masks:", result.message);
@@ -249,8 +262,7 @@ export const useSegmentationStore = defineStore("segmentation", {
 
         const mask = result.masks[0];
         return this.createLayerFromMask(
-          store,
-          store.sourceImage,
+          projectStore.sourceImage,
           mask,
           options.layerName,
           options.positionAtCenter,
@@ -261,20 +273,17 @@ export const useSegmentationStore = defineStore("segmentation", {
       }
     },
 
-    /**
-     * Auto-segment entire image and create multiple layers.
-     */
     async autoSegmentToLayers(
-      store: SegmentationStoreAccess,
       options: AutoSegmentOptions = {},
     ): Promise<Layer[]> {
-      if (!store.sourceImage) {
+      const projectStore = useProjectStore();
+      if (!projectStore.sourceImage) {
         storeLogger.warn("No source image for auto segmentation");
         return [];
       }
 
       try {
-        const result = await autoSegment(store.sourceImage, {
+        const result = await autoSegment(projectStore.sourceImage, {
           model: options.model,
           minArea: options.minArea,
           maxMasks: options.maxMasks,
@@ -291,8 +300,7 @@ export const useSegmentationStore = defineStore("segmentation", {
         for (let i = 0; i < result.masks.length; i++) {
           const mask = result.masks[i];
           const layer = await this.createLayerFromMask(
-            store,
-            store.sourceImage,
+            projectStore.sourceImage,
             mask,
             `${namePrefix}_${i + 1}`,
             options.positionAtCenter,

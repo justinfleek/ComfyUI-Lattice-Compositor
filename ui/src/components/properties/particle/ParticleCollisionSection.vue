@@ -182,10 +182,13 @@ defineProps<Props>();
 
 const emit = defineEmits<{
   (e: "toggle"): void;
-  (e: "update", key: keyof CollisionConfig, value: any): void;
+  (e: "update", key: keyof CollisionConfig, value: CollisionConfig[keyof CollisionConfig]): void;
 }>();
 
-function update(key: keyof CollisionConfig, value: any): void {
+function update(
+  key: keyof CollisionConfig,
+  value: CollisionConfig[keyof CollisionConfig],
+): void {
   emit("update", key, value);
 }
 </script>

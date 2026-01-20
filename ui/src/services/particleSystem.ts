@@ -96,6 +96,27 @@ export type {
 export { SeededRandom } from "./particles/SeededRandom";
 
 // ============================================================================
+// Serialization Types
+// ============================================================================
+
+/**
+ * Serialized particle system state for persistence
+ */
+export interface ParticleSystemSerialized {
+  config: ParticleSystemConfig;
+  emitters: EmitterConfig[];
+  gravityWells: GravityWellConfig[];
+  vortices: VortexConfig[];
+  modulations: ParticleModulation[];
+  frameCount: number;
+  turbulenceFields: TurbulenceConfig[];
+  subEmitters: SubEmitterConfig[];
+  renderOptions: RenderOptions;
+  seed: number;
+  noiseTime: number;
+}
+
+// ============================================================================
 // Particle System Class
 // ============================================================================
 
@@ -1341,7 +1362,7 @@ export class ParticleSystem {
    * Sample valid emission points from a depth map
    */
   private sampleDepthMapEmissionPoints(
-    config: any,
+    config: import("@/types/particles").DepthMapEmission,
   ): Array<{ x: number; y: number; depth: number }> {
     const points: Array<{ x: number; y: number; depth: number }> = [];
 
@@ -1440,7 +1461,7 @@ export class ParticleSystem {
    * Sample valid emission points from a mask
    */
   private sampleMaskEmissionPoints(
-    config: any,
+    config: import("@/types/particles").MaskEmission,
   ): Array<{ x: number; y: number }> {
     const points: Array<{ x: number; y: number }> = [];
 
@@ -2219,7 +2240,7 @@ export class ParticleSystem {
   // Serialization
   // ============================================================================
 
-  serialize(): object {
+  serialize(): ParticleSystemSerialized {
     return {
       config: this.config,
       emitters: Array.from(this.emitters.values()),
@@ -2236,7 +2257,7 @@ export class ParticleSystem {
     };
   }
 
-  static deserialize(data: any): ParticleSystem {
+  static deserialize(data: ParticleSystemSerialized): ParticleSystem {
     const system = new ParticleSystem(data.config);
 
     if (data.emitters) {

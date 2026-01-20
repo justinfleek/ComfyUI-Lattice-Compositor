@@ -147,6 +147,8 @@ import {
   type CameraMotionIntent,
   motionIntentResolver,
   motionIntentTranslator,
+  type KeyframeBatch,
+  type NewSplineSpec,
   type SceneContext,
   type SplineMotionIntent,
   type VisionModelId,
@@ -175,7 +177,7 @@ const _props = defineProps<{
 
 const emit = defineEmits<{
   (e: "close"): void;
-  (e: "accept", result: { keyframes: any[]; splines: any[] }): void;
+  (e: "accept", result: { keyframes: KeyframeBatch[]; splines: NewSplineSpec[] }): void;
   (e: "preview", suggestions: SuggestionItem[]): void;
 }>();
 
@@ -480,7 +482,7 @@ async function suggestPaths() {
             y: p.y,
             depth: p.depth,
           })),
-          intent: intent as any,
+          intent: intent as SplineMotionIntent,
         });
       }
     }
@@ -508,9 +510,12 @@ function acceptSuggestion() {
   if (selectedSuggestion.value === null) return;
 
   const suggestion = suggestions.value[selectedSuggestion.value];
-  const result = {
-    keyframes: [] as any[],
-    splines: [] as any[],
+  const result: {
+    keyframes: KeyframeBatch[];
+    splines: NewSplineSpec[];
+  } = {
+    keyframes: [],
+    splines: [],
   };
 
   // Translate the intent to keyframes

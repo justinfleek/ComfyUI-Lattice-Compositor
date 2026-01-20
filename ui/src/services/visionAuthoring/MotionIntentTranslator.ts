@@ -111,6 +111,23 @@ function getEasingHandles(easing: EasingType, duration: number): BezierHandles {
 }
 
 // ============================================================================
+// TYPES
+// ============================================================================
+
+/**
+ * Particle config for AI-generated particle layers
+ */
+interface ParticleBaseConfig {
+  emissionRate: number;
+  particleLifetime: number;
+  spread: number;
+  direction?: number;
+  speed?: number;
+  speedVariance?: number;
+  gravity?: number;
+}
+
+// ============================================================================
 // MOTION INTENT TRANSLATOR
 // ============================================================================
 
@@ -345,7 +362,7 @@ export class MotionIntentTranslator {
     _compositionHeight: number,
   ): TranslationResult {
     // Map behavior to particle system config
-    const baseConfig: Record<string, unknown> = {
+    const baseConfig: ParticleBaseConfig = {
       emissionRate: intent.intensity * 20,
       particleLifetime: intent.lifetime ?? 60,
       spread: intent.spread ?? 30,

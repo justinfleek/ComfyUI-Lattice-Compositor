@@ -427,7 +427,7 @@ class CompositorEditorNode:
       return (matte_tensor, preview_tensor)
 
     # Return placeholder if no compositor data yet
-    import torch
+    import torch  # type: ignore[reportMissingImports]  # Provided by ComfyUI at runtime
 
     _, height, width, _ = source_image.shape
     empty_mask = torch.zeros((frame_count, height, width), dtype=torch.float32)
@@ -460,7 +460,7 @@ class CompositorEditorNode:
     """Convert base64 PNG to tensor."""
     import io
 
-    import torch
+    import torch  # type: ignore[reportMissingImports]  # Provided by ComfyUI at runtime
     from PIL import Image
 
     image_data = base64.b64decode(b64_string)
@@ -476,6 +476,9 @@ try:
   from server import PromptServer
 
   routes = PromptServer.instance.routes
+except Exception:
+  # If aiohttp/server not available or not running under ComfyUI, disable route registration
+  routes = None
 
   @routes.post("/lattice/compositor/set_output")
   async def set_compositor_output(request):

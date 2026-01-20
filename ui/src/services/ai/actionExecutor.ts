@@ -43,6 +43,43 @@ import type {
 } from "@/types/project";
 import { isLayerOfType } from "@/types/project";
 import type { ToolCall } from "./toolDefinitions";
+import type {
+  CreateLayerArgs,
+  DeleteLayerArgs,
+  DuplicateLayerArgs,
+  RenameLayerArgs,
+  SetLayerParentArgs,
+  ReorderLayersArgs,
+  SetLayerPropertyArgs,
+  SetLayerTransformArgs,
+  AddKeyframeArgs,
+  RemoveKeyframeArgs,
+  SetKeyframeEasingArgs,
+  ScaleKeyframeTimingArgs,
+  SetExpressionArgs,
+  RemoveExpressionArgs,
+  AddEffectArgs,
+  UpdateEffectArgs,
+  RemoveEffectArgs,
+  ConfigureParticlesArgs,
+  ApplyCameraTrajectoryArgs,
+  AddCameraShakeArgs,
+  ApplyRackFocusArgs,
+  SetCameraPathFollowingArgs,
+  SetCameraAutoFocusArgs,
+  SetTextContentArgs,
+  SetTextPathArgs,
+  SetSplinePointsArgs,
+  SetSpeedMapArgs,
+  SetCurrentFrameArgs,
+  PlayPreviewArgs,
+  DecomposeImageArgs,
+  VectorizeImageArgs,
+  GetLayerInfoArgs,
+  FindLayersArgs,
+  GetProjectStateArgs,
+  ToolArgumentsFor,
+} from "./toolArgumentTypes";
 
 // ============================================================================
 // TYPES
@@ -79,7 +116,20 @@ function ensureCameraLayerData(layer: Layer): CameraLayerData {
  * Execute a tool call from the AI agent
  * Returns the result of the action for the AI to verify
  */
-export async function executeToolCall(toolCall: ToolCall): Promise<any> {
+export async function executeToolCall(toolCall: ToolCall): Promise<
+  | { layerId: string; message: string }
+  | { success: boolean; message: string }
+  | { layerId: string | null; message: string }
+  | { keyframeId: string | null; message: string }
+  | { effectId: string | null; message: string }
+  | { success: boolean; keyframeCount: number; message: string }
+  | { frame: number; message: string }
+  | { playing: boolean; message: string }
+  | { layerIds: string[]; message: string }
+  | { layer: Record<string, string | number | boolean | { x: number; y: number } | Array<{ id: string; effectKey: string; name: string; enabled: boolean }> | null> | null; message: string }
+  | { layers: Array<{ id: string; name: string; type: string }>; message: string }
+  | { state: Record<string, { id: string; name: string; width: number; height: number; frameCount: number; fps: number; currentFrame: number } | null | number | Array<{ id: string; name: string; type: string; visible: boolean }>>; message: string }
+> {
   const store = useCompositorStore();
   const layerStore = useLayerStore();
   const animationStore = useAnimationStore();
@@ -87,105 +137,109 @@ export async function executeToolCall(toolCall: ToolCall): Promise<any> {
   const selectionStore = useSelectionStore();
 
   const context: ExecutionContext = { store, playbackStore, selectionStore, layerStore, animationStore };
-  const { name, arguments: args } = toolCall;
+  
+  // ToolCall is now a discriminated union - TypeScript narrows the type based on name
+  // Extract arguments type-safely using destructuring to remove 'name' and 'id'
+  const { name, id, ...args } = toolCall;
 
-  // Route to appropriate handler
+  // Route to appropriate handler with type-safe narrowing
+  // TypeScript knows the correct argument type for each case after destructuring
   switch (name) {
     // Layer Management
     case "createLayer":
-      return executeCreateLayer(context, args);
+      return executeCreateLayer(context, args as CreateLayerArgs);
     case "deleteLayer":
-      return executeDeleteLayer(context, args);
+      return executeDeleteLayer(context, args as DeleteLayerArgs);
     case "duplicateLayer":
-      return executeDuplicateLayer(context, args);
+      return executeDuplicateLayer(context, args as DuplicateLayerArgs);
     case "renameLayer":
-      return executeRenameLayer(context, args);
+      return executeRenameLayer(context, args as RenameLayerArgs);
     case "setLayerParent":
-      return executeSetLayerParent(context, args);
+      return executeSetLayerParent(context, args as SetLayerParentArgs);
     case "reorderLayers":
-      return executeReorderLayers(context, args);
+      return executeReorderLayers(context, args as ReorderLayersArgs);
 
     // Property Modification
     case "setLayerProperty":
-      return executeSetLayerProperty(context, args);
+      return executeSetLayerProperty(context, args as SetLayerPropertyArgs);
     case "setLayerTransform":
-      return executeSetLayerTransform(context, args);
+      return executeSetLayerTransform(context, args as SetLayerTransformArgs);
 
     // Keyframe Animation
     case "addKeyframe":
-      return executeAddKeyframe(context, args);
+      return executeAddKeyframe(context, args as AddKeyframeArgs);
     case "removeKeyframe":
-      return executeRemoveKeyframe(context, args);
+      return executeRemoveKeyframe(context, args as RemoveKeyframeArgs);
     case "setKeyframeEasing":
-      return executeSetKeyframeEasing(context, args);
+      return executeSetKeyframeEasing(context, args as SetKeyframeEasingArgs);
     case "scaleKeyframeTiming":
-      return executeScaleKeyframeTiming(context, args);
+      return executeScaleKeyframeTiming(context, args as ScaleKeyframeTimingArgs);
 
     // Expressions
     case "setExpression":
-      return executeSetExpression(context, args);
+      return executeSetExpression(context, args as SetExpressionArgs);
     case "removeExpression":
-      return executeRemoveExpression(context, args);
+      return executeRemoveExpression(context, args as RemoveExpressionArgs);
 
     // Effects
     case "addEffect":
-      return executeAddEffect(context, args);
+      return executeAddEffect(context, args as AddEffectArgs);
     case "updateEffect":
-      return executeUpdateEffect(context, args);
+      return executeUpdateEffect(context, args as UpdateEffectArgs);
     case "removeEffect":
-      return executeRemoveEffect(context, args);
+      return executeRemoveEffect(context, args as RemoveEffectArgs);
 
     // Particle System
     case "configureParticles":
-      return executeConfigureParticles(context, args);
+      return executeConfigureParticles(context, args as ConfigureParticlesArgs);
 
     // Camera System
     case "applyCameraTrajectory":
-      return executeApplyCameraTrajectory(context, args);
+      return executeApplyCameraTrajectory(context, args as ApplyCameraTrajectoryArgs);
     case "addCameraShake":
-      return executeAddCameraShake(context, args);
+      return executeAddCameraShake(context, args as AddCameraShakeArgs);
     case "applyRackFocus":
-      return executeApplyRackFocus(context, args);
+      return executeApplyRackFocus(context, args as ApplyRackFocusArgs);
     case "setCameraPathFollowing":
-      return executeSetCameraPathFollowing(context, args);
+      return executeSetCameraPathFollowing(context, args as SetCameraPathFollowingArgs);
     case "setCameraAutoFocus":
-      return executeSetCameraAutoFocus(context, args);
+      return executeSetCameraAutoFocus(context, args as SetCameraAutoFocusArgs);
 
     // Text
     case "setTextContent":
-      return executeSetTextContent(context, args);
+      return executeSetTextContent(context, args as SetTextContentArgs);
     case "setTextPath":
-      return executeSetTextPath(context, args);
+      return executeSetTextPath(context, args as SetTextPathArgs);
 
     // Spline
     case "setSplinePoints":
-      return executeSetSplinePoints(context, args);
+      return executeSetSplinePoints(context, args as SetSplinePointsArgs);
 
     // Speed Map (formerly Time Remapping)
     case "setSpeedMap":
-      return executeSetSpeedMap(context, args);
+      return executeSetSpeedMap(context, args as SetSpeedMapArgs);
     case "setTimeRemap": // Legacy - redirects to setSpeedMap
-      return executeSetSpeedMap(context, args);
+      return executeSetSpeedMap(context, args as SetSpeedMapArgs);
 
     // Playback
     case "setCurrentFrame":
-      return executeSetCurrentFrame(context, args);
+      return executeSetCurrentFrame(context, args as SetCurrentFrameArgs);
     case "playPreview":
-      return executePlayPreview(context, args);
+      return executePlayPreview(context, args as PlayPreviewArgs);
 
     // AI Image Processing
     case "decomposeImage":
-      return executeDecomposeImage(context, args);
+      return executeDecomposeImage(context, args as DecomposeImageArgs);
     case "vectorizeImage":
-      return executeVectorizeImage(context, args);
+      return executeVectorizeImage(context, args as VectorizeImageArgs);
 
     // Utility
     case "getLayerInfo":
-      return executeGetLayerInfo(context, args);
+      return executeGetLayerInfo(context, args as GetLayerInfoArgs);
     case "findLayers":
-      return executeFindLayers(context, args);
+      return executeFindLayers(context, args as FindLayersArgs);
     case "getProjectState":
-      return executeGetProjectState(context, args);
+      return executeGetProjectState(context, args as GetProjectStateArgs);
 
     default:
       throw new Error(`Unknown tool: ${name}`);
@@ -200,7 +254,7 @@ export async function executeToolCall(toolCall: ToolCall): Promise<any> {
  * Validate required arguments exist and have correct types
  */
 function validateArgs(
-  args: Record<string, any>,
+  args: Record<string, string | number | boolean | Vec2 | Vec3 | null | undefined | Record<string, string | number | boolean> | Array<unknown>>,
   schema: Record<string, { type: string; required?: boolean }>,
 ): { valid: boolean; error?: string } {
   for (const [key, spec] of Object.entries(schema)) {
@@ -234,7 +288,7 @@ function validateArgs(
 
 function executeCreateLayer(
   context: ExecutionContext,
-  args: Record<string, any>,
+  args: CreateLayerArgs,
 ): { layerId: string; message: string } {
   const { store, layerStore } = context;
   if (!layerStore) {
@@ -328,7 +382,7 @@ function executeCreateLayer(
 
 function executeDeleteLayer(
   context: ExecutionContext,
-  args: Record<string, any>,
+  args: DeleteLayerArgs,
 ): { success: boolean; message: string } {
   const { store, layerStore } = context;
   if (!layerStore) {
@@ -353,7 +407,7 @@ function executeDeleteLayer(
 
 function executeDuplicateLayer(
   context: ExecutionContext,
-  args: Record<string, any>,
+  args: DuplicateLayerArgs,
 ): { layerId: string | null; message: string } {
   const { store, layerStore } = context;
   if (!layerStore) {
@@ -379,7 +433,7 @@ function executeDuplicateLayer(
 
 function executeRenameLayer(
   context: ExecutionContext,
-  args: Record<string, any>,
+  args: RenameLayerArgs,
 ): { success: boolean; message: string } {
   const { store } = context;
   const { layerId, name } = args;
@@ -404,7 +458,7 @@ function executeRenameLayer(
 
 function executeSetLayerParent(
   context: ExecutionContext,
-  args: Record<string, any>,
+  args: SetLayerParentArgs,
 ): { success: boolean; message: string } {
   const { store, layerStore } = context;
   if (!layerStore) {
@@ -425,7 +479,7 @@ function executeSetLayerParent(
 
 function executeReorderLayers(
   context: ExecutionContext,
-  args: Record<string, any>,
+  args: ReorderLayersArgs,
 ): { success: boolean; message: string } {
   const { store, layerStore } = context;
   if (!layerStore) {
@@ -448,7 +502,7 @@ function executeReorderLayers(
 
 function executeSetLayerProperty(
   context: ExecutionContext,
-  args: Record<string, any>,
+  args: SetLayerPropertyArgs,
 ): { success: boolean; message: string } {
   const { store } = context;
   const { layerId, propertyPath, value } = args;
@@ -469,7 +523,10 @@ function executeSetLayerProperty(
     const transformKey = parts[1] as keyof typeof layer.transform;
     const prop = layer.transform[transformKey];
     if (prop && typeof prop === "object" && "value" in prop) {
-      (prop as { value: unknown }).value = value;
+      // Type-safe property value assignment
+      if (prop && typeof prop === "object" && "value" in prop) {
+        (prop as { value: string | number | boolean | Vec2 | Vec3 | null }).value = value;
+      }
     }
   } else if (propertyPath === "opacity") {
     layer.opacity.value = value;
@@ -500,7 +557,7 @@ function executeSetLayerProperty(
 
 function executeSetLayerTransform(
   context: ExecutionContext,
-  args: Record<string, any>,
+  args: SetLayerTransformArgs,
 ): { success: boolean; message: string } {
   const { store } = context;
   const { layerId, position, scale, rotation, opacity, anchorPoint } = args;
@@ -553,7 +610,7 @@ function executeSetLayerTransform(
 
 function executeAddKeyframe(
   context: ExecutionContext,
-  args: Record<string, any>,
+  args: AddKeyframeArgs,
 ): { keyframeId: string | null; message: string } {
   const { store } = context;
   const { layerId, propertyPath, frame, value, interpolation } = args;
@@ -592,7 +649,7 @@ function executeAddKeyframe(
 
 function executeRemoveKeyframe(
   context: ExecutionContext,
-  args: Record<string, any>,
+  args: RemoveKeyframeArgs,
 ): { success: boolean; message: string } {
   const { store } = context;
   const { layerId, propertyPath, frame } = args;
@@ -623,7 +680,7 @@ function executeRemoveKeyframe(
 
 function executeSetKeyframeEasing(
   context: ExecutionContext,
-  args: Record<string, any>,
+  args: SetKeyframeEasingArgs,
 ): { success: boolean; message: string } {
   const { store } = context;
   const { layerId, propertyPath, frame, interpolation } = args;
@@ -659,7 +716,7 @@ function executeSetKeyframeEasing(
 
 function executeScaleKeyframeTiming(
   context: ExecutionContext,
-  args: Record<string, any>,
+  args: ScaleKeyframeTimingArgs,
 ): { success: boolean; message: string } {
   const { store } = context;
   const { layerId, scaleFactor, propertyPath } = args;
@@ -707,7 +764,7 @@ function executeScaleKeyframeTiming(
 
 function executeSetExpression(
   context: ExecutionContext,
-  args: Record<string, any>,
+  args: SetExpressionArgs,
 ): { success: boolean; message: string } {
   const { store } = context;
   const { layerId, propertyPath, expressionType, params } = args;
@@ -742,7 +799,7 @@ function executeSetExpression(
 
 function executeRemoveExpression(
   context: ExecutionContext,
-  args: Record<string, any>,
+  args: RemoveExpressionArgs,
 ): { success: boolean; message: string } {
   const { store } = context;
   const { layerId, propertyPath } = args;
@@ -775,7 +832,7 @@ function executeRemoveExpression(
 
 function executeAddEffect(
   context: ExecutionContext,
-  args: Record<string, any>,
+  args: AddEffectArgs,
 ): { effectId: string | null; message: string } {
   const { store } = context;
   const { layerId, effectType, params } = args;
@@ -812,7 +869,7 @@ function executeAddEffect(
 
 function executeUpdateEffect(
   context: ExecutionContext,
-  args: Record<string, any>,
+  args: UpdateEffectArgs,
 ): { success: boolean; message: string } {
   const { store } = context;
   const { layerId, effectId, params } = args;
@@ -843,7 +900,7 @@ function executeUpdateEffect(
 
 function executeRemoveEffect(
   context: ExecutionContext,
-  args: Record<string, any>,
+  args: RemoveEffectArgs,
 ): { success: boolean; message: string } {
   const { store } = context;
   const { layerId, effectId } = args;
@@ -863,7 +920,7 @@ function executeRemoveEffect(
 
 function executeConfigureParticles(
   context: ExecutionContext,
-  args: Record<string, any>,
+  args: ConfigureParticlesArgs,
 ): { success: boolean; message: string } {
   const { store } = context;
   const { layerId, emitter, particles, physics } = args;
@@ -925,7 +982,7 @@ function executeConfigureParticles(
 
 function executeApplyCameraTrajectory(
   context: ExecutionContext,
-  args: Record<string, any>,
+  args: ApplyCameraTrajectoryArgs,
 ): { success: boolean; keyframeCount: number; message: string } {
   const { store } = context;
   const {
@@ -1046,7 +1103,7 @@ function executeApplyCameraTrajectory(
 
 function executeAddCameraShake(
   context: ExecutionContext,
-  args: Record<string, any>,
+  args: AddCameraShakeArgs,
 ): { success: boolean; message: string } {
   const { store } = context;
   const {
@@ -1110,7 +1167,7 @@ function executeAddCameraShake(
 
 function executeApplyRackFocus(
   context: ExecutionContext,
-  args: Record<string, any>,
+  args: ApplyRackFocusArgs,
 ): { success: boolean; keyframeCount: number; message: string } {
   const { store } = context;
   const {
@@ -1185,7 +1242,7 @@ function executeApplyRackFocus(
 
 function executeSetCameraPathFollowing(
   context: ExecutionContext,
-  args: Record<string, any>,
+  args: SetCameraPathFollowingArgs,
 ): { success: boolean; message: string } {
   const { store } = context;
   const {
@@ -1248,7 +1305,7 @@ function executeSetCameraPathFollowing(
 
 function executeSetCameraAutoFocus(
   context: ExecutionContext,
-  args: Record<string, any>,
+  args: SetCameraAutoFocusArgs,
 ): { success: boolean; message: string } {
   const { store } = context;
   const {
@@ -1310,7 +1367,7 @@ function executeSetCameraAutoFocus(
 
 function executeSetTextContent(
   context: ExecutionContext,
-  args: Record<string, any>,
+  args: SetTextContentArgs,
 ): { success: boolean; message: string } {
   const { store } = context;
   const { layerId, text, fontSize, fontFamily, fontWeight, color, alignment } =
@@ -1348,7 +1405,7 @@ function executeSetTextContent(
 
 function executeSetTextPath(
   context: ExecutionContext,
-  args: Record<string, any>,
+  args: SetTextPathArgs,
 ): { success: boolean; message: string } {
   const { store } = context;
   const { textLayerId, splineLayerId, startOffset } = args;
@@ -1386,7 +1443,7 @@ function executeSetTextPath(
 
 function executeSetSplinePoints(
   context: ExecutionContext,
-  args: Record<string, any>,
+  args: SetSplinePointsArgs,
 ): { success: boolean; message: string } {
   const { store } = context;
   const { layerId, points, closed } = args;
@@ -1432,7 +1489,7 @@ function executeSetSplinePoints(
 
 function executeSetSpeedMap(
   context: ExecutionContext,
-  args: Record<string, any>,
+  args: SetSpeedMapArgs,
 ): { success: boolean; message: string } {
   const { store } = context;
   const { layerId, enabled, keyframes } = args;
@@ -1466,7 +1523,7 @@ function executeSetSpeedMap(
 /** @deprecated Use executeSetSpeedMap instead */
 function _executeSetTimeRemap(
   context: ExecutionContext,
-  args: Record<string, any>,
+  args: SetSpeedMapArgs,
 ): { success: boolean; message: string } {
   return executeSetSpeedMap(context, args);
 }
@@ -1477,7 +1534,7 @@ function _executeSetTimeRemap(
 
 function executeSetCurrentFrame(
   context: ExecutionContext,
-  args: Record<string, any>,
+  args: SetCurrentFrameArgs,
 ): { frame: number; message: string } {
   const { store, playbackStore, animationStore } = context;
   const { frame } = args;
@@ -1497,7 +1554,7 @@ function executeSetCurrentFrame(
 
 function executePlayPreview(
   context: ExecutionContext,
-  args: Record<string, any>,
+  args: PlayPreviewArgs,
 ): { playing: boolean; message: string } {
   const { store, playbackStore, animationStore } = context;
   const { play } = args;
@@ -1529,7 +1586,7 @@ function executePlayPreview(
 
 async function executeDecomposeImage(
   context: ExecutionContext,
-  args: Record<string, any>,
+  args: DecomposeImageArgs,
 ): Promise<{ layerIds: string[]; message: string }> {
   const { store } = context;
   const { sourceLayerId, numLayers = 4 } = args;
@@ -1611,7 +1668,7 @@ async function executeDecomposeImage(
 
 async function executeVectorizeImage(
   context: ExecutionContext,
-  args: Record<string, any>,
+  args: VectorizeImageArgs,
 ): Promise<{ layerIds: string[]; message: string }> {
   const { store } = context;
   const {
@@ -1789,8 +1846,8 @@ async function executeVectorizeImage(
 
 function executeGetLayerInfo(
   context: ExecutionContext,
-  args: Record<string, any>,
-): { layer: Record<string, any> | null; message: string } {
+  args: GetLayerInfoArgs,
+): { layer: Record<string, string | number | boolean | { x: number; y: number } | Array<{ id: string; effectKey: string; name: string; enabled: boolean }> | null> | null; message: string } {
   const { store } = context;
   const { layerId } = args;
 
@@ -1831,7 +1888,7 @@ function executeGetLayerInfo(
 
 function executeFindLayers(
   context: ExecutionContext,
-  args: Record<string, any>,
+  args: FindLayersArgs,
 ): {
   layers: Array<{ id: string; name: string; type: string }>;
   message: string;
@@ -1862,8 +1919,8 @@ function executeFindLayers(
 
 function executeGetProjectState(
   context: ExecutionContext,
-  _args: Record<string, any>,
-): { state: any; message: string } {
+  _args: GetProjectStateArgs,
+): { state: Record<string, { id: string; name: string; width: number; height: number; frameCount: number; fps: number; currentFrame: number } | null | number | Array<{ id: string; name: string; type: string; visible: boolean }>>; message: string } {
   const { store } = context;
   const comp = store.getActiveComp();
 
@@ -1899,7 +1956,7 @@ function executeGetProjectState(
 /**
  * Set a nested property value using dot notation path
  */
-function setNestedProperty(obj: any, path: string[], value: any): void {
+function setNestedProperty(obj: Record<string, string | number | boolean | Vec2 | Vec3 | null | Record<string, string | number | boolean> | Array<unknown>>, path: string[], value: string | number | boolean | Vec2 | Vec3 | null): void {
   let current = obj;
   for (let i = 0; i < path.length - 1; i++) {
     if (!(path[i] in current)) {

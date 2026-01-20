@@ -7,7 +7,8 @@
  * @see docs/graphs/layerActions.md
  */
 
-import type { AnyLayerData, ClipboardKeyframe, Layer } from "@/types/project";
+import type { LayerDataUnion, AssetReference, ClipboardKeyframe, Layer } from "@/types/project";
+import type { Camera3D } from "@/types/camera";
 
 // ============================================================================
 // LAYER SOURCE REPLACEMENT
@@ -36,7 +37,7 @@ export interface CreateLayerOptions {
   name?: string;
   position?: { x: number; y: number };
   size?: { width: number; height: number };
-  data?: Partial<AnyLayerData>;
+  data?: Partial<LayerDataUnion>;
   parentId?: string;
   insertIndex?: number;
 }
@@ -160,9 +161,9 @@ export interface CompositorStoreAccess {
   createLayer?(type: Layer["type"], name?: string): Layer;
   deleteLayer?(layerId: string): void;
   // Camera store access (for camera layer creation)
-  cameras?: Map<string, any>;
+  cameras?: Map<string, Camera3D>;
   activeCameraId?: string | null;
   selectLayer?(layerId: string): void;
   // Video store access (for video layer creation)
-  assets?: Record<string, any>;
+  assets?: Record<string, AssetReference>;
 }

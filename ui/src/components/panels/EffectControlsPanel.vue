@@ -290,19 +290,23 @@ function addEffect(key: string) {
   }
 }
 
-function removeEffect(effect: any) {
+function removeEffect(effect: { id: string }) {
   if (layer.value) effectStore.removeEffectFromLayer(store, layer.value.id, effect.id);
 }
 
-function toggleEffect(effect: any) {
+function toggleEffect(effect: { id: string }) {
   if (layer.value) effectStore.toggleEffect(store, layer.value.id, effect.id);
 }
 
-function toggleExpand(effect: any) {
+function toggleExpand(effect: { expanded?: boolean }) {
   effect.expanded = !effect.expanded;
 }
 
-function updateParam(effectId: string, paramKey: string, value: any) {
+function updateParam(
+  effectId: string,
+  paramKey: string,
+  value: import("@/types/effects").EffectParameterValue,
+) {
   if (layer.value)
     effectStore.updateEffectParameter(store, layer.value.id, effectId, paramKey, value);
 }
@@ -314,7 +318,9 @@ function updatePoint(
   val: number,
 ) {
   if (!layer.value) return;
-  const effect = layer.value.effects.find((e: any) => e.id === effectId);
+  const effect = layer.value.effects.find(
+    (e): e is import("@/types/effects").EffectInstance => e.id === effectId,
+  );
   if (!effect) return;
 
   const current = effect.parameters[paramKey].value;
@@ -323,9 +329,21 @@ function updatePoint(
 }
 
 // Color handling: Store uses RGBA object {r,g,b,a}, Picker uses Hex string
-function formatColor(val: any) {
+function formatColor(
+  val: import("@/types/effects").EffectParameterValue,
+): string {
   if (typeof val === "string") return val;
-  return rgbaToHex(val.r, val.g, val.b, val.a ?? 1);
+  if (
+    typeof val === "object" &&
+    val !== null &&
+    "r" in val &&
+    "g" in val &&
+    "b" in val
+  ) {
+    const rgba = val as { r: number; g: number; b: number; a?: number };
+    return rgbaToHex(rgba.r, rgba.g, rgba.b, rgba.a ?? 1);
+  }
+  return "#ffffff"; // Fallback
 }
 
 function updateColor(effectId: string, paramKey: string, hex: string) {
@@ -338,7 +356,9 @@ function updateColor(effectId: string, paramKey: string, hex: string) {
 
 function toggleParamAnim(effectId: string, paramKey: string) {
   if (!layer.value) return;
-  const effect = layer.value.effects.find((e: any) => e.id === effectId);
+  const effect = layer.value.effects.find(
+    (e): e is import("@/types/effects").EffectInstance => e.id === effectId,
+  );
   const param = effect?.parameters[paramKey];
   if (param) {
     effectStore.setEffectParamAnimated(

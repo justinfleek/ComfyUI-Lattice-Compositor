@@ -7,6 +7,9 @@ import { DEPTH_FORMAT_SPECS } from "@/config/exportPresets";
 import type { Camera3D } from "@/types/camera";
 import type { DepthMapFormat } from "@/types/export";
 import type { Layer } from "@/types/project";
+import type { LatticeEngine } from "@/engine/LatticeEngine";
+import type { BaseLayer } from "@/engine/layers/BaseLayer";
+import type { ExportedParticle } from "@/engine/particles/GPUParticleSystem";
 
 // ============================================================================
 // Types
@@ -221,8 +224,9 @@ function getLayerScreenBounds(
   }
 
   // Get layer dimensions (assuming they're stored or can be derived)
-  const layerWidth = (layer as any).width || screenWidth;
-  const layerHeight = (layer as any).height || screenHeight;
+  const layerWithDimensions = layer as Layer & { width?: number; height?: number };
+  const layerWidth = layerWithDimensions.width ?? screenWidth;
+  const layerHeight = layerWithDimensions.height ?? screenHeight;
 
   // Get scale from transform
   let scaleX = 1,
@@ -279,10 +283,20 @@ function getLayerScreenBounds(
 }
 
 /**
- * Check if layer has depth data (depthflow layers)
+ * Interface for depthflow layers with runtime depth data
  */
-function hasDepthData(layer: Layer): boolean {
-  return layer.type === "depthflow" && !!(layer as any).depthMapData;
+interface DepthflowLayerWithDepthData extends Layer {
+  type: "depthflow";
+  depthMapData?: Uint8Array | Float32Array;
+  depthWidth?: number;
+  depthHeight?: number;
+}
+
+/**
+ * Type guard for depthflow layers with depth data
+ */
+function hasDepthData(layer: Layer): layer is DepthflowLayerWithDepthData {
+  return layer.type === "depthflow" && "depthMapData" in layer && layer.depthMapData !== undefined;
 }
 
 /**
@@ -290,16 +304,18 @@ function hasDepthData(layer: Layer): boolean {
  */
 function fillDepthFromDepthflow(
   depthBuffer: Float32Array,
-  layer: Layer,
+  layer: DepthflowLayerWithDepthData,
   bounds: { x: number; y: number; width: number; height: number },
   screenWidth: number,
   screenHeight: number,
   nearClip: number,
   farClip: number,
 ): void {
-  const depthData = (layer as any).depthMapData as Uint8Array | Float32Array;
-  const depthWidth = (layer as any).depthWidth || bounds.width;
-  const depthHeight = (layer as any).depthHeight || bounds.height;
+  const depthData = layer.depthMapData;
+  if (!depthData) return;
+  
+  const depthWidth = layer.depthWidth ?? bounds.width;
+  const depthHeight = layer.depthHeight ?? bounds.height;
 
   for (let y = 0; y < bounds.height; y++) {
     for (let x = 0; x < bounds.width; x++) {
@@ -346,6 +362,20 @@ function fillDepthFromDepthflow(
  * Fill depth buffer from particle layer
  * Each particle contributes to depth based on its position and size
  */
+/**
+ * Interface for particle layers with getActiveParticles method
+ */
+interface ParticleLayerWithParticles extends BaseLayer {
+  getActiveParticles(): ExportedParticle[];
+}
+
+/**
+ * Type guard for particle layers with getActiveParticles method
+ */
+function isParticleLayerWithParticles(layer: BaseLayer | null): layer is ParticleLayerWithParticles {
+  return layer !== null && typeof (layer as ParticleLayerWithParticles).getActiveParticles === "function";
+}
+
 function fillDepthFromParticles(
   depthBuffer: Float32Array,
   layer: Layer,
@@ -357,12 +387,12 @@ function fillDepthFromParticles(
   farClip: number,
 ): void {
   // Access the engine's particle layer to get active particles
-  const engine = (window as any).__latticeEngine;
+  const engine: LatticeEngine | undefined = window.__latticeEngine;
   if (!engine) return;
 
   // Get the particle layer from the engine
-  const particleLayer = engine.getLayerById?.(layer.id);
-  if (!particleLayer || typeof particleLayer.getActiveParticles !== "function") {
+  const particleLayer = engine.getLayer(layer.id);
+  if (!isParticleLayerWithParticles(particleLayer)) {
     return;
   }
 
@@ -445,8 +475,16 @@ function fillUniformDepth(
 /**
  * Interpolate value from keyframes
  */
+/**
+ * Keyframe interface for interpolation
+ */
+interface Keyframe {
+  frame: number;
+  value: number | number[];
+}
+
 function interpolateValue(
-  keyframes: any[],
+  keyframes: Keyframe[],
   frame: number,
   index?: number,
 ): number | null {
@@ -955,6 +993,27 @@ export async function exportDepthSequence(
 }
 
 /**
+ * Depth metadata structure returned by generateDepthMetadata
+ */
+export interface DepthMetadata {
+  format: DepthMapFormat;
+  bitDepth: number;
+  nearClip: number;
+  farClip: number;
+  inverted: boolean;
+  normalized: boolean;
+  frameCount: number;
+  width: number;
+  height: number;
+  actualRange: {
+    min: number;
+    max: number;
+  };
+  generatedAt: string; // ISO 8601 timestamp
+  generator: string;
+}
+
+/**
  * Generate depth metadata JSON
  */
 export function generateDepthMetadata(
@@ -964,7 +1023,7 @@ export function generateDepthMetadata(
   height: number,
   minDepth: number,
   maxDepth: number,
-): object {
+): DepthMetadata {
   const spec = DEPTH_FORMAT_SPECS[format];
 
   return {

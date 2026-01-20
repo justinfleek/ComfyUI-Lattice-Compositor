@@ -57,16 +57,10 @@ import {
 import type {
   Camera3D,
   CameraKeyframe,
-  ViewOptions,
-  ViewportState,
-} from "@/types/camera";
-import {
-  createDefaultViewOptions,
-  createDefaultViewportState,
 } from "@/types/camera";
 import type {
   AnimatableProperty,
-  AnyLayerData,
+  LayerDataUnion,
   AssetReference,
   AudioParticleMapping,
   BezierHandle,
@@ -99,7 +93,6 @@ import {
   type TimeStretchOptions,
   type SequenceLayersOptions,
   type ExponentialScaleOptions,
-  type CompositorStoreAccess,
 } from "./layerStore";
 import {
   useKeyframeStore,
@@ -128,149 +121,19 @@ import { useSelectionStore } from "./selectionStore";
 import { useUIStore } from "./uiStore";
 import { useProjectStore } from "./projectStore";
 
-interface CompositorState {
-  // Project data
-  project: LatticeProject;
-
-  // Active composition (for multi-composition support)
-  activeCompositionId: string;
-  openCompositionIds: string[]; // Tabs - which comps are open
-  compositionBreadcrumbs: string[]; // Navigation history for nested compositions
-
-  // ComfyUI connection
-  comfyuiNodeId: string | null;
-
-  // Input data from ComfyUI
-  sourceImage: string | null;
-  depthMap: string | null;
-
-  // Playback state (isPlaying migrated to playbackStore, accessed via getter)
-
-  // Selection state is now in selectionStore (accessed via getters)
-  // Tool 'segment' is compositor-specific, handled separately
-  segmentToolActive: boolean;
-
-  // Segmentation state
-  segmentMode: "point" | "box";
-  segmentPendingMask: {
-    mask: string;
-    bounds: { x: number; y: number; width: number; height: number };
-    area: number;
-    score: number;
-  } | null;
-  segmentBoxStart: { x: number; y: number } | null;
-  segmentIsLoading: boolean;
-
-  // UI state (migrated to uiStore - accessed via getters/delegation)
-
-  // History for undo/redo
-  historyStack: LatticeProject[];
-  historyIndex: number;
-
-  // Path animators for audio-driven motion (only state still managed here)
-  pathAnimators: Map<string, PathAnimatorAccess>;
-
-  // Camera system
-  cameras: Map<string, Camera3D>; // All cameras by ID
-  cameraKeyframes: Map<string, CameraKeyframe[]>; // Keyframes per camera
-  activeCameraId: string | null; // Which camera is currently active
-  viewportState: ViewportState; // Multi-view layout state
-  viewOptions: ViewOptions; // Display options (wireframes, etc.)
-
-  // Property driver system (propertyDriverSystem and propertyDrivers migrated to expressionStore)
-
-  // Timeline snapping (snapConfig migrated to animationStore)
-
-  // Clipboard for copy/paste
-  clipboard: {
-    layers: Layer[];
-    keyframes: ClipboardKeyframe[];
-  };
-
-  // Autosave state
-  autosaveEnabled: boolean;
-  autosaveIntervalMs: number;
-  autosaveTimerId: number | null;
-  lastSaveTime: number; // 0 = never saved, Date.now() = last save time
-  lastSaveProjectId: string | null;
-  hasUnsavedChanges: boolean;
-
-  // Frame cache state
-  frameCacheEnabled: boolean;
-  projectStateHash: string;
-
-  // Timeline UI state (timelineZoom migrated to animationStore)
-  selectedAssetId: string | null;
-}
-
 export const useCompositorStore = defineStore("compositor", {
-  state: (): CompositorState => {
-    // Create initial project and pre-populate history with it
-    // This ensures undo works for the very first action
-    const initialProject = createEmptyProject(1280, 720); // 720p HD default
-    return {
-      project: initialProject,
-      activeCompositionId: "main",
-      openCompositionIds: ["main"],
-      compositionBreadcrumbs: ["main"], // Start with main comp in breadcrumb path
-      comfyuiNodeId: null,
-      sourceImage: null,
-      depthMap: null,
-      // isPlaying migrated to playbackStore (accessed via getter)
-      segmentToolActive: false,
-      segmentMode: "point",
-      segmentPendingMask: null,
-      segmentBoxStart: null,
-      segmentIsLoading: false,
-      // UI state migrated to uiStore (curveEditorVisible, hideMinimizedLayers, shapeToolOptions)
-      // Initialize history with initial project state so first action can be undone
-      historyStack: [structuredClone(initialProject)],
-      historyIndex: 0,
-      pathAnimators: new Map(),
-
-      // Camera system
-      cameras: new Map(),
-      cameraKeyframes: new Map(),
-      activeCameraId: null,
-      viewportState: createDefaultViewportState(),
-      viewOptions: createDefaultViewOptions(),
-
-      // Property driver system (migrated to expressionStore)
-
-      // Timeline snapping (snapConfig migrated to animationStore)
-
-      // Clipboard
-      clipboard: {
-        layers: [],
-        keyframes: [],
-      },
-
-      // Autosave (enabled by default, every 60 seconds)
-      autosaveEnabled: true,
-      autosaveIntervalMs: 60000,
-      autosaveTimerId: null,
-      lastSaveTime: 0, // 0 = never saved
-      lastSaveProjectId: null,
-      hasUnsavedChanges: false,
-
-      // Frame cache (enabled by default)
-      frameCacheEnabled: true,
-      projectStateHash: "",
-
-      // Timeline UI state (timelineZoom migrated to animationStore)
-      selectedAssetId: null,
-    };
-  },
+  state: () => ({}),
 
   getters: {
-    // Active composition helper
-    activeComposition: (state): Composition | null => {
-      return state.project.compositions[state.activeCompositionId] || null;
+    // Active composition helper (delegated to projectStore)
+    activeComposition(): Composition | null {
+      const projectStore = useProjectStore();
+      return projectStore.project.compositions[projectStore.activeCompositionId] || null;
     },
 
-    // Project info - computed from active composition
+    // Project info - computed from active composition (delegated to projectStore)
     hasProject(): boolean {
-      return this.sourceImage !== null;
+      return useProjectStore().sourceImage !== null;
     },
     width(): number {
       return this.activeComposition?.settings.width || 1024;
@@ -306,9 +169,10 @@ export const useCompositorStore = defineStore("compositor", {
       return useAnimationStore().isPlaying;
     },
 
-    // Current frame - per composition
-    currentFrame(state): number {
-      const comp = state.project.compositions[state.activeCompositionId];
+    // Current frame - per composition (delegated to projectStore)
+    currentFrame(): number {
+      const projectStore = useProjectStore();
+      const comp = projectStore.project.compositions[projectStore.activeCompositionId];
       return comp?.currentFrame || 0;
     },
     currentTime(): number {
@@ -317,19 +181,22 @@ export const useCompositorStore = defineStore("compositor", {
       return comp.currentFrame / comp.settings.fps;
     },
 
-    // Layers - from active composition
-    layers(state): Layer[] {
-      const comp = state.project.compositions[state.activeCompositionId];
+    // Layers - from active composition (delegated to projectStore)
+    layers(): Layer[] {
+      const projectStore = useProjectStore();
+      const comp = projectStore.project.compositions[projectStore.activeCompositionId];
       return comp?.layers || [];
     },
-    visibleLayers(state): Layer[] {
-      const comp = state.project.compositions[state.activeCompositionId];
+    visibleLayers(): Layer[] {
+      const projectStore = useProjectStore();
+      const comp = projectStore.project.compositions[projectStore.activeCompositionId];
       const layers = comp?.layers || [];
       return layers.filter((l: Layer) => l.visible);
     },
     // Layers displayed in timeline (respects minimized filter)
-    displayedLayers(state): Layer[] {
-      const comp = state.project.compositions[state.activeCompositionId];
+    displayedLayers(): Layer[] {
+      const projectStore = useProjectStore();
+      const comp = projectStore.project.compositions[projectStore.activeCompositionId];
       const layers = comp?.layers || [];
       const uiStore = useUIStore();
       if (uiStore.hideMinimizedLayers) {
@@ -348,23 +215,23 @@ export const useCompositorStore = defineStore("compositor", {
     selectedPropertyPath(): string | null {
       return useSelectionStore().selectedPropertyPath;
     },
-    currentTool(
-      state,
-    ): "select" | "pen" | "text" | "hand" | "zoom" | "segment" {
-      if (state.segmentToolActive) return "segment";
+    currentTool(): "select" | "pen" | "text" | "hand" | "zoom" | "segment" {
+      if (useSegmentationStore().segmentToolActive) return "segment";
       return useSelectionStore().currentTool;
     },
-    selectedLayers(state): Layer[] {
-      const comp = state.project.compositions[state.activeCompositionId];
+    selectedLayers(): Layer[] {
+      const projectStore = useProjectStore();
+      const comp = projectStore.project.compositions[projectStore.activeCompositionId];
       const selectionStore = useSelectionStore();
       return (comp?.layers || []).filter((l: Layer) =>
         selectionStore.selectedLayerIds.includes(l.id),
       );
     },
-    selectedLayer(state): Layer | null {
+    selectedLayer(): Layer | null {
       const selectionStore = useSelectionStore();
       if (selectionStore.selectedLayerIds.length !== 1) return null;
-      const comp = state.project.compositions[state.activeCompositionId];
+      const projectStore = useProjectStore();
+      const comp = projectStore.project.compositions[projectStore.activeCompositionId];
       return (
         (comp?.layers || []).find(
           (l: Layer) => l.id === selectionStore.selectedLayerIds[0],
@@ -372,40 +239,50 @@ export const useCompositorStore = defineStore("compositor", {
       );
     },
 
-    // All compositions for tabs
-    allCompositions: (state): Composition[] => {
-      return Object.values(state.project.compositions);
+    // All compositions for tabs (delegated to projectStore)
+    allCompositions(): Composition[] {
+      const projectStore = useProjectStore();
+      return Object.values(projectStore.project.compositions);
     },
     openCompositions(): Composition[] {
-      return this.openCompositionIds
-        .map((id: string) => this.project.compositions[id])
+      const projectStore = useProjectStore();
+      return projectStore.openCompositionIds
+        .map((id: string) => projectStore.project.compositions[id])
         .filter((comp): comp is Composition => comp !== undefined);
     },
 
-    // Breadcrumb navigation path for nested compositions
+    // Breadcrumb navigation path for nested compositions (delegated to projectStore)
     breadcrumbPath(): Array<{ id: string; name: string }> {
-      return this.compositionBreadcrumbs.map((id: string) => {
-        const comp = this.project.compositions[id];
+      const projectStore = useProjectStore();
+      return projectStore.compositionBreadcrumbs.map((id: string) => {
+        const comp = projectStore.project.compositions[id];
         return { id, name: comp?.name || "Unknown" };
       });
     },
 
-    // Assets
-    assets: (state): Record<string, AssetReference> => state.project.assets,
-
-    // History
-    canUndo: (state): boolean => state.historyIndex > 0,
-    canRedo: (state): boolean =>
-      state.historyIndex < state.historyStack.length - 1,
-
-    // Camera
-    activeCamera: (state): Camera3D | null => {
-      if (!state.activeCameraId) return null;
-      return state.cameras.get(state.activeCameraId) || null;
+    // Assets (delegated to projectStore)
+    assets(): Record<string, AssetReference> {
+      return useProjectStore().project.assets;
     },
-    allCameras: (state): Camera3D[] => Array.from(state.cameras.values()),
-    cameraLayers(state): Layer[] {
-      const comp = state.project.compositions[state.activeCompositionId];
+
+    // History (delegated to projectStore)
+    canUndo(): boolean {
+      return useProjectStore().historyIndex > 0;
+    },
+    canRedo(): boolean {
+      const projectStore = useProjectStore();
+      return projectStore.historyIndex < projectStore.historyStack.length - 1;
+    },
+
+    activeCamera(): Camera3D | null {
+      return useCameraStore().activeCamera;
+    },
+    allCameras(): Camera3D[] {
+      return useCameraStore().allCameras;
+    },
+    cameraLayers(): Layer[] {
+      const projectStore = useProjectStore();
+      const comp = projectStore.project.compositions[projectStore.activeCompositionId];
       const layers = comp?.layers || [];
       return layers.filter((l: Layer) => l.type === "camera");
     },
@@ -426,20 +303,28 @@ export const useCompositorStore = defineStore("compositor", {
     // ============================================================
     // HELPER METHODS
     // ============================================================
-
-    /**
-     * Get the layers array for the active composition (mutable reference)
-     */
-    getActiveCompLayers(): Layer[] {
-      const comp = this.project.compositions[this.activeCompositionId];
-      return comp?.layers || [];
+    
+    _getCompositionStoreAccess(): Parameters<ReturnType<typeof useCompositionStore>["createComposition"]>[0] {
+      const projectStore = useProjectStore();
+      const selectionStore = useSelectionStore();
+      return {
+        project: projectStore.project,
+        activeCompositionId: projectStore.activeCompositionId,
+        openCompositionIds: projectStore.openCompositionIds,
+        compositionBreadcrumbs: projectStore.compositionBreadcrumbs,
+        selectedLayerIds: selectionStore.selectedLayerIds,
+        getActiveComp: () => projectStore.getActiveComp(),
+        switchComposition: (id: string) => this.switchComposition(id),
+        pushHistory: () => this.pushHistory(),
+      };
     },
 
-    /**
-     * Get the active composition (mutable reference)
-     */
+    getActiveCompLayers(): Layer[] {
+      return useProjectStore().getActiveCompLayers();
+    },
+
     getActiveComp(): Composition | null {
-      return this.project.compositions[this.activeCompositionId] || null;
+      return useProjectStore().getActiveComp();
     },
     // ============================================================
     // COMPOSITION MANAGEMENT (delegated to compositionActions)
@@ -450,66 +335,73 @@ export const useCompositorStore = defineStore("compositor", {
       settings?: Partial<CompositionSettings>,
       isNestedComp: boolean = false,
     ): Composition {
-      return useCompositionStore().createComposition(this, name, settings, isNestedComp);
+      return useCompositionStore().createComposition(this._getCompositionStoreAccess(), name, settings, isNestedComp);
+    },
+
+    createLayer(
+      type: Layer["type"],
+      name?: string,
+    ): Layer {
+      return useLayerStore().createLayer(type, name);
     },
 
     deleteComposition(compId: string): boolean {
-      return useCompositionStore().deleteComposition(this, compId);
+      return useCompositionStore().deleteComposition(this._getCompositionStoreAccess(), compId);
     },
 
     switchComposition(compId: string): void {
-      useCompositionStore().switchComposition(this, compId);
+      useCompositionStore().switchComposition(this._getCompositionStoreAccess(), compId);
     },
 
     closeCompositionTab(compId: string): void {
-      useCompositionStore().closeCompositionTab(this, compId);
+      useCompositionStore().closeCompositionTab(this._getCompositionStoreAccess(), compId);
     },
 
     enterNestedComp(compId: string): void {
-      useCompositionStore().enterNestedComp(this, compId);
+      useCompositionStore().enterNestedComp(this._getCompositionStoreAccess(), compId);
     },
 
     navigateBack(): void {
-      useCompositionStore().navigateBack(this);
+      useCompositionStore().navigateBack(this._getCompositionStoreAccess());
     },
 
     navigateToBreadcrumb(index: number): void {
-      useCompositionStore().navigateToBreadcrumb(this, index);
+      useCompositionStore().navigateToBreadcrumb(this._getCompositionStoreAccess(), index);
     },
 
     resetBreadcrumbs(): void {
-      useCompositionStore().resetBreadcrumbs(this);
+      useCompositionStore().resetBreadcrumbs(this._getCompositionStoreAccess());
     },
 
     renameComposition(compId: string, newName: string): void {
-      useCompositionStore().renameComposition(this, compId, newName);
+      useCompositionStore().renameComposition(this._getCompositionStoreAccess(), compId, newName);
     },
 
     updateCompositionSettings(
       compId: string,
       settings: Partial<CompositionSettings>,
     ): void {
-      useCompositionStore().updateCompositionSettings(this, compId, settings);
+      useCompositionStore().updateCompositionSettings(this._getCompositionStoreAccess(), compId, settings);
     },
 
     getComposition(compId: string): Composition | null {
-      return useCompositionStore().getComposition(this, compId);
+      return useCompositionStore().getComposition(this._getCompositionStoreAccess(), compId);
     },
 
     enableFrameBlending(compId: string): void {
-      useCompositionStore().enableFrameBlending(this, compId);
+      useCompositionStore().enableFrameBlending(this._getCompositionStoreAccess(), compId);
     },
 
     disableFrameBlending(compId: string): void {
-      useCompositionStore().disableFrameBlending(this, compId);
+      useCompositionStore().disableFrameBlending(this._getCompositionStoreAccess(), compId);
     },
 
     toggleFrameBlending(compId: string): void {
-      useCompositionStore().toggleFrameBlending(this, compId);
+      useCompositionStore().toggleFrameBlending(this._getCompositionStoreAccess(), compId);
     },
 
     nestSelectedLayers(name?: string): Composition | null {
-      return useCompositionStore().nestSelectedLayers(this, name);
+      return useCompositionStore().nestSelectedLayers(this._getCompositionStoreAccess(), name);
     },
 
     // ============================================================
@@ -527,8 +419,7 @@ export const useCompositorStore = defineStore("compositor", {
       height: number;
       frame_count: number;
     }): void {
-      useProjectStore().loadInputs(this, inputs);
-
+      useProjectStore().loadInputs(inputs);
       // Save initial state to history
       this.pushHistory();
     },
@@ -538,7 +429,7 @@ export const useCompositorStore = defineStore("compositor", {
 
      */
     createLayer(type: Layer["type"], name?: string): Layer {
-      return useLayerStore().createLayer(this, type, name);
+      return useLayerStore().createLayer(type, name);
     },
 
     /**
@@ -546,14 +437,14 @@ export const useCompositorStore = defineStore("compositor", {
 
      */
     addLayer(type: Layer["type"], name?: string): Layer {
-      return useLayerStore().createLayer(this, type, name);
+      return useLayerStore().createLayer(type, name);
     },
 
     /**
      * Get a layer by ID
      */
     getLayerById(layerId: string): Layer | null {
-      return useLayerStore().getLayerById(this, layerId);
+      return useLayerStore().getLayerById(layerId);
     },
 
     /**
@@ -561,7 +452,7 @@ export const useCompositorStore = defineStore("compositor", {
 
      */
     deleteLayer(layerId: string): void {
-      useLayerStore().deleteLayer(this, layerId);
+      useLayerStore().deleteLayer(layerId);
     },
 
     /**
@@ -569,49 +460,49 @@ export const useCompositorStore = defineStore("compositor", {
 
      */
     duplicateLayer(layerId: string): Layer | null {
-      return useLayerStore().duplicateLayer(this, layerId);
+      return useLayerStore().duplicateLayer(layerId);
     },
 
     /**
      * Copy selected layers to clipboard
      */
     copySelectedLayers(): void {
-      useLayerStore().copySelectedLayers(this);
+      useLayerStore().copySelectedLayers();
     },
 
     /**
      * Paste layers from clipboard
      */
     pasteLayers(): Layer[] {
-      return useLayerStore().pasteLayers(this);
+      return useLayerStore().pasteLayers();
     },
 
     /**
      * Cut selected layers (copy + delete)
      */
     cutSelectedLayers(): void {
-      useLayerStore().cutSelectedLayers(this);
+      useLayerStore().cutSelectedLayers();
     },
 
     /**
      * Select all layers in the active composition
      */
     selectAllLayers(): void {
-      useLayerStore().selectAllLayers(this);
+      useLayerStore().selectAllLayers();
     },
 
     /**
      * Delete all selected layers
      */
     deleteSelectedLayers(): void {
-      useLayerStore().deleteSelectedLayers(this);
+      useLayerStore().deleteSelectedLayers();
     },
 
     /**
      * Duplicate all selected layers
      */
     duplicateSelectedLayers(): string[] {
-      return useLayerStore().duplicateSelectedLayers(this);
+      return useLayerStore().duplicateSelectedLayers();
     },
 
     /**
@@ -619,19 +510,19 @@ export const useCompositorStore = defineStore("compositor", {
 
      */
     updateLayer(layerId: string, updates: Partial<Layer>): void {
-      useLayerStore().updateLayer(this, layerId, updates);
+      useLayerStore().updateLayer(layerId, updates);
     },
 
     /**
      * Update layer-specific data (e.g., text content, image path, etc.)
-     * Accepts both common AnyLayerData properties and layer-type-specific properties.
+     * Accepts both common LayerDataUnion properties and layer-type-specific properties.
 
      */
     updateLayerData(
       layerId: string,
-      dataUpdates: Partial<AnyLayerData> & Record<string, unknown>,
+      dataUpdates: Partial<LayerDataUnion>,
     ): void {
-      useLayerStore().updateLayerData(this, layerId, dataUpdates);
+      useLayerStore().updateLayerData(layerId, dataUpdates);
     },
 
     /**
@@ -642,7 +533,7 @@ export const useCompositorStore = defineStore("compositor", {
       layerId: string,
       point: SplineControlPoint,
     ): void {
-      useLayerStore().addSplineControlPoint(this, layerId, point);
+      useLayerStore().addSplineControlPoint(layerId, point);
     },
 
     /**
@@ -654,7 +545,7 @@ export const useCompositorStore = defineStore("compositor", {
       point: SplineControlPoint,
       index: number,
     ): void {
-      useLayerStore().insertSplineControlPoint(this, layerId, point, index);
+      useLayerStore().insertSplineControlPoint(layerId, point, index);
     },
 
     /**
@@ -666,7 +557,7 @@ export const useCompositorStore = defineStore("compositor", {
       pointId: string,
       updates: Partial<SplineControlPoint>,
     ): void {
-      useLayerStore().updateSplineControlPoint(this, layerId, pointId, updates);
+      useLayerStore().updateSplineControlPoint(layerId, pointId, updates);
     },
 
     /**
@@ -674,7 +565,7 @@ export const useCompositorStore = defineStore("compositor", {
 
      */
     deleteSplineControlPoint(layerId: string, pointId: string): void {
-      useLayerStore().deleteSplineControlPoint(this, layerId, pointId);
+      useLayerStore().deleteSplineControlPoint(layerId, pointId);
     },
 
     /**
@@ -682,7 +573,7 @@ export const useCompositorStore = defineStore("compositor", {
 
      */
     enableSplineAnimation(layerId: string): void {
-      useLayerStore().enableSplineAnimation(this, layerId);
+      useLayerStore().enableSplineAnimation(layerId);
     },
 
     /**
@@ -703,7 +594,6 @@ export const useCompositorStore = defineStore("compositor", {
       frame: number,
     ): void {
       useLayerStore().addSplinePointKeyframe(
-        this,
         layerId,
         pointId,
         property,
@@ -721,7 +611,6 @@ export const useCompositorStore = defineStore("compositor", {
       frame: number,
     ): void {
       useLayerStore().addSplinePointPositionKeyframe(
-        this,
         layerId,
         pointId,
         frame,
@@ -741,7 +630,6 @@ export const useCompositorStore = defineStore("compositor", {
       addKeyframe: boolean = false,
     ): void {
       useLayerStore().updateSplinePointWithKeyframe(
-        this,
         layerId,
         pointId,
         x,
@@ -759,7 +647,7 @@ export const useCompositorStore = defineStore("compositor", {
       layerId: string,
       frame: number,
     ): import("@/types/project").EvaluatedControlPoint[] {
-      return useLayerStore().getEvaluatedSplinePoints(this, layerId, frame);
+      return useLayerStore().getEvaluatedSplinePoints(layerId, frame);
     },
 
     /**
@@ -767,7 +655,7 @@ export const useCompositorStore = defineStore("compositor", {
 
      */
     isSplineAnimated(layerId: string): boolean {
-      return useLayerStore().isSplineAnimated(this, layerId);
+      return useLayerStore().isSplineAnimated(layerId);
     },
 
     /**
@@ -775,7 +663,7 @@ export const useCompositorStore = defineStore("compositor", {
 
      */
     hasSplinePointKeyframes(layerId: string, pointId: string): boolean {
-      return useLayerStore().hasSplinePointKeyframes(this, layerId, pointId);
+      return useLayerStore().hasSplinePointKeyframes(layerId, pointId);
     },
 
     /**
@@ -784,7 +672,7 @@ export const useCompositorStore = defineStore("compositor", {
 
      */
     simplifySpline(layerId: string, tolerance: number): void {
-      useLayerStore().simplifySpline(this, layerId, tolerance);
+      useLayerStore().simplifySpline(layerId, tolerance);
     },
 
     /**
@@ -793,7 +681,7 @@ export const useCompositorStore = defineStore("compositor", {
 
      */
     smoothSplineHandles(layerId: string, amount: number): void {
-      useLayerStore().smoothSplineHandles(this, layerId, amount);
+      useLayerStore().smoothSplineHandles(layerId, amount);
     },
 
     /**
@@ -819,7 +707,6 @@ export const useCompositorStore = defineStore("compositor", {
       },
     ): number | null {
       return useLayerStore().copyPathToPosition(
-        this,
         sourceSplineLayerId,
         targetLayerId,
         options,
@@ -830,14 +717,14 @@ export const useCompositorStore = defineStore("compositor", {
      * Toggle 3D mode for a layer
      */
     toggleLayer3D(layerId: string): void {
-      useLayerStore().toggleLayer3D(this, layerId);
+      useLayerStore().toggleLayer3D(layerId);
     },
 
     /**
      * Reorder layers
      */
     moveLayer(layerId: string, newIndex: number): void {
-      useLayerStore().moveLayer(this, layerId, newIndex);
+      useLayerStore().moveLayer(layerId, newIndex);
     },
 
     /**
@@ -848,74 +735,74 @@ export const useCompositorStore = defineStore("compositor", {
       layerId: string,
       newSource: LayerSourceReplacement,
     ): void {
-      useLayerStore().replaceLayerSource(this, layerId, newSource);
+      useLayerStore().replaceLayerSource(layerId, newSource);
     },
 
     /**
      * Toggle locked state for selected layers
      */
     toggleLayerLock(): void {
-      useLayerStore().toggleLayerLock(this);
+      useLayerStore().toggleLayerLock();
     },
 
     /**
      * Toggle visibility for selected layers
      */
     toggleLayerVisibility(): void {
-      useLayerStore().toggleLayerVisibility(this);
+      useLayerStore().toggleLayerVisibility();
     },
 
     /**
      * Toggle solo state for selected layers
      */
     toggleLayerSolo(): void {
-      useLayerStore().toggleLayerSolo(this);
+      useLayerStore().toggleLayerSolo();
     },
 
     /**
      * Move selected layers to the front (top of stack)
      */
     bringToFront(): void {
-      useLayerStore().bringToFront(this);
+      useLayerStore().bringToFront();
     },
 
     /**
      * Move selected layers to the back (bottom of stack)
      */
     sendToBack(): void {
-      useLayerStore().sendToBack(this);
+      useLayerStore().sendToBack();
     },
 
     /**
      * Move selected layers forward by one position
      */
     bringForward(): void {
-      useLayerStore().bringForward(this);
+      useLayerStore().bringForward();
     },
 
     /**
      * Move selected layers backward by one position
      */
     sendBackward(): void {
-      useLayerStore().sendBackward(this);
+      useLayerStore().sendBackward();
     },
 
     /**
      * Selection
      */
     selectLayer(layerId: string, addToSelection = false): void {
-      useLayerStore().selectLayer(this, layerId, addToSelection);
+      useLayerStore().selectLayer(layerId, addToSelection);
     },
 
     deselectLayer(layerId: string): void {
-      useLayerStore().deselectLayer(this, layerId);
+      useLayerStore().deselectLayer(layerId);
     },
 
     /**
      * Set a layer's parent for parenting/hierarchy
      */
     setLayerParent(layerId: string, parentId: string | null): void {
-      useLayerStore().setLayerParent(this, layerId, parentId);
+      useLayerStore().setLayerParent(layerId, parentId);
     },
 
     // ============================================================
@@ -931,7 +818,7 @@ export const useCompositorStore = defineStore("compositor", {
       layerId: string,
       options: TimeStretchOptions,
     ): void {
-      useLayerStore().timeStretchLayer(this, layerId, options);
+      useLayerStore().timeStretchLayer(layerId, options);
     },
 
     /**
@@ -939,7 +826,7 @@ export const useCompositorStore = defineStore("compositor", {
      * @param layerId - Target layer ID
      */
     reverseLayer(layerId: string): void {
-      useLayerStore().reverseLayer(this, layerId);
+      useLayerStore().reverseLayer(layerId);
     },
 
     /**
@@ -948,15 +835,7 @@ export const useCompositorStore = defineStore("compositor", {
      * @param layerId - Target layer ID
      */
     freezeFrameAtPlayhead(layerId: string): void {
-      const comp = this.getActiveComp();
-      const storeWithFrame = {
-        ...this,
-        currentFrame: comp?.currentFrame ?? 0,
-        fps: comp?.settings.fps ?? 30,
-        // Explicitly bind pushHistory to preserve 'this' context
-        pushHistory: this.pushHistory.bind(this),
-      };
-      useLayerStore().freezeFrameAtPlayhead(storeWithFrame, layerId);
+      useLayerStore().freezeFrameAtPlayhead(layerId);
     },
 
     /**
@@ -966,19 +845,11 @@ export const useCompositorStore = defineStore("compositor", {
      * @returns The new layer created after the split point
      */
     splitLayerAtPlayhead(layerId: string): Layer | null {
-      const comp = this.getActiveComp();
-      const storeWithFrame = {
-        ...this,
-        currentFrame: comp?.currentFrame ?? 0,
-        fps: comp?.settings.fps ?? 30,
-        // Explicitly bind pushHistory to preserve 'this' context
-        pushHistory: this.pushHistory.bind(this),
-      };
-      return useLayerStore().splitLayerAtPlayhead(storeWithFrame, layerId);
+      return useLayerStore().splitLayerAtPlayhead(layerId);
     },
 
     clearSelection(): void {
-      useLayerStore().clearSelection(this);
+      useLayerStore().clearSelection();
     },
 
     /**
@@ -1051,72 +922,61 @@ export const useCompositorStore = defineStore("compositor", {
     setTool(
       tool: "select" | "pen" | "text" | "hand" | "zoom" | "segment",
     ): void {
+      const segmentationStore = useSegmentationStore();
       if (tool === "segment") {
-        // Segment tool is compositor-specific
-        this.segmentToolActive = true;
+        segmentationStore.setSegmentToolActive(true);
       } else {
-        // Regular tools are handled by selectionStore
-        this.segmentToolActive = false;
+        segmentationStore.setSegmentToolActive(false);
         useSelectionStore().setTool(tool);
-        this.clearSegmentPendingMask();
+        segmentationStore.clearSegmentPendingMask();
       }
     },
 
-    /**
-     * Set segmentation mode (point or box)
-     */
     setSegmentMode(mode: "point" | "box"): void {
-      this.segmentMode = mode;
-      this.clearSegmentPendingMask();
+      const segmentationStore = useSegmentationStore();
+      segmentationStore.setSegmentMode(mode);
+      segmentationStore.clearSegmentPendingMask();
     },
 
-    /**
-     * Clear pending segmentation mask
-     */
     clearSegmentPendingMask(): void {
-      this.segmentPendingMask = null;
-      this.segmentBoxStart = null;
+      useSegmentationStore().clearSegmentPendingMask();
     },
 
-    /**
-     * Set pending segmentation mask (preview before creating layer)
-     */
-    setSegmentPendingMask(mask: CompositorState["segmentPendingMask"]): void {
-      this.segmentPendingMask = mask;
+    setSegmentPendingMask(mask: {
+      mask: string;
+      bounds: { x: number; y: number; width: number; height: number };
+      area: number;
+      score: number;
+    } | null): void {
+      useSegmentationStore().setSegmentPendingMask(mask);
     },
 
-    /**
-     * Set box selection start point
-     */
     setSegmentBoxStart(point: { x: number; y: number } | null): void {
-      this.segmentBoxStart = point;
+      useSegmentationStore().setSegmentBoxStart(point);
     },
 
-    /**
-     * Set segmentation loading state
-     */
     setSegmentLoading(loading: boolean): void {
-      this.segmentIsLoading = loading;
+      useSegmentationStore().setSegmentIsLoading(loading);
     },
 
     /**
      * Confirm pending mask and create layer from it
      */
     async confirmSegmentMask(layerName?: string): Promise<Layer | null> {
-      if (!this.segmentPendingMask || !this.sourceImage) {
+      const projectStore = useProjectStore();
+      const segmentationStore = useSegmentationStore();
+      if (!segmentationStore.segmentPendingMask || !projectStore.sourceImage) {
         return null;
       }
 
       const layer = await useSegmentationStore().createLayerFromMask(
-        this,
-        this.sourceImage,
-        this.segmentPendingMask,
+        projectStore.sourceImage,
+        segmentationStore.segmentPendingMask,
         layerName,
         false,
       );
 
-      // Clear pending mask after creating layer
-      this.clearSegmentPendingMask();
+      segmentationStore.clearSegmentPendingMask();
 
       return layer;
     },
@@ -1132,26 +992,26 @@ export const useCompositorStore = defineStore("compositor", {
      * History management (delegated to projectStore)
      */
     pushHistory(): void {
-      useProjectStore().pushHistory(this);
+      useProjectStore().pushHistory();
     },
 
     undo(): void {
-      useProjectStore().undo(this);
+      useProjectStore().undo();
     },
 
     redo(): void {
-      useProjectStore().redo(this);
+      useProjectStore().redo();
     },
 
     /**
      * Project serialization (delegated to projectStore)
      */
     exportProject(): string {
-      return useProjectStore().exportProject(this);
+      return useProjectStore().exportProject();
     },
 
     importProject(json: string): boolean {
-      return useProjectStore().importProject(this, json, () => this.pushHistory());
+      return useProjectStore().importProject(json, () => this.pushHistory());
     },
 
     /**
@@ -1167,14 +1027,14 @@ export const useCompositorStore = defineStore("compositor", {
      * Save project to server (ComfyUI backend)
      */
     async saveProjectToServer(projectId?: string): Promise<string | null> {
-      return useProjectStore().saveProjectToServer(this, projectId);
+      return useProjectStore().saveProjectToServer(projectId);
     },
 
     /**
      * Load project from server (ComfyUI backend)
      */
     async loadProjectFromServer(projectId: string): Promise<boolean> {
-      return useProjectStore().loadProjectFromServer(this, projectId, () =>
+      return useProjectStore().loadProjectFromServer(projectId, () =>
         this.pushHistory(),
       );
     },
@@ -1661,7 +1521,7 @@ export const useCompositorStore = defineStore("compositor", {
       layerIds: string[],
       options?: SequenceLayersOptions,
     ): number {
-      return useLayerStore().sequenceLayers(this, layerIds, options);
+      return useLayerStore().sequenceLayers(layerIds, options);
     },
 
     /**
@@ -1672,28 +1532,28 @@ export const useCompositorStore = defineStore("compositor", {
       layerId: string,
       options?: ExponentialScaleOptions,
     ): number {
-      return useLayerStore().applyExponentialScale(this, layerId, options);
+      return useLayerStore().applyExponentialScale(layerId, options);
     },
 
     /**
      * Create a text layer with proper data structure
      */
     createTextLayer(text: string = "Text"): Layer {
-      return useLayerStore().createTextLayer(this, text);
+      return useLayerStore().createTextLayer(text);
     },
 
     /**
      * Create a spline layer with proper data structure
      */
     createSplineLayer(): Layer {
-      return useLayerStore().createSplineLayer(this);
+      return useLayerStore().createSplineLayer();
     },
 
     /**
      * Create a shape layer with proper data structure
      */
     createShapeLayer(name: string = "Shape Layer"): Layer {
-      return useLayerStore().createShapeLayer(this, name);
+      return useLayerStore().createShapeLayer(name);
     },
 
     /**
@@ -1708,14 +1568,14 @@ export const useCompositorStore = defineStore("compositor", {
         groupCharacters?: boolean;
       } = {},
     ): Promise<string[] | null> {
-      return useLayerStore().convertTextLayerToSplines(this, layerId, options);
+      return useLayerStore().convertTextLayerToSplines(layerId, options);
     },
 
     /**
      * Rename a layer by ID
      */
     renameLayer(layerId: string, newName: string): void {
-      return useLayerStore().renameLayer(this, layerId, newName);
+      return useLayerStore().renameLayer(layerId, newName);
     },
 
     // ============================================================
@@ -1801,7 +1661,7 @@ export const useCompositorStore = defineStore("compositor", {
      * Create a nested comp layer referencing another composition
      */
     createNestedCompLayer(compositionId: string, name?: string): Layer {
-      return useLayerStore().createNestedCompLayer(this, compositionId, name);
+      return useLayerStore().createNestedCompLayer(compositionId, name);
     },
 
     /**
@@ -1811,7 +1671,7 @@ export const useCompositorStore = defineStore("compositor", {
       layerId: string,
       updates: Partial<NestedCompData>,
     ): void {
-      useLayerStore().updateNestedCompLayerData(this, layerId, updates);
+      useLayerStore().updateNestedCompLayerData(layerId, updates);
     },
 
     // ============================================================
@@ -1826,7 +1686,7 @@ export const useCompositorStore = defineStore("compositor", {
         positionAtCenter?: boolean;
       } = {},
     ): Promise<Layer | null> {
-      return useSegmentationStore().segmentToLayerByPoint(this, point, options);
+      return useSegmentationStore().segmentToLayerByPoint(point, options);
     },
     async segmentToLayerByBox(
       box: [number, number, number, number],
@@ -1836,7 +1696,7 @@ export const useCompositorStore = defineStore("compositor", {
         positionAtCenter?: boolean;
       } = {},
     ): Promise<Layer | null> {
-      return useSegmentationStore().segmentToLayerByBox(this, box, options);
+      return useSegmentationStore().segmentToLayerByBox(box, options);
     },
     async segmentToLayerByMultiplePoints(
       foregroundPoints: SegmentationPoint[],
@@ -1848,7 +1708,6 @@ export const useCompositorStore = defineStore("compositor", {
       } = {},
     ): Promise<Layer | null> {
       return useSegmentationStore().segmentToLayerByMultiplePoints(
-        this,
         foregroundPoints,
         backgroundPoints,
         options,
@@ -1862,7 +1721,7 @@ export const useCompositorStore = defineStore("compositor", {
         namePrefix?: string;
       } = {},
     ): Promise<Layer[]> {
-      return useSegmentationStore().autoSegmentToLayers(this, options);
+      return useSegmentationStore().autoSegmentToLayers(options);
     },
 
     // ============================================================
@@ -2056,40 +1915,43 @@ export const useCompositorStore = defineStore("compositor", {
     // ============================================================
 
     createCameraLayer(name?: string): { camera: Camera3D; layer: Layer } {
-      return useCameraStore().createCameraLayer(this, name);
+      return useCameraStore().createCameraLayer(name);
     },
     getCamera(cameraId: string): Camera3D | null {
-      return useCameraStore().getCamera(this, cameraId);
+      return useCameraStore().getCamera(cameraId);
     },
     updateCamera(cameraId: string, updates: Partial<Camera3D>): void {
-      useCameraStore().updateCamera(this, cameraId, updates);
+      useCameraStore().updateCamera(cameraId, updates);
     },
     setActiveCamera(cameraId: string): void {
-      useCameraStore().setActiveCamera(this, cameraId);
+      useCameraStore().setActiveCamera(cameraId);
     },
     deleteCamera(cameraId: string): void {
-      useCameraStore().deleteCamera(this, cameraId);
+      useCameraStore().deleteCamera(cameraId);
     },
     getCameraKeyframes(cameraId: string): CameraKeyframe[] {
-      return useCameraStore().getCameraKeyframes(this, cameraId);
+      return useCameraStore().getCameraKeyframes(cameraId);
     },
     addCameraKeyframe(cameraId: string, keyframe: CameraKeyframe): void {
-      useCameraStore().addCameraKeyframe(this, cameraId, keyframe);
+      useCameraStore().addCameraKeyframe(cameraId, keyframe);
     },
     removeCameraKeyframe(cameraId: string, frame: number): void {
-      useCameraStore().removeCameraKeyframe(this, cameraId, frame);
+      useCameraStore().removeCameraKeyframe(cameraId, frame);
     },
     getCameraAtFrame(cameraId: string, frame: number): Camera3D | null {
-      return useCameraStore().getCameraAtFrame(this, cameraId, frame);
+      return useCameraStore().getCameraAtFrame(cameraId, frame);
     },
     getActiveCameraAtFrame(frame?: number): Camera3D | null {
-      return useCameraStore().getActiveCameraAtFrame(this, frame ?? this.currentFrame);
+      const animationStore = useAnimationStore();
+      const projectStore = useProjectStore();
+      const currentFrame = projectStore.getActiveComp()?.currentFrame ?? 0;
+      return useCameraStore().getActiveCameraAtFrame(frame ?? currentFrame);
     },
     updateViewportState(updates: Partial<ViewportState>): void {
-      useCameraStore().updateViewportState(this, updates);
+      useCameraStore().updateViewportState(updates);
     },
     updateViewOptions(updates: Partial<ViewOptions>): void {
-      useCameraStore().updateViewOptions(this, updates);
+      useCameraStore().updateViewOptions(updates);
     },
 
     // ============================================================
@@ -2097,14 +1959,15 @@ export const useCompositorStore = defineStore("compositor", {
     // ============================================================
 
     async loadAudio(file: File): Promise<void> {
-      await useAudioStore().loadAudio(file, this.project.composition.fps);
+      const projectStore = useProjectStore();
+      await useAudioStore().loadAudio(file, projectStore.project.composition.fps);
     },
     cancelAudioLoad(): void {
       useAudioStore().cancelLoad();
     },
     clearAudio(): void {
       useAudioStore().clear();
-      this.pathAnimators.clear();
+      useAudioKeyframeStore().resetPathAnimators();
     },
     setAudioVolume(volume: number): void {
       useAudioStore().setVolume(volume);
@@ -2245,28 +2108,28 @@ export const useCompositorStore = defineStore("compositor", {
       layerId: string,
       config: Partial<PathAnimatorConfig> = {},
     ): void {
-      useAudioKeyframeStore().createPathAnimator(this, layerId, config);
+      useAudioKeyframeStore().createPathAnimator(layerId, config);
     },
     setPathAnimatorPath(layerId: string, pathData: string): void {
-      useAudioKeyframeStore().setPathAnimatorPath(this, layerId, pathData);
+      useAudioKeyframeStore().setPathAnimatorPath(layerId, pathData);
     },
     updatePathAnimatorConfig(
       layerId: string,
       config: Partial<PathAnimatorConfig>,
     ): void {
-      useAudioKeyframeStore().updatePathAnimatorConfig(this, layerId, config);
+      useAudioKeyframeStore().updatePathAnimatorConfig(layerId, config);
     },
     removePathAnimator(layerId: string): void {
-      useAudioKeyframeStore().removePathAnimator(this, layerId);
+      useAudioKeyframeStore().removePathAnimator(layerId);
     },
     getPathAnimator(layerId: string): PathAnimatorAccess | undefined {
-      return useAudioKeyframeStore().getPathAnimator(this, layerId);
+      return useAudioKeyframeStore().getPathAnimator(layerId);
     },
     updatePathAnimators(): void {
-      useAudioKeyframeStore().updatePathAnimators(this);
+      useAudioKeyframeStore().updatePathAnimators();
     },
     resetPathAnimators(): void {
-      useAudioKeyframeStore().resetPathAnimators(this);
+      useAudioKeyframeStore().resetPathAnimators();
     },
     initializeAudioReactiveMapper(): void {
       useAudioStore().initializeReactiveMapper();
@@ -2494,30 +2357,29 @@ export const useCompositorStore = defineStore("compositor", {
       );
     },
     disableAutosave(): void {
-      useProjectStore().stopAutosave(this);
-      this.autosaveEnabled = false;
+      useProjectStore().stopAutosave();
+      // TODO: Remove after consumer migration
     },
     startAutosaveTimer(): void {
-      useProjectStore().startAutosave(this, () => this.performAutosave());
+      useProjectStore().startAutosave(() => this.performAutosave());
     },
     stopAutosaveTimer(): void {
-      useProjectStore().stopAutosave(this);
+      useProjectStore().stopAutosave();
     },
     async performAutosave(): Promise<void> {
-      return useProjectStore().performAutosave(this);
+      return useProjectStore().performAutosave();
     },
     markUnsavedChanges(): void {
-      useProjectStore().markUnsavedChanges(this);
+      useProjectStore().markUnsavedChanges();
       this.invalidateFrameCache();
     },
     async saveProjectToBackend(): Promise<string> {
-      const result = await useProjectStore().saveProjectToServer(this);
+      const result = await useProjectStore().saveProjectToServer();
       if (!result) throw new Error("Save failed");
       return result;
     },
     async loadProjectFromBackend(projectId: string): Promise<void> {
       const success = await useProjectStore().loadProjectFromServer(
-        this,
         projectId,
         () => this.pushHistory(),
       );
@@ -2534,28 +2396,28 @@ export const useCompositorStore = defineStore("compositor", {
     // ============================================================
 
     async initializeFrameCache(): Promise<void> {
-      return useCacheStore().initializeCache(this);
+      return useCacheStore().initializeCache();
     },
     setFrameCacheEnabled(enabled: boolean): void {
-      useCacheStore().setFrameCacheEnabled(this, enabled);
+      useCacheStore().setFrameCacheEnabled(enabled);
     },
     getCachedFrame(frame: number): ImageData | null {
-      return useCacheStore().getCachedFrame(this, frame);
+      return useCacheStore().getCachedFrame(frame);
     },
     async cacheFrame(frame: number, imageData: ImageData): Promise<void> {
-      return useCacheStore().cacheFrame(this, frame, imageData);
+      return useCacheStore().cacheFrame(frame, imageData);
     },
     isFrameCached(frame: number): boolean {
-      return useCacheStore().isFrameCached(this, frame);
+      return useCacheStore().isFrameCached(frame);
     },
     async startPreCache(
       currentFrame: number,
       direction: "forward" | "backward" | "both" = "both",
     ): Promise<void> {
-      return useCacheStore().startPreCache(this, currentFrame, direction);
+      return useCacheStore().startPreCache(currentFrame, direction);
     },
     invalidateFrameCache(): void {
-      useCacheStore().invalidateFrameCache(this);
+      useCacheStore().invalidateFrameCache();
     },
     clearFrameCache(): void {
       useCacheStore().clearFrameCache();
@@ -2564,7 +2426,7 @@ export const useCompositorStore = defineStore("compositor", {
       return useCacheStore().getFrameCacheStats();
     },
     computeProjectHash(): string {
-      return useCacheStore().computeProjectHash(this);
+      return useCacheStore().computeProjectHash();
     },
 
     // ============================================================
@@ -2582,7 +2444,7 @@ export const useCompositorStore = defineStore("compositor", {
      * Select an asset by ID
      */
     selectAsset(assetId: string | null): void {
-      useProjectStore().selectAsset(this, assetId);
+      useProjectStore().selectAsset(assetId);
     },
 
     /**
@@ -2777,7 +2639,7 @@ export const useCompositorStore = defineStore("compositor", {
      * Check if clipboard has keyframes
      */
     hasKeyframesInClipboard(): boolean {
-      return this.clipboard.keyframes.length > 0;
+      return useLayerStore().hasKeyframesInClipboard;
     },
 
     // ============================================================
@@ -2901,7 +2763,7 @@ export const useCompositorStore = defineStore("compositor", {
         anchor?: { x: number; y: number; z?: number }; // Alias for origin
       },
     ): void {
-      return useLayerStore().updateLayerTransform(this, layerId, updates);
+      return useLayerStore().updateLayerTransform(layerId, updates);
     },
   },
 });

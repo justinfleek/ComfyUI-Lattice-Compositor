@@ -6,9 +6,15 @@
  * - Wan-Move: Camera movement for Wan video generation
  * - Uni3C: Universal 3D camera control
  * - CameraCtrl: Generic camera control format
+ * Includes comprehensive validation constraints for security and data integrity.
  */
 
 import { z } from 'zod';
+import {
+  boundedArray,
+  iso8601DateTime,
+  MAX_NAME_LENGTH,
+} from "../shared-validation";
 
 /**
  * Supported camera export formats.
@@ -48,41 +54,41 @@ export const Matrix4x4Schema = z.tuple([
  * Camera intrinsic parameters.
  */
 export const CameraIntrinsicsSchema = z.object({
-  focalLength: z.number().positive(),
-  sensorWidth: z.number().positive().optional(),
-  sensorHeight: z.number().positive().optional(),
+  focalLength: z.number().positive().max(10000), // Max 10k mm focal length
+  sensorWidth: z.number().positive().max(100).optional(), // Max 100mm sensor width
+  sensorHeight: z.number().positive().max(100).optional(), // Max 100mm sensor height
   fov: z.number().positive().max(180), // Field of view in degrees
-  aspectRatio: z.number().positive(),
+  aspectRatio: z.number().positive().max(10), // Max 10:1 aspect ratio
   principalPoint: z.object({
     x: z.number().finite(),
     y: z.number().finite(),
-  }).optional(),
-});
+  }).strict().optional(),
+}).strict();
 
 /**
  * Single camera frame data.
  */
 export const CameraFrameSchema = z.object({
-  frame: z.number().int().nonnegative(),
-  timestamp: z.number().nonnegative().optional(),
+  frame: z.number().int().nonnegative().max(100000), // Max 100k frames
+  timestamp: z.number().nonnegative().max(86400).optional(), // Max 24 hours timestamp
   
   // Position in world space
   position: z.object({
     x: z.number().finite(),
     y: z.number().finite(),
     z: z.number().finite(),
-  }),
+  }).strict(),
   
   // Rotation as Euler angles (degrees) or quaternion
   rotation: z.union([
     // Euler angles
     z.object({
       type: z.literal('euler'),
-      x: z.number().finite(),
-      y: z.number().finite(), 
-      z: z.number().finite(),
+      x: z.number().finite().max(360), // Max 360 degrees
+      y: z.number().finite().max(360), // Max 360 degrees
+      z: z.number().finite().max(360), // Max 360 degrees
       order: z.enum(['XYZ', 'YXZ', 'ZXY', 'ZYX', 'XZY', 'YZX']).optional(),
-    }),
+    }).strict(),
     // Quaternion
     z.object({
       type: z.literal('quaternion'),
@@ -90,7 +96,14 @@ export const CameraFrameSchema = z.object({
       y: z.number().finite(),
       z: z.number().finite(),
       w: z.number().finite(),
-    }),
+    }).strict().refine(
+      (q) => {
+        // Quaternion should be normalized (approximately)
+        const len = Math.sqrt(q.x * q.x + q.y * q.y + q.z * q.z + q.w * q.w);
+        return Math.abs(len - 1) < 0.1; // Allow 10% tolerance
+      },
+      { message: "Quaternion should be normalized", path: ["w"] }
+    ),
   ]),
   
   // Optional: Full 4x4 matrix (overrides position/rotation)
@@ -98,73 +111,73 @@ export const CameraFrameSchema = z.object({
   
   // Optional: Per-frame intrinsics (for dolly zoom etc)
   intrinsics: CameraIntrinsicsSchema.optional(),
-});
+}).strict();
 
 /**
  * MotionCtrl-specific format.
  */
 export const MotionCtrlOutputSchema = z.object({
   format: z.literal('motionctrl'),
-  version: z.string(),
+  version: z.string().min(1).max(50).trim(), // Version string
   
   // Camera trajectory as list of 4x4 matrices
-  camera_poses: z.array(Matrix4x4Schema),
+  camera_poses: boundedArray(Matrix4x4Schema, 100000), // Max 100k camera poses
   
   // Intrinsics
-  focal_length: z.number().positive(),
-  image_width: z.number().int().positive(),
-  image_height: z.number().int().positive(),
-});
+  focal_length: z.number().positive().max(10000), // Max 10k mm focal length
+  image_width: z.number().int().positive().max(16384), // Max reasonable dimension
+  image_height: z.number().int().positive().max(16384), // Max reasonable dimension
+}).strict();
 
 /**
  * Wan-Move specific format.
  */
 export const WanMoveOutputSchema = z.object({
   format: z.literal('wan-move'),
-  version: z.string(),
+  version: z.string().min(1).max(50).trim(), // Version string
   
   // Control points
-  control_points: z.array(z.object({
-    frame: z.number().int().nonnegative(),
-    position: z.tuple([z.number(), z.number(), z.number()]),
-    rotation: z.tuple([z.number(), z.number(), z.number()]),
-  })),
+  control_points: boundedArray(z.object({
+    frame: z.number().int().nonnegative().max(100000), // Max 100k frames
+    position: z.tuple([z.number().finite(), z.number().finite(), z.number().finite()]),
+    rotation: z.tuple([z.number().finite().max(360), z.number().finite().max(360), z.number().finite().max(360)]), // Max 360 degrees each
+  }).strict(), 100000), // Max 100k control points
   
   // Interpolation type
   interpolation: z.enum(['linear', 'bezier', 'spline']),
-});
+}).strict();
 
 /**
  * Full camera export output.
  */
 export const CameraExportOutputSchema = z.object({
   // Metadata
-  version: z.string(),
-  exportedAt: z.string().datetime(),
+  version: z.string().min(1).max(50).trim(), // Version string
+  exportedAt: iso8601DateTime,
   format: CameraFormatSchema,
   coordinateSystem: CoordinateSystemSchema,
   
   // Composition info
   composition: z.object({
-    width: z.number().int().positive(),
-    height: z.number().int().positive(),
-    fps: z.number().positive(),
-    frameCount: z.number().int().positive(),
-  }),
+    width: z.number().int().positive().max(16384), // Max reasonable dimension
+    height: z.number().int().positive().max(16384), // Max reasonable dimension
+    fps: z.number().positive().max(120), // Max 120 FPS
+    frameCount: z.number().int().positive().max(100000), // Max 100k frames
+  }).strict(),
   
   // Camera settings
   intrinsics: CameraIntrinsicsSchema,
   
   // Frame data
-  frames: z.array(CameraFrameSchema),
+  frames: boundedArray(CameraFrameSchema, 100000), // Max 100k frames
   
   // Format-specific data
   formatSpecific: z.union([
     MotionCtrlOutputSchema,
     WanMoveOutputSchema,
-    z.object({}), // Generic format
+    z.object({}).strict(), // Generic format
   ]).optional(),
-});
+}).strict();
 
 // Type exports
 export type CameraFormat = z.infer<typeof CameraFormatSchema>;

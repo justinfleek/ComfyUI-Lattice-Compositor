@@ -22,11 +22,12 @@ import {
   saveProject,
 } from "@/services/projectStorage";
 import { validateURL } from "@/services/security/urlValidator";
-import type { AssetReference, Composition, LatticeProject, Layer } from "@/types/project";
+import type { AssetReference, Composition, LatticeProject, Layer, ProjectMeta } from "@/types/project";
 import { storeLogger } from "@/utils/logger";
 import { safeJsonParse } from "@/utils/schemaValidation";
 import { validateProjectStructure } from "@/utils/security";
 import { useAnimationStore } from "./animationStore";
+import { createEmptyProject } from "@/types/project";
 
 // ============================================================================
 // CONSTANTS
@@ -88,60 +89,66 @@ export interface ProjectStore {
 // HELPER FUNCTIONS
 // ============================================================================
 
-export function getOpenCompositions(compositorStore: ProjectStoreAccess): Composition[] {
-  return compositorStore.openCompositionIds
-    .map((id: string) => compositorStore.project.compositions[id])
+export function getOpenCompositions(projectStore: ReturnType<typeof useProjectStore>): Composition[] {
+  return projectStore.openCompositionIds
+    .map((id: string) => projectStore.project.compositions[id])
     .filter(Boolean) as Composition[];
 }
 
-export function getBreadcrumbPath(compositorStore: ProjectStoreAccess): Array<{ id: string; name: string }> {
-  return compositorStore.compositionBreadcrumbs
+export function getBreadcrumbPath(projectStore: ReturnType<typeof useProjectStore>): Array<{ id: string; name: string }> {
+  return projectStore.compositionBreadcrumbs
     .map((id: string) => {
-      const comp = compositorStore.project.compositions[id];
+      const comp = projectStore.project.compositions[id];
       return comp ? { id, name: comp.name } : null;
     })
     .filter(Boolean) as Array<{ id: string; name: string }>;
 }
 
-export function hasProject(compositorStore: ProjectStateAccess): boolean {
-  return compositorStore.sourceImage !== null;
+export function hasProject(projectStore: ReturnType<typeof useProjectStore>): boolean {
+  return projectStore.sourceImage !== null;
 }
 
-export function getWidth(compositorStore: ProjectStoreAccess): number {
-  return compositorStore.getActiveComp()?.settings.width || 1024;
+export function getWidth(projectStore: ReturnType<typeof useProjectStore>): number {
+  const comp = projectStore.project.compositions[projectStore.activeCompositionId];
+  return comp?.settings.width || 1024;
 }
 
-export function getHeight(compositorStore: ProjectStoreAccess): number {
-  return compositorStore.getActiveComp()?.settings.height || 1024;
+export function getHeight(projectStore: ReturnType<typeof useProjectStore>): number {
+  const comp = projectStore.project.compositions[projectStore.activeCompositionId];
+  return comp?.settings.height || 1024;
 }
 
-export function getFrameCount(compositorStore: ProjectStoreAccess): number {
-  return compositorStore.getActiveComp()?.settings.frameCount || 81;
+export function getFrameCount(projectStore: ReturnType<typeof useProjectStore>): number {
+  const comp = projectStore.project.compositions[projectStore.activeCompositionId];
+  return comp?.settings.frameCount || 81;
 }
 
-export function getFps(compositorStore: ProjectStoreAccess): number {
-  return compositorStore.getActiveComp()?.settings.fps || 16;
+export function getFps(projectStore: ReturnType<typeof useProjectStore>): number {
+  const comp = projectStore.project.compositions[projectStore.activeCompositionId];
+  return comp?.settings.fps || 16;
 }
 
-export function getDuration(compositorStore: ProjectStoreAccess): number {
-  return compositorStore.getActiveComp()?.settings.duration || 5;
+export function getDuration(projectStore: ReturnType<typeof useProjectStore>): number {
+  const comp = projectStore.project.compositions[projectStore.activeCompositionId];
+  return comp?.settings.duration || 5;
 }
 
-export function getBackgroundColor(compositorStore: ProjectStoreAccess): string {
-  return compositorStore.getActiveComp()?.settings.backgroundColor || "#050505";
+export function getBackgroundColor(projectStore: ReturnType<typeof useProjectStore>): string {
+  const comp = projectStore.project.compositions[projectStore.activeCompositionId];
+  return comp?.settings.backgroundColor || "#050505";
 }
 
-export function getCurrentTime(compositorStore: ProjectStoreAccess): number {
-  const comp = compositorStore.getActiveComp();
+export function getCurrentTime(projectStore: ReturnType<typeof useProjectStore>): number {
+  const comp = projectStore.project.compositions[projectStore.activeCompositionId];
   return comp ? comp.currentFrame / comp.settings.fps : 0;
 }
 
-export function selectAsset(compositorStore: ProjectStoreAccess, assetId: string | null): void {
-  compositorStore.selectedAssetId = assetId;
+export function selectAsset(projectStore: ReturnType<typeof useProjectStore>, assetId: string | null): void {
+  projectStore.selectedAssetId = assetId;
 }
 
 export function loadInputs(
-  compositorStore: ProjectStoreAccess,
+  projectStore: ReturnType<typeof useProjectStore>,
   inputs: {
     node_id: string;
     source_image: string;
@@ -151,11 +158,11 @@ export function loadInputs(
     frame_count: number;
   },
 ): void {
-  compositorStore.comfyuiNodeId = inputs.node_id;
-  compositorStore.sourceImage = inputs.source_image;
-  compositorStore.depthMap = inputs.depth_map;
+  projectStore.comfyuiNodeId = inputs.node_id;
+  projectStore.sourceImage = inputs.source_image;
+  projectStore.depthMap = inputs.depth_map;
 
-  const comp = compositorStore.getActiveComp();
+  const comp = projectStore.project.compositions[projectStore.activeCompositionId];
   if (!comp) return;
 
   const oldFrameCount = comp.settings.frameCount;
@@ -165,10 +172,10 @@ export function loadInputs(
   comp.settings.frameCount = inputs.frame_count;
   comp.settings.duration = inputs.frame_count / comp.settings.fps;
 
-  compositorStore.project.composition.width = inputs.width;
-  compositorStore.project.composition.height = inputs.height;
-  compositorStore.project.composition.frameCount = inputs.frame_count;
-  compositorStore.project.composition.duration = inputs.frame_count / compositorStore.project.composition.fps;
+  projectStore.project.composition.width = inputs.width;
+  projectStore.project.composition.height = inputs.height;
+  projectStore.project.composition.frameCount = inputs.frame_count;
+  projectStore.project.composition.duration = inputs.frame_count / projectStore.project.composition.fps;
 
   if (inputs.frame_count > oldFrameCount) {
     for (const layer of comp.layers) {
@@ -179,7 +186,7 @@ export function loadInputs(
   }
 
   if (inputs.source_image) {
-    compositorStore.project.assets.source_image = {
+    projectStore.project.assets.source_image = {
       id: "source_image",
       type: "image",
       source: "comfyui_node",
@@ -191,7 +198,7 @@ export function loadInputs(
   }
 
   if (inputs.depth_map) {
-    compositorStore.project.assets.depth_map = {
+    projectStore.project.assets.depth_map = {
       id: "depth_map",
       type: "depth_map",
       source: "comfyui_node",
@@ -203,17 +210,21 @@ export function loadInputs(
   }
 
   if (comp) comp.currentFrame = 0;
-  compositorStore.project.meta.modified = new Date().toISOString();
+  projectStore.project.meta.modified = new Date().toISOString();
 }
 
 // ============================================================================
 // PARTICLE CACHE INVALIDATION
 // ============================================================================
 
+interface LatticeEngineGlobal {
+  __latticeEngine?: {
+    getLayers?: () => Array<{ clearCache?: () => void }>;
+  };
+}
+
 function invalidateParticleCaches(): void {
-  const engine = (window as unknown as {
-    __latticeEngine?: { getLayers?: () => Array<{ clearCache?: () => void }> };
-  }).__latticeEngine;
+  const engine = (window as LatticeEngineGlobal).__latticeEngine;
   if (!engine) return;
 
   try {
@@ -235,16 +246,23 @@ function invalidateParticleCaches(): void {
 export function findUsedAssetIds(store: ProjectStore): Set<string> {
   const usedIds = new Set<string>();
 
+  /**
+   * Type guard for layer data with assetId
+   */
+  function hasAssetId(data: unknown): data is { assetId?: string | null; sourceAssetId?: string | null; spriteSheetAssetId?: string | null; environmentMapId?: string | null; materials?: Array<{ textureId?: string; normalMapId?: string; roughnessMapId?: string }> } {
+    return data !== null && typeof data === "object";
+  }
+
   for (const comp of Object.values(store.project.compositions)) {
     for (const layer of comp.layers) {
-      if (layer.data && typeof layer.data === "object") {
-        const data = layer.data as unknown as Record<string, unknown>;
+      if (layer.data && hasAssetId(layer.data)) {
+        const data = layer.data;
 
         if (data.assetId && typeof data.assetId === "string") usedIds.add(data.assetId);
         if (data.sourceAssetId && typeof data.sourceAssetId === "string") usedIds.add(data.sourceAssetId);
 
         if (data.materials && Array.isArray(data.materials)) {
-          for (const mat of data.materials as Array<Record<string, unknown>>) {
+          for (const mat of data.materials) {
             if (mat.textureId && typeof mat.textureId === "string") usedIds.add(mat.textureId);
             if (mat.normalMapId && typeof mat.normalMapId === "string") usedIds.add(mat.normalMapId);
             if (mat.roughnessMapId && typeof mat.roughnessMapId === "string") usedIds.add(mat.roughnessMapId);
@@ -318,151 +336,201 @@ export function createDefaultProject(): LatticeProject {
 // ============================================================================
 
 export const useProjectStore = defineStore("project", {
-  state: () => ({}),
+  state: () => {
+    // Create initial project and pre-populate history with it
+    // This ensures undo works for the very first action
+    const initialProject = createEmptyProject(1280, 720); // 720p HD default
+    return {
+      // Project data
+      project: initialProject,
+      
+      // Active composition (for multi-composition support)
+      activeCompositionId: "main",
+      openCompositionIds: ["main"] as string[], // Tabs - which comps are open
+      compositionBreadcrumbs: ["main"] as string[], // Navigation history for nested compositions
+      
+      // ComfyUI connection
+      comfyuiNodeId: null as string | null,
+      
+      // Input data from ComfyUI
+      sourceImage: null as string | null,
+      depthMap: null as string | null,
+      
+      // History for undo/redo
+      historyStack: [structuredClone<LatticeProject>(initialProject)] as LatticeProject[],
+      historyIndex: 0,
+      
+      // Autosave state
+      autosaveEnabled: true,
+      autosaveIntervalMs: 60000,
+      autosaveTimerId: null as number | null,
+      lastSaveTime: 0, // 0 = never saved, Date.now() = last save time
+      lastSaveProjectId: null as string | null,
+      hasUnsavedChanges: false,
+      
+      // Timeline UI state
+      selectedAssetId: null as string | null,
+    };
+  },
 
   actions: {
     // ========================================================================
     // GETTERS (delegated from compositorStore)
     // ========================================================================
 
-    getOpenCompositions(compositorStore: ProjectStoreAccess): Composition[] {
-      return getOpenCompositions(compositorStore);
+    getOpenCompositions(): Composition[] {
+      return getOpenCompositions(this);
     },
 
-    getBreadcrumbPath(compositorStore: ProjectStoreAccess): Array<{ id: string; name: string }> {
-      return getBreadcrumbPath(compositorStore);
+    getBreadcrumbPath(): Array<{ id: string; name: string }> {
+      return getBreadcrumbPath(this);
     },
 
-    hasProject(compositorStore: ProjectStateAccess): boolean {
-      return hasProject(compositorStore);
+    hasProject(): boolean {
+      return hasProject(this);
     },
 
-    getWidth(compositorStore: ProjectStoreAccess): number {
-      return getWidth(compositorStore);
+    getWidth(): number {
+      return getWidth(this);
     },
 
-    getHeight(compositorStore: ProjectStoreAccess): number {
-      return getHeight(compositorStore);
+    getHeight(): number {
+      return getHeight(this);
     },
 
-    getFrameCount(compositorStore: ProjectStoreAccess): number {
-      return getFrameCount(compositorStore);
+    getFrameCount(): number {
+      return getFrameCount(this);
     },
 
-    getFps(compositorStore: ProjectStoreAccess): number {
-      return getFps(compositorStore);
+    getFps(): number {
+      return getFps(this);
     },
 
-    getDuration(compositorStore: ProjectStoreAccess): number {
-      return getDuration(compositorStore);
+    getDuration(): number {
+      return getDuration(this);
     },
 
-    getBackgroundColor(compositorStore: ProjectStoreAccess): string {
-      return getBackgroundColor(compositorStore);
+    getBackgroundColor(): string {
+      return getBackgroundColor(this);
     },
 
-    getCurrentTime(compositorStore: ProjectStoreAccess): number {
-      return getCurrentTime(compositorStore);
+    getCurrentTime(): number {
+      return getCurrentTime(this);
     },
 
-    selectAsset(compositorStore: ProjectStoreAccess, assetId: string | null): void {
-      selectAsset(compositorStore, assetId);
+    /**
+     * Get the active composition (mutable reference)
+     */
+    getActiveComp(): Composition | null {
+      return this.project.compositions[this.activeCompositionId] || null;
     },
 
-    loadInputs(compositorStore: ProjectStoreAccess, inputs: Parameters<typeof loadInputs>[1]): void {
-      loadInputs(compositorStore, inputs);
+    /**
+     * Get the layers array for the active composition (mutable reference)
+     */
+    getActiveCompLayers(): Layer[] {
+      const comp = this.project.compositions[this.activeCompositionId];
+      return comp?.layers || [];
+    },
+
+    selectAsset(assetId: string | null): void {
+      selectAsset(this, assetId);
+    },
+
+    loadInputs(inputs: Parameters<typeof loadInputs>[1]): void {
+      loadInputs(this, inputs);
     },
 
     // ========================================================================
     // HISTORY MANAGEMENT
     // ========================================================================
 
-    pushHistory(store: ProjectStore): void {
-      if (store.historyIndex < store.historyStack.length - 1) {
-        store.historyStack = store.historyStack.slice(0, store.historyIndex + 1);
+    pushHistory(): void {
+      if (this.historyIndex < this.historyStack.length - 1) {
+        this.historyStack = this.historyStack.slice(0, this.historyIndex + 1);
       }
-      const snapshot = structuredClone(toRaw(store.project)) as typeof store.project;
-      store.historyStack.push(snapshot);
-      store.historyIndex = store.historyStack.length - 1;
-      if (store.historyStack.length > MAX_HISTORY_SIZE) {
-        store.historyStack = store.historyStack.slice(-MAX_HISTORY_SIZE);
-        store.historyIndex = store.historyStack.length - 1;
+      const snapshot: LatticeProject = structuredClone<LatticeProject>(toRaw(this.project));
+      this.historyStack.push(snapshot);
+      this.historyIndex = this.historyStack.length - 1;
+      if (this.historyStack.length > MAX_HISTORY_SIZE) {
+        this.historyStack = this.historyStack.slice(-MAX_HISTORY_SIZE);
+        this.historyIndex = this.historyStack.length - 1;
       }
     },
 
-    undo(store: ProjectStore): boolean {
-      if (store.historyIndex <= 0) return false;
-      store.historyIndex--;
-      const historyEntry = toRaw(store.historyStack[store.historyIndex]);
-      store.project = structuredClone(historyEntry) as LatticeProject;
+    undo(): boolean {
+      if (this.historyIndex <= 0) return false;
+      this.historyIndex--;
+      const historyEntry = toRaw(this.historyStack[this.historyIndex]);
+      this.project = structuredClone<LatticeProject>(historyEntry);
       invalidateParticleCaches();
       return true;
     },
 
-    redo(store: ProjectStore): boolean {
-      if (store.historyIndex >= store.historyStack.length - 1) return false;
-      store.historyIndex++;
-      const historyEntry = toRaw(store.historyStack[store.historyIndex]);
-      store.project = structuredClone(historyEntry) as LatticeProject;
+    redo(): boolean {
+      if (this.historyIndex >= this.historyStack.length - 1) return false;
+      this.historyIndex++;
+      const historyEntry = toRaw(this.historyStack[this.historyIndex]);
+      this.project = structuredClone<LatticeProject>(historyEntry);
       invalidateParticleCaches();
       return true;
     },
 
-    canUndo(store: ProjectStore): boolean {
-      return store.historyIndex > 0;
+    canUndo(): boolean {
+      return this.historyIndex > 0;
     },
 
-    canRedo(store: ProjectStore): boolean {
-      return store.historyIndex < store.historyStack.length - 1;
+    canRedo(): boolean {
+      return this.historyIndex < this.historyStack.length - 1;
     },
 
-    clearHistory(store: ProjectStore): void {
-      const snapshot = structuredClone(toRaw(store.project)) as typeof store.project;
-      store.historyStack = [snapshot];
-      store.historyIndex = 0;
+    clearHistory(): void {
+      const snapshot: LatticeProject = structuredClone<LatticeProject>(toRaw(this.project));
+      this.historyStack = [snapshot];
+      this.historyIndex = 0;
     },
 
     // ========================================================================
     // PROJECT INITIALIZATION
     // ========================================================================
 
-    newProject(store: ProjectStore): void {
-      store.project = createDefaultProject();
-      store.lastSaveProjectId = null;
-      store.lastSaveTime = 0;
-      store.hasUnsavedChanges = false;
-      this.clearHistory(store);
+    newProject(): void {
+      this.project = createDefaultProject();
+      this.lastSaveProjectId = null;
+      this.lastSaveTime = 0;
+      this.hasUnsavedChanges = false;
+      this.clearHistory();
       storeLogger.info("Project reset to default state");
     },
 
     /**
      * Save project (convenience wrapper for performAutosave).
      */
-    async saveProject(store: ProjectStore): Promise<void> {
-      await this.performAutosave(store);
+    async saveProject(): Promise<void> {
+      await this.performAutosave();
     },
 
     /**
      * Save project as (to server with new ID).
      */
-    async saveProjectAs(store: ProjectStore): Promise<string | null> {
-      return await this.saveProjectToServer(store, undefined);
+    async saveProjectAs(): Promise<string | null> {
+      return await this.saveProjectToServer(undefined);
     },
 
     // ========================================================================
     // SERIALIZATION
     // ========================================================================
 
-    exportProject(store: ProjectStore): string {
-      const project = { ...store.project };
+    exportProject(): string {
+      const project: LatticeProject = { ...this.project };
       const animationStore = useAnimationStore();
       if (animationStore.snapConfig) {
-        (project as Record<string, unknown>).snapConfig = animationStore.snapConfig;
+        project.snapConfig = animationStore.snapConfig;
       }
       return JSON.stringify(project, null, 2);
     },
 
-    importProject(store: ProjectStore, json: string, pushHistoryFn: () => void): boolean {
+    importProject(json: string, pushHistoryFn: () => void): boolean {
       try {
         const parseResult = safeJsonParse<LatticeProject>(json, undefined, {
           maxSize: MAX_PROJECT_SIZE,
@@ -479,7 +547,7 @@ export const useProjectStore = defineStore("project", {
         let project = parseResult.data;
 
         if (needsMigration(project)) {
-          const oldVersion = (project as unknown as { schemaVersion?: number }).schemaVersion ?? 1;
+          const oldVersion = project.schemaVersion ?? 1;
           storeLogger.info(`Migrating project from schema v${oldVersion} to v${CURRENT_SCHEMA_VERSION}`);
           const migrationResult = migrateProject(project);
           if (migrationResult.success && migrationResult.project) {
@@ -497,18 +565,17 @@ export const useProjectStore = defineStore("project", {
           return false;
         }
 
-        const projectWithSnap = project as unknown as Record<string, unknown>;
         const animationStore = useAnimationStore();
-        if (projectWithSnap.snapConfig) {
+        if (project.snapConfig) {
           try {
-            animationStore.setSnapConfig(projectWithSnap.snapConfig as Partial<typeof animationStore.snapConfig>);
+            animationStore.setSnapConfig(project.snapConfig);
           } catch {
             // Continue with default snapConfig
           }
         }
 
-        const { snapConfig: _, ...projectWithoutSnapConfig } = projectWithSnap;
-        store.project = projectWithoutSnapConfig as unknown as LatticeProject;
+        const { snapConfig: _, ...projectWithoutSnapConfig } = project;
+        this.project = projectWithoutSnapConfig;
         pushHistoryFn();
         return true;
       } catch (err) {
@@ -517,7 +584,7 @@ export const useProjectStore = defineStore("project", {
       }
     },
 
-    async loadProjectFromFile(store: ProjectStore, file: File, pushHistoryFn: () => void): Promise<boolean> {
+    async loadProjectFromFile(file: File, pushHistoryFn: () => void): Promise<boolean> {
       try {
         const json = await file.text();
 
@@ -546,7 +613,7 @@ export const useProjectStore = defineStore("project", {
           // JSON parse error will be caught by importProject
         }
 
-        const success = this.importProject(store, json, pushHistoryFn);
+        const success = this.importProject(json, pushHistoryFn);
         if (success) storeLogger.info("Loaded project from file:", file.name);
         return success;
       } catch (err) {
@@ -559,13 +626,13 @@ export const useProjectStore = defineStore("project", {
     // SERVER OPERATIONS
     // ========================================================================
 
-    async saveProjectToServer(store: ProjectStore, projectId?: string): Promise<string | null> {
+    async saveProjectToServer(projectId?: string): Promise<string | null> {
       try {
-        const result = await saveProject(store.project, projectId);
+        const result = await saveProject(this.project, projectId);
         if (result.status === "success" && result.project_id) {
-          store.lastSaveProjectId = result.project_id;
-          store.lastSaveTime = Date.now();
-          store.hasUnsavedChanges = false;
+          this.lastSaveProjectId = result.project_id;
+          this.lastSaveTime = Date.now();
+          this.hasUnsavedChanges = false;
           storeLogger.info("Project saved to server:", result.project_id);
           return result.project_id;
         } else {
@@ -578,7 +645,7 @@ export const useProjectStore = defineStore("project", {
       }
     },
 
-    async loadProjectFromServer(store: ProjectStore, projectId: string, pushHistoryFn: () => void): Promise<boolean> {
+    async loadProjectFromServer(projectId: string, pushHistoryFn: () => void): Promise<boolean> {
       try {
         const result = await loadProject(projectId);
 
@@ -586,7 +653,7 @@ export const useProjectStore = defineStore("project", {
           let project = result.project;
 
           if (needsMigration(project)) {
-            const oldVersion = (project as unknown as { schemaVersion?: number }).schemaVersion ?? 1;
+            const oldVersion = project.schemaVersion ?? 1;
             storeLogger.info(`Migrating project from schema v${oldVersion} to v${CURRENT_SCHEMA_VERSION}`);
             const migrationResult = migrateProject(project);
             if (migrationResult.success && migrationResult.project) {
@@ -611,11 +678,11 @@ export const useProjectStore = defineStore("project", {
             return false;
           }
 
-          store.project = project;
+          this.project = project;
           pushHistoryFn();
-          store.lastSaveProjectId = projectId;
-          store.lastSaveTime = Date.now();
-          store.hasUnsavedChanges = false;
+          this.lastSaveProjectId = projectId;
+          this.lastSaveTime = Date.now();
+          this.hasUnsavedChanges = false;
           storeLogger.info("Project loaded from server:", projectId);
           return true;
         } else {
@@ -652,43 +719,42 @@ export const useProjectStore = defineStore("project", {
     // AUTOSAVE
     // ========================================================================
 
-    startAutosave(store: ProjectStore, performAutosaveFn: () => Promise<void>): void {
-      if (store.autosaveTimerId !== null || !store.autosaveEnabled) return;
-      store.autosaveTimerId = window.setInterval(performAutosaveFn, store.autosaveIntervalMs);
-      storeLogger.info("Autosave started with interval:", store.autosaveIntervalMs);
+    startAutosave(performAutosaveFn: () => Promise<void>): void {
+      if (this.autosaveTimerId !== null || !this.autosaveEnabled) return;
+      this.autosaveTimerId = window.setInterval(performAutosaveFn, this.autosaveIntervalMs);
+      storeLogger.info("Autosave started with interval:", this.autosaveIntervalMs);
     },
 
-    stopAutosave(store: ProjectStore): void {
-      if (store.autosaveTimerId !== null && store.autosaveTimerId !== undefined) {
-        window.clearInterval(store.autosaveTimerId);
-        store.autosaveTimerId = null;
+    stopAutosave(): void {
+      if (this.autosaveTimerId !== null && this.autosaveTimerId !== undefined) {
+        window.clearInterval(this.autosaveTimerId);
+        this.autosaveTimerId = null;
         storeLogger.info("Autosave stopped");
       }
     },
 
     configureAutosave(
-      store: ProjectStore,
       options: { enabled?: boolean; intervalMs?: number },
       performAutosaveFn: () => Promise<void>,
     ): void {
-      if (options.enabled !== undefined) store.autosaveEnabled = options.enabled;
+      if (options.enabled !== undefined) this.autosaveEnabled = options.enabled;
       if (options.intervalMs !== undefined && Number.isFinite(options.intervalMs) && options.intervalMs > 0) {
-        store.autosaveIntervalMs = options.intervalMs;
+        this.autosaveIntervalMs = options.intervalMs;
       }
-      this.stopAutosave(store);
-      if (store.autosaveEnabled) this.startAutosave(store, performAutosaveFn);
+      this.stopAutosave();
+      if (this.autosaveEnabled) this.startAutosave(performAutosaveFn);
     },
 
-    async performAutosave(store: ProjectStore): Promise<void> {
-      if (!store.hasUnsavedChanges) return;
+    async performAutosave(): Promise<void> {
+      if (!this.hasUnsavedChanges) return;
 
       try {
-        const existingProjectId = store.lastSaveProjectId || undefined;
-        const result = await saveProject(store.project, existingProjectId);
+        const existingProjectId = this.lastSaveProjectId || undefined;
+        const result = await saveProject(this.project, existingProjectId);
         if (result.status === "success" && result.project_id) {
-          store.lastSaveProjectId = result.project_id;
-          store.lastSaveTime = Date.now();
-          store.hasUnsavedChanges = false;
+          this.lastSaveProjectId = result.project_id;
+          this.lastSaveTime = Date.now();
+          this.hasUnsavedChanges = false;
           storeLogger.info("Autosaved project:", result.project_id);
         } else {
           storeLogger.error("Autosave failed:", result.message);
@@ -698,8 +764,8 @@ export const useProjectStore = defineStore("project", {
       }
     },
 
-    markUnsavedChanges(store: ProjectStore): void {
-      store.hasUnsavedChanges = true;
+    markUnsavedChanges(): void {
+      this.hasUnsavedChanges = true;
     },
 
     // ========================================================================
@@ -792,9 +858,12 @@ export const useProjectStore = defineStore("project", {
         }
       }
 
-      const exportProject = structuredClone(toRaw(store.project));
-      (exportProject.meta as unknown as Record<string, unknown>).exportedAt = new Date().toISOString();
-      (exportProject as unknown as Record<string, unknown>)._assetManifest = assetManifest;
+      const exportProject = structuredClone(toRaw(store.project)) as LatticeProject & {
+        meta: ProjectMeta & { exportedAt?: string };
+        _assetManifest?: typeof assetManifest;
+      };
+      exportProject.meta.exportedAt = new Date().toISOString();
+      exportProject._assetManifest = assetManifest;
 
       folder.file("project.lattice.json", JSON.stringify(exportProject, null, 2));
 

@@ -12,7 +12,6 @@
  */
 
 import { useCompositorStore } from "@/stores/compositorStore";
-import { useLayerStore } from "@/stores/layerStore";
 import { parseAndSanitize } from "@/services/security/jsonSanitizer";
 import {
   CameraTrackingSolveSchema,
@@ -22,6 +21,7 @@ import {
 } from "@/schemas/imports/cameraTracking-schema";
 import type { AnimatableProperty } from "@/types/animation";
 import { createAnimatableProperty, createKeyframe } from "@/types/animation";
+import type { Layer, PointCloudLayerData } from "@/types/project";
 import type {
   CameraIntrinsics,
   CameraPose,
@@ -391,7 +391,6 @@ export async function importCameraTracking(
   options: CameraTrackingImportOptions = {},
 ): Promise<CameraTrackingImportResult> {
   const store = useCompositorStore();
-  const layerStore = useLayerStore();
   const result: CameraTrackingImportResult = {
     success: false,
     warnings: [],
@@ -447,7 +446,7 @@ export async function importCameraTracking(
       });
 
       // Create camera layer
-      const cameraLayer = layerStore.createCameraLayer(store as any);
+      const { layer: cameraLayer } = store.createCameraLayer();
       cameraLayer.name = `Tracked Camera (${solve.source})`;
 
       if (cameraLayer) {
@@ -460,7 +459,8 @@ export async function importCameraTracking(
           "Transform",
         );
         positionProp.animated = true;
-        positionProp.keyframes = positionKeyframes as any; // keyframes match the value type
+        // Keyframe values include z which satisfies the z? optional type
+        (positionProp as AnimatableProperty<{ x: number; y: number; z: number }>).keyframes = positionKeyframes;
 
         // Use orientation for 3D rotation (vector3), rotation is for 2D (number)
         const orientationProp = createAnimatableProperty(
@@ -470,14 +470,14 @@ export async function importCameraTracking(
           "Transform",
         );
         orientationProp.animated = true;
-        orientationProp.keyframes = rotationKeyframes as any;
+        (orientationProp as AnimatableProperty<{ x: number; y: number; z: number }>).keyframes = rotationKeyframes;
 
         // Update the camera layer with camera-specific data and transform
-        layerStore.updateLayer(store, cameraLayer.id, {
+        store.updateLayer(cameraLayer.id, {
           threeD: true,
           transform: {
             ...cameraLayer.transform,
-            position: positionProp as any, // Cast needed due to z optional mismatch
+            position: positionProp as AnimatableProperty<{ x: number; y: number; z?: number }>,
             orientation: orientationProp,
           },
         });
@@ -509,10 +509,10 @@ export async function importCameraTracking(
             offset.z,
         };
 
-        const nullLayer = layerStore.createLayer(store, "control", `Track Point ${point.id}`);
+        const nullLayer = store.createLayer("control", `Track Point ${point.id}`);
 
         if (nullLayer) {
-          layerStore.updateLayer(store, nullLayer.id, {
+          store.updateLayer(nullLayer.id, {
             threeD: true,
             transform: {
               ...nullLayer.transform,
@@ -521,7 +521,7 @@ export async function importCameraTracking(
                 pos,
                 "position",
                 "Transform",
-              ) as any,
+              ) as AnimatableProperty<{ x: number; y: number; z?: number }>,
             },
           });
 
@@ -567,17 +567,37 @@ export async function importCameraTracking(
         }
       }
 
-      const pointCloudLayer = layerStore.createLayer(store, "pointcloud", `Track Points (${solve.source})`);
+      const pointCloudLayer = store.createLayer("pointcloud", `Track Points (${solve.source})`);
 
       if (pointCloudLayer) {
-        // Note: point cloud data structure may vary - cast as any for flexibility
-        layerStore.updateLayer(store, pointCloudLayer.id, {
-          data: {
-            positions: new Float32Array(positions),
-            colors: new Float32Array(colors),
-            pointSize,
-            format: "xyz_rgb",
-          } as any,
+        // Point cloud data structure - runtime data stored in positions/colors arrays
+        // Note: This creates a minimal point cloud layer with runtime data
+        // The actual PointCloudLayerData type expects assetId, but we're creating from tracking data
+        const pointCloudData = {
+          assetId: "", // Runtime-generated, no asset file
+          format: "xyz" as const,
+          pointCount: positions.length / 3,
+          pointSize: createAnimatableProperty("pointSize", pointSize, "number"),
+          sizeAttenuation: true,
+          minPointSize: 1,
+          maxPointSize: 10,
+          colorMode: "rgb" as const,
+          uniformColor: "#ffffff",
+          // Runtime-specific data stored in these properties (not in type definition)
+          positions: new Float32Array(positions),
+          colors: new Float32Array(colors),
+        };
+        // Runtime-specific data stored separately (positions/colors not in type definition)
+        // Use intersection type to include runtime properties
+        const runtimeData: PointCloudLayerData & {
+          positions: Float32Array;
+          colors: Float32Array;
+        } = pointCloudData as PointCloudLayerData & {
+          positions: Float32Array;
+          colors: Float32Array;
+        };
+        store.updateLayer(pointCloudLayer.id, {
+          data: runtimeData,
         });
         result.pointCloudLayerId = pointCloudLayer.id;
       }

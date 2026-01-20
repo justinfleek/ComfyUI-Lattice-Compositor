@@ -341,7 +341,7 @@ import {
   validateLoadedSprite,
   validateLoadedSpritesheet,
 } from "@/services/spriteValidation";
-import { useAssetStore } from "@/stores/assetStore";
+import { useAssetStore, type EnvironmentState } from "@/stores/assetStore";
 import { useCompositorStore } from "@/stores/compositorStore";
 import type { AssetType } from "@/types/assets";
 
@@ -517,9 +517,22 @@ function registerSvgAsMesh(svgId: string) {
 // MESH PARTICLES
 // ========================================================================
 
+// Type-safe primitive mesh type from registerPrimitiveMesh signature
+type PrimitiveMeshType =
+  | "cube"
+  | "sphere"
+  | "cone"
+  | "cylinder"
+  | "torus"
+  | "tetrahedron"
+  | "octahedron"
+  | "icosahedron";
+
 function addPrimitiveMesh() {
   if (selectedPrimitive.value) {
-    assetStore.registerPrimitiveMesh(selectedPrimitive.value as any);
+    // Type-safe assertion - selectedPrimitive.value should be one of the valid primitive types
+    const primitiveType = selectedPrimitive.value as PrimitiveMeshType;
+    assetStore.registerPrimitiveMesh(primitiveType);
     selectedPrimitive.value = "";
   }
 }
@@ -700,7 +713,7 @@ function deleteSprite(id: string) {
 // ENVIRONMENT
 // ========================================================================
 
-function onEnvironmentUpdate(settings: any) {
+function onEnvironmentUpdate(settings: Partial<EnvironmentState>) {
   assetStore.updateEnvironment(settings);
   emit("environment-update", settings);
 }
@@ -722,8 +735,8 @@ function onEnvironmentClear() {
 const emit = defineEmits<{
   (e: "create-layers-from-svg", svgId: string): void;
   (e: "use-mesh-as-emitter", meshId: string): void;
-  (e: "environment-update", settings: any): void;
-  (e: "environment-load", settings: any): void;
+  (e: "environment-update", settings: Partial<EnvironmentState>): void;
+  (e: "environment-load", settings: Partial<EnvironmentState>): void;
   (e: "environment-clear"): void;
 }>();
 </script>

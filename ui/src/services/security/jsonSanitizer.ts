@@ -7,6 +7,24 @@
  * ENTERPRISE SECURITY: This is a critical security control for ensuring Enterprise readiness.
  */
 
+/**
+ * Type representing all valid JSON values (recursive)
+ */
+type JSONValue =
+  | string
+  | number
+  | boolean
+  | null
+  | JSONValue[]
+  | { [key: string]: JSONValue };
+
+/**
+ * Type guard for JSON objects
+ */
+function isJSONObject(value: unknown): value is { [key: string]: JSONValue } {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
 export interface JSONSanitizeOptions {
   /** Maximum nesting depth (default: 50) */
   maxDepth?: number;
@@ -232,7 +250,7 @@ function sanitizeValue(
   // Object
   if (type === "object") {
     return sanitizeObject(
-      value as Record<string, unknown>,
+      value as { [key: string]: JSONValue },
       opts,
       stats,
       warnings,
@@ -314,12 +332,12 @@ function sanitizeArray(
  * Sanitize an object
  */
 function sanitizeObject(
-  obj: Record<string, unknown>,
+  obj: { [key: string]: JSONValue },
   opts: Required<JSONSanitizeOptions>,
   stats: JSONSanitizeResult["stats"],
   warnings: string[],
   depth: number,
-): Record<string, unknown> {
+): { [key: string]: JSONValue } {
   const keys = Object.keys(obj);
 
   // Key count check
@@ -330,7 +348,7 @@ function sanitizeObject(
     );
   }
 
-  const result: Record<string, unknown> = {};
+  const result: { [key: string]: JSONValue } = {};
 
   for (const key of keys) {
     // Key length check

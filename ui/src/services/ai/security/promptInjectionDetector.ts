@@ -23,10 +23,35 @@
  */
 
 import { logAuditEntry } from "../../security/auditLog";
+import type { Layer } from "@/types/project";
 
 // ============================================================================
 // TYPES
 // ============================================================================
+
+/**
+ * Minimal layer structure for injection scanning
+ */
+interface ScannableLayer {
+  name?: string;
+  expression?: string;
+  properties?: Partial<{
+    visible: boolean;
+    locked: boolean;
+    [key: string]: string | number | boolean | null | undefined | Array<unknown> | { [key: string]: string | number | boolean | null | undefined | Array<unknown> };
+  }>;
+}
+
+/**
+ * Minimal project structure for injection scanning
+ */
+interface ScannableProject {
+  name?: string;
+  description?: string;
+  author?: string;
+  compositions?: Record<string, { layers?: ScannableLayer[] }>;
+  layers?: ScannableLayer[];
+}
 
 export interface InjectionDetectionResult {
   /** Whether injection was detected */
@@ -973,29 +998,45 @@ export function sanitizeForLLM(
  * @param options - Sanitization options
  * @returns Sanitized object (new object, original unchanged)
  */
-export function sanitizeObjectForLLM<T extends Record<string, unknown>>(
+/**
+ * Type guard for objects that can be sanitized
+ */
+interface SanitizableValue {
+  [key: string]: string | number | boolean | null | undefined | SanitizableValue | Array<string | number | boolean | null | undefined | SanitizableValue>;
+}
+
+function isSanitizableObject(value: unknown): value is SanitizableValue {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+/**
+ * Type for sanitizable object values
+ */
+interface SanitizableObjectValue {
+  [key: string]: string | number | boolean | null | undefined | Array<unknown> | SanitizableObjectValue;
+}
+
+export function sanitizeObjectForLLM<T extends SanitizableObjectValue>(
   obj: T,
   options: Parameters<typeof sanitizeForLLM>[1] = {},
 ): T {
-  const result: Record<string, unknown> = {};
+  const result = {} as T;
 
   for (const [key, value] of Object.entries(obj)) {
     if (typeof value === "string") {
-      result[key] = sanitizeForLLM(value, options);
-    } else if (typeof value === "object" && value !== null) {
-      if (Array.isArray(value)) {
-        result[key] = value.map((item) =>
-          typeof item === "string"
-            ? sanitizeForLLM(item, options)
-            : typeof item === "object" && item !== null
-              ? sanitizeObjectForLLM(item as Record<string, unknown>, options)
-              : item,
-        );
-      } else {
-        result[key] = sanitizeObjectForLLM(value as Record<string, unknown>, options);
-      }
+      (result as { [key: string]: unknown })[key] = sanitizeForLLM(value, options);
+    } else if (isSanitizableObject(value)) {
+      (result as { [key: string]: unknown })[key] = sanitizeObjectForLLM(value as SanitizableObjectValue, options);
+    } else if (Array.isArray(value)) {
+      (result as { [key: string]: unknown })[key] = value.map((item) =>
+        typeof item === "string"
+          ? sanitizeForLLM(item, options)
+          : isSanitizableObject(item)
+            ? sanitizeObjectForLLM(item as SanitizableObjectValue, options)
+            : item,
+      );
     } else {
-      result[key] = value;
+      (result as { [key: string]: unknown })[key] = value;
     }
   }
 
@@ -1192,11 +1233,7 @@ export function scanForInjections(
  * @param layer - Layer object to scan
  * @returns Array of detected injections
  */
-export function scanLayerForInjections(layer: {
-  name?: string;
-  expression?: string;
-  properties?: Record<string, unknown>;
-}): InjectionDetectionResult[] {
+export function scanLayerForInjections(layer: ScannableLayer): InjectionDetectionResult[] {
   const fields: Record<string, string | undefined> = {
     name: layer.name,
     expression: layer.expression,
@@ -1224,14 +1261,11 @@ export function scanLayerForInjections(layer: {
  * Behavioral anomaly detection for projects
  * Looks for structural patterns that indicate injection attempts
  */
-function detectBehavioralAnomalies(project: {
-  compositions?: Record<string, { layers?: Array<{ name?: string; expression?: string; properties?: Record<string, unknown> }> }>;
-  layers?: Array<{ name?: string; expression?: string; properties?: Record<string, unknown> }>;
-}): InjectionDetectionResult[] {
+function detectBehavioralAnomalies(project: ScannableProject): InjectionDetectionResult[] {
   const anomalies: InjectionDetectionResult[] = [];
 
   // Collect all layers
-  const allLayers: Array<{ name?: string; expression?: string; properties?: Record<string, unknown>; location: string }> = [];
+  const allLayers: Array<ScannableLayer & { location: string }> = [];
 
   if (project.compositions) {
     for (const [compId, comp] of Object.entries(project.compositions)) {
@@ -1337,7 +1371,7 @@ function detectBehavioralAnomalies(project: {
   // Anomaly 5: Large number of hidden/invisible layers
   let hiddenCount = 0;
   for (const layer of allLayers) {
-    if (layer.properties && (layer.properties as Record<string, unknown>).visible === false) {
+    if (layer.properties && layer.properties.visible === false) {
       hiddenCount++;
     }
   }
@@ -1367,13 +1401,7 @@ function detectBehavioralAnomalies(project: {
  * @param project - Project data to scan
  * @returns Object with detection summary
  */
-export function scanProjectForInjections(project: {
-  name?: string;
-  description?: string;
-  author?: string;
-  compositions?: Record<string, { layers?: Array<{ name?: string; expression?: string; properties?: Record<string, unknown> }> }>;
-  layers?: Array<{ name?: string; expression?: string; properties?: Record<string, unknown> }>;
-}): {
+export function scanProjectForInjections(project: ScannableProject): {
   safe: boolean;
   totalDetections: number;
   highConfidenceCount: number;

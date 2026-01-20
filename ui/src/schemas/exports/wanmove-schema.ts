@@ -4,11 +4,15 @@
  * Zod schemas for validating WanMove trajectory export data.
  * WanMove format uses N points across T frames with [x,y] coordinates.
  * All numeric values use .finite() to reject NaN/Infinity.
+ * Includes comprehensive validation constraints for security and data integrity.
  *
  * @see https://github.com/ali-vilab/Wan-Move
  */
 
 import { z } from "zod";
+import {
+  boundedArray,
+} from "../shared-validation";
 
 // ============================================================================
 // Constants
@@ -63,9 +67,9 @@ const colorChannel = z.number().int().min(0).max(255);
  * Simple 2D point with x,y coordinates.
  */
 export const Point2DSchema = z.object({
-  x: finiteNumber,
-  y: finiteNumber,
-});
+  x: finiteNumber.max(WANMOVE_MAX_DIMENSION), // Max dimension
+  y: finiteNumber.max(WANMOVE_MAX_DIMENSION), // Max dimension
+}).strict();
 
 export type Point2D = z.infer<typeof Point2DSchema>;
 
@@ -105,12 +109,12 @@ export type RGBColorTuple = z.infer<typeof RGBColorTupleSchema>;
  * Metadata for a WanMove trajectory export.
  */
 export const WanMoveMetadataSchema = z.object({
-  numPoints: positiveCount,
-  numFrames: positiveCount,
+  numPoints: positiveCount.max(WANMOVE_MAX_POINTS), // Max 10k points
+  numFrames: positiveCount.max(WANMOVE_MAX_FRAMES), // Max 10k frames
   width: positiveDimension,
   height: positiveDimension,
-  fps: positiveFinite,
-});
+  fps: positiveFinite.max(120), // Max 120 FPS
+}).strict();
 
 export type WanMoveMetadata = z.infer<typeof WanMoveMetadataSchema>;
 
@@ -121,42 +125,59 @@ export type WanMoveMetadata = z.infer<typeof WanMoveMetadataSchema>;
 /**
  * A single track's trajectory: array of [x, y] points per frame.
  */
-export const SingleTrackSchema = z.array(TrackPointTupleSchema);
+export const SingleTrackSchema = boundedArray(TrackPointTupleSchema, WANMOVE_MAX_FRAMES); // Max 10k frames per track
 
 export type SingleTrack = z.infer<typeof SingleTrackSchema>;
 
 /**
  * All tracks: [N][T][2] format - N points, T frames, 2 coordinates.
  */
-export const TracksArraySchema = z.array(SingleTrackSchema);
+export const TracksArraySchema = boundedArray(SingleTrackSchema, WANMOVE_MAX_POINTS); // Max 10k tracks
 
 export type TracksArray = z.infer<typeof TracksArraySchema>;
 
 /**
  * Visibility for a single track: boolean per frame.
  */
-export const SingleVisibilitySchema = z.array(z.boolean());
+export const SingleVisibilitySchema = boundedArray(z.boolean(), WANMOVE_MAX_FRAMES); // Max 10k frames per track
 
 export type SingleVisibility = z.infer<typeof SingleVisibilitySchema>;
 
 /**
  * All visibility data: [N][T] format.
  */
-export const VisibilityArraySchema = z.array(SingleVisibilitySchema);
+export const VisibilityArraySchema = boundedArray(SingleVisibilitySchema, WANMOVE_MAX_POINTS); // Max 10k tracks
 
 export type VisibilityArray = z.infer<typeof VisibilityArraySchema>;
 
 /**
- * Main WanMove trajectory structure.
+ * Base WanMove trajectory structure (without refinements for extend support).
  */
-export const WanMoveTrajectorySchema = z.object({
+export const WanMoveTrajectoryBaseSchema = z.object({
   /** Trajectory coordinates: [N][T][2] */
   tracks: TracksArraySchema,
   /** Visibility mask: [N][T] */
   visibility: VisibilityArraySchema,
   /** Metadata */
   metadata: WanMoveMetadataSchema,
-});
+}).strict();
+
+/**
+ * Main WanMove trajectory structure.
+ */
+export const WanMoveTrajectorySchema = WanMoveTrajectoryBaseSchema.refine(
+  (data) => {
+    // tracks and visibility should have same length
+    return data.tracks.length === data.visibility.length;
+  },
+  { message: "tracks and visibility arrays must have same length", path: ["visibility"] }
+).refine(
+  (data) => {
+    // numPoints should match tracks length
+    return data.metadata.numPoints === data.tracks.length;
+  },
+  { message: "numPoints must match tracks array length", path: ["metadata", "numPoints"] }
+);
 
 export type WanMoveTrajectory = z.infer<typeof WanMoveTrajectorySchema>;
 
@@ -170,7 +191,7 @@ export type WanMoveTrajectory = z.infer<typeof WanMoveTrajectorySchema>;
 export const ColorStopSchema = z.object({
   position: normalized01,
   color: RGBColorTupleSchema,
-});
+}).strict();
 
 export type ColorStop = z.infer<typeof ColorStopSchema>;
 
@@ -178,8 +199,19 @@ export type ColorStop = z.infer<typeof ColorStopSchema>;
  * A color gradient definition.
  */
 export const ColorGradientSchema = z.object({
-  stops: z.array(ColorStopSchema).min(1),
-});
+  stops: boundedArray(ColorStopSchema, 100).min(1), // Max 100 stops, min 1
+}).strict().refine(
+  (data) => {
+    // Stops should be sorted by position
+    for (let i = 1; i < data.stops.length; i++) {
+      if (data.stops[i].position < data.stops[i - 1].position) {
+        return false;
+      }
+    }
+    return true;
+  },
+  { message: "Gradient stops must be sorted by position", path: ["stops"] }
+);
 
 export type ColorGradient = z.infer<typeof ColorGradientSchema>;
 
@@ -190,14 +222,26 @@ export type ColorGradient = z.infer<typeof ColorGradientSchema>;
 /**
  * Extended trajectory with color data.
  */
-export const ColoredTrajectorySchema = WanMoveTrajectorySchema.extend({
+export const ColoredTrajectorySchema = WanMoveTrajectoryBaseSchema.extend({
   /** RGB color per point per frame: [N][T][3] values 0-255 */
-  colors: z.array(z.array(RGBColorTupleSchema)).optional(),
+  colors: boundedArray(boundedArray(RGBColorTupleSchema, WANMOVE_MAX_FRAMES), WANMOVE_MAX_POINTS).optional(), // Max 10k tracks, 10k frames
   /** Data values per point (for visualization): [N] */
-  dataValues: z.array(finiteNumber).optional(),
+  dataValues: boundedArray(finiteNumber, WANMOVE_MAX_POINTS).optional(), // Max 10k values
   /** Trail history length per point */
-  trailLength: positiveCount.optional(),
-});
+  trailLength: positiveCount.max(10000).optional(), // Max 10k trail length
+}).strict().refine(
+  (data) => {
+    // tracks and visibility should have same length
+    return data.tracks.length === data.visibility.length;
+  },
+  { message: "tracks and visibility arrays must have same length", path: ["visibility"] }
+).refine(
+  (data) => {
+    // numPoints should match tracks length
+    return data.metadata.numPoints === data.tracks.length;
+  },
+  { message: "numPoints must match tracks array length", path: ["metadata", "numPoints"] }
+);
 
 export type ColoredTrajectory = z.infer<typeof ColoredTrajectorySchema>;
 

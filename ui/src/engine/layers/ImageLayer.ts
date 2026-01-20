@@ -82,7 +82,7 @@ export class ImageLayer extends BaseLayer {
   }
 
   /**
-   * Extract image data from layer object
+   * Extract image data from layer object (type-safe)
    */
   private extractImageData(layerData: Layer): {
     source: string | null;
@@ -90,13 +90,31 @@ export class ImageLayer extends BaseLayer {
     targetHeight: number | null;
     fit: "none" | "contain" | "cover" | "fill";
   } {
-    const data = layerData.data as any;
+    // Type-safe narrowing - ImageLayerData uses assetId, but runtime may have source/url
+    if (layerData.type !== "image" || !layerData.data) {
+      return {
+        source: null,
+        targetWidth: null,
+        targetHeight: null,
+        fit: "none",
+      };
+    }
+
+    const imageData = layerData.data as import("@/types/project").ImageLayerData;
+    
+    // Handle runtime properties that may exist but aren't in type definition
+    const runtimeData = imageData as import("@/types/project").ImageLayerData & {
+      source?: string;
+      url?: string;
+      width?: number;
+      height?: number;
+    };
 
     return {
-      source: data?.source ?? data?.url ?? data?.assetId ?? null,
-      targetWidth: data?.width ?? null,
-      targetHeight: data?.height ?? null,
-      fit: data?.fit ?? "none",
+      source: runtimeData.source ?? runtimeData.url ?? imageData.assetId ?? null,
+      targetWidth: runtimeData.width ?? null,
+      targetHeight: runtimeData.height ?? null,
+      fit: imageData.fit ?? "none",
     };
   }
 
@@ -397,33 +415,43 @@ export class ImageLayer extends BaseLayer {
   }
 
   protected onUpdate(properties: Partial<Layer>): void {
-    const data = properties.data as any;
-    let needsResize = false;
+    // Type-safe data access - only process if this is an image layer update
+    if (properties.data && typeof properties.data === "object") {
+      const imageData = properties.data as import("@/types/project").ImageLayerData;
+      
+      // Handle runtime properties that may exist but aren't in type definition
+      const runtimeData = imageData as import("@/types/project").ImageLayerData & {
+        source?: string;
+        url?: string;
+        width?: number;
+        height?: number;
+      };
+      
+      let needsResize = false;
 
-    // Handle source change
-    if (data?.source || data?.url || data?.assetId) {
-      const newSource = data.source ?? data.url ?? data.assetId;
-      if (newSource !== this.sourceUrl) {
+      // Handle source change
+      const newSource = runtimeData.source ?? runtimeData.url ?? imageData.assetId;
+      if (newSource && newSource !== this.sourceUrl) {
         this.loadImage(newSource);
       }
-    }
 
-    // Handle fit mode change
-    if (data?.fit !== undefined && data.fit !== this.fit) {
-      this.fit = data.fit;
-      needsResize = true;
-    }
+      // Handle fit mode change
+      if (imageData.fit !== undefined && imageData.fit !== this.fit) {
+        this.fit = imageData.fit;
+        needsResize = true;
+      }
 
-    // Handle target dimension change (for fit calculations)
-    if (data?.width !== undefined || data?.height !== undefined) {
-      this.targetWidth = data.width ?? this.targetWidth;
-      this.targetHeight = data.height ?? this.targetHeight;
-      needsResize = true;
-    }
+      // Handle target dimension change (for fit calculations)
+      if (runtimeData.width !== undefined || runtimeData.height !== undefined) {
+        this.targetWidth = runtimeData.width ?? this.targetWidth;
+        this.targetHeight = runtimeData.height ?? this.targetHeight;
+        needsResize = true;
+      }
 
-    // Recalculate mesh size if fit or target changed
-    if (needsResize) {
-      this.updateMeshSize();
+      // Recalculate mesh size if fit or target changed
+      if (needsResize) {
+        this.updateMeshSize();
+      }
     }
   }
 

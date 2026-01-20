@@ -398,8 +398,11 @@ export async function textLayerToSplines(
   const layers: Partial<Layer>[] = [];
   const groupByCharacter = options?.groupByCharacter ?? true;
 
-  const layerX = (textLayer.transform?.position?.value as any)?.x ?? 0;
-  const layerY = (textLayer.transform?.position?.value as any)?.y ?? 0;
+  // Type-safe access to transform position value
+  // LayerTransform.position.value is AnimatableProperty<{ x: number; y: number; z?: number }>.value
+  const positionValue = textLayer.transform?.position?.value;
+  const layerX = (typeof positionValue === "object" && positionValue !== null && "x" in positionValue) ? positionValue.x : 0;
+  const layerY = (typeof positionValue === "object" && positionValue !== null && "y" in positionValue) ? positionValue.y : 0;
 
   if (groupByCharacter) {
     for (const charGroup of result.characters) {

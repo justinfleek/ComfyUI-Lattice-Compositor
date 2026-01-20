@@ -14,6 +14,7 @@
  */
 
 import { logAuditEntry } from "../../security/auditLog";
+import type { ToolCall } from "../toolDefinitions";
 
 // ============================================================================
 // TYPES

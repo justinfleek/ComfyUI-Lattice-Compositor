@@ -16,6 +16,7 @@ import { z } from "zod";
 import { safeJsonParse } from "../../../utils/schemaValidation";
 import { sanitizeFilename, isPathSafe } from "../../../utils/schemaValidation";
 import { logAuditEntry } from "../../security/auditLog";
+import type { ComfyUIWorkflow, ComfyUINode } from "@/types/export";
 
 // ============================================================================
 // COMFYUI DATA SCHEMAS
@@ -304,7 +305,7 @@ function findSuspiciousStrings(
  * - Suspicious inputs
  * - External URL references
  */
-export function validateComfyWorkflow(workflow: Record<string, unknown>): {
+export function validateComfyWorkflow(workflow: ComfyUIWorkflow): {
   safe: boolean;
   warnings: string[];
   blocked: string[];
@@ -331,11 +332,11 @@ export function validateComfyWorkflow(workflow: Record<string, unknown>): {
   ]);
 
   for (const [nodeId, nodeData] of Object.entries(workflow)) {
-    if (typeof nodeData !== "object" || nodeData === null) {
+    if (!nodeData || typeof nodeData !== "object") {
       continue;
     }
 
-    const node = nodeData as Record<string, unknown>;
+    const node = nodeData as ComfyUINode;
     const classType = node.class_type;
 
     if (typeof classType !== "string") {
@@ -355,8 +356,8 @@ export function validateComfyWorkflow(workflow: Record<string, unknown>): {
 
     // Check node inputs for suspicious values
     const inputs = node.inputs;
-    if (typeof inputs === "object" && inputs !== null) {
-      for (const [inputName, inputValue] of Object.entries(inputs as Record<string, unknown>)) {
+    if (inputs && typeof inputs === "object") {
+      for (const [inputName, inputValue] of Object.entries(inputs)) {
         // Check for file path inputs
         if (typeof inputValue === "string") {
           if (!isPathSafe(inputValue)) {

@@ -205,8 +205,9 @@ async function sendMessage() {
   try {
     const agent = getAIAgent();
 
-    // Update agent model config
-    (agent as any).config.model = selectedModel.value;
+    // Type-safe model update using proper setter method
+    const modelValue = selectedModel.value as "gpt-4o" | "claude-sonnet" | "local";
+    agent.updateConfig({ model: modelValue });
 
     // Process instruction
     const _response = await agent.processInstruction(text);

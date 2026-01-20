@@ -21,6 +21,7 @@ import {
 import type { ControlPoint } from "@/types/spline";
 import type { Layer } from "@/types/project";
 import { createAnimatableProperty } from "@/types/animation";
+import { createDefaultTransform } from "@/types/transform";
 
 // ============================================================
 // ARBITRARIES
@@ -254,13 +255,27 @@ describe("PROPERTY: SVGExportService", () => {
   });
 
   it("exportSplineLayer warns for non-spline layers", () => {
-    const layer = {
+    const layer: Layer = {
       id: "test",
       name: "Test",
       type: "image", // Not a spline!
       visible: true,
       locked: false,
-    } as unknown as Layer;
+      isolate: false,
+      threeD: false,
+      motionBlur: false,
+      startFrame: 0,
+      endFrame: 100,
+      inPoint: 0,
+      outPoint: 100,
+      blendMode: "normal",
+      opacity: createAnimatableProperty("opacity", 100, "number"),
+      transform: createDefaultTransform(),
+      effects: [],
+      properties: [],
+      parentId: null,
+      data: null,
+    };
     
     const result = exportSplineLayerToSVG(layer);
     expect(result.warnings.length).toBeGreaterThan(0);
@@ -365,7 +380,27 @@ describe("PROPERTY: exportSplineLayer (simple)", () => {
   });
 
   it("returns empty string for non-spline layers", () => {
-    const layer = { id: "test", name: "Test", type: "image" } as unknown as Layer;
+    const layer: Layer = {
+      id: "test",
+      name: "Test",
+      type: "image",
+      visible: true,
+      locked: false,
+      isolate: false,
+      threeD: false,
+      motionBlur: false,
+      startFrame: 0,
+      endFrame: 100,
+      inPoint: 0,
+      outPoint: 100,
+      blendMode: "normal",
+      opacity: createAnimatableProperty("opacity", 100, "number"),
+      transform: createDefaultTransform(),
+      effects: [],
+      properties: [],
+      parentId: null,
+      data: null,
+    };
     const result = exportSplineLayer(layer);
     expect(result).toBe("");
   });
@@ -427,7 +462,27 @@ describe("PROPERTY: exportLayers (simple)", () => {
       { id: "p1", x: 0, y: 0, handleIn: null, handleOut: null, type: "corner" },
       { id: "p2", x: 100, y: 100, handleIn: null, handleOut: null, type: "corner" }
     ], false);
-    const imageLayer = { id: "img", name: "Image", type: "image" } as unknown as Layer;
+    const imageLayer: Layer = {
+      id: "img",
+      name: "Image",
+      type: "image",
+      visible: true,
+      locked: false,
+      isolate: false,
+      threeD: false,
+      motionBlur: false,
+      startFrame: 0,
+      endFrame: 100,
+      inPoint: 0,
+      outPoint: 100,
+      blendMode: "normal",
+      opacity: createAnimatableProperty("opacity", 100, "number"),
+      transform: createDefaultTransform(),
+      effects: [],
+      properties: [],
+      parentId: null,
+      data: null,
+    };
     
     const result = exportLayers([splineLayer, imageLayer]);
     

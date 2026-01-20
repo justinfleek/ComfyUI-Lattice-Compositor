@@ -93,6 +93,30 @@ const GOOGLE_FONTS = [
   "Barlow",
 ];
 
+// ============================================================================
+// TYPE EXTENSIONS FOR LOCAL FONT ACCESS API
+// ============================================================================
+
+/**
+ * Extended Window interface for Local Font Access API
+ * queryLocalFonts() is available in Chrome/Edge 103+ but not yet in TypeScript DOM types
+ */
+interface WindowWithFontAccess extends Window {
+  queryLocalFonts?: () => Promise<Array<{
+    family: string;
+    fullName: string;
+    style: string;
+    postscriptName?: string;
+  }>>;
+}
+
+/**
+ * Type guard to check if window supports Local Font Access API
+ */
+function supportsLocalFontAccess(window: Window): window is WindowWithFontAccess {
+  return "queryLocalFonts" in window;
+}
+
 class FontService {
   private systemFonts: FontInfo[] = [];
   private loadedGoogleFonts: Set<string> = new Set();
@@ -118,8 +142,14 @@ class FontService {
    */
   private async loadSystemFonts(): Promise<void> {
     try {
+      // Type-safe access to queryLocalFonts API
+      if (!supportsLocalFontAccess(window)) {
+        fontLogger.info("Local Font Access API not available");
+        return;
+      }
+
       // This will prompt for permission
-      const fonts = await (window as any).queryLocalFonts();
+      const fonts = await window.queryLocalFonts();
 
       // Group by family, keep one entry per family
       const familyMap = new Map<string, FontInfo>();

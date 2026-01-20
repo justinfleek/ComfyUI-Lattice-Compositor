@@ -23,6 +23,7 @@ import type {
   Composition,
   EffectInstance,
   Layer,
+  PropertyValue,
 } from "@/types/project";
 
 // ============================================================================
@@ -150,7 +151,7 @@ export interface SerializedLayer {
   transform: SerializedTransform;
   opacity: SerializedAnimatableProperty;
   effects?: SerializedEffect[];
-  data?: Record<string, any>;
+  data?: Record<string, PropertyValue>;
 }
 
 export interface SerializedTransform {
@@ -162,8 +163,12 @@ export interface SerializedTransform {
   anchorPoint?: SerializedAnimatableProperty;
 }
 
+/**
+ * Serialized animatable property for state serialization
+ * Uses PropertyValue union type for type-safe serialization
+ */
 export interface SerializedAnimatableProperty {
-  value: any;
+  value: import("@/types/animation").PropertyValue; // Type-safe property value union
   animated: boolean;
   keyframeCount?: number;
   keyframes?: SerializedKeyframe[];
@@ -171,7 +176,7 @@ export interface SerializedAnimatableProperty {
 
 export interface SerializedKeyframe {
   frame: number;
-  value: any;
+  value: import("@/types/animation").PropertyValue; // Type-safe property value union
   interpolation: string;
 }
 
@@ -180,7 +185,7 @@ export interface SerializedEffect {
   name: string;
   type: string;
   enabled: boolean;
-  parameters: Record<string, any>;
+  parameters: Record<string, PropertyValue>;
 }
 
 // ============================================================================
@@ -505,7 +510,7 @@ function serializeAnimatableProperty(
 
 function serializeEffect(effect: EffectInstance): SerializedEffect {
   // Summarize effect parameters (just current values)
-  const parameters: Record<string, any> = {};
+  const parameters: Record<string, PropertyValue> = {};
   for (const [key, param] of Object.entries(effect.parameters)) {
     // SECURITY: Sanitize string parameter values
     parameters[key] =
@@ -523,7 +528,7 @@ function serializeEffect(effect: EffectInstance): SerializedEffect {
   };
 }
 
-function serializeLayerData(type: string, data: any): Record<string, any> {
+function serializeLayerData(type: string, data: unknown): Record<string, PropertyValue> {
   // Return a summarized version of layer-specific data
   // SECURITY: Sanitize all user-controlled string fields
   switch (type) {

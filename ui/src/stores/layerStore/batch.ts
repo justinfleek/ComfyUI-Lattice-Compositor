@@ -11,10 +11,10 @@ import type { Layer } from "@/types/project";
 import { storeLogger } from "@/utils/logger";
 import { markLayerDirty } from "@/services/layerEvaluationCache";
 import type {
-  CompositorStoreAccess,
   ExponentialScaleOptions,
   SequenceLayersOptions,
 } from "./types";
+import { useProjectStore } from "../projectStore";
 
 // ============================================================================
 // SEQUENCE LAYERS
@@ -22,16 +22,15 @@ import type {
 
 /**
  * Sequence layers - arrange them one after another in timeline
- * @param compositorStore - The compositor store instance
  * @param layerIds - Array of layer IDs to sequence
  * @param options - Sequencing options
  * @returns Number of layers sequenced
  */
 export function sequenceLayers(
-  compositorStore: CompositorStoreAccess,
   layerIds: string[],
   options: SequenceLayersOptions = {},
 ): number {
+  const projectStore = useProjectStore();
   const { gapFrames = 0, startFrame = 0, reverse = false } = options;
 
   if (layerIds.length < 2) {
@@ -42,7 +41,7 @@ export function sequenceLayers(
   // Get layers in order
   const layers = layerIds
     .map((id) =>
-      compositorStore.getActiveCompLayers().find((l: Layer) => l.id === id),
+      projectStore.getActiveCompLayers().find((l: Layer) => l.id === id),
     )
     .filter((l: Layer | undefined): l is Layer => l !== null && l !== undefined);
 
@@ -55,7 +54,7 @@ export function sequenceLayers(
   const orderedLayers = reverse ? [...layers].reverse() : layers;
 
   // Push history BEFORE changes for undo support
-  compositorStore.pushHistory();
+  projectStore.pushHistory();
 
   let currentFrame = startFrame;
 
@@ -72,7 +71,7 @@ export function sequenceLayers(
     markLayerDirty(layer.id);
   });
 
-  compositorStore.project.meta.modified = new Date().toISOString();
+  projectStore.project.meta.modified = new Date().toISOString();
 
   storeLogger.info(
     `sequenceLayers: sequenced ${orderedLayers.length} layers starting at frame ${startFrame}`,
@@ -89,16 +88,15 @@ export function sequenceLayers(
  * Uses exponential curve instead of linear for more natural zoom effect.
  * Formula: scale(t) = startScale * (endScale/startScale)^t
  *
- * @param compositorStore - The compositor store instance
  * @param layerId - Layer to apply exponential scale to
  * @param options - Scale animation options
  * @returns Number of keyframes created
  */
 export function applyExponentialScale(
-  compositorStore: CompositorStoreAccess,
   layerId: string,
   options: ExponentialScaleOptions = {},
 ): number {
+  const projectStore = useProjectStore();
   const {
     startScale = 100,
     endScale = 200,
@@ -108,7 +106,7 @@ export function applyExponentialScale(
     axis = "both",
   } = options;
 
-  const layer = compositorStore
+  const layer = projectStore
     .getActiveCompLayers()
     .find((l: Layer) => l.id === layerId);
   if (!layer) {
@@ -131,7 +129,7 @@ export function applyExponentialScale(
   }
 
   // Push history BEFORE changes for undo support
-  compositorStore.pushHistory();
+  projectStore.pushHistory();
 
   // Clear existing scale keyframes
   layer.transform.scale.keyframes = [];
@@ -171,7 +169,7 @@ export function applyExponentialScale(
   }
 
   markLayerDirty(layerId);
-  compositorStore.project.meta.modified = new Date().toISOString();
+  projectStore.project.meta.modified = new Date().toISOString();
 
   storeLogger.info(
     `applyExponentialScale: created ${keyframeCount + 1} keyframes for exponential scale ${startScale}% -> ${endScale}%`,

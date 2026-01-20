@@ -18,8 +18,11 @@
     "test:browser": "vitest --config vitest.browser.config.ts",
     "test:all": "npm run test:unit && npm run test:browser",
     "test:coverage": "vitest run --coverage",
-    "test:playwright": "playwright test",
-    "test:playwright:ui": "playwright test --ui"
+    "test:playwright": "bash scripts/setup-test-env.sh && playwright test",
+    "test:playwright:ui": "bash scripts/setup-test-env.sh && playwright test --ui",
+    "test:playwright:install": "bash scripts/install-playwright-browsers.sh",
+    "test:playwright:setup-comfyui": "bash scripts/setup-comfyui-test.sh",
+    "test:playwright:setup-local": "cd .. && bash scripts/setup-comfyui-local.sh"
   },
   "dependencies": {
     "@phosphor-icons/vue": "^2.2.1",

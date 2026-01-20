@@ -14,6 +14,7 @@ import {
   initializeFrameCache,
 } from "@/services/frameCache";
 import { storeLogger } from "@/utils/logger";
+import { useProjectStore } from "./projectStore";
 
 // ============================================================================
 // STORE ACCESS INTERFACE
@@ -40,101 +41,80 @@ export interface CacheStoreAccess {
 // ============================================================================
 
 export const useCacheStore = defineStore("cache", {
-  state: () => ({}),
+  state: () => ({
+    frameCacheEnabled: true,
+    projectStateHash: "",
+  }),
 
   getters: {},
 
   actions: {
-    /**
-     * Initialize the frame cache
-     * Should be called on app startup
-     */
-    async initializeCache(store: CacheStoreAccess): Promise<void> {
-      if (store.frameCacheEnabled) {
+    async initializeCache(): Promise<void> {
+      if (this.frameCacheEnabled) {
         await initializeFrameCache();
         storeLogger.info("Frame cache initialized");
       }
     },
 
-    /**
-     * Enable or disable frame caching
-     */
-    setFrameCacheEnabled(store: CacheStoreAccess, enabled: boolean): void {
-      store.frameCacheEnabled = enabled;
+    setFrameCacheEnabled(enabled: boolean): void {
+      this.frameCacheEnabled = enabled;
       if (!enabled) {
         this.clearFrameCache();
       }
       storeLogger.info("Frame cache", enabled ? "enabled" : "disabled");
     },
 
-    /**
-     * Get frame from cache or null if not cached
-     */
-    getCachedFrame(store: CacheStoreAccess, frame: number): ImageData | null {
-      if (!store.frameCacheEnabled) return null;
+    getCachedFrame(frame: number): ImageData | null {
+      if (!this.frameCacheEnabled) return null;
 
+      const projectStore = useProjectStore();
       const cache = getFrameCache();
-      return cache.get(frame, store.activeCompositionId, store.projectStateHash);
+      return cache.get(frame, projectStore.activeCompositionId, this.projectStateHash);
     },
 
-    /**
-     * Cache a rendered frame
-     */
-    async cacheFrame(
-      store: CacheStoreAccess,
-      frame: number,
-      imageData: ImageData,
-    ): Promise<void> {
-      if (!store.frameCacheEnabled) return;
+    async cacheFrame(frame: number, imageData: ImageData): Promise<void> {
+      if (!this.frameCacheEnabled) return;
 
+      const projectStore = useProjectStore();
       const cache = getFrameCache();
       await cache.set(
         frame,
-        store.activeCompositionId,
+        projectStore.activeCompositionId,
         imageData,
-        store.projectStateHash,
+        this.projectStateHash,
       );
     },
 
-    /**
-     * Check if a frame is cached
-     */
-    isFrameCached(store: CacheStoreAccess, frame: number): boolean {
-      if (!store.frameCacheEnabled) return false;
+    isFrameCached(frame: number): boolean {
+      if (!this.frameCacheEnabled) return false;
 
+      const projectStore = useProjectStore();
       const cache = getFrameCache();
-      return cache.has(frame, store.activeCompositionId);
+      return cache.has(frame, projectStore.activeCompositionId);
     },
 
-    /**
-     * Start pre-caching frames around current position
-     */
     async startPreCache(
-      store: CacheStoreAccess,
       currentFrame: number,
       direction: "forward" | "backward" | "both" = "both",
     ): Promise<void> {
-      if (!store.frameCacheEnabled) return;
+      if (!this.frameCacheEnabled) return;
 
+      const projectStore = useProjectStore();
       const cache = getFrameCache();
       await cache.startPreCache(
         currentFrame,
-        store.activeCompositionId,
-        store.projectStateHash,
+        projectStore.activeCompositionId,
+        this.projectStateHash,
         direction,
       );
     },
 
-    /**
-     * Invalidate frame cache (called when project changes)
-     */
-    invalidateFrameCache(store: CacheStoreAccess): void {
-      // Update project state hash
-      store.projectStateHash = this.computeProjectHash(store);
+    invalidateFrameCache(): void {
+      this.projectStateHash = this.computeProjectHash();
 
-      // Clear cache for current composition
+      const projectStore = useProjectStore();
       const cache = getFrameCache();
-      cache.invalidate(store.activeCompositionId, store.projectStateHash);
+      cache.invalidate(projectStore.activeCompositionId, this.projectStateHash);
     },
 
     /**
@@ -154,35 +134,29 @@ export const useCacheStore = defineStore("cache", {
       return cache.getStats();
     },
 
-    /**
-     * Compute a hash of the project state for cache invalidation
-     * Uses a simplified hash of key state that affects rendering
-     */
-    computeProjectHash(store: CacheStoreAccess): string {
-      const comp = store.project.compositions[store.activeCompositionId];
+    computeProjectHash(): string {
+      const projectStore = useProjectStore();
+      const comp = projectStore.project.compositions[projectStore.activeCompositionId];
       if (!comp) return "";
 
-      // Create a simplified fingerprint of the composition state
       const fingerprint = {
         layerCount: comp.layers?.length ?? 0,
         layerIds: comp.layers?.map((l) => l.id).join(",") ?? "",
-        modified: store.project.meta.modified,
+        modified: projectStore.project.meta.modified,
         settings: comp.settings,
       };
 
-      // Simple hash function (with fallback for circular refs)
       let str: string;
       try {
         str = JSON.stringify(fingerprint);
       } catch {
-        // Fallback if settings contains circular references
         str = `${fingerprint.layerCount}:${fingerprint.layerIds}:${fingerprint.modified}`;
       }
       let hash = 0;
       for (let i = 0; i < str.length; i++) {
         const char = str.charCodeAt(i);
         hash = (hash << 5) - hash + char;
-        hash = hash & hash; // Convert to 32-bit integer
+        hash = hash & hash;
       }
       return hash.toString(16);
     },

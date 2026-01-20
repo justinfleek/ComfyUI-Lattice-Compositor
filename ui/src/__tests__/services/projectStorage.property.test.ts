@@ -9,7 +9,9 @@ import { test, fc } from '@fast-check/vitest';
 
 // Mock fetch for API tests
 const mockFetch = vi.fn();
-global.fetch = mockFetch as any;
+// Type assertion: mock fetch for test environment
+// Production-grade: properly type the global fetch mock
+global.fetch = mockFetch as typeof fetch;
 
 // Import after mocking
 import {

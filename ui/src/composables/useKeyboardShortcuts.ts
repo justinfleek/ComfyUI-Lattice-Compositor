@@ -1,6 +1,5 @@
 import { type ComputedRef, computed, provide, type Ref, ref } from "vue";
 import { useAudioStore } from "@/stores/audioStore";
-import { useCompositorStore } from "@/stores/compositorStore";
 import { useLayerStore } from "@/stores/layerStore";
 import { usePlaybackStore } from "@/stores/playbackStore";
 import { useSelectionStore } from "@/stores/selectionStore";
@@ -8,21 +7,119 @@ import { useKeyframeStore } from "@/stores/keyframeStore";
 import { useAnimationStore } from "@/stores/animationStore";
 import { useProjectStore } from "@/stores/projectStore";
 import { useMarkerStore } from "@/stores/markerStore";
+import type { MarkerStoreAccess } from "@/stores/markerStore";
+import type { AnimationStoreAccess } from "@/stores/animationStore/types";
+import type { KeyframeStoreAccess } from "@/stores/keyframeStore/types";
 import type { AnimatableProperty } from "@/types/animation";
 import type { LayerTransform } from "@/types/transform";
+import type { ImageLayerData, VideoData, ModelLayerData, SolidLayerData } from "@/types/layerData";
+import type { Layer } from "@/types/project";
+import type { AssetReference } from "@/types/assets";
+import { hasDimensions, hasAssetIdProperty } from "@/utils/typeGuards";
 
 // Internal types for dynamic property access
 
 /** Transform property keys that can be iterated for easing operations */
 type EasingTransformKey = "position" | "scale" | "rotation" | "anchor" | "opacity";
 
-/** Layer data with optional dimension/asset properties (used by fit-to-comp and reveal operations) */
-interface LayerDataWithDimensions {
+/**
+ * Get layer dimensions with proper type handling.
+ * 
+ * Production-grade implementation that:
+ * 1. For solid layers: uses data.width and data.height directly
+ * 2. For image/video layers: gets dimensions from project.assets[assetId]
+ * 3. For other layers: uses composition dimensions as fallback
+ * 
+ * @param layer - The layer to get dimensions for
+ * @param assets - Project assets map for looking up image/video dimensions
+ * @param fallbackWidth - Composition width to use as fallback
+ * @param fallbackHeight - Composition height to use as fallback
+ * @returns Object with width and height, guaranteed to be positive numbers
+ */
+function getLayerDimensions(
+  layer: Layer,
+  assets: Record<string, AssetReference>,
+  fallbackWidth: number,
+  fallbackHeight: number,
+): { width: number; height: number } {
+  if (!layer.data) {
+    return { width: fallbackWidth, height: fallbackHeight };
+  }
+
+  // Case 1: Solid layers have width/height directly in data
+  if (layer.type === "solid" && hasDimensions(layer.data)) {
+    return {
+      width: layer.data.width,
+      height: layer.data.height,
+    };
+  }
+
+  // Case 2: Image/video layers get dimensions from assets
+  if ((layer.type === "image" || layer.type === "video") && hasAssetIdProperty(layer.data)) {
+    const assetId = layer.data.assetId;
+    if (assetId && assets[assetId]) {
+      const asset = assets[assetId];
+      if (isFiniteNumber(asset.width) && isFiniteNumber(asset.height) && asset.width > 0 && asset.height > 0) {
+        return {
+          width: asset.width,
+          height: asset.height,
+        };
+      }
+    }
+  }
+
+  // Case 3: Fallback to composition dimensions
+  return { width: fallbackWidth, height: fallbackHeight };
+}
+
+/**
+ * Helper function to check if a number is finite and positive
+ */
+function isFiniteNumber(value: unknown): value is number {
+  return typeof value === "number" && Number.isFinite(value) && value > 0;
+}
+
+
+/**
+ * Image layer data with runtime properties (for file imports)
+ */
+interface ImageLayerDataWithRuntime extends ImageLayerData {
+  src?: string;
   width?: number;
   height?: number;
-  assetId?: string | null;
-  compositionId?: string;
-  [key: string]: unknown;
+  originalFilename?: string;
+}
+
+/**
+ * Video layer data with runtime properties (for file imports)
+ */
+interface VideoDataWithRuntime extends VideoData {
+  originalFilename?: string;
+}
+
+/**
+ * Model layer data with runtime properties (for file imports)
+ */
+interface ModelLayerDataWithRuntime extends ModelLayerData {
+  src?: string;
+  format?: string;
+  originalFilename?: string;
+}
+
+/**
+ * Type guard for objects with keyframes property
+ */
+interface ObjectWithKeyframes {
+  keyframes?: Array<{ id?: string; frame?: number; value?: unknown }>;
+}
+
+function hasKeyframes(obj: unknown): obj is ObjectWithKeyframes {
+  return (
+    typeof obj === "object" &&
+    obj !== null &&
+    "keyframes" in obj &&
+    Array.isArray((obj as ObjectWithKeyframes).keyframes)
+  );
 }
 
 /** Type-safe transform property accessor for easing operations */
@@ -88,7 +185,6 @@ export interface KeyboardShortcutsOptions {
 }
 
 export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
-  const store = useCompositorStore();
   const layerStore = useLayerStore();
   const playbackStore = usePlaybackStore();
   const audioStore = useAudioStore();
@@ -96,6 +192,89 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
   const animationStore = useAnimationStore();
   const projectStore = useProjectStore();
   const markerStore = useMarkerStore();
+  const selectionStore = useSelectionStore();
+
+  // Helper to create MarkerStoreAccess for marker operations
+  function getMarkerStoreAccess(): MarkerStoreAccess {
+    const activeComp = projectStore.getActiveComp();
+    return {
+      project: {
+        compositions: projectStore.project.compositions,
+        meta: projectStore.project.meta,
+      },
+      activeCompositionId: projectStore.activeCompositionId,
+      currentFrame: activeComp?.currentFrame ?? 0,
+      getActiveComp: () => projectStore.getActiveComp(),
+      setFrame: (frame: number) => {
+        const comp = projectStore.getActiveComp();
+        if (comp) {
+          comp.currentFrame = frame;
+        }
+      },
+      pushHistory: () => projectStore.pushHistory(),
+    };
+  }
+
+  // Helper to create AnimationStoreAccess for animation operations
+  function getAnimationStoreAccess(): AnimationStoreAccess {
+    const activeComp = projectStore.getActiveComp();
+    return {
+      isPlaying: playbackStore.isPlaying,
+      getActiveComp: () => projectStore.getActiveComp(),
+      get currentFrame() {
+        const comp = projectStore.getActiveComp();
+        return comp?.currentFrame ?? 0;
+      },
+      get frameCount() {
+        const comp = projectStore.getActiveComp();
+        return comp?.settings.frameCount ?? 81;
+      },
+      get fps() {
+        return projectStore.getFps();
+      },
+      getActiveCompLayers: () => projectStore.getActiveCompLayers(),
+      getLayerById: (id: string) => {
+        const layers = projectStore.getActiveCompLayers();
+        return layers.find(l => l.id === id) || null;
+      },
+      project: {
+        composition: {
+          width: activeComp?.settings.width ?? projectStore.project.composition.width,
+          height: activeComp?.settings.height ?? projectStore.project.composition.height,
+        },
+        meta: projectStore.project.meta,
+      },
+      pushHistory: () => projectStore.pushHistory(),
+    };
+  }
+
+  // Helper to create KeyframeStoreAccess for keyframe operations
+  function getKeyframeStoreAccess(): KeyframeStoreAccess {
+    const activeComp = projectStore.getActiveComp();
+    return {
+      project: {
+        composition: {
+          width: activeComp?.settings.width ?? projectStore.project.composition.width,
+          height: activeComp?.settings.height ?? projectStore.project.composition.height,
+        },
+        meta: projectStore.project.meta,
+      },
+      getActiveComp: () => activeComp ? {
+        currentFrame: activeComp.currentFrame,
+        layers: activeComp.layers,
+        settings: activeComp.settings,
+      } : null,
+      getActiveCompLayers: () => projectStore.getActiveCompLayers(),
+      getLayerById: (id: string) => {
+        const layers = projectStore.getActiveCompLayers();
+        return layers.find(l => l.id === id) || null;
+      },
+      pushHistory: () => projectStore.pushHistory(),
+      get fps() {
+        return projectStore.getFps();
+      },
+    };
+  }
 
   const {
     showExportDialog,
@@ -124,42 +303,47 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
 
   function togglePlay() {
     isPlaying.value = !isPlaying.value;
+    const animationAccess = getAnimationStoreAccess();
     if (isPlaying.value) {
-      store.play();
+      animationStore.play(animationAccess);
     } else {
-      store.pause();
+      animationStore.pause(animationAccess);
     }
   }
 
   function goToStart() {
-    animationStore.goToStart(store);
+    animationStore.goToStart(getAnimationStoreAccess());
   }
 
   function goToEnd() {
-    animationStore.goToEnd(store);
+    animationStore.goToEnd(getAnimationStoreAccess());
   }
 
   function stepForward(frames: number = 1) {
-    const currentFrame = animationStore.getCurrentFrame(store);
-    animationStore.setFrame(store, Math.min(currentFrame + frames, projectStore.getFrameCount(store) - 1));
+    const animationAccess = getAnimationStoreAccess();
+    const currentFrame = animationAccess.currentFrame;
+    const frameCount = animationAccess.frameCount;
+    animationStore.setFrame(animationAccess, Math.min(currentFrame + frames, frameCount - 1));
   }
 
   function stepBackward(frames: number = 1) {
-    const currentFrame = animationStore.getCurrentFrame(store);
-    animationStore.setFrame(store, Math.max(0, currentFrame - frames));
+    const animationAccess = getAnimationStoreAccess();
+    const currentFrame = animationAccess.currentFrame;
+    animationStore.setFrame(animationAccess, Math.max(0, currentFrame - frames));
   }
 
   // ========================================================================
   // SMOOTH EASING (F9)
   // ========================================================================
   function applySmoothEasing() {
-    const selectedIds = store.selectedLayerIds;
+    const selectedIds = selectionStore.selectedLayerIds;
     if (selectedIds.length === 0) return;
 
     let keyframesUpdated = 0;
+    const keyframeAccess = getKeyframeStoreAccess();
 
     for (const layerId of selectedIds) {
-      const layer = layerStore.getLayerById(store, layerId);
+      const layer = layerStore.getLayerById(layerId);
       if (!layer?.transform) continue;
 
       const transform = layer.transform;
@@ -169,7 +353,7 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
         if (prop?.animated && prop?.keyframes) {
           for (const kf of prop.keyframes) {
             keyframeStore.setKeyframeInterpolation(
-              store,
+              keyframeAccess,
               layerId,
               `transform.${propKey}`,
               kf.id,
@@ -182,7 +366,7 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
 
       if (layer.opacity?.animated && layer.opacity?.keyframes) {
         for (const kf of layer.opacity.keyframes) {
-          keyframeStore.setKeyframeInterpolation(store, layerId, "opacity", kf.id, "bezier");
+          keyframeStore.setKeyframeInterpolation(keyframeAccess, layerId, "opacity", kf.id, "bezier");
           keyframesUpdated++;
         }
       }
@@ -196,13 +380,14 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
   }
 
   function applySmoothEaseIn() {
-    const selectedIds = store.selectedLayerIds;
+    const selectedIds = selectionStore.selectedLayerIds;
     if (selectedIds.length === 0) return;
 
     let keyframesUpdated = 0;
+    const keyframeAccess = getKeyframeStoreAccess();
 
     for (const layerId of selectedIds) {
-      const layer = layerStore.getLayerById(store, layerId);
+      const layer = layerStore.getLayerById(layerId);
       if (!layer?.transform) continue;
 
       const transform = layer.transform;
@@ -212,14 +397,14 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
         if (prop?.animated && prop?.keyframes) {
           for (const kf of prop.keyframes) {
             keyframeStore.setKeyframeInterpolation(
-              store,
+              keyframeAccess,
               layerId,
               `transform.${propKey}`,
               kf.id,
               "bezier",
             );
             keyframeStore.setKeyframeHandle(
-              store,
+              keyframeAccess,
               layerId,
               `transform.${propKey}`,
               kf.id,
@@ -227,7 +412,7 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
               { frame: 0.1, value: 0, enabled: true },
             );
             keyframeStore.setKeyframeHandle(
-              store,
+              keyframeAccess,
               layerId,
               `transform.${propKey}`,
               kf.id,
@@ -248,13 +433,14 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
   }
 
   function applySmoothEaseOut() {
-    const selectedIds = store.selectedLayerIds;
+    const selectedIds = selectionStore.selectedLayerIds;
     if (selectedIds.length === 0) return;
 
     let keyframesUpdated = 0;
+    const keyframeAccess = getKeyframeStoreAccess();
 
     for (const layerId of selectedIds) {
-      const layer = layerStore.getLayerById(store, layerId);
+      const layer = layerStore.getLayerById(layerId);
       if (!layer?.transform) continue;
 
       const transform = layer.transform;
@@ -264,14 +450,14 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
         if (prop?.animated && prop?.keyframes) {
           for (const kf of prop.keyframes) {
             keyframeStore.setKeyframeInterpolation(
-              store,
+              keyframeAccess,
               layerId,
               `transform.${propKey}`,
               kf.id,
               "bezier",
             );
             keyframeStore.setKeyframeHandle(
-              store,
+              keyframeAccess,
               layerId,
               `transform.${propKey}`,
               kf.id,
@@ -279,7 +465,7 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
               { frame: 0.42, value: 0, enabled: true },
             );
             keyframeStore.setKeyframeHandle(
-              store,
+              keyframeAccess,
               layerId,
               `transform.${propKey}`,
               kf.id,
@@ -303,14 +489,15 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
   // KEYFRAME NAVIGATION (J/K)
   // ========================================================================
   function goToPrevKeyframe() {
-    const selectedIds = store.selectedLayerIds;
+    const selectedIds = selectionStore.selectedLayerIds;
     if (selectedIds.length === 0) return;
 
     let prevFrame = -1;
-    const currentFrame = animationStore.getCurrentFrame(store);
+    const animationAccess = getAnimationStoreAccess();
+    const currentFrame = animationAccess.currentFrame;
 
     for (const layerId of selectedIds) {
-      const layer = layerStore.getLayerById(store, layerId);
+      const layer = layerStore.getLayerById(layerId);
       if (!layer?.transform) continue;
 
       const transform = layer.transform;
@@ -328,19 +515,20 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
     }
 
     if (prevFrame >= 0) {
-      animationStore.setFrame(store, prevFrame);
+      animationStore.setFrame(animationAccess, prevFrame);
     }
   }
 
   function goToNextKeyframe() {
-    const selectedIds = store.selectedLayerIds;
+    const selectedIds = selectionStore.selectedLayerIds;
     if (selectedIds.length === 0) return;
 
     let nextFrame = Infinity;
-    const currentFrame = animationStore.getCurrentFrame(store);
+    const animationAccess = getAnimationStoreAccess();
+    const currentFrame = animationAccess.currentFrame;
 
     for (const layerId of selectedIds) {
-      const layer = layerStore.getLayerById(store, layerId);
+      const layer = layerStore.getLayerById(layerId);
       if (!layer?.transform) continue;
 
       const transform = layer.transform;
@@ -358,7 +546,7 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
     }
 
     if (nextFrame < Infinity) {
-      animationStore.setFrame(store, nextFrame);
+      animationStore.setFrame(animationAccess, nextFrame);
     }
   }
 
@@ -419,18 +607,20 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
   const workAreaEnd = ref<number | null>(null);
 
   function setWorkAreaStart() {
-    workAreaStart.value = animationStore.getCurrentFrame(store);
+    const animationAccess = getAnimationStoreAccess();
+    workAreaStart.value = animationAccess.currentFrame;
     playbackStore.setWorkArea(workAreaStart.value, workAreaEnd.value);
     console.log(
-      `[Lattice] Render range start set to frame ${animationStore.getCurrentFrame(store)}`,
+      `[Lattice] Render range start set to frame ${animationAccess.currentFrame}`,
     );
   }
 
   function setWorkAreaEnd() {
-    workAreaEnd.value = animationStore.getCurrentFrame(store);
+    const animationAccess = getAnimationStoreAccess();
+    workAreaEnd.value = animationAccess.currentFrame;
     playbackStore.setWorkArea(workAreaStart.value, workAreaEnd.value);
     console.log(
-      `[Lattice] Render range end set to frame ${animationStore.getCurrentFrame(store)}`,
+      `[Lattice] Render range end set to frame ${animationAccess.currentFrame}`,
     );
   }
 
@@ -454,10 +644,10 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
   }
 
   function toggleLayerHidden(layerId: string) {
-    const layer = layerStore.getLayerById(store, layerId);
+    const layer = layerStore.getLayerById(layerId);
     if (layer) {
       // Layer uses 'visible' property (true = visible, false = hidden)
-      layerStore.updateLayer(store, layerId, { visible: !layer.visible });
+      layerStore.updateLayer(layerId, { visible: !layer.visible });
     }
   }
 
@@ -530,75 +720,83 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
   // UNDO/REDO (Ctrl+Z)
   // ========================================================================
   function undo() {
-    store.undo();
+    projectStore.undo();
   }
 
   function redo() {
-    store.redo();
+    projectStore.redo();
   }
 
   // ========================================================================
   // LAYER NAVIGATION (I/O - in/out points)
   // ========================================================================
   function goToLayerInPoint() {
-    const selectedIds = store.selectedLayerIds;
+    const selectedIds = selectionStore.selectedLayerIds;
     if (selectedIds.length === 0) return;
-    const layer = layerStore.getLayerById(store, selectedIds[0]);
+    const layer = layerStore.getLayerById(selectedIds[0]);
     if (layer) {
-      animationStore.setFrame(store, layer.inPoint ?? 0);
+      const animationAccess = getAnimationStoreAccess();
+      animationStore.setFrame(animationAccess, layer.inPoint ?? 0);
     }
   }
 
   function goToLayerOutPoint() {
-    const selectedIds = store.selectedLayerIds;
+    const selectedIds = selectionStore.selectedLayerIds;
     if (selectedIds.length === 0) return;
-    const layer = layerStore.getLayerById(store, selectedIds[0]);
+    const layer = layerStore.getLayerById(selectedIds[0]);
     if (layer) {
-      animationStore.setFrame(store, (layer.outPoint ?? projectStore.getFrameCount(store)) - 1);
+      const animationAccess = getAnimationStoreAccess();
+      const frameCount = animationAccess.frameCount;
+      animationStore.setFrame(animationAccess, (layer.outPoint ?? frameCount) - 1);
     }
   }
 
   function moveLayerInPointToPlayhead() {
-    const selectedIds = store.selectedLayerIds;
+    const selectedIds = selectionStore.selectedLayerIds;
     if (selectedIds.length === 0) return;
+    const animationAccess = getAnimationStoreAccess();
     for (const id of selectedIds) {
-      layerStore.updateLayer(store, id, { inPoint: animationStore.getCurrentFrame(store) });
+      layerStore.updateLayer(id, { inPoint: animationAccess.currentFrame });
     }
   }
 
   function moveLayerOutPointToPlayhead() {
-    const selectedIds = store.selectedLayerIds;
+    const selectedIds = selectionStore.selectedLayerIds;
     if (selectedIds.length === 0) return;
+    const animationAccess = getAnimationStoreAccess();
     for (const id of selectedIds) {
-      layerStore.updateLayer(store, id, { outPoint: animationStore.getCurrentFrame(store) + 1 });
+      layerStore.updateLayer(id, { outPoint: animationAccess.currentFrame + 1 });
     }
   }
 
   function trimLayerInPoint() {
-    const selectedIds = store.selectedLayerIds;
+    const selectedIds = selectionStore.selectedLayerIds;
     if (selectedIds.length === 0) return;
+    const animationAccess = getAnimationStoreAccess();
     for (const id of selectedIds) {
-      const layer = layerStore.getLayerById(store, id);
+      const layer = layerStore.getLayerById(id);
       if (layer) {
         const currentIn = layer.inPoint ?? 0;
-        const currentFrame = animationStore.getCurrentFrame(store);
+        const currentFrame = animationAccess.currentFrame;
         if (currentFrame > currentIn) {
-          layerStore.updateLayer(store, id, { inPoint: currentFrame });
+          layerStore.updateLayer(id, { inPoint: currentFrame });
         }
       }
     }
   }
 
   function trimLayerOutPoint() {
-    const selectedIds = store.selectedLayerIds;
+    const selectedIds = selectionStore.selectedLayerIds;
     if (selectedIds.length === 0) return;
+    const animationAccess = getAnimationStoreAccess();
     for (const id of selectedIds) {
-      const layer = layerStore.getLayerById(store, id);
+      const layer = layerStore.getLayerById(id);
       if (layer) {
-        const currentOut = layer.outPoint ?? projectStore.getFrameCount(store);
-        const currentFrame = animationStore.getCurrentFrame(store);
+        const frameCount = animationAccess.frameCount;
+        const currentOut = layer.outPoint ?? frameCount;
+        const currentFrame = animationAccess.currentFrame;
         if (currentFrame < currentOut) {
-          layerStore.updateLayer(store, id, { outPoint: currentFrame + 1 });
+          layerStore.updateLayer(id, { outPoint: currentFrame + 1 });
         }
       }
     }
@@ -608,12 +806,12 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
   // LAYER SELECTION (Ctrl+Arrow)
   // ========================================================================
   function selectPreviousLayer(extend: boolean = false) {
-    const layers = store.layers;
+    const layers = projectStore.getActiveCompLayers();
     if (layers.length === 0) return;
 
-    const selectedIds = store.selectedLayerIds;
+    const selectedIds = selectionStore.selectedLayerIds;
     if (selectedIds.length === 0) {
-      layerStore.selectLayer(store, layers[0].id);
+      layerStore.selectLayer(layers[0].id);
       return;
     }
 
@@ -621,20 +819,20 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
     if (currentIndex > 0) {
       const targetLayer = layers[currentIndex - 1];
       if (extend) {
-        layerStore.selectLayer(store, targetLayer.id);
+        layerStore.selectLayer(targetLayer.id, true);
       } else {
-        layerStore.selectLayer(store, targetLayer.id);
+        layerStore.selectLayer(targetLayer.id);
       }
     }
   }
 
   function selectNextLayer(extend: boolean = false) {
-    const layers = store.layers;
+    const layers = projectStore.getActiveCompLayers();
     if (layers.length === 0) return;
 
-    const selectedIds = store.selectedLayerIds;
+    const selectedIds = selectionStore.selectedLayerIds;
     if (selectedIds.length === 0) {
-      layerStore.selectLayer(store, layers[0].id);
+      layerStore.selectLayer(layers[0].id);
       return;
     }
 
@@ -644,9 +842,9 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
     if (lastSelectedIndex < layers.length - 1) {
       const targetLayer = layers[lastSelectedIndex + 1];
       if (extend) {
-        layerStore.selectLayer(store, targetLayer.id);
+        layerStore.selectLayer(targetLayer.id, true);
       } else {
-        layerStore.selectLayer(store, targetLayer.id);
+        layerStore.selectLayer(targetLayer.id);
       }
     }
   }
@@ -655,27 +853,28 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
   // SPLIT LAYER (Ctrl+Shift+D)
   // ========================================================================
   function splitLayerAtPlayhead() {
-    const selectedIds = store.selectedLayerIds;
+    const selectedIds = selectionStore.selectedLayerIds;
     if (selectedIds.length === 0) return;
 
     for (const id of selectedIds) {
-      const layer = layerStore.getLayerById(store, id);
+      const layer = layerStore.getLayerById(id);
       if (!layer) continue;
 
-      const currentFrame = animationStore.getCurrentFrame(store);
+      const animationAccess = getAnimationStoreAccess();
+      const currentFrame = animationAccess.currentFrame;
       const inPoint = layer.inPoint ?? 0;
-      const outPoint = layer.outPoint ?? projectStore.getFrameCount(store);
+      const outPoint = layer.outPoint ?? animationAccess.frameCount;
 
       if (currentFrame > inPoint && currentFrame < outPoint) {
-        layerStore.updateLayer(store, id, { outPoint: currentFrame });
+        layerStore.updateLayer(id, { outPoint: currentFrame });
 
-        const newLayer = layerStore.duplicateLayer(store, id);
+        const newLayer = layerStore.duplicateLayer(id);
         if (newLayer) {
-          layerStore.updateLayer(store, newLayer.id, {
+          layerStore.updateLayer(newLayer.id, {
             inPoint: currentFrame,
             outPoint: outPoint,
           });
-          layerStore.renameLayer(store, newLayer.id, `${layer.name} (split)`);
+          layerStore.renameLayer(newLayer.id, `${layer.name} (split)`);
         }
       }
     }
@@ -685,11 +884,11 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
   // REVERSE LAYER (Ctrl+Alt+R)
   // ========================================================================
   function reverseSelectedLayers() {
-    const selectedIds = store.selectedLayerIds;
+    const selectedIds = selectionStore.selectedLayerIds;
     if (selectedIds.length === 0) return;
 
     for (const id of selectedIds) {
-      layerStore.reverseLayer(store, id);
+      layerStore.reverseLayer(id);
     }
   }
 
@@ -697,11 +896,11 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
   // FREEZE FRAME (Alt+Shift+F)
   // ========================================================================
   function freezeSelectedLayers() {
-    const selectedIds = store.selectedLayerIds;
+    const selectedIds = selectionStore.selectedLayerIds;
     if (selectedIds.length === 0) return;
 
     for (const id of selectedIds) {
-      layerStore.freezeFrameAtPlayhead(store, id);
+      layerStore.freezeFrameAtPlayhead(id);
     }
     console.log(
       "[Lattice] Freeze frame created at playhead for selected layers",
@@ -715,17 +914,17 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
 
   function zoomTimelineIn() {
     timelineZoom.value = Math.min(timelineZoom.value * 1.5, 10);
-    store.setTimelineZoom?.(timelineZoom.value);
+    animationStore.setTimelineZoom(timelineZoom.value);
   }
 
   function zoomTimelineOut() {
     timelineZoom.value = Math.max(timelineZoom.value / 1.5, 0.1);
-    store.setTimelineZoom?.(timelineZoom.value);
+    animationStore.setTimelineZoom(timelineZoom.value);
   }
 
   function zoomTimelineToFit() {
     timelineZoom.value = 1;
-    store.setTimelineZoom?.(1);
+    animationStore.setTimelineZoom(1);
   }
 
   // ========================================================================
@@ -771,13 +970,13 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
   // HOLD KEYFRAMES (Ctrl+Alt+H)
   // ========================================================================
   function convertToHoldKeyframes() {
-    const selectedIds = store.selectedLayerIds;
+    const selectedIds = selectionStore.selectedLayerIds;
     if (selectedIds.length === 0) return;
 
     let keyframesUpdated = 0;
 
     for (const layerId of selectedIds) {
-      const layer = layerStore.getLayerById(store, layerId);
+      const layer = layerStore.getLayerById(layerId);
       if (!layer?.transform) continue;
 
       const transform = layer.transform;
@@ -787,7 +986,7 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
         if (prop?.animated && prop?.keyframes) {
           for (const kf of prop.keyframes) {
             keyframeStore.setKeyframeInterpolation(
-              store,
+              getKeyframeStoreAccess(),
               layerId,
               `transform.${propKey}`,
               kf.id,
@@ -808,13 +1007,14 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
   // TIME-REVERSE KEYFRAMES (Ctrl+Alt+R without layer)
   // ========================================================================
   function timeReverseKeyframes() {
-    const selectedIds = store.selectedLayerIds;
+    const selectedIds = selectionStore.selectedLayerIds;
     if (selectedIds.length === 0) return;
 
     let totalReversed = 0;
+    const keyframeAccess = getKeyframeStoreAccess();
     for (const layerId of selectedIds) {
-      // Use store action to reverse all transform property keyframes
-      totalReversed += keyframeStore.timeReverseKeyframes(store, layerId);
+      // Use keyframeStore action to reverse all transform property keyframes
+      totalReversed += keyframeStore.timeReverseKeyframes(keyframeAccess, layerId);
     }
 
     if (totalReversed > 0) {
@@ -826,19 +1026,18 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
   // FIT LAYER TO COMP (Ctrl+Alt+F)
   // ========================================================================
   function fitLayerToComp() {
-    const selectedIds = store.selectedLayerIds;
+    const selectedIds = selectionStore.selectedLayerIds;
     if (selectedIds.length === 0) return;
 
     const compW = compWidth.value;
     const compH = compHeight.value;
+    const assets = projectStore.project.assets;
 
     for (const id of selectedIds) {
-      const layer = layerStore.getLayerById(store, id);
+      const layer = layerStore.getLayerById(id);
       if (!layer) continue;
 
-      const data = layer.data as unknown as LayerDataWithDimensions;
-      const layerW = data?.width || compW;
-      const layerH = data?.height || compH;
+      const { width: layerW, height: layerH } = getLayerDimensions(layer, assets, compW, compH);
 
       const scaleX = compW / layerW;
       const scaleY = compH / layerH;
@@ -847,7 +1046,7 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
       const centerX = compW / 2;
       const centerY = compH / 2;
 
-      layerStore.updateLayerTransform(store, id, {
+      layerStore.updateLayerTransform(id, {
         position: { x: centerX, y: centerY, z: 0 },
         scale: { x: scale * 100, y: scale * 100, z: 100 },
         anchor: { x: layerW / 2, y: layerH / 2, z: 0 },
@@ -858,21 +1057,21 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
   }
 
   function fitLayerToCompWidth() {
-    const selectedIds = store.selectedLayerIds;
+    const selectedIds = selectionStore.selectedLayerIds;
     if (selectedIds.length === 0) return;
 
     const compW = compWidth.value;
+    const compH = compHeight.value;
+    const assets = projectStore.project.assets;
 
     for (const id of selectedIds) {
-      const layer = layerStore.getLayerById(store, id);
+      const layer = layerStore.getLayerById(id);
       if (!layer) continue;
 
-      const data = layer.data as unknown as LayerDataWithDimensions;
-      const layerW = data?.width || compW;
-
+      const { width: layerW } = getLayerDimensions(layer, assets, compW, compH);
       const scale = compW / layerW;
 
-      layerStore.updateLayerTransform(store, id, {
+      layerStore.updateLayerTransform(id, {
         scale: { x: scale * 100, y: scale * 100, z: 100 },
       });
     }
@@ -881,21 +1080,21 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
   }
 
   function fitLayerToCompHeight() {
-    const selectedIds = store.selectedLayerIds;
+    const selectedIds = selectionStore.selectedLayerIds;
     if (selectedIds.length === 0) return;
 
+    const compW = compWidth.value;
     const compH = compHeight.value;
+    const assets = projectStore.project.assets;
 
     for (const id of selectedIds) {
-      const layer = layerStore.getLayerById(store, id);
+      const layer = layerStore.getLayerById(id);
       if (!layer) continue;
 
-      const data = layer.data as unknown as LayerDataWithDimensions;
-      const layerH = data?.height || compH;
-
+      const { height: layerH } = getLayerDimensions(layer, assets, compW, compH);
       const scale = compH / layerH;
 
-      layerStore.updateLayerTransform(store, id, {
+      layerStore.updateLayerTransform(id, {
         scale: { x: scale * 100, y: scale * 100, z: 100 },
       });
     }
@@ -907,13 +1106,13 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
   // LOCK LAYER (Ctrl+L)
   // ========================================================================
   function toggleLayerLock() {
-    const selectedIds = store.selectedLayerIds;
+    const selectedIds = selectionStore.selectedLayerIds;
     if (selectedIds.length === 0) return;
 
     for (const id of selectedIds) {
-      const layer = layerStore.getLayerById(store, id);
+      const layer = layerStore.getLayerById(id);
       if (layer) {
-        layerStore.updateLayer(store, id, { locked: !layer.locked });
+        layerStore.updateLayer(id, { locked: !layer.locked });
       }
     }
   }
@@ -922,16 +1121,18 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
   // CENTER ANCHOR POINT (Ctrl+Alt+Home)
   // ========================================================================
   function centerAnchorPoint() {
-    const selectedIds = store.selectedLayerIds;
+    const selectedIds = selectionStore.selectedLayerIds;
     if (selectedIds.length === 0) return;
 
+    const compW = compWidth.value;
+    const compH = compHeight.value;
+    const assets = projectStore.project.assets;
+
     for (const id of selectedIds) {
-      const layer = layerStore.getLayerById(store, id);
+      const layer = layerStore.getLayerById(id);
       if (!layer) continue;
 
-      const data = layer.data as unknown as LayerDataWithDimensions;
-      const layerW = data?.width || compWidth.value;
-      const layerH = data?.height || compHeight.value;
+      const { width: layerW, height: layerH } = getLayerDimensions(layer, assets, compW, compH);
 
       const centerX = layerW / 2;
       const centerY = layerH / 2;
@@ -945,7 +1146,7 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
       const offsetX = centerX - (currentAnchor.x || 0);
       const offsetY = centerY - (currentAnchor.y || 0);
 
-      layerStore.updateLayerTransform(store, id, {
+      layerStore.updateLayerTransform(id, {
         anchor: { x: centerX, y: centerY, z: currentAnchor.z || 0 },
         position: {
           x: (currentPos.x || 0) + offsetX,
@@ -962,20 +1163,20 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
   // CENTER LAYER IN COMP (Ctrl+Home)
   // ========================================================================
   function centerLayerInComp() {
-    const selectedIds = store.selectedLayerIds;
+    const selectedIds = selectionStore.selectedLayerIds;
     if (selectedIds.length === 0) return;
 
     const centerX = compWidth.value / 2;
     const centerY = compHeight.value / 2;
 
     for (const id of selectedIds) {
-      const layer = layerStore.getLayerById(store, id);
+      const layer = layerStore.getLayerById(id);
       if (!layer) continue;
 
       const transform = layer.transform;
       const currentPos = transform.position?.value ?? { x: 0, y: 0, z: 0 };
 
-      layerStore.updateLayerTransform(store, id, {
+      layerStore.updateLayerTransform(id, {
         position: { x: centerX, y: centerY, z: currentPos.z || 0 },
       });
     }
@@ -987,7 +1188,7 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
   // CREATE EFFECT LAYER (Ctrl+Alt+Y)
   // ========================================================================
   function createAdjustmentLayer() {
-    layerStore.createLayer(store, "adjustment", "Effect Layer");
+    layerStore.createLayer("adjustment", "Effect Layer");
     console.log("[Lattice] Created effect layer");
   }
 
@@ -995,7 +1196,7 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
   // CREATE CONTROL LAYER (Ctrl+Alt+Shift+Y)
   // ========================================================================
   function createNullLayer() {
-    layerStore.createLayer(store, "null", "Control");
+    layerStore.createLayer("null", "Control");
     console.log("[Lattice] Created control layer");
   }
 
@@ -1003,25 +1204,28 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
   // REVEAL SOURCE IN PROJECT (Ctrl+Alt+E)
   // ========================================================================
   function revealSourceInProject() {
-    const selectedIds = store.selectedLayerIds;
+    const selectedIds = selectionStore.selectedLayerIds;
     if (selectedIds.length === 0) {
       console.log("[Lattice] No layer selected to reveal source");
       return;
     }
 
-    const layer = layerStore.getLayerById(store, selectedIds[0]);
-    if (!layer) return;
+    const layer = layerStore.getLayerById(selectedIds[0]);
+    if (!layer || !layer.data) return;
 
-    const data = layer.data as unknown as LayerDataWithDimensions;
+    // Type guard: Check if layer data has assetId property
     let assetId: string | null = null;
+    if (hasAssetIdProperty(layer.data)) {
+      assetId = layer.data.assetId;
+    }
 
-    if (data?.assetId) {
-      assetId = data.assetId;
-    } else if (layer.type === "nestedComp") {
-      if (data?.compositionId) {
+    // Check for nested comp compositionId
+    if (!assetId && layer.type === "nestedComp") {
+      const nestedCompData = layer.data as { compositionId?: string };
+      if (nestedCompData.compositionId) {
         leftTab.value = "comps";
         console.log(
-          `[Lattice] Revealed nested comp source: ${data.compositionId}`,
+          `[Lattice] Revealed nested comp source: ${nestedCompData.compositionId}`,
         );
         return;
       }
@@ -1029,9 +1233,7 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
 
     if (assetId) {
       leftTab.value = "assets";
-      if (typeof store.selectAsset === "function") {
-        store.selectAsset(assetId);
-      }
+      projectStore.selectAsset(assetId);
       console.log(`[Lattice] Revealed source asset: ${assetId}`);
     } else {
       console.log(`[Lattice] Layer type '${layer.type}' has no source asset`);
@@ -1042,13 +1244,13 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
   // SELECT ALL KEYFRAMES ON LAYERS (Ctrl+A)
   // ========================================================================
   function selectAllKeyframesOnSelectedLayers(): boolean {
-    const selectedIds = store.selectedLayerIds;
+    const selectedIds = selectionStore.selectedLayerIds;
     if (selectedIds.length === 0) return false;
 
     const keyframeIds: string[] = [];
 
     for (const layerId of selectedIds) {
-      const layer = layerStore.getLayerById(store, layerId);
+      const layer = layerStore.getLayerById(layerId);
       if (!layer) continue;
 
       const transform = layer.transform;
@@ -1064,27 +1266,33 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
         }
       }
 
-      const data = layer.data as unknown as LayerDataWithDimensions;
-      if (data) {
+      // Recursively check layer data for keyframes
+      if (layer.data) {
         const checkForKeyframes = (obj: unknown): void => {
           if (!obj || typeof obj !== "object" || obj === null) return;
-          if (Array.isArray((obj as Record<string, unknown>).keyframes)) {
-            const keyframes = (obj as Record<string, unknown>).keyframes as Array<{ id?: string }>;
-            for (const kf of keyframes) {
-              if (kf.id) keyframeIds.push(kf.id);
+          if (hasKeyframes(obj)) {
+            const keyframes = obj.keyframes;
+            if (keyframes) {
+              for (const kf of keyframes) {
+                if (kf.id) keyframeIds.push(kf.id);
+              }
             }
           }
-          for (const key of Object.keys(obj)) {
-            const value = (obj as Record<string, unknown>)[key];
-            if (typeof value === "object" && value !== null) checkForKeyframes(value);
+          // Recursively check nested objects
+          if (typeof obj === "object" && obj !== null) {
+            for (const key of Object.keys(obj)) {
+              // Type-safe property access for recursive keyframe checking
+              const value = (obj as Record<string, unknown>)[key];
+              if (typeof value === "object" && value !== null) checkForKeyframes(value);
+            }
           }
         };
-        checkForKeyframes(data);
+        checkForKeyframes(layer.data);
       }
     }
 
     if (keyframeIds.length > 0) {
-      useSelectionStore().selectKeyframes(keyframeIds);
+      selectionStore.selectKeyframes(keyframeIds);
       console.log(
         `[Lattice] Selected ${keyframeIds.length} keyframes on ${selectedIds.length} layer(s)`,
       );
@@ -1097,15 +1305,15 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
   // SELECT LAYERS BY LABEL (Ctrl+Shift+G)
   // ========================================================================
   function selectLayersByLabel() {
-    const selectedIds = store.selectedLayerIds;
+    const selectedIds = selectionStore.selectedLayerIds;
     if (selectedIds.length === 0) return;
 
-    const firstLayer = layerStore.getLayerById(store, selectedIds[0]);
+    const firstLayer = layerStore.getLayerById(selectedIds[0]);
     if (!firstLayer) return;
 
     const targetColor = firstLayer.labelColor || "#808080";
 
-    const layers = store.layers;
+    const layers = projectStore.getActiveCompLayers();
     const matchingIds: string[] = [];
 
     for (const layer of layers) {
@@ -1116,7 +1324,6 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
     }
 
     if (matchingIds.length > 0) {
-      const selectionStore = useSelectionStore();
       selectionStore.selectLayers(matchingIds);
       console.log(
         `[Lattice] Selected ${matchingIds.length} layers with label color ${targetColor}`,
@@ -1150,9 +1357,9 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
           const img = new Image();
           img.onload = () => {
             const layerName = file.name.replace(/\.[^/.]+$/, "");
-            const layer = layerStore.createLayer(store, "image", layerName);
-            if (layer?.data) {
-              const data = layer.data as unknown as Record<string, unknown>;
+            const layer = layerStore.createLayer("image", layerName);
+            if (layer?.data && layer.type === "image") {
+              const data = layer.data as ImageLayerDataWithRuntime;
               data.src = url;
               data.width = img.width;
               data.height = img.height;
@@ -1164,9 +1371,9 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
           // Import video as layer
           const url = URL.createObjectURL(file);
           const layerName = file.name.replace(/\.[^/.]+$/, "");
-          layerStore.createVideoLayer(store, file).then((result) => {
-            if (result.status === "success" && result.layer?.data) {
-              const data = result.layer.data as unknown as Record<string, unknown>;
+          layerStore.createVideoLayer(file).then((result) => {
+            if (result.status === "success" && result.layer?.data && result.layer.type === "video") {
+              const data = result.layer.data as VideoDataWithRuntime;
               data.originalFilename = file.name;
             }
           });
@@ -1174,9 +1381,9 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
           // Import 3D model
           const url = URL.createObjectURL(file);
           const layerName = file.name.replace(/\.[^/.]+$/, "");
-          const layer = layerStore.createLayer(store, "model", layerName);
-          if (layer?.data) {
-            const data = layer.data as unknown as Record<string, unknown>;
+          const layer = layerStore.createLayer("model", layerName);
+          if (layer?.data && layer.type === "model") {
+            const data = layer.data as ModelLayerDataWithRuntime;
             data.src = url;
             data.format = ext;
             data.originalFilename = file.name;
@@ -1193,7 +1400,7 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
   // OPEN TIME STRETCH DIALOG (Ctrl+Alt+T)
   // ========================================================================
   function openTimeStretchDialog() {
-    if (store.selectedLayerIds.length === 0) return;
+    if (selectionStore.selectedLayerIds.length === 0) return;
     showTimeStretchDialog.value = true;
   }
 
@@ -1216,7 +1423,7 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
       return;
     }
 
-    const hasSelectedLayer = store.selectedLayerIds.length > 0;
+    const hasSelectedLayer = selectionStore.selectedLayerIds.length > 0;
 
     switch (e.key.toLowerCase()) {
       case " ":
@@ -1256,10 +1463,10 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
           if (hasSelectedLayer) {
             const selectedKeyframes = selectAllKeyframesOnSelectedLayers();
             if (!selectedKeyframes) {
-              layerStore.selectAllLayers(store);
+              layerStore.selectAllLayers();
             }
           } else {
-            layerStore.selectAllLayers(store);
+            layerStore.selectAllLayers();
           }
         } else if (hasSelectedLayer) {
           e.preventDefault();
@@ -1360,7 +1567,7 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
           e.preventDefault();
           if (e.shiftKey) {
             // Shift+J: Jump to previous marker
-            store.jumpToPreviousMarker();
+            markerStore.jumpToPreviousMarker(getMarkerStoreAccess());
           } else {
             // J: Go to previous keyframe
             goToPrevKeyframe();
@@ -1370,7 +1577,7 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
       case "k":
         if ((e.ctrlKey || e.metaKey) && e.shiftKey) {
           e.preventDefault();
-          if (store.selectedKeyframeIds.length > 0) {
+          if (selectionStore.selectedKeyframeIds.length > 0) {
             showKeyframeInterpolationDialog.value = true;
           } else {
             console.log(
@@ -1383,7 +1590,7 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
         } else if (e.shiftKey) {
           // Shift+K: Jump to next marker
           e.preventDefault();
-          store.jumpToNextMarker();
+          markerStore.jumpToNextMarker(getMarkerStoreAccess());
         } else {
           e.preventDefault();
           goToNextKeyframe();
@@ -1423,19 +1630,19 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
       case "c":
         if ((e.ctrlKey || e.metaKey) && e.shiftKey) {
           e.preventDefault();
-          if (store.selectedLayerIds.length > 0) {
+          if (selectionStore.selectedLayerIds.length > 0) {
             showPrecomposeDialog.value = true;
           }
         } else if (e.ctrlKey || e.metaKey) {
           e.preventDefault();
-          layerStore.copySelectedLayers(store);
+          layerStore.copySelectedLayers();
         }
         break;
       case "delete":
       case "backspace":
-        if (store.selectedLayerIds.length > 0) {
+        if (selectionStore.selectedLayerIds.length > 0) {
           e.preventDefault();
-          layerStore.deleteSelectedLayers(store);
+          layerStore.deleteSelectedLayers();
         }
         break;
       case "f9":
@@ -1452,7 +1659,7 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
         if ((e.ctrlKey || e.metaKey) && e.shiftKey) {
           // Ctrl+Shift+V - Keyframe Velocity Dialog
           e.preventDefault();
-          if (store.selectedKeyframeIds.length > 0) {
+          if (selectionStore.selectedKeyframeIds.length > 0) {
             showKeyframeVelocityDialog.value = true;
           } else {
             console.log(
@@ -1461,7 +1668,7 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
           }
         } else if (e.ctrlKey || e.metaKey) {
           e.preventDefault();
-          layerStore.pasteLayers(store);
+          layerStore.pasteLayers();
         } else if (!e.shiftKey) {
           currentTool.value = "select";
         }
@@ -1469,7 +1676,7 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
       case "x":
         if (e.ctrlKey || e.metaKey) {
           e.preventDefault();
-          layerStore.cutSelectedLayers(store);
+          layerStore.cutSelectedLayers();
         }
         break;
 
@@ -1514,7 +1721,7 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
           splitLayerAtPlayhead();
         } else if (e.ctrlKey || e.metaKey) {
           e.preventDefault();
-          layerStore.duplicateSelectedLayers(store);
+          layerStore.duplicateSelectedLayers();
         }
         break;
 
@@ -1578,7 +1785,8 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
       case ".":
         if (e.ctrlKey || e.metaKey) {
           e.preventDefault();
-          audioStore.toggleAudioPlayback(animationStore.getCurrentFrame(store), projectStore.getFps(store));
+          const animationAccess = getAnimationStoreAccess();
+          audioStore.toggleAudioPlayback(animationAccess.currentFrame, animationAccess.fps);
         }
         break;
 
@@ -1653,7 +1861,8 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
           centerLayerInComp();
         } else {
           e.preventDefault();
-          animationStore.setFrame(store, 0);
+          const animationAccess = getAnimationStoreAccess();
+          animationStore.setFrame(animationAccess, 0);
         }
         break;
 
@@ -1678,10 +1887,11 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
       case "*":
       case "numpadmultiply":
         e.preventDefault();
-        markerStore.addMarkers(store, [
+        const markerAccess = getMarkerStoreAccess();
+        markerStore.addMarkers(markerAccess, [
           {
-            frame: animationStore.getCurrentFrame(store),
-            label: `Marker ${markerStore.getMarkers(store).length + 1}`,
+            frame: markerAccess.currentFrame,
+            label: `Marker ${markerStore.getMarkers(markerAccess).length + 1}`,
             color: "#FFFF00",
           },
         ]);

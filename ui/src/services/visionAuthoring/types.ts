@@ -211,10 +211,51 @@ export interface TranslationResult {
   readonly newSplines?: NewSplineSpec[]; // Suggested splines to create
 }
 
+/**
+ * Configuration for new spline layer
+ */
+interface NewSplineLayerConfig {
+  controlPoints?: ControlPoint[];
+  closed?: boolean;
+  strokeWidth?: number;
+  strokeColor?: string;
+  fillColor?: string;
+  [key: string]: ControlPoint[] | boolean | number | string | undefined;
+}
+
+/**
+ * Configuration for new particle layer
+ */
+interface NewParticleLayerConfig {
+  emissionRate?: number;
+  particleLifetime?: number;
+  spread?: number;
+  direction?: number;
+  speed?: number;
+  speedVariance?: number;
+  gravity?: number;
+  [key: string]: number | undefined;
+}
+
+/**
+ * Configuration for new camera layer
+ */
+interface NewCameraLayerConfig {
+  fov?: number;
+  position?: Vec3;
+  target?: Vec3;
+  [key: string]: number | Vec3 | undefined;
+}
+
+/**
+ * Union type for new layer configurations based on layer type
+ */
+type NewLayerConfig = NewSplineLayerConfig | NewParticleLayerConfig | NewCameraLayerConfig;
+
 export interface NewLayerSpec {
   readonly type: "spline" | "particles" | "camera";
   readonly name: string;
-  readonly config: Record<string, unknown>;
+  readonly config: NewLayerConfig;
 }
 
 export interface NewSplineSpec {

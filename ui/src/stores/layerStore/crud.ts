@@ -10,17 +10,20 @@
 import { toRaw } from "vue";
 import type {
   AnimatableProperty,
-  AnyLayerData,
+  LayerDataUnion,
   Keyframe,
   Layer,
   PropertyValue,
+  SplineData,
+  TextData,
 } from "@/types/project";
 import { createAnimatableProperty, createDefaultTransform } from "@/types/project";
 import { storeLogger } from "@/utils/logger";
 import { clearLayerCache, markLayerDirty } from "@/services/layerEvaluationCache";
 import { useSelectionStore } from "../selectionStore";
+import { useProjectStore } from "../projectStore";
 import { getDefaultLayerData } from "../actions/layer/layerDefaults";
-import type { CompositorStoreAccess, DeleteLayerOptions } from "./types";
+import type { DeleteLayerOptions } from "./types";
 import { getLayerById } from "./hierarchy";
 
 // ============================================================================
@@ -30,22 +33,21 @@ import { getLayerById } from "./hierarchy";
 /**
  * Create a new layer of the specified type
  *
- * @param compositorStore - The compositor store instance (for project access)
  * @param type - The layer type to create
  * @param name - Optional layer name
  * @returns The created layer
  */
 export function createLayer(
-  compositorStore: CompositorStoreAccess,
   type: Layer["type"],
   name?: string,
 ): Layer {
+  const projectStore = useProjectStore();
   const id = `layer_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
 
   // Get type-specific data from layer defaults module
   const layerData = getDefaultLayerData(type, {
-    width: compositorStore.project.composition.width,
-    height: compositorStore.project.composition.height,
+    width: projectStore.project.composition.width,
+    height: projectStore.project.composition.height,
   });
 
   // Initialize audio props for video/audio layers
@@ -61,20 +63,17 @@ export function createLayer(
 
   // Spline layer properties for timeline
   if (type === "spline") {
-    const splineData = layerData as unknown as {
-      strokeWidth?: number;
-      strokeOpacity?: number;
-    };
+    const splineData = layerData as SplineData;
     layerProperties = [
       createAnimatableProperty(
         "Stroke Width",
-        splineData?.strokeWidth ?? 2,
+        splineData.strokeWidth ?? 2,
         "number",
         "Stroke",
       ),
       createAnimatableProperty(
         "Stroke Opacity",
-        splineData?.strokeOpacity ?? 100,
+        splineData.strokeOpacity ?? 100,
         "number",
         "Stroke",
       ),
@@ -84,14 +83,14 @@ export function createLayer(
     ];
   }
 
-  const comp = compositorStore.getActiveComp();
-  const layers = compositorStore.getActiveCompLayers();
+  const comp = projectStore.getActiveComp();
+  const layers = projectStore.getActiveCompLayers();
 
   // Create transform with position centered in composition
   const compWidth =
-    comp?.settings.width || compositorStore.project.composition.width || 1920;
+    comp?.settings.width || projectStore.project.composition.width || 1920;
   const compHeight =
-    comp?.settings.height || compositorStore.project.composition.height || 1080;
+    comp?.settings.height || projectStore.project.composition.height || 1080;
   const centeredTransform = createDefaultTransform();
   centeredTransform.position.value = { x: compWidth / 2, y: compHeight / 2 };
 
@@ -131,8 +130,8 @@ export function createLayer(
   });
 
   layers.unshift(layer);
-  compositorStore.project.meta.modified = new Date().toISOString();
-  compositorStore.pushHistory();
+  projectStore.project.meta.modified = new Date().toISOString();
+  projectStore.pushHistory();
 
   return layer;
 }
@@ -149,11 +148,11 @@ export function createLayer(
  * @param options - Optional configuration
  */
 export function deleteLayer(
-  compositorStore: CompositorStoreAccess,
   layerId: string,
   options?: DeleteLayerOptions,
 ): void {
-  const layers = compositorStore.getActiveCompLayers();
+  const projectStore = useProjectStore();
+  const layers = projectStore.getActiveCompLayers();
   const index = layers.findIndex((l: Layer) => l.id === layerId);
   if (index === -1) return;
 
@@ -175,9 +174,9 @@ export function deleteLayer(
     if (
       layer.type === "text" &&
       layer.data &&
-      (layer.data as unknown as Record<string, unknown>).pathLayerId === layerId
+      (layer.data as TextData).pathLayerId === layerId
     ) {
-      (layer.data as unknown as Record<string, unknown>).pathLayerId = null;
+      (layer.data as TextData).pathLayerId = null;
     }
   }
 
@@ -189,10 +188,10 @@ export function deleteLayer(
   }
 
   clearLayerCache(layerId);
-  compositorStore.project.meta.modified = new Date().toISOString();
+  projectStore.project.meta.modified = new Date().toISOString();
 
   if (!options?.skipHistory) {
-    compositorStore.pushHistory();
+    projectStore.pushHistory();
   }
 }
 
@@ -209,11 +208,11 @@ export function deleteLayer(
  * @param updates - Partial layer updates
  */
 export function updateLayer(
-  compositorStore: CompositorStoreAccess,
   layerId: string,
   updates: Partial<Layer>,
 ): void {
-  const layer = compositorStore.getActiveCompLayers().find((l: Layer) => l.id === layerId);
+  const projectStore = useProjectStore();
+  const layer = projectStore.getActiveCompLayers().find((l: Layer) => l.id === layerId);
   if (!layer) return;
 
   // If layer is locked, only allow changing the 'locked' property itself
@@ -229,8 +228,8 @@ export function updateLayer(
 
   Object.assign(layer, updates);
   markLayerDirty(layerId);
-  compositorStore.project.meta.modified = new Date().toISOString();
-  compositorStore.pushHistory();
+  projectStore.project.meta.modified = new Date().toISOString();
+  projectStore.pushHistory();
 }
 
 /**
@@ -242,11 +241,11 @@ export function updateLayer(
  * @param dataUpdates - Partial layer data updates
  */
 export function updateLayerData(
-  compositorStore: CompositorStoreAccess,
   layerId: string,
-  dataUpdates: Partial<AnyLayerData> & Record<string, unknown>,
+  dataUpdates: Partial<LayerDataUnion & { physics?: import("@/types/physics").PhysicsLayerData }>,
 ): void {
-  const layer = compositorStore.getActiveCompLayers().find((l: Layer) => l.id === layerId);
+  const projectStore = useProjectStore();
+  const layer = projectStore.getActiveCompLayers().find((l: Layer) => l.id === layerId);
   if (!layer || !layer.data) return;
 
   if (layer.locked) {
@@ -256,8 +255,8 @@ export function updateLayerData(
 
   layer.data = { ...toRaw(layer.data), ...dataUpdates } as Layer["data"];
   markLayerDirty(layerId);
-  compositorStore.project.meta.modified = new Date().toISOString();
-  compositorStore.pushHistory();
+  projectStore.project.meta.modified = new Date().toISOString();
+  projectStore.pushHistory();
 }
 
 // ============================================================================
@@ -269,15 +268,26 @@ export function updateLayerData(
  * @internal
  */
 export function regenerateKeyframeIds(layer: Layer): void {
-  type TransformProp = AnimatableProperty<PropertyValue> | undefined;
-
   if (layer.transform) {
-    const transformRecord = layer.transform as unknown as Record<
-      string,
-      TransformProp
-    >;
-    for (const key of Object.keys(layer.transform)) {
-      const prop = transformRecord[key];
+    const transformProps: Array<AnimatableProperty<PropertyValue> | undefined> = [
+      layer.transform.position,
+      layer.transform.origin,
+      layer.transform.anchorPoint,
+      layer.transform.scale,
+      layer.transform.positionX,
+      layer.transform.positionY,
+      layer.transform.positionZ,
+      layer.transform.scaleX,
+      layer.transform.scaleY,
+      layer.transform.scaleZ,
+      layer.transform.rotation,
+      layer.transform.orientation,
+      layer.transform.rotationX,
+      layer.transform.rotationY,
+      layer.transform.rotationZ,
+    ];
+
+    for (const prop of transformProps) {
       if (prop?.keyframes) {
         prop.keyframes = prop.keyframes.map((kf: Keyframe<PropertyValue>) => ({
           ...kf,
@@ -306,10 +316,10 @@ export function regenerateKeyframeIds(layer: Layer): void {
  * @returns The duplicated layer or null if not found
  */
 export function duplicateLayer(
-  compositorStore: CompositorStoreAccess,
   layerId: string,
 ): Layer | null {
-  const layers = compositorStore.getActiveCompLayers();
+  const projectStore = useProjectStore();
+  const layers = projectStore.getActiveCompLayers();
   const original = layers.find((l: Layer) => l.id === layerId);
   if (!original) return null;
 
@@ -327,8 +337,8 @@ export function duplicateLayer(
   const index = layers.findIndex((l: Layer) => l.id === layerId);
   layers.splice(index, 0, duplicate);
 
-  compositorStore.project.meta.modified = new Date().toISOString();
-  compositorStore.pushHistory();
+  projectStore.project.meta.modified = new Date().toISOString();
+  projectStore.pushHistory();
 
   return duplicate;
 }
@@ -345,24 +355,24 @@ export function duplicateLayer(
  * @param newIndex - Target index position
  */
 export function moveLayer(
-  compositorStore: CompositorStoreAccess,
   layerId: string,
   newIndex: number,
 ): void {
+  const projectStore = useProjectStore();
   if (!Number.isInteger(newIndex) || newIndex < 0) {
     storeLogger.warn("moveLayer: Invalid index:", newIndex);
     return;
   }
 
-  const layers = compositorStore.getActiveCompLayers();
+  const layers = projectStore.getActiveCompLayers();
   const currentIndex = layers.findIndex((l: Layer) => l.id === layerId);
   if (currentIndex === -1) return;
 
   const clampedIndex = Math.min(newIndex, layers.length - 1);
   const [layer] = layers.splice(currentIndex, 1);
   layers.splice(clampedIndex, 0, layer);
-  compositorStore.project.meta.modified = new Date().toISOString();
-  compositorStore.pushHistory();
+  projectStore.project.meta.modified = new Date().toISOString();
+  projectStore.pushHistory();
 }
 
 // ============================================================================
@@ -372,16 +382,15 @@ export function moveLayer(
 /**
  * Rename a layer by ID
  *
- * @param compositorStore - The compositor store instance
  * @param layerId - The layer ID to rename
  * @param newName - The new name for the layer
  */
 export function renameLayer(
-  compositorStore: CompositorStoreAccess,
   layerId: string,
   newName: string,
 ): void {
-  const layer = getLayerById(compositorStore, layerId);
+  const projectStore = useProjectStore();
+  const layer = getLayerById(layerId);
   if (!layer) return;
 
   // Cannot rename locked layers
@@ -399,8 +408,8 @@ export function renameLayer(
 
   layer.name = trimmedName;
   markLayerDirty(layerId);
-  compositorStore.project.meta.modified = new Date().toISOString();
-  compositorStore.pushHistory();
+  projectStore.project.meta.modified = new Date().toISOString();
+  projectStore.pushHistory();
 }
 
 // ============================================================================
@@ -415,7 +424,6 @@ export function renameLayer(
  * @param updates - Object with transform properties to update
  */
 export function updateLayerTransform(
-  compositorStore: CompositorStoreAccess,
   layerId: string,
   updates: {
     position?: { x: number; y: number; z?: number };
@@ -426,7 +434,8 @@ export function updateLayerTransform(
     anchor?: { x: number; y: number; z?: number }; // Alias for origin
   },
 ): void {
-  const layer = getLayerById(compositorStore, layerId);
+  const projectStore = useProjectStore();
+  const layer = getLayerById(layerId);
   if (!layer?.transform) return;
 
   // Cannot update transform of locked layers
@@ -489,8 +498,8 @@ export function updateLayerTransform(
   }
 
   markLayerDirty(layerId);
-  compositorStore.project.meta.modified = new Date().toISOString();
-  compositorStore.pushHistory();
+  projectStore.project.meta.modified = new Date().toISOString();
+  projectStore.pushHistory();
 }
 
 // ============================================================================
@@ -502,22 +511,23 @@ export function updateLayerTransform(
  *
  * @param compositorStore - The compositor store instance
  */
-export function toggleLayerLock(compositorStore: CompositorStoreAccess): void {
+export function toggleLayerLock(): void {
+  const projectStore = useProjectStore();
   const selectionStore = useSelectionStore();
   const selectedIds = selectionStore.selectedLayerIds;
   if (selectedIds.length === 0) return;
 
-  compositorStore.pushHistory();
+  projectStore.pushHistory();
 
   for (const id of selectedIds) {
-    const layer = getLayerById(compositorStore, id);
+    const layer = getLayerById(id);
     if (layer) {
       layer.locked = !layer.locked;
       markLayerDirty(id);
     }
   }
 
-  compositorStore.project.meta.modified = new Date().toISOString();
+  projectStore.project.meta.modified = new Date().toISOString();
 }
 
 /**
@@ -525,24 +535,23 @@ export function toggleLayerLock(compositorStore: CompositorStoreAccess): void {
  *
  * @param compositorStore - The compositor store instance
  */
-export function toggleLayerVisibility(
-  compositorStore: CompositorStoreAccess,
-): void {
+export function toggleLayerVisibility(): void {
+  const projectStore = useProjectStore();
   const selectionStore = useSelectionStore();
   const selectedIds = selectionStore.selectedLayerIds;
   if (selectedIds.length === 0) return;
 
-  compositorStore.pushHistory();
+  projectStore.pushHistory();
 
   for (const id of selectedIds) {
-    const layer = getLayerById(compositorStore, id);
+    const layer = getLayerById(id);
     if (layer) {
       layer.visible = !layer.visible;
       markLayerDirty(id);
     }
   }
 
-  compositorStore.project.meta.modified = new Date().toISOString();
+  projectStore.project.meta.modified = new Date().toISOString();
 }
 
 /**
@@ -551,22 +560,23 @@ export function toggleLayerVisibility(
  *
  * @param compositorStore - The compositor store instance
  */
-export function toggleLayerSolo(compositorStore: CompositorStoreAccess): void {
+export function toggleLayerSolo(): void {
+  const projectStore = useProjectStore();
   const selectionStore = useSelectionStore();
   const selectedIds = selectionStore.selectedLayerIds;
   if (selectedIds.length === 0) return;
 
-  compositorStore.pushHistory();
+  projectStore.pushHistory();
 
   for (const id of selectedIds) {
-    const layer = getLayerById(compositorStore, id);
+    const layer = getLayerById(id);
     if (layer) {
       layer.isolate = !layer.isolate;
       markLayerDirty(id);
     }
   }
 
-  compositorStore.project.meta.modified = new Date().toISOString();
+  projectStore.project.meta.modified = new Date().toISOString();
 }
 
 // ============================================================================
@@ -578,15 +588,16 @@ export function toggleLayerSolo(compositorStore: CompositorStoreAccess): void {
  *
  * @param compositorStore - The compositor store instance
  */
-export function bringToFront(compositorStore: CompositorStoreAccess): void {
+export function bringToFront(): void {
+  const projectStore = useProjectStore();
   const selectionStore = useSelectionStore();
   const selectedIds = selectionStore.selectedLayerIds;
   if (selectedIds.length === 0) return;
 
-  const layers = compositorStore.getActiveCompLayers();
+  const layers = projectStore.getActiveCompLayers();
   if (layers.length === 0) return;
 
-  compositorStore.pushHistory();
+  projectStore.pushHistory();
 
   // Get selected layers in reverse order (to maintain relative order when moved to front)
   const selectedLayers = selectedIds
@@ -615,7 +626,7 @@ export function bringToFront(compositorStore: CompositorStoreAccess): void {
     markLayerDirty(selectedLayers[i].layer.id);
   }
 
-  compositorStore.project.meta.modified = new Date().toISOString();
+  projectStore.project.meta.modified = new Date().toISOString();
 }
 
 /**
@@ -623,15 +634,16 @@ export function bringToFront(compositorStore: CompositorStoreAccess): void {
  *
  * @param compositorStore - The compositor store instance
  */
-export function sendToBack(compositorStore: CompositorStoreAccess): void {
+export function sendToBack(): void {
+  const projectStore = useProjectStore();
   const selectionStore = useSelectionStore();
   const selectedIds = selectionStore.selectedLayerIds;
   if (selectedIds.length === 0) return;
 
-  const layers = compositorStore.getActiveCompLayers();
+  const layers = projectStore.getActiveCompLayers();
   if (layers.length === 0) return;
 
-  compositorStore.pushHistory();
+  projectStore.pushHistory();
 
   // Get selected layers in order (to maintain relative order when moved to back)
   const selectedLayers = selectedIds
@@ -660,7 +672,7 @@ export function sendToBack(compositorStore: CompositorStoreAccess): void {
     markLayerDirty(layer.id);
   }
 
-  compositorStore.project.meta.modified = new Date().toISOString();
+  projectStore.project.meta.modified = new Date().toISOString();
 }
 
 /**
@@ -668,15 +680,16 @@ export function sendToBack(compositorStore: CompositorStoreAccess): void {
  *
  * @param compositorStore - The compositor store instance
  */
-export function bringForward(compositorStore: CompositorStoreAccess): void {
+export function bringForward(): void {
+  const projectStore = useProjectStore();
   const selectionStore = useSelectionStore();
   const selectedIds = selectionStore.selectedLayerIds;
   if (selectedIds.length === 0) return;
 
-  const layers = compositorStore.getActiveCompLayers();
+  const layers = projectStore.getActiveCompLayers();
   if (layers.length === 0) return;
 
-  compositorStore.pushHistory();
+  projectStore.pushHistory();
 
   // Get selected layer IDs sorted by current index (ascending - top to bottom)
   const selectedIndices = selectedIds
@@ -701,7 +714,7 @@ export function bringForward(compositorStore: CompositorStoreAccess): void {
     }
   }
 
-  compositorStore.project.meta.modified = new Date().toISOString();
+  projectStore.project.meta.modified = new Date().toISOString();
 }
 
 /**
@@ -709,15 +722,16 @@ export function bringForward(compositorStore: CompositorStoreAccess): void {
  *
  * @param compositorStore - The compositor store instance
  */
-export function sendBackward(compositorStore: CompositorStoreAccess): void {
+export function sendBackward(): void {
+  const projectStore = useProjectStore();
   const selectionStore = useSelectionStore();
   const selectedIds = selectionStore.selectedLayerIds;
   if (selectedIds.length === 0) return;
 
-  const layers = compositorStore.getActiveCompLayers();
+  const layers = projectStore.getActiveCompLayers();
   if (layers.length === 0) return;
 
-  compositorStore.pushHistory();
+  projectStore.pushHistory();
 
   // Get selected layer IDs sorted by current index (descending - bottom to top)
   const selectedIndices = selectedIds
@@ -742,5 +756,5 @@ export function sendBackward(compositorStore: CompositorStoreAccess): void {
     }
   }
 
-  compositorStore.project.meta.modified = new Date().toISOString();
+  projectStore.project.meta.modified = new Date().toISOString();
 }

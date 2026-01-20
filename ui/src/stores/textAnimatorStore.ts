@@ -131,13 +131,26 @@ function hexToRgbaObject(hex: string): { r: number; g: number; b: number; a: num
   return rgba ? { r: rgba[0], g: rgba[1], b: rgba[2], a: Math.round(rgba[3] * 255) } : { r: 0, g: 0, b: 0, a: 255 };
 }
 
-function isRgbaObject(value: unknown): value is { r: number; g: number; b: number; a?: number } {
+/**
+ * Type guard for RGBA color objects
+ */
+interface RgbaObject {
+  r: number;
+  g: number;
+  b: number;
+  a?: number;
+}
+
+function isRgbaObject(value: unknown): value is RgbaObject {
   return (
     typeof value === "object" &&
     value !== null &&
-    typeof (value as Record<string, unknown>).r === "number" &&
-    typeof (value as Record<string, unknown>).g === "number" &&
-    typeof (value as Record<string, unknown>).b === "number"
+    "r" in value &&
+    "g" in value &&
+    "b" in value &&
+    typeof (value as RgbaObject).r === "number" &&
+    typeof (value as RgbaObject).g === "number" &&
+    typeof (value as RgbaObject).b === "number"
   );
 }
 
@@ -522,13 +535,16 @@ export const useTextAnimatorStore = defineStore("textAnimator", {
         valueType = "color";
       }
 
-      const props = animator.properties as Record<string, unknown>;
       const propName = String(propertyName);
 
-      if (!props[propName]) {
-        props[propName] = createAnimatableProperty(propName, normalizedValue, valueType);
+      // Type-safe property access
+      if (!(propName in animator.properties)) {
+        (animator.properties as Partial<TextAnimatorProperties>)[propName as keyof TextAnimatorProperties] = createAnimatableProperty(propName, normalizedValue, valueType) as TextAnimatorProperties[keyof TextAnimatorProperties];
       } else {
-        (props[propName] as { value: unknown }).value = normalizedValue;
+        const prop = animator.properties[propertyName];
+        if (prop && typeof prop === "object" && "value" in prop) {
+          (prop as { value: string | number | { x: number; y: number } }).value = normalizedValue as string | number | { x: number; y: number };
+        }
       }
 
       updateModified(store);

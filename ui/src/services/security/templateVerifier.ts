@@ -27,6 +27,7 @@
  */
 
 import { logSecurityWarning } from "./auditLog";
+import type { LatticeTemplate, SerializedComposition } from "@/types/templateBuilder";
 
 // TweetNaCl type interface (library is optional, loaded dynamically)
 interface NaClSignDetached {
@@ -94,9 +95,23 @@ export interface VerificationResult {
   signedAt?: string;
 }
 
+/**
+ * Template data structure for signing (excludes _signature)
+ * Based on LatticeTemplate but allows partial data for flexibility
+ */
+export interface TemplateDataForSigning {
+  formatVersion?: string;
+  templateConfig?: unknown;
+  composition?: SerializedComposition;
+  assets?: unknown[];
+  fonts?: unknown[];
+  posterImage?: string;
+  [key: string]: unknown; // Allow additional properties for extensibility
+}
+
 export interface SignedTemplate {
   /** Template data (everything except _signature) */
-  data: Record<string, unknown>;
+  data: TemplateDataForSigning;
   /** Signature block */
   _signature?: TemplateSignature;
 }
@@ -313,7 +328,7 @@ export function getVerificationBadge(result: VerificationResult): {
  * @returns Template with _signature block added
  */
 export async function signTemplate(
-  template: Record<string, unknown>,
+  template: TemplateDataForSigning,
   privateKeyBase64: string,
 ): Promise<SignedTemplate> {
   // This function requires tweetnacl which may not be bundled
@@ -362,7 +377,7 @@ export async function signTemplate(
  * Verify an Ed25519 signature.
  */
 async function verifySignature(
-  data: Record<string, unknown>,
+  data: TemplateDataForSigning,
   signature: TemplateSignature,
 ): Promise<boolean> {
   const nacl = await loadNaCl();
@@ -395,7 +410,7 @@ async function verifySignature(
 function isValidSignatureStructure(sig: unknown): sig is TemplateSignature {
   if (!sig || typeof sig !== "object") return false;
 
-  const s = sig as Record<string, unknown>;
+  const s = sig as { algorithm?: unknown; publicKey?: unknown; signature?: unknown; version?: unknown; signedAt?: unknown };
 
   return (
     s.algorithm === "Ed25519" &&
@@ -413,11 +428,22 @@ function isValidSignatureStructure(sig: unknown): sig is TemplateSignature {
  * SECURITY: This ensures identical objects always produce identical signatures,
  * regardless of property insertion order.
  */
+/**
+ * Type guard for objects that can be canonicalized
+ */
+interface CanonicalizableObject {
+  [key: string]: unknown;
+}
+
+function isCanonicalizableObject(value: unknown): value is CanonicalizableObject {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
 function createCanonicalJson(obj: unknown): string {
   return JSON.stringify(obj, (_, value) => {
     // Only sort object keys, leave arrays and primitives alone
-    if (value && typeof value === "object" && !Array.isArray(value)) {
-      const sorted: Record<string, unknown> = {};
+    if (isCanonicalizableObject(value)) {
+      const sorted: CanonicalizableObject = {};
       for (const key of Object.keys(value).sort()) {
         sorted[key] = value[key];
       }
@@ -459,7 +485,7 @@ function uint8ArrayToBase64(bytes: Uint8Array): string {
  * Returns both the template data and verification result.
  */
 export async function loadAndVerifyTemplate(json: string): Promise<{
-  template: Record<string, unknown>;
+  template: TemplateDataForSigning;
   verification: VerificationResult;
 }> {
   try {

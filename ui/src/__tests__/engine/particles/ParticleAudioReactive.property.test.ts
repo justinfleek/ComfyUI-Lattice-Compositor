@@ -11,6 +11,7 @@
 
 import { describe, it, expect, beforeEach } from "vitest";
 import * as fc from "fast-check";
+import * as THREE from "three";
 import { ParticleAudioReactive } from "@/engine/particles/ParticleAudioReactive";
 import type {
   AudioBinding,
@@ -41,7 +42,7 @@ function createDefaultBinding(): AudioBinding {
 
 function createEmitterMap(): Map<
   string,
-  EmitterConfig & { accumulator: number; velocity: unknown }
+  EmitterConfig & { accumulator: number; velocity: THREE.Vector3 }
 > {
   const emitter = {
     id: "emitter-1",
@@ -75,8 +76,8 @@ function createEmitterMap(): Map<
     beatEmissionMultiplier: 1,
     shape: { type: "point" as const },
     accumulator: 0,
-    velocity: null,
-  } as EmitterConfig & { accumulator: number; velocity: unknown };
+    velocity: new THREE.Vector3(0, 0, 0),
+  } as EmitterConfig & { accumulator: number; velocity: THREE.Vector3 };
 
   return new Map([["emitter-1", emitter]]);
 }

@@ -413,12 +413,25 @@ function createJSONAccessor(asset: JSONDataAsset): FootageDataAccessor {
 function createCSVAccessor(asset: CSVDataAsset): FootageDataAccessor {
   // Convert CSV to JSON-like array for sourceData access
   const sourceData: CSVSourceData = asset.rows.map((row) => {
-    const obj: Record<string, any> = {};
+    const obj: Record<string, string | number | boolean | null> = {};
     asset.headers.forEach((header, index) => {
       const value = row[index];
       // Try to parse as number
       const numValue = parseFloat(value);
-      obj[header] = Number.isNaN(numValue) ? value : numValue;
+      if (Number.isNaN(numValue)) {
+        // Check for boolean/null values
+        if (value.toLowerCase() === "true") {
+          obj[header] = true;
+        } else if (value.toLowerCase() === "false") {
+          obj[header] = false;
+        } else if (value === "" || value.toLowerCase() === "null") {
+          obj[header] = null;
+        } else {
+          obj[header] = value;
+        }
+      } else {
+        obj[header] = numValue;
+      }
     });
     return obj;
   });
@@ -479,10 +492,14 @@ function createCSVAccessor(asset: CSVDataAsset): FootageDataAccessor {
 /**
  * Extract array from JSON data at path
  */
+/**
+ * Extract array from JSON data asset at path
+ * Returns null if path doesn't exist or value is not an array
+ */
 export function extractArrayFromJSON(
   asset: JSONDataAsset,
   path: string,
-): any[] | null {
+): import("@/types/dataAsset").JSONValue[] | null {
   const parts = path.split(".");
   let current = asset.sourceData;
 
@@ -499,7 +516,14 @@ export function extractArrayFromJSON(
 /**
  * Get value from JSON data at path
  */
-export function getJSONValue(asset: JSONDataAsset, path: string): any {
+/**
+ * Get value from JSON data asset at path
+ * Returns the JSON value at the specified path
+ */
+export function getJSONValue(
+  asset: JSONDataAsset,
+  path: string,
+): import("@/types/dataAsset").JSONValue | undefined {
   const parts = path.split(".");
   let current = asset.sourceData;
 

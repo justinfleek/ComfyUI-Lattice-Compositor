@@ -297,10 +297,10 @@ class ProjectCollectionService {
         return await response.blob();
       }
 
-      // If asset has raw data (cast to unknown first for type compatibility)
-      const rawData = asset.data as unknown;
-      if (rawData instanceof Blob) {
-        return rawData;
+      // If asset has raw data, check if it's a Blob
+      // Asset.data can be various types, so we check instanceof at runtime
+      if (asset.data instanceof Blob) {
+        return asset.data;
       }
 
       if (rawData instanceof ArrayBuffer) {

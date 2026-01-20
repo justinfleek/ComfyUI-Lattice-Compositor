@@ -503,9 +503,10 @@ export function registerAudioVisualizerEffects(): void {
   registerEffectRenderer(
     "audio-spectrum",
     (input: EffectStackResult, params: EvaluatedEffectParams) => {
+      // AudioSpectrumParams extends EvaluatedEffectParams, so direct cast is safe
       return renderAudioSpectrum(
         input,
-        params as unknown as AudioSpectrumParams,
+        params as AudioSpectrumParams,
         0,
       );
     },
@@ -515,9 +516,10 @@ export function registerAudioVisualizerEffects(): void {
   registerEffectRenderer(
     "audio-waveform",
     (input: EffectStackResult, params: EvaluatedEffectParams) => {
+      // AudioWaveformParams extends EvaluatedEffectParams, so direct cast is safe
       return renderAudioWaveform(
         input,
-        params as unknown as AudioWaveformParams,
+        params as AudioWaveformParams,
         0,
       );
     },

@@ -24,13 +24,15 @@ export const CURRENT_SCHEMA_VERSION = 2;
 /** Minimum supported schema version for migration */
 export const MIN_SUPPORTED_VERSION = 1;
 
-export interface VersionedProject {
+/**
+ * Versioned project structure for migration
+ * Extends LatticeProject with version metadata
+ */
+export interface VersionedProject extends import("@/types/project").LatticeProject {
   /** Project schema version */
   schemaVersion: number;
   /** Project file format version (semantic) */
   version: string;
-  /** Rest of project data */
-  [key: string]: any;
 }
 
 export interface MigrationResult {
@@ -50,7 +52,13 @@ export interface MigrationResult {
   changes: string[];
 }
 
-export type MigrationFunction = (project: any) => any;
+/**
+ * Migration function type
+ * Takes a project of any version and returns a migrated project
+ */
+export type MigrationFunction = (
+  project: VersionedProject,
+) => VersionedProject;
 
 export interface Migration {
   /** Source version */
@@ -73,8 +81,8 @@ const migrations: Migration[] = [
     from: 1,
     to: 2,
     description: "Rename anchorPoint to origin, update trade dress terminology",
-    migrate: (project: any) => {
-      const migrated = JSON.parse(JSON.stringify(project));
+    migrate: (project: VersionedProject): VersionedProject => {
+      const migrated = JSON.parse(JSON.stringify(project)) as VersionedProject;
 
       // Migrate compositions
       if (Array.isArray(migrated.compositions)) {
@@ -138,7 +146,9 @@ const migrations: Migration[] = [
 /**
  * Get the schema version from a project
  */
-export function getProjectVersion(project: any): number {
+export function getProjectVersion(
+  project: VersionedProject | Record<string, unknown>,
+): number {
   if (typeof project?.schemaVersion === "number") {
     return project.schemaVersion;
   }
@@ -150,7 +160,9 @@ export function getProjectVersion(project: any): number {
 /**
  * Check if a project needs migration
  */
-export function needsMigration(project: any): boolean {
+export function needsMigration(
+  project: VersionedProject | Record<string, unknown>,
+): boolean {
   const version = getProjectVersion(project);
   return version < CURRENT_SCHEMA_VERSION;
 }
@@ -177,7 +189,9 @@ function getMigrationPath(from: number, to: number): Migration[] {
 /**
  * Migrate a project to the current schema version
  */
-export function migrateProject(project: any): MigrationResult {
+export function migrateProject(
+  project: VersionedProject | Record<string, unknown>,
+): MigrationResult {
   const fromVersion = getProjectVersion(project);
   const toVersion = CURRENT_SCHEMA_VERSION;
   const warnings: string[] = [];
@@ -265,7 +279,9 @@ export function migrateProject(project: any): MigrationResult {
 /**
  * Stamp project with current version
  */
-export function stampProjectVersion(project: any): any {
+export function stampProjectVersion(
+  project: Record<string, unknown>,
+): VersionedProject {
   return {
     ...project,
     schemaVersion: CURRENT_SCHEMA_VERSION,

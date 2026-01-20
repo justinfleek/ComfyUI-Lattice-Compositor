@@ -6,9 +6,13 @@
  *
  * CRITICAL: These schemas ensure property names match what ComfyUI nodes require.
  * If property names don't match, exports will fail silently.
+ * Includes comprehensive validation constraints for security and data integrity.
  */
 
 import { z } from "zod";
+import {
+  boundedArray,
+} from "../shared-validation";
 
 // ============================================================================
 // Primitives
@@ -28,9 +32,9 @@ const positiveFinite = z.number().finite().positive();
  * Used by WanMove and ATI exports
  */
 export const TrackPointSchema = z.object({
-  x: finiteNumber,
-  y: finiteNumber,
-});
+  x: finiteNumber.max(16384), // Max reasonable coordinate
+  y: finiteNumber.max(16384), // Max reasonable coordinate
+}).strict();
 
 export type TrackPoint = z.infer<typeof TrackPointSchema>;
 
@@ -45,8 +49,8 @@ export type TrackPoint = z.infer<typeof TrackPointSchema>;
  * - Format matches exportWanMoveTrackCoordsJSON() output after JSON.parse()
  */
 export const WanMoveMotionDataSchema = z.object({
-  tracks: z.array(z.array(TrackPointSchema)),
-});
+  tracks: boundedArray(boundedArray(TrackPointSchema, 100000), 10000), // Max 10k tracks, 100k points per track
+}).strict();
 
 export type WanMoveMotionData = z.infer<typeof WanMoveMotionDataSchema>;
 
@@ -61,8 +65,8 @@ export type WanMoveMotionData = z.infer<typeof WanMoveMotionDataSchema>;
  * - Format matches exportATITrackCoordsJSON() output after JSON.parse()
  */
 export const ATIMotionDataSchema = z.object({
-  trajectories: z.array(z.array(TrackPointSchema)),
-});
+  trajectories: boundedArray(boundedArray(TrackPointSchema, 121), 10000), // Max 10k trajectories, exactly 121 points per trajectory (ATI format)
+}).strict();
 
 export type ATIMotionData = z.infer<typeof ATIMotionDataSchema>;
 

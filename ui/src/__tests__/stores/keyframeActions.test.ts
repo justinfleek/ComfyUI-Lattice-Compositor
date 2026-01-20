@@ -17,6 +17,7 @@ import { getKeyframesAtFrame, getAllKeyframeFrames, findNextKeyframeFrame, findP
 import { scaleKeyframeTiming, timeReverseKeyframes } from "@/stores/keyframeStore/timing";
 import type { KeyframeStoreAccess as KeyframeStore } from "@/stores/keyframeStore/types";
 import type { Layer, AnimatableProperty, Keyframe, Composition } from "@/types/project";
+import type { PropertyValue } from "@/types/animation";
 
 // ============================================================================
 // Test Helpers
@@ -42,7 +43,7 @@ function createAnimatableProperty<T>(
   return {
     id: `prop-${Math.random().toString(36).slice(2, 8)}`,
     name: "test",
-    type: "number" as any,
+    type: "number" as const,
     value,
     animated: animated || keyframes.length > 0,
     keyframes,
@@ -221,9 +222,20 @@ describe("addKeyframe", () => {
   it("uses current frame when atFrame not specified", () => {
     const layer = createMockLayer("layer-1");
     const store = createMockStore([layer]);
-    (store.getActiveComp() as any).currentFrame = 15;
+    // Type guard ensures safe property access for test setup
+    const comp = store.getActiveComp();
+    if (!comp) {
+      throw new Error("Expected active composition to exist");
+    }
+    const compPartial: Partial<typeof comp> = { ...comp };
+    compPartial.currentFrame = 15;
+    // Create modified store with updated currentFrame
+    const modifiedStore: KeyframeStore = {
+      ...store,
+      getActiveComp: () => ({ ...comp, currentFrame: 15 }),
+    };
 
-    const keyframe = addKeyframe(store, "layer-1", "opacity", 75);
+    const keyframe = addKeyframe(modifiedStore, "layer-1", "opacity", 75);
 
     expect(keyframe!.frame).toBe(15);
   });
@@ -289,9 +301,17 @@ describe("addKeyframe", () => {
   it("handles undefined frame by using currentFrame", () => {
     const layer = createMockLayer("layer-1");
     const store = createMockStore([layer]);
-    (store.getActiveComp() as any).currentFrame = 45;
+    // Type guard ensures safe property access for test setup
+    const comp = store.getActiveComp();
+    if (!comp) {
+      throw new Error("Expected active composition to exist");
+    }
+    const modifiedStore: KeyframeStore = {
+      ...store,
+      getActiveComp: () => ({ ...comp, currentFrame: 45 }),
+    };
 
-    const keyframe = addKeyframe(store, "layer-1", "opacity", 50, undefined);
+    const keyframe = addKeyframe(modifiedStore, "layer-1", "opacity", 50, undefined);
 
     expect(keyframe!.frame).toBe(45);
   });

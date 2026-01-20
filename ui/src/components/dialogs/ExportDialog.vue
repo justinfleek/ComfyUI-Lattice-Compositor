@@ -430,7 +430,12 @@ async function generateDepthFrames(
   const depthService = getBackendDepthService();
 
   // Access the engine to render frames
-  const engine = (window as any).__latticeEngine;
+  interface LatticeEngineGlobal {
+    __latticeEngine?: {
+      renderFrameToCanvas?: (frame: number, width: number, height: number) => Promise<HTMLCanvasElement>;
+    };
+  }
+  const engine = (window as LatticeEngineGlobal).__latticeEngine;
 
   for (let frame = 0; frame < frameCount; frame++) {
     if (onProgress) onProgress(frame, frameCount);
@@ -530,7 +535,8 @@ async function generateNormalFrames(
 ): Promise<Blob[]> {
   const frames: Blob[] = [];
   const depthService = getBackendDepthService();
-  const engine = (window as any).__latticeEngine;
+  // Type-safe access - Window.__latticeEngine is typed in vite-env.d.ts
+  const engine = window.__latticeEngine;
 
   for (let frame = 0; frame < frameCount; frame++) {
     if (onProgress) onProgress(frame, frameCount);

@@ -31,8 +31,12 @@ export function safeJSONParse<T>(
 /**
  * Safely stringify JSON with circular reference handling
  */
+/**
+ * Safely stringify JSON with circular reference handling
+ * Accepts any serializable value (JSON-compatible types)
+ */
 export function safeJSONStringify(
-  data: any,
+  data: unknown, // Accept any value for JSON serialization
   indent: number = 2,
 ): { success: true; json: string } | { success: false; error: string } {
   try {
@@ -63,9 +67,16 @@ export function safeJSONStringify(
 // ============================================================
 
 /**
+ * Generic object type for JSON validation
+ */
+export interface JSONObject {
+  [key: string]: unknown;
+}
+
+/**
  * Check if value is a non-null object
  */
-export function isObject(value: unknown): value is Record<string, unknown> {
+export function isObject(value: unknown): value is JSONObject {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
@@ -126,7 +137,7 @@ export function validateLatticeTemplate(data: unknown): ValidationResult {
     return { valid: false, errors, warnings };
   }
 
-  const template = data as Record<string, unknown>;
+  const template = data;
 
   // Required fields
   if (!isString(template.formatVersion)) {
@@ -177,7 +188,7 @@ export function validateTemplateConfig(data: unknown): ValidationResult {
     return { valid: false, errors, warnings };
   }
 
-  const config = data as Record<string, unknown>;
+  const config = data;
 
   if (!isString(config.name) || (config.name as string).trim() === "") {
     errors.push({ path: "$.name", message: "Template name is required" });

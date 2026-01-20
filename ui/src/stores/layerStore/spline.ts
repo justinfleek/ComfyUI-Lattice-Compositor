@@ -19,7 +19,7 @@ import {
   controlPointToAnimatable,
 } from "@/types/project";
 import { storeLogger } from "@/utils/logger";
-import type { CompositorStoreAccess } from "./types";
+import { useProjectStore } from "../projectStore";
 
 // ============================================================================
 // SPLINE CONTROL POINT INTERFACE
@@ -43,11 +43,11 @@ export interface SplineControlPoint {
  * Add a control point to a spline layer
  */
 export function addSplineControlPoint(
-  compositorStore: CompositorStoreAccess,
   layerId: string,
   point: SplineControlPoint,
 ): void {
-  const layer = compositorStore.getActiveCompLayers().find((l) => l.id === layerId);
+  const projectStore = useProjectStore();
+  const layer = projectStore.getActiveCompLayers().find((l) => l.id === layerId);
   if (!layer || layer.type !== "spline" || !layer.data) return;
 
   const splineData = layer.data as SplineData;
@@ -55,19 +55,19 @@ export function addSplineControlPoint(
     splineData.controlPoints = [];
   }
   splineData.controlPoints.push(point as ControlPoint);
-  compositorStore.project.meta.modified = new Date().toISOString();
+  projectStore.project.meta.modified = new Date().toISOString();
 }
 
 /**
  * Insert a control point at a specific index in a spline layer
  */
 export function insertSplineControlPoint(
-  compositorStore: CompositorStoreAccess,
   layerId: string,
   point: SplineControlPoint,
   index: number,
 ): void {
-  const layer = compositorStore.getActiveCompLayers().find((l) => l.id === layerId);
+  const projectStore = useProjectStore();
+  const layer = projectStore.getActiveCompLayers().find((l) => l.id === layerId);
   if (!layer || layer.type !== "spline" || !layer.data) return;
 
   const splineData = layer.data as SplineData;
@@ -80,19 +80,19 @@ export function insertSplineControlPoint(
     Math.min(index, splineData.controlPoints.length),
   );
   splineData.controlPoints.splice(insertIndex, 0, point as ControlPoint);
-  compositorStore.project.meta.modified = new Date().toISOString();
+  projectStore.project.meta.modified = new Date().toISOString();
 }
 
 /**
  * Update a spline control point
  */
 export function updateSplineControlPoint(
-  compositorStore: CompositorStoreAccess,
   layerId: string,
   pointId: string,
   updates: Partial<SplineControlPoint>,
 ): void {
-  const layer = compositorStore.getActiveCompLayers().find((l) => l.id === layerId);
+  const projectStore = useProjectStore();
+  const layer = projectStore.getActiveCompLayers().find((l) => l.id === layerId);
   if (!layer || layer.type !== "spline" || !layer.data) return;
 
   const splineData = layer.data as SplineData;
@@ -100,18 +100,18 @@ export function updateSplineControlPoint(
   if (!point) return;
 
   Object.assign(point, updates);
-  compositorStore.project.meta.modified = new Date().toISOString();
+  useProjectStore().project.meta.modified = new Date().toISOString();
 }
 
 /**
  * Delete a spline control point
  */
 export function deleteSplineControlPoint(
-  compositorStore: CompositorStoreAccess,
   layerId: string,
   pointId: string,
 ): void {
-  const layer = compositorStore.getActiveCompLayers().find((l) => l.id === layerId);
+  const projectStore = useProjectStore();
+  const layer = projectStore.getActiveCompLayers().find((l) => l.id === layerId);
   if (!layer || layer.type !== "spline" || !layer.data) return;
 
   const splineData = layer.data as SplineData;
@@ -120,7 +120,7 @@ export function deleteSplineControlPoint(
   const index = splineData.controlPoints.findIndex((p) => p.id === pointId);
   if (index >= 0) {
     splineData.controlPoints.splice(index, 1);
-    compositorStore.project.meta.modified = new Date().toISOString();
+    useProjectStore().project.meta.modified = new Date().toISOString();
   }
 }
 
@@ -133,10 +133,10 @@ export function deleteSplineControlPoint(
  * Converts static controlPoints to animatedControlPoints
  */
 export function enableSplineAnimation(
-  compositorStore: CompositorStoreAccess,
   layerId: string,
 ): void {
-  const layer = compositorStore.getActiveCompLayers().find((l) => l.id === layerId);
+  const projectStore = useProjectStore();
+  const layer = projectStore.getActiveCompLayers().find((l) => l.id === layerId);
   if (!layer || layer.type !== "spline" || !layer.data) return;
 
   const splineData = layer.data as SplineData;
@@ -157,7 +157,7 @@ export function enableSplineAnimation(
   splineData.animatedControlPoints = animatedPoints;
   splineData.animated = true;
 
-  compositorStore.project.meta.modified = new Date().toISOString();
+  useProjectStore().project.meta.modified = new Date().toISOString();
   markLayerDirty(layerId);
 
   storeLogger.debug(
@@ -172,7 +172,6 @@ export function enableSplineAnimation(
  * This sets the current value as a keyframe
  */
 export function addSplinePointKeyframe(
-  compositorStore: CompositorStoreAccess,
   layerId: string,
   pointId: string,
   property:
@@ -185,14 +184,15 @@ export function addSplinePointKeyframe(
     | "handleOut.y",
   frame: number,
 ): void {
-  const layer = compositorStore.getActiveCompLayers().find((l) => l.id === layerId);
+  const projectStore = useProjectStore();
+  const layer = projectStore.getActiveCompLayers().find((l) => l.id === layerId);
   if (!layer || layer.type !== "spline" || !layer.data) return;
 
   const splineData = layer.data as SplineData;
 
   // Auto-enable animation if needed
   if (!splineData.animated || !splineData.animatedControlPoints) {
-    enableSplineAnimation(compositorStore, layerId);
+    enableSplineAnimation(layerId);
   }
 
   // Find the animated control point
@@ -258,7 +258,7 @@ export function addSplinePointKeyframe(
     animatableProp.keyframes.sort((a, b) => a.frame - b.frame);
   }
 
-  compositorStore.project.meta.modified = new Date().toISOString();
+  useProjectStore().project.meta.modified = new Date().toISOString();
   markLayerDirty(layerId);
 
   storeLogger.debug(
@@ -275,13 +275,12 @@ export function addSplinePointKeyframe(
  * Add keyframes to all position properties of a control point at once
  */
 export function addSplinePointPositionKeyframe(
-  compositorStore: CompositorStoreAccess,
   layerId: string,
   pointId: string,
   frame: number,
 ): void {
-  addSplinePointKeyframe(compositorStore, layerId, pointId, "x", frame);
-  addSplinePointKeyframe(compositorStore, layerId, pointId, "y", frame);
+  addSplinePointKeyframe(layerId, pointId, "x", frame);
+  addSplinePointKeyframe(layerId, pointId, "y", frame);
 }
 
 /**
@@ -289,7 +288,6 @@ export function addSplinePointPositionKeyframe(
  * Used when dragging control points in the editor
  */
 export function updateSplinePointWithKeyframe(
-  compositorStore: CompositorStoreAccess,
   layerId: string,
   pointId: string,
   x: number,
@@ -297,7 +295,8 @@ export function updateSplinePointWithKeyframe(
   frame: number,
   addKeyframe: boolean = false,
 ): void {
-  const layer = compositorStore.getActiveCompLayers().find((l) => l.id === layerId);
+  const projectStore = useProjectStore();
+  const layer = projectStore.getActiveCompLayers().find((l) => l.id === layerId);
   if (!layer || layer.type !== "spline" || !layer.data) return;
 
   const splineData = layer.data as SplineData;
@@ -313,7 +312,7 @@ export function updateSplinePointWithKeyframe(
     point.y.value = y;
 
     if (addKeyframe) {
-      addSplinePointPositionKeyframe(compositorStore, layerId, pointId, frame);
+      addSplinePointPositionKeyframe(layerId, pointId, frame);
     }
 
     // Also update the static version for backwards compatibility
@@ -331,7 +330,7 @@ export function updateSplinePointWithKeyframe(
     point.y = y;
   }
 
-  compositorStore.project.meta.modified = new Date().toISOString();
+  useProjectStore().project.meta.modified = new Date().toISOString();
   markLayerDirty(layerId);
 }
 
@@ -339,11 +338,11 @@ export function updateSplinePointWithKeyframe(
  * Get evaluated (interpolated) control points at a specific frame
  */
 export function getEvaluatedSplinePoints(
-  compositorStore: CompositorStoreAccess,
   layerId: string,
   frame: number,
 ): EvaluatedControlPoint[] {
-  const layer = compositorStore.getActiveCompLayers().find((l) => l.id === layerId);
+  const projectStore = useProjectStore();
+  const layer = projectStore.getActiveCompLayers().find((l) => l.id === layerId);
   if (!layer || layer.type !== "spline" || !layer.data) return [];
 
   const splineData = layer.data as SplineData;
@@ -400,10 +399,10 @@ export function getEvaluatedSplinePoints(
  * Check if a spline has animation enabled
  */
 export function isSplineAnimated(
-  compositorStore: CompositorStoreAccess,
   layerId: string,
 ): boolean {
-  const layer = compositorStore.getActiveCompLayers().find((l) => l.id === layerId);
+  const projectStore = useProjectStore();
+  const layer = projectStore.getActiveCompLayers().find((l) => l.id === layerId);
   if (!layer || layer.type !== "spline" || !layer.data) return false;
 
   const splineData = layer.data as SplineData;
@@ -414,11 +413,11 @@ export function isSplineAnimated(
  * Check if a control point has any keyframes
  */
 export function hasSplinePointKeyframes(
-  compositorStore: CompositorStoreAccess,
   layerId: string,
   pointId: string,
 ): boolean {
-  const layer = compositorStore.getActiveCompLayers().find((l) => l.id === layerId);
+  const projectStore = useProjectStore();
+  const layer = projectStore.getActiveCompLayers().find((l) => l.id === layerId);
   if (!layer || layer.type !== "spline" || !layer.data) return false;
 
   const splineData = layer.data as SplineData;
@@ -453,11 +452,11 @@ interface Point2D {
  * @param tolerance - Distance threshold in pixels (higher = more simplification)
  */
 export function simplifySpline(
-  compositorStore: CompositorStoreAccess,
   layerId: string,
   tolerance: number,
 ): void {
-  const layer = compositorStore.getActiveCompLayers().find((l) => l.id === layerId);
+  const projectStore = useProjectStore();
+  const layer = projectStore.getActiveCompLayers().find((l) => l.id === layerId);
   if (!layer || layer.type !== "spline" || !layer.data) return;
 
   const splineData = layer.data as SplineData;
@@ -496,7 +495,7 @@ export function simplifySpline(
     splineData.animatedControlPoints = newAnimatedPoints;
   }
 
-  compositorStore.project.meta.modified = new Date().toISOString();
+  useProjectStore().project.meta.modified = new Date().toISOString();
   markLayerDirty(layerId);
 
   storeLogger.debug(
@@ -576,11 +575,11 @@ function perpendicularDist(
  * @param amount - Smoothing amount 0-100 (100 = fully smooth bezier handles)
  */
 export function smoothSplineHandles(
-  compositorStore: CompositorStoreAccess,
   layerId: string,
   amount: number,
 ): void {
-  const layer = compositorStore.getActiveCompLayers().find((l) => l.id === layerId);
+  const projectStore = useProjectStore();
+  const layer = projectStore.getActiveCompLayers().find((l) => l.id === layerId);
   if (!layer || layer.type !== "spline" || !layer.data) return;
 
   const splineData = layer.data as SplineData;
@@ -657,7 +656,7 @@ export function smoothSplineHandles(
     cp.type = "smooth";
   }
 
-  compositorStore.project.meta.modified = new Date().toISOString();
+  useProjectStore().project.meta.modified = new Date().toISOString();
   markLayerDirty(layerId);
 
   storeLogger.debug(`Smoothed spline handles with amount ${amount}%`);

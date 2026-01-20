@@ -13,7 +13,9 @@ import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
 import { setActivePinia, createPinia } from "pinia";
 import { useProjectStore, createDefaultProject, findUsedAssetIds } from "@/stores/projectStore";
 import type { ProjectStore } from "@/stores/projectStore";
-import type { LatticeProject, Layer, Composition } from "@/types/project";
+import type { LatticeProject, Layer, Composition, LayerType, AssetReference, ProjectMeta } from "@/types/project";
+import type { ParticleLayerData } from "@/types/particles";
+import { isObject } from "@/utils/typeGuards";
 
 // Initialize Pinia before tests
 beforeEach(() => {
@@ -162,11 +164,11 @@ function createMockStore(overrides: Partial<ProjectStore> = {}): ProjectStore {
   };
 }
 
-function createMockLayer(id: string, type: string = "solid", data: any = {}): Layer {
+function createMockLayer(id: string, type: LayerType = "solid", data: Record<string, unknown> = {}): Layer {
   return {
     id,
     name: `Layer ${id}`,
-    type: type as any,
+    type,
     visible: true,
     locked: false,
     isolate: false,
@@ -454,8 +456,18 @@ describe("Project Serialization", () => {
       const store = createMockStore();
       const layer = createMockLayer("layer-1", "text", { text: "Hello" });
       store.project.compositions.main.layers.push(layer);
+      // Create minimal valid AssetReference for testing
+      const asset: AssetReference = {
+        id: "asset-1",
+        type: "image",
+        source: "file",
+        width: 1920,
+        height: 1080,
+        data: "data:image/png;base64,test",
+        filename: "test.png",
+      };
       store.project.assets = {
-        "asset-1": { id: "asset-1", type: "image", filename: "test.png" } as any,
+        "asset-1": asset,
       };
 
       const json = exportProject(store);
@@ -470,7 +482,13 @@ describe("Project Serialization", () => {
   describe("importProject", () => {
     it("successfully imports valid project JSON", () => {
       const store = createMockStore();
-      const projectJson = JSON.stringify(createMockProject({ meta: { name: "Imported" } as any }));
+      // Create minimal valid ProjectMeta for testing
+      const meta: ProjectMeta = {
+        name: "Imported",
+        created: new Date().toISOString(),
+        modified: new Date().toISOString(),
+      };
+      const projectJson = JSON.stringify(createMockProject({ meta }));
       const pushHistoryFn = vi.fn();
 
       const result = importProject(store, projectJson, pushHistoryFn);
@@ -825,9 +843,28 @@ describe("Asset Management", () => {
   describe("removeUnusedAssets", () => {
     it("removes assets not referenced by any layer", () => {
       const store = createMockStore();
+      // Create minimal valid AssetReference objects for testing
+      const usedAsset: AssetReference = {
+        id: "used-001",
+        type: "image",
+        source: "file",
+        width: 1920,
+        height: 1080,
+        data: "data:image/png;base64,used",
+        filename: "used.png",
+      };
+      const unusedAsset: AssetReference = {
+        id: "unused-001",
+        type: "image",
+        source: "file",
+        width: 1920,
+        height: 1080,
+        data: "data:image/png;base64,unused",
+        filename: "unused.png",
+      };
       store.project.assets = {
-        "used-001": { id: "used-001", type: "image", filename: "used.png" } as any,
-        "unused-001": { id: "unused-001", type: "image", filename: "unused.png" } as any,
+        "used-001": usedAsset,
+        "unused-001": unusedAsset,
       };
 
       const layer = createMockLayer("layer-1", "image", { assetId: "used-001" });
@@ -844,7 +881,15 @@ describe("Asset Management", () => {
     it("returns 0 when all assets are used", () => {
       const store = createMockStore();
       store.project.assets = {
-        "used-001": { id: "used-001", type: "image", filename: "used.png" } as any,
+        "used-001": {
+          id: "used-001",
+          type: "image",
+          source: "file",
+          width: 1920,
+          height: 1080,
+          data: "data:image/png;base64,used",
+          filename: "used.png",
+        },
       };
 
       const layer = createMockLayer("layer-1", "image", { assetId: "used-001" });
@@ -859,7 +904,15 @@ describe("Asset Management", () => {
     it("pushes history after removing assets", () => {
       const store = createMockStore();
       store.project.assets = {
-        "unused-001": { id: "unused-001", type: "image", filename: "unused.png" } as any,
+        "unused-001": {
+          id: "unused-001",
+          type: "image",
+          source: "file",
+          width: 1920,
+          height: 1080,
+          data: "data:image/png;base64,unused",
+          filename: "unused.png",
+        },
       };
       const initialHistoryLength = store.historyStack.length;
 
@@ -882,9 +935,33 @@ describe("Asset Management", () => {
     it("returns correct counts", () => {
       const store = createMockStore();
       store.project.assets = {
-        "used-001": { id: "used-001", type: "image", filename: "used.png" } as any,
-        "unused-001": { id: "unused-001", type: "image", filename: "unused1.png" } as any,
-        "unused-002": { id: "unused-002", type: "image", filename: "unused2.png" } as any,
+        "used-001": {
+          id: "used-001",
+          type: "image",
+          source: "file",
+          width: 1920,
+          height: 1080,
+          data: "data:image/png;base64,used",
+          filename: "used.png",
+        },
+        "unused-001": {
+          id: "unused-001",
+          type: "image",
+          source: "file",
+          width: 1920,
+          height: 1080,
+          data: "data:image/png;base64,unused1",
+          filename: "unused1.png",
+        },
+        "unused-002": {
+          id: "unused-002",
+          type: "image",
+          source: "file",
+          width: 1920,
+          height: 1080,
+          data: "data:image/png;base64,unused2",
+          filename: "unused2.png",
+        },
       };
 
       const layer = createMockLayer("layer-1", "image", { assetId: "used-001" });
@@ -962,7 +1039,17 @@ describe("Edge Cases", () => {
       pushHistory(store);
 
       // Modify nested value to 100
-      (store.project.compositions.main.layers[0].data as any).emitter.config.nested.deeply.value = 100;
+      // Type guard ensures safe property access for deeply nested test data
+      const layerData = store.project.compositions.main.layers[0].data;
+      if (!isObject(layerData)) {
+        throw new Error("Expected layer.data to be an object");
+      }
+      const layerDataObj = layerData as Record<string, unknown>;
+      const emitter = layerDataObj.emitter as Record<string, unknown>;
+      const config = emitter.config as Record<string, unknown>;
+      const nested = config.nested as Record<string, unknown>;
+      const deeply = nested.deeply as Record<string, unknown>;
+      deeply.value = 100;
 
       // Push modified state
       pushHistory(store);
@@ -970,9 +1057,17 @@ describe("Edge Cases", () => {
       // Now undo should restore value to 42
       undo(store);
 
-      expect(
-        (store.project.compositions.main.layers[0].data as any).emitter.config.nested.deeply.value
-      ).toBe(42);
+      // Type guard ensures safe property access for assertion
+      const restoredLayerData = store.project.compositions.main.layers[0].data;
+      if (!isObject(restoredLayerData)) {
+        throw new Error("Expected layer.data to be an object");
+      }
+      const restoredLayerDataObj = restoredLayerData as Record<string, unknown>;
+      const restoredEmitter = restoredLayerDataObj.emitter as Record<string, unknown>;
+      const restoredConfig = restoredEmitter.config as Record<string, unknown>;
+      const restoredNested = restoredConfig.nested as Record<string, unknown>;
+      const restoredDeeply = restoredNested.deeply as Record<string, unknown>;
+      expect(restoredDeeply.value).toBe(42);
     });
   });
 
@@ -1012,7 +1107,10 @@ describe("Edge Cases", () => {
     it("handles layer with null data", () => {
       const store = createMockStore();
       const layer = createMockLayer("layer-1");
-      (layer as any).data = null;
+      // Type guard ensures safe property assignment for null data test
+      const layerPartial: Partial<Layer> = { ...layer };
+      layerPartial.data = null;
+      store.project.compositions.main.layers.push(layerPartial as Layer);
       store.project.compositions.main.layers.push(layer);
 
       // Should not throw
@@ -1023,7 +1121,14 @@ describe("Edge Cases", () => {
     it("handles asset with missing filename", () => {
       const store = createMockStore();
       store.project.assets = {
-        "no-name": { id: "no-name", type: "image" } as any,
+        "no-name": {
+          id: "no-name",
+          type: "image",
+          source: "file",
+          width: 1920,
+          height: 1080,
+          data: "data:image/png;base64,noname",
+        },
       };
 
       const stats = getAssetUsageStats(store);

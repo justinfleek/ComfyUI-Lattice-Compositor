@@ -261,15 +261,17 @@
  * SplineEditor - Control point editor for spline and path layers
  * Refactored to use useSplineInteraction composable for interaction logic.
  */
-import { computed, onMounted, onUnmounted, ref, toRef } from "vue";
+import { computed, type ComputedRef, onMounted, onUnmounted, ref, toRef } from "vue";
 import { useSplineInteraction } from "@/composables/useSplineInteraction";
 import { interpolateProperty } from "@/services/interpolation";
 import { useCompositorStore } from "@/stores/compositorStore";
 import { useLayerStore } from "@/stores/layerStore";
 import type {
+  AnimatableProperty,
   ControlPoint,
   EvaluatedControlPoint,
   PathLayerData,
+  PropertyValue,
   SplineData,
 } from "@/types/project";
 
@@ -343,12 +345,15 @@ const layerTransform = computed(() => {
 
   const t = layer.transform;
 
-  const getVal = (prop: any, defaultVal: any) => {
+  const getVal = <T extends PropertyValue>(
+    prop: AnimatableProperty<T> | undefined,
+    defaultVal: T,
+  ): T => {
     if (!prop) return defaultVal;
     if (prop.animated && prop.keyframes?.length > 0) {
-      return interpolateProperty(prop, props.currentFrame) ?? defaultVal;
+      return (interpolateProperty(prop, props.currentFrame) ?? defaultVal) as T;
     }
-    return prop.value ?? defaultVal;
+    return (prop.value ?? defaultVal) as T;
   };
 
   const position = getVal(t.position, {
@@ -449,18 +454,11 @@ const rawControlPoints = computed<(ControlPoint | EvaluatedControlPoint)[]>(
   },
 );
 
-interface TransformedControlPoint {
-  id: string;
+interface TransformedControlPoint extends ControlPoint {
   rawX: number;
   rawY: number;
-  x: number;
-  y: number;
-  depth?: number;
-  handleIn: { x: number; y: number } | null;
-  handleOut: { x: number; y: number } | null;
   rawHandleIn: { x: number; y: number } | null;
   rawHandleOut: { x: number; y: number } | null;
-  type: "corner" | "smooth" | "symmetric";
 }
 
 const visibleControlPoints = computed<TransformedControlPoint[]>(() => {
@@ -549,9 +547,14 @@ const interaction = useSplineInteraction({
   containerHeight: toRef(props, "containerHeight"),
   zoom: toRef(props, "zoom"),
   isPenMode: toRef(props, "isPenMode"),
-  visibleControlPoints: visibleControlPoints as any,
+  visibleControlPoints: visibleControlPoints as ComputedRef<(ControlPoint | EvaluatedControlPoint)[]>,
   isClosed,
-  overlayStyle: overlayStyle as any,
+  overlayStyle: overlayStyle as ComputedRef<{
+    width: string;
+    height: string;
+    left: string;
+    top: string;
+  }>,
   transformPoint,
   inverseTransformPoint,
   store,

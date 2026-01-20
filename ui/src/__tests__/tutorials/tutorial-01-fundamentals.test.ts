@@ -18,7 +18,9 @@ import { useCompositorStore } from '@/stores/compositorStore';
 import { useLayerStore } from '@/stores/layerStore';
 import { useSelectionStore } from '@/stores/selectionStore';
 import { usePlaybackStore } from '@/stores/playbackStore';
-import type { AssetReference, Composition } from '@/types/project';
+import type { AssetReference, Composition, LatticeProject, Layer } from '@/types/project';
+import type { TextData } from '@/types/text';
+import { isTextData } from '@/utils/typeGuards';
 
 describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
   let store: ReturnType<typeof useCompositorStore>;
@@ -737,7 +739,8 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
 
         // Solid has color in data
         expect(solid!.data).toBeDefined();
-        expect((solid!.data as any).color).toBeDefined();
+        const solidData = solid!.data as { color?: string };
+        expect(solidData.color).toBeDefined();
       });
 
       it('can create EffectLayer/adjustment layer (Step 45)', () => {
@@ -2912,8 +2915,10 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       it('documents centerOrigin API gap (Step 170)', () => {
         // Step 170: "Center Origin: Press Ctrl/Cmd + Alt + Home"
         // No dedicated centerOrigin() method exists
-        expect(typeof (store as any).centerOrigin).toBe('undefined');
-        expect(typeof (store as any).resetOrigin).toBe('undefined');
+        // Type guard ensures safe property access for API gap documentation
+        const storeObj = store as Record<string, unknown>;
+        expect(typeof storeObj.centerOrigin).toBe('undefined');
+        expect(typeof storeObj.resetOrigin).toBe('undefined');
       });
 
       it('anchor is alias for origin', () => {
@@ -3018,7 +3023,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
         // 1. Sets property to default value
         // 2. Removes all keyframes on that property
         // Currently requires manual implementation of both steps
-        expect(typeof (store as any).resetProperty).toBe('undefined');
+        // Type guard ensures safe property access for API gap documentation
+        const storeObj = store as Record<string, unknown>;
+        expect(typeof storeObj.resetProperty).toBe('undefined');
       });
     });
 
@@ -3684,7 +3691,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
         // Step 222: "Press Ctrl/Cmd + A with property revealed to select all visible keyframes"
         // This is implemented in CurveEditor composable, not as a store method.
         // See: useCurveEditorInteraction.ts selectAllKeyframes()
-        expect(typeof (store as any).selectAllVisibleKeyframes).toBe('undefined');
+        // Type guard ensures safe property access for API gap documentation
+        const storeObj = store as Record<string, unknown>;
+        expect(typeof storeObj.selectAllVisibleKeyframes).toBe('undefined');
       });
 
       it('can toggle keyframe selection', () => {
@@ -4995,7 +5004,11 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
         const layer = layerStore.createTextLayer(store,'Test Text');
 
         expect(layer.data).toBeDefined();
-        const textData = layer.data as any;
+        // Type guard ensures safe property access
+        if (!isTextData(layer.data)) {
+          throw new Error("Expected layer.data to be TextData");
+        }
+        const textData: TextData = layer.data;
         expect(textData.text).toBe('Test Text');
         expect(textData.fontFamily).toBe('Arial');
         expect(textData.fontSize).toBe(72);
@@ -5009,7 +5022,11 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
         // Layer name should be truncated to 20 chars
         expect(layer.name.length).toBeLessThanOrEqual(20);
         // But data.text should have full content
-        expect((layer.data as any).text).toBe(longText);
+        // Type guard ensures safe property access
+        if (!isTextData(layer.data)) {
+          throw new Error("Expected layer.data to be TextData");
+        }
+        expect(layer.data.text).toBe(longText);
       });
     });
 
@@ -5023,7 +5040,10 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
         store.updateLayerData(layer.id, { fontFamily: 'Helvetica' });
 
         const updated = layerStore.getLayerById(store,layer.id);
-        expect((updated!.data as any).fontFamily).toBe('Helvetica');
+        if (!updated || !isTextData(updated.data)) {
+          throw new Error("Expected layer.data to be TextData");
+        }
+        expect(updated.data.fontFamily).toBe('Helvetica');
       });
 
       it('can update font size (Step 304)', () => {
@@ -5032,7 +5052,10 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
         store.updateLayerData(layer.id, { fontSize: 48 });
 
         const updated = layerStore.getLayerById(store,layer.id);
-        expect((updated!.data as any).fontSize).toBe(48);
+        if (!updated || !isTextData(updated.data)) {
+          throw new Error("Expected layer.data to be TextData");
+        }
+        expect(updated.data.fontSize).toBe(48);
       });
 
       it('can update fill color (Step 305)', () => {
@@ -5041,7 +5064,10 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
         store.updateLayerData(layer.id, { fill: '#ff0000' });
 
         const updated = layerStore.getLayerById(store,layer.id);
-        expect((updated!.data as any).fill).toBe('#ff0000');
+        if (!updated || !isTextData(updated.data)) {
+          throw new Error("Expected layer.data to be TextData");
+        }
+        expect(updated.data.fill).toBe('#ff0000');
       });
 
       it('can update tracking/letter spacing (Step 306)', () => {
@@ -5050,7 +5076,10 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
         store.updateLayerData(layer.id, { tracking: 50 });
 
         const updated = layerStore.getLayerById(store,layer.id);
-        expect((updated!.data as any).tracking).toBe(50);
+        if (!updated || !isTextData(updated.data)) {
+          throw new Error("Expected layer.data to be TextData");
+        }
+        expect(updated.data.tracking).toBe(50);
       });
 
       it('can update line height/leading (Step 307)', () => {
@@ -5059,7 +5088,10 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
         store.updateLayerData(layer.id, { lineHeight: 1.5 });
 
         const updated = layerStore.getLayerById(store,layer.id);
-        expect((updated!.data as any).lineHeight).toBe(1.5);
+        if (!updated || !isTextData(updated.data)) {
+          throw new Error("Expected layer.data to be TextData");
+        }
+        expect(updated.data.lineHeight).toBe(1.5);
       });
     });
 
@@ -5073,7 +5105,10 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
         store.updateLayerData(layer.id, { textAlign: 'center' });
 
         const updated = layerStore.getLayerById(store,layer.id);
-        expect((updated!.data as any).textAlign).toBe('center');
+        if (!updated || !isTextData(updated.data)) {
+          throw new Error("Expected layer.data to be TextData");
+        }
+        expect(updated.data.textAlign).toBe('center');
       });
 
       it('can set text alignment to left (Step 310)', () => {
@@ -5082,7 +5117,10 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
         store.updateLayerData(layer.id, { textAlign: 'left' });
 
         const updated = layerStore.getLayerById(store,layer.id);
-        expect((updated!.data as any).textAlign).toBe('left');
+        if (!updated || !isTextData(updated.data)) {
+          throw new Error("Expected layer.data to be TextData");
+        }
+        expect(updated.data.textAlign).toBe('left');
       });
 
       it('can set text alignment to right (Step 310)', () => {
@@ -5091,7 +5129,10 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
         store.updateLayerData(layer.id, { textAlign: 'right' });
 
         const updated = layerStore.getLayerById(store,layer.id);
-        expect((updated!.data as any).textAlign).toBe('right');
+        if (!updated || !isTextData(updated.data)) {
+          throw new Error("Expected layer.data to be TextData");
+        }
+        expect(updated.data.textAlign).toBe('right');
       });
     });
 
@@ -5195,12 +5236,17 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
 
         // Current behavior: no text type distinction
         // Point text = no bounding box, text doesn't wrap
-        const textData = layer.data as any;
+        if (!isTextData(layer.data)) {
+          throw new Error("Expected layer.data to be TextData");
+        }
+        const textData: TextData = layer.data;
         expect(textData.text).toBe('Point Text');
 
         // These properties would be needed for paragraph text but don't exist:
-        expect(textData.textType).toBeUndefined();  // 'point' | 'paragraph'
-        expect(textData.boundingBox).toBeUndefined(); // { width, height }
+        // Type guard ensures safe property access
+        const textDataObj = textData as Record<string, unknown>;
+        expect(textDataObj.textType).toBeUndefined();  // 'point' | 'paragraph'
+        expect(textDataObj.boundingBox).toBeUndefined(); // { width, height }
       });
 
       it('documents paragraph text API gap (Steps 320-321)', () => {
@@ -5209,26 +5255,37 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
         // These features are not implemented.
 
         // No method to create paragraph text with bounding box
-        expect(typeof (store as any).createParagraphText).toBe('undefined');
+        // Type guard ensures safe property access for API gap documentation
+        const storeObj = store as Record<string, unknown>;
+        expect(typeof storeObj.createParagraphText).toBe('undefined');
 
         // No bounding box property to enable text wrapping
         const layer = layerStore.createTextLayer(store,'No Wrap');
-        expect((layer.data as any).boundingBox).toBeUndefined();
+        if (!isTextData(layer.data)) {
+          throw new Error("Expected layer.data to be TextData");
+        }
+        const textDataObj = layer.data as Record<string, unknown>;
+        expect(textDataObj.boundingBox).toBeUndefined();
       });
 
       it('documents convertTextType API gap (Step 322)', () => {
         // Step 322: "Convert between: Right-click > Convert to Paragraph/Point Text"
         // No conversion method exists
-        expect(typeof (store as any).convertTextType).toBe('undefined');
-        expect(typeof (store as any).convertToPointText).toBe('undefined');
-        expect(typeof (store as any).convertToParagraphText).toBe('undefined');
+        // Type guard ensures safe property access for API gap documentation
+        const storeObj = store as Record<string, unknown>;
+        expect(typeof storeObj.convertTextType).toBe('undefined');
+        expect(typeof storeObj.convertToPointText).toBe('undefined');
+        expect(typeof storeObj.convertToParagraphText).toBe('undefined');
       });
 
       it('long text does not wrap (current behavior)', () => {
         const longText = 'This is a very long piece of text that would wrap in paragraph mode but does not wrap in point text mode because there are no boundaries defined.';
         const layer = layerStore.createTextLayer(store,longText);
 
-        const textData = layer.data as any;
+        if (!isTextData(layer.data)) {
+          throw new Error("Expected layer.data to be TextData");
+        }
+        const textData: TextData = layer.data;
         expect(textData.text).toBe(longText);
 
         // Without paragraph text support, text renders on single line
@@ -5247,7 +5304,10 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
         store.updateLayerData(layer.id, { text: 'Updated Text Content' });
 
         const updated = layerStore.getLayerById(store,layer.id);
-        expect((updated!.data as any).text).toBe('Updated Text Content');
+        if (!updated || !isTextData(updated.data)) {
+          throw new Error("Expected layer.data to be TextData");
+        }
+        expect(updated.data.text).toBe('Updated Text Content');
       });
 
       it('text layer has animatable properties', () => {
@@ -5285,13 +5345,25 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
         const layer = layerStore.createTextLayer(store,'Undo Data');
 
         store.updateLayerData(layer.id, { fontSize: 96 });
-        expect((layerStore.getLayerById(store,layer.id)!.data as any).fontSize).toBe(96);
+        const updated1 = layerStore.getLayerById(store,layer.id);
+        if (!updated1 || !isTextData(updated1.data)) {
+          throw new Error("Expected layer.data to be TextData");
+        }
+        expect(updated1.data.fontSize).toBe(96);
 
         store.undo();
-        expect((layerStore.getLayerById(store,layer.id)!.data as any).fontSize).toBe(72); // Default
+        const updated2 = layerStore.getLayerById(store,layer.id);
+        if (!updated2 || !isTextData(updated2.data)) {
+          throw new Error("Expected layer.data to be TextData");
+        }
+        expect(updated2.data.fontSize).toBe(72); // Default
 
         store.redo();
-        expect((layerStore.getLayerById(store,layer.id)!.data as any).fontSize).toBe(96);
+        const updated3 = layerStore.getLayerById(store,layer.id);
+        if (!updated3 || !isTextData(updated3.data)) {
+          throw new Error("Expected layer.data to be TextData");
+        }
+        expect(updated3.data.fontSize).toBe(96);
       });
 
       it('can undo/redo text animation', () => {
@@ -5349,7 +5421,10 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
         freshStore.importProject(savedJson);
 
         const loaded = freshStore.getActiveCompLayers().find(l => l.name === 'Save Data');
-        const textData = loaded!.data as any;
+        if (!loaded || !isTextData(loaded.data)) {
+          throw new Error("Expected layer.data to be TextData");
+        }
+        const textData: TextData = loaded.data;
 
         expect(textData.text).toBe('Custom Text Content');
         expect(textData.fontFamily).toBe('Georgia');
@@ -5823,11 +5898,13 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
 
       it('documents API gaps for alignment features', () => {
         // This test documents that the following methods are NOT implemented:
-        expect(typeof (store as any).alignLayerToComposition).toBe('undefined');
-        expect(typeof (store as any).alignLayers).toBe('undefined');
-        expect(typeof (store as any).distributeLayers).toBe('undefined');
-        expect(typeof (store as any).centerLayerInComposition).toBe('undefined');
-        expect(typeof (store as any).fitLayerToComposition).toBe('undefined');
+        // Type guard ensures safe property access for API gap documentation
+        const storeObj = store as Record<string, unknown>;
+        expect(typeof storeObj.alignLayerToComposition).toBe('undefined');
+        expect(typeof storeObj.alignLayers).toBe('undefined');
+        expect(typeof storeObj.distributeLayers).toBe('undefined');
+        expect(typeof storeObj.centerLayerInComposition).toBe('undefined');
+        expect(typeof storeObj.fitLayerToComposition).toBe('undefined');
       });
     });
   });
@@ -7833,10 +7910,10 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
         const nestedComp = store.nestSelectedLayers('Export Nested');
 
         const exported = store.exportProject();
-        const parsed = JSON.parse(exported);
+        const parsed = JSON.parse(exported) as LatticeProject;
 
         // Should have both main and nested compositions
-        const compNames = Object.values(parsed.compositions).map((c: any) => c.name);
+        const compNames = Object.values(parsed.compositions).map((c: Composition) => c.name);
         expect(compNames).toContain('Export Nested');
       });
 

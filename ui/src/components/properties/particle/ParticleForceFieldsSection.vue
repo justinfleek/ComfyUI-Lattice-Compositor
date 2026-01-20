@@ -233,10 +233,10 @@ defineEmits<{
   (e: "toggle"): void;
   (e: "addWell"): void;
   (e: "removeWell", id: string): void;
-  (e: "updateWell", id: string, key: keyof GravityWellConfig, value: any): void;
+  (e: "updateWell", id: string, key: keyof GravityWellConfig, value: GravityWellConfig[keyof GravityWellConfig]): void;
   (e: "addVortex"): void;
   (e: "removeVortex", id: string): void;
-  (e: "updateVortex", id: string, key: keyof VortexConfig, value: any): void;
+  (e: "updateVortex", id: string, key: keyof VortexConfig, value: VortexConfig[keyof VortexConfig]): void;
 }>();
 
 const activeTab = ref<"wells" | "vortices">("wells");

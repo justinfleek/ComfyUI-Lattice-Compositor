@@ -417,7 +417,7 @@ export const useEffectStore = defineStore("effect", {
 
       store.pushHistory();
       const styles = ensureLayerStyles(layer);
-      const style = styles[styleType] as Record<string, unknown> | undefined;
+      const style = styles[styleType];
 
       if (!style) {
         storeLogger.warn("updateStyleProperty: Style not found", { layerId, styleType });

@@ -1130,11 +1130,12 @@ export function collectAudioReactiveModifiers(
       /^spline\.controlPoint\.(\d+)\.(x|y|depth)$/,
     );
     if (splineMatch) {
-      const index = splineMatch[1];
+      const index = parseInt(splineMatch[1], 10);
       const prop = splineMatch[2] as "x" | "y" | "depth";
-      const key =
-        `splineControlPoint_${index}_${prop}` as keyof AudioReactiveModifiers;
-      (modifiers as any)[key] = value;
+      // Type-safe assignment using template literal type
+      const key = `splineControlPoint_${index}_${prop}` as `splineControlPoint_${number}_${"x" | "y" | "depth"}`;
+      // TypeScript knows this key exists in AudioReactiveModifiers via index signature
+      modifiers[key] = value;
     }
   }
 

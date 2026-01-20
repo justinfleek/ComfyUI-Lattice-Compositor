@@ -261,7 +261,7 @@ function updateName() {
 }
 
 // Update property value in the layer
-function updateValue(value: any) {
+function updateValue(value: import("@/types/animation").PropertyValue) {
   if (!props.layer) return;
   setPropertyValue(props.layer, props.property.sourcePropertyPath, value);
 }
@@ -275,15 +275,26 @@ function updatePointValue(axis: "x" | "y", value: number) {
 }
 
 // Color utilities
-function colorToHex(color: any): string {
+function colorToHex(
+  color: import("@/types/animation").PropertyValue,
+): string {
   if (!color) return "#ffffff";
   if (typeof color === "string") return color;
+  if (
+    typeof color === "object" &&
+    color !== null &&
+    "r" in color &&
+    "g" in color &&
+    "b" in color
+  ) {
+    const rgba = color as { r: number; g: number; b: number; a?: number };
+    const r = Math.round((rgba.r ?? 255) * (rgba.r > 1 ? 1 : 255));
+    const g = Math.round((rgba.g ?? 255) * (rgba.g > 1 ? 1 : 255));
+    const b = Math.round((rgba.b ?? 255) * (rgba.b > 1 ? 1 : 255));
 
-  const r = Math.round((color.r ?? 255) * (color.r > 1 ? 1 : 255));
-  const g = Math.round((color.g ?? 255) * (color.g > 1 ? 1 : 255));
-  const b = Math.round((color.b ?? 255) * (color.b > 1 ? 1 : 255));
-
-  return `#${[r, g, b].map((c) => c.toString(16).padStart(2, "0")).join("")}`;
+    return `#${[r, g, b].map((c) => c.toString(16).padStart(2, "0")).join("")}`;
+  }
+  return "#ffffff";
 }
 
 function hexToColor(hex: string): {

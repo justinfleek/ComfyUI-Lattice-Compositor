@@ -24,10 +24,17 @@ export type Math3DWarning =
   | 'SINGULAR_MATRIX'
   | 'DIVISION_BY_ZERO';
 
+/**
+ * Warning context - allows common debugging values
+ */
+export interface Math3DWarnContext {
+  [key: string]: number | string | boolean | Vec3 | Mat4 | null | undefined | Array<number | string | boolean | Vec3>;
+}
+
 export interface Math3DWarnEvent {
   type: Math3DWarning;
   message: string;
-  context?: Record<string, unknown>;
+  context?: Math3DWarnContext;
 }
 
 /**
@@ -48,7 +55,7 @@ export function setMath3DWarnHandler(handler: (event: Math3DWarnEvent) => void):
   math3dWarnHandler = handler;
 }
 
-function math3dWarn(type: Math3DWarning, message: string, context?: Record<string, unknown>): void {
+function math3dWarn(type: Math3DWarning, message: string, context?: Math3DWarnContext): void {
   math3dWarnHandler({ type, message, context });
 }
 

@@ -1,6 +1,18 @@
 import type { SESCompartment } from "@/types/ses-ambient";
 
 /**
+ * Safe context type - only allows primitive values for security
+ */
+type SafeContextValue = number | string | boolean | null | undefined;
+
+/**
+ * Safe context object - only primitive values allowed
+ */
+interface SafeContext {
+  [key: string]: SafeContextValue;
+}
+
+/**
  * SES (Secure ECMAScript) Expression Evaluator
  *
  * This module provides a secure sandbox for evaluating user expressions using
@@ -464,7 +476,7 @@ export function evaluateInSES(
  */
 export function evaluateSimpleExpression(
   expr: string,
-  context: Record<string, unknown>,
+  context: ExpressionContext,
 ): number | null {
   // SECURITY: Type check - defense in depth for JS callers
   if (typeof expr !== "string") {
@@ -536,17 +548,17 @@ export function evaluateSimpleExpression(
     });
 
     // Harden the provided context values
-    const safeContext: Record<string, unknown> = {};
+    const safeContext: SafeContext = {};
     for (const [key, value] of Object.entries(context)) {
-      // Only allow primitive values in context (numbers, strings, booleans)
+      // Only allow primitive values in context (numbers, strings, booleans, null, undefined)
       if (
         typeof value === "number" ||
         typeof value === "string" ||
-        typeof value === "boolean"
+        typeof value === "boolean" ||
+        value === null ||
+        value === undefined
       ) {
-        safeContext[key] = value;
-      } else if (value === null || value === undefined) {
-        safeContext[key] = value;
+        safeContext[key] = value as SafeContextValue;
       }
       // Skip objects/arrays/functions - they could have malicious valueOf/toString
     }

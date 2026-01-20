@@ -47,6 +47,17 @@ export interface StemModel {
 }
 
 /**
+ * Attribution information for stem separation (model credits, licenses, etc.)
+ */
+export interface StemAttribution {
+  model?: string;
+  author?: string;
+  license?: string;
+  source?: string;
+  [key: string]: string | undefined;
+}
+
+/**
  * Separated stems result
  */
 export interface StemSeparationResult {
@@ -57,7 +68,7 @@ export interface StemSeparationResult {
   sample_rate?: number;
   duration?: number;
   model?: string;
-  attribution?: Record<string, unknown>;
+  attribution?: StemAttribution;
 }
 
 /**

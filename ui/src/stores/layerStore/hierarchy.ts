@@ -11,7 +11,7 @@ import type { Layer } from "@/types/project";
 import { createAnimatableProperty } from "@/types/project";
 import { storeLogger } from "@/utils/logger";
 import { useSelectionStore } from "../selectionStore";
-import type { CompositorStoreAccess } from "./types";
+import { useProjectStore } from "../projectStore";
 import { deleteLayer, duplicateLayer } from "./crud";
 
 // ============================================================================
@@ -26,11 +26,11 @@ import { deleteLayer, duplicateLayer } from "./crud";
  * @param parentId - ID of the parent layer (or null to unparent)
  */
 export function setLayerParent(
-  compositorStore: CompositorStoreAccess,
   layerId: string,
   parentId: string | null,
 ): void {
-  const layers = compositorStore.getActiveCompLayers();
+  const projectStore = useProjectStore();
+  const layers = projectStore.getActiveCompLayers();
   const layer = layers.find((l: Layer) => l.id === layerId);
   if (!layer) return;
 
@@ -58,8 +58,8 @@ export function setLayerParent(
   }
 
   layer.parentId = parentId;
-  compositorStore.project.meta.modified = new Date().toISOString();
-  compositorStore.pushHistory();
+  projectStore.project.meta.modified = new Date().toISOString();
+  projectStore.pushHistory();
 }
 
 // ============================================================================
@@ -72,10 +72,10 @@ export function setLayerParent(
  * @param layerId - The layer ID to toggle
  */
 export function toggleLayer3D(
-  compositorStore: CompositorStoreAccess,
   layerId: string,
 ): void {
-  const layer = compositorStore
+  const projectStore = useProjectStore();
+  const layer = projectStore
     .getActiveCompLayers()
     .find((l: Layer) => l.id === layerId);
   if (!layer) return;
@@ -134,7 +134,7 @@ export function toggleLayer3D(
     }
   }
 
-  compositorStore.project.meta.modified = new Date().toISOString();
+  projectStore.project.meta.modified = new Date().toISOString();
 }
 
 // ============================================================================
@@ -148,7 +148,6 @@ export function toggleLayer3D(
  * @param addToSelection - Whether to add to existing selection
  */
 export function selectLayer(
-  _compositorStore: CompositorStoreAccess,
   layerId: string,
   addToSelection = false,
 ): void {
@@ -162,11 +161,9 @@ export function selectLayer(
 
 /**
  * Deselect a layer (delegates to selectionStore)
- * @param _compositorStore - Unused, kept for API consistency
  * @param layerId - The layer ID to deselect
  */
 export function deselectLayer(
-  _compositorStore: CompositorStoreAccess,
   layerId: string,
 ): void {
   useSelectionStore().removeFromSelection(layerId);
@@ -174,50 +171,49 @@ export function deselectLayer(
 
 /**
  * Clear all layer selection (delegates to selectionStore)
- * @param _compositorStore - Unused, kept for API consistency
  */
-export function clearSelection(_compositorStore: CompositorStoreAccess): void {
+export function clearSelection(): void {
   useSelectionStore().clearLayerSelection();
 }
 
 /**
  * Select all layers in the active composition
- * @param compositorStore - The compositor store instance
  */
-export function selectAllLayers(compositorStore: CompositorStoreAccess): void {
-  const layers = compositorStore.getActiveCompLayers?.() ?? [];
+export function selectAllLayers(): void {
+  const projectStore = useProjectStore();
+  const layers = projectStore.getActiveCompLayers();
   const selection = useSelectionStore();
   selection.selectLayers(layers.map((l: Layer) => l.id));
 }
 
 /**
  * Delete all selected layers
- * @param compositorStore - The compositor store instance
  */
-export function deleteSelectedLayers(compositorStore: CompositorStoreAccess): void {
+export function deleteSelectedLayers(): void {
+  const projectStore = useProjectStore();
   const selection = useSelectionStore();
   const layerIds = [...selection.selectedLayerIds];
   
   layerIds.forEach((id: string) => {
-    deleteLayer(compositorStore, id);
+    deleteLayer(id);
   });
   
   selection.clearLayerSelection();
-  compositorStore.project.meta.modified = new Date().toISOString();
-  compositorStore.pushHistory();
+  projectStore.project.meta.modified = new Date().toISOString();
+  projectStore.pushHistory();
 }
 
 /**
  * Duplicate all selected layers
- * @param compositorStore - The compositor store instance
  * @returns Array of new layer IDs
  */
-export function duplicateSelectedLayers(compositorStore: CompositorStoreAccess): string[] {
+export function duplicateSelectedLayers(): string[] {
+  const projectStore = useProjectStore();
   const selection = useSelectionStore();
   const newLayerIds: string[] = [];
   
   selection.selectedLayerIds.forEach((id: string) => {
-    const newLayer = duplicateLayer(compositorStore, id);
+    const newLayer = duplicateLayer(id);
     if (newLayer) {
       newLayerIds.push(newLayer.id);
     }
@@ -228,8 +224,8 @@ export function duplicateSelectedLayers(compositorStore: CompositorStoreAccess):
     selection.selectLayers(newLayerIds);
   }
   
-  compositorStore.project.meta.modified = new Date().toISOString();
-  compositorStore.pushHistory();
+  projectStore.project.meta.modified = new Date().toISOString();
+  projectStore.pushHistory();
   
   return newLayerIds;
 }
@@ -245,10 +241,10 @@ export function duplicateSelectedLayers(compositorStore: CompositorStoreAccess):
  * @returns The layer or null if not found
  */
 export function getLayerById(
-  compositorStore: CompositorStoreAccess,
   layerId: string,
 ): Layer | null {
-  const layers = compositorStore.getActiveCompLayers?.() ?? [];
+  const projectStore = useProjectStore();
+  const layers = projectStore.getActiveCompLayers();
   return layers.find((l: Layer) => l.id === layerId) ?? null;
 }
 
@@ -259,29 +255,27 @@ export function getLayerById(
  * @returns Array of child layers
  */
 export function getLayerChildren(
-  compositorStore: CompositorStoreAccess,
   layerId: string,
 ): Layer[] {
-  const layers = compositorStore.getActiveCompLayers?.() ?? [];
+  const projectStore = useProjectStore();
+  const layers = projectStore.getActiveCompLayers();
   return layers.filter((l: Layer) => l.parentId === layerId);
 }
 
 /**
  * Get all descendants of a layer (recursive)
- * @param compositorStore - The compositor store instance
  * @param layerId - The ancestor layer ID
  * @returns Array of all descendant layers
  */
 export function getLayerDescendants(
-  compositorStore: CompositorStoreAccess,
   layerId: string,
 ): Layer[] {
   const descendants: Layer[] = [];
-  const children = getLayerChildren(compositorStore, layerId);
+  const children = getLayerChildren(layerId);
 
   for (const child of children) {
     descendants.push(child);
-    descendants.push(...getLayerDescendants(compositorStore, child.id));
+    descendants.push(...getLayerDescendants(child.id));
   }
 
   return descendants;
@@ -289,27 +283,24 @@ export function getLayerDescendants(
 
 /**
  * Get all visible layers from active composition
- * @param compositorStore - The compositor store instance
  * @returns Array of visible layers
  */
-export function getVisibleLayers(
-  compositorStore: CompositorStoreAccess,
-): Layer[] {
-  const layers = compositorStore.getActiveCompLayers?.() ?? [];
+export function getVisibleLayers(): Layer[] {
+  const projectStore = useProjectStore();
+  const layers = projectStore.getActiveCompLayers();
   return layers.filter((l: Layer) => l.visible);
 }
 
 /**
  * Get layers displayed in timeline (respects minimized filter)
- * @param compositorStore - The compositor store instance
  * @param hideMinimized - Whether to hide minimized layers (default: false)
  * @returns Array of displayed layers
  */
 export function getDisplayedLayers(
-  compositorStore: CompositorStoreAccess,
   hideMinimized = false,
 ): Layer[] {
-  const layers = compositorStore.getActiveCompLayers?.() ?? [];
+  const projectStore = useProjectStore();
+  const layers = projectStore.getActiveCompLayers();
   if (hideMinimized) {
     return layers.filter((l: Layer) => !l.minimized);
   }
@@ -318,37 +309,31 @@ export function getDisplayedLayers(
 
 /**
  * Get root layers (layers with no parent)
- * @param compositorStore - The compositor store instance
  * @returns Array of root layers
  */
-export function getRootLayers(
-  compositorStore: CompositorStoreAccess,
-): Layer[] {
-  const layers = compositorStore.getActiveCompLayers?.() ?? [];
+export function getRootLayers(): Layer[] {
+  const projectStore = useProjectStore();
+  const layers = projectStore.getActiveCompLayers();
   return layers.filter((l: Layer) => !l.parentId);
 }
 
 /**
  * Get all camera layers in the active composition
- * @param compositorStore - The compositor store instance
  * @returns Array of camera layers
  */
-export function getCameraLayers(
-  compositorStore: CompositorStoreAccess,
-): Layer[] {
-  const layers = compositorStore.getActiveCompLayers?.() ?? [];
+export function getCameraLayers(): Layer[] {
+  const projectStore = useProjectStore();
+  const layers = projectStore.getActiveCompLayers();
   return layers.filter((l: Layer) => l.type === "camera");
 }
 
 /**
  * Get all selected layers in the active composition
- * @param compositorStore - The compositor store instance
  * @returns Array of selected layers
  */
-export function getSelectedLayers(
-  compositorStore: CompositorStoreAccess,
-): Layer[] {
-  const layers = compositorStore.getActiveCompLayers?.() ?? [];
+export function getSelectedLayers(): Layer[] {
+  const projectStore = useProjectStore();
+  const layers = projectStore.getActiveCompLayers();
   const selectionStore = useSelectionStore();
   return layers.filter((l: Layer) =>
     selectionStore.selectedLayerIds.includes(l.id),
@@ -357,15 +342,13 @@ export function getSelectedLayers(
 
 /**
  * Get the single selected layer (returns null if 0 or 2+ layers selected)
- * @param compositorStore - The compositor store instance
  * @returns The selected layer or null
  */
-export function getSelectedLayer(
-  compositorStore: CompositorStoreAccess,
-): Layer | null {
+export function getSelectedLayer(): Layer | null {
+  const projectStore = useProjectStore();
   const selectionStore = useSelectionStore();
   if (selectionStore.selectedLayerIds.length !== 1) return null;
-  const layers = compositorStore.getActiveCompLayers?.() ?? [];
+  const layers = projectStore.getActiveCompLayers();
   return (
     layers.find((l: Layer) => l.id === selectionStore.selectedLayerIds[0]) ||
     null

@@ -6,6 +6,7 @@
  */
 
 import { defineStore } from "pinia";
+import type { ClipboardKeyframe, Layer } from "@/types/project";
 
 interface UIState {
   // Panel visibility
@@ -22,6 +23,12 @@ interface UIState {
     starPoints: number;
     starInnerRadius: number;
   };
+
+  // Clipboard for copy/paste
+  clipboard: {
+    layers: Layer[];
+    keyframes: ClipboardKeyframe[];
+  };
 }
 
 export const useUIStore = defineStore("ui", {
@@ -34,6 +41,10 @@ export const useUIStore = defineStore("ui", {
       polygonSides: 6,
       starPoints: 5,
       starInnerRadius: 0.5,
+    },
+    clipboard: {
+      layers: [],
+      keyframes: [],
     },
   }),
 

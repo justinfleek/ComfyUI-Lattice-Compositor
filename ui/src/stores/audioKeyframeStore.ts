@@ -42,7 +42,7 @@ type PathAnimatorMap = Map<string, PathAnimatorAccess>;
 export interface AudioKeyframeStoreAccess {
   project: { composition: { fps: number } };
   pathAnimators: PathAnimatorMap;
-  createLayer(type: string, name: string): Layer;
+  createLayer(type: Layer["type"], name?: string): Layer;
   getActiveCompLayers(): Layer[];
   getActiveComp(): { currentFrame: number } | null;
   pushHistory(): void;
@@ -211,7 +211,9 @@ function createAmplitudeProperty(
 // ============================================================================
 
 export const useAudioKeyframeStore = defineStore("audioKeyframe", {
-  state: () => ({}),
+  state: () => ({
+    pathAnimators: new Map<string, PathAnimatorAccess>(),
+  }),
   
   getters: {},
   
@@ -220,84 +222,58 @@ export const useAudioKeyframeStore = defineStore("audioKeyframe", {
     // Path Animator Operations
     // ========================================================================
 
-    /**
-     * Create path animator for a layer
-     */
-    createPathAnimator(
-      store: AudioKeyframeStoreAccess,
-      layerId: string,
-      config: Partial<PathAnimatorConfig> = {},
-    ): void {
+    createPathAnimator(layerId: string, config: Partial<PathAnimatorConfig> = {}): void {
       const animator = new AudioPathAnimator(config);
-      store.pathAnimators.set(layerId, animator);
+      this.pathAnimators.set(layerId, animator);
     },
 
-    /**
-     * Set path for an animator
-     */
-    setPathAnimatorPath(
-      store: AudioKeyframeStoreAccess,
-      layerId: string,
-      pathData: string,
-    ): void {
-      const animator = store.pathAnimators.get(layerId);
+    setPathAnimatorPath(layerId: string, pathData: string): void {
+      const animator = this.pathAnimators.get(layerId);
       if (animator) {
         animator.setPath(pathData);
       }
     },
 
-    /**
-     * Update path animator config
-     */
-    updatePathAnimatorConfig(
-      store: AudioKeyframeStoreAccess,
-      layerId: string,
-      config: Partial<PathAnimatorConfig>,
-    ): void {
-      const animator = store.pathAnimators.get(layerId);
+    updatePathAnimatorConfig(layerId: string, config: Partial<PathAnimatorConfig>): void {
+      const animator = this.pathAnimators.get(layerId);
       if (animator) {
         animator.setConfig(config);
       }
     },
 
-    /**
-     * Remove path animator
-     */
-    removePathAnimator(store: AudioKeyframeStoreAccess, layerId: string): void {
-      store.pathAnimators.delete(layerId);
+    removePathAnimator(layerId: string): void {
+      this.pathAnimators.delete(layerId);
     },
 
-    /**
-     * Get path animator for layer
-     */
-    getPathAnimator(
-      store: AudioKeyframeStoreAccess,
-      layerId: string,
-    ): PathAnimatorAccess | undefined {
-      return store.pathAnimators.get(layerId);
+    getPathAnimator(layerId: string): PathAnimatorAccess | undefined {
+      return this.pathAnimators.get(layerId);
     },
 
-    /**
-     * Update all path animators for current frame
-     */
-    updatePathAnimators(store: AudioKeyframeStoreAccess): void {
+    updatePathAnimators(): void {
       const audioStore = useAudioStore();
       if (!audioStore.audioAnalysis) return;
 
-      const frame = store.getActiveComp()?.currentFrame ?? 0;
-      const amplitude = audioStore.getFeatureAtFrame(store, "amplitude", frame);
+      const projectStore = useProjectStore();
+      const frame = projectStore.getActiveComp()?.currentFrame ?? 0;
+      const amplitude = audioStore.getFeatureAtFrame({
+        project: projectStore.project,
+        pathAnimators: this.pathAnimators,
+        createLayer: () => {
+          throw new Error("Not implemented");
+        },
+        getActiveCompLayers: () => projectStore.getActiveCompLayers(),
+        getActiveComp: () => projectStore.getActiveComp(),
+        pushHistory: () => projectStore.pushHistory(),
+      }, "amplitude", frame);
       const isBeat = audioStore.isBeatAtFrame(frame);
 
-      for (const [_layerId, animator] of store.pathAnimators) {
+      for (const [_layerId, animator] of this.pathAnimators) {
         animator.update(amplitude, isBeat);
       }
     },
 
-    /**
-     * Reset all path animators
-     */
-    resetPathAnimators(store: AudioKeyframeStoreAccess): void {
-      for (const animator of store.pathAnimators.values()) {
+    resetPathAnimators(): void {
+      for (const animator of this.pathAnimators.values()) {
         animator.reset();
       }
     },

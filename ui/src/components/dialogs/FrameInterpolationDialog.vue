@@ -300,7 +300,12 @@ async function startProcessing() {
 
 async function collectFrames(): Promise<string[]> {
   const frames: string[] = [];
-  const engine = (window as any).__latticeEngine;
+  interface LatticeEngineGlobal {
+    __latticeEngine?: {
+      renderFrameToCanvas?: (frame: number, width: number, height: number) => Promise<HTMLCanvasElement>;
+    };
+  }
+  const engine = (window as LatticeEngineGlobal).__latticeEngine;
 
   for (let i = startFrame.value; i <= endFrame.value; i++) {
     progress.value = ((i - startFrame.value) / frameRangeCount.value) * 30;

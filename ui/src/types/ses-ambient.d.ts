@@ -5,17 +5,15 @@
  * The ses package has type declarations but they don't augment globalThis properly.
  */
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 export interface SESCompartment {
-  globalThis: Record<PropertyKey, any>;
+  globalThis: Record<PropertyKey, unknown>;
   name: string;
-  evaluate(code: string, options?: Record<string, unknown>): any;
+  evaluate(code: string, options?: Record<string, unknown>): unknown;
 }
 
 interface SESCompartmentConstructor {
   new (
-    globals?: Record<PropertyKey, any>,
+    globals?: Record<PropertyKey, unknown>,
     modules?: Record<string, unknown>,
     options?: Record<string, unknown>,
   ): SESCompartment;

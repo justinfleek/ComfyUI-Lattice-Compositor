@@ -41,7 +41,7 @@ export interface PreprocessorInfo {
 
 export interface PreprocessorInput {
   type: "combo" | "int" | "float" | "bool" | "string";
-  default: any;
+  default: string | number | boolean;
   min?: number;
   max?: number;
   step?: number;
@@ -684,7 +684,7 @@ export async function fetchPreprocessorInfo(
 export async function executePreprocessor(
   preprocessorId: string,
   imageData: string,
-  options: Record<string, any> = {},
+  options: Record<string, string | number | boolean> = {},
 ): Promise<PreprocessorResult> {
   const startTime = Date.now();
 
@@ -739,8 +739,8 @@ export async function renderLayerToImage(
   resolution: number = 512,
 ): Promise<string | null> {
   try {
-    // Get the canvas from the engine
-    const engine = (window as any).__latticeEngine;
+    // Get the canvas from the engine (type-safe - Window.__latticeEngine is typed in vite-env.d.ts)
+    const engine = window.__latticeEngine;
     if (!engine) {
       console.error("[PreprocessorService] Engine not available");
       return null;
@@ -769,7 +769,7 @@ export async function generateFromLayer(
   sourceLayerId: string,
   _targetLayerId: string,
   preprocessorId: string,
-  options: Record<string, any> = {},
+  options: Record<string, string | number | boolean> = {},
   frame: number = 0,
   onProgress?: (status: string) => void,
 ): Promise<{

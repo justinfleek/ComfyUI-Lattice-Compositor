@@ -13,6 +13,7 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest';
 import { ref, shallowRef } from 'vue';
 import { useViewportControls } from '@/composables/useViewportControls';
+import type { LatticeEngine } from '@/engine/LatticeEngine';
 
 // Mock console.warn to capture validation warnings
 const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
@@ -23,8 +24,9 @@ describe('Viewport Controls NaN Validation Regression', () => {
   });
 
   function createTestControls() {
-    // Create mock engine
-    const mockEngine = {
+    // Create partial mock engine matching the interface used by useViewportControls
+    // Only include methods actually used by the composable
+    const mockEngine: Pick<LatticeEngine, "setViewportTransform" | "getCameraController" | "resetCameraToDefault"> = {
       setViewportTransform: vi.fn(),
       getCameraController: () => ({
         setZoom: vi.fn(),
@@ -34,7 +36,7 @@ describe('Viewport Controls NaN Validation Regression', () => {
     };
 
     return useViewportControls({
-      engine: shallowRef(mockEngine) as any,
+      engine: shallowRef(mockEngine as LatticeEngine),
       compositionWidth: ref(1920),
       compositionHeight: ref(1080),
       canvasWidth: ref(800),

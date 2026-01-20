@@ -31,7 +31,6 @@ export type {
   ExponentialScaleOptions,
   TimeStretchOptions,
   LayerState,
-  CompositorStoreAccess,
 } from "./types";
 
 // CRUD operations
@@ -143,14 +142,14 @@ export type { CopyPathToPositionOptions } from "./pathOperations";
 // Types for internal use
 import type {
   LayerState,
-  CompositorStoreAccess,
   DeleteLayerOptions,
   SequenceLayersOptions,
   ExponentialScaleOptions,
   TimeStretchOptions,
   LayerSourceReplacement,
 } from "./types";
-import type { Layer, ClipboardKeyframe, AnyLayerData, EvaluatedControlPoint, NestedCompData } from "@/types/project";
+import type { AssetReference, Layer, ClipboardKeyframe, LayerDataUnion, EvaluatedControlPoint, NestedCompData } from "@/types/project";
+import type { VideoImportResult } from "@/stores/videoStore";
 import type { SplineControlPoint } from "./spline";
 import type { ConvertTextToSplinesOptions } from "./textConversion";
 import type { CopyPathToPositionOptions } from "./pathOperations";
@@ -197,62 +196,54 @@ export const useLayerStore = defineStore("layer", {
     // ========================================================================
 
     createLayer(
-      compositorStore: CompositorStoreAccess,
       type: Layer["type"],
       name?: string,
     ): Layer {
-      return createLayerImpl(compositorStore, type, name);
+      return createLayerImpl(type, name);
     },
 
     deleteLayer(
-      compositorStore: CompositorStoreAccess,
       layerId: string,
       options?: DeleteLayerOptions,
     ): void {
-      deleteLayerImpl(compositorStore, layerId, options);
+      deleteLayerImpl(layerId, options);
     },
 
     updateLayer(
-      compositorStore: CompositorStoreAccess,
       layerId: string,
       updates: Partial<Layer>,
     ): void {
-      updateLayerImpl(compositorStore, layerId, updates);
+      updateLayerImpl(layerId, updates);
     },
 
     updateLayerData(
-      compositorStore: CompositorStoreAccess,
       layerId: string,
-      dataUpdates: Partial<AnyLayerData> & Record<string, unknown>,
+      dataUpdates: Partial<LayerDataUnion & { physics?: import("@/types/physics").PhysicsLayerData }>,
     ): void {
-      updateLayerDataImpl(compositorStore, layerId, dataUpdates);
+      updateLayerDataImpl(layerId, dataUpdates);
     },
 
     duplicateLayer(
-      compositorStore: CompositorStoreAccess,
       layerId: string,
     ): Layer | null {
-      return duplicateLayerImpl(compositorStore, layerId);
+      return duplicateLayerImpl(layerId);
     },
 
     moveLayer(
-      compositorStore: CompositorStoreAccess,
       layerId: string,
       newIndex: number,
     ): void {
-      moveLayerImpl(compositorStore, layerId, newIndex);
+      moveLayerImpl(layerId, newIndex);
     },
 
     renameLayer(
-      compositorStore: CompositorStoreAccess,
       layerId: string,
       newName: string,
     ): void {
-      renameLayerImpl(compositorStore, layerId, newName);
+      renameLayerImpl(layerId, newName);
     },
 
     updateLayerTransform(
-      compositorStore: CompositorStoreAccess,
       layerId: string,
       updates: {
         position?: { x: number; y: number; z?: number };
@@ -263,35 +254,35 @@ export const useLayerStore = defineStore("layer", {
         anchor?: { x: number; y: number; z?: number };
       },
     ): void {
-      updateLayerTransformImpl(compositorStore, layerId, updates);
+      updateLayerTransformImpl(layerId, updates);
     },
 
-    toggleLayerLock(compositorStore: CompositorStoreAccess): void {
-      toggleLayerLockImpl(compositorStore);
+    toggleLayerLock(): void {
+      toggleLayerLockImpl();
     },
 
-    toggleLayerVisibility(compositorStore: CompositorStoreAccess): void {
-      toggleLayerVisibilityImpl(compositorStore);
+    toggleLayerVisibility(): void {
+      toggleLayerVisibilityImpl();
     },
 
-    toggleLayerSolo(compositorStore: CompositorStoreAccess): void {
-      toggleLayerSoloImpl(compositorStore);
+    toggleLayerSolo(): void {
+      toggleLayerSoloImpl();
     },
 
-    bringToFront(compositorStore: CompositorStoreAccess): void {
-      bringToFrontImpl(compositorStore);
+    bringToFront(): void {
+      bringToFrontImpl();
     },
 
-    sendToBack(compositorStore: CompositorStoreAccess): void {
-      sendToBackImpl(compositorStore);
+    sendToBack(): void {
+      sendToBackImpl();
     },
 
-    bringForward(compositorStore: CompositorStoreAccess): void {
-      bringForwardImpl(compositorStore);
+    bringForward(): void {
+      bringForwardImpl();
     },
 
-    sendBackward(compositorStore: CompositorStoreAccess): void {
-      sendBackwardImpl(compositorStore);
+    sendBackward(): void {
+      sendBackwardImpl();
     },
 
     /** @internal Used by clipboard operations */
@@ -303,16 +294,16 @@ export const useLayerStore = defineStore("layer", {
     // CLIPBOARD OPERATIONS
     // ========================================================================
 
-    copySelectedLayers(compositorStore: CompositorStoreAccess): void {
-      copySelectedLayersImpl(this.$state, compositorStore);
+    copySelectedLayers(): void {
+      copySelectedLayersImpl(this.$state);
     },
 
-    pasteLayers(compositorStore: CompositorStoreAccess): Layer[] {
-      return pasteLayersImpl(this.$state, compositorStore);
+    pasteLayers(): Layer[] {
+      return pasteLayersImpl(this.$state);
     },
 
-    cutSelectedLayers(compositorStore: CompositorStoreAccess): void {
-      cutSelectedLayersImpl(this.$state, compositorStore);
+    cutSelectedLayers(): void {
+      cutSelectedLayersImpl(this.$state);
     },
 
     // ========================================================================
@@ -320,15 +311,14 @@ export const useLayerStore = defineStore("layer", {
     // ========================================================================
 
     setLayerParent(
-      compositorStore: CompositorStoreAccess,
       layerId: string,
       parentId: string | null,
     ): void {
-      setLayerParentImpl(compositorStore, layerId, parentId);
+      setLayerParentImpl(layerId, parentId);
     },
 
-    toggleLayer3D(compositorStore: CompositorStoreAccess, layerId: string): void {
-      toggleLayer3DImpl(compositorStore, layerId);
+    toggleLayer3D(layerId: string): void {
+      toggleLayer3DImpl(layerId);
     },
 
     // ========================================================================
@@ -336,31 +326,30 @@ export const useLayerStore = defineStore("layer", {
     // ========================================================================
 
     selectLayer(
-      compositorStore: CompositorStoreAccess,
       layerId: string,
       addToSelection = false,
     ): void {
-      selectLayerImpl(compositorStore, layerId, addToSelection);
+      selectLayerImpl(layerId, addToSelection);
     },
 
-    deselectLayer(compositorStore: CompositorStoreAccess, layerId: string): void {
-      deselectLayerImpl(compositorStore, layerId);
+    deselectLayer(layerId: string): void {
+      deselectLayerImpl(layerId);
     },
 
-    clearSelection(compositorStore: CompositorStoreAccess): void {
-      clearSelectionImpl(compositorStore);
+    clearSelection(): void {
+      clearSelectionImpl();
     },
 
-    selectAllLayers(compositorStore: CompositorStoreAccess): void {
-      selectAllLayersImpl(compositorStore);
+    selectAllLayers(): void {
+      selectAllLayersImpl();
     },
 
-    deleteSelectedLayers(compositorStore: CompositorStoreAccess): void {
-      deleteSelectedLayersImpl(compositorStore);
+    deleteSelectedLayers(): void {
+      deleteSelectedLayersImpl();
     },
 
-    duplicateSelectedLayers(compositorStore: CompositorStoreAccess): string[] {
-      return duplicateSelectedLayersImpl(compositorStore);
+    duplicateSelectedLayers(): string[] {
+      return duplicateSelectedLayersImpl();
     },
 
     // ========================================================================
@@ -368,73 +357,60 @@ export const useLayerStore = defineStore("layer", {
     // ========================================================================
 
     createTextLayer(
-      compositorStore: CompositorStoreAccess,
       text: string = "Text",
     ): Layer {
-      return createTextLayerImpl(compositorStore, text);
+      return createTextLayerImpl(text);
     },
 
-    createSplineLayer(compositorStore: CompositorStoreAccess): Layer {
-      return createSplineLayerImpl(compositorStore);
+    createSplineLayer(): Layer {
+      return createSplineLayerImpl();
     },
 
     createShapeLayer(
-      compositorStore: CompositorStoreAccess,
       name: string = "Shape Layer",
     ): Layer {
-      return createShapeLayerImpl(compositorStore, name);
+      return createShapeLayerImpl(name);
     },
 
     /**
      * Create a camera layer
-     * Requires camera store access (cameras Map, activeCameraId, selectLayer)
+     * Creates both the camera object and the layer, managing camera state
      */
     createCameraLayer(
-      compositorStore: CompositorStoreAccess & {
-        cameras: Map<string, any>;
-        activeCameraId: string | null;
-        selectLayer: (layerId: string) => void;
-      },
       name?: string,
     ): Layer {
-      return createCameraLayerImpl(compositorStore, name);
+      return createCameraLayerImpl(name);
     },
 
     /**
      * Create a video layer from a file
-     * Requires video store access (assets Record)
-     * Delegates to videoActions for metadata extraction and asset management
+     * Delegates to videoStore for metadata extraction and asset management
      */
     async createVideoLayer(
-      compositorStore: CompositorStoreAccess & {
-        assets: Record<string, any>;
-      },
       file: File,
       autoResizeComposition: boolean = true,
-    ): Promise<{ status: string; layer?: Layer; error?: string; [key: string]: any }> {
-      return createVideoLayerImpl(compositorStore, file, autoResizeComposition);
+    ): Promise<VideoImportResult> {
+      return createVideoLayerImpl(file, autoResizeComposition);
     },
 
     /**
      * Create a nested comp layer referencing another composition
      */
     createNestedCompLayer(
-      compositorStore: CompositorStoreAccess,
       compositionId: string,
       name?: string,
     ): Layer {
-      return createNestedCompLayerImpl(compositorStore, compositionId, name);
+      return createNestedCompLayerImpl(compositionId, name);
     },
 
     /**
      * Update nested comp layer data
      */
     updateNestedCompLayerData(
-      compositorStore: CompositorStoreAccess,
       layerId: string,
       updates: Partial<NestedCompData>,
     ): void {
-      updateNestedCompLayerDataImpl(compositorStore, layerId, updates);
+      updateNestedCompLayerDataImpl(layerId, updates);
     },
 
     // ========================================================================
@@ -442,11 +418,10 @@ export const useLayerStore = defineStore("layer", {
     // ========================================================================
 
     replaceLayerSource(
-      compositorStore: CompositorStoreAccess,
       layerId: string,
       newSource: LayerSourceReplacement,
     ): void {
-      replaceLayerSourceImpl(compositorStore, layerId, newSource);
+      replaceLayerSourceImpl(layerId, newSource);
     },
 
     // ========================================================================
@@ -454,19 +429,17 @@ export const useLayerStore = defineStore("layer", {
     // ========================================================================
 
     sequenceLayers(
-      compositorStore: CompositorStoreAccess,
       layerIds: string[],
       options: SequenceLayersOptions = {},
     ): number {
-      return sequenceLayersImpl(compositorStore, layerIds, options);
+      return sequenceLayersImpl(layerIds, options);
     },
 
     applyExponentialScale(
-      compositorStore: CompositorStoreAccess,
       layerId: string,
       options: ExponentialScaleOptions = {},
     ): number {
-      return applyExponentialScaleImpl(compositorStore, layerId, options);
+      return applyExponentialScaleImpl(layerId, options);
     },
 
     // ========================================================================
@@ -474,52 +447,46 @@ export const useLayerStore = defineStore("layer", {
     // ========================================================================
 
     timeStretchLayer(
-      compositorStore: CompositorStoreAccess,
       layerId: string,
       options: TimeStretchOptions,
     ): void {
-      timeStretchLayerImpl(compositorStore, layerId, options);
+      timeStretchLayerImpl(layerId, options);
     },
 
-    reverseLayer(compositorStore: CompositorStoreAccess, layerId: string): void {
-      reverseLayerImpl(compositorStore, layerId);
+    reverseLayer(layerId: string): void {
+      reverseLayerImpl(layerId);
     },
 
     freezeFrameAtPlayhead(
-      compositorStore: CompositorStoreAccess,
       layerId: string,
     ): void {
-      freezeFrameAtPlayheadImpl(compositorStore, layerId);
+      freezeFrameAtPlayheadImpl(layerId);
     },
 
     splitLayerAtPlayhead(
-      compositorStore: CompositorStoreAccess,
       layerId: string,
     ): Layer | null {
-      return splitLayerAtPlayheadImpl(compositorStore, layerId);
+      return splitLayerAtPlayheadImpl(layerId);
     },
 
     enableSpeedMap(
-      compositorStore: CompositorStoreAccess,
       layerId: string,
       fps?: number,
     ): void {
-      enableSpeedMapImpl(compositorStore, layerId, fps);
+      enableSpeedMapImpl(layerId, fps);
     },
 
     disableSpeedMap(
-      compositorStore: CompositorStoreAccess,
       layerId: string,
     ): void {
-      disableSpeedMapImpl(compositorStore, layerId);
+      disableSpeedMapImpl(layerId);
     },
 
     toggleSpeedMap(
-      compositorStore: CompositorStoreAccess,
       layerId: string,
       fps?: number,
     ): boolean {
-      return toggleSpeedMapImpl(compositorStore, layerId, fps);
+      return toggleSpeedMapImpl(layerId, fps);
     },
 
     // ========================================================================
@@ -527,51 +494,47 @@ export const useLayerStore = defineStore("layer", {
     // ========================================================================
 
     getLayerById(
-      compositorStore: CompositorStoreAccess,
       layerId: string,
     ): Layer | null {
-      return getLayerByIdImpl(compositorStore, layerId);
+      return getLayerByIdImpl(layerId);
     },
 
     getLayerChildren(
-      compositorStore: CompositorStoreAccess,
       layerId: string,
     ): Layer[] {
-      return getLayerChildrenImpl(compositorStore, layerId);
+      return getLayerChildrenImpl(layerId);
     },
 
     getLayerDescendants(
-      compositorStore: CompositorStoreAccess,
       layerId: string,
     ): Layer[] {
-      return getLayerDescendantsImpl(compositorStore, layerId);
+      return getLayerDescendantsImpl(layerId);
     },
 
-    getVisibleLayers(compositorStore: CompositorStoreAccess): Layer[] {
-      return getVisibleLayersImpl(compositorStore);
+    getVisibleLayers(): Layer[] {
+      return getVisibleLayersImpl();
     },
 
     getDisplayedLayers(
-      compositorStore: CompositorStoreAccess,
       hideMinimized = false,
     ): Layer[] {
-      return getDisplayedLayersImpl(compositorStore, hideMinimized);
+      return getDisplayedLayersImpl(hideMinimized);
     },
 
-    getRootLayers(compositorStore: CompositorStoreAccess): Layer[] {
-      return getRootLayersImpl(compositorStore);
+    getRootLayers(): Layer[] {
+      return getRootLayersImpl();
     },
 
-    getCameraLayers(compositorStore: CompositorStoreAccess): Layer[] {
-      return getCameraLayersImpl(compositorStore);
+    getCameraLayers(): Layer[] {
+      return getCameraLayersImpl();
     },
 
-    getSelectedLayers(compositorStore: CompositorStoreAccess): Layer[] {
-      return getSelectedLayersImpl(compositorStore);
+    getSelectedLayers(): Layer[] {
+      return getSelectedLayersImpl();
     },
 
-    getSelectedLayer(compositorStore: CompositorStoreAccess): Layer | null {
-      return getSelectedLayerImpl(compositorStore);
+    getSelectedLayer(): Layer | null {
+      return getSelectedLayerImpl();
     },
 
     // ========================================================================
@@ -579,48 +542,42 @@ export const useLayerStore = defineStore("layer", {
     // ========================================================================
 
     addSplineControlPoint(
-      compositorStore: CompositorStoreAccess,
       layerId: string,
       point: SplineControlPoint,
     ): void {
-      addSplineControlPointImpl(compositorStore, layerId, point);
+      addSplineControlPointImpl(layerId, point);
     },
 
     insertSplineControlPoint(
-      compositorStore: CompositorStoreAccess,
       layerId: string,
       point: SplineControlPoint,
       index: number,
     ): void {
-      insertSplineControlPointImpl(compositorStore, layerId, point, index);
+      insertSplineControlPointImpl(layerId, point, index);
     },
 
     updateSplineControlPoint(
-      compositorStore: CompositorStoreAccess,
       layerId: string,
       pointId: string,
       updates: Partial<SplineControlPoint>,
     ): void {
-      updateSplineControlPointImpl(compositorStore, layerId, pointId, updates);
+      updateSplineControlPointImpl(layerId, pointId, updates);
     },
 
     deleteSplineControlPoint(
-      compositorStore: CompositorStoreAccess,
       layerId: string,
       pointId: string,
     ): void {
-      deleteSplineControlPointImpl(compositorStore, layerId, pointId);
+      deleteSplineControlPointImpl(layerId, pointId);
     },
 
     enableSplineAnimation(
-      compositorStore: CompositorStoreAccess,
       layerId: string,
     ): void {
-      enableSplineAnimationImpl(compositorStore, layerId);
+      enableSplineAnimationImpl(layerId);
     },
 
     addSplinePointKeyframe(
-      compositorStore: CompositorStoreAccess,
       layerId: string,
       pointId: string,
       property:
@@ -633,20 +590,18 @@ export const useLayerStore = defineStore("layer", {
         | "handleOut.y",
       frame: number,
     ): void {
-      addSplinePointKeyframeImpl(compositorStore, layerId, pointId, property, frame);
+      addSplinePointKeyframeImpl(layerId, pointId, property, frame);
     },
 
     addSplinePointPositionKeyframe(
-      compositorStore: CompositorStoreAccess,
       layerId: string,
       pointId: string,
       frame: number,
     ): void {
-      addSplinePointPositionKeyframeImpl(compositorStore, layerId, pointId, frame);
+      addSplinePointPositionKeyframeImpl(layerId, pointId, frame);
     },
 
     updateSplinePointWithKeyframe(
-      compositorStore: CompositorStoreAccess,
       layerId: string,
       pointId: string,
       x: number,
@@ -655,7 +610,6 @@ export const useLayerStore = defineStore("layer", {
       addKeyframe: boolean = false,
     ): void {
       updateSplinePointWithKeyframeImpl(
-        compositorStore,
         layerId,
         pointId,
         x,
@@ -666,42 +620,37 @@ export const useLayerStore = defineStore("layer", {
     },
 
     getEvaluatedSplinePoints(
-      compositorStore: CompositorStoreAccess,
       layerId: string,
       frame: number,
     ): EvaluatedControlPoint[] {
-      return getEvaluatedSplinePointsImpl(compositorStore, layerId, frame);
+      return getEvaluatedSplinePointsImpl(layerId, frame);
     },
 
     isSplineAnimated(
-      compositorStore: CompositorStoreAccess,
       layerId: string,
     ): boolean {
-      return isSplineAnimatedImpl(compositorStore, layerId);
+      return isSplineAnimatedImpl(layerId);
     },
 
     hasSplinePointKeyframes(
-      compositorStore: CompositorStoreAccess,
       layerId: string,
       pointId: string,
     ): boolean {
-      return hasSplinePointKeyframesImpl(compositorStore, layerId, pointId);
+      return hasSplinePointKeyframesImpl(layerId, pointId);
     },
 
     simplifySpline(
-      compositorStore: CompositorStoreAccess,
       layerId: string,
       tolerance: number,
     ): void {
-      simplifySplineImpl(compositorStore, layerId, tolerance);
+      simplifySplineImpl(layerId, tolerance);
     },
 
     smoothSplineHandles(
-      compositorStore: CompositorStoreAccess,
       layerId: string,
       amount: number,
     ): void {
-      smoothSplineHandlesImpl(compositorStore, layerId, amount);
+      smoothSplineHandlesImpl(layerId, amount);
     },
 
     // ========================================================================
@@ -709,11 +658,10 @@ export const useLayerStore = defineStore("layer", {
     // ========================================================================
 
     async convertTextLayerToSplines(
-      compositorStore: CompositorStoreAccess,
       layerId: string,
       options: ConvertTextToSplinesOptions = {},
     ): Promise<string[] | null> {
-      return convertTextLayerToSplinesImpl(compositorStore, layerId, options);
+      return convertTextLayerToSplinesImpl(layerId, options);
     },
 
     // ========================================================================
@@ -721,13 +669,11 @@ export const useLayerStore = defineStore("layer", {
     // ========================================================================
 
     copyPathToPosition(
-      compositorStore: CompositorStoreAccess,
       sourceSplineLayerId: string,
       targetLayerId: string,
       options: CopyPathToPositionOptions = {},
     ): number | null {
       return copyPathToPositionImpl(
-        compositorStore,
         sourceSplineLayerId,
         targetLayerId,
         options,

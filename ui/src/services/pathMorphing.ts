@@ -748,12 +748,26 @@ export function getCorrespondence(
  * Check if a value is a BezierPath
  * Used for type-safe path morphing in interpolation
  */
+/**
+ * Type guard for objects that might be BezierVertex
+ */
+function isBezierVertex(value: unknown): value is BezierVertex {
+  if (typeof value !== "object" || value === null) return false;
+  const v = value as { point?: { x?: unknown; y?: unknown } };
+  return (
+    typeof v.point === "object" &&
+    v.point !== null &&
+    typeof (v.point as { x?: unknown }).x === "number" &&
+    typeof (v.point as { x?: unknown; y?: unknown }).y === "number"
+  );
+}
+
 export function isBezierPath(value: unknown): value is BezierPath {
   if (typeof value !== "object" || value === null) {
     return false;
   }
 
-  const obj = value as Record<string, unknown>;
+  const obj = value as { vertices?: unknown; closed?: unknown };
 
   // Must have 'vertices' array and 'closed' boolean
   if (!Array.isArray(obj.vertices) || typeof obj.closed !== "boolean") {
@@ -762,10 +776,9 @@ export function isBezierPath(value: unknown): value is BezierPath {
 
   // Check first vertex structure (if any vertices exist)
   if (obj.vertices.length > 0) {
-    const v = obj.vertices[0] as Record<string, unknown>;
-    if (typeof v !== "object" || v === null) return false;
-    if (typeof (v.point as any)?.x !== "number") return false;
-    if (typeof (v.point as any)?.y !== "number") return false;
+    if (!isBezierVertex(obj.vertices[0])) {
+      return false;
+    }
   }
 
   return true;

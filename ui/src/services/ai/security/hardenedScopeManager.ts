@@ -24,6 +24,7 @@
  */
 
 import { logAuditEntry, logSecurityWarning } from "../../security/auditLog";
+import type { ToolCall } from "../toolDefinitions";
 
 // ============================================================================
 // TYPES
@@ -78,7 +79,7 @@ export interface PendingApproval {
   id: string;
   /** Tool being requested */
   toolName: string;
-  /** Arguments for tool */
+  /** Arguments for tool (without name/id fields) */
   arguments: Record<string, unknown>;
   /** When requested */
   requestedAt: number;

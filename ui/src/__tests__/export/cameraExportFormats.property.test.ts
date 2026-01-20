@@ -26,6 +26,7 @@ import {
 } from "@/services/export/cameraExportFormats";
 
 import type { Camera3D, CameraKeyframe, CameraType, MeasureFilmSize, AutoOrientMode } from "@/types/camera";
+import type { ExportTarget } from "@/types/export";
 
 // ============================================================================
 // Arbitraries (Test Data Generators)
@@ -256,13 +257,15 @@ describe("PROPERTY: interpolateCameraAtFrame", () => {
       farClip: 10000,
     };
 
-    const keyframes = [
+    // Adversarial test: duplicate frames to test edge case behavior
+    // Type assertion documents intentional invalid input for testing error handling
+    const keyframes: CameraKeyframe[] = [
       { frame: 5, position: { x: -9, y: 255, z: -879 } },
       { frame: 5, position: { x: 0, y: 0, z: 0 } }, // Duplicate frame!
       { frame: 100, position: { x: 100, y: 100, z: 100 } },
     ];
 
-    const result = interpolateCameraAtFrame(camera, keyframes as any, 5);
+    const result = interpolateCameraAtFrame(camera, keyframes, 5);
 
     // Current behavior: returns LAST keyframe at frame 5
     // Is this intended? Should it be FIRST? Should it throw?
@@ -945,25 +948,27 @@ describe("PROPERTY: exportCameraMatrices", () => {
 // ============================================================================
 
 describe("PROPERTY: exportCameraForTarget", () => {
-  const targetArb = fc.constantFrom(
+  // Valid export targets for property testing
+  // Includes custom-workflow which tests the default case
+  const validTargetArb = fc.constantFrom<ExportTarget>(
     "motionctrl",
     "motionctrl-svd",
     "wan22-fun-camera",
     "uni3c-camera",
     "animatediff-cameractrl",
-    "unknown-format",
+    "custom-workflow", // Tests default case handler
   );
 
   it("returns an object for any target", () => {
     fc.assert(
       fc.property(
-        targetArb,
+        validTargetArb,
         camera3DArb,
         sortedKeyframesArb,
         fc.integer({ min: 1, max: 50 }),
         (target, camera, keyframes, frameCount) => {
           const result = exportCameraForTarget(
-            target as any,
+            target,
             camera,
             keyframes,
             frameCount,
@@ -979,19 +984,19 @@ describe("PROPERTY: exportCameraForTarget", () => {
   it("is deterministic", () => {
     fc.assert(
       fc.property(
-        targetArb,
+        validTargetArb,
         camera3DArb,
         sortedKeyframesArb,
         fc.integer({ min: 1, max: 20 }),
         (target, camera, keyframes, frameCount) => {
           const result1 = exportCameraForTarget(
-            target as any,
+            target,
             camera,
             keyframes,
             frameCount,
           );
           const result2 = exportCameraForTarget(
-            target as any,
+            target,
             camera,
             keyframes,
             frameCount,

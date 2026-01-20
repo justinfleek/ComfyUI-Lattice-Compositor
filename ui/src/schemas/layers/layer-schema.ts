@@ -3,6 +3,7 @@
  *
  * Zod schema for validating Layer objects.
  * All numeric values use .finite() to reject NaN/Infinity.
+ * Includes comprehensive validation constraints for security and data integrity.
  */
 
 import { z } from "zod";
@@ -29,6 +30,10 @@ import {
   AudioPathAnimationSchema,
 } from "./transform-schema";
 import { LayerDataSchema } from "./layer-data-schema";
+import {
+  boundedArray,
+  MAX_NAME_LENGTH,
+} from "../shared-validation";
 
 // ============================================================================
 // Layer Type
@@ -72,126 +77,33 @@ export type LayerType = z.infer<typeof LayerTypeSchema>;
 // Matte Types
 // ============================================================================
 
-export const MatteTypeSchema = z.enum([
-  "none",
-  "alpha",
-  "alpha-inverted",
-  "luma",
-  "luma-inverted",
-]);
-
-export type MatteType = z.infer<typeof MatteTypeSchema>;
+import { MatteTypeSchema as MatteTypeSchemaFull } from "../masks/masks-schema";
+export { MatteTypeSchemaFull as MatteTypeSchema };
+export type { MatteType } from "../masks/masks-schema";
 
 // ============================================================================
-// Effect Instance (simplified)
+// Effect Instance
 // ============================================================================
 
-export const EffectInstanceSchema = z.object({
-  id: EntityIdSchema,
-  type: z.string(),
-  name: z.string(),
-  enabled: z.boolean(),
-  expanded: z.boolean().optional(),
-  params: z.record(z.union([
-    finiteNumber,
-    z.string(),
-    z.boolean(),
-    z.array(finiteNumber),
-    z.object({ x: finiteNumber, y: finiteNumber }),
-    z.object({ r: finiteNumber, g: finiteNumber, b: finiteNumber, a: finiteNumber }),
-  ])).optional(),
-});
-
-export type EffectInstance = z.infer<typeof EffectInstanceSchema>;
+import { EffectInstanceSchema as EffectInstanceSchemaFull } from "../effects/effects-schema";
+export { EffectInstanceSchemaFull as EffectInstanceSchema };
+export type { EffectInstance } from "../effects/effects-schema";
 
 // ============================================================================
-// Layer Mask (simplified)
+// Layer Mask
 // ============================================================================
 
-export const MaskModeSchema = z.enum([
-  "add",
-  "subtract",
-  "intersect",
-  "difference",
-  "none",
-]);
-
-export const LayerMaskSchema = z.object({
-  id: EntityIdSchema,
-  name: z.string(),
-  mode: MaskModeSchema,
-  inverted: z.boolean(),
-  opacity: AnimatableNumberSchema.optional(),
-  feather: nonNegativeFinite.optional(),
-  expansion: finiteNumber.optional(),
-  locked: z.boolean().optional(),
-  visible: z.boolean().optional(),
-});
-
-export type LayerMask = z.infer<typeof LayerMaskSchema>;
+import { LayerMaskSchema as LayerMaskSchemaFull, MaskModeSchema as MaskModeSchemaFull } from "../masks/masks-schema";
+export { LayerMaskSchemaFull as LayerMaskSchema, MaskModeSchemaFull as MaskModeSchema };
+export type { LayerMask, MaskMode } from "../masks/masks-schema";
 
 // ============================================================================
-// Layer Styles (simplified)
+// Layer Styles
 // ============================================================================
 
-export const LayerStylesSchema = z.object({
-  dropShadow: z.object({
-    enabled: z.boolean(),
-    color: HexColorSchema.optional(),
-    opacity: z.number().finite().min(0).max(100).optional(),
-    angle: finiteNumber.optional(),
-    distance: nonNegativeFinite.optional(),
-    spread: nonNegativeFinite.optional(),
-    size: nonNegativeFinite.optional(),
-  }).optional(),
-  innerShadow: z.object({
-    enabled: z.boolean(),
-    color: HexColorSchema.optional(),
-    opacity: z.number().finite().min(0).max(100).optional(),
-    angle: finiteNumber.optional(),
-    distance: nonNegativeFinite.optional(),
-    choke: nonNegativeFinite.optional(),
-    size: nonNegativeFinite.optional(),
-  }).optional(),
-  outerGlow: z.object({
-    enabled: z.boolean(),
-    color: HexColorSchema.optional(),
-    opacity: z.number().finite().min(0).max(100).optional(),
-    spread: nonNegativeFinite.optional(),
-    size: nonNegativeFinite.optional(),
-  }).optional(),
-  innerGlow: z.object({
-    enabled: z.boolean(),
-    color: HexColorSchema.optional(),
-    opacity: z.number().finite().min(0).max(100).optional(),
-    choke: nonNegativeFinite.optional(),
-    size: nonNegativeFinite.optional(),
-    source: z.enum(["center", "edge"]).optional(),
-  }).optional(),
-  bevelEmboss: z.object({
-    enabled: z.boolean(),
-    style: z.enum(["outer-bevel", "inner-bevel", "emboss", "pillow-emboss"]).optional(),
-    depth: nonNegativeFinite.optional(),
-    direction: z.enum(["up", "down"]).optional(),
-    size: nonNegativeFinite.optional(),
-    soften: nonNegativeFinite.optional(),
-    angle: finiteNumber.optional(),
-    altitude: finiteNumber.optional(),
-    highlightColor: HexColorSchema.optional(),
-    highlightOpacity: z.number().finite().min(0).max(100).optional(),
-    shadowColor: HexColorSchema.optional(),
-    shadowOpacity: z.number().finite().min(0).max(100).optional(),
-  }).optional(),
-  stroke: z.object({
-    enabled: z.boolean(),
-    color: HexColorSchema.optional(),
-    size: nonNegativeFinite.optional(),
-    position: z.enum(["outside", "inside", "center"]).optional(),
-    opacity: z.number().finite().min(0).max(100).optional(),
-  }).optional(),
-}).optional();
-
-export type LayerStyles = z.infer<typeof LayerStylesSchema>;
+import { LayerStylesSchema as LayerStylesSchemaFull } from "../layerStyles/layerStyles-schema";
+export { LayerStylesSchemaFull as LayerStylesSchema };
+export type { LayerStyles } from "../layerStyles/layerStyles-schema";
 
 // ============================================================================
 // Audio Settings
@@ -199,7 +111,7 @@ export type LayerStyles = z.infer<typeof LayerStylesSchema>;
 
 export const LayerAudioSchema = z.object({
   level: AnimatableNumberSchema,
-});
+}).strict();
 
 export type LayerAudio = z.infer<typeof LayerAudioSchema>;
 
@@ -212,7 +124,7 @@ export type LayerAudio = z.infer<typeof LayerAudioSchema>;
  */
 export const LayerSchema = z.object({
   id: EntityIdSchema,
-  name: z.string(),
+  name: z.string().min(1).max(MAX_NAME_LENGTH).trim(),
   type: LayerTypeSchema,
   visible: z.boolean(),
   locked: z.boolean(),
@@ -246,7 +158,7 @@ export const LayerSchema = z.object({
   outPoint: frameNumber.optional(),
 
   // Time Stretch
-  timeStretch: finiteNumber.optional(),
+  timeStretch: finiteNumber.min(0.01).max(100).optional(), // Max 100x stretch
   stretchAnchor: z.enum(["startFrame", "endFrame", "currentFrame"]).optional(),
 
   // Hierarchy
@@ -259,30 +171,36 @@ export const LayerSchema = z.object({
   audio: LayerAudioSchema.optional(),
 
   // Masking
-  masks: z.array(LayerMaskSchema).optional(),
-  matteType: MatteTypeSchema.optional(),
+  masks: boundedArray(LayerMaskSchemaFull, 100).optional(), // Max 100 masks per layer
+  matteType: MatteTypeSchemaFull.optional(),
   matteLayerId: EntityIdSchema.optional(),
   matteCompositionId: EntityIdSchema.optional(),
   preserveTransparency: z.boolean().optional(),
 
   // Deprecated aliases
   /** @deprecated Use matteType instead */
-  trackMatteType: MatteTypeSchema.optional(),
+  trackMatteType: MatteTypeSchemaFull.optional(),
   /** @deprecated Use matteLayerId instead */
   trackMatteLayerId: EntityIdSchema.optional(),
   /** @deprecated Use matteCompositionId instead */
   trackMatteCompositionId: EntityIdSchema.optional(),
 
   // Properties and effects
-  properties: z.array(AnimatablePropertySchema),
-  effects: z.array(EffectInstanceSchema),
+  properties: boundedArray(AnimatablePropertySchema, 10000), // Max 10k properties per layer
+  effects: boundedArray(EffectInstanceSchemaFull, 1000), // Max 1000 effects per layer
 
   // Layer styles
-  layerStyles: LayerStylesSchema,
+  layerStyles: LayerStylesSchemaFull,
 
   // Layer-specific data
   data: LayerDataSchema,
-});
+}).strict().refine(
+  (data) => {
+    // endFrame should be >= startFrame
+    return data.endFrame >= data.startFrame;
+  },
+  { message: "endFrame must be >= startFrame", path: ["endFrame"] }
+);
 
 export type Layer = z.infer<typeof LayerSchema>;
 

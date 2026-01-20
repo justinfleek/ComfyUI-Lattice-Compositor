@@ -7,14 +7,23 @@
 
 import type { Ref } from "vue";
 import { useAssetStore } from "@/stores/assetStore";
-import { useCompositorStore } from "@/stores/compositorStore";
 import { useLayerStore } from "@/stores/layerStore";
+import { useProjectStore } from "@/stores/projectStore";
 import { useSelectionStore } from "@/stores/selectionStore";
 import { isLayerOfType } from "@/types/project";
 import type { ParticleLayerData } from "@/types/particles";
+import { isObject } from "@/utils/typeGuards";
+
+// Type for CenterViewport exposed properties (matches defineExpose in CenterViewport.vue)
+// Vue's defineExpose exposes refs/computeds directly - threeCanvasRef is a Ref, engine is a ComputedRef
+export interface CenterViewportExposed {
+  threeCanvasRef?: import("vue").Ref<InstanceType<typeof import("@/components/canvas/ThreeCanvas.vue").default> | null>;
+  getEngine?: () => LatticeEngine | undefined;
+  engine?: import("vue").ComputedRef<LatticeEngine | null>;
+}
 
 export interface AssetHandlersOptions {
-  canvasRef: Ref<{ getEngine?: () => LatticeEngine | undefined } | null>;
+  canvasRef: Ref<InstanceType<typeof import("@/components/layout/CenterViewport.vue").default> | null>;
 }
 
 interface LatticeEngine {
@@ -31,12 +40,30 @@ interface EnvironmentMapOptions {
 }
 
 export function useAssetHandlers(options: AssetHandlersOptions) {
-  const compositorStore = useCompositorStore();
+  const projectStore = useProjectStore();
   const layerStore = useLayerStore();
   const assetStore = useAssetStore();
   const selectionStore = useSelectionStore();
 
   const { canvasRef } = options;
+  
+  // Helper to safely access getEngine from exposed properties
+  // Vue exposes functions directly via defineExpose - use runtime property check with type guards
+  function getEngine(): LatticeEngine | undefined {
+    const viewport = canvasRef.value;
+    if (!viewport || !isObject(viewport)) return undefined;
+    // Runtime check: Vue exposes getEngine as a function
+    // Use property access with runtime check - TypeScript can't know about exposed properties
+    const getEngineProp = viewport.getEngine;
+    if (typeof getEngineProp === "function") {
+      const engine = getEngineProp();
+      // Type guard: verify it's the expected engine type
+      if (engine && isObject(engine)) {
+        return engine as LatticeEngine;
+      }
+    }
+    return undefined;
+  }
 
   /**
    * Create layers from imported SVG paths
@@ -48,10 +75,25 @@ export function useAssetHandlers(options: AssetHandlersOptions) {
     storedSvg.document.paths.forEach((path: { id: string }, index: number) => {
       const config = storedSvg.layerConfigs[index];
 
-      const layer = layerStore.createShapeLayer(compositorStore);
-      layerStore.renameLayer(compositorStore, layer.id, `${storedSvg.name}_${path.id}`);
+      // Create CompositorStoreAccess helper for layerStore.createShapeLayer which still requires it
+      // TODO: Phase 5 - Remove CompositorStoreAccess parameter from createShapeLayer
+      const compositorStoreAccess = {
+        project: {
+          composition: {
+            width: projectStore.project.composition.width,
+            height: projectStore.project.composition.height,
+          },
+          meta: projectStore.project.meta,
+        },
+        getActiveComp: () => projectStore.getActiveComp(),
+        getActiveCompLayers: () => projectStore.getActiveCompLayers(),
+        pushHistory: () => projectStore.pushHistory(),
+      };
 
-      layerStore.updateLayerData(compositorStore, layer.id, {
+      const layer = layerStore.createShapeLayer(compositorStoreAccess);
+      layerStore.renameLayer(layer.id, `${storedSvg.name}_${path.id}`);
+
+      layerStore.updateLayerData(layer.id, {
         svgDocumentId: svgId,
         svgPathId: path.id,
         svgPathIndex: index,
@@ -88,7 +130,8 @@ export function useAssetHandlers(options: AssetHandlersOptions) {
       return;
     }
 
-    const layer = compositorStore.layers.find((l) => l.id === selectedLayerIds[0]);
+    const layers = projectStore.getActiveCompLayers();
+    const layer = layers.find((l) => l.id === selectedLayerIds[0]);
     if (!layer) {
       console.warn("[Lattice] Selected layer not found");
       return;
@@ -124,7 +167,7 @@ export function useAssetHandlers(options: AssetHandlersOptions) {
           },
         ];
 
-    layerStore.updateLayerData(compositorStore, layer.id, {
+    layerStore.updateLayerData(layer.id, {
       emitters: updatedEmitters,
     });
 
@@ -135,7 +178,7 @@ export function useAssetHandlers(options: AssetHandlersOptions) {
    * Update environment settings in the engine
    */
   function onEnvironmentUpdate(settings: unknown): void {
-    const engine = canvasRef.value?.getEngine?.();
+    const engine = getEngine();
     if (!engine) return;
     engine.setEnvironmentConfig(settings);
   }
@@ -144,7 +187,7 @@ export function useAssetHandlers(options: AssetHandlersOptions) {
    * Load environment map into the engine
    */
   async function onEnvironmentLoad(settings: EnvironmentMapOptions & { url?: string }): Promise<void> {
-    const engine = canvasRef.value?.getEngine?.();
+    const engine = getEngine();
     if (!engine || !settings.url) return;
 
     try {
@@ -164,7 +207,7 @@ export function useAssetHandlers(options: AssetHandlersOptions) {
    * Clear environment map from the engine
    */
   function onEnvironmentClear(): void {
-    const engine = canvasRef.value?.getEngine?.();
+    const engine = getEngine();
     if (!engine) return;
     engine.setEnvironmentEnabled(false);
   }

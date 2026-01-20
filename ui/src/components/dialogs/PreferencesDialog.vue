@@ -567,6 +567,155 @@
                 </div>
               </div>
             </div>
+
+            <!-- Advanced Tab -->
+            <div v-if="activeTab === 'advanced'" class="tab-content">
+              <h3>Advanced Settings</h3>
+              <div class="warning-banner">
+                <strong>⚠️ Warning:</strong> Changing these limits may cause performance issues or system instability. 
+                Only modify if you have high-performance hardware and understand the implications.
+              </div>
+
+              <div class="setting-group">
+                <h4>Validation Limits</h4>
+                <p class="hint">These limits control maximum values for dimensions, frames, arrays, and other data structures. 
+                Increasing them allows larger projects but may cause memory issues or crashes on lower-end systems.</p>
+
+                <div class="form-row">
+                  <label>Max Dimension (width/height):</label>
+                  <div class="input-with-hint">
+                    <input
+                      type="number"
+                      v-model.number="validationLimits.maxDimension"
+                      :min="64"
+                      :max="validationLimits.maxDimensionAbsolute"
+                      :step="64"
+                      class="number-input"
+                    />
+                    <span class="unit">px</span>
+                    <span class="hint">Default: 8192 | Max: {{ validationLimits.maxDimensionAbsolute }}</span>
+                  </div>
+                </div>
+
+                <div class="form-row">
+                  <label>Max Frame Count:</label>
+                  <div class="input-with-hint">
+                    <input
+                      type="number"
+                      v-model.number="validationLimits.maxFrameCount"
+                      :min="100"
+                      :max="validationLimits.maxFrameCountAbsolute"
+                      :step="1000"
+                      class="number-input"
+                    />
+                    <span class="unit">frames</span>
+                    <span class="hint">Default: 10000 | Max: {{ validationLimits.maxFrameCountAbsolute }}</span>
+                  </div>
+                </div>
+
+                <div class="form-row">
+                  <label>Max Array Length:</label>
+                  <div class="input-with-hint">
+                    <input
+                      type="number"
+                      v-model.number="validationLimits.maxArrayLength"
+                      :min="1000"
+                      :max="validationLimits.maxArrayLengthAbsolute"
+                      :step="10000"
+                      class="number-input"
+                    />
+                    <span class="unit">items</span>
+                    <span class="hint">Default: 100000 | Max: {{ validationLimits.maxArrayLengthAbsolute }}</span>
+                  </div>
+                </div>
+
+                <div class="form-row">
+                  <label>Max Particles:</label>
+                  <div class="input-with-hint">
+                    <input
+                      type="number"
+                      v-model.number="validationLimits.maxParticles"
+                      :min="10000"
+                      :max="validationLimits.maxParticlesAbsolute"
+                      :step="100000"
+                      class="number-input"
+                    />
+                    <span class="unit">particles</span>
+                    <span class="hint">Default: 1M | Max: {{ validationLimits.maxParticlesAbsolute.toLocaleString() }}</span>
+                  </div>
+                </div>
+
+                <div class="form-row">
+                  <label>Max Layers:</label>
+                  <div class="input-with-hint">
+                    <input
+                      type="number"
+                      v-model.number="validationLimits.maxLayers"
+                      :min="100"
+                      :max="validationLimits.maxLayersAbsolute"
+                      :step="100"
+                      class="number-input"
+                    />
+                    <span class="unit">layers</span>
+                    <span class="hint">Default: 1000 | Max: {{ validationLimits.maxLayersAbsolute }}</span>
+                  </div>
+                </div>
+
+                <div class="form-row">
+                  <label>Max Keyframes per Property:</label>
+                  <div class="input-with-hint">
+                    <input
+                      type="number"
+                      v-model.number="validationLimits.maxKeyframesPerProperty"
+                      :min="1000"
+                      :max="validationLimits.maxKeyframesPerPropertyAbsolute"
+                      :step="1000"
+                      class="number-input"
+                    />
+                    <span class="unit">keyframes</span>
+                    <span class="hint">Default: 10000 | Max: {{ validationLimits.maxKeyframesPerPropertyAbsolute }}</span>
+                  </div>
+                </div>
+
+                <div class="form-row">
+                  <label>Max String Length:</label>
+                  <div class="input-with-hint">
+                    <input
+                      type="number"
+                      v-model.number="validationLimits.maxStringLength"
+                      :min="10000"
+                      :max="validationLimits.maxStringLengthAbsolute"
+                      :step="10000"
+                      class="number-input"
+                    />
+                    <span class="unit">chars</span>
+                    <span class="hint">Default: 100000 | Max: {{ validationLimits.maxStringLengthAbsolute.toLocaleString() }}</span>
+                  </div>
+                </div>
+
+                <div class="form-row">
+                  <label>Max Frame Rate:</label>
+                  <div class="input-with-hint">
+                    <input
+                      type="number"
+                      v-model.number="validationLimits.maxFPS"
+                      :min="30"
+                      :max="validationLimits.maxFPSAbsolute"
+                      :step="10"
+                      class="number-input"
+                    />
+                    <span class="unit">fps</span>
+                    <span class="hint">Default: 120 | Max: {{ validationLimits.maxFPSAbsolute }}</span>
+                  </div>
+                </div>
+
+                <div class="form-actions">
+                  <button class="btn btn-text" @click="resetValidationLimits">
+                    Reset to Defaults
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -587,6 +736,7 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, reactive, ref, watch } from "vue";
 import ParticlePreferencesPanel from "../preferences/ParticlePreferencesPanel.vue";
+import { useValidationLimitsStore } from "../../stores/validationLimitsStore";
 
 interface CustomColors {
   accent: string;
@@ -672,6 +822,7 @@ const tabs = [
   { id: "export", label: "Export", icon: "📤" },
   { id: "shortcuts", label: "Shortcuts", icon: "⌨️" },
   { id: "ai", label: "AI", icon: "🤖" },
+  { id: "advanced", label: "Advanced", icon: "🔧" },
 ];
 
 const themes = [
@@ -797,6 +948,15 @@ const defaultPreferences: Preferences = {
 };
 
 const preferences = reactive<Preferences>({ ...defaultPreferences });
+
+// Validation limits store
+const validationLimitsStore = useValidationLimitsStore();
+const validationLimits = reactive(validationLimitsStore.getLimits());
+
+function resetValidationLimits() {
+  validationLimitsStore.resetToDefaults();
+  Object.assign(validationLimits, validationLimitsStore.getLimits());
+}
 
 function loadPreferences() {
   try {
@@ -929,6 +1089,8 @@ function cancel() {
 function save() {
   applyCustomColors(); // Ensure colors are applied
   savePreferences();
+  // Save validation limits
+  validationLimitsStore.updateLimits(validationLimits);
   emit("save", { ...preferences });
   emit("close");
 }
@@ -947,6 +1109,8 @@ watch(
   (visible) => {
     if (visible) {
       loadPreferences();
+      // Load validation limits
+      Object.assign(validationLimits, validationLimitsStore.getLimits());
       activeTab.value = "general";
     }
   },
@@ -1163,6 +1327,41 @@ onUnmounted(() => {
 .value {
   color: var(--lattice-text-muted, #666);
   font-size: 11px;
+}
+
+.warning-banner {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 4px;
+  padding: 12px;
+  margin-bottom: 20px;
+  color: var(--lattice-text-primary, #e5e5e5);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.warning-banner strong {
+  color: #EF4444;
+}
+
+.input-with-hint {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.input-with-hint .hint {
+  flex: 1;
+  font-size: 11px;
+  color: var(--lattice-text-muted, #666);
+  margin-left: auto;
+}
+
+.form-actions {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--lattice-surface-3, #333);
 }
 
 .hint {

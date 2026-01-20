@@ -44,7 +44,9 @@ import {
 // HELPER FUNCTION TO VERIFY ANIMATABLE PROPERTY STRUCTURE
 // ============================================================
 
-function verifyAnimatableProperty(prop: any, expectedType?: string) {
+import type { AnimatableProperty, PropertyValue } from "@/types/animation";
+
+function verifyAnimatableProperty(prop: AnimatableProperty<PropertyValue>, expectedType?: string) {
   expect(prop).toHaveProperty("id");
   expect(prop).toHaveProperty("name");
   expect(prop).toHaveProperty("type");

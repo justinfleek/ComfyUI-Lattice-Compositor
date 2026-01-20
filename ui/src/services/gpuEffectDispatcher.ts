@@ -16,6 +16,7 @@
  * - Async processing with frame batching
  */
 
+import type { PropertyValue } from "@/types/project";
 import { engineLogger } from "@/utils/logger";
 import { type GLSLEngine, getGLSLEngine } from "./glsl/GLSLEngine";
 import { detectGPUTier, type GPUTier } from "./gpuDetection";
@@ -540,7 +541,7 @@ class GPUEffectDispatcher {
   async processEffect(
     effectKey: string,
     input: ImageData | HTMLCanvasElement,
-    params: Record<string, any>,
+    params: Record<string, PropertyValue>,
   ): Promise<ImageData> {
     // Ensure initialized
     if (!this.capabilities.initialized) {
@@ -585,24 +586,86 @@ class GPUEffectDispatcher {
   }
 
   /**
+   * Type-safe interface for WebGPU renderer methods
+   * Maps effect method names to their corresponding WebGPU renderer methods
+   */
+  private typeSafeWebGPUMethod(
+    methodName: string,
+  ): (
+    input: ImageData | HTMLCanvasElement,
+    params: unknown,
+  ) => Promise<ImageData> | null {
+    // Type-safe method access - map known method names to renderer methods
+    const methodMap: Record<
+      string,
+      (
+        input: ImageData | HTMLCanvasElement,
+        params: unknown,
+      ) => Promise<ImageData>
+    > = {
+      blur: (input, params) =>
+        webgpuRenderer.blur(input, params as Parameters<typeof webgpuRenderer.blur>[1]),
+      colorCorrection: (input, params) =>
+        webgpuRenderer.colorCorrection(
+          input,
+          params as Parameters<typeof webgpuRenderer.colorCorrection>[1],
+        ),
+      radialBlur: (input, params) =>
+        webgpuRenderer.radialBlur(
+          input,
+          params as Parameters<typeof webgpuRenderer.radialBlur>[1],
+        ),
+      directionalBlur: (input, params) =>
+        webgpuRenderer.directionalBlur(
+          input,
+          params as Parameters<typeof webgpuRenderer.directionalBlur>[1],
+        ),
+      displacement: (input, params) =>
+        webgpuRenderer.displacement(
+          input,
+          params as Parameters<typeof webgpuRenderer.displacement>[1],
+        ),
+      warp: (input, params) =>
+        webgpuRenderer.warp(
+          input,
+          params as Parameters<typeof webgpuRenderer.warp>[1],
+        ),
+      glow: (input, params) =>
+        webgpuRenderer.glow(
+          input,
+          params as Parameters<typeof webgpuRenderer.glow>[1],
+        ),
+      levels: (input, params) =>
+        webgpuRenderer.levels(
+          input,
+          params as Parameters<typeof webgpuRenderer.levels>[1],
+        ),
+    };
+
+    const method = methodMap[methodName];
+    if (!method) {
+      throw new Error(`WebGPU method ${methodName} not found`);
+    }
+
+    return method;
+  }
+
+  /**
    * Process effect using WebGPU
    */
   private async processWebGPU(
     effectKey: string,
     input: ImageData | HTMLCanvasElement,
-    params: Record<string, any>,
+    params: Record<string, PropertyValue>,
     methodName: string,
   ): Promise<ImageData> {
-    const renderer = webgpuRenderer as any;
-
-    if (typeof renderer[methodName] !== "function") {
-      throw new Error(`WebGPU method ${methodName} not found`);
-    }
+    // Type-safe method access
+    const method = this.typeSafeWebGPUMethod(methodName);
 
     // Map effect params to WebGPU params based on effect type
     const gpuParams = this.mapParamsToWebGPU(effectKey, params);
 
-    return await renderer[methodName](input, gpuParams);
+    return await method(input, gpuParams);
   }
 
   /**
@@ -611,7 +674,7 @@ class GPUEffectDispatcher {
   private async processWebGL(
     effectKey: string,
     input: ImageData | HTMLCanvasElement,
-    params: Record<string, any>,
+    params: Record<string, PropertyValue>,
     shaderSource: string,
   ): Promise<ImageData> {
     if (!this.glslEngine) {
@@ -639,8 +702,8 @@ class GPUEffectDispatcher {
    */
   private mapParamsToWebGPU(
     effectKey: string,
-    params: Record<string, any>,
-  ): any {
+    params: Record<string, PropertyValue>,
+  ): Record<string, number | string | { x: number; y: number } | { x: number; y: number; z: number }> {
     switch (effectKey) {
       case "gaussian-blur":
       case "box-blur":
@@ -726,10 +789,10 @@ class GPUEffectDispatcher {
    */
   private mapParamsToGLSL(
     effectKey: string,
-    params: Record<string, any>,
-  ): Record<string, any> {
+    params: Record<string, PropertyValue>,
+  ): Record<string, number | string | { x: number; y: number } | { x: number; y: number; z: number }> {
     // Base uniforms - frame time for animated effects
-    const baseUniforms: Record<string, any> = {
+    const baseUniforms: Record<string, number> = {
       iTime: (params._frame ?? 0) / (params._fps ?? 30),
       iFrame: params._frame ?? 0,
     };
@@ -815,7 +878,7 @@ class GPUEffectDispatcher {
     effects: Array<{
       effectKey: string;
       input: ImageData | HTMLCanvasElement;
-      params: Record<string, any>;
+      params: Record<string, PropertyValue>;
     }>,
   ): Promise<ImageData[]> {
     // Ensure initialized

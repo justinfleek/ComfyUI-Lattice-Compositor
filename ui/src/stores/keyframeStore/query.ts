@@ -5,7 +5,7 @@
  */
 
 import type { AnimatableProperty, Keyframe, LayerTransform, PropertyValue } from "@/types/project";
-import type { KeyframeStoreAccess } from "./types";
+import { useProjectStore } from "../projectStore";
 
 // ============================================================================
 // KEYFRAME QUERY UTILITIES
@@ -15,11 +15,11 @@ import type { KeyframeStoreAccess } from "./types";
  * Get keyframes at a specific frame across all animated properties of a layer.
  */
 export function getKeyframesAtFrame(
-  store: KeyframeStoreAccess,
   layerId: string,
   frame: number,
 ): Array<{ propertyPath: string; keyframe: Keyframe<PropertyValue> }> {
-  const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
+  const projectStore = useProjectStore();
+  const layer = projectStore.getActiveCompLayers().find((l) => l.id === layerId);
   if (!layer) return [];
 
   const results: Array<{ propertyPath: string; keyframe: Keyframe<PropertyValue> }> = [];
@@ -75,10 +75,10 @@ export function getKeyframesAtFrame(
  * Get all keyframe frames for a layer (for timeline display).
  */
 export function getAllKeyframeFrames(
-  store: KeyframeStoreAccess,
   layerId: string,
 ): number[] {
-  const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
+  const projectStore = useProjectStore();
+  const layer = projectStore.getActiveCompLayers().find((l) => l.id === layerId);
   if (!layer) return [];
 
   const frames = new Set<number>();
@@ -127,23 +127,22 @@ export function getAllKeyframeFrames(
 /**
  * Find the next keyframe frame after the given frame.
  *
- * @param store - The keyframe store
  * @param currentFrame - The current frame
  * @param layerIds - Layer IDs to search (if empty, searches all layers)
  * @returns The next keyframe frame, or null if none found
  */
 export function findNextKeyframeFrame(
-  store: KeyframeStoreAccess,
   currentFrame: number,
   layerIds: string[],
 ): number | null {
-  const layers = store.getActiveCompLayers();
+  const projectStore = useProjectStore();
+  const layers = projectStore.getActiveCompLayers();
   const searchLayerIds =
     layerIds.length > 0 ? layerIds : layers.map((l) => l.id);
 
   const frameSet = new Set<number>();
   for (const lid of searchLayerIds) {
-    for (const frame of getAllKeyframeFrames(store, lid)) {
+    for (const frame of getAllKeyframeFrames(lid)) {
       frameSet.add(frame);
     }
   }
@@ -155,23 +154,22 @@ export function findNextKeyframeFrame(
 /**
  * Find the previous keyframe frame before the given frame.
  *
- * @param store - The keyframe store
  * @param currentFrame - The current frame
  * @param layerIds - Layer IDs to search (if empty, searches all layers)
  * @returns The previous keyframe frame, or null if none found
  */
 export function findPrevKeyframeFrame(
-  store: KeyframeStoreAccess,
   currentFrame: number,
   layerIds: string[],
 ): number | null {
-  const layers = store.getActiveCompLayers();
+  const projectStore = useProjectStore();
+  const layers = projectStore.getActiveCompLayers();
   const searchLayerIds =
     layerIds.length > 0 ? layerIds : layers.map((l) => l.id);
 
   const frameSet = new Set<number>();
   for (const lid of searchLayerIds) {
-    for (const frame of getAllKeyframeFrames(store, lid)) {
+    for (const frame of getAllKeyframeFrames(lid)) {
       frameSet.add(frame);
     }
   }

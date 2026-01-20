@@ -18,6 +18,10 @@ import type {
   ExportResult,
   ExportTarget,
   GenerationProgress,
+  MotionCtrlCameraData,
+  MotionCtrlSVDCameraData,
+  Uni3CCameraData,
+  Wan22FunCameraData,
 } from "@/types/export";
 import type { Layer } from "@/types/project";
 import { exportCameraForTarget } from "./cameraExportFormats";
@@ -345,7 +349,9 @@ export class ExportPipeline {
     const rotation =
       typeof evaluated.transform.rotation === "number"
         ? evaluated.transform.rotation
-        : ((evaluated.transform.rotation as any)?.z ?? 0);
+        : (typeof evaluated.transform.rotation === "object" && evaluated.transform.rotation !== null && "z" in evaluated.transform.rotation
+          ? (evaluated.transform.rotation as { z: number }).z
+          : 0);
     const opacity = evaluated.opacity;
 
     ctx.save();
@@ -356,24 +362,36 @@ export class ExportPipeline {
     ctx.rotate((rotation * Math.PI) / 180);
     ctx.scale(scaleVal.x / 100, scaleVal.y / 100);
 
-    // Draw layer content
-    const layerData = layer.data as any;
-    if (layer.type === "image" && layerData?.src) {
-      // Create image from content URL
-      const img = await this.loadImage(layerData.src);
-      ctx.drawImage(img, -img.width / 2, -img.height / 2);
-    } else if (layer.type === "solid" && layerData?.color) {
-      ctx.fillStyle = layerData.color || "#000000";
-      const width = layerData.width ?? 100;
-      const height = layerData.height ?? 100;
+    // Draw layer content (type-safe narrowing based on layer.type)
+    if (layer.type === "image" && layer.data) {
+      const imageData = layer.data as import("@/types/project").ImageLayerData;
+      // Note: ImageLayerData uses assetId, not src. This simplified renderer
+      // may not have asset resolution available. If src exists as runtime property,
+      // handle it, otherwise skip image rendering in this context.
+      const imageSource =
+        ("src" in imageData && typeof (imageData as { src?: unknown }).src === "string"
+          ? (imageData as { src: string }).src
+          : imageData.assetId
+            ? imageData.assetId // Use assetId as fallback (may need resolution)
+            : null);
+      if (imageSource) {
+        const img = await this.loadImage(imageSource);
+        ctx.drawImage(img, -img.width / 2, -img.height / 2);
+      }
+    } else if (layer.type === "solid" && layer.data) {
+      const solidData = layer.data as import("@/types/project").SolidLayerData;
+      ctx.fillStyle = solidData.color || "#000000";
+      const width = solidData.width ?? 100;
+      const height = solidData.height ?? 100;
       ctx.fillRect(-width / 2, -height / 2, width, height);
-    } else if (layer.type === "text" && layerData?.text) {
+    } else if (layer.type === "text" && layer.data) {
+      const textData = layer.data as import("@/types/project").TextData;
       // Render text with evaluated properties
-      const textContent = evaluated.properties.textContent ?? layerData.text;
+      const textContent = evaluated.properties.textContent ?? textData.text;
       const fontSize =
-        evaluated.properties.fontSize ?? layerData.fontSize ?? 48;
-      const fontFamily = layerData.fontFamily ?? "Arial";
-      const fillColor = layerData.fillColor ?? "#ffffff";
+        evaluated.properties.fontSize ?? textData.fontSize ?? 48;
+      const fontFamily = textData.fontFamily ?? "Arial";
+      const fillColor = textData.fillColor ?? "#ffffff";
 
       ctx.fillStyle = fillColor;
       ctx.font = `${fontSize}px ${fontFamily}`;
@@ -709,6 +727,8 @@ export class ExportPipeline {
   // Camera Data Export
   // ============================================================================
 
+  private cameraDataObject: MotionCtrlCameraData | MotionCtrlSVDCameraData | Uni3CCameraData | Wan22FunCameraData | undefined = undefined;
+
   private async exportCameraData(result: ExportResult): Promise<void> {
     this.updateProgress({
       stage: "exporting_camera",
@@ -764,6 +784,9 @@ export class ExportPipeline {
       this.config.fps,
     );
 
+    // Store the actual camera data object for workflow generation
+    this.cameraDataObject = cameraData as MotionCtrlCameraData | MotionCtrlSVDCameraData | Uni3CCameraData | Wan22FunCameraData;
+
     const filename = `${this.config.filenamePrefix}_camera.json`;
     const blob = new Blob([JSON.stringify(cameraData, null, 2)], {
       type: "application/json",
@@ -818,8 +841,8 @@ export class ExportPipeline {
     };
 
     // Add target-specific camera data
-    if (result.outputFiles.cameraData) {
-      params.cameraData = result.outputFiles.cameraData;
+    if (this.cameraDataObject) {
+      params.cameraData = this.cameraDataObject;
     }
 
     // Generate workflow

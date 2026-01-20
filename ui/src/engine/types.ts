@@ -163,11 +163,13 @@ export interface DepthCaptureResult {
 // Effect Types
 // ============================================================================
 
+import type { PropertyValue } from "@/types/project";
+
 export interface EffectConfig {
   type: string;
   enabled: boolean;
   order: number;
-  parameters: Record<string, unknown>;
+  parameters: Record<string, PropertyValue>;
 }
 
 export interface BlurEffectConfig extends EffectConfig {

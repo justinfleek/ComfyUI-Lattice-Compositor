@@ -514,7 +514,7 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 import { useCompositorStore } from "@/stores/compositorStore";
-import { useHistoryStore } from "@/stores/historyStore";
+import { useProjectStore } from "@/stores/projectStore";
 
 const emit = defineEmits<{
   (e: "action", action: string): void;
@@ -523,19 +523,19 @@ const emit = defineEmits<{
 }>();
 
 const compositorStore = useCompositorStore();
-const historyStore = useHistoryStore();
+const projectStore = useProjectStore();
 
 const activeMenu = ref<string | null>(null);
 let closeTimeout: ReturnType<typeof setTimeout> | null = null;
 
 // Computed properties
-const canUndo = computed(() => historyStore.canUndo);
-const canRedo = computed(() => historyStore.canRedo);
+const canUndo = computed(() => projectStore.canUndo());
+const canRedo = computed(() => projectStore.canRedo());
 const hasSelection = computed(
   () => compositorStore.selectedLayerIds.length > 0,
 );
-const projectName = computed(() => compositorStore.project?.meta?.name || "");
-const hasUnsavedChanges = computed(() => historyStore.currentIndex > 0);
+const projectName = computed(() => projectStore.project.meta.name || "");
+const hasUnsavedChanges = computed(() => projectStore.hasUnsavedChanges);
 
 // View state (these should come from a view store in a real implementation)
 const showGrid = ref(false);

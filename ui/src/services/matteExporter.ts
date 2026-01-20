@@ -374,14 +374,14 @@ class MatteExporter {
   /**
    * Build path commands from spline control points
    */
-  private buildPathCommands(splineData: SplineData): any[] | null {
+  private buildPathCommands(splineData: SplineData): Array<{ command: string; points: number[] }> | null {
     const cp = splineData.controlPoints;
     if (!cp || cp.length < 2) return null;
 
-    const pathCommands: any[] = [];
+    const pathCommands: Array<{ command: string; points: number[] }> = [];
 
     // Move to first point
-    pathCommands.push(["M", cp[0].x, cp[0].y]);
+    pathCommands.push({ command: "M", points: [cp[0].x, cp[0].y] });
 
     // Create cubic bezier curves between points
     for (let i = 0; i < cp.length - 1; i++) {
@@ -392,7 +392,7 @@ class MatteExporter {
       const h1 = p1.handleOut || { x: p1.x, y: p1.y };
       const h2 = p2.handleIn || { x: p2.x, y: p2.y };
 
-      pathCommands.push(["C", h1.x, h1.y, h2.x, h2.y, p2.x, p2.y]);
+      pathCommands.push({ command: "C", points: [h1.x, h1.y, h2.x, h2.y, p2.x, p2.y] });
     }
 
     return pathCommands;

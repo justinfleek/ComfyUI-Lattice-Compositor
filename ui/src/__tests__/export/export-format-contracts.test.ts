@@ -22,6 +22,7 @@ import {
   generateDepthMetadata,
   type DepthRenderOptions,
   type DepthRenderResult,
+  type DepthMetadata,
 } from "@/services/export/depthRenderer";
 
 import {
@@ -56,6 +57,8 @@ import {
 import type { Camera3D, CameraKeyframe } from "@/types/camera";
 import type { DepthMapFormat, ExportTarget } from "@/types/export";
 import type { Layer } from "@/types/project";
+import { createAnimatableProperty } from "@/types/animation";
+import { createDefaultTransform } from "@/types/transform";
 
 // ============================================================================
 // Test Fixtures
@@ -139,24 +142,21 @@ function createTestLayer(): Layer {
     type: "solid",
     visible: true,
     locked: false,
-    solo: false,
-    shy: false,
+    isolate: false,
+    threeD: false,
+    motionBlur: false,
     startFrame: 0,
     endFrame: 100,
-    transform: {
-      position: { animated: false, value: [0, 0, 0], keyframes: [] },
-      scale: { animated: false, value: [100, 100, 100], keyframes: [] },
-      rotation: { animated: false, value: 0, keyframes: [] },
-      anchorPoint: { animated: false, value: [0, 0], keyframes: [] },
-    },
-    opacity: { animated: false, value: 100, keyframes: [] },
-    effects: [],
-    masks: [],
+    inPoint: 0,
+    outPoint: 100,
     blendMode: "normal",
+    opacity: createAnimatableProperty("opacity", 100, "number"),
+    transform: createDefaultTransform(),
+    effects: [],
+    properties: [],
     parentId: null,
-    trackMatteId: null,
-    trackMatteType: null,
-  } as unknown as Layer;
+    data: { color: "#ff0000", width: 1920, height: 1080 },
+  };
 }
 
 function createDepthRenderOptions(): DepthRenderOptions {
@@ -1084,7 +1084,7 @@ describe("Depth Colormap Contracts", () => {
 
   describe("generateDepthMetadata", () => {
     it("should generate metadata for MiDaS format", () => {
-      const metadata = generateDepthMetadata("midas", 30, 512, 512, 0.1, 100) as any;
+      const metadata: DepthMetadata = generateDepthMetadata("midas", 30, 512, 512, 0.1, 100);
 
       expect(metadata.format).toBe("midas");
       expect(metadata.bitDepth).toBe(8);
@@ -1097,7 +1097,7 @@ describe("Depth Colormap Contracts", () => {
     });
 
     it("should generate metadata for depth-anything format", () => {
-      const metadata = generateDepthMetadata("depth-anything", 60, 1920, 1080, 0.5, 50) as any;
+      const metadata: DepthMetadata = generateDepthMetadata("depth-anything", 60, 1920, 1080, 0.5, 50);
 
       expect(metadata.format).toBe("depth-anything");
       expect(metadata.bitDepth).toBe(16);
@@ -1105,7 +1105,7 @@ describe("Depth Colormap Contracts", () => {
     });
 
     it("should generate metadata for Zoe format", () => {
-      const metadata = generateDepthMetadata("zoe", 10, 256, 256, 1, 200) as any;
+      const metadata: DepthMetadata = generateDepthMetadata("zoe", 10, 256, 256, 1, 200);
 
       expect(metadata.format).toBe("zoe");
       expect(metadata.actualRange.min).toBe(1);
@@ -1113,7 +1113,7 @@ describe("Depth Colormap Contracts", () => {
     });
 
     it("should generate metadata for Marigold format", () => {
-      const metadata = generateDepthMetadata("marigold", 1, 768, 768, 0.01, 1000) as any;
+      const metadata: DepthMetadata = generateDepthMetadata("marigold", 1, 768, 768, 0.01, 1000);
 
       expect(metadata.format).toBe("marigold");
       expect(metadata.width).toBe(768);
@@ -1121,14 +1121,14 @@ describe("Depth Colormap Contracts", () => {
     });
 
     it("should generate metadata for raw format", () => {
-      const metadata = generateDepthMetadata("raw", 120, 4096, 2160, 0.001, 10000) as any;
+      const metadata: DepthMetadata = generateDepthMetadata("raw", 120, 4096, 2160, 0.001, 10000);
 
       expect(metadata.format).toBe("raw");
       expect(metadata.bitDepth).toBe(32);
     });
 
     it("should include timestamp", () => {
-      const metadata = generateDepthMetadata("midas", 1, 100, 100, 0, 1) as any;
+      const metadata: DepthMetadata = generateDepthMetadata("midas", 1, 100, 100, 0, 1);
 
       expect(metadata.generatedAt).toBeDefined();
       expect(typeof metadata.generatedAt).toBe("string");

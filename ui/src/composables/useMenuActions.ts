@@ -6,12 +6,16 @@
  */
 
 import type { Ref } from "vue";
-import { useCompositorStore } from "@/stores/compositorStore";
 import { useLayerStore } from "@/stores/layerStore";
-import { useHistoryStore } from "@/stores/historyStore";
 import { useAnimationStore } from "@/stores/animationStore";
 import { useMarkerStore } from "@/stores/markerStore";
 import { useProjectStore } from "@/stores/projectStore";
+import { useSelectionStore } from "@/stores/selectionStore";
+import { useCacheStore } from "@/stores/cacheStore";
+import { useCameraStore } from "@/stores/cameraStore";
+import type { MarkerStoreAccess } from "@/stores/markerStore";
+import type { AnimationStoreAccess } from "@/stores/animationStore/types";
+import { usePlaybackStore } from "@/stores/playbackStore";
 
 export interface MenuActionsOptions {
   // Dialog refs
@@ -46,12 +50,68 @@ export interface MenuActionsOptions {
 }
 
 export function useMenuActions(options: MenuActionsOptions) {
-  const store = useCompositorStore();
   const layerStore = useLayerStore();
-  const _historyStore = useHistoryStore();
   const animationStore = useAnimationStore();
   const markerStore = useMarkerStore();
   const projectStore = useProjectStore();
+  const selectionStore = useSelectionStore();
+  const cacheStore = useCacheStore();
+  const cameraStore = useCameraStore();
+  const playbackStore = usePlaybackStore();
+
+  // Helper to create MarkerStoreAccess for marker operations
+  function getMarkerStoreAccess(): MarkerStoreAccess {
+    const activeComp = projectStore.getActiveComp();
+    return {
+      project: {
+        compositions: projectStore.project.compositions,
+        meta: projectStore.project.meta,
+      },
+      activeCompositionId: projectStore.activeCompositionId,
+      currentFrame: activeComp?.currentFrame ?? 0,
+      getActiveComp: () => projectStore.getActiveComp(),
+      setFrame: (frame: number) => {
+        const comp = projectStore.getActiveComp();
+        if (comp) {
+          comp.currentFrame = frame;
+        }
+      },
+      pushHistory: () => projectStore.pushHistory(),
+    };
+  }
+
+  // Helper to create AnimationStoreAccess for animation operations
+  function getAnimationStoreAccess(): AnimationStoreAccess {
+    const activeComp = projectStore.getActiveComp();
+    return {
+      isPlaying: playbackStore.isPlaying,
+      getActiveComp: () => projectStore.getActiveComp(),
+      get currentFrame() {
+        const comp = projectStore.getActiveComp();
+        return comp?.currentFrame ?? 0;
+      },
+      get frameCount() {
+        const comp = projectStore.getActiveComp();
+        return comp?.settings.frameCount ?? 81;
+      },
+      get fps() {
+        return projectStore.getFps();
+      },
+      getActiveCompLayers: () => projectStore.getActiveCompLayers(),
+      getLayerById: (id: string) => {
+        const layers = projectStore.getActiveCompLayers();
+        return layers.find(l => l.id === id) || null;
+      },
+      project: {
+        composition: {
+          width: projectStore.project.composition.width,
+          height: projectStore.project.composition.height,
+        },
+        meta: projectStore.project.meta,
+      },
+      pushHistory: () => projectStore.pushHistory(),
+    };
+  }
 
   const {
     showExportDialog,
@@ -99,17 +159,17 @@ export function useMenuActions(options: MenuActionsOptions) {
       // File menu
       case "newProject":
         if (confirm("Create a new project? Unsaved changes will be lost.")) {
-          projectStore.newProject(store);
+          projectStore.newProject();
         }
         break;
       case "openProject":
         triggerProjectOpen();
         break;
       case "saveProject":
-        projectStore.saveProject(store);
+        projectStore.saveProject();
         break;
       case "saveProjectAs":
-        projectStore.saveProjectAs(store).then((projectId: string | null) => {
+        projectStore.saveProjectAs().then((projectId: string | null) => {
           if (projectId) {
             alert(`Project saved with ID: ${projectId}`);
           } else {
@@ -126,7 +186,7 @@ export function useMenuActions(options: MenuActionsOptions) {
 
       // Server operations
       case "saveProjectToServer":
-        store.saveProjectToServer().then((projectId: string | null) => {
+        projectStore.saveProjectToServer().then((projectId: string | null) => {
           if (projectId) {
             alert(`Project saved to server with ID: ${projectId}`);
           } else {
@@ -139,7 +199,7 @@ export function useMenuActions(options: MenuActionsOptions) {
         {
           const projectId = prompt("Enter project ID to load:");
           if (projectId) {
-            store.loadProjectFromServer(projectId).then((success: boolean) => {
+            projectStore.loadProjectFromServer(projectId, () => projectStore.pushHistory()).then((success: boolean) => {
               if (success) {
                 alert("Project loaded from server");
               } else {
@@ -152,102 +212,107 @@ export function useMenuActions(options: MenuActionsOptions) {
 
       // Edit menu
       case "undo":
-        store.undo();
+        projectStore.undo();
         break;
       case "redo":
-        store.redo();
+        projectStore.redo();
         break;
       case "cut":
-        layerStore.cutSelectedLayers(store);
+        layerStore.cutSelectedLayers();
         break;
       case "copy":
-        layerStore.copySelectedLayers(store);
+        layerStore.copySelectedLayers();
         break;
       case "paste":
-        layerStore.pasteLayers(store);
+        layerStore.pasteLayers();
         break;
       case "duplicate":
-        layerStore.duplicateSelectedLayers(store);
+        layerStore.duplicateSelectedLayers();
         break;
       case "delete":
-        layerStore.deleteSelectedLayers(store);
+        layerStore.deleteSelectedLayers();
         break;
       case "selectAll":
-        layerStore.selectAllLayers(store);
+        layerStore.selectAllLayers();
         break;
       case "deselectAll":
-        layerStore.clearSelection(store);
+        layerStore.clearSelection();
         break;
 
       // Markers
-      case "addMarkerAtPlayhead":
-        markerStore.addMarkers(store, [
+      case "addMarkerAtPlayhead": {
+        const markerAccess = getMarkerStoreAccess();
+        markerStore.addMarkers(markerAccess, [
           {
-            frame: animationStore.getCurrentFrame(store),
-            label: `Marker ${markerStore.getMarkers(store).length + 1}`,
+            frame: markerAccess.currentFrame,
+            label: `Marker ${markerStore.getMarkers(markerAccess).length + 1}`,
             color: "#FFFF00",
           },
         ]);
         break;
+      }
       case "jumpToNextMarker":
-        markerStore.jumpToNextMarker(store);
+        markerStore.jumpToNextMarker(getMarkerStoreAccess());
         break;
       case "jumpToPreviousMarker":
-        markerStore.jumpToPreviousMarker(store);
+        markerStore.jumpToPreviousMarker(getMarkerStoreAccess());
         break;
       case "clearMarkers":
         if (confirm("Clear all markers?")) {
-          markerStore.clearMarkers(store);
+          markerStore.clearMarkers(getMarkerStoreAccess());
         }
         break;
 
       // Cache operations
       case "clearFrameCache":
-        store.clearFrameCache();
+        cacheStore.clearFrameCache();
         break;
 
       // Create menu - layer types
       case "createSolid":
-        layerStore.createLayer(store, "solid");
+        layerStore.createLayer("solid");
         break;
-      case "createText":
-        layerStore.createTextLayer(store);
+      case "createText": {
+        layerStore.createTextLayer();
         break;
-      case "createShape":
-        layerStore.createSplineLayer(store);
+      }
+      case "createShape": {
+        layerStore.createSplineLayer();
         break;
+      }
       case "createPath":
-        layerStore.createLayer(store, "path");
+        layerStore.createLayer("path");
         break;
-      case "createCamera":
-        layerStore.createCameraLayer(store);
+      case "createCamera": {
+        layerStore.createCameraLayer();
         break;
+      }
       case "createLight":
-        layerStore.createLayer(store, "light");
+        layerStore.createLayer("light");
         break;
       case "createControl":
-        layerStore.createLayer(store, "control");
+        layerStore.createLayer("control");
         break;
       case "createParticle":
-        layerStore.createLayer(store, "particle");
+        layerStore.createLayer("particle");
         break;
       case "createDepth":
-        layerStore.createLayer(store, "depth");
+        layerStore.createLayer("depth");
         break;
       case "createNormal":
-        layerStore.createLayer(store, "normal");
+        layerStore.createLayer("normal");
         break;
       case "createGenerated":
-        layerStore.createLayer(store, "generated");
+        layerStore.createLayer("generated");
         break;
       case "createGroup":
-        layerStore.createLayer(store, "group");
+        layerStore.createLayer("group");
         break;
       case "createEffectLayer":
-        layerStore.createLayer(store, "effectLayer");
+        layerStore.createLayer("effectLayer");
         break;
       case "createMatte":
-        layerStore.createLayer(store, "matte");
+        layerStore.createLayer("matte");
         break;
 
       // Layer menu
@@ -256,9 +321,9 @@ export function useMenuActions(options: MenuActionsOptions) {
         break;
       case "splitLayer":
         {
-          const selectedIds = store.selectedLayerIds;
+          const selectedIds = selectionStore.selectedLayerIds;
           if (selectedIds.length > 0) {
-            layerStore.splitLayerAtPlayhead(store, selectedIds[0]);
+            layerStore.splitLayerAtPlayhead(selectedIds[0]);
           }
         }
         break;
@@ -270,40 +335,40 @@ export function useMenuActions(options: MenuActionsOptions) {
         break;
       case "timeReverse":
         {
-          const selectedIds = store.selectedLayerIds;
+          const selectedIds = selectionStore.selectedLayerIds;
           for (const id of selectedIds) {
-            layerStore.reverseLayer(store, id);
+            layerStore.reverseLayer(id);
           }
         }
         break;
       case "freezeFrame":
         {
-          const selectedIds = store.selectedLayerIds;
+          const selectedIds = selectionStore.selectedLayerIds;
           if (selectedIds.length > 0) {
-            layerStore.freezeFrameAtPlayhead(store, selectedIds[0]);
+            layerStore.freezeFrameAtPlayhead(selectedIds[0]);
           }
         }
         break;
       case "lockLayer":
-        layerStore.toggleLayerLock(store);
+        layerStore.toggleLayerLock();
         break;
       case "toggleVisibility":
-        layerStore.toggleLayerVisibility(store);
+        layerStore.toggleLayerVisibility();
         break;
       case "isolateLayer":
-        layerStore.toggleLayerSolo(store);
+        layerStore.toggleLayerSolo();
         break;
       case "bringToFront":
-        layerStore.bringToFront(store);
+        layerStore.bringToFront();
         break;
       case "sendToBack":
-        layerStore.sendToBack(store);
+        layerStore.sendToBack();
         break;
       case "bringForward":
-        layerStore.bringForward(store);
+        layerStore.bringForward();
         break;
       case "sendBackward":
-        layerStore.sendBackward(store);
+        layerStore.sendBackward();
         break;
 
       // View menu

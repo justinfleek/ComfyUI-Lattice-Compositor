@@ -157,7 +157,7 @@ export class ShapeLayer extends BaseLayer {
     this.ctx = this.canvas.getContext("2d")!;
 
     // Create texture
-    this.texture = new THREE.CanvasTexture(this.canvas as any);
+    this.texture = new THREE.CanvasTexture(this.canvas);
     this.texture.colorSpace = THREE.SRGBColorSpace;
     this.texture.minFilter = THREE.LinearFilter;
     this.texture.magFilter = THREE.LinearFilter;
@@ -208,7 +208,10 @@ export class ShapeLayer extends BaseLayer {
     this.ctx = this.canvas.getContext("2d")!;
 
     // Update texture
-    this.texture.image = this.canvas as any;
+    // THREE.CanvasTexture.image accepts HTMLCanvasElement | OffscreenCanvas,
+    // but TypeScript types may not include OffscreenCanvas - cast is safe here
+    // as THREE.js runtime supports OffscreenCanvas
+    this.texture.image = this.canvas as HTMLCanvasElement;
     this.texture.needsUpdate = true;
 
     // Update mesh geometry
@@ -279,7 +282,9 @@ export class ShapeLayer extends BaseLayer {
     }
   }
 
-  onApplyEvaluatedState(state: any): void {
+  protected override onApplyEvaluatedState(
+    state: import("../MotionEngine").EvaluatedLayer,
+  ): void {
     // Shape-specific state could include animated shape properties
     if (state.shapeData) {
       this.shapeData = state.shapeData;

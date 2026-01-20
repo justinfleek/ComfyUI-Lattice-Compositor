@@ -15,7 +15,7 @@ import type {
   ViewOptions,
   ViewportState,
 } from "@/types/camera";
-import { createDefaultCamera } from "@/types/camera";
+import { createDefaultCamera, createDefaultViewportState, createDefaultViewOptions } from "@/types/camera";
 import type { CameraLayerData, Layer } from "@/types/project";
 import {
   createAnimatableProperty,
@@ -23,6 +23,8 @@ import {
 } from "@/types/project";
 import { useLayerStore } from "@/stores/layerStore";
 import { useSelectionStore } from "./selectionStore";
+import { useProjectStore } from "./projectStore";
+import { useAnimationStore } from "./animationStore";
 
 // ============================================================================
 // HELPER FUNCTIONS
@@ -75,29 +77,37 @@ export interface CameraStoreAccess {
 // ============================================================================
 
 export const useCameraStore = defineStore("camera", {
-  state: () => ({}),
+  state: () => ({
+    cameras: new Map<string, Camera3D>(),
+    cameraKeyframes: new Map<string, CameraKeyframe[]>(),
+    activeCameraId: null as string | null,
+    viewportState: createDefaultViewportState(),
+    viewOptions: createDefaultViewOptions(),
+  }),
   
-  getters: {},
+  getters: {
+    activeCamera(): Camera3D | null {
+      if (!this.activeCameraId) return null;
+      return this.cameras.get(this.activeCameraId) || null;
+    },
+    allCameras(): Camera3D[] {
+      return Array.from(this.cameras.values());
+    },
+  },
   
   actions: {
     // ========================================================================
     // Camera CRUD
     // ========================================================================
 
-    /**
-     * Create a new camera and corresponding layer
-     */
-    createCameraLayer(
-      store: CameraStoreAccess,
-      name?: string,
-    ): { camera: Camera3D; layer: Layer } {
-      const comp = store.getActiveComp();
-      const layers = store.getActiveCompLayers();
+    createCameraLayer(name?: string): { camera: Camera3D; layer: Layer } {
+      const projectStore = useProjectStore();
+      const comp = projectStore.getActiveComp();
+      const layers = projectStore.getActiveCompLayers();
 
       const cameraId = `camera_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
-      const cameraName = name || `Camera ${store.cameras.size + 1}`;
+      const cameraName = name || `Camera ${this.cameras.size + 1}`;
 
-      // Create the camera object
       const camera = createDefaultCamera(
         cameraId,
         comp?.settings.width || 1024,
@@ -105,15 +115,12 @@ export const useCameraStore = defineStore("camera", {
       );
       camera.name = cameraName;
 
-      // Add to cameras map
-      store.cameras.set(cameraId, camera);
+      this.cameras.set(cameraId, camera);
 
-      // If this is the first camera, make it active
-      if (!store.activeCameraId) {
-        store.activeCameraId = cameraId;
+      if (!this.activeCameraId) {
+        this.activeCameraId = cameraId;
       }
 
-      // Create the layer
       const layerId = `layer_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
       const frameCount = (comp?.settings.frameCount || 81) - 1;
       const layer: Layer = {
@@ -137,58 +144,39 @@ export const useCameraStore = defineStore("camera", {
         effects: [],
         data: {
           cameraId,
-          isActiveCamera:
-            !store.activeCameraId || store.activeCameraId === cameraId,
+          isActiveCamera: !this.activeCameraId || this.activeCameraId === cameraId,
         } as CameraLayerData,
       };
 
       layers.unshift(layer);
-      store.project.meta.modified = new Date().toISOString();
-      store.pushHistory();
+      projectStore.project.meta.modified = new Date().toISOString();
+      projectStore.pushHistory();
 
-      // Auto-select the new camera layer
-      const layerStore = useLayerStore();
-      // Type assertion: compositorStore passed at runtime implements required interface
-      layerStore.selectLayer(
-        store as unknown as Parameters<typeof layerStore.selectLayer>[0],
-        layerId
-      );
+      useSelectionStore().selectLayer(layerId);
 
       return { camera, layer };
     },
 
-    /**
-     * Get a camera by ID
-     */
-    getCamera(store: CameraStoreAccess, cameraId: string): Camera3D | null {
-      return store.cameras.get(cameraId) || null;
+    getCamera(cameraId: string): Camera3D | null {
+      return this.cameras.get(cameraId) || null;
     },
 
-    /**
-     * Update camera properties
-     */
-    updateCamera(
-      store: CameraStoreAccess,
-      cameraId: string,
-      updates: Partial<Camera3D>,
-    ): void {
-      const camera = store.cameras.get(cameraId);
+    updateCamera(cameraId: string, updates: Partial<Camera3D>): void {
+      const camera = this.cameras.get(cameraId);
       if (!camera) return;
 
       Object.assign(camera, updates);
-      store.project.meta.modified = new Date().toISOString();
+      const projectStore = useProjectStore();
+      projectStore.project.meta.modified = new Date().toISOString();
     },
 
-    /**
-     * Set the active camera
-     */
-    setActiveCamera(store: CameraStoreAccess, cameraId: string): void {
-      if (!store.cameras.has(cameraId)) return;
+    setActiveCamera(cameraId: string): void {
+      if (!this.cameras.has(cameraId)) return;
 
-      store.activeCameraId = cameraId;
+      this.activeCameraId = cameraId;
 
-      // Update all camera layers' isActiveCamera flag
-      const layers = store.getActiveCompLayers();
+      const projectStore = useProjectStore();
+      const layers = projectStore.getActiveCompLayers();
       for (const layer of layers) {
         if (layer.type === "camera" && layer.data) {
           const cameraData = layer.data as CameraLayerData;
@@ -196,75 +184,55 @@ export const useCameraStore = defineStore("camera", {
         }
       }
 
-      store.project.meta.modified = new Date().toISOString();
+      projectStore.project.meta.modified = new Date().toISOString();
     },
 
-    /**
-     * Delete a camera and its layer
-     */
-    deleteCamera(store: CameraStoreAccess, cameraId: string): void {
-      const layers = store.getActiveCompLayers();
+    deleteCamera(cameraId: string): void {
+      const projectStore = useProjectStore();
+      const layers = projectStore.getActiveCompLayers();
 
-      // Find the associated layer
       const layerIndex = layers.findIndex(
         (l) =>
           l.type === "camera" && (l.data as CameraLayerData)?.cameraId === cameraId,
       );
 
-      // Remove the layer if found
       if (layerIndex !== -1) {
         const layerId = layers[layerIndex].id;
         layers.splice(layerIndex, 1);
         useSelectionStore().removeFromSelection(layerId);
       }
 
-      // Remove camera keyframes
-      store.cameraKeyframes.delete(cameraId);
+      this.cameraKeyframes.delete(cameraId);
+      this.cameras.delete(cameraId);
 
-      // Remove the camera
-      store.cameras.delete(cameraId);
+      if (this.activeCameraId === cameraId) {
+        const remaining = Array.from(this.cameras.keys());
+        this.activeCameraId = remaining.length > 0 ? remaining[0] : null;
 
-      // If this was the active camera, select another or set to null
-      if (store.activeCameraId === cameraId) {
-        const remaining = Array.from(store.cameras.keys());
-        store.activeCameraId = remaining.length > 0 ? remaining[0] : null;
-
-        // Update layer flags
-        if (store.activeCameraId) {
-          this.setActiveCamera(store, store.activeCameraId);
+        if (this.activeCameraId) {
+          this.setActiveCamera(this.activeCameraId);
         }
       }
 
-      store.project.meta.modified = new Date().toISOString();
-      store.pushHistory();
+      projectStore.project.meta.modified = new Date().toISOString();
+      projectStore.pushHistory();
     },
 
     // ========================================================================
     // Camera Keyframes
     // ========================================================================
 
-    /**
-     * Get all keyframes for a camera
-     */
-    getCameraKeyframes(store: CameraStoreAccess, cameraId: string): CameraKeyframe[] {
-      return store.cameraKeyframes.get(cameraId) || [];
+    getCameraKeyframes(cameraId: string): CameraKeyframe[] {
+      return this.cameraKeyframes.get(cameraId) || [];
     },
 
-    /**
-     * Add a keyframe to a camera
-     */
-    addCameraKeyframe(
-      store: CameraStoreAccess,
-      cameraId: string,
-      keyframe: CameraKeyframe,
-    ): void {
-      let keyframes = store.cameraKeyframes.get(cameraId);
+    addCameraKeyframe(cameraId: string, keyframe: CameraKeyframe): void {
+      let keyframes = this.cameraKeyframes.get(cameraId);
       if (!keyframes) {
         keyframes = [];
-        store.cameraKeyframes.set(cameraId, keyframes);
+        this.cameraKeyframes.set(cameraId, keyframes);
       }
 
-      // Remove existing keyframe at same frame (use framesEqual to handle NaN)
       const existingIndex = keyframes.findIndex((k) =>
         framesEqual(k.frame, keyframe.frame),
       );
@@ -272,28 +240,22 @@ export const useCameraStore = defineStore("camera", {
         keyframes[existingIndex] = keyframe;
       } else {
         keyframes.push(keyframe);
-        // Keep sorted by frame
         keyframes.sort((a, b) => a.frame - b.frame);
       }
 
-      store.project.meta.modified = new Date().toISOString();
+      const projectStore = useProjectStore();
+      projectStore.project.meta.modified = new Date().toISOString();
     },
 
-    /**
-     * Remove a keyframe from a camera at a specific frame
-     */
-    removeCameraKeyframe(
-      store: CameraStoreAccess,
-      cameraId: string,
-      frame: number,
-    ): void {
-      const keyframes = store.cameraKeyframes.get(cameraId);
+    removeCameraKeyframe(cameraId: string, frame: number): void {
+      const keyframes = this.cameraKeyframes.get(cameraId);
       if (!keyframes) return;
 
       const index = keyframes.findIndex((k) => framesEqual(k.frame, frame));
       if (index >= 0) {
         keyframes.splice(index, 1);
-        store.project.meta.modified = new Date().toISOString();
+        const projectStore = useProjectStore();
+        projectStore.project.meta.modified = new Date().toISOString();
       }
     },
 
@@ -301,27 +263,18 @@ export const useCameraStore = defineStore("camera", {
     // Camera Interpolation
     // ========================================================================
 
-    /**
-     * Get the interpolated camera state at a specific frame
-     */
-    getCameraAtFrame(
-      store: CameraStoreAccess,
-      cameraId: string,
-      frame: number,
-    ): Camera3D | null {
-      const camera = store.cameras.get(cameraId);
+    getCameraAtFrame(cameraId: string, frame: number): Camera3D | null {
+      const camera = this.cameras.get(cameraId);
       if (!camera) return null;
 
-      const keyframes = store.cameraKeyframes.get(cameraId);
+      const keyframes = this.cameraKeyframes.get(cameraId);
       if (!keyframes || keyframes.length === 0) {
-        return camera; // No animation, return base camera
+        return camera;
       }
 
-      // Validate frame before passing to interpolation
       const validFrame = safeFrame(frame, 0);
       const interpolated = interpolateCameraAtFrame(camera, keyframes, validFrame);
 
-      // Merge interpolated values back onto camera (return modified copy, not original)
       return {
         ...camera,
         position: interpolated.position,
@@ -335,32 +288,21 @@ export const useCameraStore = defineStore("camera", {
       };
     },
 
-    /**
-     * Get the active camera state at a specific frame
-     */
-    getActiveCameraAtFrame(store: CameraStoreAccess, frame?: number): Camera3D | null {
-      if (!store.activeCameraId) return null;
-      // Use safeFrame to handle NaN (nullish coalescing doesn't catch NaN)
-      const targetFrame = safeFrame(frame, store.currentFrame);
-      return this.getCameraAtFrame(store, store.activeCameraId, targetFrame);
+    getActiveCameraAtFrame(frame?: number): Camera3D | null {
+      if (!this.activeCameraId) return null;
+      const animationStore = useAnimationStore();
+      const projectStore = useProjectStore();
+      const currentFrame = projectStore.getActiveComp()?.currentFrame ?? 0;
+      const targetFrame = safeFrame(frame, currentFrame);
+      return this.getCameraAtFrame(this.activeCameraId, targetFrame);
     },
 
-    // ========================================================================
-    // Viewport State
-    // ========================================================================
-
-    /**
-     * Update the viewport state
-     */
-    updateViewportState(store: CameraStoreAccess, updates: Partial<ViewportState>): void {
-      Object.assign(store.viewportState, updates);
+    updateViewportState(updates: Partial<ViewportState>): void {
+      Object.assign(this.viewportState, updates);
     },
 
-    /**
-     * Update view options
-     */
-    updateViewOptions(store: CameraStoreAccess, updates: Partial<ViewOptions>): void {
-      Object.assign(store.viewOptions, updates);
+    updateViewOptions(updates: Partial<ViewOptions>): void {
+      Object.assign(this.viewOptions, updates);
     },
   },
 });

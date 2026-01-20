@@ -497,7 +497,7 @@ function closePropertyPicker() {
 function addPropertyFromPicker(prop: {
   path: string;
   name: string;
-  type: any;
+  type: import("@/types/templateBuilder").ExposedPropertyType;
 }) {
   if (!templateConfig.value || !selectedLayerForPicker.value) return;
 
@@ -736,7 +736,15 @@ async function applyTemplate(template: SavedTemplate) {
   }
 }
 
-function setNestedProperty(obj: any, path: string, value: any) {
+/**
+ * Set nested property value in template builder object
+ * Accepts any JSON-serializable value
+ */
+function setNestedProperty(
+  obj: Record<string, unknown>,
+  path: string,
+  value: unknown,
+) {
   const parts = path.split(".");
   let current = obj;
 

@@ -188,7 +188,12 @@ defineEmits<{
   (e: "toggle"): void;
   (e: "add"): void;
   (e: "remove", id: string): void;
-  (e: "update", id: string, key: keyof AudioBindingConfig, value: any): void;
+  (
+    e: "update",
+    id: string,
+    key: keyof AudioBindingConfig,
+    value: AudioBindingConfig[keyof AudioBindingConfig],
+  ): void;
 }>();
 </script>
 

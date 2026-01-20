@@ -8,6 +8,7 @@
  * - Detecting performance regressions
  */
 
+import type { PropertyValue } from "@/types/project";
 import type { EffectInstance } from "@/types/effects";
 import { engineLogger } from "@/utils/logger";
 import { processEffectStack, processEffectStackAsync } from "./effectProcessor";
@@ -83,7 +84,7 @@ function createTestCanvas(width: number, height: number): HTMLCanvasElement {
  */
 function createTestEffect(
   effectKey: string,
-  params: Record<string, any> = {},
+  params: Record<string, PropertyValue> = {},
 ): EffectInstance {
   return {
     id: `test-${effectKey}`,
@@ -112,7 +113,7 @@ function createTestEffect(
 // BENCHMARK EFFECTS
 // ============================================================================
 
-const BENCHMARK_EFFECTS: Array<{ key: string; params: Record<string, any> }> = [
+const BENCHMARK_EFFECTS: Array<{ key: string; params: Record<string, PropertyValue> }> = [
   // Blur effects (high GPU benefit)
   { key: "gaussian-blur", params: { radius: 20 } },
   { key: "radial-blur", params: { centerX: 0.5, centerY: 0.5, amount: 50 } },
@@ -138,7 +139,7 @@ const BENCHMARK_EFFECTS: Array<{ key: string; params: Record<string, any> }> = [
  */
 async function benchmarkEffect(
   effectKey: string,
-  params: Record<string, any>,
+  params: Record<string, PropertyValue>,
   canvas: HTMLCanvasElement,
   iterations: number,
 ): Promise<BenchmarkResult> {
@@ -246,7 +247,7 @@ export async function runBenchmarkSuite(
  */
 export async function quickBenchmark(
   effectKey: string,
-  params: Record<string, any> = {},
+  params: Record<string, PropertyValue> = {},
   width: number = 1920,
   height: number = 1080,
 ): Promise<BenchmarkResult> {

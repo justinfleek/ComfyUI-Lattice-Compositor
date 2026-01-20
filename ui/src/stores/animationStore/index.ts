@@ -17,6 +17,7 @@ import {
   type SnapResult,
 } from "@/services/timelineSnap";
 import { usePlaybackStore } from "../playbackStore";
+import { useProjectStore } from "../projectStore";
 import { motionEngine } from "@/engine/MotionEngine";
 import { useAudioStore } from "../audioStore";
 import type { FrameState } from "@/engine/MotionEngine";
@@ -84,6 +85,13 @@ export const useAnimationStore = defineStore("animation", {
     /** Whether playback is currently active (delegated to playbackStore) */
     isPlaying(): boolean {
       return usePlaybackStore().isPlaying;
+    },
+
+    /** Get current frame from active composition (playback position) */
+    currentFrame(): number {
+      const projectStore = useProjectStore();
+      const comp = projectStore.getActiveComp();
+      return comp?.currentFrame ?? 0;
     },
   },
 

@@ -224,12 +224,12 @@ describe('createAnimatableProperty', () => {
     });
 
     test('value: null (stores null)', () => {
-      const prop = createAnimatableProperty('nullable', null as any);
+      const prop = createAnimatableProperty<null>('nullable', null);
       expect(prop.value).toBeNull();
     });
 
     test('value: undefined (stores undefined)', () => {
-      const prop = createAnimatableProperty('undef', undefined as any);
+      const prop = createAnimatableProperty<undefined>('undef', undefined);
       expect(prop.value).toBeUndefined();
     });
 
@@ -566,12 +566,12 @@ describe('createKeyframe', () => {
   // EMPTY/NULL VALUES
   describe('empty and null values', () => {
     test('value: null', () => {
-      const kf = createKeyframe(0, null as any);
+      const kf = createKeyframe<null>(0, null);
       expect(kf.value).toBeNull();
     });
 
     test('value: undefined', () => {
-      const kf = createKeyframe(0, undefined as any);
+      const kf = createKeyframe<undefined>(0, undefined);
       expect(kf.value).toBeUndefined();
     });
 

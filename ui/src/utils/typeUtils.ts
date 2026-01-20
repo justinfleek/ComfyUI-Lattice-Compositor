@@ -16,9 +16,10 @@ export function omitKeys<T extends object, K extends keyof T>(
   obj: T,
   keys: readonly K[],
 ): Omit<T, K> {
-  const result = { ...obj } as Record<string, unknown>;
+  // Create a copy and delete specified keys
+  const result = { ...obj } as Partial<T>;
   for (const key of keys) {
-    delete result[key as string];
+    delete result[key];
   }
   return result as Omit<T, K>;
 }

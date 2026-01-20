@@ -19,9 +19,11 @@ import type {
   DepthMapFormat,
   ExportConfig,
   ExportProgress,
+  ExportResult,
   ExportTarget,
 } from "@/types/export";
 import type { Layer } from "@/types/project";
+import type { CameraKeyframe } from "@/types/camera";
 
 // Access compositor store for composition settings
 const compositorStore = useCompositorStore();
@@ -32,7 +34,7 @@ const compositorStore = useCompositorStore();
 
 interface Props {
   layers: Layer[];
-  cameraKeyframes: any[];
+  cameraKeyframes: CameraKeyframe[];
   currentFrame: number;
   totalFrames: number;
 }
@@ -41,7 +43,7 @@ const props = defineProps<Props>();
 
 const emit = defineEmits<{
   close: [];
-  exported: [result: any];
+  exported: [result: ExportResult];
 }>();
 
 // ============================================================================

@@ -170,7 +170,7 @@ const layerStore = useLayerStore();
 
 const lightData = computed<LightData>(() => {
   return (
-    (props.layer.data as unknown as LightData) || {
+    (props.layer.data as LightData) || {
       lightType: "spot",
       color: "#ffffff",
       intensity: 100,
@@ -186,12 +186,15 @@ const lightData = computed<LightData>(() => {
   );
 });
 
-function update(key: keyof LightData, value: any) {
+function update(key: keyof LightData, value: LightData[keyof LightData]) {
+  // Cast to LightLayerData - local LightData interface matches LightLayerData structure
+  const updatedData: import("@/types/project").LightLayerData = {
+    ...lightData.value,
+    [key]: value,
+  } as import("@/types/project").LightLayerData;
+  
   layerStore.updateLayer(store, props.layer.id, {
-    data: {
-      ...lightData.value,
-      [key]: value,
-    } as unknown as typeof props.layer.data,
+    data: updatedData,
   });
   emit("update");
 }

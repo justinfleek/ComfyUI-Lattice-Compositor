@@ -110,7 +110,7 @@ const durationBarStyle = computed(() => {
 
 // Collect all keyframes from all animated properties
 const allKeyframes = computed(() => {
-  const keyframes: Array<Keyframe<any> & { propertyName: string }> = [];
+  const keyframes: Array<Keyframe<unknown> & { propertyName: string }> = [];
 
   // From opacity
   if (props.layer.opacity.animated) {
@@ -120,14 +120,21 @@ const allKeyframes = computed(() => {
   }
 
   // From transform properties
-  ["position", "scale", "rotation"].forEach((propName) => {
-    const prop = (props.layer.transform as any)[propName];
-    if (prop?.animated) {
-      prop.keyframes.forEach((kf: Keyframe<any>) => {
-        keyframes.push({ ...kf, propertyName: propName });
-      });
-    }
-  });
+  const transform = props.layer.transform;
+  if (transform) {
+    const transformProps: Array<{ name: string; prop: import("@/types/project").AnimatableProperty<import("@/types/project").PropertyValue> | undefined }> = [
+      { name: "position", prop: transform.position },
+      { name: "scale", prop: transform.scale },
+      { name: "rotation", prop: transform.rotation },
+    ];
+    transformProps.forEach(({ name, prop }) => {
+      if (prop?.animated) {
+        prop.keyframes.forEach((kf: import("@/types/project").Keyframe<unknown>) => {
+          keyframes.push({ ...kf, propertyName: name });
+        });
+      }
+    });
+  }
 
   // From custom properties
   props.layer.properties.forEach((prop) => {

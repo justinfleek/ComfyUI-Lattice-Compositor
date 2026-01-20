@@ -44,6 +44,31 @@ import {
   calculateCompleteCharacterInfluence,
   calculateWigglyOffset,
 } from "@/services/textAnimator";
+
+interface TroikaTextExtended extends InstanceType<typeof TroikaText> {
+  fontWeight: string;
+  fontStyle: "normal" | "italic";
+  sdfGlyphSize: number;
+  gpuAccelerateSDF: boolean;
+  outlineBlur: number;
+  __blurX?: number;
+  __blurY?: number;
+}
+
+/**
+ * Create a TroikaText instance with extended properties
+ * Helper to avoid type assertions when extending third-party library types
+ */
+function createTroikaTextExtended(): TroikaTextExtended {
+  const text = new TroikaText();
+  return Object.assign(text, {
+    fontWeight: "400",
+    fontStyle: "normal" as const,
+    sdfGlyphSize: 256,
+    gpuAccelerateSDF: true,
+    outlineBlur: 0,
+  }) as TroikaTextExtended;
+}
 import {
   type CharacterPlacement,
   createDefaultPathConfig,
@@ -96,9 +121,9 @@ export interface CharacterTransform {
 
 export class TextLayer extends BaseLayer {
   // Text rendering
-  private textMesh: InstanceType<typeof TroikaText>;
+  private textMesh: TroikaTextExtended;
   private perCharacterGroup: THREE.Group | null = null;
-  private characterMeshes: InstanceType<typeof TroikaText>[] = [];
+  private characterMeshes: TroikaTextExtended[] = [];
 
   // Text data from layer
   private textData: TextData;
@@ -352,8 +377,8 @@ export class TextLayer extends BaseLayer {
   /**
    * Create Troika text mesh with current settings
    */
-  private createTextMesh(): InstanceType<typeof TroikaText> {
-    const text = new TroikaText();
+  private createTextMesh(): TroikaTextExtended {
+    const text = createTroikaTextExtended();
 
     // Core text content
     text.text = this.textData.text;
@@ -362,9 +387,8 @@ export class TextLayer extends BaseLayer {
     text.font = this.getFontUrl(this.textData.fontFamily) ?? null;
     text.fontSize = this.textData.fontSize;
 
-    // Font weight and style (using type assertions - Troika supports these but types are incomplete)
-    (text as any).fontWeight = this.textData.fontWeight || "400";
-    (text as any).fontStyle = this.textData.fontStyle || "normal";
+    text.fontWeight = this.textData.fontWeight || "400";
+    text.fontStyle = this.textData.fontStyle || "normal";
 
     // Colors
     text.color = this.textData.fill;
@@ -386,16 +410,11 @@ export class TextLayer extends BaseLayer {
     text.depthOffset = 0;
     text.renderOrder = 0;
 
-    // Improve text rendering quality - higher SDF glyph size for sharper edges
-    // Max useful value is around 256 (higher = better quality but more memory)
-    (text as any).sdfGlyphSize = 256; // Default is 64, higher = sharper text
+    text.sdfGlyphSize = 256;
+    text.gpuAccelerateSDF = true;
 
-    // GPU texture precision for better rendering
-    (text as any).gpuAccelerateSDF = true;
-
-    // Enable smooth outline edges
     if (this.textData.strokeWidth > 0) {
-      (text as any).outlineBlur = 0.003; // Slight blur for smoother outline edges
+      text.outlineBlur = 0.003;
     }
 
     // Trigger initial sync
@@ -700,13 +719,13 @@ export class TextLayer extends BaseLayer {
 
     for (let i = 0; i < text.length; i++) {
       const char = text[i];
-      const charMesh = new TroikaText();
+      const charMesh = createTroikaTextExtended();
 
       charMesh.text = char;
       charMesh.font = this.getFontUrl(this.textData.fontFamily) ?? null;
       charMesh.fontSize = this.textData.fontSize;
-      (charMesh as any).fontWeight = this.textData.fontWeight || "400";
-      (charMesh as any).fontStyle = this.textData.fontStyle || "normal";
+      charMesh.fontWeight = this.textData.fontWeight || "400";
+      charMesh.fontStyle = this.textData.fontStyle || "normal";
       charMesh.color = this.textData.fill;
       charMesh.anchorX = "center";
       charMesh.anchorY = "middle";
@@ -715,11 +734,10 @@ export class TextLayer extends BaseLayer {
         charMesh.outlineWidth =
           this.textData.strokeWidth / this.textData.fontSize;
         charMesh.outlineColor = this.textData.stroke;
-        (charMesh as any).outlineBlur = 0.005;
+        charMesh.outlineBlur = 0.005;
       }
 
-      // Quality settings for character mesh
-      (charMesh as any).sdfGlyphSize = 128;
+      charMesh.sdfGlyphSize = 128;
 
       // Position character (for horizontal layout)
       const charWidth = this.characterWidths[i];
@@ -817,22 +835,23 @@ export class TextLayer extends BaseLayer {
 
   setFontWeight(weight: string): void {
     this.textData.fontWeight = weight;
-    (this.textMesh as any).fontWeight = weight;
+    this.textMesh.fontWeight = weight;
     this.textMesh.sync();
 
     for (const charMesh of this.characterMeshes) {
-      (charMesh as any).fontWeight = weight;
+      charMesh.fontWeight = weight;
       charMesh.sync();
     }
   }
 
   setFontStyle(style: string): void {
-    this.textData.fontStyle = style as "normal" | "italic";
-    (this.textMesh as any).fontStyle = style;
+    const fontStyle = style as "normal" | "italic";
+    this.textData.fontStyle = fontStyle;
+    this.textMesh.fontStyle = fontStyle;
     this.textMesh.sync();
 
     for (const charMesh of this.characterMeshes) {
-      (charMesh as any).fontStyle = style;
+      charMesh.fontStyle = fontStyle;
       charMesh.sync();
     }
   }
@@ -1323,13 +1342,10 @@ export class TextLayer extends BaseLayer {
             wiggleOffset.y * this.textData.fontSize * influence;
         }
 
-        // Apply Blur (if supported via material)
         if (props.blur) {
-          // Blur requires special handling - Troika doesn't support per-character blur
-          // Store blur value for potential post-processing
           const blurVal = this.getAnimatorPropertyValue(props.blur, frame);
-          (charMesh as any).__blurX = blurVal.x * influence;
-          (charMesh as any).__blurY = blurVal.y * influence;
+          charMesh.__blurX = blurVal.x * influence;
+          charMesh.__blurY = blurVal.y * influence;
         }
       }
     }

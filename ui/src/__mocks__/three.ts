@@ -287,10 +287,10 @@ export class Scene extends Object3D {
 // Geometry
 export class BufferGeometry {
   uuid = Math.random().toString();
-  attributes: Record<string, any> = {};
-  index: any = null;
+  attributes: Record<string, unknown> = {};
+  index: number | null = null;
   dispose() {}
-  setAttribute(_name: string, _attr: any) {
+  setAttribute(_name: string, _attr: unknown) {
     return this;
   }
   setFromPoints(_points: Vector3[]) {
@@ -325,13 +325,13 @@ export class Material {
 
 export class MeshBasicMaterial extends Material {
   color = new Color();
-  map: any = null;
+  map: Texture | null = null;
   wireframe = false;
 }
 
 export class MeshStandardMaterial extends Material {
   color = new Color();
-  map: any = null;
+  map: Texture | null = null;
   metalness = 0;
   roughness = 1;
 }
@@ -348,7 +348,7 @@ export class ShaderMaterial extends Material {
 
 export class SpriteMaterial extends Material {
   color = new Color();
-  map: any = null;
+  map: Texture | null = null;
 }
 
 export class PointsMaterial extends Material {
@@ -471,7 +471,7 @@ export class SpotLight extends Light {
 // Texture
 export class Texture {
   uuid = Math.random().toString();
-  image: any = null;
+  image: HTMLImageElement | HTMLCanvasElement | ImageBitmap | null = null;
   needsUpdate = false;
   wrapS = 1000;
   wrapT = 1000;
@@ -502,14 +502,14 @@ export class WebGLRenderer {
   getRenderTarget() {
     return null;
   }
-  setRenderTarget(_target: any) {}
+  setRenderTarget(_target: WebGLRenderTarget | null) {}
   readRenderTargetPixels(
-    _target: any,
+    _target: WebGLRenderTarget,
     _x: number,
     _y: number,
     _w: number,
     _h: number,
-    _buffer: any,
+    _buffer: ArrayBufferView,
   ) {}
   getContext() {
     return {};
@@ -521,7 +521,7 @@ export class WebGLRenderTarget {
   height: number;
   texture = new Texture();
 
-  constructor(width: number, height: number, _options?: any) {
+  constructor(width: number, height: number, _options?: Record<string, unknown>) {
     this.width = width;
     this.height = height;
   }
@@ -625,7 +625,7 @@ export class Raycaster {
   near = 0;
   far = Infinity;
   setFromCamera(_coords: Vector2, _camera: Camera) {}
-  intersectObjects(_objects: Object3D[], _recursive?: boolean): any[] {
+  intersectObjects(_objects: Object3D[], _recursive?: boolean): Array<{ object: Object3D; point: Vector3; distance: number }> {
     return [];
   }
 }

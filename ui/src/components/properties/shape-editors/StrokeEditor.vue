@@ -216,14 +216,25 @@ function updateNumber(
   emit("update", updated);
 }
 
-function updateMeta(key: string, value: any) {
+function updateMeta(key: string, value: unknown) {
   const updated = { ...props.shape, [key]: value };
   emit("update", updated);
 }
 
-function updateTaper(prop: string, value: number) {
+// Type-safe taper property accessor
+function updateTaper(
+  prop:
+    | "taperStartLength"
+    | "taperStartWidth"
+    | "taperStartEase"
+    | "taperEndLength"
+    | "taperEndWidth"
+    | "taperEndEase",
+  value: number,
+) {
   const updated = { ...props.shape };
-  (updated as any)[prop] = { ...(updated as any)[prop], value };
+  // Type-safe property access - all taper properties are AnimatableProperty<number>
+  updated[prop] = { ...updated[prop], value };
   emit("update", updated);
 }
 
@@ -241,6 +252,34 @@ function updateDashes(e: Event) {
   emit("update", updated);
 }
 
+// Type-safe property accessor for StrokeShape animatable properties
+function getAnimatableProperty(
+  shape: StrokeShape,
+  prop:
+    | "color"
+    | "opacity"
+    | "width"
+    | "dashOffset"
+    | "taperStartLength"
+    | "taperStartWidth"
+    | "taperStartEase"
+    | "taperEndLength"
+    | "taperEndWidth"
+    | "taperEndEase",
+): import("@/types/animation").AnimatableProperty<unknown> {
+  // Type-safe property access - all these properties are AnimatableProperty
+  if (prop === "color") return shape.color as import("@/types/animation").AnimatableProperty<unknown>;
+  if (prop === "opacity") return shape.opacity;
+  if (prop === "width") return shape.width;
+  if (prop === "dashOffset") return shape.dashOffset;
+  if (prop === "taperStartLength") return shape.taperStartLength;
+  if (prop === "taperStartWidth") return shape.taperStartWidth;
+  if (prop === "taperStartEase") return shape.taperStartEase;
+  if (prop === "taperEndLength") return shape.taperEndLength;
+  if (prop === "taperEndWidth") return shape.taperEndWidth;
+  return shape.taperEndEase;
+}
+
 function toggleKeyframe(
   prop:
     | "color"
@@ -255,14 +294,12 @@ function toggleKeyframe(
     | "taperEndEase",
 ) {
   const updated = { ...props.shape };
-  const animProp = (updated as any)[prop];
+  const animProp = getAnimatableProperty(updated, prop);
   const frame = store.currentFrame;
 
-  const hasKf = animProp.keyframes.some((k: any) => k.frame === frame);
+  const hasKf = animProp.keyframes.some((k) => k.frame === frame);
   if (hasKf) {
-    animProp.keyframes = animProp.keyframes.filter(
-      (k: any) => k.frame !== frame,
-    );
+    animProp.keyframes = animProp.keyframes.filter((k) => k.frame !== frame);
   } else {
     animProp.keyframes.push(createKeyframe(frame, animProp.value, "linear"));
   }

@@ -223,7 +223,11 @@ import type {
   SatinUpdate,
   StrokeStyleUpdate,
   StyleBlendingOptionsUpdate,
+  RGBA,
+  ContourCurve,
+  GradientStop,
 } from "@/types/layerStyles";
+import type { BlendMode } from "@/types/project";
 
 const store = useCompositorStore();
 
@@ -369,7 +373,7 @@ function formatPresetName(name: string): string {
 // Style update handlers - generic helper to reduce duplication
 function applyStyleUpdates<T extends keyof LayerStyles>(
   styleType: T,
-  updates: Record<string, unknown>,
+  updates: Partial<NonNullable<LayerStyles[T]>>,
 ): void {
   if (!selectedLayer.value) return;
   const layerId = selectedLayer.value.id;
@@ -380,49 +384,49 @@ function applyStyleUpdates<T extends keyof LayerStyles>(
       layerId,
       styleType,
       key as keyof NonNullable<LayerStyles[T]>,
-      value,
+      value as string | number | boolean | RGBA | BlendMode | ContourCurve | GradientStop[] | null | undefined,
     );
   }
 }
 
 function updateDropShadow(updates: DropShadowUpdate) {
-  applyStyleUpdates("dropShadow", updates as Record<string, unknown>);
+  applyStyleUpdates("dropShadow", updates);
 }
 
 function updateInnerShadow(updates: InnerShadowUpdate) {
-  applyStyleUpdates("innerShadow", updates as Record<string, unknown>);
+  applyStyleUpdates("innerShadow", updates);
 }
 
 function updateOuterGlow(updates: OuterGlowUpdate) {
-  applyStyleUpdates("outerGlow", updates as Record<string, unknown>);
+  applyStyleUpdates("outerGlow", updates);
 }
 
 function updateInnerGlow(updates: InnerGlowUpdate) {
-  applyStyleUpdates("innerGlow", updates as Record<string, unknown>);
+  applyStyleUpdates("innerGlow", updates);
 }
 
 function updateBevelEmboss(updates: BevelEmbossUpdate) {
-  applyStyleUpdates("bevelEmboss", updates as Record<string, unknown>);
+  applyStyleUpdates("bevelEmboss", updates);
 }
 
 function updateSatin(updates: SatinUpdate) {
-  applyStyleUpdates("satin", updates as Record<string, unknown>);
+  applyStyleUpdates("satin", updates);
 }
 
 function updateColorOverlay(updates: ColorOverlayUpdate) {
-  applyStyleUpdates("colorOverlay", updates as Record<string, unknown>);
+  applyStyleUpdates("colorOverlay", updates);
 }
 
 function updateGradientOverlay(updates: GradientOverlayUpdate) {
-  applyStyleUpdates("gradientOverlay", updates as Record<string, unknown>);
+  applyStyleUpdates("gradientOverlay", updates);
 }
 
 function updateStroke(updates: StrokeStyleUpdate) {
-  applyStyleUpdates("stroke", updates as Record<string, unknown>);
+  applyStyleUpdates("stroke", updates);
 }
 
 function updateBlendingOptions(updates: StyleBlendingOptionsUpdate) {
-  applyStyleUpdates("blendingOptions", updates as Record<string, unknown>);
+  applyStyleUpdates("blendingOptions", updates);
 }
 </script>
 

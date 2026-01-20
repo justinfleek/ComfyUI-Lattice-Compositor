@@ -8,6 +8,7 @@
  */
 
 import type {
+  AssetReference,
   CameraLayerData,
   ImageLayerData,
   Layer,
@@ -15,6 +16,7 @@ import type {
   SplineData,
   VideoData,
 } from "@/types/project";
+import type { VideoImportResult } from "@/stores/videoStore";
 import { createAnimatableProperty, isLayerOfType, createDefaultTransform } from "@/types/project";
 import type { Camera3D } from "@/types/camera";
 import { createDefaultCamera } from "@/types/camera";
@@ -22,7 +24,12 @@ import { storeLogger } from "@/utils/logger";
 import { markLayerDirty } from "@/services/layerEvaluationCache";
 import { createLayer } from "./crud";
 import { selectLayer } from "./hierarchy";
-import type { CompositorStoreAccess, LayerSourceReplacement } from "./types";
+import { useProjectStore } from "../projectStore";
+import { useCameraStore } from "../cameraStore";
+import { useSelectionStore } from "../selectionStore";
+import { useLayerStore } from "./index";
+import { useCompositionStore } from "../compositionStore";
+import type { LayerSourceReplacement, TimeStretchOptions } from "./types";
 
 // ============================================================================
 // TEXT LAYER CREATION
@@ -35,10 +42,9 @@ import type { CompositorStoreAccess, LayerSourceReplacement } from "./types";
  * @returns The created text layer
  */
 export function createTextLayer(
-  compositorStore: CompositorStoreAccess,
   text: string = "Text",
 ): Layer {
-  const layer = createLayer(compositorStore, "text", text.substring(0, 20));
+  const layer = createLayer("text", text.substring(0, 20));
 
   // Set up text data with full AE parity
   const textData = {
@@ -144,11 +150,11 @@ export function createTextLayer(
  * @param newSource - The new source data
  */
 export function replaceLayerSource(
-  compositorStore: CompositorStoreAccess,
   layerId: string,
   newSource: LayerSourceReplacement,
 ): void {
-  const layer = compositorStore
+  const projectStore = useProjectStore();
+  const layer = projectStore
     .getActiveCompLayers()
     .find((l: Layer) => l.id === layerId);
   if (!layer) return;
@@ -233,8 +239,8 @@ export function replaceLayerSource(
   }
 
   markLayerDirty(layerId);
-  compositorStore.project.meta.modified = new Date().toISOString();
-  compositorStore.pushHistory();
+  projectStore.project.meta.modified = new Date().toISOString();
+  projectStore.pushHistory();
   storeLogger.info(`Replaced layer source: ${layer.name}`);
 }
 
@@ -247,8 +253,8 @@ export function replaceLayerSource(
  * @param compositorStore - The compositor store instance
  * @returns The created spline layer
  */
-export function createSplineLayer(compositorStore: CompositorStoreAccess): Layer {
-  const layer = createLayer(compositorStore, "spline");
+export function createSplineLayer(): Layer {
+  const layer = createLayer("spline");
 
   const splineData: SplineData = {
     pathData: "",
@@ -275,10 +281,9 @@ export function createSplineLayer(compositorStore: CompositorStoreAccess): Layer
  * @returns The created shape layer
  */
 export function createShapeLayer(
-  compositorStore: CompositorStoreAccess,
   name: string = "Shape Layer",
 ): Layer {
-  return createLayer(compositorStore, "shape", name);
+  return createLayer("shape", name);
 }
 
 // ============================================================================
@@ -295,18 +300,14 @@ export function createShapeLayer(
  * @returns The created camera layer
  */
 export function createCameraLayer(
-  compositorStore: CompositorStoreAccess & {
-    cameras: Map<string, Camera3D>;
-    activeCameraId: string | null;
-    selectLayer: (layerId: string) => void;
-  },
   name?: string,
 ): Layer {
-  const comp = compositorStore.getActiveComp();
-  const layers = compositorStore.getActiveCompLayers();
+  const projectStore = useProjectStore();
+  const cameraStore = useCameraStore();
+  const comp = projectStore.getActiveComp();
 
   const cameraId = `camera_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
-  const cameraName = name || `Camera ${compositorStore.cameras.size + 1}`;
+  const cameraName = name || `Camera ${cameraStore.cameras.size + 1}`;
 
   // Create the camera object
   const camera = createDefaultCamera(
@@ -317,29 +318,29 @@ export function createCameraLayer(
   camera.name = cameraName;
 
   // Add to cameras map
-  compositorStore.cameras.set(cameraId, camera);
+  cameraStore.cameras.set(cameraId, camera);
 
   // If this is the first camera, make it active
-  if (!compositorStore.activeCameraId) {
-    compositorStore.activeCameraId = cameraId;
+  if (!cameraStore.activeCameraId) {
+    cameraStore.setActiveCamera(cameraId);
   }
 
   // Create the layer using generic createLayer
-  const layer = createLayer(compositorStore, "camera", cameraName);
+  const layer = createLayer("camera", cameraName);
   
   // Update layer data with camera-specific info
   layer.data = {
     cameraId,
-    isActiveCamera: !compositorStore.activeCameraId || compositorStore.activeCameraId === cameraId,
+    isActiveCamera: !cameraStore.activeCameraId || cameraStore.activeCameraId === cameraId,
   } as CameraLayerData;
   
   layer.threeD = true; // Camera layers are always 3D
 
   // Auto-select the new camera layer
-  selectLayer(compositorStore, layer.id);
+  selectLayer(layer.id);
 
-  compositorStore.project.meta.modified = new Date().toISOString();
-  compositorStore.pushHistory();
+  projectStore.project.meta.modified = new Date().toISOString();
+  projectStore.pushHistory();
 
   return layer;
 }
@@ -360,23 +361,13 @@ export function createCameraLayer(
  * @returns Promise resolving to video import result
  */
 export async function createVideoLayer(
-  compositorStore: CompositorStoreAccess & {
-    assets: Record<string, any>;
-  },
   file: File,
   autoResizeComposition: boolean = true,
-): Promise<{ status: string; layer?: Layer; error?: string; [key: string]: any }> {
-  // Import videoStore to delegate video import logic
+): Promise<VideoImportResult> {
   const { useVideoStore } = await import("@/stores/videoStore");
   const videoStore = useVideoStore();
   
-  // Delegate to videoStore which handles metadata extraction and asset creation
-  // Type assertion: compositorStore implements required interface at runtime
-  return videoStore.createVideoLayer(
-    compositorStore as unknown as Parameters<typeof videoStore.createVideoLayer>[0],
-    file,
-    autoResizeComposition
-  );
+  return videoStore.createVideoLayer(file, autoResizeComposition);
 }
 
 // ============================================================================
@@ -391,11 +382,11 @@ export async function createVideoLayer(
  * @returns The created nested comp layer
  */
 export function createNestedCompLayer(
-  compositorStore: CompositorStoreAccess,
   compositionId: string,
   name?: string,
 ): Layer {
-  const layer = createLayer(compositorStore, "nestedComp", name || "Nested Comp");
+  const projectStore = useProjectStore();
+  const layer = createLayer("nestedComp", name || "Nested Comp");
 
   const nestedCompData: NestedCompData = {
     compositionId,
@@ -411,8 +402,8 @@ export function createNestedCompLayer(
   };
 
   layer.data = nestedCompData;
-  compositorStore.project.meta.modified = new Date().toISOString();
-  compositorStore.pushHistory();
+  projectStore.project.meta.modified = new Date().toISOString();
+  projectStore.pushHistory();
 
   return layer;
 }
@@ -428,15 +419,15 @@ export function createNestedCompLayer(
  * @param updates - Partial nested comp data updates
  */
 export function updateNestedCompLayerData(
-  compositorStore: CompositorStoreAccess,
   layerId: string,
   updates: Partial<NestedCompData>,
 ): void {
-  const layer = compositorStore.getActiveCompLayers().find((l) => l.id === layerId);
+  const projectStore = useProjectStore();
+  const layer = projectStore.getActiveCompLayers().find((l) => l.id === layerId);
   if (!layer || layer.type !== "nestedComp") return;
 
   const data = layer.data as NestedCompData;
   Object.assign(data, updates);
-  compositorStore.project.meta.modified = new Date().toISOString();
-  compositorStore.pushHistory(); // Fixed: was missing in original implementation
+  projectStore.project.meta.modified = new Date().toISOString();
+  projectStore.pushHistory(); // Fixed: was missing in original implementation
 }

@@ -7,10 +7,12 @@
  * Extracted from GPUParticleSystem.ts for modularity.
  */
 
+import * as THREE from "three";
 import type {
   AudioBinding,
   AudioFeature,
   EmitterConfig,
+  EmitterShapeConfig,
   ForceFieldConfig,
 } from "./types";
 
@@ -92,7 +94,7 @@ export class ParticleAudioReactive {
   applyModulation(
     emitters: Map<
       string,
-      EmitterConfig & { accumulator: number; velocity: unknown }
+      EmitterConfig & { accumulator: number; velocity: THREE.Vector3 }
     >,
     forceFields: Map<string, ForceFieldConfig>,
   ): void {
@@ -155,14 +157,31 @@ export class ParticleAudioReactive {
       if (binding.target === "emitter") {
         const emitter = emitters.get(binding.targetId);
         if (emitter) {
-          (emitter as unknown as Record<string, unknown>)[binding.parameter] =
-            output;
+          // Type-safe parameter assignment - explicitly handle numeric properties
+          const param = binding.parameter;
+          if (param === "emissionRate" || param === "emissionRateVariance" || param === "burstCount" || param === "burstInterval" ||
+              param === "initialSpeed" || param === "speedVariance" || param === "inheritEmitterVelocity" ||
+              param === "initialSize" || param === "sizeVariance" || param === "initialMass" || param === "massVariance" ||
+              param === "lifetime" || param === "lifetimeVariance" || param === "initialRotation" || param === "rotationVariance" ||
+              param === "initialAngularVelocity" || param === "angularVelocityVariance" || param === "colorVariance" ||
+              param === "emissionSpread" || param === "beatEmissionMultiplier") {
+            emitter[param] = output;
+          }
         }
       } else if (binding.target === "forceField") {
         const field = forceFields.get(binding.targetId);
         if (field) {
-          (field as unknown as Record<string, unknown>)[binding.parameter] =
-            output;
+          // Type-safe parameter assignment - explicitly handle numeric properties
+          const param = binding.parameter;
+          if (param === "strength" || param === "falloffStart" || param === "falloffEnd" ||
+              param === "attractorMass" || param === "inwardForce" || param === "noiseScale" || param === "noiseSpeed" ||
+              param === "noiseOctaves" || param === "noiseLacunarity" || param === "noiseGain" ||
+              param === "gustStrength" || param === "gustFrequency" || param === "dragCoefficient" ||
+              param === "linearDrag" || param === "quadraticDrag" || param === "bounceDamping" ||
+              param === "collisionRestitution" || param === "collisionFriction" || param === "pathStrength" ||
+              param === "pathRadius" || param === "lorenzSigma" || param === "lorenzRho" || param === "lorenzBeta") {
+            field[param] = output;
+          }
         }
       }
     }

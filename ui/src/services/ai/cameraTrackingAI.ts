@@ -212,18 +212,40 @@ function sampleFrames(frames: string[], maxFrames: number): string[] {
 }
 
 /**
+ * VLM API response structure
+ */
+interface VLMResponseSegment {
+  startFrame?: number | string;
+  endFrame?: number | string;
+  motion?: string;
+  confidence?: number | string;
+  description?: string;
+}
+
+interface VLMResponse {
+  segments?: VLMResponseSegment[];
+  summary?: string;
+}
+
+/**
  * Parse VLM JSON response
  */
 function parseVLMResponse(raw: unknown): CameraMotionAnalysisResult {
-  const data = raw as Record<string, unknown>;
+  if (typeof raw !== "object" || raw === null) {
+    return {
+      segments: [],
+      summary: "Invalid response",
+      suggestedPreset: null,
+    };
+  }
 
-  const segments = (
-    (data.segments as Array<Record<string, unknown>>) || []
-  ).map((seg) => ({
-    startFrame: Number(seg.startFrame) || 0,
-    endFrame: Number(seg.endFrame) || 0,
+  const data = raw as VLMResponse;
+
+  const segments = (data.segments ?? []).map((seg) => ({
+    startFrame: typeof seg.startFrame === "number" ? seg.startFrame : Number(seg.startFrame) || 0,
+    endFrame: typeof seg.endFrame === "number" ? seg.endFrame : Number(seg.endFrame) || 0,
     motion: (seg.motion as CameraMotionPrimitive) || "unknown",
-    confidence: Number(seg.confidence) || 0.5,
+    confidence: typeof seg.confidence === "number" ? seg.confidence : Number(seg.confidence) || 0.5,
     description: String(seg.description || ""),
   }));
 

@@ -586,8 +586,8 @@ export class ModelLayer extends BaseLayer {
       : mesh.material.clone();
 
     // Apply overrides
-    if (override.wireframe !== undefined) {
-      (material as any).wireframe = override.wireframe;
+    if (override.wireframe !== undefined && "wireframe" in material) {
+      (material as THREE.MeshStandardMaterial).wireframe = override.wireframe;
     }
 
     if (override.wireframeColor && override.wireframe) {
@@ -596,7 +596,15 @@ export class ModelLayer extends BaseLayer {
         wireframe: true,
       });
     } else if (override.colorOverride) {
-      (material as any).color = new THREE.Color(override.colorOverride);
+      // Type-safe color assignment - check if material has color property
+      if (
+        material instanceof THREE.MeshStandardMaterial ||
+        material instanceof THREE.MeshBasicMaterial ||
+        material instanceof THREE.MeshPhongMaterial ||
+        material instanceof THREE.MeshLambertMaterial
+      ) {
+        material.color = new THREE.Color(override.colorOverride);
+      }
     }
 
     if (override.opacityOverride !== undefined) {

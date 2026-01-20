@@ -195,6 +195,8 @@ import {
 import { useCompositorStore } from "@/stores/compositorStore";
 import { useCompositionStore } from "@/stores/compositionStore";
 import { useProjectStore } from "@/stores/projectStore";
+import type { ImageLayerData, NestedCompData, SolidLayerData } from "@/types/project";
+import { isLayerOfType } from "@/types/project";
 import { useLayerStore } from "@/stores/layerStore";
 
 const emit = defineEmits<{
@@ -356,9 +358,8 @@ async function getSourceImage(): Promise<string | null> {
   }
 
   // For solid layers, create a canvas with the color
-  if (layer.type === "solid" && layer.data) {
-    const solidData =
-      layer.data as unknown as import("@/types/project").SolidLayerData;
+  if (isLayerOfType(layer, "solid") && layer.data) {
+    const solidData = layer.data as SolidLayerData;
     const canvas = document.createElement("canvas");
     canvas.width = solidData.width || projectStore.getWidth(store);
     canvas.height = solidData.height || projectStore.getHeight(store);
@@ -415,8 +416,9 @@ async function createLayersFromDecomposition(
     for (let i = decomposedLayers.length - 1; i >= 0; i--) {
       const decomposed = decomposedLayers[i];
       const layer = layerStore.createLayer(store, "image", decomposed.label);
-      if (layer.data) {
-        (layer.data as any).source = decomposed.image;
+      if (isLayerOfType(layer, "image") && layer.data) {
+        const imageData = layer.data as ImageLayerData;
+        imageData.source = decomposed.image;
       }
     }
 
@@ -425,16 +427,18 @@ async function createLayersFromDecomposition(
 
     // Add the nested comp as a layer in the original
     const nestedLayer = layerStore.createLayer(store, "nestedComp", nestedCompName);
-    if (nestedLayer.data) {
-      (nestedLayer.data as any).compositionId = nestedComp.id;
+    if (isLayerOfType(nestedLayer, "nestedComp") && nestedLayer.data) {
+      const nestedData = nestedLayer.data as NestedCompData;
+      nestedData.compositionId = nestedComp.id;
     }
   } else {
     // Create layers directly in current composition (original behavior)
     for (let i = decomposedLayers.length - 1; i >= 0; i--) {
       const decomposed = decomposedLayers[i];
       const layer = layerStore.createLayer(store, "image", decomposed.label);
-      if (layer.data) {
-        (layer.data as any).source = decomposed.image;
+      if (isLayerOfType(layer, "image") && layer.data) {
+        const imageData = layer.data as ImageLayerData;
+        imageData.source = decomposed.image;
       }
     }
   }

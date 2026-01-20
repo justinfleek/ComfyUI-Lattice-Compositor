@@ -57,7 +57,7 @@ function updateNumber(
   emit("update", updated);
 }
 
-function updateMeta(key: string, value: any) {
+function updateMeta(key: string, value: unknown) {
   const updated = { ...props.operator, [key]: value };
   emit("update", updated);
 }

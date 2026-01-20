@@ -138,6 +138,7 @@
 import { computed } from "vue";
 import { useCompositorStore } from "@/stores/compositorStore";
 import type { Camera3D } from "@/types/camera";
+import type { LatticeEngine } from "@/engine/LatticeEngine";
 
 const store = useCompositorStore();
 const selectedLayerId = computed(() => store.selectedLayerIds[0] || "");
@@ -162,7 +163,7 @@ const props = defineProps<{
   expandedPanels: ExpandedPanels;
   aiTab: AITab;
   camera: Camera3D;
-  engine: any;
+  engine: LatticeEngine | null;
 }>();
 
 const emit = defineEmits<{

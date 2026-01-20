@@ -145,8 +145,8 @@ export interface DataAssetReference {
   rawContent: string; // Original file content
   lastModified: number; // Timestamp
 
-  // For JSON: the parsed data
-  sourceData?: any;
+  // For JSON: the parsed data (type-safe JSON value)
+  sourceData?: import("@/types/dataAsset").JSONValue;
 
   // For CSV/TSV: tabular structure
   headers?: string[];

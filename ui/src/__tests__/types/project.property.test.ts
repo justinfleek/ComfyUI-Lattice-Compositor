@@ -143,8 +143,10 @@ describe('PROPERTY: isLayerOfType', () => {
 
 describe('PROPERTY: getLayerData', () => {
   test.prop([layerArb])('returns data when types match', (layer) => {
-    // Set some data
-    layer.data = { testField: 'value' } as any;
+    // Set test data matching layer type
+    // Type assertion: data must match LayerDataMap for the layer type
+    const testData = { testField: 'value' };
+    layer.data = testData as typeof layer.data;
     const result = getLayerData(layer, layer.type);
     expect(result).toBe(layer.data);
   });
@@ -152,7 +154,9 @@ describe('PROPERTY: getLayerData', () => {
   test.prop([layerTypeArb, layerTypeArb])('returns null when types differ', (type1, type2) => {
     fc.pre(type1 !== type2);
     const layer = createMinimalLayer(type1);
-    layer.data = { testField: 'value' } as any;
+    // Set test data matching layer type
+    const testData = { testField: 'value' };
+    layer.data = testData as typeof layer.data;
     const result = getLayerData(layer, type2);
     expect(result).toBeNull();
   });
@@ -448,13 +452,16 @@ describe('PROPERTY: normalizeLayerTiming', () => {
   });
 
   test.prop([frameArb, frameArb])('migrates inPoint/outPoint to startFrame/endFrame', (inP, outP) => {
-    const layer = createMinimalLayer('solid');
-    (layer as any).startFrame = undefined;
-    (layer as any).endFrame = undefined;
-    layer.inPoint = inP;
-    layer.outPoint = outP;
+    const baseLayer = createMinimalLayer('solid');
+    // Create layer without startFrame/endFrame for testing migration behavior
+    const { startFrame, endFrame, ...layerWithoutFrames } = baseLayer;
+    const layer: Omit<Layer, 'startFrame' | 'endFrame'> & { inPoint: number; outPoint: number } = {
+      ...layerWithoutFrames,
+      inPoint: inP,
+      outPoint: outP,
+    };
     
-    const normalized = normalizeLayerTiming(layer);
+    const normalized = normalizeLayerTiming(layer as Layer);
     
     expect(normalized.startFrame).toBe(inP);
     expect(normalized.endFrame).toBe(outP);

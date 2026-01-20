@@ -85,6 +85,11 @@ defineEmits<{
   (e: "toggle"): void;
   (e: "add"): void;
   (e: "remove", id: string): void;
-  (e: "update", id: string, key: keyof TurbulenceFieldConfig, value: any): void;
+  (
+    e: "update",
+    id: string,
+    key: keyof TurbulenceFieldConfig,
+    value: TurbulenceFieldConfig[keyof TurbulenceFieldConfig],
+  ): void;
 }>();
 </script>

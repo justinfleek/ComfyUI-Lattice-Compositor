@@ -687,11 +687,17 @@ function toggleSection(section: string): void {
   }
 }
 
-function updateConfig(key: keyof DepthflowLayerData, value: any): void {
+function updateConfig(
+  key: keyof DepthflowLayerData,
+  value: DepthflowLayerData[keyof DepthflowLayerData],
+): void {
   emit("update", { [key]: value });
 }
 
-function updateDepthflowConfig(key: keyof DepthflowConfig, value: any): void {
+function updateDepthflowConfig(
+  key: keyof DepthflowConfig,
+  value: DepthflowConfig[keyof DepthflowConfig],
+): void {
   emit("update", {
     config: { ...depthflowConfig.value, [key]: value },
   });
@@ -703,7 +709,7 @@ function selectPreset(preset: DepthflowPreset): void {
 
 function updateCameraSyncConfig(
   key: keyof CameraToDepthflowConfig,
-  value: any,
+  value: CameraToDepthflowConfig[keyof CameraToDepthflowConfig],
 ): void {
   emit("update", {
     cameraSyncConfig: { ...cameraSyncConfig.value, [key]: value },

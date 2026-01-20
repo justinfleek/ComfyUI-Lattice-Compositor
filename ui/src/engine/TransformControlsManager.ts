@@ -18,6 +18,28 @@ import type { LayerManager } from "./core/LayerManager";
 import type { RenderPipeline } from "./core/RenderPipeline";
 import type { SceneManager } from "./core/SceneManager";
 
+// ============================================================================
+// TYPE EXTENSIONS FOR THREE.JS COMPATIBILITY
+// ============================================================================
+
+/**
+ * Extended Object3D interface for compatibility with objects from different Three.js instances
+ * These properties exist at runtime but may not pass instanceof checks
+ */
+interface CompatibleObject3D {
+  children?: THREE.Object3D[];
+  matrix?: THREE.Matrix4;
+  matrixWorld?: THREE.Matrix4;
+}
+
+/**
+ * Extended TransformControls interface with visible property
+ * TransformControls has visible property at runtime but TypeScript types may not expose it
+ */
+interface TransformControlsWithVisible extends TransformControls {
+  visible?: boolean;
+}
+
 /** Layer transform update from TransformControls manipulation */
 export interface LayerTransformUpdate {
   position?: { x: number; y: number; z?: number };
@@ -59,21 +81,26 @@ export class TransformControlsManager {
   private ensureObjectChildren(obj: THREE.Object3D, depth = 0): void {
     if (!obj || depth > 50) return;
 
+    // Type-safe access for compatibility objects
+    // CompatibleObject3D interface defined at top of file
+    // Runtime check: properties exist at runtime but may not be in TypeScript types
+    const compatObj = obj as THREE.Object3D & CompatibleObject3D;
+
     // Ensure children is an array
-    if ((obj as any).children === undefined || (obj as any).children === null) {
-      (obj as any).children = [];
+    if (compatObj.children === undefined || compatObj.children === null) {
+      compatObj.children = [];
     }
 
     // Ensure matrix properties exist
-    if (!(obj as any).matrix) {
-      (obj as any).matrix = new THREE.Matrix4();
+    if (!compatObj.matrix) {
+      compatObj.matrix = new THREE.Matrix4();
     }
-    if (!(obj as any).matrixWorld) {
-      (obj as any).matrixWorld = new THREE.Matrix4();
+    if (!compatObj.matrixWorld) {
+      compatObj.matrixWorld = new THREE.Matrix4();
     }
 
     // Recursively process children
-    const children = (obj as any).children;
+    const children = compatObj.children;
     if (Array.isArray(children)) {
       for (const child of children) {
         this.ensureObjectChildren(child, depth + 1);
@@ -103,13 +130,14 @@ export class TransformControlsManager {
 
       // Ensure all gizmo objects have proper children arrays
       // (fixes multi-Three.js instance issues)
+      // TransformControls extends Object3D internally but TypeScript types may not reflect this
       this.ensureObjectChildren(
-        this.transformControls as unknown as THREE.Object3D,
+        this.transformControls as THREE.Object3D,
       );
 
       // Add to scene (TransformControls extends Object3D internally)
       this.deps.scene.addUIElement(
-        this.transformControls as unknown as THREE.Object3D,
+        this.transformControls as THREE.Object3D,
       );
     } catch (e) {
       console.error("[TransformControlsManager] Failed to initialize:", e);
@@ -123,7 +151,7 @@ export class TransformControlsManager {
     // Disable orbit/pan during transform and track dragging state
     this.transformControls.addEventListener(
       "dragging-changed",
-      (event: any) => {
+      (event: { value: boolean }) => {
         isDragging = event.value;
         this.deps.emit("transform-dragging", { dragging: event.value });
       },
@@ -141,9 +169,11 @@ export class TransformControlsManager {
       // Get the layer to access anchor point
       const layer = this.deps.layers.getLayer(this.selectedLayerId);
       const layerData = layer?.getLayerData?.();
-      const anchorX = layerData?.transform?.anchorPoint?.value?.x ?? 0;
-      const anchorY = layerData?.transform?.anchorPoint?.value?.y ?? 0;
-      const anchorZ = (layerData?.transform?.anchorPoint?.value as any)?.z ?? 0;
+      const anchorPointValue = layerData?.transform?.anchorPoint?.value;
+      // Type-safe access - anchorPoint.value is { x: number; y: number; z?: number }
+      const anchorX = (typeof anchorPointValue === "object" && anchorPointValue !== null && "x" in anchorPointValue) ? anchorPointValue.x : 0;
+      const anchorY = (typeof anchorPointValue === "object" && anchorPointValue !== null && "y" in anchorPointValue) ? anchorPointValue.y : 0;
+      const anchorZ = (typeof anchorPointValue === "object" && anchorPointValue !== null && "z" in anchorPointValue) ? anchorPointValue.z : 0;
 
       // Convert 3D position back to layer position by adding anchor point back
       // The 3D object position is offset by anchor point in applyTransform()
@@ -271,7 +301,12 @@ export class TransformControlsManager {
    */
   setVisible(visible: boolean): void {
     if (this.transformControls) {
-      (this.transformControls as any).visible = visible;
+      // Type-safe access to visible property
+      // TransformControlsWithVisible interface defined at top of file
+      const controlsWithVisible = this.transformControls as TransformControlsWithVisible;
+      if (controlsWithVisible.visible !== undefined) {
+        controlsWithVisible.visible = visible;
+      }
       this.transformControls.enabled = visible;
     }
   }

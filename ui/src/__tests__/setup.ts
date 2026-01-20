@@ -41,7 +41,8 @@ if (typeof globalThis.ImageData === 'undefined') {
     }
   }
 
-  (globalThis as unknown as Record<string, unknown>).ImageData = ImageDataPolyfill;
+  // Type-safe polyfill assignment - ImageData exists at runtime but may not be in TypeScript types
+  (globalThis as typeof globalThis & { ImageData: typeof ImageDataPolyfill }).ImageData = ImageDataPolyfill;
 }
 
 // Mock the workerEvaluator module to bypass worker-based validation
@@ -124,8 +125,9 @@ class MockCompartment {
 
 // Add to globalThis so sesEvaluator can find them
 // IMPORTANT: This must happen BEFORE any imports that use sesEvaluator
-(globalThis as unknown as Record<string, unknown>).Compartment = MockCompartment;
-(globalThis as unknown as Record<string, unknown>).harden = mockHarden;
+// Type-safe polyfill assignment - these exist at runtime but may not be in TypeScript types
+(globalThis as typeof globalThis & { Compartment: typeof MockCompartment }).Compartment = MockCompartment;
+(globalThis as typeof globalThis & { harden: typeof mockHarden }).harden = mockHarden;
 
 // Initialize SES after adding the globals
 // Use top-level await to ensure SES is initialized before tests run

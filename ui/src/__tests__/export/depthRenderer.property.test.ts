@@ -232,7 +232,7 @@ describe("PROPERTY: generateDepthMetadata", () => {
         (format, frameCount, width, height, minDepth, maxDepth) => {
           const metadata = generateDepthMetadata(
             format, frameCount, width, height, minDepth, maxDepth
-          ) as Record<string, unknown>;
+          );
           
           expect(metadata).toHaveProperty("format");
           expect(metadata).toHaveProperty("bitDepth");

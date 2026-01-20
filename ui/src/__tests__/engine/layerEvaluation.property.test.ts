@@ -21,6 +21,7 @@ import type {
   Composition,
   LayerTransform,
   Keyframe,
+  LayerMask,
 } from '@/types/project';
 
 // ============================================================================
@@ -102,7 +103,7 @@ const arbitraryTestLayer = (): fc.Arbitrary<Layer> =>
     transform: arbitraryTransform(),
     effects: fc.constant([]),
     properties: fc.constant([]),
-    masks: fc.constant([]),
+    masks: fc.constant([] as LayerMask[]),
     startFrame: fc.integer({ min: 0, max: 50 }),
     endFrame: fc.integer({ min: 50, max: 200 }),
     data: fc.constant(null),
@@ -121,20 +122,14 @@ const arbitraryTestProject = (layers?: Layer[]): fc.Arbitrary<LatticeProject> =>
     
   return layerArb.chain(layerList => {
     const compId = 'test-comp-' + Math.random().toString(36).slice(2);
+    // fc.record returns Arbitrary<Record<...>>, cast to LatticeProject structure
     return fc.record({
-      version: fc.constant('1.0.0'),
+      version: fc.constant('1.0.0' as const),
       mainCompositionId: fc.constant(compId),
       meta: fc.record({
         name: fc.constant('Test Project'),
         created: fc.constant(new Date().toISOString()),
         modified: fc.constant(new Date().toISOString()),
-      }),
-      composition: fc.record({
-        width: fc.constant(1920),
-        height: fc.constant(1080),
-        frameCount: fc.constant(300),
-        fps: fc.constant(30),
-        backgroundColor: fc.constant('#000000'),
       }),
       compositions: fc.constant({
         [compId]: {
@@ -158,8 +153,8 @@ const arbitraryTestProject = (layers?: Layer[]): fc.Arbitrary<LatticeProject> =>
       assets: fc.constant({}),
       layers: fc.constant([]),
       currentFrame: fc.constant(0),
-    });
-  }) as unknown as fc.Arbitrary<LatticeProject>;
+    }).map(project => project as unknown as LatticeProject);
+  });
 };
 
 // ============================================================================

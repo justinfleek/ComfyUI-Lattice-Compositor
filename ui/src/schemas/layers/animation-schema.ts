@@ -3,6 +3,7 @@
  *
  * Zod schemas for keyframes, animatable properties, and expressions.
  * All numeric values use .finite() to reject NaN/Infinity.
+ * Includes comprehensive validation constraints for security and data integrity.
  */
 
 import { z } from "zod";
@@ -14,6 +15,15 @@ import {
   Position2DOr3DSchema,
   RGBAColorSchema,
 } from "./primitives-schema";
+import {
+  entityId,
+  boundedArray,
+  propertyPath,
+  MAX_NAME_LENGTH,
+  MAX_PATH_LENGTH,
+  MAX_ARRAY_LENGTH,
+  MAX_STRING_LENGTH,
+} from "../shared-validation";
 
 // ============================================================================
 // Interpolation Types
@@ -85,7 +95,7 @@ export const BezierHandleSchema = z.object({
   frame: finiteNumber,
   value: finiteNumber,
   enabled: z.boolean(),
-});
+}).strict();
 
 export type BezierHandle = z.infer<typeof BezierHandleSchema>;
 
@@ -105,9 +115,9 @@ export type ControlMode = z.infer<typeof ControlModeSchema>;
  */
 export const PropertyValueSchema = z.union([
   finiteNumber,
-  z.string(),
-  z.object({ x: finiteNumber, y: finiteNumber }),
-  z.object({ x: finiteNumber, y: finiteNumber, z: finiteNumber.optional() }),
+  z.string().max(MAX_STRING_LENGTH),
+  z.object({ x: finiteNumber, y: finiteNumber }).strict(),
+  z.object({ x: finiteNumber, y: finiteNumber, z: finiteNumber.optional() }).strict(),
   RGBAColorSchema,
 ]);
 
@@ -130,7 +140,7 @@ export const KeyframeSchema = z.object({
   controlMode: ControlModeSchema,
   spatialInTangent: Vec3Schema.optional(),
   spatialOutTangent: Vec3Schema.optional(),
-});
+}).strict();
 
 export type Keyframe = z.infer<typeof KeyframeSchema>;
 
@@ -171,9 +181,15 @@ export type ColorKeyframe = z.infer<typeof ColorKeyframeSchema>;
 export const PropertyExpressionSchema = z.object({
   enabled: z.boolean(),
   type: z.enum(["preset", "custom"]),
-  name: z.string(),
-  params: z.record(z.union([finiteNumber, z.string(), z.boolean()])),
-});
+  name: z.string().min(1).max(MAX_NAME_LENGTH).trim(),
+  params: z.record(
+    z.string().max(200),
+    z.union([finiteNumber, z.string().max(MAX_STRING_LENGTH), z.boolean()])
+  ).refine(
+    (params) => Object.keys(params).length <= 1000,
+    { message: "Maximum 1000 expression parameters allowed" }
+  ),
+}).strict();
 
 export type PropertyExpression = z.infer<typeof PropertyExpressionSchema>;
 
@@ -203,14 +219,27 @@ export function createAnimatablePropertySchema<T extends z.ZodTypeAny>(
 ) {
   return z.object({
     id: EntityIdSchema,
-    name: z.string(),
+    name: z.string().min(1).max(MAX_NAME_LENGTH).trim(),
     type: PropertyTypeSchema,
     value: valueSchema,
     animated: z.boolean(),
-    keyframes: z.array(KeyframeSchema),
-    group: z.string().optional(),
+    keyframes: boundedArray(KeyframeSchema, 10000), // Max 10k keyframes per property
+    group: z.string().max(MAX_NAME_LENGTH).trim().optional(),
     expression: PropertyExpressionSchema.optional(),
-  });
+  }).strict().refine(
+    (data) => {
+      // If animated is true, keyframes should be sorted by frame
+      if (data.animated && data.keyframes.length > 0) {
+        for (let i = 1; i < data.keyframes.length; i++) {
+          if (data.keyframes[i].frame < data.keyframes[i - 1].frame) {
+            return false;
+          }
+        }
+      }
+      return true;
+    },
+    { message: "Keyframes must be sorted by frame when animated", path: ["keyframes"] }
+  );
 }
 
 /**
@@ -253,14 +282,27 @@ export type AnimatableEnum = z.infer<typeof AnimatableEnumSchema>;
  */
 export const AnimatablePropertySchema = z.object({
   id: EntityIdSchema,
-  name: z.string(),
+  name: z.string().min(1).max(MAX_NAME_LENGTH).trim(),
   type: PropertyTypeSchema,
   value: PropertyValueSchema,
   animated: z.boolean(),
-  keyframes: z.array(KeyframeSchema),
-  group: z.string().optional(),
+  keyframes: boundedArray(KeyframeSchema, 10000), // Max 10k keyframes per property
+  group: z.string().max(MAX_NAME_LENGTH).trim().optional(),
   expression: PropertyExpressionSchema.optional(),
-});
+}).strict().refine(
+  (data) => {
+    // If animated is true, keyframes should be sorted by frame
+    if (data.animated && data.keyframes.length > 0) {
+      for (let i = 1; i < data.keyframes.length; i++) {
+        if (data.keyframes[i].frame < data.keyframes[i - 1].frame) {
+          return false;
+        }
+      }
+    }
+    return true;
+  },
+  { message: "Keyframes must be sorted by frame when animated", path: ["keyframes"] }
+);
 
 export type AnimatableProperty = z.infer<typeof AnimatablePropertySchema>;
 
@@ -273,8 +315,8 @@ export type AnimatableProperty = z.infer<typeof AnimatablePropertySchema>;
  */
 export const ClipboardKeyframeSchema = z.object({
   layerId: EntityIdSchema,
-  propertyPath: z.string(),
-  keyframes: z.array(KeyframeSchema),
-});
+  propertyPath: propertyPath,
+  keyframes: boundedArray(KeyframeSchema, 10000), // Max 10k keyframes in clipboard
+}).strict();
 
 export type ClipboardKeyframe = z.infer<typeof ClipboardKeyframeSchema>;

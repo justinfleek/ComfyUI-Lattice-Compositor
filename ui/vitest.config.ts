@@ -18,6 +18,12 @@ export default defineConfig({
       provider: "v8",
       reporter: ["text", "json", "html"],
       exclude: ["node_modules/**", "src/**/*.d.ts", "src/main.ts"],
+      thresholds: {
+        lines: 95,
+        functions: 95,
+        branches: 95,
+        statements: 95,
+      },
     },
     // Server config for resolving three.js properly
     server: {

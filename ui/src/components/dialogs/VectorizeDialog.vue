@@ -238,7 +238,8 @@ import {
 } from "@/services/vectorize";
 import { useCompositorStore } from "@/stores/compositorStore";
 import { useLayerStore } from "@/stores/layerStore";
-import type { ControlPoint, Layer } from "@/types/project";
+import type { ControlPoint, ImageLayerData, Layer } from "@/types/project";
+import { isLayerOfType } from "@/types/project";
 
 const props = defineProps<{
   visible: boolean;
@@ -337,10 +338,11 @@ async function loadLayerPreview() {
 
   try {
     // Get the layer's image data
-    const layerData = layer.data as any;
-    if (layerData?.source) {
+    if (!isLayerOfType(layer, "image") || !layer.data) return;
+    const layerData = layer.data as ImageLayerData;
+    if (layerData.source) {
       previewUrl.value = layerData.source;
-    } else if (layerData?.assetId) {
+    } else if (layerData.assetId) {
       const asset = store.project?.assets[layerData.assetId];
       if (asset?.data) {
         previewUrl.value = asset.data;
@@ -398,12 +400,14 @@ async function startVectorize() {
       const layer = store.layers.find(
         (l: Layer) => l.id === selectedLayerId.value,
       );
-      if (!layer) throw new Error("Layer not found");
+      if (!layer || !isLayerOfType(layer, "image") || !layer.data) {
+        throw new Error("Layer not found or not an image layer");
+      }
 
-      const layerData = layer.data as any;
-      if (layerData?.source) {
+      const layerData = layer.data as ImageLayerData;
+      if (layerData.source) {
         imageDataUrl = layerData.source;
-      } else if (layerData?.assetId) {
+      } else if (layerData.assetId) {
         const asset = store.project?.assets[layerData.assetId];
         if (!asset?.data) throw new Error("Asset data not found");
         imageDataUrl = asset.data;

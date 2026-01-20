@@ -48,6 +48,25 @@ export interface DepthEstimationOptions {
   includeReasoning?: boolean; // Include LLM reasoning (default true)
 }
 
+/**
+ * Parsed layer structure from LLM depth estimation response
+ */
+interface ParsedDepthLayer {
+  index?: number;
+  depth?: number;
+  content?: string;
+  confidence?: number;
+  reasoning?: string;
+}
+
+/**
+ * Parsed depth estimation response structure
+ */
+interface ParsedDepthResponse {
+  sceneDescription?: string;
+  layers?: ParsedDepthLayer[];
+}
+
 // ============================================================================
 // System Prompts
 // ============================================================================
@@ -305,11 +324,11 @@ Respond with JSON only.`;
     }
 
     try {
-      const parsed = JSON.parse(jsonStr);
+      const parsed = JSON.parse(jsonStr) as ParsedDepthResponse;
 
       return {
         sceneDescription: parsed.sceneDescription || "Scene analyzed",
-        layers: (parsed.layers || []).map((layer: any) => ({
+        layers: (parsed.layers || []).map((layer: ParsedDepthLayer) => ({
           index: layer.index ?? 0,
           depth: Math.max(0, Math.min(100, layer.depth ?? 50)),
           content: layer.content || "Unknown",

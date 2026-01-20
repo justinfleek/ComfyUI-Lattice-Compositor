@@ -20,44 +20,14 @@ import type {
   VideoData,
 } from "@/types/project";
 import { storeLogger } from "@/utils/logger";
+import { useProjectStore } from "./projectStore";
+import { useSelectionStore } from "./selectionStore";
+import { useLayerStore } from "./layerStore";
+import { useCompositionStore } from "./compositionStore";
 
 // ============================================================================
 // TYPES
 // ============================================================================
-
-export interface VideoStoreAccess {
-  project: {
-    assets: Record<string, AssetReference>;
-    composition: {
-      width: number;
-      height: number;
-      frameCount: number;
-      duration: number;
-      fps: number;
-    };
-    compositions: Record<string, Composition>;
-    meta: { modified: string };
-  };
-  activeCompositionId: string;
-  selectedLayerIds: string[];
-  getActiveComp(): Composition | null;
-  getActiveCompLayers(): Layer[];
-  createLayer(type: Layer["type"], name?: string): Layer;
-  pushHistory(): void;
-  selectAllLayers?(): void;
-  nestSelectedLayers?(name: string): Composition | null;
-  timeStretchLayer?(
-    layerId: string,
-    options: {
-      stretchFactor: number;
-      holdInPlace: "in-point" | "current-frame" | "out-point";
-      reverse: boolean;
-      newStartFrame: number;
-      newEndFrame: number;
-      speed: number;
-    },
-  ): void;
-}
 
 export interface VideoImportSuccess {
   status: "success";
@@ -119,10 +89,11 @@ export const useVideoStore = defineStore("video", {
      * Returns fps_mismatch status if comp has layers and fps differs.
      */
     async createVideoLayer(
-      store: VideoStoreAccess,
       file: File,
       autoResizeComposition: boolean = true,
     ): Promise<VideoImportResult> {
+      const projectStore = useProjectStore();
+      const layerStore = useLayerStore();
       let videoUrl: string;
       try {
         videoUrl = URL.createObjectURL(file);
@@ -156,7 +127,7 @@ export const useVideoStore = defineStore("video", {
         hasAudio: metadata.hasAudio,
       };
 
-      store.project.assets[assetId] = asset;
+      projectStore.project.assets[assetId] = asset;
 
       // Check if fps could not be detected
       if (metadata.fps === null) {
@@ -178,21 +149,21 @@ export const useVideoStore = defineStore("video", {
       }
 
       // Check for fps mismatch
-      const compHasLayers = store.getActiveCompLayers().length > 0;
+      const compHasLayers = projectStore.getActiveCompLayers().length > 0;
       const fpsMismatch =
-        Math.abs(metadata.fps - store.project.composition.fps) > 0.5;
+        Math.abs(metadata.fps - projectStore.project.composition.fps) > 0.5;
 
       if (autoResizeComposition && compHasLayers && fpsMismatch) {
         storeLogger.debug("FPS mismatch detected:", {
           videoFps: metadata.fps,
-          compositionFps: store.project.composition.fps,
+          compositionFps: projectStore.project.composition.fps,
           fileName: file.name,
         });
 
         return {
           status: "fps_mismatch",
           importedFps: metadata.fps,
-          compositionFps: store.project.composition.fps,
+          compositionFps: projectStore.project.composition.fps,
           fileName: file.name,
           videoDuration: metadata.duration,
           pendingImport: {
@@ -206,13 +177,13 @@ export const useVideoStore = defineStore("video", {
       // Auto-resize composition if requested
       if (autoResizeComposition) {
         const compSettings = calculateCompositionFromVideo(metadata);
-        const comp = store.getActiveComp();
+        const comp = projectStore.getActiveComp();
 
-        store.project.composition.width = compSettings.width;
-        store.project.composition.height = compSettings.height;
-        store.project.composition.frameCount = compSettings.frameCount;
-        store.project.composition.fps = compSettings.fps;
-        store.project.composition.duration =
+        projectStore.project.composition.width = compSettings.width;
+        projectStore.project.composition.height = compSettings.height;
+        projectStore.project.composition.frameCount = compSettings.frameCount;
+        projectStore.project.composition.fps = compSettings.fps;
+        projectStore.project.composition.duration =
           compSettings.frameCount / compSettings.fps;
 
         if (comp) {
@@ -225,10 +196,10 @@ export const useVideoStore = defineStore("video", {
       }
 
       // Create the layer
-      const layer = this.createVideoLayerFromAsset(store, assetId, metadata, file.name);
+      const layer = this.createVideoLayerFromAsset(assetId, metadata, file.name);
 
-      store.project.meta.modified = new Date().toISOString();
-      store.pushHistory();
+      projectStore.project.meta.modified = new Date().toISOString();
+      projectStore.pushHistory();
 
       storeLogger.debug("Created video layer:", {
         layerId: layer.id,
@@ -247,14 +218,14 @@ export const useVideoStore = defineStore("video", {
      * Create video layer from existing asset (used after fps decision).
      */
     createVideoLayerFromAsset(
-      store: VideoStoreAccess,
       assetId: string,
       metadata: VideoMetadata,
       fileName: string,
       timeStretch: number = 100,
     ): Layer {
-      // Use store.createLayer directly - defined in VideoStoreAccess interface
-      const layer = store.createLayer("video", fileName.replace(/\.[^.]+$/, ""));
+      const projectStore = useProjectStore();
+      const layerStore = useLayerStore();
+      const layer = layerStore.createLayer("video", fileName.replace(/\.[^.]+$/, ""));
 
       const videoData: VideoData = {
         assetId,
@@ -280,11 +251,11 @@ export const useVideoStore = defineStore("video", {
       }
 
       const videoFrameCount = Math.ceil(
-        metadata.duration * store.project.composition.fps,
+        metadata.duration * projectStore.project.composition.fps,
       );
       layer.outPoint = Math.min(
         videoFrameCount - 1,
-        store.project.composition.frameCount - 1,
+        projectStore.project.composition.frameCount - 1,
       );
       layer.endFrame = layer.outPoint;
 
@@ -300,32 +271,36 @@ export const useVideoStore = defineStore("video", {
      * Precomp existing layers, change composition to video's fps, add video layer.
      */
     async completeVideoImportWithMatch(
-      store: VideoStoreAccess,
       pendingImport: VideoImportFpsMismatch["pendingImport"],
       fileName: string,
     ): Promise<Layer | null> {
       const { metadata, assetId } = pendingImport;
-      const originalFps = store.project.composition.fps;
-      const comp = store.getActiveComp();
+      const projectStore = useProjectStore();
+      const layerStore = useLayerStore();
+      const compositionStore = useCompositionStore();
+      const selectionStore = useSelectionStore();
+
+      const originalFps = projectStore.project.composition.fps;
+      const comp = projectStore.getActiveComp();
 
       if (!comp) return null;
 
       // Step 1: Precomp existing layers
-      const existingLayers = store.getActiveCompLayers();
-      if (existingLayers.length > 0 && store.selectAllLayers && store.nestSelectedLayers) {
-        store.selectAllLayers();
+      const existingLayers = projectStore.getActiveCompLayers();
+      if (existingLayers.length > 0) {
+        layerStore.selectAllLayers();
         const precompName = `Original ${originalFps}fps Layers`;
-        store.nestSelectedLayers(precompName);
+        compositionStore.nestSelectedLayers(precompName);
       }
 
       // Step 2: Change composition fps
       const compSettings = calculateCompositionFromVideo(metadata);
 
-      store.project.composition.fps = compSettings.fps;
-      store.project.composition.frameCount = compSettings.frameCount;
-      store.project.composition.width = compSettings.width;
-      store.project.composition.height = compSettings.height;
-      store.project.composition.duration =
+      projectStore.project.composition.fps = compSettings.fps;
+      projectStore.project.composition.frameCount = compSettings.frameCount;
+      projectStore.project.composition.width = compSettings.width;
+      projectStore.project.composition.height = compSettings.height;
+      projectStore.project.composition.duration =
         compSettings.frameCount / compSettings.fps;
 
       if (comp) {
@@ -337,10 +312,10 @@ export const useVideoStore = defineStore("video", {
       }
 
       // Step 3: Create video layer
-      const layer = this.createVideoLayerFromAsset(store, assetId, metadata, fileName);
+      const layer = this.createVideoLayerFromAsset(assetId, metadata, fileName);
 
-      store.project.meta.modified = new Date().toISOString();
-      store.pushHistory();
+      projectStore.project.meta.modified = new Date().toISOString();
+      projectStore.pushHistory();
 
       return layer;
     },
@@ -350,12 +325,12 @@ export const useVideoStore = defineStore("video", {
      * Keep composition fps, add video layer with time stretch.
      */
     completeVideoImportWithConform(
-      store: VideoStoreAccess,
       pendingImport: VideoImportFpsMismatch["pendingImport"],
       fileName: string,
       compositionFps: number,
     ): Layer {
       const { metadata, assetId } = pendingImport;
+      const projectStore = useProjectStore();
       const videoFps = metadata.fps!;
 
       const safeCompFps =
@@ -372,7 +347,6 @@ export const useVideoStore = defineStore("video", {
       });
 
       const layer = this.createVideoLayerFromAsset(
-        store,
         assetId,
         metadata,
         fileName,
@@ -383,12 +357,12 @@ export const useVideoStore = defineStore("video", {
       const frameCount = Math.ceil(stretchedDuration * safeCompFps);
       layer.outPoint = Math.min(
         frameCount - 1,
-        store.project.composition.frameCount - 1,
+        projectStore.project.composition.frameCount - 1,
       );
       layer.endFrame = layer.outPoint;
 
-      store.project.meta.modified = new Date().toISOString();
-      store.pushHistory();
+      projectStore.project.meta.modified = new Date().toISOString();
+      projectStore.pushHistory();
 
       return layer;
     },
@@ -397,12 +371,12 @@ export const useVideoStore = defineStore("video", {
      * Cancel pending video import (cleanup).
      */
     cancelVideoImport(
-      store: VideoStoreAccess,
       pendingImport:
         | VideoImportFpsMismatch["pendingImport"]
         | VideoImportFpsUnknown["pendingImport"],
     ): void {
-      delete store.project.assets[pendingImport.assetId];
+      const projectStore = useProjectStore();
+      delete projectStore.project.assets[pendingImport.assetId];
       URL.revokeObjectURL(pendingImport.videoUrl);
       storeLogger.debug("Cancelled video import:", { assetId: pendingImport.assetId });
     },
@@ -411,13 +385,13 @@ export const useVideoStore = defineStore("video", {
      * Complete video import after user specifies fps (for unknown fps scenario).
      */
     async completeVideoImportWithUserFps(
-      store: VideoStoreAccess,
       pendingImport: VideoImportFpsUnknown["pendingImport"],
       fileName: string,
       userFps: number,
       autoResizeComposition: boolean = true,
     ): Promise<VideoImportResult> {
       const { metadata, assetId } = pendingImport;
+      const projectStore = useProjectStore();
 
       const updatedMetadata: VideoMetadata = {
         ...metadata,
@@ -425,20 +399,20 @@ export const useVideoStore = defineStore("video", {
         frameCount: Math.ceil(metadata.duration * userFps),
       };
 
-      const asset = store.project.assets[assetId];
+      const asset = projectStore.project.assets[assetId];
       if (asset) {
         asset.fps = userFps;
         asset.frameCount = updatedMetadata.frameCount;
       }
 
-      const compHasLayers = store.getActiveCompLayers().length > 0;
-      const fpsMismatch = Math.abs(userFps - store.project.composition.fps) > 0.5;
+      const compHasLayers = projectStore.getActiveCompLayers().length > 0;
+      const fpsMismatch = Math.abs(userFps - projectStore.project.composition.fps) > 0.5;
 
       if (autoResizeComposition && compHasLayers && fpsMismatch) {
         return {
           status: "fps_mismatch",
           importedFps: userFps,
-          compositionFps: store.project.composition.fps,
+          compositionFps: projectStore.project.composition.fps,
           fileName,
           videoDuration: metadata.duration,
           pendingImport: {
@@ -450,13 +424,13 @@ export const useVideoStore = defineStore("video", {
 
       if (autoResizeComposition) {
         const compSettings = calculateCompositionFromVideo(updatedMetadata);
-        const comp = store.getActiveComp();
+        const comp = projectStore.getActiveComp();
 
-        store.project.composition.width = compSettings.width;
-        store.project.composition.height = compSettings.height;
-        store.project.composition.frameCount = compSettings.frameCount;
-        store.project.composition.fps = compSettings.fps;
-        store.project.composition.duration =
+        projectStore.project.composition.width = compSettings.width;
+        projectStore.project.composition.height = compSettings.height;
+        projectStore.project.composition.frameCount = compSettings.frameCount;
+        projectStore.project.composition.fps = compSettings.fps;
+        projectStore.project.composition.duration =
           compSettings.frameCount / compSettings.fps;
 
         if (comp) {
@@ -469,14 +443,13 @@ export const useVideoStore = defineStore("video", {
       }
 
       const layer = this.createVideoLayerFromAsset(
-        store,
         assetId,
         updatedMetadata,
         fileName,
       );
 
-      store.project.meta.modified = new Date().toISOString();
-      store.pushHistory();
+      projectStore.project.meta.modified = new Date().toISOString();
+      projectStore.pushHistory();
 
       return { status: "success", layer, metadata: updatedMetadata };
     },
@@ -489,33 +462,33 @@ export const useVideoStore = defineStore("video", {
      * Update video layer data.
      */
     updateVideoLayerData(
-      store: VideoStoreAccess,
       layerId: string,
       updates: Partial<VideoData>,
     ): void {
-      const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
+      const projectStore = useProjectStore();
+      const layer = projectStore.getActiveCompLayers().find((l) => l.id === layerId);
       if (!layer || layer.type !== "video") return;
 
       const data = layer.data as VideoData;
       Object.assign(data, updates);
-      store.project.meta.modified = new Date().toISOString();
+      projectStore.project.meta.modified = new Date().toISOString();
     },
 
     /**
      * Handle video metadata loaded callback from engine.
      */
     onVideoMetadataLoaded(
-      store: VideoStoreAccess,
       layerId: string,
       metadata: VideoMetadata,
     ): void {
-      const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
+      const projectStore = useProjectStore();
+      const layer = projectStore.getActiveCompLayers().find((l) => l.id === layerId);
       if (!layer || layer.type !== "video") return;
 
       const videoData = layer.data as VideoData;
       if (!videoData.assetId) return;
 
-      const asset = store.project.assets[videoData.assetId];
+      const asset = projectStore.project.assets[videoData.assetId];
       if (asset) {
         asset.width = metadata.width;
         asset.height = metadata.height;
@@ -536,12 +509,12 @@ export const useVideoStore = defineStore("video", {
      * Resize composition settings.
      */
     resizeComposition(
-      store: VideoStoreAccess,
       width: number,
       height: number,
       frameCount?: number,
     ): void {
-      const comp = store.getActiveComp();
+      const projectStore = useProjectStore();
+      const comp = projectStore.getActiveComp();
       if (!comp) return;
 
       const oldFrameCount = comp.settings.frameCount;
@@ -549,16 +522,16 @@ export const useVideoStore = defineStore("video", {
       comp.settings.width = width;
       comp.settings.height = height;
 
-      store.project.composition.width = width;
-      store.project.composition.height = height;
+      projectStore.project.composition.width = width;
+      projectStore.project.composition.height = height;
 
       if (frameCount !== undefined) {
         comp.settings.frameCount = frameCount;
         comp.settings.duration = frameCount / comp.settings.fps;
 
-        store.project.composition.frameCount = frameCount;
-        store.project.composition.duration =
-          frameCount / store.project.composition.fps;
+        projectStore.project.composition.frameCount = frameCount;
+        projectStore.project.composition.duration =
+          frameCount / projectStore.project.composition.fps;
 
         if (frameCount > oldFrameCount) {
           for (const layer of comp.layers) {
@@ -573,8 +546,8 @@ export const useVideoStore = defineStore("video", {
         comp.currentFrame = comp.settings.frameCount - 1;
       }
 
-      store.project.meta.modified = new Date().toISOString();
-      store.pushHistory();
+      projectStore.project.meta.modified = new Date().toISOString();
+      projectStore.pushHistory();
 
       storeLogger.debug("Composition resized:", {
         width,

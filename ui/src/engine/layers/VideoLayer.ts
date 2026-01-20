@@ -340,7 +340,9 @@ export class VideoLayer extends BaseLayer {
     if (!this.videoElement) return false;
 
     // Check for audio tracks (if available)
-    const audioTracks = (this.videoElement as any).audioTracks;
+    // Note: audioTracks is not in standard HTMLVideoElement type but may exist in some browsers
+    const videoWithTracks = this.videoElement as HTMLVideoElement & { audioTracks?: { length: number } };
+    const audioTracks = videoWithTracks.audioTracks;
     if (audioTracks) {
       return audioTracks.length > 0;
     }
@@ -1030,6 +1032,49 @@ export class VideoLayer extends BaseLayer {
 // VIDEO METADATA EXTRACTION UTILITY
 // ============================================================================
 
+// ============================================================================
+// TYPE EXTENSIONS FOR NEWER WEB APIs
+// ============================================================================
+
+/**
+ * VideoFrameCallbackMetadata - metadata provided by requestVideoFrameCallback
+ * This API is available in Chrome 89+ and Safari 15.4+
+ */
+interface VideoFrameCallbackMetadata {
+  mediaTime: number;
+  presentedFrames: number;
+  width: number;
+  height: number;
+  expectedDisplayTime: number;
+}
+
+/**
+ * Extended HTMLVideoElement with requestVideoFrameCallback API
+ * This API is not yet in TypeScript DOM types but is available in modern browsers
+ */
+interface HTMLVideoElementWithFrameCallback extends HTMLVideoElement {
+  requestVideoFrameCallback(
+    callback: (
+      now: DOMHighResTimeStamp,
+      metadata: VideoFrameCallbackMetadata,
+    ) => void,
+  ): number;
+  cancelVideoFrameCallback(handle: number): void;
+}
+
+/**
+ * Type guard to check if video element supports requestVideoFrameCallback
+ */
+function supportsVideoFrameCallback(
+  video: HTMLVideoElement,
+): video is HTMLVideoElementWithFrameCallback {
+  return "requestVideoFrameCallback" in video;
+}
+
+// ============================================================================
+// VIDEO METADATA EXTRACTION UTILITY
+// ============================================================================
+
 /**
  * Detect video fps using requestVideoFrameCallback API
  * Returns detected fps or null if detection fails/unsupported
@@ -1038,8 +1083,8 @@ async function detectVideoFps(
   video: HTMLVideoElement,
   timeout: number = 2000,
 ): Promise<number | null> {
-  // Check if requestVideoFrameCallback is supported
-  if (!("requestVideoFrameCallback" in video)) {
+  // Check if requestVideoFrameCallback is supported (type-safe)
+  if (!supportsVideoFrameCallback(video)) {
     return null;
   }
 
@@ -1102,13 +1147,15 @@ async function detectVideoFps(
         return;
       }
 
-      (video as any).requestVideoFrameCallback(onFrame);
+      // Type-safe call - we've already verified support above
+      video.requestVideoFrameCallback(onFrame);
     };
 
     video
       .play()
       .then(() => {
-        (video as any).requestVideoFrameCallback(onFrame);
+        // Type-safe call - we've already verified support above
+        video.requestVideoFrameCallback(onFrame);
       })
       .catch(() => {
         clearTimeout(timeoutId);

@@ -17,6 +17,7 @@
 import { computed } from "vue";
 import { useExpressionEditor } from "@/composables/useExpressionEditor";
 import { useCompositorStore } from "@/stores/compositorStore";
+import { useAnimationStore } from "@/stores/animationStore";
 import type {
   AnimatableProperty,
   BezierHandle,

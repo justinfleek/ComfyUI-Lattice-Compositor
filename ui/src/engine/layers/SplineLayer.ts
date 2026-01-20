@@ -1606,7 +1606,7 @@ export class SplineLayer extends BaseLayer {
     const audioMod = this.currentAudioModifiers;
     for (const key in audioMod) {
       if (key.startsWith("splineControlPoint_")) {
-        const value = (audioMod as any)[key];
+        const value = (audioMod as Record<string, number | undefined>)[key];
         if (value !== undefined && value !== 0) {
           return true;
         }
@@ -1632,17 +1632,17 @@ export class SplineLayer extends BaseLayer {
     }
 
     // Apply modifiers to each control point
+    // Type-safe access using AudioReactiveModifiers index signature
     return points.map((point, index) => {
       // Get audio modifiers for this control point index
-      const xMod = (audioMod as any)[`splineControlPoint_${index}_x`] as
-        | number
-        | undefined;
-      const yMod = (audioMod as any)[`splineControlPoint_${index}_y`] as
-        | number
-        | undefined;
-      const depthMod = (audioMod as any)[`splineControlPoint_${index}_depth`] as
-        | number
-        | undefined;
+      // AudioReactiveModifiers has index signature: [key: `splineControlPoint_${number}_${"x" | "y" | "depth"}`]: number | undefined
+      const xKey = `splineControlPoint_${index}_x` as const;
+      const yKey = `splineControlPoint_${index}_y` as const;
+      const depthKey = `splineControlPoint_${index}_depth` as const;
+      
+      const xMod = audioMod[xKey];
+      const yMod = audioMod[yKey];
+      const depthMod = audioMod[depthKey];
 
       // If no modifiers for this point, return unchanged
       if (!xMod && !yMod && !depthMod) {

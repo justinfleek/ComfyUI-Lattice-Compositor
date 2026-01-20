@@ -13,9 +13,16 @@
  * - scribble: Scribble/sketch input
  * - seg: Semantic segmentation
  * - pose: OpenPose skeleton
+ * Includes comprehensive validation constraints for security and data integrity.
  */
 
 import { z } from "zod";
+import {
+  boundedArray,
+  filename,
+  hexColor,
+  MAX_NAME_LENGTH,
+} from "../shared-validation";
 
 // ============================================================================
 // Primitives
@@ -49,11 +56,20 @@ export type ControlNetType = z.infer<typeof ControlNetTypeSchema>;
 
 export const ControlNetExportConfigSchema = z.object({
   type: ControlNetTypeSchema,
-  resolution: positiveInt,
-  threshold_low: finiteNumber.optional(),
-  threshold_high: finiteNumber.optional(),
-  detect_resolution: positiveInt.optional(),
-});
+  resolution: positiveInt.max(16384), // Max reasonable resolution
+  threshold_low: finiteNumber.min(0).max(255).optional(), // 0-255 range
+  threshold_high: finiteNumber.min(0).max(255).optional(), // 0-255 range
+  detect_resolution: positiveInt.max(16384).optional(), // Max reasonable resolution
+}).strict().refine(
+  (data) => {
+    // If both thresholds present, high should be >= low
+    if (data.threshold_low !== undefined && data.threshold_high !== undefined) {
+      return data.threshold_high >= data.threshold_low;
+    }
+    return true;
+  },
+  { message: "threshold_high must be >= threshold_low", path: ["threshold_high"] }
+);
 
 export type ControlNetExportConfig = z.infer<typeof ControlNetExportConfigSchema>;
 
@@ -66,23 +82,23 @@ export type ControlNetExportConfig = z.infer<typeof ControlNetExportConfigSchema
  * Matches the exact structure returned by exportToOpenPoseJSON().
  */
 export const OpenPosePersonSchema = z.object({
-  person_id: z.array(z.number().int()),
-  pose_keypoints_2d: z.array(finiteNumber),
-  face_keypoints_2d: z.array(finiteNumber),
-  hand_left_keypoints_2d: z.array(finiteNumber),
-  hand_right_keypoints_2d: z.array(finiteNumber),
-  pose_keypoints_3d: z.array(finiteNumber),
-  face_keypoints_3d: z.array(finiteNumber),
-  hand_left_keypoints_3d: z.array(finiteNumber),
-  hand_right_keypoints_3d: z.array(finiteNumber),
-});
+  person_id: boundedArray(z.number().int(), 100), // Max 100 person IDs
+  pose_keypoints_2d: boundedArray(finiteNumber, 1000), // Max 1000 2D pose keypoints
+  face_keypoints_2d: boundedArray(finiteNumber, 1000), // Max 1000 2D face keypoints
+  hand_left_keypoints_2d: boundedArray(finiteNumber, 500), // Max 500 2D left hand keypoints
+  hand_right_keypoints_2d: boundedArray(finiteNumber, 500), // Max 500 2D right hand keypoints
+  pose_keypoints_3d: boundedArray(finiteNumber, 1000), // Max 1000 3D pose keypoints
+  face_keypoints_3d: boundedArray(finiteNumber, 1000), // Max 1000 3D face keypoints
+  hand_left_keypoints_3d: boundedArray(finiteNumber, 500), // Max 500 3D left hand keypoints
+  hand_right_keypoints_3d: boundedArray(finiteNumber, 500), // Max 500 3D right hand keypoints
+}).strict();
 
 export type OpenPosePerson = z.infer<typeof OpenPosePersonSchema>;
 
 export const OpenPoseJSONSchema = z.object({
-  version: z.number().int().nonnegative(),
-  people: z.array(OpenPosePersonSchema),
-});
+  version: z.number().int().nonnegative().max(100), // Max version 100
+  people: boundedArray(OpenPosePersonSchema, 1000), // Max 1000 people per frame
+}).strict();
 
 export type OpenPoseJSON = z.infer<typeof OpenPoseJSONSchema>;
 
@@ -91,19 +107,25 @@ export type OpenPoseJSON = z.infer<typeof OpenPoseJSONSchema>;
 // ============================================================================
 
 export const PoseExportConfigSchema = z.object({
-  width: positiveInt,
-  height: positiveInt,
-  startFrame: nonNegativeInt,
-  endFrame: nonNegativeInt,
-  boneWidth: positiveFinite,
-  keypointRadius: positiveFinite,
+  width: positiveInt.max(16384), // Max reasonable dimension
+  height: positiveInt.max(16384), // Max reasonable dimension
+  startFrame: nonNegativeInt.max(100000), // Max 100k frames
+  endFrame: nonNegativeInt.max(100000), // Max 100k frames
+  boneWidth: positiveFinite.max(100), // Max 100px bone width
+  keypointRadius: positiveFinite.max(100), // Max 100px keypoint radius
   showKeypoints: z.boolean(),
   showBones: z.boolean(),
   useOpenPoseColors: z.boolean(),
-  customColor: z.string().optional(),
-  backgroundColor: z.string(),
+  customColor: hexColor.optional(),
+  backgroundColor: hexColor,
   outputFormat: z.enum(["images", "json", "both"]),
-});
+}).strict().refine(
+  (data) => {
+    // endFrame should be >= startFrame
+    return data.endFrame >= data.startFrame;
+  },
+  { message: "endFrame must be >= startFrame", path: ["endFrame"] }
+);
 
 export type PoseExportConfig = z.infer<typeof PoseExportConfigSchema>;
 
@@ -112,26 +134,26 @@ export type PoseExportConfig = z.infer<typeof PoseExportConfigSchema>;
 // ============================================================================
 
 export const PoseSequenceMetadataSchema = z.object({
-  frameCount: positiveInt,
-  fps: positiveFinite,
-  width: positiveInt,
-  height: positiveInt,
-});
+  frameCount: positiveInt.max(100000), // Max 100k frames
+  fps: positiveFinite.max(120), // Max 120 FPS
+  width: positiveInt.max(16384), // Max reasonable dimension
+  height: positiveInt.max(16384), // Max reasonable dimension
+}).strict();
 
 export type PoseSequenceMetadata = z.infer<typeof PoseSequenceMetadataSchema>;
 
 export const PoseSequenceJsonSchema = z.object({
-  frames: z.array(OpenPoseJSONSchema),
+  frames: boundedArray(OpenPoseJSONSchema, 100000), // Max 100k frames
   metadata: PoseSequenceMetadataSchema,
-});
+}).strict();
 
 export type PoseSequenceJson = z.infer<typeof PoseSequenceJsonSchema>;
 
 export const PoseExportResultSchema = z.object({
-  images: z.array(z.instanceof(HTMLCanvasElement)).optional(),
-  jsonFrames: z.array(OpenPoseJSONSchema).optional(),
+  images: boundedArray(z.instanceof(HTMLCanvasElement), 100000).optional(), // Max 100k images
+  jsonFrames: boundedArray(OpenPoseJSONSchema, 100000).optional(), // Max 100k JSON frames
   sequenceJson: PoseSequenceJsonSchema.optional(),
-});
+}).strict();
 
 export type PoseExportResult = z.infer<typeof PoseExportResultSchema>;
 
@@ -145,12 +167,18 @@ export type PoseExportResult = z.infer<typeof PoseExportResultSchema>;
  * Returns array of filenames (PNG images).
  */
 export const ControlNetExportResultSchema = z.object({
-  files: z.array(z.string().min(1)),
+  files: boundedArray(filename, 100000), // Max 100k files
   format: ControlNetTypeSchema,
-  width: positiveInt,
-  height: positiveInt,
-  frameCount: positiveInt,
-});
+  width: positiveInt.max(16384), // Max reasonable dimension
+  height: positiveInt.max(16384), // Max reasonable dimension
+  frameCount: positiveInt.max(100000), // Max 100k frames
+}).strict().refine(
+  (data) => {
+    // files array length should match frameCount
+    return data.files.length === data.frameCount;
+  },
+  { message: "files array length must match frameCount", path: ["files"] }
+);
 
 export type ControlNetExportResult = z.infer<typeof ControlNetExportResultSchema>;
 

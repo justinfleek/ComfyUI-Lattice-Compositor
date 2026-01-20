@@ -10,9 +10,16 @@
 // ============================================================================
 
 /**
+ * Generic object type for type guards
+ */
+export interface GenericObject {
+  [key: string]: unknown;
+}
+
+/**
  * Check if value is a non-null object
  */
-export function isObject(value: unknown): value is Record<string, unknown> {
+export function isObject(value: unknown): value is GenericObject {
   return typeof value === "object" && value !== null;
 }
 
@@ -71,16 +78,6 @@ export function hasXYZ(
 }
 
 /**
- * Check if value has numeric width and height properties
- */
-export function hasDimensions(
-  value: unknown,
-): value is { width: number; height: number } {
-  if (!isObject(value)) return false;
-  return isFiniteNumber(value.width) && isFiniteNumber(value.height);
-}
-
-/**
  * Check if value is a valid bounding box
  */
 export function isBoundingBox(
@@ -126,9 +123,12 @@ export function isRGBAColor(
   value: unknown,
 ): value is { r: number; g: number; b: number; a: number } {
   if (!isRGBColor(value)) return false;
-  const obj = value as Record<string, unknown>;
+  // value is already narrowed to { r: number; g: number; b: number } by isRGBColor
   return (
-    isFiniteNumber(obj.a) && (obj.a as number) >= 0 && (obj.a as number) <= 1
+    "a" in value &&
+    isFiniteNumber(value.a) &&
+    value.a >= 0 &&
+    value.a <= 1
   );
 }
 
@@ -190,6 +190,42 @@ export function hasCompositionId(
 export function hasSource(value: unknown): value is { source: string } {
   if (!isObject(value)) return false;
   return isNonEmptyString(value.source);
+}
+
+/**
+ * Type guard: Check if layer data has width and height properties directly
+ * (e.g., SolidLayerData)
+ * 
+ * Production-grade type guard with runtime validation:
+ * - Checks that value is an object
+ * - Validates width and height are finite numbers
+ * - Ensures dimensions are positive (prevents division by zero)
+ */
+export function hasDimensions(
+  value: unknown,
+): value is { width: number; height: number } {
+  if (!isObject(value)) return false;
+  return (
+    isFiniteNumber(value.width) &&
+    isFiniteNumber(value.height) &&
+    value.width > 0 &&
+    value.height > 0
+  );
+}
+
+/**
+ * Type guard: Check if layer data has assetId property
+ * (e.g., ImageLayerData, VideoData)
+ * 
+ * Production-grade type guard with runtime validation:
+ * - Checks that value is an object
+ * - Validates assetId exists and is either null or a string
+ */
+export function hasAssetIdProperty(
+  value: unknown,
+): value is { assetId: string | null } {
+  if (!isObject(value)) return false;
+  return "assetId" in value && (value.assetId === null || typeof value.assetId === "string");
 }
 
 /**
@@ -273,6 +309,36 @@ export function hasRotation(
   const rotation = value.rotation;
   if (!isObject(rotation)) return false;
   return isFiniteNumber(rotation.value);
+}
+
+// ============================================================================
+// LAYER DATA TYPE GUARDS
+// ============================================================================
+
+/**
+ * Type guard: Check if layer data is TextData
+ * 
+ * Production-grade type guard with runtime validation:
+ * - Checks that value is an object
+ * - Validates required TextData properties exist with correct types
+ */
+export function isTextData(value: unknown): value is import("@/types/text").TextData {
+  if (!isObject(value)) return false;
+  return (
+    typeof value.text === "string" &&
+    typeof value.fontFamily === "string" &&
+    isFiniteNumber(value.fontSize) &&
+    typeof value.fontWeight === "string" &&
+    (value.fontStyle === "normal" || value.fontStyle === "italic") &&
+    typeof value.fill === "string" &&
+    typeof value.stroke === "string" &&
+    isFiniteNumber(value.strokeWidth) &&
+    isFiniteNumber(value.tracking) &&
+    isFiniteNumber(value.lineSpacing) &&
+    isFiniteNumber(value.lineAnchor) &&
+    typeof value.lineHeight === "number" &&
+    (value.textAlign === "left" || value.textAlign === "center" || value.textAlign === "right")
+  );
 }
 
 // ============================================================================

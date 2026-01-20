@@ -24,6 +24,7 @@ import type {
   EffectInstance,
   Layer,
   LayerTransform,
+  PropertyValue,
 } from "@/types/project";
 
 // ============================================================================
@@ -312,19 +313,26 @@ function evaluateTransform(
  * Evaluate effects at a frame
  * @param fps - Frames per second (required for expression evaluation)
  */
+/**
+ * Type for evaluated effect parameters
+ * Values come from AnimatableProperty evaluation, which returns PropertyValue
+ */
+type EvaluatedEffectParameters = Readonly<Record<string, PropertyValue>>;
+
 function evaluateEffects(
   frame: number,
   effects: EffectInstance[],
   fps: number,
 ): EvaluatedEffect[] {
   return effects.map((effect) => {
-    const evaluatedParams: Record<string, unknown> = {};
+    const evaluatedParams: Record<string, PropertyValue> = {};
 
     for (const [key, param] of Object.entries(effect.parameters)) {
       if (isAnimatableProperty(param)) {
         evaluatedParams[key] = interpolateProperty(param, frame, fps);
       } else {
-        evaluatedParams[key] = param;
+        // Non-animatable parameters are already PropertyValue
+        evaluatedParams[key] = param as PropertyValue;
       }
     }
 
@@ -332,10 +340,16 @@ function evaluateEffects(
       id: effect.id,
       type: effect.effectKey,
       enabled: effect.enabled,
-      parameters: Object.freeze(evaluatedParams),
+      parameters: Object.freeze(evaluatedParams) as EvaluatedEffectParameters,
     });
   });
 }
+
+/**
+ * Type for evaluated layer properties
+ * Values come from AnimatableProperty evaluation, which returns PropertyValue
+ */
+type EvaluatedLayerProperties = Readonly<Record<string, PropertyValue>>;
 
 /**
  * Evaluate layer-specific properties at a frame
@@ -345,8 +359,8 @@ function evaluateLayerProperties(
   frame: number,
   layer: Layer,
   fps: number,
-): Record<string, unknown> {
-  const evaluated: Record<string, unknown> = {};
+): EvaluatedLayerProperties {
+  const evaluated: Record<string, PropertyValue> = {};
 
   // Guard against missing properties array (e.g., from old/corrupted project data)
   if (layer.properties && Array.isArray(layer.properties)) {
@@ -356,7 +370,7 @@ function evaluateLayerProperties(
   }
 
   // Handle type-specific animatable properties in data
-  if (layer.data) {
+  if (layer.data && typeof layer.data === "object") {
     for (const [key, value] of Object.entries(layer.data)) {
       if (isAnimatableProperty(value)) {
         evaluated[key] = interpolateProperty(value, frame, fps);
@@ -364,7 +378,7 @@ function evaluateLayerProperties(
     }
   }
 
-  return evaluated;
+  return Object.freeze(evaluated) as EvaluatedLayerProperties;
 }
 
 /**

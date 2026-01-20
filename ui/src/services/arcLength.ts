@@ -327,7 +327,7 @@ export class MultiSegmentParameterizer {
  * Converts SVG-style path commands to a Three.js curve
  */
 export function pathCommandsToBezier(
-  pathCommands: any[],
+  pathCommands: Array<{ command: string; points: number[] }>,
 ): THREE.CubicBezierCurve3 | null {
   if (!pathCommands || pathCommands.length < 2) {
     return null;
@@ -336,7 +336,8 @@ export function pathCommandsToBezier(
   let startPoint: Point3D | null = null;
 
   for (const cmd of pathCommands) {
-    const [command, ...coords] = cmd;
+    const command = cmd.command;
+    const coords = cmd.points;
 
     if (command === "M") {
       startPoint = { x: coords[0], y: coords[1], z: coords[2] || 0 };

@@ -147,10 +147,13 @@ defineProps<Props>();
 
 const emit = defineEmits<{
   (e: "toggle"): void;
-  (e: "update", key: keyof FlockingConfig, value: any): void;
+  (e: "update", key: keyof FlockingConfig, value: FlockingConfig[keyof FlockingConfig]): void;
 }>();
 
-function update(key: keyof FlockingConfig, value: any): void {
+function update(
+  key: keyof FlockingConfig,
+  value: FlockingConfig[keyof FlockingConfig],
+): void {
   emit("update", key, value);
 }
 </script>

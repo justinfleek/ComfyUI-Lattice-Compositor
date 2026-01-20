@@ -15,9 +15,17 @@ import type {
 import { isFiniteNumber, hasXY, isNumberArray } from "@/utils/typeGuards";
 import { easingFunctions } from "./EasingFunctions";
 
+// Type-safe cache entry that preserves property type
+type TypedCacheEntry<T> = {
+  property: AnimatableProperty<T>;
+  frame: number;
+  value: T;
+};
+
 export class KeyframeEvaluator {
-  // Cache for recent evaluations (cleared per frame batch)
-  private cache: Map<string, { frame: number; value: any }> = new Map();
+  // Type-safe cache: Map keyed by property ID, but stores full property reference for type verification
+  // We verify property identity on retrieval to ensure type safety without assertions
+  private cache: Map<string, TypedCacheEntry<unknown>> = new Map();
 
   /**
    * Evaluate an animatable property at a given frame
@@ -26,8 +34,13 @@ export class KeyframeEvaluator {
     // Check cache
     const cacheKey = property.id;
     const cached = this.cache.get(cacheKey);
-    if (cached && cached.frame === frame) {
-      return cached.value;
+    
+    // Type-safe retrieval: verify property object identity matches (ensures type match)
+    if (cached && cached.property === (property as AnimatableProperty<unknown>) && cached.frame === frame) {
+      // Property identity match guarantees type match - TypeScript can't prove this but it's runtime-safe
+      // We need to structure this so TypeScript understands the type relationship
+      const typedCached = cached as TypedCacheEntry<T>;
+      return typedCached.value;
     }
 
     let value: T;
@@ -43,8 +56,13 @@ export class KeyframeEvaluator {
       value = this.evaluateKeyframes(property.keyframes, frame, property.value);
     }
 
-    // Cache result
-    this.cache.set(cacheKey, { frame, value });
+    // Cache result with property reference for type verification
+    // PropertyValue is the union type for all possible keyframe values
+    this.cache.set(cacheKey, {
+      property: property as AnimatableProperty<import("@/types/animation").PropertyValue>,
+      frame,
+      value: value as import("@/types/animation").PropertyValue,
+    });
 
     return value;
   }
@@ -305,7 +323,7 @@ export class KeyframeEvaluator {
    * Check if value is position-like (has x, y properties)
    */
   private isPositionLike(
-    value: any,
+    value: unknown,
   ): value is { x: number; y: number; z?: number } {
     return (
       value !== null &&

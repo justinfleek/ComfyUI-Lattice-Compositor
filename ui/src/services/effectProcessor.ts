@@ -13,7 +13,7 @@
  * - Texture pooling for GPU operations
  */
 import type { EffectInstance } from "@/types/effects";
-import type { AnimatableProperty } from "@/types/project";
+import type { AnimatableProperty, PropertyValue } from "@/types/project";
 import { canvasPool, type CanvasResult } from "@/utils/canvasPool";
 import { renderLogger } from "@/utils/logger";
 import type { AudioReactiveModifiers } from "./audioReactiveMapping";
@@ -42,7 +42,7 @@ function applyAudioModifiersToEffect(
       audioModifiers.glowIntensity !== 0
     ) {
       // Multiplicative intensity modifier
-      const baseIntensity = params.glow_intensity ?? 100;
+      const baseIntensity = typeof params.glow_intensity === "number" ? params.glow_intensity : 100;
       params.glow_intensity = baseIntensity * (1 + audioModifiers.glowIntensity);
     }
     if (
@@ -50,7 +50,7 @@ function applyAudioModifiersToEffect(
       audioModifiers.glowRadius !== 0
     ) {
       // Additive radius modifier (controls blur spread)
-      const baseRadius = params.glow_radius ?? 25;
+      const baseRadius = typeof params.glow_radius === "number" ? params.glow_radius : 25;
       params.glow_radius = baseRadius + audioModifiers.glowRadius * 50;
     }
     if (
@@ -59,7 +59,7 @@ function applyAudioModifiersToEffect(
     ) {
       // Additive threshold modifier (controls luminance cutoff for what glows)
       // Lower threshold = more pixels glow, higher = only brightest pixels glow
-      const baseThreshold = params.glow_threshold ?? 50;
+      const baseThreshold = typeof params.glow_threshold === "number" ? params.glow_threshold : 50;
       params.glow_threshold = baseThreshold + audioModifiers.glowThreshold * 50;
     }
   }
@@ -71,9 +71,9 @@ function applyAudioModifiersToEffect(
       audioModifiers.edgeGlowIntensity !== undefined &&
       audioModifiers.edgeGlowIntensity !== 0
     ) {
-      const baseIntensity = params.intensity ?? params.strength ?? 1;
+      const baseIntensity = typeof params.intensity === "number" ? params.intensity : (typeof params.strength === "number" ? params.strength : 1);
       params.intensity = baseIntensity * (1 + audioModifiers.edgeGlowIntensity);
-      params.strength = params.intensity;
+      params.strength = typeof params.intensity === "number" ? params.intensity : baseIntensity;
     }
   }
 
@@ -84,7 +84,7 @@ function applyAudioModifiersToEffect(
       audioModifiers.glitchAmount !== undefined &&
       audioModifiers.glitchAmount !== 0
     ) {
-      const baseAmount = params.glitch_amount ?? 5;
+      const baseAmount = typeof params.glitch_amount === "number" ? params.glitch_amount : 5;
       params.glitch_amount = baseAmount + audioModifiers.glitchAmount * 10;
     }
   }
@@ -97,8 +97,8 @@ function applyAudioModifiersToEffect(
       audioModifiers.rgbSplitAmount !== 0
     ) {
       // Symmetric split: red channel shifts right, blue channel shifts left
-      const baseRedOffset = params.red_offset_x ?? 5;
-      const baseBlueOffset = params.blue_offset_x ?? -5;
+      const baseRedOffset = typeof params.red_offset_x === "number" ? params.red_offset_x : 5;
+      const baseBlueOffset = typeof params.blue_offset_x === "number" ? params.blue_offset_x : -5;
       const splitDelta = audioModifiers.rgbSplitAmount * 30;
       params.red_offset_x = baseRedOffset + splitDelta;
       params.blue_offset_x = baseBlueOffset - splitDelta;
@@ -286,9 +286,18 @@ export function cleanupEffectResources(): void {
 /**
  * Evaluated effect parameters at a specific frame
  * All animatable values resolved to their concrete values
+ * Also includes special context properties for time-based effects
  */
 export interface EvaluatedEffectParams {
-  [key: string]: any;
+  // Standard effect parameters (evaluated PropertyValue)
+  [key: string]: PropertyValue | number | string | HTMLCanvasElement | EffectInstance | undefined;
+  // Special context properties for time-based effects
+  _frame?: number;
+  _fps?: number;
+  _layerId?: string;
+  _compositionId?: string;
+  _sourceCanvas?: HTMLCanvasElement;
+  _effectInstance?: EffectInstance;
 }
 
 /**

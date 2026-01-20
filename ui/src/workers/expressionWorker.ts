@@ -10,22 +10,26 @@
  */
 
 // Worker-side SES initialization
+// SES types are declared in types/ses-ambient.d.ts
+import type { SESCompartmentConstructor, HardenFunction } from "@/types/ses-ambient";
+
 let sesReady = false;
-let Compartment: any = null;
-let harden: any = null;
+let Compartment: SESCompartmentConstructor | null = null;
+let harden: HardenFunction | null = null;
 
 async function initSES(): Promise<boolean> {
   if (sesReady) return true;
 
   try {
     await import("ses");
-    const g = globalThis as any;
-
-    if (!g.lockdown) {
+    
+    // Type-safe access - SES injects these on globalThis after import
+    // Types are declared in types/ses-ambient.d.ts
+    if (!globalThis.lockdown) {
       return false;
     }
 
-    g.lockdown({
+    globalThis.lockdown({
       consoleTaming: "unsafe",
       errorTaming: "unsafe",
       stackFiltering: "verbose",
@@ -34,8 +38,14 @@ async function initSES(): Promise<boolean> {
       domainTaming: "unsafe",
     });
 
-    Compartment = g.Compartment;
-    harden = g.harden;
+    // Type-safe assignment - these are available after lockdown()
+    Compartment = globalThis.Compartment ?? null;
+    harden = globalThis.harden ?? null;
+    
+    if (!Compartment || !harden) {
+      return false;
+    }
+    
     sesReady = true;
     return true;
   } catch (e) {
@@ -67,10 +77,12 @@ const safeMath = {
   E: Math.E,
 };
 
+import type { ExpressionContext } from "../services/expressions/types";
+
 interface EvalRequest {
   id: number;
   code: string;
-  context: Record<string, unknown>;
+  context: ExpressionContext;
 }
 
 interface EvalResponse {
@@ -101,7 +113,12 @@ async function evaluate(req: EvalRequest): Promise<EvalResponse> {
     const seededRandom = harden(createSeededRandom(frame));
 
     // Build compartment globals from context
-    const globals: Record<string, unknown> = {
+    // Type for SES compartment globals (primitives only for security)
+    interface SESGlobals {
+      [key: string]: number | string | boolean | (() => number) | typeof Math | undefined;
+    }
+
+    const globals: SESGlobals = {
       ...safeMath,
       random: seededRandom,
 

@@ -41,12 +41,22 @@ export async function detectGPUTier(): Promise<GPUTier> {
       });
 
       if (adapter) {
+        // Extended GPUAdapter interface for adapter.info property
+        // GPUAdapter.info exists in newer WebGPU spec but may not be in TypeScript types
+        interface GPUAdapterWithInfo extends GPUAdapter {
+          info?: {
+            device?: string;
+            description?: string;
+            vendor?: string;
+          };
+        }
+
         // Get adapter info - method varies by browser version
         let deviceName = "";
         if ("info" in adapter) {
-          // Newer API
-          const info = (adapter as any).info;
-          deviceName = info?.device || info?.description || "";
+          // Type-safe access to adapter info
+          const adapterWithInfo = adapter as GPUAdapterWithInfo;
+          deviceName = adapterWithInfo.info?.device || adapterWithInfo.info?.description || "";
         }
 
         // Detect Blackwell (RTX 50 series)

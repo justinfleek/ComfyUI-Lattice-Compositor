@@ -36,6 +36,22 @@ export type FalloffType = "none" | "smooth" | "inverseSquareClamped";
 export type ShadowType = "basic" | "pcf" | "pcfSoft" | "vsm";
 
 /**
+ * Type guard for objects with dispose method
+ */
+interface Disposable {
+  dispose(): void;
+}
+
+function hasDispose(obj: unknown): obj is Disposable {
+  return (
+    typeof obj === "object" &&
+    obj !== null &&
+    "dispose" in obj &&
+    typeof (obj as { dispose: unknown }).dispose === "function"
+  );
+}
+
+/**
  * Color temperature presets in Kelvin
  */
 export const COLOR_TEMPERATURE_PRESETS = {
@@ -273,7 +289,70 @@ export class LightLayer extends BaseLayer {
   // ============================================================================
 
   private extractLightData(layerData: Layer): LightData {
-    const data = layerData.data as any;
+    if (!layerData.data || typeof layerData.data !== "object") {
+      return {
+        lightType: "point",
+        color: "#ffffff",
+        useColorTemperature: false,
+        intensity: 100,
+        usePhysicalIntensity: false,
+        radius: 500,
+        falloff: "none",
+        falloffDistance: 500,
+        pointOfInterest: {
+          enabled: false,
+          targetType: "position",
+          position: {
+            id: "poi_position",
+            name: "Point of Interest Position",
+            type: "position",
+            value: { x: 0, y: 0, z: 0 },
+            animated: false,
+            keyframes: [],
+          },
+          offset: { x: 0, y: 0, z: 0 },
+          smoothing: 0.1,
+        },
+        pathFollowing: {
+          enabled: false,
+          splineLayerId: undefined,
+          progress: {
+            id: "path_progress",
+            name: "Path Progress",
+            type: "number",
+            value: 0,
+            animated: false,
+            keyframes: [],
+          },
+          autoOrient: true,
+          bankAngle: {
+            id: "bank_angle",
+            name: "Bank Angle",
+            type: "number",
+            value: 0,
+            animated: false,
+            keyframes: [],
+          },
+        },
+        shadow: {
+          enabled: false,
+          type: "pcf",
+          mapSize: 1024,
+          darkness: 100,
+          radius: 1,
+          bias: -0.0001,
+          normalBias: 0,
+          cameraNear: 1,
+          cameraFar: 1000,
+          cameraSize: 100,
+        },
+        lightLinking: {
+          mode: "include",
+          layers: [],
+        },
+      };
+    }
+    const data = layerData.data as Partial<LightData> & { castShadows?: boolean; shadowDarkness?: number; shadowDiffusion?: number };
 
     return {
       lightType: data?.lightType ?? "point",
@@ -499,8 +578,8 @@ export class LightLayer extends BaseLayer {
   private createHelper(): void {
     if (this.helper) {
       this.group.remove(this.helper);
-      if ((this.helper as any).dispose) {
-        (this.helper as any).dispose();
+      if (hasDispose(this.helper)) {
+        this.helper.dispose();
       }
     }
 
@@ -680,8 +759,8 @@ export class LightLayer extends BaseLayer {
     this.lightData.lightType = type;
 
     this.group.remove(this.light);
-    if ((this.light as any).dispose) {
-      (this.light as any).dispose();
+    if (hasDispose(this.light)) {
+      this.light.dispose();
     }
 
     this.light = this.createLight();
@@ -1198,11 +1277,11 @@ export class LightLayer extends BaseLayer {
   }
 
   protected onDispose(): void {
-    if ((this.light as any).dispose) {
-      (this.light as any).dispose();
+    if (hasDispose(this.light)) {
+      this.light.dispose();
     }
-    if (this.helper && (this.helper as any).dispose) {
-      (this.helper as any).dispose();
+    if (this.helper && hasDispose(this.helper)) {
+      this.helper.dispose();
     }
   }
 }

@@ -3,9 +3,15 @@
  *
  * Zod schemas for validating particle trajectory export data.
  * Matches ParticleTrajectoryExport interface.
+ * Includes comprehensive validation constraints for security and data integrity.
  */
 
 import { z } from "zod";
+import {
+  boundedArray,
+  MAX_NAME_LENGTH,
+  MAX_ARRAY_LENGTH,
+} from "../shared-validation";
 
 // ============================================================================
 // Primitives
@@ -21,11 +27,11 @@ const normalized01 = z.number().finite().min(0).max(1);
 // ============================================================================
 
 export const ParticlePositionSchema = z.object({
-  frame: nonNegativeInt,
+  frame: nonNegativeInt.max(100000), // Max 100k frames
   x: finiteNumber,
   y: finiteNumber,
   z: finiteNumber.optional(),
-});
+}).strict();
 
 export type ParticlePosition = z.infer<typeof ParticlePositionSchema>;
 
@@ -34,11 +40,11 @@ export type ParticlePosition = z.infer<typeof ParticlePositionSchema>;
 // ============================================================================
 
 export const ParticleVelocitySchema = z.object({
-  frame: nonNegativeInt,
-  vx: finiteNumber,
-  vy: finiteNumber,
-  vz: finiteNumber,
-});
+  frame: nonNegativeInt.max(100000), // Max 100k frames
+  vx: finiteNumber.max(100000), // Max 100k units/sec velocity
+  vy: finiteNumber.max(100000), // Max 100k units/sec velocity
+  vz: finiteNumber.max(100000), // Max 100k units/sec velocity
+}).strict();
 
 export type ParticleVelocity = z.infer<typeof ParticleVelocitySchema>;
 
@@ -50,7 +56,7 @@ export const ParticleColorSchema = z.object({
   r: normalized01,
   g: normalized01,
   b: normalized01,
-});
+}).strict();
 
 export type ParticleColor = z.infer<typeof ParticleColorSchema>;
 
@@ -59,15 +65,28 @@ export type ParticleColor = z.infer<typeof ParticleColorSchema>;
 // ============================================================================
 
 export const ParticleDataSchema = z.object({
-  id: z.number().int(), // Particle ID is a number
-  birthFrame: nonNegativeInt,
-  deathFrame: nonNegativeInt,
-  positions: z.array(ParticlePositionSchema),
-  velocities: z.array(ParticleVelocitySchema).optional(),
-  size: z.array(finiteNumber).optional(), // Can be any number, not just 0-1
-  opacity: z.array(normalized01).optional(),
-  color: z.array(ParticleColorSchema).optional(),
-});
+  id: z.number().int().max(10000000), // Max 10M particle ID
+  birthFrame: nonNegativeInt.max(100000), // Max 100k frames
+  deathFrame: nonNegativeInt.max(100000), // Max 100k frames
+  positions: boundedArray(ParticlePositionSchema, 100000), // Max 100k positions per particle
+  velocities: boundedArray(ParticleVelocitySchema, 100000).optional(), // Max 100k velocities
+  size: boundedArray(finiteNumber.max(100000), 100000).optional(), // Max 100k size values, 100k px max
+  opacity: boundedArray(normalized01, 100000).optional(), // Max 100k opacity values
+  color: boundedArray(ParticleColorSchema, 100000).optional(), // Max 100k color values
+}).strict().refine(
+  (data) => {
+    // deathFrame should be >= birthFrame
+    return data.deathFrame >= data.birthFrame;
+  },
+  { message: "deathFrame must be >= birthFrame", path: ["deathFrame"] }
+).refine(
+  (data) => {
+    // positions array length should match frame range
+    const expectedLength = data.deathFrame - data.birthFrame + 1;
+    return data.positions.length === expectedLength;
+  },
+  { message: "positions array length must match deathFrame - birthFrame + 1", path: ["positions"] }
+);
 
 export type ParticleData = z.infer<typeof ParticleDataSchema>;
 
@@ -76,15 +95,15 @@ export type ParticleData = z.infer<typeof ParticleDataSchema>;
 // ============================================================================
 
 export const EmitterConfigSchema = z.object({
-  type: z.string().min(1),
+  type: z.string().min(1).max(MAX_NAME_LENGTH).trim(),
   position: z.object({
     x: finiteNumber,
     y: finiteNumber,
     z: finiteNumber,
-  }),
-  rate: positiveInt,
-  lifetime: positiveInt,
-});
+  }).strict(),
+  rate: positiveInt.max(1000000), // Max 1M particles/sec
+  lifetime: positiveInt.max(100000), // Max 100k frames lifetime
+}).strict();
 
 export type EmitterConfig = z.infer<typeof EmitterConfigSchema>;
 
@@ -97,14 +116,20 @@ export type EmitterConfig = z.infer<typeof EmitterConfigSchema>;
  * Matches ParticleTrajectoryExport interface exactly.
  */
 export const ParticleTrajectoryExportSchema = z.object({
-  particles: z.array(ParticleDataSchema),
+  particles: boundedArray(ParticleDataSchema, 10000000), // Max 10M particles
   emitterConfig: EmitterConfigSchema,
   metadata: z.object({
-    totalParticles: nonNegativeInt,
-    frameCount: positiveInt,
-    maxActiveParticles: nonNegativeInt,
-  }),
-});
+    totalParticles: nonNegativeInt.max(10000000), // Max 10M particles
+    frameCount: positiveInt.max(100000), // Max 100k frames
+    maxActiveParticles: nonNegativeInt.max(10000000), // Max 10M active particles
+  }).strict(),
+}).strict().refine(
+  (data) => {
+    // totalParticles should match particles array length
+    return data.metadata.totalParticles === data.particles.length;
+  },
+  { message: "totalParticles must match particles array length", path: ["metadata", "totalParticles"] }
+);
 
 export type ParticleTrajectoryExport = z.infer<
   typeof ParticleTrajectoryExportSchema

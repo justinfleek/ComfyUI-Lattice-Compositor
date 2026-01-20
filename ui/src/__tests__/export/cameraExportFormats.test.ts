@@ -24,6 +24,15 @@ import {
   detectUni3CTrajectoryType,
 } from "@/services/export/cameraExportFormats";
 import type { Camera3D, CameraKeyframe } from "@/types/camera";
+import type {
+  MotionCtrlCameraData,
+  MotionCtrlSVDCameraData,
+  Wan22FunCameraData,
+  Uni3CCameraData,
+  CameraCtrlPoses,
+  FullCameraExport,
+  ExportTarget,
+} from "@/types/export";
 
 // ============================================================================
 // Test Fixtures
@@ -729,9 +738,10 @@ describe("exportCameraForTarget", () => {
       camera,
       keyframes,
       10
-    ) as any;
+    ) as MotionCtrlCameraData;
 
     expect(result.camera_poses).toBeDefined();
+    expect(Array.isArray(result.camera_poses)).toBe(true);
   });
 
   it("should route to MotionCtrl-SVD format", () => {
@@ -740,9 +750,10 @@ describe("exportCameraForTarget", () => {
       camera,
       keyframes,
       10
-    ) as any;
+    ) as MotionCtrlSVDCameraData;
 
     expect(result.motion_camera).toBeDefined();
+    expect(typeof result.motion_camera).toBe("string");
   });
 
   it("should route to Wan22 Fun Camera format", () => {
@@ -751,9 +762,10 @@ describe("exportCameraForTarget", () => {
       camera,
       keyframes,
       10
-    ) as any;
+    ) as Wan22FunCameraData;
 
     expect(result.camera_motion).toBeDefined();
+    expect(typeof result.camera_motion).toBe("string");
   });
 
   it("should route to Uni3C format", () => {
@@ -764,9 +776,10 @@ describe("exportCameraForTarget", () => {
       10,
       1920,
       1080
-    ) as any;
+    ) as Uni3CCameraData;
 
     expect(result.traj_type).toBeDefined();
+    expect(typeof result.traj_type).toBe("string");
   });
 
   it("should route to AnimateDiff CameraCtrl format", () => {
@@ -775,25 +788,30 @@ describe("exportCameraForTarget", () => {
       camera,
       keyframes,
       10
-    ) as any;
+    ) as CameraCtrlPoses;
 
     expect(result.motion_type).toBeDefined();
+    expect(typeof result.motion_type).toBe("string");
     expect(result.speed).toBeDefined();
+    expect(typeof result.speed).toBe("number");
   });
 
-  it("should use full matrices for unknown targets", () => {
+  it("should use full matrices for custom-workflow target", () => {
+    // Test default case: custom-workflow goes to default handler
     const result = exportCameraForTarget(
-      "unknown-target" as any,
+      "custom-workflow",
       camera,
       keyframes,
       10,
       1920,
       1080,
       24
-    ) as any;
+    ) as FullCameraExport;
 
     expect(result.frames).toBeDefined();
+    expect(Array.isArray(result.frames)).toBe(true);
     expect(result.metadata).toBeDefined();
+    expect(typeof result.metadata).toBe("object");
   });
 });
 

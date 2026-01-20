@@ -7,6 +7,8 @@
  * - Input sanitization
  */
 
+import type { ToolCall } from "@/services/ai/toolDefinitions";
+
 // ============================================================================
 // URL VALIDATION
 // ============================================================================
@@ -228,9 +230,16 @@ export class ValidationError extends Error {
 }
 
 /**
+ * Generic object type for security utilities
+ */
+export interface SecurityObject {
+  [key: string]: unknown;
+}
+
+/**
  * Validate that a value is a non-null object
  */
-export function isObject(value: unknown): value is Record<string, unknown> {
+export function isObject(value: unknown): value is SecurityObject {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
@@ -267,7 +276,7 @@ export function validateAIResponse(
     toolCalls?: Array<{
       id: string;
       name: string;
-      arguments: Record<string, unknown>;
+      arguments: Omit<ToolCall, "id" | "name">;
     }>;
   } = {};
 
@@ -327,7 +336,7 @@ export function validateAIResponse(
         args = {};
       }
 
-      return { id, name, arguments: args as Record<string, unknown> };
+      return { id, name, arguments: args as Omit<ToolCall, "id" | "name"> };
     });
   }
 
@@ -383,7 +392,8 @@ export function validateProjectStructure(
       }
 
       // Validate numeric fields in settings
-      const settings = comp.settings as Record<string, unknown>;
+      // CompositionSettings has width, height, frameCount, fps, duration, backgroundColor, etc.
+      const settings = comp.settings;
       if (
         settings.width !== undefined &&
         (!Number.isFinite(settings.width) || (settings.width as number) <= 0)

@@ -170,6 +170,8 @@
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { useCompositorStore } from "@/stores/compositorStore";
 import { useLayerStore } from "@/stores/layerStore";
+import type { SplineData } from "@/types/project";
+import { isLayerOfType } from "@/types/project";
 import type { WarpPin, WarpPinType } from "@/types/meshWarp";
 import { createDefaultWarpPin } from "@/types/meshWarp";
 
@@ -203,9 +205,10 @@ const dragStartPos = ref<{ x: number; y: number } | null>(null);
 const pins = computed<WarpPin[]>(() => {
   if (!props.layerId) return [];
   const layer = layerStore.getLayerById(store, props.layerId);
-  if (!layer || layer.type !== "spline") return [];
+  if (!layer || !isLayerOfType(layer, "spline")) return [];
   // Support both old 'puppetPins' and new 'warpPins' property names
-  return (layer.data as any)?.warpPins ?? (layer.data as any)?.puppetPins ?? [];
+  const splineData = layer.data as SplineData;
+  return splineData.warpPins ?? splineData.puppetPins ?? [];
 });
 
 const selectedPin = computed(() => {
@@ -347,14 +350,14 @@ function addPinToLayer(
 
   // Get current pins and add new one
   const layer = layerStore.getLayerById(store, props.layerId);
-  if (!layer) return null;
+  if (!layer || !isLayerOfType(layer, "spline")) return null;
 
   // Support both old and new property names, prefer new
-  const currentPins =
-    (layer.data as any)?.warpPins ?? (layer.data as any)?.puppetPins ?? [];
+  const splineData = layer.data as SplineData;
+  const currentPins = splineData.warpPins ?? splineData.puppetPins ?? [];
   layerStore.updateLayer(store, props.layerId, {
     data: {
-      ...(layer.data as any),
+      ...splineData,
       warpPins: [...currentPins, newPin],
     },
   });
@@ -366,13 +369,13 @@ function removePinFromLayer(pinId: string): void {
   if (!props.layerId) return;
 
   const layer = layerStore.getLayerById(store, props.layerId);
-  if (!layer) return;
+  if (!layer || !isLayerOfType(layer, "spline")) return;
 
-  const currentPins: WarpPin[] =
-    (layer.data as any)?.warpPins ?? (layer.data as any)?.puppetPins ?? [];
+  const splineData = layer.data as SplineData;
+  const currentPins: WarpPin[] = splineData.warpPins ?? splineData.puppetPins ?? [];
   layerStore.updateLayer(store, props.layerId, {
     data: {
-      ...(layer.data as any),
+      ...splineData,
       warpPins: currentPins.filter((p) => p.id !== pinId),
     },
   });
@@ -387,10 +390,10 @@ function updatePinPosition(pinId: string, x: number, y: number): void {
   if (!props.layerId) return;
 
   const layer = layerStore.getLayerById(store, props.layerId);
-  if (!layer) return;
+  if (!layer || !isLayerOfType(layer, "spline")) return;
 
-  const currentPins: WarpPin[] =
-    (layer.data as any)?.warpPins ?? (layer.data as any)?.puppetPins ?? [];
+  const splineData = layer.data as SplineData;
+  const currentPins: WarpPin[] = splineData.warpPins ?? splineData.puppetPins ?? [];
   const updatedPins = currentPins.map((p) => {
     if (p.id === pinId) {
       return {
@@ -406,20 +409,20 @@ function updatePinPosition(pinId: string, x: number, y: number): void {
 
   layerStore.updateLayer(store, props.layerId, {
     data: {
-      ...(layer.data as any),
+      ...splineData,
       warpPins: updatedPins,
     },
   });
 }
 
-function updatePinProperty(pinId: string, property: string, value: any): void {
+function updatePinProperty(pinId: string, property: string, value: unknown): void {
   if (!props.layerId) return;
 
   const layer = layerStore.getLayerById(store, props.layerId);
-  if (!layer) return;
+  if (!layer || !isLayerOfType(layer, "spline")) return;
 
-  const currentPins: WarpPin[] =
-    (layer.data as any)?.warpPins ?? (layer.data as any)?.puppetPins ?? [];
+  const splineData = layer.data as SplineData;
+  const currentPins: WarpPin[] = splineData.warpPins ?? splineData.puppetPins ?? [];
   const updatedPins = currentPins.map((p) => {
     if (p.id === pinId) {
       return {
@@ -432,7 +435,7 @@ function updatePinProperty(pinId: string, property: string, value: any): void {
 
   layerStore.updateLayer(store, props.layerId, {
     data: {
-      ...(layer.data as any),
+      ...splineData,
       warpPins: updatedPins,
     },
   });

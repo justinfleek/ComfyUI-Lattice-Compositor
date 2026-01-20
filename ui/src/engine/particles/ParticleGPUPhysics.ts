@@ -255,7 +255,7 @@ export class ParticleGPUPhysics {
       // Create force field texture
       this.forceFieldBuffer = new Float32Array(MAX_FORCE_FIELDS * 16);
       this.forceFieldTexture = new THREE.DataTexture(
-        this.forceFieldBuffer as unknown as BufferSource,
+        this.forceFieldBuffer.buffer as ArrayBuffer,
         MAX_FORCE_FIELDS,
         4,
         THREE.RGBAFormat,

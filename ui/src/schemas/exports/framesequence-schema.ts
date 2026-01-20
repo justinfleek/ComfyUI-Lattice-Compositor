@@ -3,9 +3,17 @@
  *
  * Zod schemas for validating frame sequence export data.
  * Matches FrameSequenceResult and related interfaces.
+ * Includes comprehensive validation constraints for security and data integrity.
  */
 
 import { z } from "zod";
+import {
+  boundedArray,
+  filename,
+  MAX_PATH_LENGTH,
+  MAX_FILENAME_LENGTH,
+  MAX_STRING_LENGTH,
+} from "../shared-validation";
 
 // ============================================================================
 // Primitives
@@ -63,13 +71,19 @@ export type BitDepth = z.infer<typeof BitDepthSchema>;
 export const FrameExportOptionsSchema = z.object({
   format: FrameFormatSchema,
   quality: normalized0100, // 0-100 for lossy formats
-  filenamePattern: z.string().min(1), // e.g., "frame_{frame:04d}"
-  outputDir: z.string(),
-  startFrame: nonNegativeInt,
-  endFrame: nonNegativeInt,
+  filenamePattern: z.string().min(1).max(MAX_FILENAME_LENGTH).trim(), // e.g., "frame_{frame:04d}"
+  outputDir: z.string().max(MAX_PATH_LENGTH).trim(),
+  startFrame: nonNegativeInt.max(100000), // Max 100k frames
+  endFrame: nonNegativeInt.max(100000), // Max 100k frames
   bitDepth: BitDepthSchema.optional(), // For HDR formats
   colorSpace: ColorSpaceSchema.optional(),
-});
+}).strict().refine(
+  (data) => {
+    // endFrame should be >= startFrame
+    return data.endFrame >= data.startFrame;
+  },
+  { message: "endFrame must be >= startFrame", path: ["endFrame"] }
+);
 
 export type FrameExportOptions = z.infer<typeof FrameExportOptionsSchema>;
 
@@ -78,12 +92,12 @@ export type FrameExportOptions = z.infer<typeof FrameExportOptionsSchema>;
 // ============================================================================
 
 export const ExportedFrameSchema = z.object({
-  frameNumber: nonNegativeInt,
-  filename: z.string().min(1),
+  frameNumber: nonNegativeInt.max(100000), // Max 100k frames
+  filename: filename,
   blob: z.instanceof(Blob).optional(),
-  dataUrl: z.string().optional(),
-  size: nonNegativeInt,
-});
+  dataUrl: z.string().max(MAX_STRING_LENGTH).optional(),
+  size: nonNegativeInt.max(2147483647), // Max 32-bit int (2GB)
+}).strict();
 
 export type ExportedFrame = z.infer<typeof ExportedFrameSchema>;
 
@@ -97,11 +111,11 @@ export type ExportedFrame = z.infer<typeof ExportedFrameSchema>;
  */
 export const FrameSequenceResultSchema = z.object({
   success: z.boolean(),
-  frames: z.array(ExportedFrameSchema),
-  totalSize: nonNegativeInt,
-  errors: z.array(z.string()),
-  warnings: z.array(z.string()),
-});
+  frames: boundedArray(ExportedFrameSchema, 100000), // Max 100k frames
+  totalSize: nonNegativeInt.max(2147483647), // Max 32-bit int (2GB)
+  errors: boundedArray(z.string().max(MAX_STRING_LENGTH), 1000), // Max 1000 errors
+  warnings: boundedArray(z.string().max(MAX_STRING_LENGTH), 1000), // Max 1000 warnings
+}).strict();
 
 export type FrameSequenceResult = z.infer<typeof FrameSequenceResultSchema>;
 

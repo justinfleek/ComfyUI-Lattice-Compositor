@@ -177,6 +177,7 @@
 
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
+import type { AnimatableProperty, Layer, PropertyValue } from "@/types/project";
 import {
   createWaveformData,
   getWaveformData,
@@ -357,17 +358,17 @@ const labelColors = [
 ];
 
 const availableParents = computed(
-  () => props.allLayers?.filter((l: any) => l.id !== props.layer.id) || [],
+  () => (props.allLayers as Layer[] | undefined)?.filter((l: Layer) => l.id !== props.layer.id) || [],
 );
 
 // Grouping Logic
 const groupedProperties = computed(() => {
-  const groups: Record<string, any[]> = {};
+  const groups: Record<string, Array<{ path: string; name: string; property: AnimatableProperty<PropertyValue> }>> = {};
   const t = props.layer.transform;
-  const transformProps: any[] = [];
+  const transformProps: Array<{ path: string; name: string; property: AnimatableProperty<PropertyValue> }> = [];
 
   // Helper to safely add props
-  const add = (path: string, name: string, prop: any) => {
+  const add = (path: string, name: string, prop: AnimatableProperty<PropertyValue> | undefined) => {
     if (prop) transformProps.push({ path, name, property: prop });
   };
 
@@ -502,7 +503,7 @@ const groupedProperties = computed(() => {
 
   // Path Options (for spline layers) - Closed is NOT animatable
   if (props.layer.type === "spline" && props.layer.data) {
-    const splineData = props.layer.data as any;
+    const splineData = props.layer.data as import("@/types/project").SplineData;
     groups["Path Options"] = [
       {
         path: "data.closed",
@@ -561,7 +562,7 @@ const groupedProperties = computed(() => {
 
   // Custom Properties (Text, etc.)
   if (props.layer.properties) {
-    props.layer.properties.forEach((p: any) => {
+    props.layer.properties.forEach((p: AnimatableProperty<PropertyValue>) => {
       const g = p.group || "Properties";
       if (!groups[g]) groups[g] = [];
       groups[g].push({ path: p.name, name: p.name, property: p });

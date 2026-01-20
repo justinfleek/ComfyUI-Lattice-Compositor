@@ -622,7 +622,7 @@ function selectLayer(layerId: string) {
 }
 
 // Update layer data
-function update(key: keyof SplineData | string, value: any) {
+function update(key: keyof SplineData | string, value: unknown) {
   layerStore.updateLayer(store, props.layer.id, {
     data: { ...shapeData.value, [key]: value },
   });
@@ -752,13 +752,52 @@ function toggleKeyframe(propName: string, dataKey: string) {
   }
 }
 
+// Type-safe property accessor for SplineData
+// Maps component property keys to actual SplineData property names
+function getSplineDataProperty(
+  data: SplineData,
+  key: string,
+): number | AnimatableProperty<number> | undefined {
+  // Map component dataKey strings to actual SplineData properties
+  // Note: Component uses legacy names (strokeLineCap, strokeDashArray) but type uses (lineCap, dashArray)
+  let propertyKey: keyof SplineData | undefined;
+  if (key === "strokeOpacity") propertyKey = "strokeOpacity";
+  else if (key === "strokeWidth") propertyKey = "strokeWidth";
+  else if (key === "fillOpacity") propertyKey = "fillOpacity";
+  else if (key === "trimStart") propertyKey = "trimStart";
+  else if (key === "trimEnd") propertyKey = "trimEnd";
+  else if (key === "trimOffset") propertyKey = "trimOffset";
+  else if (key === "strokeDashOffset") propertyKey = "dashOffset"; // Map legacy name
+  else return undefined;
+
+  const value = data[propertyKey];
+  if (value === undefined) return undefined;
+
+  // Return as-is if it's already a number or AnimatableProperty
+  if (typeof value === "number" || (typeof value === "object" && "value" in value)) {
+    return value as number | AnimatableProperty<number>;
+  }
+
+  return undefined;
+}
+
+// Extract numeric value from number or AnimatableProperty
+function extractNumericValue(
+  value: number | AnimatableProperty<number> | undefined,
+): number {
+  if (value === undefined) return 0;
+  if (typeof value === "number") return value;
+  return value.value ?? 0;
+}
+
 // Ensure a property exists in layer.properties for timeline display
 function ensureProperty(propName: string, dataKey: string) {
   const existingProperties = props.layer.properties || [];
   const existing = existingProperties.find((p) => p.name === propName);
 
   if (!existing) {
-    const currentValue = (shapeData.value as any)[dataKey] ?? 0;
+    const propertyValue = getSplineDataProperty(shapeData.value, dataKey);
+    const currentValue = extractNumericValue(propertyValue);
     const newProperty = {
       id: `prop_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
       name: propName,
@@ -930,63 +969,157 @@ function moveEffect(index: number, direction: -1 | 1) {
   update("pathEffects", effects);
 }
 
+// Type-safe property accessor for SplinePathEffect discriminated union
 function getEffectPropValue(
-  effect: SplinePathEffect,
+  effect: SplinePathEffectInstance,
   propName: string,
 ): number {
-  const prop = (effect as any)[propName] as
-    | AnimatableProperty<number>
-    | number
-    | undefined;
-  if (prop === undefined) return 0;
-  if (typeof prop === "number") return prop;
-  return prop.value;
+  // Type-safe property access based on effect type
+  if (effect.type === "offsetPath") {
+    if (propName === "amount") return effect.amount.value;
+    if (propName === "miterLimit") return effect.miterLimit.value;
+  } else if (effect.type === "roughen") {
+    if (propName === "size") return effect.size.value;
+    if (propName === "detail") return effect.detail.value;
+  } else if (effect.type === "wiggle") {
+    if (propName === "size") return effect.size.value;
+    if (propName === "detail") return effect.detail.value;
+    if (propName === "temporalPhase") return effect.temporalPhase.value;
+    if (propName === "spatialPhase") return effect.spatialPhase.value;
+    if (propName === "correlation") return effect.correlation.value;
+  } else if (effect.type === "zigzag") {
+    if (propName === "size") return effect.size.value;
+    if (propName === "ridgesPerSegment") return effect.ridgesPerSegment.value;
+  } else if (effect.type === "wave") {
+    if (propName === "amplitude") return effect.amplitude.value;
+    if (propName === "frequency") return effect.frequency.value;
+    if (propName === "phase") return effect.phase.value;
+  }
+  return 0;
 }
 
+// Type-safe check if effect property is animated
 function isEffectPropAnimated(
-  effect: SplinePathEffect,
+  effect: SplinePathEffectInstance,
   propName: string,
 ): boolean {
-  const prop = (effect as any)[propName] as
-    | AnimatableProperty<number>
-    | undefined;
-  if (!prop || typeof prop === "number") return false;
+  // Type-safe property access based on effect type
+  let prop: AnimatableProperty<number> | undefined;
+  if (effect.type === "offsetPath") {
+    if (propName === "amount") prop = effect.amount;
+    else if (propName === "miterLimit") prop = effect.miterLimit;
+  } else if (effect.type === "roughen") {
+    if (propName === "size") prop = effect.size;
+    else if (propName === "detail") prop = effect.detail;
+  } else if (effect.type === "wiggle") {
+    if (propName === "size") prop = effect.size;
+    else if (propName === "detail") prop = effect.detail;
+    else if (propName === "temporalPhase") prop = effect.temporalPhase;
+    else if (propName === "spatialPhase") prop = effect.spatialPhase;
+    else if (propName === "correlation") prop = effect.correlation;
+  } else if (effect.type === "zigzag") {
+    if (propName === "size") prop = effect.size;
+    else if (propName === "ridgesPerSegment") prop = effect.ridgesPerSegment;
+  } else if (effect.type === "wave") {
+    if (propName === "amplitude") prop = effect.amplitude;
+    else if (propName === "frequency") prop = effect.frequency;
+    else if (propName === "phase") prop = effect.phase;
+  }
+  if (!prop) return false;
   return prop.animated ?? false;
 }
 
+// Type-safe update of effect property value
 function updateEffectProp(effectId: string, propName: string, value: number) {
   const effects = [...(shapeData.value.pathEffects || [])];
   const effect = effects.find((e) => e.id === effectId);
   if (!effect) return;
 
-  const prop = (effect as any)[propName];
-  if (prop && typeof prop === "object") {
-    prop.value = value;
-  } else {
-    (effect as any)[propName] = value;
+  // Type-safe property update based on effect type
+  if (effect.type === "offsetPath") {
+    if (propName === "amount") effect.amount.value = value;
+    else if (propName === "miterLimit") effect.miterLimit.value = value;
+  } else if (effect.type === "roughen") {
+    if (propName === "size") effect.size.value = value;
+    else if (propName === "detail") effect.detail.value = value;
+  } else if (effect.type === "wiggle") {
+    if (propName === "size") effect.size.value = value;
+    else if (propName === "detail") effect.detail.value = value;
+    else if (propName === "temporalPhase") effect.temporalPhase.value = value;
+    else if (propName === "spatialPhase") effect.spatialPhase.value = value;
+    else if (propName === "correlation") effect.correlation.value = value;
+  } else if (effect.type === "zigzag") {
+    if (propName === "size") effect.size.value = value;
+    else if (propName === "ridgesPerSegment") effect.ridgesPerSegment.value = value;
+  } else if (effect.type === "wave") {
+    if (propName === "amplitude") effect.amplitude.value = value;
+    else if (propName === "frequency") effect.frequency.value = value;
+    else if (propName === "phase") effect.phase.value = value;
   }
 
   update("pathEffects", effects);
 }
 
-function updateEffectMeta(effectId: string, key: string, value: any) {
+// Type-safe update of effect metadata (non-animatable properties)
+function updateEffectMeta(
+  effectId: string,
+  key: string,
+  value: string | number | boolean,
+) {
   const effects = [...(shapeData.value.pathEffects || [])];
   const effect = effects.find((e) => e.id === effectId);
   if (!effect) return;
 
-  (effect as any)[key] = value;
+  // Type-safe metadata update based on effect type
+  if (key === "enabled") {
+    effect.enabled = value as boolean;
+  } else if (key === "order") {
+    effect.order = value as number;
+  } else if (effect.type === "offsetPath" && key === "lineJoin") {
+    effect.lineJoin = value as "miter" | "round" | "bevel";
+  } else if (effect.type === "roughen" && key === "seed") {
+    effect.seed = value as number;
+  } else if (effect.type === "wiggle" && key === "seed") {
+    effect.seed = value as number;
+  } else if (effect.type === "zigzag" && key === "pointType") {
+    effect.pointType = value as "corner" | "smooth";
+  } else if (effect.type === "wave" && key === "waveType") {
+    effect.waveType = value as "sine" | "triangle" | "square";
+  }
+
   update("pathEffects", effects);
 }
 
+// Type-safe toggle keyframe for effect property
 function toggleEffectKeyframe(effectId: string, propName: string) {
   const effects = [...(shapeData.value.pathEffects || [])];
   const effect = effects.find((e) => e.id === effectId);
   if (!effect) return;
 
-  const prop = (effect as any)[propName] as
-    | AnimatableProperty<number>
-    | undefined;
-  if (!prop || typeof prop === "number") return;
+  // Type-safe property access based on effect type
+  let prop: AnimatableProperty<number> | undefined;
+  if (effect.type === "offsetPath") {
+    if (propName === "amount") prop = effect.amount;
+    else if (propName === "miterLimit") prop = effect.miterLimit;
+  } else if (effect.type === "roughen") {
+    if (propName === "size") prop = effect.size;
+    else if (propName === "detail") prop = effect.detail;
+  } else if (effect.type === "wiggle") {
+    if (propName === "size") prop = effect.size;
+    else if (propName === "detail") prop = effect.detail;
+    else if (propName === "temporalPhase") prop = effect.temporalPhase;
+    else if (propName === "spatialPhase") prop = effect.spatialPhase;
+    else if (propName === "correlation") prop = effect.correlation;
+  } else if (effect.type === "zigzag") {
+    if (propName === "size") prop = effect.size;
+    else if (propName === "ridgesPerSegment") prop = effect.ridgesPerSegment;
+  } else if (effect.type === "wave") {
+    if (propName === "amplitude") prop = effect.amplitude;
+    else if (propName === "frequency") prop = effect.frequency;
+    else if (propName === "phase") prop = effect.phase;
+  }
+
+  if (!prop) return;
 
   const frame = store.currentFrame;
   const hasKeyframeAtFrame = prop.keyframes.some((k) => k.frame === frame);

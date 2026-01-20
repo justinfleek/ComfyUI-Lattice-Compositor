@@ -34,6 +34,7 @@ import type {
   LayerStyles,
   LayerTransform,
   MatteType,
+  PropertyValue,
 } from "@/types/project";
 import { layerLogger } from "@/utils/logger";
 import { KeyframeEvaluator } from "../animation/KeyframeEvaluator";
@@ -1648,7 +1649,7 @@ export abstract class BaseLayer implements LayerInstance {
   protected processEffectWithParams(
     _effect: EffectInstance,
     _sourceCanvas: HTMLCanvasElement,
-    _params: Record<string, unknown>,
+    _params: Record<string, PropertyValue>,
   ): HTMLCanvasElement | null {
     // This would delegate to effect-specific processors
     // For now, mark canvas for re-processing with new params

@@ -25,17 +25,31 @@ import type {
   RigidBodyConfig,
   ForceField,
 } from "@/types/physics";
-import type { Keyframe, Layer } from "@/types/project";
+import type { Keyframe, Layer, LayerDataUnion } from "@/types/project";
 import { storeLogger } from "@/utils/logger";
 import { useLayerStore } from "@/stores/layerStore";
+import { useProjectStore } from "./projectStore";
+import { useAnimationStore } from "./animationStore";
+import { useKeyframeStore } from "./keyframeStore";
 
 // ============================================================================
-// STORE ACCESS INTERFACE
+// TYPE GUARDS
 // ============================================================================
 
 /**
- * Interface for compositorStore access during transition period.
- * Will be removed in Phase 5 when compositorStore is deleted.
+ * Type guard to check if layer data has physics property
+ */
+function hasPhysicsData(data: unknown): data is { physics?: PhysicsLayerData } {
+  return data !== null && data !== undefined && typeof data === "object" && "physics" in data;
+}
+
+// ============================================================================
+// STORE ACCESS INTERFACE (DEPRECATED - Will be removed in Phase 5)
+// ============================================================================
+
+/**
+ * @deprecated This interface is no longer used. All methods now use domain stores directly.
+ * Will be removed when compositorStore is deleted.
  */
 export interface PhysicsStoreAccess {
   activeCompositionId: string;
@@ -55,7 +69,7 @@ export interface PhysicsStoreAccess {
     >;
   };
   getLayerById(id: string): Layer | null;
-  updateLayerData(layerId: string, data: Record<string, unknown>): void;
+  updateLayerData(layerId: string, data: Partial<LayerDataUnion>): void;
   addKeyframe<T>(
     layerId: string,
     propertyName: string,
@@ -118,10 +132,10 @@ export const usePhysicsStore = defineStore("physics", {
      * Initialize physics engine for the current composition
      */
     initializePhysicsEngine(
-      store: PhysicsStoreAccess,
       config?: Partial<PhysicsSpaceConfig>,
     ): PhysicsEngine {
-      const comp = store.project.compositions[store.activeCompositionId];
+      const projectStore = useProjectStore();
+      const comp = projectStore.project.compositions[projectStore.activeCompositionId];
       if (!comp) {
         throw new Error("No active composition");
       }
@@ -129,7 +143,7 @@ export const usePhysicsStore = defineStore("physics", {
       physicsEngine = createPhysicsEngine(config);
       storeLogger.info(
         "Physics engine initialized for composition",
-        store.activeCompositionId,
+        projectStore.activeCompositionId,
       );
       return physicsEngine;
     },
@@ -137,9 +151,9 @@ export const usePhysicsStore = defineStore("physics", {
     /**
      * Get or create physics engine
      */
-    getPhysicsEngine(store: PhysicsStoreAccess): PhysicsEngine {
+    getPhysicsEngine(): PhysicsEngine {
       if (!physicsEngine) {
-        return this.initializePhysicsEngine(store);
+        return this.initializePhysicsEngine();
       }
       return physicsEngine;
     },
@@ -162,17 +176,17 @@ export const usePhysicsStore = defineStore("physics", {
      * Enable physics for a layer as a rigid body
      */
     enableLayerPhysics(
-      store: PhysicsStoreAccess,
       layerId: string,
       config: Partial<RigidBodyConfig> = {},
     ): void {
-      const layer = store.getLayerById(layerId);
+      const layerStore = useLayerStore();
+      const layer = layerStore.getLayerById(layerId);
       if (!layer) {
         storeLogger.warn("Layer not found for physics:", layerId);
         return;
       }
 
-      const engine = this.getPhysicsEngine(store);
+      const engine = this.getPhysicsEngine();
 
       const position = {
         x: layer.transform?.position?.value?.x ?? 0,
@@ -209,18 +223,19 @@ export const usePhysicsStore = defineStore("physics", {
         rigidBody: finalConfig,
       };
 
-      store.updateLayerData(layerId, { physics: physicsData });
+      layerStore.updateLayerData(layerId, { physics: physicsData });
       storeLogger.info("Physics enabled for layer:", layerId);
     },
 
     /**
      * Disable physics for a layer
      */
-    disableLayerPhysics(store: PhysicsStoreAccess, layerId: string): void {
-      const engine = this.getPhysicsEngine(store);
+    disableLayerPhysics(layerId: string): void {
+      const layerStore = useLayerStore();
+      const engine = this.getPhysicsEngine();
       engine.removeRigidBody(layerId);
 
-      store.updateLayerData(layerId, {
+      layerStore.updateLayerData(layerId, {
         physics: { physicsEnabled: false },
       });
       storeLogger.info("Physics disabled for layer:", layerId);
@@ -230,19 +245,18 @@ export const usePhysicsStore = defineStore("physics", {
      * Update physics body for a layer
      */
     updateLayerPhysicsConfig(
-      store: PhysicsStoreAccess,
       layerId: string,
       updates: Partial<RigidBodyConfig>,
     ): void {
-      const layer = store.getLayerById(layerId);
-      if (!layer) return;
+      const layerStore = useLayerStore();
+      const layer = layerStore.getLayerById(layerId);
+      if (!layer || !layer.data) return;
 
-      const physicsData = (layer.data as unknown as Record<string, unknown>)?.physics as
-        | PhysicsLayerData
-        | undefined;
+      if (!hasPhysicsData(layer.data)) return;
+      const physicsData = layer.data.physics;
       if (!physicsData?.physicsEnabled || !physicsData.rigidBody) return;
 
-      const engine = this.getPhysicsEngine(store);
+      const engine = this.getPhysicsEngine();
       engine.removeRigidBody(layerId);
 
       const newConfig: RigidBodyConfig = {
@@ -252,7 +266,7 @@ export const usePhysicsStore = defineStore("physics", {
 
       engine.addRigidBody(newConfig);
 
-      store.updateLayerData(layerId, {
+      layerStore.updateLayerData(layerId, {
         physics: {
           ...physicsData,
           rigidBody: newConfig,
@@ -267,9 +281,10 @@ export const usePhysicsStore = defineStore("physics", {
     /**
      * Add a force field to the physics simulation
      */
-    addForceField(store: PhysicsStoreAccess, force: ForceField): void {
-      const engine = this.getPhysicsEngine(store);
-      const compId = store.activeCompositionId;
+    addForceField(force: ForceField): void {
+      const projectStore = useProjectStore();
+      const engine = this.getPhysicsEngine();
+      const compId = projectStore.activeCompositionId;
 
       const fields = compositionForceFields.get(compId) || [];
       const existingIndex = fields.findIndex((f) => f.id === force.id);
@@ -288,9 +303,10 @@ export const usePhysicsStore = defineStore("physics", {
     /**
      * Remove a force field
      */
-    removeForceField(store: PhysicsStoreAccess, forceId: string): void {
-      const engine = this.getPhysicsEngine(store);
-      const compId = store.activeCompositionId;
+    removeForceField(forceId: string): void {
+      const projectStore = useProjectStore();
+      const engine = this.getPhysicsEngine();
+      const compId = projectStore.activeCompositionId;
 
       const fields = compositionForceFields.get(compId) || [];
       const newFields = fields.filter((f) => f.id !== forceId);
@@ -304,15 +320,15 @@ export const usePhysicsStore = defineStore("physics", {
      * Set global gravity
      */
     setGravity(
-      store: PhysicsStoreAccess,
       gravityX: number,
       gravityY: number,
     ): void {
+      const projectStore = useProjectStore();
       const safeGravityX = Number.isFinite(gravityX) ? gravityX : 0;
       const safeGravityY = Number.isFinite(gravityY) ? gravityY : 0;
 
-      const engine = this.getPhysicsEngine(store);
-      const compId = store.activeCompositionId;
+      const engine = this.getPhysicsEngine();
+      const compId = projectStore.activeCompositionId;
 
       const fields = compositionForceFields.get(compId) || [];
       const newFields = fields.filter((f) => f.id !== "global-gravity");
@@ -336,41 +352,41 @@ export const usePhysicsStore = defineStore("physics", {
     /**
      * Step the physics simulation to a specific frame
      */
-    stepPhysics(store: PhysicsStoreAccess, targetFrame: number): void {
-      const engine = this.getPhysicsEngine(store);
+    stepPhysics(targetFrame: number): void {
+      const engine = this.getPhysicsEngine();
       const state = engine.evaluateFrame(targetFrame);
-      this._applyPhysicsStateToLayers(store, state);
+      this._applyPhysicsStateToLayers(state);
     },
 
     /**
      * Evaluate physics at a specific frame (for scrubbing)
      */
-    evaluatePhysicsAtFrame(store: PhysicsStoreAccess, targetFrame: number): void {
-      const engine = this.getPhysicsEngine(store);
+    evaluatePhysicsAtFrame(targetFrame: number): void {
+      const engine = this.getPhysicsEngine();
       const state = engine.evaluateFrame(targetFrame);
-      this._applyPhysicsStateToLayers(store, state);
+      this._applyPhysicsStateToLayers(state);
     },
 
     /**
      * Reset physics simulation to initial state
      */
-    resetPhysicsSimulation(store: PhysicsStoreAccess): void {
-      const engine = this.getPhysicsEngine(store);
+    resetPhysicsSimulation(): void {
+      const projectStore = useProjectStore();
+      const engine = this.getPhysicsEngine();
       engine.clearCache();
 
       for (const key of compositionPhysicsStates.keys()) {
-        if (key.startsWith(store.activeCompositionId)) {
+        if (key.startsWith(projectStore.activeCompositionId)) {
           compositionPhysicsStates.delete(key);
         }
       }
 
-      const comp = store.project.compositions[store.activeCompositionId];
+      const comp = projectStore.project.compositions[projectStore.activeCompositionId];
       if (!comp) return;
 
       for (const layer of comp.layers) {
-        const physicsData = (layer.data as unknown as Record<string, unknown>)?.physics as
-          | PhysicsLayerData
-          | undefined;
+        if (!layer.data || !hasPhysicsData(layer.data)) continue;
+        const physicsData = layer.data.physics;
         if (physicsData?.physicsEnabled && physicsData.rigidBody) {
           const initialPos = physicsData.rigidBody.position;
           if (layer.transform?.position) {
@@ -390,16 +406,15 @@ export const usePhysicsStore = defineStore("physics", {
      * Apply physics state to layer transforms (internal)
      */
     _applyPhysicsStateToLayers(
-      store: PhysicsStoreAccess,
       state: PhysicsSimulationState,
     ): void {
-      const comp = store.project.compositions[store.activeCompositionId];
+      const projectStore = useProjectStore();
+      const comp = projectStore.project.compositions[projectStore.activeCompositionId];
       if (!comp) return;
 
       for (const layer of comp.layers) {
-        const physicsData = (layer.data as unknown as Record<string, unknown>)?.physics as
-          | PhysicsLayerData
-          | undefined;
+        if (!layer.data || !hasPhysicsData(layer.data)) continue;
+        const physicsData = layer.data.physics;
         if (!physicsData?.physicsEnabled) continue;
 
         const bodyState = state.rigidBodies.find((b) => b.id === layer.id);
@@ -427,16 +442,18 @@ export const usePhysicsStore = defineStore("physics", {
      * Bake physics simulation to keyframes
      */
     async bakePhysicsToKeyframes(
-      store: PhysicsStoreAccess,
       layerId: string,
       options: BakeOptions = {},
     ): Promise<BakeResult> {
-      const layer = store.getLayerById(layerId);
+      const layerStore = useLayerStore();
+      const projectStore = useProjectStore();
+      const keyframeStore = useKeyframeStore();
+      const layer = layerStore.getLayerById(layerId);
       if (!layer) {
         throw new Error(`Layer not found: ${layerId}`);
       }
 
-      const comp = store.project.compositions[store.activeCompositionId];
+      const comp = projectStore.project.compositions[projectStore.activeCompositionId];
       if (!comp) {
         throw new Error("No active composition");
       }
@@ -448,7 +465,7 @@ export const usePhysicsStore = defineStore("physics", {
           ? options.sampleInterval!
           : 1;
 
-      const engine = this.getPhysicsEngine(store);
+      const engine = this.getPhysicsEngine();
       engine.clearCache();
 
       const positionKeyframes: BakedKeyframe<{ x: number; y: number; z: number }>[] = [];
@@ -477,15 +494,38 @@ export const usePhysicsStore = defineStore("physics", {
         }
       }
 
+      // Create KeyframeStoreAccess helper for keyframeStore calls
+      const activeComp = projectStore.getActiveComp();
+      const keyframeStoreAccess = {
+        project: {
+          composition: {
+            width: comp.settings.width,
+            height: comp.settings.height,
+          },
+          meta: projectStore.project.meta,
+        },
+        getActiveComp: () => activeComp ? {
+          currentFrame: activeComp.currentFrame,
+          layers: activeComp.layers,
+          settings: activeComp.settings,
+        } : null,
+        getActiveCompLayers: () => projectStore.getActiveCompLayers(),
+        getLayerById: (id: string) => layerStore.getLayerById(id),
+        pushHistory: () => projectStore.pushHistory(),
+        get fps() {
+          return projectStore.getFps();
+        },
+      };
+
       for (const kf of positionKeyframes) {
-        store.addKeyframe(layerId, "transform.position", kf.value, kf.frame);
+        keyframeStore.addKeyframe(keyframeStoreAccess, layerId, "transform.position", kf.value, kf.frame);
       }
 
       for (const kf of rotationKeyframes) {
-        store.addKeyframe(layerId, "transform.rotation", kf.value, kf.frame);
+        keyframeStore.addKeyframe(keyframeStoreAccess, layerId, "transform.rotation", kf.value, kf.frame);
       }
 
-      this.disableLayerPhysics(store, layerId);
+      this.disableLayerPhysics(layerId);
 
       storeLogger.info("Physics baked to keyframes:", layerId, {
         positionKeyframes: positionKeyframes.length,
@@ -503,20 +543,19 @@ export const usePhysicsStore = defineStore("physics", {
      * Bake all physics-enabled layers to keyframes
      */
     async bakeAllPhysicsToKeyframes(
-      store: PhysicsStoreAccess,
       options: BakeOptions = {},
     ): Promise<BakeResult[]> {
-      const comp = store.project.compositions[store.activeCompositionId];
+      const projectStore = useProjectStore();
+      const comp = projectStore.project.compositions[projectStore.activeCompositionId];
       if (!comp) return [];
 
       const results: BakeResult[] = [];
 
       for (const layer of comp.layers) {
-        const physicsData = (layer.data as unknown as Record<string, unknown>)?.physics as
-          | PhysicsLayerData
-          | undefined;
+        if (!layer.data || !hasPhysicsData(layer.data)) continue;
+        const physicsData = layer.data.physics;
         if (physicsData?.physicsEnabled) {
-          const result = await this.bakePhysicsToKeyframes(store, layer.id, options);
+          const result = await this.bakePhysicsToKeyframes(layer.id, options);
           results.push(result);
         }
       }
@@ -532,7 +571,6 @@ export const usePhysicsStore = defineStore("physics", {
      * Create cloth simulation for a layer
      */
     createClothForLayer(
-      store: PhysicsStoreAccess,
       layerId: string,
       options: {
         width: number;
@@ -542,10 +580,11 @@ export const usePhysicsStore = defineStore("physics", {
         pinnedCorners?: boolean;
       },
     ): void {
-      const layer = store.getLayerById(layerId);
+      const layerStore = useLayerStore();
+      const layer = layerStore.getLayerById(layerId);
       if (!layer) return;
 
-      const engine = this.getPhysicsEngine(store);
+      const engine = this.getPhysicsEngine();
 
       const origin = {
         x: layer.transform?.position?.value?.x ?? 0,
@@ -563,13 +602,12 @@ export const usePhysicsStore = defineStore("physics", {
 
       engine.addCloth(clothConfig);
 
-      store.updateLayerData(layerId, {
-        physics: {
-          enabled: true,
-          type: "cloth",
-          config: clothConfig,
-        },
-      });
+      const physicsData: PhysicsLayerData = {
+        physicsEnabled: true,
+        cloth: clothConfig,
+      };
+
+      layerStore.updateLayerData(layerId, { physics: physicsData });
 
       storeLogger.info("Cloth created for layer:", layerId);
     },
@@ -582,17 +620,17 @@ export const usePhysicsStore = defineStore("physics", {
      * Create ragdoll for a pose layer
      */
     createRagdollForLayer(
-      store: PhysicsStoreAccess,
       layerId: string,
       preset: "adult" | "child" | "cartoon" = "adult",
     ): void {
-      const layer = store.getLayerById(layerId);
+      const layerStore = useLayerStore();
+      const layer = layerStore.getLayerById(layerId);
       if (!layer || layer.type !== "pose") {
         storeLogger.warn("Ragdoll requires a pose layer");
         return;
       }
 
-      const engine = this.getPhysicsEngine(store);
+      const engine = this.getPhysicsEngine();
       const builder = createRagdollBuilder(layerId, layerId);
       const ragdoll = builder.fromPreset(preset).build();
 
@@ -623,7 +661,7 @@ export const usePhysicsStore = defineStore("physics", {
       }
       engine.addRagdoll(ragdoll.id, ragdoll.bones);
 
-      store.updateLayerData(layerId, {
+      layerStore.updateLayerData(layerId, {
         physics: {
           physicsEnabled: true,
           ragdoll: ragdoll,
@@ -641,15 +679,11 @@ export const usePhysicsStore = defineStore("physics", {
      * Set collision group for a layer
      */
     setLayerCollisionGroup(
-      store: PhysicsStoreAccess,
       layerId: string,
       group: number,
       mask: number = 0xffffffff,
     ): void {
-      const layer = store.getLayerById(layerId);
-      if (!layer) return;
-
-      this.updateLayerPhysicsConfig(store, layerId, {
+      this.updateLayerPhysicsConfig(layerId, {
         filter: {
           category: 1 << (group - 1),
           mask,
@@ -664,7 +698,6 @@ export const usePhysicsStore = defineStore("physics", {
      * Enable/disable collision between two layers
      */
     setLayersCanCollide(
-      _store: PhysicsStoreAccess,
       _layerIdA: string,
       _layerIdB: string,
       _canCollide: boolean,

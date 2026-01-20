@@ -16,6 +16,30 @@ import { createLogger } from "@/utils/logger";
 const logger = createLogger("VideoDecoder");
 
 // ============================================================================
+// TYPE EXTENSIONS FOR HTML VIDEO ELEMENT
+// ============================================================================
+
+/**
+ * Extended HTMLVideoElement with audioTracks API
+ * This API is available in some browsers but not yet in TypeScript DOM types
+ */
+interface HTMLVideoElementWithAudioTracks extends HTMLVideoElement {
+  audioTracks?: {
+    length: number;
+    [index: number]: { enabled: boolean };
+  };
+}
+
+/**
+ * Type guard to check if video element supports audioTracks API
+ */
+function supportsAudioTracks(
+  video: HTMLVideoElement,
+): video is HTMLVideoElementWithAudioTracks {
+  return "audioTracks" in video;
+}
+
+// ============================================================================
 // Types
 // ============================================================================
 
@@ -317,9 +341,9 @@ export class VideoDecoderService {
    * Check if video has audio track
    */
   private hasAudioTrack(video: HTMLVideoElement): boolean {
-    // Check audioTracks API if available
-    if ("audioTracks" in video) {
-      return (video as any).audioTracks.length > 0;
+    // Check audioTracks API if available (type-safe)
+    if (supportsAudioTracks(video) && video.audioTracks) {
+      return video.audioTracks.length > 0;
     }
     // Assume it has audio if we can't detect
     return true;

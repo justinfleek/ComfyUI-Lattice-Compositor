@@ -53,6 +53,8 @@
 </template>
 
 <script setup lang="ts">
+import type { EnvironmentState } from "@/stores/assetStore";
+
 export type LeftTab = "project" | "effects" | "assets";
 
 defineProps<{
@@ -64,8 +66,8 @@ defineEmits<{
   openCompositionSettings: [];
   createLayersFromSvg: [svgId: string];
   useMeshAsEmitter: [meshId: string];
-  environmentUpdate: [settings: any];
-  environmentLoad: [settings: any];
+  environmentUpdate: [settings: Partial<EnvironmentState>];
+  environmentLoad: [settings: Partial<EnvironmentState>];
   environmentClear: [];
 }>();
 </script>

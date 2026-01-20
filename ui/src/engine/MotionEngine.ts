@@ -51,6 +51,7 @@ import type {
   Layer,
   LayerTransform,
   ParticleLayerData,
+  PropertyValue,
 } from "@/types/project";
 import {
   type ParticleSnapshot,
@@ -127,7 +128,7 @@ export interface EvaluatedLayer {
   readonly effects: readonly EvaluatedEffect[];
 
   /** Layer-specific evaluated properties (type-safe) */
-  readonly properties: Readonly<Record<string, unknown>>;
+  readonly properties: Readonly<Record<string, PropertyValue>>;
 
   /** Parent layer ID for hierarchy */
   readonly parentId: string | null;
@@ -203,7 +204,7 @@ export interface EvaluatedEffect {
   readonly id: string;
   readonly type: string;
   readonly enabled: boolean;
-  readonly parameters: Readonly<Record<string, unknown>>;
+  readonly parameters: Readonly<Record<string, PropertyValue>>;
 }
 
 /**
@@ -928,14 +929,15 @@ export class MotionEngine {
     fps: number = 30,
   ): EvaluatedEffect[] {
     return effects.map((effect) => {
-      const evaluatedParams: Record<string, unknown> = {};
+      const evaluatedParams: Record<string, PropertyValue> = {};
 
       // Evaluate each parameter
       for (const [key, param] of Object.entries(effect.parameters)) {
         if (this.isAnimatableProperty(param)) {
-          evaluatedParams[key] = interpolateProperty(param, frame, fps);
+          evaluatedParams[key] = interpolateProperty(param, frame, fps) as PropertyValue;
         } else {
-          evaluatedParams[key] = param;
+          // Non-animatable parameters are already PropertyValue (from AnimatableProperty.value)
+          evaluatedParams[key] = param.value as PropertyValue;
         }
       }
 
@@ -952,12 +954,12 @@ export class MotionEngine {
     frame: number,
     layer: Layer,
     fps: number = 30,
-  ): Record<string, unknown> {
-    const evaluated: Record<string, unknown> = {};
+  ): Record<string, PropertyValue> {
+    const evaluated: Record<string, PropertyValue> = {};
 
     // Evaluate properties array
     for (const prop of layer.properties) {
-      evaluated[prop.name] = interpolateProperty(prop, frame, fps, layer.id);
+      evaluated[prop.name] = interpolateProperty(prop, frame, fps, layer.id) as PropertyValue;
     }
 
     // Type-specific evaluation

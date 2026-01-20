@@ -12,9 +12,18 @@
  * @see AUDIT/SECURITY_ARCHITECTURE.md
  */
 
+import type { ToolCall } from "@/services/ai/toolDefinitions";
+
 // ============================================================================
 // Types
 // ============================================================================
+
+/**
+ * Audit log metadata - allows common JSON-serializable values
+ */
+export interface AuditLogMetadata {
+  [key: string]: string | number | boolean | null | undefined | string[] | number[] | { [key: string]: string | number | boolean | null | undefined };
+}
 
 export interface AuditLogEntry {
   /** Unique entry ID (auto-generated) */
@@ -35,7 +44,7 @@ export interface AuditLogEntry {
   /** Tool name (for tool events) */
   toolName?: string;
   /** Tool arguments (sanitized) */
-  toolArguments?: Record<string, unknown>;
+  toolArguments?: ToolCall["arguments"];
   /** Result or error message */
   message: string;
   /** Success/failure for tool calls */
@@ -45,7 +54,7 @@ export interface AuditLogEntry {
   /** User action that triggered this (if known) */
   userAction?: string;
   /** Additional context */
-  metadata?: Record<string, unknown>;
+  metadata?: AuditLogMetadata;
 }
 
 export interface AuditLogQuery {
@@ -218,7 +227,7 @@ export async function logAuditEntry(
  */
 export async function logToolCall(
   toolName: string,
-  toolArguments: Record<string, unknown>,
+  toolArguments: ToolCall["arguments"],
   userAction?: string,
 ): Promise<void> {
   await logAuditEntry({
@@ -238,7 +247,7 @@ export async function logToolResult(
   toolName: string,
   success: boolean,
   message: string,
-  metadata?: Record<string, unknown>,
+  metadata?: AuditLogMetadata,
 ): Promise<void> {
   await logAuditEntry({
     category: "tool_result",
@@ -311,7 +320,7 @@ export async function logUserConfirmation(
  */
 export async function logSecurityWarning(
   message: string,
-  metadata?: Record<string, unknown>,
+  metadata?: AuditLogMetadata,
 ): Promise<void> {
   await logAuditEntry({
     category: "security_warning",
@@ -639,9 +648,9 @@ export async function clearAuditLog(
  * Removes potentially sensitive data, truncates long strings.
  */
 function sanitizeArguments(
-  args: Record<string, unknown>,
-): Record<string, unknown> {
-  const sanitized: Record<string, unknown> = {};
+  args: ToolCall["arguments"],
+): ToolCall["arguments"] {
+  const sanitized: ToolCall["arguments"] = {};
 
   for (const [key, value] of Object.entries(args)) {
     // Skip potentially sensitive keys

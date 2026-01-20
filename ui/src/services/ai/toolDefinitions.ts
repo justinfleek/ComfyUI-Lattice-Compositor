@@ -9,16 +9,45 @@
 // TYPES
 // ============================================================================
 
-export interface ToolCall {
+import type { ToolArguments } from "./toolArgumentTypes";
+
+/**
+ * Tool call from AI agent
+ * Uses discriminated union for type-safe arguments based on tool name
+ * The `name` field discriminates which argument type to use
+ */
+export type ToolCall = ToolArguments & {
   id: string;
-  name: string;
-  arguments: Record<string, any>;
-}
+};
+
+/**
+ * Extract arguments from a ToolCall (removes 'name' and 'id' fields)
+ * This is a helper type for places that need just the arguments
+ */
+export type ToolCallArguments<T extends ToolCall = ToolCall> = Omit<T, "name" | "id">;
+
+/**
+ * Tool execution result type
+ * Matches the return type of executeToolCall
+ */
+export type ToolExecutionResult =
+  | { layerId: string; message: string }
+  | { success: boolean; message: string }
+  | { layerId: string | null; message: string }
+  | { keyframeId: string | null; message: string }
+  | { effectId: string | null; message: string }
+  | { success: boolean; keyframeCount: number; message: string }
+  | { frame: number; message: string }
+  | { playing: boolean; message: string }
+  | { layerIds: string[]; message: string }
+  | { layer: Record<string, string | number | boolean | { x: number; y: number } | Array<{ id: string; effectKey: string; name: string; enabled: boolean }> | null> | null; message: string }
+  | { layers: Array<{ id: string; name: string; type: string }>; message: string }
+  | { state: Record<string, { id: string; name: string; width: number; height: number; frameCount: number; fps: number; currentFrame: number } | null | number | Array<{ id: string; name: string; type: string; visible: boolean }>>; message: string };
 
 export interface ToolResult {
   toolCallId: string;
   success: boolean;
-  result?: any;
+  result?: ToolExecutionResult; // Type-safe tool execution result
   error?: string;
 }
 
@@ -29,7 +58,13 @@ export interface ToolDefinition {
     description: string;
     parameters: {
       type: "object";
-      properties: Record<string, any>;
+      properties: Record<string, {
+        type?: string;
+        enum?: readonly string[];
+        properties?: Record<string, { type: string }>;
+        description?: string;
+        nullable?: boolean;
+      }>;
       required?: string[];
     };
   };

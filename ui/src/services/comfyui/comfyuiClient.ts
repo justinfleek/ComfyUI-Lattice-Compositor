@@ -61,7 +61,7 @@ export class ComfyUIClient {
   private serverAddress: string;
   private clientId: string;
   private ws: WebSocket | null = null;
-  private messageHandlers: Map<string, (data: any) => void> = new Map();
+  private messageHandlers: Map<string, (data: unknown) => void> = new Map();
 
   constructor(config: ComfyUIClientConfig) {
     this.serverAddress = config.serverAddress.replace(/\/$/, "");
@@ -182,7 +182,7 @@ export class ComfyUIClient {
    */
   async queuePrompt(
     workflow: ComfyUIWorkflow,
-    extraData?: Record<string, any>,
+    extraData?: Record<string, string | number | boolean>,
   ): Promise<ComfyUIPromptResult> {
     const payload = {
       prompt: workflow,
@@ -411,7 +411,7 @@ export class ComfyUIClient {
   /**
    * Register a message handler for a specific message type
    */
-  onMessage(type: string, handler: (data: any) => void): void {
+  onMessage(type: string, handler: (data: unknown) => void): void {
     this.messageHandlers.set(type, handler);
   }
 
@@ -422,8 +422,9 @@ export class ComfyUIClient {
     this.messageHandlers.delete(type);
   }
 
-  private handleWebSocketMessage(data: any): void {
-    const { type } = data;
+  private handleWebSocketMessage(data: unknown): void {
+    if (typeof data !== "object" || data === null || !("type" in data)) return;
+    const { type } = data as { type: string };
 
     // Call registered handler
     const handler = this.messageHandlers.get(type);
@@ -518,54 +519,66 @@ export class ComfyUIClient {
       // Progress updates
       this.onMessage("progress", (data) => {
         checkTimeout();
-        onProgress?.({
-          status: "executing",
-          currentStep: data.data.value,
-          totalSteps: data.data.max,
-          percentage: (data.data.value / data.data.max) * 100,
-        });
+        if (typeof data === "object" && data !== null && "data" in data) {
+          const progressData = data.data as { value: number; max: number };
+          onProgress?.({
+            status: "executing",
+            currentStep: progressData.value,
+            totalSteps: progressData.max,
+            percentage: (progressData.value / progressData.max) * 100,
+          });
+        }
       });
 
       // Node execution
       this.onMessage("executing", (data) => {
         checkTimeout();
-        if (data.data.prompt_id === promptId) {
-          onProgress?.({
-            status: "executing",
-            currentNode: data.data.node,
-            percentage: 10, // Approximate
-          });
+        if (typeof data === "object" && data !== null && "data" in data) {
+          const execData = data.data as { prompt_id?: string; node?: string };
+          if (execData.prompt_id === promptId) {
+            onProgress?.({
+              status: "executing",
+              currentNode: execData.node,
+              percentage: 10, // Approximate
+            });
+          }
         }
       });
 
       // Completion
       this.onMessage("executed", async (data) => {
-        if (data.data.prompt_id === promptId && !completed) {
-          completed = true;
-          cleanup();
+        if (typeof data === "object" && data !== null && "data" in data) {
+          const execData = data.data as { prompt_id?: string };
+          if (execData.prompt_id === promptId && !completed) {
+            completed = true;
+            cleanup();
 
-          onProgress?.({
-            status: "completed",
-            percentage: 100,
-          });
+            onProgress?.({
+              status: "completed",
+              percentage: 100,
+            });
 
-          // Fetch final history
-          const history = await this.getHistory(promptId);
-          resolve(history[promptId]);
+            // Fetch final history
+            const history = await this.getHistory(promptId);
+            resolve(history[promptId]);
+          }
         }
       });
 
       // Error
       this.onMessage("execution_error", (data) => {
-        if (data.data.prompt_id === promptId) {
-          cleanup();
+        if (typeof data === "object" && data !== null && "data" in data) {
+          const errorData = data.data as { prompt_id?: string; exception_message?: string };
+          if (errorData.prompt_id === promptId) {
+            cleanup();
 
-          onProgress?.({
-            status: "error",
-            percentage: 0,
-          });
+            onProgress?.({
+              status: "error",
+              percentage: 0,
+            });
 
-          reject(new Error(data.data.exception_message || "Execution failed"));
+            reject(new Error(errorData.exception_message || "Execution failed"));
+          }
         }
       });
     });

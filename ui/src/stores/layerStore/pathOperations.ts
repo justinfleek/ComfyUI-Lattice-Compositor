@@ -7,7 +7,7 @@
 import type { ControlPoint, Keyframe, SplineData } from "@/types/project";
 import { markLayerDirty } from "@/services/layerEvaluationCache";
 import { storeLogger } from "@/utils/logger";
-import type { CompositorStoreAccess } from "./types";
+import { useProjectStore } from "../projectStore";
 
 // ============================================================================
 // COPY PATH TO POSITION
@@ -34,19 +34,18 @@ export interface CopyPathToPositionOptions {
  * Copy a path from a spline layer and paste it as position keyframes on a target layer.
  * This creates a motion path where the layer follows the spline's shape over time.
  *
- * @param compositorStore - The compositor store instance
  * @param sourceSplineLayerId - The spline layer to copy the path from
  * @param targetLayerId - The layer to apply position keyframes to
  * @param options - Configuration options
  * @returns Number of keyframes created, or null if failed
  */
 export function copyPathToPosition(
-  compositorStore: CompositorStoreAccess,
   sourceSplineLayerId: string,
   targetLayerId: string,
   options: CopyPathToPositionOptions = {},
 ): number | null {
-  const comp = compositorStore.getActiveComp();
+  const projectStore = useProjectStore();
+  const comp = projectStore.getActiveComp();
   if (!comp) {
     storeLogger.error("copyPathToPosition: No active composition");
     return null;
@@ -166,7 +165,7 @@ export function copyPathToPosition(
   }
 
   // Apply keyframes to target layer's position
-  compositorStore.pushHistory();
+  projectStore.pushHistory();
 
   targetLayer.transform.position.animated = true;
   // Type assertion needed: our keyframes match Keyframe<{x,y,z}> structure
@@ -178,7 +177,7 @@ export function copyPathToPosition(
 
   // Mark layer dirty for re-evaluation
   markLayerDirty(targetLayerId);
-  compositorStore.project.meta.modified = new Date().toISOString();
+  projectStore.project.meta.modified = new Date().toISOString();
 
   storeLogger.info(
     `copyPathToPosition: Created ${keyframes.length} position keyframes on layer "${targetLayer.name}"`,

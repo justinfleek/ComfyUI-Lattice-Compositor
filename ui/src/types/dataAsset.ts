@@ -31,9 +31,21 @@ export interface DataAssetBase {
  *
  * Stores parsed JSON data accessible via sourceData property.
  */
+/**
+ * JSON value type - represents any valid JSON value
+ * JSON can be: null, boolean, number, string, array, or object
+ */
+export type JSONValue =
+  | null
+  | boolean
+  | number
+  | string
+  | JSONValue[]
+  | { [key: string]: JSONValue };
+
 export interface JSONDataAsset extends DataAssetBase {
   type: "json" | "mgjson";
-  sourceData: any; // Parsed JSON object
+  sourceData: JSONValue; // Parsed JSON object (type-safe JSON value)
 }
 
 /**
@@ -65,7 +77,7 @@ export type DataAsset = JSONDataAsset | CSVDataAsset;
  * Provides access to parsed JSON structure.
  */
 export interface JSONDataAccessor {
-  sourceData: any;
+  sourceData: JSONValue; // Type-safe JSON value
 }
 
 /**
@@ -105,8 +117,10 @@ export interface CSVDataAccessor {
 /**
  * CSV data represented as JSON-like structure
  * Allows array-style access: data[0].columnName
+ * Values are strings (from CSV), numbers (if parsed), booleans, or null
+ * Matches schema definition in dataAsset-schema.ts
  */
-export type CSVSourceData = Record<string, any>[];
+export type CSVSourceData = Array<Record<string, string | number | boolean | null>>;
 
 // ============================================================================
 // FOOTAGE ACCESSOR (Combined interface for expressions)
@@ -120,7 +134,7 @@ export type CSVSourceData = Record<string, any>[];
  */
 export interface FootageDataAccessor {
   // For JSON files
-  sourceData?: any;
+  sourceData?: JSONValue; // Type-safe JSON value
 
   // For CSV files
   dataValue?: (coords: [number, number | string]) => string | number;
@@ -172,10 +186,14 @@ export interface JSONParseOptions {
 /**
  * Common chart data structure
  */
+/**
+ * Chart data point with additional metadata
+ * Additional properties can be any JSON-compatible value
+ */
 export interface ChartDataPoint {
   label: string;
   value: number;
-  [key: string]: any; // Additional properties
+  [key: string]: JSONValue; // Additional properties (type-safe JSON values)
 }
 
 /**

@@ -12,6 +12,10 @@ dependencies = [
     "numpy>=2.4.0",
     "pillow>=12.1.0",
     "scipy>=1.16.3",
+    "aiohttp>=3.9.0",  # Provided by ComfyUI, but needed for type checking
+    "torch>=2.0.0",  # Provided by ComfyUI, but needed for type checking
+    "torchvision>=0.15.0",  # Provided by ComfyUI, but needed for type checking
+    "torchaudio>=2.0.0",  # Provided by ComfyUI, but needed for type checking
 ]
 
 [tool.hatchling.build]
@@ -39,4 +43,7 @@ dev = [
     "pytest-cov>=7.0.0",
     "ruff>=0.14.10",
     "ty>=0.0.8",
+    "torch>=2.0.0",  # For type checking (provided by ComfyUI at runtime)
+    "torchvision>=0.15.0",  # For type checking (provided by ComfyUI at runtime)
+    "torchaudio>=2.0.0",  # For type checking (provided by ComfyUI at runtime)
 ]

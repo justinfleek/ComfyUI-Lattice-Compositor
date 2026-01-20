@@ -8,6 +8,8 @@
 import { computed, ref } from "vue";
 import { useCompositorStore } from "@/stores/compositorStore";
 import { useLayerStore } from "@/stores/layerStore";
+import type { Keyframe } from "@/types/project";
+import type { ShapeGenerator } from "@/types/shapes";
 
 export interface ShapeDrawBounds {
   x1: number;
@@ -29,7 +31,7 @@ export interface ShapeDrawState {
 function createAnimatableProp<T>(value: T): {
   value: T;
   animated: boolean;
-  keyframes: any[];
+  keyframes: Keyframe<T>[];
 } {
   return {
     value,
@@ -248,13 +250,16 @@ export function useShapeDrawing() {
     const options = store.shapeToolOptions;
 
     // Create the appropriate shape generator based on type
-    const shapeData = newLayer.data as any;
+    // Type-safe access - newLayer.data is ShapeLayerData for shape layers
+    const shapeData = newLayer.data as import("@/types/shapes").ShapeLayerData;
     if (!shapeData.contents || !Array.isArray(shapeData.contents)) {
       shapeData.contents = [];
     }
 
     // Find or create a default group
-    let group = shapeData.contents.find((c: any) => c.type === "group");
+    let group = shapeData.contents.find(
+      (c): c is import("@/types/shapes").GroupShape => c.type === "group",
+    );
     if (!group) {
       group = {
         type: "group",
@@ -270,7 +275,7 @@ export function useShapeDrawing() {
     group.contents = [];
 
     // Create the shape generator
-    let generator: any;
+    let generator: ShapeGenerator;
     switch (shapeType) {
       case "rectangle":
         generator = {

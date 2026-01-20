@@ -266,10 +266,19 @@ export function sanitizeObject<T>(obj: T): T {
     return obj.map(sanitizeObject) as T;
   }
 
-  const result: Record<string, unknown> = {};
+  // Use JSONValue type for sanitized objects (recursive type from jsonSanitizer)
+  type JSONValue =
+    | string
+    | number
+    | boolean
+    | null
+    | JSONValue[]
+    | { [key: string]: JSONValue };
+
+  const result: { [key: string]: JSONValue } = {};
   for (const [key, value] of Object.entries(obj)) {
     if (!DANGEROUS_KEYS.has(key)) {
-      result[key] = sanitizeObject(value);
+      result[key] = sanitizeObject(value) as JSONValue;
     }
   }
   return result as T;

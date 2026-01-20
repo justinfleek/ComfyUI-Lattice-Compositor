@@ -18,7 +18,7 @@ export {
 } from "./expressionStore";
 // Main compositor store (legacy - being refactored into domain stores)
 export { useCompositorStore } from "./compositorStore";
-export { type HistoryStore, useHistoryStore } from "./historyStore";
+// Note: historyStore removed - history is managed by projectStore
 // Domain-specific stores (Phase 1+ migration targets)
 export {
   type LayerStoreType,
@@ -36,3 +36,38 @@ export { type SelectionStore, useSelectionStore } from "./selectionStore";
 export { type ProjectStoreAccess, useProjectStore } from "./projectStore";
 export { type MarkerStoreAccess, useMarkerStore } from "./markerStore";
 export { useUIStore } from "./uiStore";
+// Phase 2 stores
+export {
+  type KeyframeStoreType,
+  type KeyframeStoreAccess,
+  useKeyframeStore,
+} from "./keyframeStore";
+// Phase 3 stores
+export {
+  type EffectStoreType,
+  type EffectStoreAccess,
+  type LayerStyleStore,
+  useEffectStore,
+} from "./effectStore";
+export {
+  type AudioKeyframeStoreAccess,
+  useAudioKeyframeStore,
+} from "./audioKeyframeStore";
+// Phase 4 stores
+export {
+  type CameraStoreAccess,
+  useCameraStore,
+} from "./cameraStore";
+export {
+  type PhysicsStoreAccess,
+  usePhysicsStore,
+} from "./physicsStore";
+// AI/ML stores
+export {
+  type DecompositionStoreAccess,
+  useDecompositionStore,
+} from "./decompositionStore";
+export {
+  type SegmentationStoreAccess,
+  useSegmentationStore,
+} from "./segmentationStore";

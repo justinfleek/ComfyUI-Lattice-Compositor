@@ -11,6 +11,22 @@ import * as THREE from "three";
 import { EXRLoader } from "three/examples/jsm/loaders/EXRLoader.js";
 import { RGBELoader } from "three/examples/jsm/loaders/RGBELoader.js";
 
+// ============================================================================
+// TYPE EXTENSIONS FOR THREE.JS COMPATIBILITY
+// ============================================================================
+
+/**
+ * Extended Object3D interface for compatibility with objects from different Three.js instances
+ * These properties exist at runtime but may not pass instanceof checks
+ */
+interface CompatibleObject3D {
+  updateMatrixWorld?: (force?: boolean) => void;
+  updateWorldMatrix?: (updateParents?: boolean, updateChildren?: boolean) => void;
+  children?: CompatibleObject3D[];
+  parent?: CompatibleObject3D | null;
+  dispatchEvent?: (event: { type: string }) => void;
+}
+
 /** Environment map configuration */
 export interface EnvironmentMapConfig {
   enabled: boolean;
@@ -269,25 +285,27 @@ export class SceneManager {
 
     // Ensure the object has required methods by binding them from our THREE.Object3D
     // This is a compatibility shim for multi-Three.js environments
+    // Type-safe interface defined at top of file
+    // Runtime check: properties exist at runtime but may not be in TypeScript types
     const proto = THREE.Object3D.prototype;
-    const obj = object as any;
+    const obj = object as THREE.Object3D & CompatibleObject3D;
 
     // Patch missing methods if they don't exist or are from wrong prototype
     if (typeof obj.updateMatrixWorld !== "function") {
-      obj.updateMatrixWorld = proto.updateMatrixWorld.bind(obj);
+      obj.updateMatrixWorld = proto.updateMatrixWorld.bind(object);
     }
     if (typeof obj.updateWorldMatrix !== "function") {
-      obj.updateWorldMatrix = proto.updateWorldMatrix.bind(obj);
+      obj.updateWorldMatrix = proto.updateWorldMatrix.bind(object);
     }
 
     // Recursively patch children
     if (obj.children && Array.isArray(obj.children)) {
-      const patchChild = (child: any) => {
+      const patchChild = (child: CompatibleObject3D) => {
         if (typeof child.updateMatrixWorld !== "function") {
-          child.updateMatrixWorld = proto.updateMatrixWorld.bind(child);
+          child.updateMatrixWorld = proto.updateMatrixWorld.bind(child as THREE.Object3D);
         }
         if (typeof child.updateWorldMatrix !== "function") {
-          child.updateWorldMatrix = proto.updateWorldMatrix.bind(child);
+          child.updateWorldMatrix = proto.updateWorldMatrix.bind(child as THREE.Object3D);
         }
         if (child.children) {
           child.children.forEach(patchChild);
@@ -324,11 +342,15 @@ export class SceneManager {
     this.scene.remove(object);
 
     // If remove() failed, manually remove from children array
+    // Type-safe handling for objects from different Three.js instances
     if (this.scene.children.length === childCountBefore) {
-      const index = this.scene.children.indexOf(object as any);
+      const index = this.scene.children.indexOf(object);
       if (index !== -1) {
         this.scene.children.splice(index, 1);
-        (object as any).parent = null;
+        // Type-safe parent assignment for compatibility objects
+        // Runtime check: parent property exists at runtime but may not be in TypeScript types
+        const compatObj = object as THREE.Object3D & { parent?: THREE.Object3D | null };
+        compatObj.parent = null;
         object.dispatchEvent?.({ type: "removed" });
       }
     }
@@ -344,7 +366,7 @@ export class SceneManager {
    * internal structures (like children arrays) to be incompatible.
    */
   prepareForRender(): void {
-    const ensureMethods = (obj: any, depth = 0) => {
+    const ensureMethods = (obj: THREE.Object3D | unknown, depth = 0) => {
       // Safety check
       if (!obj || depth > 50) return;
 

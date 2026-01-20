@@ -132,7 +132,8 @@ export interface ExposedProperty {
   comment?: string;
 
   // Value snapshot for template export/import
-  defaultValue?: any;
+  // Type depends on ExposedPropertyType: string | number | boolean | { r: number; g: number; b: number; a: number } | { x: number; y: number }
+  defaultValue?: string | number | boolean | { r: number; g: number; b: number; a: number } | { x: number; y: number };
 }
 
 /**
@@ -249,13 +250,36 @@ export interface TemplateExportSettings {
  * Lattice Template file structure (.lattice.json)
  * Exported templates that can be shared and imported
  */
+import type { Composition } from "./project";
+
+/**
+ * Serialized composition data for templates
+ * This is a JSON-serializable subset of Composition that excludes
+ * runtime-only properties and circular references
+ */
+export interface SerializedComposition {
+  id: string;
+  name: string;
+  settings: Composition["settings"];
+  layers: Composition["layers"];
+  currentFrame: number;
+  isNestedComp: boolean;
+  parentCompositionId?: string;
+  workflowId?: string;
+  workflowInputs?: Composition["workflowInputs"];
+  workflowOutputs?: Composition["workflowOutputs"];
+  templateConfig?: Composition["templateConfig"];
+  globalLight?: Composition["globalLight"];
+  markers?: Composition["markers"];
+}
+
 export interface LatticeTemplate {
   // Metadata
   formatVersion: string; // Template format version
   templateConfig: TemplateConfig;
 
   // Composition data (serialized LatticeProject subset)
-  composition: any; // Serialized composition
+  composition: SerializedComposition;
 
   // Embedded assets
   assets: TemplateAsset[];
@@ -270,7 +294,7 @@ export interface LatticeTemplate {
 export interface TemplateAsset {
   id: string;
   name: string;
-  type: "image" | "video" | "audio";
+  type: "depth_map" | "image" | "video" | "audio" | "model" | "pointcloud" | "texture" | "material" | "hdri" | "svg" | "sprite" | "spritesheet" | "lut";
   data: string; // Base64 encoded or URL
   mimeType: string;
 }
@@ -358,7 +382,7 @@ export function createExpressionControl(
 ): ExpressionControl {
   const id = `ctrl_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
 
-  let defaultValue: any;
+  let defaultValue: number | boolean | { r: number; g: number; b: number; a: number } | { x: number; y: number };
   let config: ExpressionControlConfig = {};
 
   switch (type) {

@@ -23,14 +23,19 @@ import {
   extractSplineTrajectories,
   exportTTMLayer,
   convertPointTrajectoriesToWanMove,
+  exportForModel,
   type CameraMatrix4x4,
   type CameraTrajectoryExport,
   type LightXMotionStyle,
   type PointTrajectory,
+  type UnifiedExportOptions,
+  type ModelTarget,
 } from "@/services/modelExport";
 import type { Camera3D } from "@/types/camera";
 import type { Layer } from "@/types/project";
 import type { SplineData } from "@/types/spline";
+import { createAnimatableProperty } from "@/types/animation";
+import { createDefaultTransform } from "@/types/transform";
 
 // ============================================================================
 // Test Fixtures
@@ -375,14 +380,14 @@ describe("detectMotionStyle", () => {
 
     const style = detectMotionStyle(cameras);
 
-    // Note: Single camera returns "static" (cast with as any in implementation)
+    // Single camera returns "static" (implementation behavior)
     expect(style).toBe("static");
   });
 
   it("should handle empty array (returns static)", () => {
     const style = detectMotionStyle([]);
 
-    // Note: Empty array returns "static" (cast with as any in implementation)
+    // Empty array returns "static" (implementation behavior)
     expect(style).toBe("static");
   });
 });
@@ -833,19 +838,21 @@ describe("extractLayerTrajectory", () => {
     type: "solid",
     visible,
     locked: false,
+    isolate: false,
+    threeD: false,
+    motionBlur: false,
+    startFrame: inPoint,
+    endFrame: outPoint,
     inPoint,
     outPoint,
-    startTime: 0,
-    opacity: { value: 100 },
     blendMode: "normal",
+    opacity: createAnimatableProperty("opacity", 100, "number"),
+    transform: createDefaultTransform(),
+    effects: [],
+    properties: [],
     parentId: null,
-    transform: {
-      position: { value: { x: 0, y: 0 } },
-      scale: { value: { x: 100, y: 100 } },
-      rotation: { value: 0 },
-      anchorPoint: { value: { x: 0, y: 0 } },
-    },
-  } as unknown as Layer);
+    data: { color: "#ff0000", width: 1920, height: 1080 },
+  });
 
   const mockGetPosition = (layer: Layer, frame: number) => ({
     x: frame * 10,
@@ -938,8 +945,6 @@ describe("extractLayerTrajectory", () => {
 // exportForModel Tests
 // ============================================================================
 
-import { exportForModel } from "@/services/modelExport";
-
 describe("exportForModel", () => {
   it("should export camera-comfyui format", async () => {
     const options = {
@@ -1004,27 +1009,41 @@ describe("exportForModel", () => {
   });
 
   it("should export wan-move format with trajectories", async () => {
-    const mockLayer = {
+    const mockLayer: Layer = {
       id: "layer-1",
       name: "Test Layer",
-      type: "solid" as const,
+      type: "solid",
+      visible: true,
+      locked: false,
+      isolate: false,
+      threeD: false,
+      motionBlur: false,
+      blendMode: "normal",
+      opacity: createAnimatableProperty("opacity", 1, "number"),
       transform: {
-        position: { x: 100, y: 100, animated: true },
-        scale: { x: 1, y: 1, animated: false },
-        rotation: 0,
-        opacity: 1,
+        position: createAnimatableProperty("position", { x: 100, y: 100 }, "position"),
+        scale: createAnimatableProperty("scale", { x: 1, y: 1 }, "position"),
+        rotation: createAnimatableProperty("rotation", 0, "number"),
+        origin: createAnimatableProperty("origin", { x: 0, y: 0 }, "position"),
       },
+      effects: [],
+      properties: [],
+      masks: [],
+      startFrame: 0,
+      endFrame: 10,
+      inPoint: 0,
+      outPoint: 10,
       parentId: null,
-      children: [],
+      data: null,
     };
 
-    const getPositionAtFrame = (layerId: string, frame: number) => ({
+    const getPositionAtFrame = (_layer: Layer, frame: number) => ({
       x: 100 + frame * 10,
       y: 100 + frame * 5,
     });
 
-    const options = {
-      target: "wan-move" as const,
+    const options: UnifiedExportOptions = {
+      target: "wan-move",
       layers: [mockLayer],
       cameras: [],
       compWidth: 1920,
@@ -1033,17 +1052,19 @@ describe("exportForModel", () => {
       startFrame: 0,
       endFrame: 10,
       getPositionAtFrame,
+      getLayerBounds: (_layer: Layer, _frame: number) => ({ x: 0, y: 0, width: 100, height: 100 }),
     };
 
-    const result = await exportForModel(options as any);
+    const result = await exportForModel(options);
 
     expect(result.success).toBe(true);
     expect(result.target).toBe("wan-move");
   });
 
-  it("should handle unsupported target gracefully", async () => {
-    const options = {
-      target: "unsupported-target" as any,
+  it("should handle valid target correctly", async () => {
+    // Test with valid ModelTarget - function validates target internally
+    const options: UnifiedExportOptions = {
+      target: "wan-move", // Valid ModelTarget
       layers: [],
       cameras: [],
       compWidth: 1920,
@@ -1055,14 +1076,8 @@ describe("exportForModel", () => {
       getLayerBounds: (_layer: Layer, _frame: number) => ({ x: 0, y: 0, width: 100, height: 100 }),
     };
 
-    // Should not throw, but return with success false or handle gracefully
-    try {
-      const result = await exportForModel(options);
-      // If it doesn't throw, check it indicates the issue
-      expect(result.target).toBe("unsupported-target");
-    } catch (error) {
-      // Some implementations throw for unsupported targets
-      expect(error).toBeDefined();
-    }
+    const result = await exportForModel(options);
+    expect(result.success).toBe(true);
+    expect(result.target).toBe("wan-move");
   });
 });

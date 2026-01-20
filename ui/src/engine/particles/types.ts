@@ -740,10 +740,26 @@ export type ParticleEventType =
   | "systemReset"
   | "audioTrigger";
 
+/**
+ * Particle event data - can contain various properties depending on event type
+ */
+export interface ParticleEventData {
+  index?: number;
+  emitterId?: string;
+  particleId?: number;
+  position?: { x: number; y: number; z: number };
+  velocity?: { x: number; y: number; z: number };
+  age?: number;
+  lifetime?: number;
+  collisionPoint?: { x: number; y: number; z: number };
+  collisionNormal?: { x: number; y: number; z: number };
+  [key: string]: number | string | { x: number; y: number; z: number } | undefined;
+}
+
 export interface ParticleEvent {
   type: ParticleEventType;
   timestamp: number;
-  data: Record<string, unknown>;
+  data: ParticleEventData;
 }
 
 export type ParticleEventHandler = (event: ParticleEvent) => void;

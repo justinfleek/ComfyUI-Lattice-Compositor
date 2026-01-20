@@ -13,7 +13,9 @@ import type {
 import type { PropertyValue } from "@/types/animation";
 import { storeLogger } from "@/utils/logger";
 import { findPropertyByPath, safeFrame } from "./helpers";
-import type { KeyframeStoreAccess } from "./types";
+import { useProjectStore } from "../projectStore";
+import { useLayerStore } from "../layerStore";
+import { useAnimationStore } from "../animationStore";
 
 // ============================================================================
 // KEYFRAME CREATION
@@ -22,7 +24,6 @@ import type { KeyframeStoreAccess } from "./types";
 /**
  * Add a keyframe to a property at the specified frame.
  *
- * @param store - The compositor store
  * @param layerId - Layer ID
  * @param propertyPath - Property path (e.g., 'position', 'transform.position')
  * @param value - The keyframe value
@@ -30,15 +31,16 @@ import type { KeyframeStoreAccess } from "./types";
  * @returns The created keyframe or null if failed
  */
 export function addKeyframe<T>(
-  store: KeyframeStoreAccess,
   layerId: string,
   propertyPath: string,
   value: T,
   atFrame?: number,
 ): Keyframe<T> | null {
-  const comp = store.getActiveComp();
+  const projectStore = useProjectStore();
+  const animationStore = useAnimationStore();
+  const comp = projectStore.getActiveComp();
   // Validate frame (nullish coalescing doesn't catch NaN)
-  const frame = safeFrame(atFrame ?? comp?.currentFrame, 0);
+  const frame = safeFrame(atFrame ?? animationStore.currentFrame, 0);
 
   storeLogger.debug("addKeyframe called:", {
     layerId,
@@ -47,7 +49,7 @@ export function addKeyframe<T>(
     frame,
   });
 
-  const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
+  const layer = projectStore.getActiveCompLayers().find((l) => l.id === layerId);
   if (!layer) {
     storeLogger.debug("addKeyframe: layer not found");
     return null;
@@ -95,8 +97,8 @@ export function addKeyframe<T>(
   }
 
   markLayerDirty(layerId);
-  store.project.meta.modified = new Date().toISOString();
-  store.pushHistory();
+  projectStore.project.meta.modified = new Date().toISOString();
+  projectStore.pushHistory();
   return keyframe;
 }
 
@@ -108,12 +110,12 @@ export function addKeyframe<T>(
  * Remove a keyframe by ID.
  */
 export function removeKeyframe(
-  store: KeyframeStoreAccess,
   layerId: string,
   propertyPath: string,
   keyframeId: string,
 ): void {
-  const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
+  const projectStore = useProjectStore();
+  const layer = projectStore.getActiveCompLayers().find((l) => l.id === layerId);
   if (!layer) return;
 
   const property = findPropertyByPath(layer, propertyPath);
@@ -130,19 +132,19 @@ export function removeKeyframe(
   }
 
   markLayerDirty(layerId);
-  store.project.meta.modified = new Date().toISOString();
-  store.pushHistory();
+  projectStore.project.meta.modified = new Date().toISOString();
+  projectStore.pushHistory();
 }
 
 /**
  * Remove all keyframes from a property.
  */
 export function clearKeyframes(
-  store: KeyframeStoreAccess,
   layerId: string,
   propertyPath: string,
 ): void {
-  const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
+  const projectStore = useProjectStore();
+  const layer = projectStore.getActiveCompLayers().find((l) => l.id === layerId);
   if (!layer) return;
 
   const property = findPropertyByPath(layer, propertyPath);
@@ -152,8 +154,8 @@ export function clearKeyframes(
   property.animated = false;
 
   markLayerDirty(layerId);
-  store.project.meta.modified = new Date().toISOString();
-  store.pushHistory();
+  projectStore.project.meta.modified = new Date().toISOString();
+  projectStore.pushHistory();
 }
 
 // ============================================================================
@@ -164,19 +166,18 @@ export function clearKeyframes(
  * Update an entire AnimatableProperty by path, including keyframes.
  * Used for batch operations like audio-reactive keyframe generation.
  *
- * @param store - The compositor store
  * @param layerId - Layer ID
  * @param propertyPath - Path to property (e.g., 'transform.position', 'opacity')
  * @param propertyData - Full AnimatableProperty object to replace with
  * @returns true if successful
  */
 export function updateLayerProperty(
-  store: KeyframeStoreAccess,
   layerId: string,
   propertyPath: string,
   propertyData: Partial<AnimatableProperty<any>>,
 ): boolean {
-  const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
+  const projectStore = useProjectStore();
+  const layer = projectStore.getActiveCompLayers().find((l) => l.id === layerId);
   if (!layer) {
     storeLogger.warn("updateLayerProperty: layer not found", layerId);
     return false;
@@ -262,8 +263,8 @@ export function updateLayerProperty(
   }
 
   markLayerDirty(layerId);
-  store.project.meta.modified = new Date().toISOString();
-  store.pushHistory();
+  projectStore.project.meta.modified = new Date().toISOString();
+  projectStore.pushHistory();
 
   storeLogger.debug(
     "updateLayerProperty: Updated",
@@ -282,19 +283,19 @@ export function updateLayerProperty(
  * Move a keyframe to a new frame position.
  */
 export function moveKeyframe(
-  store: KeyframeStoreAccess,
   layerId: string,
   propertyPath: string,
   keyframeId: string,
   newFrame: number,
 ): void {
+  const projectStore = useProjectStore();
   // Validate frame before processing
   if (!Number.isFinite(newFrame)) {
     storeLogger.warn("moveKeyframe: Invalid frame value:", newFrame);
     return;
   }
 
-  const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
+  const layer = projectStore.getActiveCompLayers().find((l) => l.id === layerId);
   if (!layer) return;
 
   const property = findPropertyByPath(layer, propertyPath);
@@ -320,8 +321,8 @@ export function moveKeyframe(
   property.keyframes.sort((a, b) => a.frame - b.frame);
 
   markLayerDirty(layerId);
-  store.project.meta.modified = new Date().toISOString();
-  store.pushHistory();
+  projectStore.project.meta.modified = new Date().toISOString();
+  projectStore.pushHistory();
 }
 
 /**
@@ -338,7 +339,6 @@ export function moveKeyframe(
  * @see layerEvaluationCache.ts - evaluateLayerCached() calls interpolateProperty
  */
 export function moveKeyframes(
-  store: KeyframeStoreAccess,
   keyframes: Array<{
     layerId: string;
     propertyPath: string;
@@ -346,6 +346,7 @@ export function moveKeyframes(
   }>,
   frameDelta: number,
 ): void {
+  const projectStore = useProjectStore();
   // Validate frameDelta
   if (!Number.isFinite(frameDelta)) {
     storeLogger.warn("moveKeyframes: Invalid frameDelta:", frameDelta);
@@ -363,7 +364,7 @@ export function moveKeyframes(
   >();
 
   for (const kf of keyframes) {
-    const layer = store.getActiveCompLayers().find((l) => l.id === kf.layerId);
+    const layer = projectStore.getActiveCompLayers().find((l) => l.id === kf.layerId);
     if (!layer) continue;
 
     const property = findPropertyByPath(layer, kf.propertyPath);
@@ -450,8 +451,8 @@ export function moveKeyframes(
   for (const layerId of layerIds) {
     markLayerDirty(layerId);
   }
-  store.project.meta.modified = new Date().toISOString();
-  store.pushHistory();
+  projectStore.project.meta.modified = new Date().toISOString();
+  projectStore.pushHistory();
 }
 
 // ============================================================================
@@ -462,13 +463,13 @@ export function moveKeyframes(
  * Update a keyframe's value.
  */
 export function setKeyframeValue(
-  store: KeyframeStoreAccess,
   layerId: string,
   propertyPath: string,
   keyframeId: string,
   newValue: PropertyValue,
 ): void {
-  const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
+  const projectStore = useProjectStore();
+  const layer = projectStore.getActiveCompLayers().find((l) => l.id === layerId);
   if (!layer) return;
 
   const property = findPropertyByPath(layer, propertyPath);
@@ -491,21 +492,21 @@ export function setKeyframeValue(
 
   keyframe.value = newValue;
   markLayerDirty(layerId);
-  store.project.meta.modified = new Date().toISOString();
-  store.pushHistory();
+  projectStore.project.meta.modified = new Date().toISOString();
+  projectStore.pushHistory();
 }
 
 /**
  * Update keyframe frame position and/or value.
  */
 export function updateKeyframe(
-  store: KeyframeStoreAccess,
   layerId: string,
   propertyPath: string,
   keyframeId: string,
   updates: { frame?: number; value?: PropertyValue },
 ): void {
-  const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
+  const projectStore = useProjectStore();
+  const layer = projectStore.getActiveCompLayers().find((l) => l.id === layerId);
   if (!layer) return;
 
   const property = findPropertyByPath(layer, propertyPath);
@@ -535,6 +536,6 @@ export function updateKeyframe(
   }
 
   markLayerDirty(layerId);
-  store.project.meta.modified = new Date().toISOString();
-  store.pushHistory();
+  projectStore.project.meta.modified = new Date().toISOString();
+  projectStore.pushHistory();
 }

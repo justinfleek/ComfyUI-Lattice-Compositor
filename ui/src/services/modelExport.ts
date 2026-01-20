@@ -541,7 +541,7 @@ export function exportTTMLayer(
 /**
  * Light-X camera motion types
  */
-export type LightXMotionStyle = "gradual" | "bullet" | "direct" | "dolly-zoom";
+export type LightXMotionStyle = "static" | "gradual" | "bullet" | "direct" | "dolly-zoom";
 
 /**
  * Light-X relighting source types
@@ -569,7 +569,7 @@ export interface LightXExport {
  * Detect motion style from camera animation
  */
 export function detectMotionStyle(cameras: Camera3D[]): LightXMotionStyle {
-  if (cameras.length < 2) return "static" as any;
+  if (cameras.length < 2) return "static";
 
   const first = cameras[0];
   const last = cameras[cameras.length - 1];
@@ -654,10 +654,24 @@ export interface UnifiedExportOptions {
   particleData?: ParticleTrajectoryExport;
 }
 
-export interface UnifiedExportResult {
+/**
+ * Export data types for each target
+ * Used to create type-safe discriminated union
+ */
+type ExportDataByTarget = {
+  "camera-comfyui": CameraTrajectoryExport;
+  "wan-move": import("@/services/export/wanMoveExport").WanMoveTrajectory;
+  "ati": import("@/services/export/wanMoveExport").WanMoveTrajectory;
+  "wan-move-3d": import("@/services/export/wanMoveExport").WanMoveTrajectory;
+  "ttm": TTMExport;
+  "light-x": LightXExport;
+  "particles": ParticleTrajectoryExport;
+};
+
+export interface UnifiedExportResult<T extends ModelTarget = ModelTarget> {
   success: boolean;
-  target: ModelTarget;
-  data: any;
+  target: T;
+  data: ExportDataByTarget[T]; // Type-safe data based on target
   files: {
     name: string;
     content: string | Blob;

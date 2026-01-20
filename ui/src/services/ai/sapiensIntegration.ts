@@ -20,6 +20,20 @@
 export type SapiensModelSize = "0.3B" | "0.6B" | "1B" | "2B";
 
 /**
+ * Sapiens API result structure (from backend)
+ */
+interface SapiensAPIResult {
+  depthMap?: string;
+  normalMap?: string;
+  mask?: string;
+  width?: number;
+  height?: number;
+  minDepth?: number;
+  maxDepth?: number;
+  labels?: SapiensBodyPart[];
+}
+
+/**
  * Sapiens task types
  */
 export type SapiensTask = "depth" | "normal" | "pose" | "segmentation";
@@ -208,13 +222,24 @@ export class SapiensService {
     }
 
     const data = await response.json();
-    return data.results.map((r: Record<string, unknown>, i: number) => ({
+    // Type guard for Sapiens API result structure
+    interface SapiensAPIResult {
+      depthMap?: string;
+      normalMap?: string;
+      mask?: string;
+      width?: number;
+      height?: number;
+      minDepth?: number;
+      maxDepth?: number;
+      labels?: SapiensBodyPart[];
+    }
+    return (data.results as SapiensAPIResult[]).map((r, i) => ({
       frame: i,
-      depthMap: new Float32Array(base64ToArrayBuffer(r.depthMap as string)),
-      width: r.width as number,
-      height: r.height as number,
-      minDepth: r.minDepth as number | undefined,
-      maxDepth: r.maxDepth as number | undefined,
+      depthMap: new Float32Array(base64ToArrayBuffer(r.depthMap ?? "")),
+      width: r.width ?? 0,
+      height: r.height ?? 0,
+      minDepth: r.minDepth,
+      maxDepth: r.maxDepth,
     }));
   }
 
@@ -248,11 +273,22 @@ export class SapiensService {
     }
 
     const data = await response.json();
-    return data.results.map((r: Record<string, unknown>, i: number) => ({
+    // Type guard for Sapiens API result structure
+    interface SapiensAPIResult {
+      depthMap?: string;
+      normalMap?: string;
+      mask?: string;
+      width?: number;
+      height?: number;
+      minDepth?: number;
+      maxDepth?: number;
+      labels?: SapiensBodyPart[];
+    }
+    return (data.results as SapiensAPIResult[]).map((r, i) => ({
       frame: i,
-      normalMap: new Float32Array(base64ToArrayBuffer(r.normalMap as string)),
-      width: r.width as number,
-      height: r.height as number,
+      normalMap: new Float32Array(base64ToArrayBuffer(r.normalMap ?? "")),
+      width: r.width ?? 0,
+      height: r.height ?? 0,
     }));
   }
 
@@ -301,12 +337,23 @@ export class SapiensService {
     }
 
     const data = await response.json();
-    return data.results.map((r: Record<string, unknown>, i: number) => ({
+    // Type guard for Sapiens API result structure
+    interface SapiensAPIResult {
+      depthMap?: string;
+      normalMap?: string;
+      mask?: string;
+      width?: number;
+      height?: number;
+      minDepth?: number;
+      maxDepth?: number;
+      labels?: SapiensBodyPart[];
+    }
+    return (data.results as SapiensAPIResult[]).map((r, i) => ({
       frame: i,
-      mask: new Uint8Array(base64ToArrayBuffer(r.mask as string)),
-      width: r.width as number,
-      height: r.height as number,
-      labels: r.labels as SapiensBodyPart[],
+      mask: new Uint8Array(base64ToArrayBuffer(r.mask ?? "")),
+      width: r.width ?? 0,
+      height: r.height ?? 0,
+      labels: r.labels ?? [],
     }));
   }
 

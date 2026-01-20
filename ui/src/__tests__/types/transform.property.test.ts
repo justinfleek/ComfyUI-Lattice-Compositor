@@ -19,7 +19,7 @@ import {
   linkScaleDimensions,
   type LayerTransform,
 } from "@/types/transform";
-import { createAnimatableProperty, createKeyframe } from "@/types/animation";
+import { createAnimatableProperty, createKeyframe, type AnimatableProperty } from "@/types/animation";
 
 // ============================================================
 // ARBITRARIES
@@ -136,19 +136,26 @@ describe("PROPERTY: normalizeLayerTransform", () => {
   });
 
   it("copies anchorPoint to origin if origin missing", () => {
-    const transform = createDefaultTransform();
-    delete (transform as any).origin;
-    transform.anchorPoint = createAnimatableProperty("test", { x: 10, y: 20, z: 30 }, "vector3");
+    const baseTransform = createDefaultTransform();
+    // Create transform without origin for testing fallback behavior
+    const { origin, ...transformWithoutOrigin } = baseTransform;
+    const transform: Omit<LayerTransform, 'origin'> & { anchorPoint?: AnimatableProperty<{ x: number; y: number; z?: number }> } = {
+      ...transformWithoutOrigin,
+      anchorPoint: createAnimatableProperty("test", { x: 10, y: 20, z: 30 }, "vector3"),
+    };
     
-    normalizeLayerTransform(transform);
+    normalizeLayerTransform(transform as LayerTransform);
     
-    expect(transform.origin).toBe(transform.anchorPoint);
+    expect((transform as LayerTransform).origin).toBe(transform.anchorPoint);
   });
 
   it("copies origin to anchorPoint if anchorPoint missing", () => {
-    const transform = createDefaultTransform();
-    delete (transform as any).anchorPoint;
-    transform.origin = createAnimatableProperty("test", { x: 10, y: 20, z: 30 }, "vector3");
+    const baseTransform = createDefaultTransform();
+    // Create transform without anchorPoint for testing fallback behavior
+    const { anchorPoint, ...transformWithoutAnchorPoint } = baseTransform;
+    const transform: Omit<LayerTransform, 'anchorPoint'> = {
+      ...transformWithoutAnchorPoint,
+    };
     
     normalizeLayerTransform(transform);
     

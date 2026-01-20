@@ -115,9 +115,11 @@ import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import { useCompositorStore } from "@/stores/compositorStore";
 import { useAnimationStore } from "@/stores/animationStore";
 
+import type { LatticeEngine } from "@/engine/LatticeEngine";
+
 const props = defineProps<{
   visible: boolean;
-  engine?: any;
+  engine?: LatticeEngine;
 }>();
 
 const emit = defineEmits<(e: "close") => void>();

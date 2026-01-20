@@ -7,6 +7,10 @@ import type {
   ComfyUINode,
   ComfyUIWorkflow,
   ExportTarget,
+  MotionCtrlCameraData,
+  MotionCtrlSVDCameraData,
+  Uni3CCameraData,
+  Wan22FunCameraData,
   MotionCtrlSVDPreset,
   NodeConnection,
   Uni3CTrajType,
@@ -28,8 +32,8 @@ export interface WorkflowParams {
   depthSequence?: string[];
   controlImages?: string[];
 
-  // Camera data
-  cameraData?: any;
+  // Camera data (varies by export target)
+  cameraData?: MotionCtrlCameraData | MotionCtrlSVDCameraData | Uni3CCameraData | Wan22FunCameraData;
 
   // Generation settings
   prompt: string;
@@ -56,7 +60,8 @@ export interface WorkflowParams {
 
   // Uni3C specific
   trajType?: Uni3CTrajType;
-  motionData?: any;
+  // Motion data varies by export target - use discriminated union from schema
+  motionData?: import("@/schemas/exports/workflow-params-schema").MotionData;
 
   // MotionCtrl specific
   motionPreset?: MotionCtrlSVDPreset;
@@ -176,7 +181,7 @@ function nextNodeId(): string {
 
 function createNode(
   classType: string,
-  inputs: Record<string, any>,
+  inputs: Record<string, string | number | boolean | string[] | number[] | null | undefined>,
   title?: string,
 ): ComfyUINode {
   const node: ComfyUINode = {
@@ -778,11 +783,12 @@ export function generateUni3CWorkflow(params: WorkflowParams): ComfyUIWorkflow {
 
   // Create camera trajectory
   const trajId = nextNodeId();
-  if (params.trajType === "custom" && params.cameraData?.trajectory) {
+  if (params.trajType === "custom" && params.cameraData && "custom_trajectory" in params.cameraData && params.cameraData.custom_trajectory) {
+    const uni3cData = params.cameraData as Uni3CCameraData;
     workflow[trajId] = createNode(
       "Uni3CCustomTrajectory",
       {
-        trajectory_data: JSON.stringify(params.cameraData.trajectory),
+        trajectory_data: JSON.stringify(uni3cData.custom_trajectory),
         length: params.frameCount,
       },
       "Custom Trajectory",
@@ -2472,10 +2478,13 @@ export function generateCameraComfyUIWorkflow(
   // Load camera matrices from cameraData
   // Expected format: Array of 4x4 matrices (16 floats each)
   const cameraMatricesId = nextNodeId();
+  const matrices = params.cameraData && "matrices" in params.cameraData 
+    ? (params.cameraData as { matrices: unknown }).matrices 
+    : [];
   workflow[cameraMatricesId] = createNode(
     "CameraComfyUI_LoadMatrices",
     {
-      matrices: JSON.stringify(params.cameraData?.matrices || []),
+      matrices: JSON.stringify(matrices),
       num_frames: params.frameCount,
     },
     "Load Camera Matrices",
@@ -2632,7 +2641,7 @@ export function generateWorkflowForTarget(
 
 export function injectParameters(
   workflow: ComfyUIWorkflow,
-  replacements: Record<string, any>,
+  replacements: Record<string, string | number | boolean>,
 ): ComfyUIWorkflow {
   const workflowStr = JSON.stringify(workflow);
   let result = workflowStr;

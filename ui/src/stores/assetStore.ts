@@ -369,7 +369,10 @@ export const useAssetStore = defineStore("assets", {
       try {
         const url = URL.createObjectURL(file);
         // Dynamic property assignment for texture URL
-        (stored.config as unknown as Record<string, string>)[textureType] = url;
+        // Note: This allows storing texture URLs on config properties dynamically
+        // The actual structure may store URLs directly on config properties for runtime use
+        const config = stored.config as PBRMaterialConfig & Record<string, string | number | boolean | { x: number; y: number } | PBRMaterialConfig["maps"] | undefined>;
+        (config as Record<string, string>)[textureType as string] = url;
         stored.modifiedAt = Date.now();
         this.materials.set(materialId, stored);
       } catch (error) {
@@ -977,11 +980,27 @@ export const useAssetStore = defineStore("assets", {
     dispose(): void {
       // Revoke all blob URLs
       for (const stored of this.materials.values()) {
-        for (const key of Object.keys(stored.config)) {
-          // Dynamic property access for cleanup
-          const value = (stored.config as unknown as Record<string, unknown>)[key];
+        const config = stored.config;
+        // Check all string properties in PBRMaterialConfig for blob URLs
+        const stringProperties: Array<keyof PBRMaterialConfig> = [
+          "id",
+          "name",
+          "color",
+          "emissive",
+          "side",
+        ];
+        for (const key of stringProperties) {
+          const value = config[key];
           if (typeof value === "string" && value.startsWith("blob:")) {
             URL.revokeObjectURL(value);
+          }
+        }
+        // Check maps object for blob URLs
+        if (config.maps) {
+          for (const mapValue of Object.values(config.maps)) {
+            if (typeof mapValue === "string" && mapValue.startsWith("blob:")) {
+              URL.revokeObjectURL(mapValue);
+            }
           }
         }
       }

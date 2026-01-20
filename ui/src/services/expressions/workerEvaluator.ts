@@ -12,6 +12,8 @@
  * - Main thread NEVER blocks
  */
 
+import type { ExpressionContext } from "./types";
+
 const EVAL_TIMEOUT_MS = 100;
 const MAX_PENDING = 100; // Prevent memory leak from abandoned requests
 
@@ -97,7 +99,7 @@ function createWorker(): Worker {
  */
 export async function evaluateWithTimeout(
   code: string,
-  context: Record<string, unknown>,
+  context: ExpressionContext,
 ): Promise<EvalResult> {
   // Input validation
   if (typeof code !== "string" || code.length === 0) {

@@ -48,6 +48,9 @@ ui/src/engine.zip
 *.zip
 !templates/*.zip
 
+# ComfyUI (local testing only - never commit)
+ComfyUI/
+
 # Playwright test artifacts
 ui/playwright-report/
 ui/test-results/

@@ -33,7 +33,7 @@ import type { AutoOrientMode } from '@/types/project';
  * BUG-035 FIX: Handle -0 serialization edge case
  * BUG-040 FIX: Handle undefined removal (JSON removes undefined values)
  */
-function normalizeForJson(obj: any): any {
+function normalizeForJson(obj: unknown): unknown {
   if (obj === null) return null;
   if (obj === undefined) return undefined; // Will be handled at object level
   if (typeof obj === 'number') {
@@ -47,7 +47,7 @@ function normalizeForJson(obj: any): any {
     return obj;
   }
   if (typeof obj === 'object') {
-    const result: any = {};
+    const result: Record<string, unknown> = {};
     for (const key of Object.keys(obj)) {
       const value = obj[key];
       // Skip undefined values (JSON doesn't preserve them)
@@ -76,7 +76,7 @@ function roundtrip<T>(obj: T): T {
 /**
  * Deep equality check that catches subtle differences
  */
-function deepEqual(a: any, b: any, path = ''): { equal: boolean; diff?: string } {
+function deepEqual(a: unknown, b: unknown, path = ''): { equal: boolean; diff?: string } {
   // Handle nulls
   if (a === null && b === null) return { equal: true };
   if (a === null || b === null) return { equal: false, diff: `${path}: null mismatch` };
@@ -699,7 +699,7 @@ describe('STRICT: Serialization Edge Cases', () => {
 
   it('handles deeply nested structures', () => {
     // Create deeply nested object
-    let nested: any = { value: 42 };
+    let nested: Record<string, unknown> = { value: 42 };
     for (let i = 0; i < 50; i++) {
       nested = { child: nested };
     }
@@ -707,7 +707,7 @@ describe('STRICT: Serialization Edge Cases', () => {
     const result = roundtrip(nested);
     
     // Navigate to deepest value
-    let current: any = result;
+    let current: Record<string, unknown> = result;
     for (let i = 0; i < 50; i++) {
       current = current.child;
     }
@@ -745,7 +745,7 @@ describe('STRICT: Serialization Edge Cases', () => {
   });
 
   it('handles circular reference gracefully (should throw)', () => {
-    const circular: any = { name: 'test' };
+    const circular: Record<string, unknown> = { name: 'test' };
     circular.self = circular;
     
     expect(() => JSON.stringify(circular)).toThrow();

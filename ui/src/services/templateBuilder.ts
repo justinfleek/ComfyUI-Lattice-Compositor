@@ -10,16 +10,28 @@
  */
 
 import type { EffectInstance } from "../types/effects";
-import type { AnimatableProperty, Composition, Layer } from "../types/project";
+import type {
+  AnimatableProperty,
+  Composition,
+  Layer,
+  TextData,
+  ImageLayerData,
+  VideoData,
+  SolidLayerData,
+} from "../types/project";
+import type { AssetReference, ModelFormat, PointCloudFormat } from "../types/assets";
 import type {
   ExposedProperty,
   ExposedPropertyType,
   LatticeTemplate,
   PropertyGroup,
+  TemplateAsset,
+  TemplateFont,
   TemplateComment,
   TemplateConfig,
   TemplateExportSettings,
 } from "../types/templateBuilder";
+import type { AssetType } from "../types/assets";
 import {
   createDefaultTemplateConfig,
   createExposedProperty,
@@ -386,31 +398,46 @@ export function removeComment(
 // PROPERTY VALUE ACCESS
 // ============================================================
 
+type PropertyValue =
+  | string
+  | number
+  | boolean
+  | { x: number; y: number }
+  | string[]
+  | number[]
+  | AnimatableProperty<number>
+  | AnimatableProperty<{ x: number; y: number }>
+  | Record<string, string | number | boolean | { x: number; y: number } | string[] | number[]>
+  | (string | number | boolean | { x: number; y: number })[];
+
 /**
  * Get the value of a property at a path
  */
-export function getPropertyValue(layer: Layer, propertyPath: string): any {
+export function getPropertyValue(
+  layer: Layer,
+  propertyPath: string,
+): PropertyValue | undefined {
   const parts = propertyPath.split(".");
-  let current: any = layer;
+  let current: PropertyValue | Layer | Record<string, PropertyValue> = layer;
 
   for (const part of parts) {
     if (current === undefined || current === null) return undefined;
 
-    // Handle array indexing (e.g., effects.0.parameters.blur)
     const arrayMatch = part.match(/^(\d+)$/);
     if (arrayMatch && Array.isArray(current)) {
-      current = current[parseInt(arrayMatch[1], 10)];
+      current = current[parseInt(arrayMatch[1], 10)] as PropertyValue;
+    } else if (typeof current === "object" && current !== null && !Array.isArray(current)) {
+      current = (current as Record<string, PropertyValue>)[part];
     } else {
-      current = current[part];
+      return undefined;
     }
   }
 
-  // If it's an AnimatableProperty, return the value
-  if (current && typeof current === "object" && "value" in current) {
-    return current.value;
+  if (current && typeof current === "object" && !Array.isArray(current) && "value" in current) {
+    return (current as AnimatableProperty<number>).value as PropertyValue;
   }
 
-  return current;
+  return current as PropertyValue | undefined;
 }
 
 /**
@@ -419,37 +446,40 @@ export function getPropertyValue(layer: Layer, propertyPath: string): any {
 export function setPropertyValue(
   layer: Layer,
   propertyPath: string,
-  value: any,
+  value: PropertyValue,
 ): boolean {
   const parts = propertyPath.split(".");
-  let current: any = layer;
+  let current: PropertyValue | Layer | Record<string, PropertyValue> = layer;
 
-  // Navigate to parent
   for (let i = 0; i < parts.length - 1; i++) {
     const part = parts[i];
     if (current === undefined || current === null) return false;
 
     const arrayMatch = part.match(/^(\d+)$/);
     if (arrayMatch && Array.isArray(current)) {
-      current = current[parseInt(arrayMatch[1], 10)];
+      current = current[parseInt(arrayMatch[1], 10)] as PropertyValue | Record<string, PropertyValue>;
+    } else if (typeof current === "object" && current !== null && !Array.isArray(current)) {
+      current = (current as Record<string, PropertyValue>)[part];
     } else {
-      current = current[part];
+      return false;
     }
   }
 
   if (current === undefined || current === null) return false;
+  if (typeof current !== "object" || Array.isArray(current)) return false;
 
   const lastPart = parts[parts.length - 1];
+  const target = (current as Record<string, PropertyValue>)[lastPart];
 
-  // If target is an AnimatableProperty, set the value property
   if (
-    current[lastPart] &&
-    typeof current[lastPart] === "object" &&
-    "value" in current[lastPart]
+    target &&
+    typeof target === "object" &&
+    !Array.isArray(target) &&
+    "value" in target
   ) {
-    current[lastPart].value = value;
+    (target as AnimatableProperty<number>).value = value as number;
   } else {
-    current[lastPart] = value;
+    (current as Record<string, PropertyValue>)[lastPart] = value;
   }
 
   return true;
@@ -463,11 +493,13 @@ export function setPropertyValue(
  * Get the value of an expression control effect on a layer
  * This enables expressions like: effect("Slider Control")("Slider")
  */
+type EffectParameterValue = string | number | boolean | { x: number; y: number };
+
 export function getEffectControlValue(
   layer: Layer,
   effectName: string,
   parameterName: string,
-): any {
+): EffectParameterValue | null {
   if (!layer.effects) return null;
 
   // Find effect by name
@@ -509,7 +541,7 @@ export function getExpressionControls(layer: Layer): EffectInstance[] {
  */
 export function prepareTemplateExport(
   composition: Composition,
-  assets: Record<string, any>,
+  assets: Record<string, AssetReference>,
   posterImageData: string,
 ): LatticeTemplate | null {
   if (!composition.templateConfig) {
@@ -559,15 +591,28 @@ export function prepareTemplateExport(
   return template;
 }
 
+import type { SerializedComposition } from "@/types/templateBuilder";
+
 /**
  * Serialize composition for template export
  */
-function serializeComposition(composition: Composition): any {
-  // Deep clone and strip runtime-only data
-  const serialized = JSON.parse(JSON.stringify(composition));
-
-  // Remove internal IDs that shouldn't be in export
-  delete serialized.templateConfig;
+function serializeComposition(composition: Composition): SerializedComposition {
+  // Create serialized composition with proper types
+  const serialized: SerializedComposition = {
+    id: composition.id,
+    name: composition.name,
+    settings: composition.settings,
+    layers: composition.layers,
+    currentFrame: composition.currentFrame,
+    isNestedComp: composition.isNestedComp,
+    parentCompositionId: composition.parentCompositionId,
+    workflowId: composition.workflowId,
+    workflowInputs: composition.workflowInputs,
+    workflowOutputs: composition.workflowOutputs,
+    // Exclude templateConfig from serialized version (it's stored separately in templateConfig)
+    globalLight: composition.globalLight,
+    markers: composition.markers,
+  };
 
   return serialized;
 }
@@ -577,9 +622,9 @@ function serializeComposition(composition: Composition): any {
  */
 function collectAssets(
   composition: Composition,
-  assets: Record<string, any>,
+  assets: Record<string, AssetReference>,
   settings: TemplateExportSettings,
-): any[] {
+): TemplateAsset[] {
   if (!settings.includeMedia) return [];
 
   const usedAssetIds = new Set<string>();
@@ -587,27 +632,129 @@ function collectAssets(
   // Find all asset references in layers
   composition.layers.forEach((layer) => {
     if (layer.data && typeof layer.data === "object") {
-      const data = layer.data as any;
-      if (data.source && typeof data.source === "string") {
+      const data = layer.data as TextData | ImageLayerData | VideoData | SolidLayerData;
+      if ("source" in data && typeof data.source === "string") {
         usedAssetIds.add(data.source);
       }
-      if (data.assetId) {
+      if ("assetId" in data && typeof data.assetId === "string") {
         usedAssetIds.add(data.assetId);
       }
     }
   });
 
-  // Collect referenced assets
-  const collectedAssets: any[] = [];
+  const MODEL_FORMAT_MIME_TYPES: Record<ModelFormat, string> = {
+    gltf: "model/gltf+json",
+    glb: "model/gltf-binary",
+    obj: "model/obj",
+    fbx: "application/octet-stream",
+    usd: "model/usd",
+    usda: "model/usd",
+    usdc: "model/usd",
+    usdz: "model/usd",
+  };
+
+  const POINT_CLOUD_FORMAT_MIME_TYPES: Record<PointCloudFormat, string> = {
+    ply: "application/ply",
+    pcd: "application/pcd",
+    las: "application/octet-stream",
+    laz: "application/octet-stream",
+    xyz: "text/plain",
+    pts: "text/plain",
+  };
+
+  const VIDEO_EXTENSION_MIME_TYPES: Record<string, string> = {
+    ".mp4": "video/mp4",
+    ".webm": "video/webm",
+    ".mov": "video/quicktime",
+  };
+
+  const AUDIO_EXTENSION_MIME_TYPES: Record<string, string> = {
+    ".mp3": "audio/mpeg",
+    ".wav": "audio/wav",
+    ".ogg": "audio/ogg",
+    ".m4a": "audio/mp4",
+  };
+
+  const IMAGE_EXTENSION_MIME_TYPES: Record<string, string> = {
+    ".png": "image/png",
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".webp": "image/webp",
+    ".exr": "image/x-exr",
+    ".hdr": "image/vnd.radiance",
+    ".gif": "image/gif",
+  };
+
+  const MATERIAL_EXTENSION_MIME_TYPES: Record<string, string> = {
+    ".json": "application/json",
+    ".mtl": "model/mtl",
+  };
+
+  const LUT_EXTENSION_MIME_TYPES: Record<string, string> = {
+    ".cube": "text/x-cube",
+    ".3dl": "application/octet-stream",
+  };
+
+  function getFileExtension(filename: string): string {
+    const lastDot = filename.lastIndexOf(".");
+    return lastDot >= 0 ? filename.substring(lastDot).toLowerCase() : "";
+  }
+
+  function getMimeTypeForAsset(asset: AssetReference): string {
+    if (asset.type === "model" && asset.modelFormat) {
+      return MODEL_FORMAT_MIME_TYPES[asset.modelFormat];
+    }
+
+    if (asset.type === "pointcloud" && asset.pointCloudFormat) {
+      return POINT_CLOUD_FORMAT_MIME_TYPES[asset.pointCloudFormat];
+    }
+
+    if (asset.type === "svg") {
+      return "image/svg+xml";
+    }
+
+    const extension = asset.filename ? getFileExtension(asset.filename) : "";
+
+    if (asset.type === "video") {
+      return VIDEO_EXTENSION_MIME_TYPES[extension] || "video/mp4";
+    }
+
+    if (asset.type === "audio") {
+      return AUDIO_EXTENSION_MIME_TYPES[extension] || "audio/mpeg";
+    }
+
+    if (asset.type === "material") {
+      return MATERIAL_EXTENSION_MIME_TYPES[extension] || "application/json";
+    }
+
+    if (asset.type === "lut") {
+      return LUT_EXTENSION_MIME_TYPES[extension] || "image/png";
+    }
+
+    if (
+      asset.type === "texture" ||
+      asset.type === "depth_map" ||
+      asset.type === "sprite" ||
+      asset.type === "spritesheet" ||
+      asset.type === "hdri" ||
+      asset.type === "image"
+    ) {
+      return IMAGE_EXTENSION_MIME_TYPES[extension] || "image/png";
+    }
+
+    return "application/octet-stream";
+  }
+
+  const collectedAssets: TemplateAsset[] = [];
   usedAssetIds.forEach((assetId) => {
     const asset = assets[assetId];
     if (asset) {
       collectedAssets.push({
         id: assetId,
-        name: asset.name || assetId,
-        type: asset.type || "image",
-        data: asset.data || asset.url,
-        mimeType: asset.mimeType || "image/png",
+        name: asset.filename || assetId,
+        type: asset.type,
+        data: asset.data,
+        mimeType: getMimeTypeForAsset(asset),
       });
     }
   });
@@ -621,14 +768,14 @@ function collectAssets(
 function collectFonts(
   composition: Composition,
   settings: TemplateExportSettings,
-): any[] {
-  const fonts: any[] = [];
+): TemplateFont[] {
+  const fonts: TemplateFont[] = [];
   const fontFamilies = new Set<string>();
 
   // Find all font references in text layers
   composition.layers.forEach((layer) => {
     if (layer.type === "text" && layer.data) {
-      const data = layer.data as any;
+      const data = layer.data as TextData;
       if (data.fontFamily) {
         fontFamilies.add(data.fontFamily);
       }
@@ -653,7 +800,7 @@ function collectFonts(
  */
 export async function exportTemplate(
   composition: Composition,
-  assets: Record<string, any>,
+  assets: Record<string, AssetReference>,
   posterImageData: string,
 ): Promise<Blob | null> {
   const template = prepareTemplateExport(composition, assets, posterImageData);

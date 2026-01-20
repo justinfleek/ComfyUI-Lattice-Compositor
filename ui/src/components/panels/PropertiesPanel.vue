@@ -58,7 +58,7 @@
                 :layerId="selectedLayer.id"
                 property="transform.position.x"
                 :linkedTo="getDriverForProperty('transform.position.x')"
-                @link="(target: { layerId: string; property: PropertyPath }) => onPropertyLink('transform.position.x', target)"
+                @link="(target) => onPropertyLink('transform.position.x', target)"
                 @unlink="() => onPropertyUnlink('transform.position.x')"
               />
               <label>Position</label>
@@ -595,7 +595,7 @@ import SolidProperties from "@/components/properties/SolidProperties.vue";
 import TextProperties from "@/components/properties/TextProperties.vue";
 import VideoProperties from "@/components/properties/VideoProperties.vue";
 import type { PropertyPath } from "@/services/propertyDriver";
-import type { AudioPathAnimation, BlendMode } from "@/types/project";
+import type { AudioPathAnimation, BlendMode, LayerDataUnion } from "@/types/project";
 import { createAnimatableProperty } from "@/types/project";
 
 const store = useCompositorStore();
@@ -1141,7 +1141,7 @@ function toggleKeyframe(property: string) {
   }
 }
 
-function onLayerUpdate(dataUpdates?: Record<string, any>) {
+function onLayerUpdate(dataUpdates?: Partial<LayerDataUnion>) {
   if (!selectedLayer.value) return;
 
   // If data updates are provided, apply them via store

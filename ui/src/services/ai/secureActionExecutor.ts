@@ -109,10 +109,11 @@ export async function executeToolCallSecure(
     };
   }
 
-  const { name, arguments: args } = toolCall;
+  // Extract arguments by removing 'name' and 'id' fields
+  const { name, id, ...args } = toolCall;
 
   // Log the tool call attempt
-  await logToolCallAudit(name, args || {}, userAction);
+  await logToolCallAudit(name, args, userAction);
 
   // 2. Check for prompt injection in string arguments
   if (args && typeof args === "object") {
@@ -163,11 +164,17 @@ export async function executeToolCallSecure(
         `[Security] Medium/low confidence injection in ${name}, sanitizing`,
       );
 
-      for (const [key, value] of Object.entries(args)) {
+      // Sanitize string values in args
+      // Extract arguments from ToolCall by removing 'name' and 'id'
+      const { name: toolName, id, ...toolArgs } = toolCall;
+      for (const [key, value] of Object.entries(toolArgs)) {
         if (typeof value === "string") {
-          (args as Record<string, unknown>)[key] = sanitizeForLLM(value);
+          // Type-safe assignment - sanitize string values
+          (toolArgs as Record<string, unknown>)[key] = sanitizeForLLM(value);
         }
       }
+      // Reconstruct toolCall with sanitized args
+      Object.assign(toolCall, toolArgs);
     }
   }
 
@@ -284,10 +291,13 @@ export async function confirmPendingToolCall(
   }
 
   // Execute with bypass since we've already confirmed
-  return executeToolCallSecure(
-    { id: confirmationId, name: pending.toolName, arguments: pending.arguments },
-    { confirmed: true, bypassScopeCheck: true },
-  );
+  // Reconstruct ToolCall from stored name and arguments
+  const toolCall = {
+    id: confirmationId,
+    name: pending.toolName,
+    ...pending.arguments,
+  } as ToolCall;
+  return executeToolCallSecure(toolCall, { confirmed: true, bypassScopeCheck: true });
 }
 
 // ============================================================================

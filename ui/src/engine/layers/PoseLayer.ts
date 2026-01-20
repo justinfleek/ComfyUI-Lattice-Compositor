@@ -17,7 +17,7 @@
  */
 
 import * as THREE from "three";
-import type { AnimatableProperty, Layer, Vec2 } from "@/types/project";
+import type { AnimatableProperty, Layer, Vec2, PoseLayerData as ProjectPoseLayerData } from "@/types/project";
 import { BaseLayer } from "./BaseLayer";
 
 // ============================================================================
@@ -297,10 +297,28 @@ export class PoseLayer extends BaseLayer {
    * Get pose data with defaults
    */
   private getPoseData(): PoseLayerData {
-    const data = (this.layerData.data as Partial<PoseLayerData>) || {};
-    return {
+    const data = (this.layerData.data as Partial<ProjectPoseLayerData>) || {};
+    const projectData: Partial<ProjectPoseLayerData> = {
       ...createDefaultPoseLayerData(),
       ...data,
+    };
+    // Convert project type to local type (they have different properties)
+    return {
+      poses: projectData.poses ?? [],
+      format: projectData.format ?? "coco18",
+      normalized: projectData.normalized ?? false,
+      boneWidth: projectData.boneWidth ?? 2,
+      keypointRadius: projectData.keypointRadius ?? 5,
+      showKeypoints: projectData.showKeypoints ?? true,
+      showBones: projectData.showBones ?? true,
+      showLabels: projectData.showLabels ?? false,
+      useDefaultColors: projectData.useDefaultColors ?? true,
+      customBoneColor: projectData.customBoneColor ?? "#00ff00",
+      customKeypointColor: projectData.customKeypointColor ?? "#ff0000",
+      backgroundColor: "#000000", // Not in project type, use default
+      boneOpacity: 100, // Not in project type, use default
+      keypointOpacity: 100, // Not in project type, use default
+      animatedKeypoints: {}, // Not in project type, use default
     };
   }
 
@@ -553,7 +571,23 @@ export class PoseLayer extends BaseLayer {
 
     if (newPoses.length > 0) {
       data.poses = newPoses;
-      this.layerData.data = data as any;
+      // Convert local PoseLayerData to project PoseLayerData
+      const projectData: ProjectPoseLayerData = {
+        poses: data.poses,
+        format: data.format,
+        normalized: data.normalized,
+        boneWidth: data.boneWidth,
+        keypointRadius: data.keypointRadius,
+        showKeypoints: data.showKeypoints,
+        showBones: data.showBones,
+        showLabels: data.showLabels,
+        useDefaultColors: data.useDefaultColors,
+        customBoneColor: data.customBoneColor,
+        customKeypointColor: data.customKeypointColor,
+        selectedKeypoint: -1, // Default value
+        selectedPose: -1, // Default value
+      };
+      this.layerData.data = projectData;
     }
   }
 
@@ -590,7 +624,23 @@ export class PoseLayer extends BaseLayer {
       }
     }
 
-    this.layerData.data = data as any;
+    // Convert local PoseLayerData to project PoseLayerData for storage
+    const projectData: ProjectPoseLayerData = {
+      poses: data.poses,
+      format: data.format,
+      normalized: data.normalized,
+      boneWidth: data.boneWidth,
+      keypointRadius: data.keypointRadius,
+      showKeypoints: data.showKeypoints,
+      showBones: data.showBones,
+      showLabels: data.showLabels,
+      useDefaultColors: data.useDefaultColors,
+      customBoneColor: data.customBoneColor,
+      customKeypointColor: data.customKeypointColor,
+      selectedKeypoint: -1, // Not in local type, use default
+      selectedPose: -1, // Not in local type, use default
+    };
+    this.layerData.data = projectData;
   }
 
   /**

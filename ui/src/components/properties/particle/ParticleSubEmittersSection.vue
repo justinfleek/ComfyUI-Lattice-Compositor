@@ -146,7 +146,7 @@ defineEmits<{
   (e: "toggle"): void;
   (e: "add"): void;
   (e: "remove", id: string): void;
-  (e: "update", id: string, key: keyof SubEmitterConfig, value: any): void;
+  (e: "update", id: string, key: keyof SubEmitterConfig, value: SubEmitterConfig[keyof SubEmitterConfig]): void;
   (e: "updateColor", id: string, hex: string): void;
 }>();
 

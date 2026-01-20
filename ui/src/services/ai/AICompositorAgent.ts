@@ -174,6 +174,21 @@ export class AICompositorAgent {
   }
 
   /**
+   * Update the agent configuration
+   * Allows updating config properties like model selection
+   */
+  updateConfig(updates: Partial<AIAgentConfig>): void {
+    this.config = { ...this.config, ...updates };
+  }
+
+  /**
+   * Get the current agent configuration
+   */
+  getConfig(): AIAgentConfig {
+    return { ...this.config };
+  }
+
+  /**
    * Set the confirmation callback for high-risk operations.
    * UI should call this to provide a dialog implementation.
    *
@@ -426,8 +441,10 @@ ${instruction}
 
     for (const call of toolCalls) {
       // SECURITY: Log ALL tool calls to persistent audit log
-      await logToolCall(call.name, call.arguments as Record<string, unknown>);
-      console.log(`[SECURITY] Tool call: ${call.name}`, call.arguments);
+      // Extract arguments by removing 'name' and 'id' fields
+      const { name, id, ...args } = call;
+      await logToolCall(name, args);
+      console.log(`[SECURITY] Tool call: ${name}`, args);
 
       // SECURITY: Check if this is a high-risk backend tool
       const highRiskInfo = HIGH_RISK_BACKEND_TOOLS.get(call.name);

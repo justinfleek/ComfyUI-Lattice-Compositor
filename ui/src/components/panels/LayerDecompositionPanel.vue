@@ -215,6 +215,7 @@ import {
 } from "@/stores/decompositionStore";
 import { useCompositorStore } from "@/stores/compositorStore";
 import { useLayerStore } from "@/stores/layerStore";
+import type { Layer } from "@/types/project";
 
 const store = useCompositorStore();
 const layerStore = useLayerStore();
@@ -349,7 +350,7 @@ async function startDecomposition() {
     // Run decomposition
     const decompositionStore = useDecompositionStore();
     const decompositionResult = await decompositionStore.decomposeImageToLayers(
-      store as any, // Type cast for simplified store interface
+      store,
       imageDataUrl,
       {
         numLayers: numLayers.value,
@@ -394,10 +395,10 @@ function selectLayer(layerId: string) {
   layerStore.selectLayer(store, layerId, false);
 }
 
-function getLayerZ(layer: any): number {
+function getLayerZ(layer: Layer): number {
   return (
-    layer.transform?.position?.value?.z ||
-    layer.transform?.position?.defaultValue?.z ||
+    layer.transform?.position?.value?.z ??
+    layer.transform?.position?.defaultValue?.z ??
     0
   );
 }

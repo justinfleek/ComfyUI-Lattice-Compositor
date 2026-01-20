@@ -20,6 +20,21 @@ export type EffectCategory =
   | "transition"
   | "utility";
 
+/**
+ * Effect parameter value types based on parameter type
+ * Maps parameter type to its corresponding value type
+ */
+export type EffectParameterValue =
+  | number // For "number", "angle" types
+  | string // For "string", "layer", "dropdown" types
+  | boolean // For "checkbox" type
+  | { x: number; y: number } // For "point" type
+  | { x: number; y: number; z: number } // For "point3D" type
+  | { r: number; g: number; b: number; a?: number } // For "color" type
+  | Array<{ x: number; y: number }> // For "curve" type (bezier curve points)
+  | Record<string, unknown> // For "data" type (arbitrary JSON data)
+  | null; // For optional parameters (layer, data)
+
 export interface EffectParameter {
   id: string;
   name: string;
@@ -35,12 +50,12 @@ export interface EffectParameter {
     | "string"
     | "curve"
     | "data";
-  value: any;
-  defaultValue: any;
+  value: EffectParameterValue;
+  defaultValue: EffectParameterValue;
   min?: number;
   max?: number;
   step?: number;
-  options?: Array<{ label: string; value: any }>;
+  options?: Array<{ label: string; value: EffectParameterValue }>;
   animatable: boolean;
   group?: string;
 }
@@ -3197,7 +3212,7 @@ export interface AnimationPreset {
     property: string;
     keyframes: Array<{
       time: number; // 0-1 normalized
-      value: any;
+      value: EffectParameterValue; // Type-safe effect parameter value
       inHandle?: { x: number; y: number };
       outHandle?: { x: number; y: number };
     }>;

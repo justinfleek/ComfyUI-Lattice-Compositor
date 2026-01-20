@@ -5,9 +5,15 @@
  * Any changes here require corresponding changes in:
  * - src/lattice/nodes/compositor_node.py
  * - ui/src/services/export/depthRenderer.ts
+ * Includes comprehensive validation constraints for security and data integrity.
  */
 
 import { z } from 'zod';
+import {
+  boundedArray,
+  iso8601DateTime,
+  MAX_STRING_LENGTH,
+} from "../shared-validation";
 
 /**
  * Valid depth output formats.
@@ -44,9 +50,9 @@ export const ColormapSchema = z.enum([
  * nearClip MUST be less than farClip.
  */
 export const DepthRangeSchema = z.object({
-  near: z.number().positive().finite(),
-  far: z.number().positive().finite(),
-}).refine(
+  near: z.number().positive().finite().max(100000), // Max 100k units
+  far: z.number().positive().finite().max(100000), // Max 100k units
+}).strict().refine(
   (range) => range.near < range.far,
   { message: 'nearClip must be less than farClip' }
 );
@@ -56,7 +62,7 @@ export const DepthRangeSchema = z.object({
  */
 export const DepthFrameOutputSchema = z.object({
   // Frame metadata
-  frame: z.number().int().nonnegative(),
+  frame: z.number().int().nonnegative().max(100000), // Max 100k frames
   width: z.number().int().positive().max(16384),
   height: z.number().int().positive().max(16384),
   
@@ -80,38 +86,41 @@ export const DepthFrameOutputSchema = z.object({
     min: z.number().finite(),
     max: z.number().finite(),
     mean: z.number().finite().optional(),
-  }).optional(),
-});
+  }).strict().optional(),
+}).strict();
 
 /**
  * Full depth export output (multiple frames).
  */
 export const DepthExportOutputSchema = z.object({
   // Export metadata
-  version: z.string(),
-  exportedAt: z.string().datetime(),
+  version: z.string().min(1).max(50).trim(), // Version string
+  exportedAt: iso8601DateTime,
   
   // Composition info
   composition: z.object({
-    width: z.number().int().positive(),
-    height: z.number().int().positive(),
-    fps: z.number().positive(),
-    frameCount: z.number().int().positive(),
-  }),
+    width: z.number().int().positive().max(16384), // Max reasonable dimension
+    height: z.number().int().positive().max(16384), // Max reasonable dimension
+    fps: z.number().positive().max(120), // Max 120 FPS
+    frameCount: z.number().int().positive().max(100000), // Max 100k frames
+  }).strict(),
   
   // Export settings used
   settings: z.object({
     format: DepthFormatSchema,
     colormap: ColormapSchema.optional(),
-    nearClip: z.number().positive(),
-    farClip: z.number().positive(),
+    nearClip: z.number().positive().max(100000), // Max 100k units
+    farClip: z.number().positive().max(100000), // Max 100k units
     normalize: z.boolean(),
     invert: z.boolean().optional(),
-  }),
+  }).strict().refine(
+    (settings) => settings.farClip > settings.nearClip,
+    { message: "farClip must be greater than nearClip", path: ["farClip"] }
+  ),
   
   // Frame data
-  frames: z.array(DepthFrameOutputSchema),
-});
+  frames: boundedArray(DepthFrameOutputSchema, 100000), // Max 100k frames
+}).strict();
 
 /**
  * Type exports for TypeScript

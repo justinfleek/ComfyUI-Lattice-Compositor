@@ -11,7 +11,9 @@ import type { AnimatableProperty, Layer, NestedCompData } from "@/types/project"
 import { createAnimatableProperty, isLayerOfType } from "@/types/project";
 import { storeLogger } from "@/utils/logger";
 import { markLayerDirty } from "@/services/layerEvaluationCache";
-import type { CompositorStoreAccess, TimeStretchOptions } from "./types";
+import type { TimeStretchOptions } from "./types";
+import { useProjectStore } from "../projectStore";
+import { useAnimationStore } from "../animationStore";
 
 // ============================================================================
 // INTERNAL TYPES
@@ -30,16 +32,15 @@ type SpeedMappableData = {
 
 /**
  * Apply time stretch to a video or nested comp layer
- * @param compositorStore - The compositor store instance
  * @param layerId - The layer ID to stretch
  * @param options - Time stretch options
  */
 export function timeStretchLayer(
-  compositorStore: CompositorStoreAccess,
   layerId: string,
   options: TimeStretchOptions,
 ): void {
-  const layer = compositorStore
+  const projectStore = useProjectStore();
+  const layer = projectStore
     .getActiveCompLayers()
     .find((l: Layer) => l.id === layerId);
   if (!layer) {
@@ -52,7 +53,7 @@ export function timeStretchLayer(
     return;
   }
 
-  compositorStore.pushHistory();
+  projectStore.pushHistory();
 
   layer.startFrame = options.newStartFrame;
   layer.endFrame = options.newEndFrame;
@@ -67,7 +68,7 @@ export function timeStretchLayer(
   }
 
   markLayerDirty(layerId);
-  compositorStore.project.meta.modified = new Date().toISOString();
+  projectStore.project.meta.modified = new Date().toISOString();
 
   storeLogger.debug(
     `Time stretched layer ${layer.name}: ${options.stretchFactor}% ` +
@@ -81,14 +82,13 @@ export function timeStretchLayer(
 
 /**
  * Reverse layer playback
- * @param compositorStore - The compositor store instance
  * @param layerId - The layer ID to reverse
  */
 export function reverseLayer(
-  compositorStore: CompositorStoreAccess,
   layerId: string,
 ): void {
-  const layer = compositorStore
+  const projectStore = useProjectStore();
+  const layer = projectStore
     .getActiveCompLayers()
     .find((l: Layer) => l.id === layerId);
   if (!layer) {
@@ -101,7 +101,7 @@ export function reverseLayer(
     return;
   }
 
-  compositorStore.pushHistory();
+  projectStore.pushHistory();
 
   if (isLayerOfType(layer, "video") && layer.data) {
     layer.data.speed = -(layer.data.speed ?? 1);
@@ -113,7 +113,7 @@ export function reverseLayer(
   }
 
   markLayerDirty(layerId);
-  compositorStore.project.meta.modified = new Date().toISOString();
+  projectStore.project.meta.modified = new Date().toISOString();
 
   storeLogger.debug(`Reversed layer: ${layer.name}`);
 }
@@ -124,14 +124,14 @@ export function reverseLayer(
 
 /**
  * Create a freeze frame at the current playhead position
- * @param compositorStore - The compositor store instance (must have currentFrame, fps)
  * @param layerId - The layer ID to freeze
  */
 export function freezeFrameAtPlayhead(
-  compositorStore: CompositorStoreAccess,
   layerId: string,
 ): void {
-  const layer = compositorStore
+  const projectStore = useProjectStore();
+  const animationStore = useAnimationStore();
+  const layer = projectStore
     .getActiveCompLayers()
     .find((l: Layer) => l.id === layerId);
   if (!layer) {
@@ -144,14 +144,11 @@ export function freezeFrameAtPlayhead(
     return;
   }
 
-  compositorStore.pushHistory();
+  projectStore.pushHistory();
 
-  const currentFrame = compositorStore.currentFrame ?? 0;
-  // Validate fps (nullish coalescing doesn't catch NaN)
-  const fps =
-    Number.isFinite(compositorStore.fps) && compositorStore.fps! > 0
-      ? compositorStore.fps!
-      : 16;
+  const activeComp = projectStore.getActiveComp();
+  const currentFrame = activeComp?.currentFrame ?? 0;
+  const fps = projectStore.getFps();
   const sourceTime = currentFrame / fps;
 
   if (layer.data) {
@@ -180,7 +177,7 @@ export function freezeFrameAtPlayhead(
         id: `kf_freeze_end_${Date.now() + 1}`,
         frame:
           (layer.endFrame ??
-            compositorStore.getActiveComp()?.settings.frameCount ??
+            activeComp?.settings.frameCount ??
             81) - 1,
         value: sourceTime,
         interpolation: "hold" as const,
@@ -194,7 +191,7 @@ export function freezeFrameAtPlayhead(
   }
 
   markLayerDirty(layerId);
-  compositorStore.project.meta.modified = new Date().toISOString();
+  projectStore.project.meta.modified = new Date().toISOString();
 
   storeLogger.debug(
     `Created freeze frame on ${layer.name} at frame ${currentFrame}`,
@@ -207,15 +204,14 @@ export function freezeFrameAtPlayhead(
 
 /**
  * Split layer at the current playhead position
- * @param compositorStore - The compositor store instance (must have currentFrame, fps)
  * @param layerId - The layer ID to split
  * @returns The new layer created from the split, or null on failure
  */
 export function splitLayerAtPlayhead(
-  compositorStore: CompositorStoreAccess,
   layerId: string,
 ): Layer | null {
-  const layer = compositorStore
+  const projectStore = useProjectStore();
+  const layer = projectStore
     .getActiveCompLayers()
     .find((l: Layer) => l.id === layerId);
   if (!layer) {
@@ -223,11 +219,12 @@ export function splitLayerAtPlayhead(
     return null;
   }
 
-  const currentFrame = compositorStore.currentFrame ?? 0;
+  const activeComp = projectStore.getActiveComp();
+  const currentFrame = activeComp?.currentFrame ?? 0;
   const startFrame = layer.startFrame ?? 0;
   const endFrame =
     layer.endFrame ??
-    compositorStore.getActiveComp()?.settings.frameCount ??
+    activeComp?.settings.frameCount ??
     81;
 
   if (currentFrame <= startFrame || currentFrame >= endFrame) {
@@ -235,7 +232,7 @@ export function splitLayerAtPlayhead(
     return null;
   }
 
-  compositorStore.pushHistory();
+  projectStore.pushHistory();
 
   const newLayerId = `layer_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
   const newLayer: Layer = {
@@ -249,11 +246,7 @@ export function splitLayerAtPlayhead(
   newLayer.endFrame = endFrame;
 
   if (isLayerOfType(newLayer, "video") && newLayer.data) {
-    // Validate fps (nullish coalescing doesn't catch NaN)
-    const fps =
-      Number.isFinite(compositorStore.fps) && compositorStore.fps! > 0
-        ? compositorStore.fps!
-        : 16;
+    const fps = projectStore.getFps();
     const originalStartTime = newLayer.data.startTime ?? 0;
     const speed = newLayer.data.speed ?? 1;
     const frameOffset = currentFrame - startFrame;
@@ -261,13 +254,13 @@ export function splitLayerAtPlayhead(
     newLayer.data.startTime = originalStartTime + timeOffset;
   }
 
-  const layers = compositorStore.getActiveCompLayers();
+  const layers = projectStore.getActiveCompLayers();
   const originalIndex = layers.findIndex((l: Layer) => l.id === layerId);
   layers.splice(originalIndex + 1, 0, newLayer);
 
   markLayerDirty(layerId);
   markLayerDirty(newLayerId);
-  compositorStore.project.meta.modified = new Date().toISOString();
+  projectStore.project.meta.modified = new Date().toISOString();
 
   storeLogger.debug(`Split layer ${layer.name} at frame ${currentFrame}`);
 
@@ -280,16 +273,15 @@ export function splitLayerAtPlayhead(
 
 /**
  * Enable SpeedMap (time remapping) on a video or nested comp layer
- * @param compositorStore - The compositor store instance
  * @param layerId - The layer ID
  * @param fps - Optional fps override
  */
 export function enableSpeedMap(
-  compositorStore: CompositorStoreAccess,
   layerId: string,
   fps?: number,
 ): void {
-  const layer = compositorStore
+  const projectStore = useProjectStore();
+  const layer = projectStore
     .getActiveCompLayers()
     .find((l: Layer) => l.id === layerId);
   if (!layer) {
@@ -302,13 +294,14 @@ export function enableSpeedMap(
     return;
   }
 
-  compositorStore.pushHistory();
+  projectStore.pushHistory();
 
-  const compositionFps = fps ?? compositorStore.fps ?? 30;
+  const activeComp = projectStore.getActiveComp();
+  const compositionFps = fps ?? projectStore.getFps();
   const layerStartFrame = layer.startFrame ?? 0;
   const layerEndFrame =
     layer.endFrame ??
-    compositorStore.getActiveComp()?.settings.frameCount ??
+    activeComp?.settings.frameCount ??
     81;
 
   if (layer.data) {
@@ -353,21 +346,20 @@ export function enableSpeedMap(
   }
 
   markLayerDirty(layerId);
-  compositorStore.project.meta.modified = new Date().toISOString();
+  projectStore.project.meta.modified = new Date().toISOString();
 
   storeLogger.debug(`Enabled SpeedMap on layer: ${layer.name}`);
 }
 
 /**
  * Disable SpeedMap (time remapping) on a video or nested comp layer
- * @param compositorStore - The compositor store instance
  * @param layerId - The layer ID
  */
 export function disableSpeedMap(
-  compositorStore: CompositorStoreAccess,
   layerId: string,
 ): void {
-  const layer = compositorStore
+  const projectStore = useProjectStore();
+  const layer = projectStore
     .getActiveCompLayers()
     .find((l: Layer) => l.id === layerId);
   if (!layer) {
@@ -379,7 +371,7 @@ export function disableSpeedMap(
     return;
   }
 
-  compositorStore.pushHistory();
+  projectStore.pushHistory();
 
   if (layer.data) {
     const data = layer.data as SpeedMappableData;
@@ -388,24 +380,23 @@ export function disableSpeedMap(
   }
 
   markLayerDirty(layerId);
-  compositorStore.project.meta.modified = new Date().toISOString();
+  projectStore.project.meta.modified = new Date().toISOString();
 
   storeLogger.debug(`Disabled SpeedMap on layer: ${layer.name}`);
 }
 
 /**
  * Toggle SpeedMap on/off for a layer
- * @param compositorStore - The compositor store instance
  * @param layerId - The layer ID
  * @param fps - Optional fps override
  * @returns Whether SpeedMap is now enabled
  */
 export function toggleSpeedMap(
-  compositorStore: CompositorStoreAccess,
   layerId: string,
   fps?: number,
 ): boolean {
-  const layer = compositorStore
+  const projectStore = useProjectStore();
+  const layer = projectStore
     .getActiveCompLayers()
     .find((l: Layer) => l.id === layerId);
   if (
@@ -420,10 +411,10 @@ export function toggleSpeedMap(
   const isCurrentlyEnabled = data?.speedMapEnabled ?? false;
 
   if (isCurrentlyEnabled) {
-    disableSpeedMap(compositorStore, layerId);
+    disableSpeedMap(layerId);
     return false;
   } else {
-    enableSpeedMap(compositorStore, layerId, fps);
+    enableSpeedMap(layerId, fps);
     return true;
   }
 }

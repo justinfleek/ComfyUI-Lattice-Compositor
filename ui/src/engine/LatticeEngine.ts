@@ -799,9 +799,9 @@ export class LatticeEngine {
     for (const layer of layers) {
       if (
         "setResolution" in layer &&
-        typeof (layer as any).setResolution === "function"
+        typeof (layer as BaseLayer & { setResolution?: (width: number, height: number) => void }).setResolution === "function"
       ) {
-        (layer as any).setResolution(width, height);
+        (layer as BaseLayer & { setResolution: (width: number, height: number) => void }).setResolution(width, height);
       }
     }
   }

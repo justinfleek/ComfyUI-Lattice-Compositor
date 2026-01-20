@@ -124,11 +124,35 @@ export function getKeyframeScreenY(
 }
 
 /**
+ * Type for position/vector values that can be extracted from keyframes
+ */
+interface PositionLike {
+  x?: number;
+  y?: number;
+  z?: number;
+}
+
+/**
+ * Type guard for position-like objects
+ */
+function isPositionLike(value: unknown): value is PositionLike {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    ("x" in value || "y" in value || "z" in value)
+  );
+}
+
+/**
  * Extract numeric value from keyframe value (handles number and object types)
  */
-export function getNumericValue(value: any): number {
+export function getNumericValue(value: unknown): number {
   if (typeof value === "number") return value;
-  if (typeof value === "object") return value.x ?? value.y ?? value.z ?? 0;
+  if (isPositionLike(value)) {
+    if (typeof value.x === "number") return value.x;
+    if (typeof value.y === "number") return value.y;
+    if (typeof value.z === "number") return value.z;
+  }
   return 0;
 }
 

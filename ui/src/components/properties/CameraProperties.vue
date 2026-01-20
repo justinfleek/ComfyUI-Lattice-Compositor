@@ -651,7 +651,7 @@ function toggleSection(section: string) {
 }
 
 // Update camera data
-function update(key: keyof CameraLayerData | string, value: any) {
+function update(key: keyof CameraLayerData | string, value: unknown) {
   layerStore.updateLayer(store, props.layer.id, {
     data: { ...cameraData.value, [key]: value },
   });
@@ -680,7 +680,10 @@ function updatePathLayer(e: Event) {
 }
 
 // Update path config value
-function updatePathConfig(key: keyof CameraPathFollowing, value: any) {
+function updatePathConfig(
+  key: keyof CameraPathFollowing,
+  value: CameraPathFollowing[keyof CameraPathFollowing],
+) {
   const newPath = { ...pathFollowing.value, [key]: value };
   update("pathFollowing", newPath);
 }
@@ -693,7 +696,10 @@ function toggleCameraShake(e: Event) {
 }
 
 // Update shake config value
-function updateShakeConfig(key: keyof CameraShakeData, value: any) {
+function updateShakeConfig(
+  key: keyof CameraShakeData,
+  value: CameraShakeData[keyof CameraShakeData],
+) {
   const newShake = { ...cameraShake.value, [key]: value };
   update("shake", newShake);
 }
@@ -712,7 +718,10 @@ function toggleRackFocus(e: Event) {
 }
 
 // Update rack focus config value
-function updateRackFocusConfig(key: keyof CameraRackFocusData, value: any) {
+function updateRackFocusConfig(
+  key: keyof CameraRackFocusData,
+  value: CameraRackFocusData[keyof CameraRackFocusData],
+) {
   const newRackFocus = { ...rackFocus.value, [key]: value };
   update("rackFocus", newRackFocus);
 }
@@ -766,11 +775,37 @@ function updatePathProperty(_key: string, value: number) {
   }
 }
 
+// Type-safe accessor for CameraLayerData animatable properties
+function getCameraAnimatableProperty(
+  data: CameraLayerData,
+  dataKey: string,
+): AnimatableProperty<number> | undefined {
+  // Map dataKey strings to actual CameraLayerData properties
+  if (dataKey === "animatedFov") return data.animatedFov;
+  if (dataKey === "animatedFocalLength") return data.animatedFocalLength;
+  if (dataKey === "animatedFocusDistance") return data.animatedFocusDistance;
+  if (dataKey === "animatedAperture") return data.animatedAperture;
+  if (dataKey === "animatedBlurLevel") return data.animatedBlurLevel;
+  return undefined;
+}
+
+// Type-safe accessor for CameraLayerData Vec3 animatable properties
+function getCameraVec3AnimatableProperty(
+  data: CameraLayerData,
+  dataKey: string,
+): AnimatableProperty<Vec3> | undefined {
+  if (dataKey === "animatedPosition") return data.animatedPosition;
+  if (dataKey === "animatedTarget") return data.animatedTarget;
+  return undefined;
+}
+
 // Get animatable property from layer.properties
 function getProperty(name: string): AnimatableProperty<number> | undefined {
-  return props.layer.properties?.find((p) => p.name === name) as
-    | AnimatableProperty<number>
-    | undefined;
+  const found = props.layer.properties?.find((p) => p.name === name);
+  if (found && "value" in found && typeof found.value === "number") {
+    return found as AnimatableProperty<number>;
+  }
+  return undefined;
 }
 
 // Get property value
@@ -796,10 +831,8 @@ function updateAnimatable(propName: string, value: number, dataKey: string) {
     layerStore.updateLayer(store, props.layer.id, { properties: updatedProperties });
   }
 
-  // Update in camera data's animated property
-  const animProp = (cameraData.value as any)[dataKey] as
-    | AnimatableProperty<number>
-    | undefined;
+  // Update in camera data's animated property (type-safe)
+  const animProp = getCameraAnimatableProperty(cameraData.value, dataKey);
   if (animProp) {
     const updatedAnimProp = { ...animProp, value };
     update(dataKey, updatedAnimProp);
@@ -938,9 +971,7 @@ function togglePathKeyframe(propName: string) {
 function getVec3Value(propName: string, axis: "x" | "y" | "z"): number {
   const dataKey =
     propName === "Position" ? "animatedPosition" : "animatedTarget";
-  const animProp = (cameraData.value as any)[dataKey] as
-    | AnimatableProperty<Vec3>
-    | undefined;
+  const animProp = getCameraVec3AnimatableProperty(cameraData.value, dataKey);
   if (animProp?.value) {
     return animProp.value[axis] ?? 0;
   }
@@ -954,9 +985,7 @@ function updateVec3Property(
   value: number,
   dataKey: string,
 ) {
-  let animProp = (cameraData.value as any)[dataKey] as
-    | AnimatableProperty<Vec3>
-    | undefined;
+  let animProp = getCameraVec3AnimatableProperty(cameraData.value, dataKey);
 
   if (!animProp) {
     animProp = {
@@ -977,9 +1006,7 @@ function updateVec3Property(
 
 // Toggle Vec3 keyframe
 function toggleVec3Keyframe(propName: string, dataKey: string) {
-  let animProp = (cameraData.value as any)[dataKey] as
-    | AnimatableProperty<Vec3>
-    | undefined;
+  let animProp = getCameraVec3AnimatableProperty(cameraData.value, dataKey);
 
   if (!animProp) {
     animProp = {

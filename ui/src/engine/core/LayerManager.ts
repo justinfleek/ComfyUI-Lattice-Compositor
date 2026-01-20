@@ -162,15 +162,24 @@ export class LayerManager {
     this.effectLayerRenderContext = context;
 
     // Update existing effect layers
+    // Type-safe access using getLayerData() method from BaseLayer
     for (const layer of this.layers.values()) {
-      const layerData = (layer as any).layerData;
+      const layerData = layer.getLayerData?.();
       if (
         layer.type === "solid" &&
-        (layerData?.effectLayer || layerData?.adjustmentLayer)
+        layerData?.data &&
+        typeof layerData.data === "object"
       ) {
-        // Check if method exists before calling (SolidLayer doesn't have setRenderContext)
-        if ("setRenderContext" in layer) {
-          (layer as unknown as EffectLayer).setRenderContext(context);
+        const solidData = layerData.data as import("@/types/project").SolidLayerData & {
+          effectLayer?: boolean;
+          adjustmentLayer?: boolean;
+        };
+        if (solidData.effectLayer || solidData.adjustmentLayer) {
+          // Check if method exists before calling (SolidLayer doesn't have setRenderContext)
+          // Type guard: EffectLayer has setRenderContext method
+          if ("setRenderContext" in layer && typeof (layer as EffectLayer).setRenderContext === "function") {
+            (layer as EffectLayer).setRenderContext(context);
+          }
         }
       }
     }
@@ -375,9 +384,9 @@ export class LayerManager {
       this.effectLayerRenderContext
     ) {
       // The layer might be a solid or any other type with effect layer flag
-      // Cast to access setRenderContext if available
-      if ("setRenderContext" in layer) {
-        (layer as unknown as EffectLayer).setRenderContext(
+      // Type guard: EffectLayer has setRenderContext method
+      if ("setRenderContext" in layer && typeof (layer as EffectLayer).setRenderContext === "function") {
+        (layer as EffectLayer).setRenderContext(
           this.effectLayerRenderContext,
         );
       }
@@ -1285,11 +1294,14 @@ export class LayerManager {
     // For now, we use the internal source canvas method
     // Subclasses like ImageLayer, VideoLayer, TextLayer implement getSourceCanvas()
 
-    // Cast to access protected method via any type assertion
+    // Type guard: Check if layer has getSourceCanvas method (protected method access)
     // In production, BaseLayer would expose a public getRenderedCanvas() method
-    const sourceCanvas = (
-      layer as unknown as { getSourceCanvas(): HTMLCanvasElement | null }
-    ).getSourceCanvas?.();
+    interface LayerWithSourceCanvas {
+      getSourceCanvas(): HTMLCanvasElement | null;
+    }
+    const sourceCanvas = ("getSourceCanvas" in layer && typeof (layer as LayerWithSourceCanvas).getSourceCanvas === "function")
+      ? (layer as LayerWithSourceCanvas).getSourceCanvas()
+      : null;
 
     if (sourceCanvas) {
       // Clone the canvas to avoid mutation issues

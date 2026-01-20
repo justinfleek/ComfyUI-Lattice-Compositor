@@ -23,6 +23,18 @@ import type { CameraAnimationProps, CameraState } from "../types";
 // Install camera-controls with Three.js subset
 CameraControls.install({ THREE });
 
+/**
+ * Camera bookmark data structure (JSON-serializable)
+ * Used for exporting/importing camera bookmarks
+ */
+export interface CameraBookmarkData {
+  position: { x: number; y: number; z: number };
+  target: { x: number; y: number; z: number };
+  spherical: { radius: number; theta: number; phi: number };
+  fov: number;
+  orbitEnabled: boolean;
+}
+
 export class CameraController {
   /** The main camera */
   public readonly camera: THREE.PerspectiveCamera;
@@ -1110,17 +1122,8 @@ export class CameraController {
   /**
    * Export all bookmarks as JSON-serializable data
    */
-  exportBookmarks(): Record<
-    string,
-    {
-      position: { x: number; y: number; z: number };
-      target: { x: number; y: number; z: number };
-      spherical: { radius: number; theta: number; phi: number };
-      fov: number;
-      orbitEnabled: boolean;
-    }
-  > {
-    const result: Record<string, any> = {};
+  exportBookmarks(): Record<string, CameraBookmarkData> {
+    const result: Record<string, CameraBookmarkData> = {};
     this.bookmarks.forEach((value, key) => {
       result[key] = {
         position: {
@@ -1140,7 +1143,7 @@ export class CameraController {
   /**
    * Import bookmarks from JSON data
    */
-  importBookmarks(data: Record<string, any>): void {
+  importBookmarks(data: Record<string, CameraBookmarkData>): void {
     Object.entries(data).forEach(([name, value]) => {
       this.bookmarks.set(name, {
         position: new THREE.Vector3(

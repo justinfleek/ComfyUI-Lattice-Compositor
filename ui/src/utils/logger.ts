@@ -90,25 +90,25 @@ function formatMessage(
  */
 export function createLogger(context: string) {
   return {
-    debug(message: string, ...args: any[]): void {
+    debug(message: string, ...args: unknown[]): void {
       if (shouldLog("debug")) {
         console.log(formatMessage("DEBUG", context, message), ...args);
       }
     },
 
-    info(message: string, ...args: any[]): void {
+    info(message: string, ...args: unknown[]): void {
       if (shouldLog("info")) {
         console.info(formatMessage("INFO", context, message), ...args);
       }
     },
 
-    warn(message: string, ...args: any[]): void {
+    warn(message: string, ...args: unknown[]): void {
       if (shouldLog("warn")) {
         console.warn(formatMessage("WARN", context, message), ...args);
       }
     },
 
-    error(message: string, ...args: any[]): void {
+    error(message: string, ...args: unknown[]): void {
       if (shouldLog("error")) {
         console.error(formatMessage("ERROR", context, message), ...args);
       }
@@ -117,7 +117,7 @@ export function createLogger(context: string) {
     /**
      * Log with a specific level
      */
-    log(level: LogLevel, message: string, ...args: any[]): void {
+    log(level: LogLevel, message: string, ...args: unknown[]): void {
       switch (level) {
         case "debug":
           this.debug(message, ...args);
@@ -151,8 +151,9 @@ export function createLogger(context: string) {
 
     /**
      * Log a table (useful for arrays/objects)
+     * Accepts any serializable data structure
      */
-    table(data: any): void {
+    table(data: unknown): void {
       if (shouldLog("debug")) {
         console.log(formatMessage("", context, "Table:"));
         console.table(data);

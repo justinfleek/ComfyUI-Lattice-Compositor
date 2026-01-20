@@ -4,9 +4,15 @@
  * Zod schemas for validating ATI (Attention-based Temporal Interpolation) trajectory export data.
  * ATI format uses exactly 121 frames with pixel coordinate trajectories.
  * All numeric values use .finite() to reject NaN/Infinity.
+ * Includes comprehensive validation constraints for security and data integrity.
  */
 
 import { z } from "zod";
+import {
+  entityId,
+  boundedArray,
+  MAX_STRING_LENGTH,
+} from "../shared-validation";
 
 // ============================================================================
 // Constants
@@ -47,9 +53,9 @@ const nonNegativeInt = z.number().int().nonnegative();
  * Used for tracking positions in ATI format.
  */
 export const ATITrackPointSchema = z.object({
-  x: finiteNumber,
-  y: finiteNumber,
-});
+  x: finiteNumber.max(ATI_MAX_DIMENSION), // Max dimension
+  y: finiteNumber.max(ATI_MAX_DIMENSION), // Max dimension
+}).strict();
 
 export type ATITrackPoint = z.infer<typeof ATITrackPointSchema>;
 
@@ -81,9 +87,9 @@ export type ATITrackFrames = z.infer<typeof ATITrackFramesSchema>;
  * All tracks in the ATI export.
  * Outer array: tracks, Inner array: 121 frames of [x, y] points.
  */
-export const ATITracksArraySchema = z.array(ATITrackFramesSchema).min(1, {
+export const ATITracksArraySchema = boundedArray(ATITrackFramesSchema, 10000).min(1, {
   message: "ATI export must have at least one track",
-});
+}); // Max 10k tracks
 
 export type ATITracksArray = z.infer<typeof ATITracksArraySchema>;
 
@@ -95,10 +101,11 @@ export type ATITracksArray = z.infer<typeof ATITracksArraySchema>;
  * Visibility data for each track at each frame.
  * Outer array: tracks, Inner array: 121 boolean visibility values.
  */
-export const ATIVisibilitySchema = z.array(
+export const ATIVisibilitySchema = boundedArray(
   z.array(z.boolean()).length(ATI_FIXED_FRAMES, {
     message: `Visibility array must have exactly ${ATI_FIXED_FRAMES} frames`,
-  })
+  }),
+  10000 // Max 10k tracks
 );
 
 export type ATIVisibility = z.infer<typeof ATIVisibilitySchema>;
@@ -113,7 +120,7 @@ export type ATIVisibility = z.infer<typeof ATIVisibilitySchema>;
  */
 export const ATIExportResultSchema = z.object({
   /** JSON-serialized track data: number[][][] format */
-  tracks: z.string().min(1),
+  tracks: z.string().min(1).max(MAX_STRING_LENGTH),
 
   /** Width of the composition in pixels */
   width: positiveDimension,
@@ -122,11 +129,11 @@ export const ATIExportResultSchema = z.object({
   height: positiveDimension,
 
   /** Number of tracks exported */
-  numTracks: nonNegativeInt,
+  numTracks: nonNegativeInt.max(10000), // Max 10k tracks
 
   /** Original frame count before resampling to 121 */
-  originalFrames: nonNegativeInt,
-});
+  originalFrames: nonNegativeInt.max(100000), // Max 100k original frames
+}).strict();
 
 export type ATIExportResult = z.infer<typeof ATIExportResultSchema>;
 
@@ -139,17 +146,26 @@ export type ATIExportResult = z.infer<typeof ATIExportResultSchema>;
  */
 export const ATIExportConfigSchema = z.object({
   /** Composition ID to export */
-  compositionId: z.string().min(1),
+  compositionId: entityId,
 
   /** Whether to include visibility data */
   includeVisibility: z.boolean().default(true),
 
   /** Frame range start (will be resampled to 121 frames) */
-  startFrame: nonNegativeInt.optional(),
+  startFrame: nonNegativeInt.max(100000).optional(), // Max 100k frames
 
   /** Frame range end (will be resampled to 121 frames) */
-  endFrame: nonNegativeInt.optional(),
-});
+  endFrame: nonNegativeInt.max(100000).optional(), // Max 100k frames
+}).strict().refine(
+  (data) => {
+    // If both present, endFrame should be >= startFrame
+    if (data.endFrame !== undefined && data.startFrame !== undefined) {
+      return data.endFrame >= data.startFrame;
+    }
+    return true;
+  },
+  { message: "endFrame must be >= startFrame", path: ["endFrame"] }
+);
 
 export type ATIExportConfig = z.infer<typeof ATIExportConfigSchema>;
 
@@ -175,14 +191,20 @@ export const ATIDataSchema = z.object({
 
   /** Metadata */
   metadata: z.object({
-    version: z.string().min(1),
+    version: z.string().min(1).max(50).trim(), // Version string
     width: positiveDimension,
     height: positiveDimension,
-    fps: z.number().finite().positive(),
+    fps: z.number().finite().positive().max(120), // Max 120 FPS
     frameCount: z.literal(ATI_FIXED_FRAMES),
-    numTracks: nonNegativeInt,
-    exportedAt: z.string().optional(),
-  }),
-});
+    numTracks: nonNegativeInt.max(10000), // Max 10k tracks
+    exportedAt: z.string().datetime().optional(),
+  }).strict(),
+}).strict().refine(
+  (data) => {
+    // numTracks should match tracks array length
+    return data.metadata.numTracks === data.tracks.length;
+  },
+  { message: "numTracks must match tracks array length", path: ["metadata", "numTracks"] }
+);
 
 export type ATIData = z.infer<typeof ATIDataSchema>;
