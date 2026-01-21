@@ -13,6 +13,7 @@
 
 import * as THREE from "three";
 import type { ControlPoint } from "@/types/project";
+import { isFiniteNumber } from "@/utils/typeGuards";
 
 // ============================================================================
 // TYPES
@@ -28,7 +29,9 @@ export interface PathPoint {
 
 export interface TextOnPathConfig {
   /** Path layer ID reference */
-  pathLayerId: string | null;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy null
+  // Pattern match: pathLayerId ∈ string (empty string = no path, never null)
+  pathLayerId: string;
 
   /** Reverse the path direction */
   reversed: boolean;
@@ -202,21 +205,31 @@ export class TextOnPathService {
       const p0 = controlPoints[i];
       const p1 = controlPoints[i + 1];
 
-      const z0 = p0.depth ?? 0;
-      const z1 = p1.depth ?? 0;
+      // Type proof: z0 ∈ number | undefined → number
+      const z0 = isFiniteNumber(p0.depth) ? p0.depth : 0;
+      // Type proof: z1 ∈ number | undefined → number
+      const z1 = isFiniteNumber(p1.depth) ? p1.depth : 0;
+
+      // Type proof: handleOut.x ∈ number | undefined → number
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const handleOut0 = (p0 != null && typeof p0 === "object" && "handleOut" in p0 && p0.handleOut != null && typeof p0.handleOut === "object") ? p0.handleOut : undefined;
+      const handleOutX0Value = (handleOut0 != null && typeof handleOut0 === "object" && "x" in handleOut0 && typeof handleOut0.x === "number") ? handleOut0.x : undefined;
+      const handleOutX0 = isFiniteNumber(handleOutX0Value) ? handleOutX0Value : 0;
+      // Type proof: handleOut.y ∈ number | undefined → number
+      const handleOutY0Value = (handleOut0 != null && typeof handleOut0 === "object" && "y" in handleOut0 && typeof handleOut0.y === "number") ? handleOut0.y : undefined;
+      const handleOutY0 = isFiniteNumber(handleOutY0Value) ? handleOutY0Value : 0;
+      // Type proof: handleIn.x ∈ number | undefined → number
+      const handleIn1 = (p1 != null && typeof p1 === "object" && "handleIn" in p1 && p1.handleIn != null && typeof p1.handleIn === "object") ? p1.handleIn : undefined;
+      const handleInX1Value = (handleIn1 != null && typeof handleIn1 === "object" && "x" in handleIn1 && typeof handleIn1.x === "number") ? handleIn1.x : undefined;
+      const handleInX1 = isFiniteNumber(handleInX1Value) ? handleInX1Value : 0;
+      // Type proof: handleIn.y ∈ number | undefined → number
+      const handleInY1Value = (handleIn1 != null && typeof handleIn1 === "object" && "y" in handleIn1 && typeof handleIn1.y === "number") ? handleIn1.y : undefined;
+      const handleInY1 = isFiniteNumber(handleInY1Value) ? handleInY1Value : 0;
 
       const bezier = new THREE.CubicBezierCurve3(
         new THREE.Vector3(p0.x, -p0.y, z0),
-        new THREE.Vector3(
-          p0.x + (p0.handleOut?.x ?? 0),
-          -(p0.y + (p0.handleOut?.y ?? 0)),
-          z0,
-        ),
-        new THREE.Vector3(
-          p1.x + (p1.handleIn?.x ?? 0),
-          -(p1.y + (p1.handleIn?.y ?? 0)),
-          z1,
-        ),
+        new THREE.Vector3(p0.x + handleOutX0, -(p0.y + handleOutY0), z0),
+        new THREE.Vector3(p1.x + handleInX1, -(p1.y + handleInY1), z1),
         new THREE.Vector3(p1.x, -p1.y, z1),
       );
 
@@ -228,19 +241,45 @@ export class TextOnPathService {
       const lastPoint = controlPoints[controlPoints.length - 1];
       const firstPoint = controlPoints[0];
 
-      const zLast = lastPoint.depth ?? 0;
-      const zFirst = firstPoint.depth ?? 0;
+      // Type proof: zLast ∈ number | undefined → number
+      const zLast = isFiniteNumber(lastPoint.depth) ? lastPoint.depth : 0;
+      // Type proof: zFirst ∈ number | undefined → number
+      const zFirst = isFiniteNumber(firstPoint.depth) ? firstPoint.depth : 0;
+
+      // Type proof: handleOut.x ∈ number | undefined → number
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const handleOutLast = (lastPoint != null && typeof lastPoint === "object" && "handleOut" in lastPoint && lastPoint.handleOut != null && typeof lastPoint.handleOut === "object") ? lastPoint.handleOut : undefined;
+      const handleOutXLastValue = (handleOutLast != null && typeof handleOutLast === "object" && "x" in handleOutLast && typeof handleOutLast.x === "number") ? handleOutLast.x : undefined;
+      const handleOutXLast = isFiniteNumber(handleOutXLastValue)
+        ? handleOutXLastValue
+        : 0;
+      // Type proof: handleOut.y ∈ number | undefined → number
+      const handleOutYLastValue = (handleOutLast != null && typeof handleOutLast === "object" && "y" in handleOutLast && typeof handleOutLast.y === "number") ? handleOutLast.y : undefined;
+      const handleOutYLast = isFiniteNumber(handleOutYLastValue)
+        ? handleOutYLastValue
+        : 0;
+      // Type proof: handleIn.x ∈ number | undefined → number
+      const handleInFirst = (firstPoint != null && typeof firstPoint === "object" && "handleIn" in firstPoint && firstPoint.handleIn != null && typeof firstPoint.handleIn === "object") ? firstPoint.handleIn : undefined;
+      const handleInXFirstValue = (handleInFirst != null && typeof handleInFirst === "object" && "x" in handleInFirst && typeof handleInFirst.x === "number") ? handleInFirst.x : undefined;
+      const handleInXFirst = isFiniteNumber(handleInXFirstValue)
+        ? handleInXFirstValue
+        : 0;
+      // Type proof: handleIn.y ∈ number | undefined → number
+      const handleInYFirstValue = (handleInFirst != null && typeof handleInFirst === "object" && "y" in handleInFirst && typeof handleInFirst.y === "number") ? handleInFirst.y : undefined;
+      const handleInYFirst = isFiniteNumber(handleInYFirstValue)
+        ? handleInYFirstValue
+        : 0;
 
       const closingBezier = new THREE.CubicBezierCurve3(
         new THREE.Vector3(lastPoint.x, -lastPoint.y, zLast),
         new THREE.Vector3(
-          lastPoint.x + (lastPoint.handleOut?.x ?? 0),
-          -(lastPoint.y + (lastPoint.handleOut?.y ?? 0)),
+          lastPoint.x + handleOutXLast,
+          -(lastPoint.y + handleOutYLast),
           zLast,
         ),
         new THREE.Vector3(
-          firstPoint.x + (firstPoint.handleIn?.x ?? 0),
-          -(firstPoint.y + (firstPoint.handleIn?.y ?? 0)),
+          firstPoint.x + handleInXFirst,
+          -(firstPoint.y + handleInYFirst),
           zFirst,
         ),
         new THREE.Vector3(firstPoint.x, -firstPoint.y, zFirst),
@@ -265,7 +304,13 @@ export class TextOnPathService {
    * Get total path length
    */
   getTotalLength(): number {
-    return this.arcLengthTable?.totalLength ?? 0;
+    // Type proof: totalLength ∈ number | undefined → number
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const arcLengthTable = this.arcLengthTable;
+    const totalLength = (arcLengthTable != null && typeof arcLengthTable === "object" && "totalLength" in arcLengthTable && typeof arcLengthTable.totalLength === "number") ? arcLengthTable.totalLength : undefined;
+    return isFiniteNumber(totalLength)
+      ? totalLength
+      : 0;
   }
 
   /**
@@ -399,8 +444,10 @@ export class TextOnPathService {
    * Get a point on the path at a specific percentage
    * Useful for positioning anchors or debugging
    */
-  getPointAtPercent(percent: number): PathPoint | null {
-    if (!this.arcLengthTable) return null;
+  getPointAtPercent(percent: number): PathPoint {
+    if (!this.arcLengthTable) {
+      throw new Error(`[TextOnPath] Cannot get point at ${percent}%: Arc length table not initialized. Call initialize() first.`);
+    }
 
     const distance = (percent / 100) * this.arcLengthTable.totalLength;
     return this.arcLengthTable.getPointAtDistance(distance);
@@ -449,7 +496,7 @@ export function createTextOnPathService(): TextOnPathService {
  */
 export function createDefaultPathConfig(): TextOnPathConfig {
   return {
-    pathLayerId: null,
+    pathLayerId: "",
     reversed: false,
     perpendicularToPath: true,
     forceAlignment: false,

@@ -116,7 +116,7 @@
 
 <script setup lang="ts">
 import { computed } from "vue";
-import { useCompositorStore } from "@/stores/compositorStore";
+import { useAnimationStore } from "@/stores/animationStore";
 import { createKeyframe } from "@/types/animation";
 import type {
   GradientStrokeShape,
@@ -127,7 +127,7 @@ import type {
 
 const props = defineProps<{ shape: GradientStrokeShape; layerId: string }>();
 const emit = defineEmits(["update"]);
-const store = useCompositorStore();
+const animationStore = useAnimationStore();
 
 // Gradient preview CSS
 const gradientPreviewStyle = computed(() => {
@@ -146,8 +146,11 @@ const gradientPreviewStyle = computed(() => {
   }
 });
 
+// Lean4/PureScript/Haskell: Explicit pattern matching - no lazy || []
 const dashPatternDisplay = computed(() => {
-  const pattern = props.shape.dashPattern?.value || [];
+  const dashPattern = props.shape.dashPattern;
+  const value = (dashPattern !== null && dashPattern !== undefined && typeof dashPattern === "object" && "value" in dashPattern) ? dashPattern.value : undefined;
+  const pattern = (value !== null && value !== undefined && Array.isArray(value)) ? value : [];
   return pattern.length > 0 ? pattern.join(", ") : "No dashes";
 });
 
@@ -189,7 +192,7 @@ function updateNumber(
 function toggleKeyframe(prop: "width" | "opacity" | "dashOffset") {
   const updated = { ...props.shape };
   const animProp = updated[prop];
-  const frame = store.currentFrame;
+  const frame = animationStore.currentFrame;
   const hasKf = animProp.keyframes.some((k) => k.frame === frame);
   if (hasKf) {
     animProp.keyframes = animProp.keyframes.filter((k) => k.frame !== frame);

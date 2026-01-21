@@ -86,20 +86,9 @@ export interface LorenzAttractorConfig {
 // Emitter Types
 // ============================================================================
 
-// Emitter shape types for geometric emission
-export type EmitterShape =
-  | "point"
-  | "line"
-  | "circle"
-  | "box"
-  | "sphere"
-  | "ring"
-  | "spline"
-  | "depth-map"
-  | "mask"
-  | "cone" // Cone-shaped emission volume
-  | "image" // Emit from non-transparent pixels of an image/layer
-  | "depthEdge"; // Emit from depth discontinuities (silhouette edges)
+// Import and re-export from canonical source
+import type { EmitterShape } from "@/types/particles";
+export type { EmitterShape };
 
 // Spline path emission configuration
 export interface SplinePathEmission {

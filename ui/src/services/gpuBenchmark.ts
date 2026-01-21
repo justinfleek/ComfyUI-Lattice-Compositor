@@ -223,9 +223,11 @@ export async function runBenchmarkSuite(
   const averageSpeedup = totalCpuTime / Math.max(totalGpuTime, 0.001);
 
   const sortedBySpeedup = [...results].sort((a, b) => b.speedup - a.speedup);
-  const bestEffect = sortedBySpeedup[0]?.effectKey || "none";
-  const worstEffect =
-    sortedBySpeedup[sortedBySpeedup.length - 1]?.effectKey || "none";
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const firstResult = (sortedBySpeedup != null && Array.isArray(sortedBySpeedup) && sortedBySpeedup.length > 0) ? sortedBySpeedup[0] : undefined;
+  const bestEffect = (firstResult != null && typeof firstResult === "object" && "effectKey" in firstResult && typeof firstResult.effectKey === "string") ? firstResult.effectKey : "none";
+  const lastResult = (sortedBySpeedup != null && Array.isArray(sortedBySpeedup) && sortedBySpeedup.length > 0) ? sortedBySpeedup[sortedBySpeedup.length - 1] : undefined;
+  const worstEffect = (lastResult != null && typeof lastResult === "object" && "effectKey" in lastResult && typeof lastResult.effectKey === "string") ? lastResult.effectKey : "none";
 
   const summary = {
     totalCpuTime,

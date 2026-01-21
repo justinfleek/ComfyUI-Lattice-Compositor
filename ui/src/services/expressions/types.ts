@@ -19,8 +19,8 @@ export interface ExpressionContext {
   duration: number; // Composition duration
 
   // Composition info
-  compWidth?: number; // Composition width in pixels
-  compHeight?: number; // Composition height in pixels
+  compWidth: number; // Composition width in pixels
+  compHeight: number; // Composition height in pixels
 
   // Layer info
   layerId: string;
@@ -44,21 +44,21 @@ export interface ExpressionContext {
 
   // Expression control parameters (for effect("Slider")("Slider") access)
   // Values are numbers (sliders), strings (text), or booleans (checkboxes)
-  params?: Record<string, number | string | boolean>;
+  params: Record<string, number | string | boolean>;
 
   // Other layer properties (for linking)
-  getLayerProperty?: (
+  getLayerProperty: (
     layerId: string,
     propertyPath: string,
   ) => number | number[] | null;
 
   // Data-driven animation (footage access)
-  footage?: (name: string) => FootageDataAccessor | null;
+  footage: (name: string) => FootageDataAccessor | null;
 
   // === Enhanced layer/effect access for thisLayer/thisComp ===
 
   // Current layer's transform values (for thisLayer.transform)
-  layerTransform?: {
+  layerTransform: {
     position: number[];
     rotation: number[];
     scale: number[];
@@ -67,7 +67,7 @@ export interface ExpressionContext {
   };
 
   // Current layer's effects (for thisLayer.effect())
-  layerEffects?: Array<{
+  layerEffects: Array<{
     name: string;
     effectKey: string;
     enabled: boolean;
@@ -75,14 +75,14 @@ export interface ExpressionContext {
   }>;
 
   // All layers in composition (for thisComp.layer(name))
-  allLayers?: Array<{
+  allLayers: Array<{
     id: string;
     name: string;
     index: number;
   }>;
 
   // Get effect parameter value from any layer
-  getLayerEffectParam?: (
+  getLayerEffectParam: (
     layerId: string,
     effectName: string,
     paramName: string,

@@ -151,7 +151,11 @@ onMounted(async () => {
 
   // Focus search input
   await nextTick();
-  searchInputRef.value?.focus();
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const searchInputElement = searchInputRef.value;
+  if (searchInputElement != null && typeof searchInputElement === "object" && typeof searchInputElement.focus === "function") {
+    searchInputElement.focus();
+  }
 
   // Load Google Font for current selection if needed
   if (props.currentFont) {

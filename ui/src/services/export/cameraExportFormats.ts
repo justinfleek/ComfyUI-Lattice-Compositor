@@ -3,6 +3,7 @@
  * Export camera animations to various AI video generation formats
  */
 
+import { isFiniteNumber, hasXY } from "@/utils/typeGuards";
 import { focalLengthToFOV } from "@/services/math3d";
 import type { Camera3D, CameraKeyframe } from "@/types/camera";
 import type {
@@ -80,18 +81,34 @@ export function interpolateCameraAtFrame(
   if (!next) next = prev;
 
   // Helper to get value with fallback
-  const getPos = (kf: CameraKeyframe | null | undefined) =>
-    kf?.position ?? camera.position;
-  const getOri = (kf: CameraKeyframe | null | undefined) =>
-    kf?.orientation ?? camera.orientation;
-  const getFocal = (kf: CameraKeyframe | null | undefined) =>
-    kf?.focalLength ?? camera.focalLength;
-  const getZoom = (kf: CameraKeyframe | null | undefined) =>
-    kf?.zoom ?? camera.zoom;
-  const getFocusDist = (kf: CameraKeyframe | null | undefined) =>
-    kf?.focusDistance ?? camera.depthOfField.focusDistance;
+  // Type proof: position ∈ {x, y, z} | undefined → {x, y, z}
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const getPos = (kf: CameraKeyframe | null | undefined) => {
+    const posValue = (kf != null && typeof kf === "object" && "position" in kf && kf.position != null && typeof kf.position === "object") ? kf.position : undefined;
+    return hasXY(posValue) && isFiniteNumber(posValue.z) ? posValue : camera.position;
+  };
+  const getOri = (kf: CameraKeyframe | null | undefined) => {
+    const oriValue = (kf != null && typeof kf === "object" && "orientation" in kf && kf.orientation != null && typeof kf.orientation === "object") ? kf.orientation : undefined;
+    return hasXY(oriValue) && isFiniteNumber(oriValue.z) ? oriValue : camera.orientation;
+  };
+  // Type proof: focalLength ∈ ℝ ∪ {undefined} → ℝ
+  const getFocal = (kf: CameraKeyframe | null | undefined) => {
+    const focalValue = (kf != null && typeof kf === "object" && "focalLength" in kf && typeof kf.focalLength === "number") ? kf.focalLength : undefined;
+    return isFiniteNumber(focalValue) && focalValue > 0 ? focalValue : camera.focalLength;
+  };
+  const getZoom = (kf: CameraKeyframe | null | undefined) => {
+    const zoomValue = (kf != null && typeof kf === "object" && "zoom" in kf && typeof kf.zoom === "number") ? kf.zoom : undefined;
+    return isFiniteNumber(zoomValue) && zoomValue > 0 ? zoomValue : camera.zoom;
+  };
+  const getFocusDist = (kf: CameraKeyframe | null | undefined) => {
+    const focusValue = (kf != null && typeof kf === "object" && "focusDistance" in kf && typeof kf.focusDistance === "number") ? kf.focusDistance : undefined;
+    return isFiniteNumber(focusValue) && focusValue > 0 ? focusValue : camera.depthOfField.focusDistance;
+  };
 
-  if (prev?.frame === next?.frame) {
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const prevFrame = (prev != null && typeof prev === "object" && "frame" in prev && typeof prev.frame === "number") ? prev.frame : undefined;
+  const nextFrame = (next != null && typeof next === "object" && "frame" in next && typeof next.frame === "number") ? next.frame : undefined;
+  if (prevFrame != null && nextFrame != null && prevFrame === nextFrame) {
     return {
       position: getPos(prev),
       rotation: getOri(prev),
@@ -102,8 +119,12 @@ export function interpolateCameraAtFrame(
   }
 
   // Interpolate
-  const prevFrame = prev?.frame ?? 0;
-  const nextFrame = next?.frame ?? prevFrame;
+  // Type proof: frame ∈ ℕ ∪ {undefined} → ℕ
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const prevFrameValue = (prev != null && typeof prev === "object" && "frame" in prev && typeof prev.frame === "number") ? prev.frame : undefined;
+  const prevFrame = isFiniteNumber(prevFrameValue) && Number.isInteger(prevFrameValue) && prevFrameValue >= 0 ? prevFrameValue : 0;
+  const nextFrameValue = (next != null && typeof next === "object" && "frame" in next && typeof next.frame === "number") ? next.frame : undefined;
+  const nextFrame = isFiniteNumber(nextFrameValue) && Number.isInteger(nextFrameValue) && nextFrameValue >= 0 ? nextFrameValue : prevFrame;
   const t = nextFrame === prevFrame ? 0 : (frame - prevFrame) / (nextFrame - prevFrame);
 
   const prevPos = getPos(prev);
@@ -304,10 +325,15 @@ export function detectMotionCtrlSVDPreset(
   const last = keyframes[keyframes.length - 1];
 
   // Get positions and orientations with defaults
-  const firstPos = first.position ?? { x: 0, y: 0, z: 0 };
-  const lastPos = last.position ?? { x: 0, y: 0, z: 0 };
-  const firstOri = first.orientation ?? { x: 0, y: 0, z: 0 };
-  const lastOri = last.orientation ?? { x: 0, y: 0, z: 0 };
+  // Type proof: position, orientation ∈ {x, y, z} | undefined → {x, y, z}
+  const firstPosValue = first.position;
+  const firstPos = hasXY(firstPosValue) && isFiniteNumber(firstPosValue.z) ? firstPosValue : { x: 0, y: 0, z: 0 };
+  const lastPosValue = last.position;
+  const lastPos = hasXY(lastPosValue) && isFiniteNumber(lastPosValue.z) ? lastPosValue : { x: 0, y: 0, z: 0 };
+  const firstOriValue = first.orientation;
+  const firstOri = hasXY(firstOriValue) && isFiniteNumber(firstOriValue.z) ? firstOriValue : { x: 0, y: 0, z: 0 };
+  const lastOriValue = last.orientation;
+  const lastOri = hasXY(lastOriValue) && isFiniteNumber(lastOriValue.z) ? lastOriValue : { x: 0, y: 0, z: 0 };
 
   const deltaX = lastPos.x - firstPos.x;
   const deltaY = lastPos.y - firstPos.y;
@@ -408,10 +434,15 @@ export function analyzeCameraMotion(
   const last = keyframes[keyframes.length - 1];
 
   // Get positions and orientations with defaults
-  const firstPos = first.position ?? { x: 0, y: 0, z: 0 };
-  const lastPos = last.position ?? { x: 0, y: 0, z: 0 };
-  const firstOri = first.orientation ?? { x: 0, y: 0, z: 0 };
-  const lastOri = last.orientation ?? { x: 0, y: 0, z: 0 };
+  // Type proof: position, orientation ∈ {x, y, z} | undefined → {x, y, z}
+  const firstPosValue = first.position;
+  const firstPos = hasXY(firstPosValue) && isFiniteNumber(firstPosValue.z) ? firstPosValue : { x: 0, y: 0, z: 0 };
+  const lastPosValue = last.position;
+  const lastPos = hasXY(lastPosValue) && isFiniteNumber(lastPosValue.z) ? lastPosValue : { x: 0, y: 0, z: 0 };
+  const firstOriValue = first.orientation;
+  const firstOri = hasXY(firstOriValue) && isFiniteNumber(firstOriValue.z) ? firstOriValue : { x: 0, y: 0, z: 0 };
+  const lastOriValue = last.orientation;
+  const lastOri = hasXY(lastOriValue) && isFiniteNumber(lastOriValue.z) ? lastOriValue : { x: 0, y: 0, z: 0 };
 
   const deltaX = lastPos.x - firstPos.x;
   const deltaY = lastPos.y - firstPos.y;
@@ -613,8 +644,11 @@ export function detectCameraCtrlMotionType(
     const first = keyframes[0];
     const last = keyframes[keyframes.length - 1];
 
-    const firstOri = first.orientation ?? { x: 0, y: 0, z: 0 };
-    const lastOri = last.orientation ?? { x: 0, y: 0, z: 0 };
+    // Type proof: orientation ∈ {x, y, z} | undefined → {x, y, z}
+    const firstOriValue = first.orientation;
+    const firstOri = hasXY(firstOriValue) && isFiniteNumber(firstOriValue.z) ? firstOriValue : { x: 0, y: 0, z: 0 };
+    const lastOriValue = last.orientation;
+    const lastOri = hasXY(lastOriValue) && isFiniteNumber(lastOriValue.z) ? lastOriValue : { x: 0, y: 0, z: 0 };
 
     const deltaRx = lastOri.x - firstOri.x;
     const deltaRy = lastOri.y - firstOri.y;

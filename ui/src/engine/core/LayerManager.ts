@@ -83,23 +83,27 @@ export class LayerManager {
     layerId: string,
     metadata: VideoMetadata,
   ) => void;
-  private nestedCompRenderContext: NestedCompRenderContext | null = null;
-  private effectLayerRenderContext: EffectLayerRenderContext | null = null;
+  // Proper optional types - undefined when not set
+  private nestedCompRenderContext: NestedCompRenderContext | undefined = undefined;
+  private effectLayerRenderContext: EffectLayerRenderContext | undefined = undefined;
   private cameraGetter?: CameraGetter;
   private cameraAtFrameGetter?: import("../layers/CameraLayer").CameraAtFrameGetter;
   private cameraUpdater?: CameraUpdater;
 
   // Renderer reference for particle systems
-  private rendererRef: THREE.WebGLRenderer | null = null;
+  // Proper optional type - undefined when not set
+  private rendererRef: THREE.WebGLRenderer | undefined = undefined;
 
   // Composition FPS for particle timing (WAN standard: 16fps)
   private compositionFPS: number = 16;
 
   // Camera reference for particles
-  private cameraRef: THREE.PerspectiveCamera | null = null;
+  // Proper optional type - undefined when not set
+  private cameraRef: THREE.PerspectiveCamera | undefined = undefined;
 
   // Audio reactive callback
-  private audioReactiveGetter: LayerAudioReactiveGetter | null = null;
+  // Proper optional type - undefined when not set
+  private audioReactiveGetter: LayerAudioReactiveGetter | undefined = undefined;
 
   // Matte canvas cache - stores rendered canvases for layers used as matte sources
   private matteCanvases: Map<string, HTMLCanvasElement> = new Map();
@@ -111,13 +115,15 @@ export class LayerManager {
   private renderOrder: string[] = [];
 
   // Callback to get cross-composition matte canvas
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy null
+  // Pattern match: Returns HTMLCanvasElement (throws error if not found, never null)
   private crossCompMatteGetter:
     | ((
         compositionId: string,
         layerId: string,
         frame: number,
-      ) => HTMLCanvasElement | null)
-    | null = null;
+      ) => HTMLCanvasElement)
+    | {} = {};
 
   constructor(scene: SceneManager, resources: ResourceManager) {
     this.scene = scene;
@@ -164,21 +170,27 @@ export class LayerManager {
     // Update existing effect layers
     // Type-safe access using getLayerData() method from BaseLayer
     for (const layer of this.layers.values()) {
-      const layerData = layer.getLayerData?.();
-      if (
-        layer.type === "solid" &&
-        layerData?.data &&
-        typeof layerData.data === "object"
-      ) {
-        const solidData = layerData.data as import("@/types/project").SolidLayerData & {
-          effectLayer?: boolean;
-          adjustmentLayer?: boolean;
-        };
-        if (solidData.effectLayer || solidData.adjustmentLayer) {
-          // Check if method exists before calling (SolidLayer doesn't have setRenderContext)
-          // Type guard: EffectLayer has setRenderContext method
-          if ("setRenderContext" in layer && typeof (layer as EffectLayer).setRenderContext === "function") {
-            (layer as EffectLayer).setRenderContext(context);
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy null returns
+      // Pattern match: layerData ∈ Layer (throws error if not found, never null)
+      if ("getLayerData" in layer && typeof layer.getLayerData === "function") {
+        const layerDataValue = layer.getLayerData();
+        if (
+          layer.type === "solid" &&
+          typeof layerDataValue === "object" && layerDataValue !== null && "data" in layerDataValue && typeof layerDataValue.data === "object" && layerDataValue.data !== null
+        ) {
+          const layerData = layerDataValue;
+          const solidData = layerData.data as import("@/types/project").SolidLayerData & {
+            effectLayer?: boolean;
+            adjustmentLayer?: boolean;
+          };
+          // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy logical OR
+          const isEffectOrAdjustment = (typeof solidData.effectLayer === "boolean" && solidData.effectLayer === true) || (typeof solidData.adjustmentLayer === "boolean" && solidData.adjustmentLayer === true);
+          if (isEffectOrAdjustment) {
+            // Check if method exists before calling (SolidLayer doesn't have setRenderContext)
+            // Type guard: EffectLayer has setRenderContext method
+            if ("setRenderContext" in layer && typeof (layer as EffectLayer).setRenderContext === "function") {
+              (layer as EffectLayer).setRenderContext(context);
+            }
           }
         }
       }
@@ -263,9 +275,16 @@ export class LayerManager {
 
   /**
    * Get camera reference
+   * Lean4/PureScript/Haskell: Explicit pattern matching - no lazy null returns
+   * Pattern match: Returns THREE.PerspectiveCamera (throws error if not set, never null)
    */
-  getCamera(): THREE.PerspectiveCamera | null {
-    return this.cameraRef;
+  getCamera(): THREE.PerspectiveCamera {
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy truthy checks
+    if (this.cameraRef !== undefined) {
+      return this.cameraRef;
+    }
+    // Pattern match: Camera not set - throw error instead of returning null
+    throw new Error("Camera reference not set. Call setCamera() first.");
   }
 
   // ============================================================================
@@ -301,9 +320,13 @@ export class LayerManager {
     this.setupLayerCallbacks(layer, layerData);
 
     // Set up parenting
-    if (layerData.parentId) {
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy truthy checks
+    const hasParentId = typeof layerData.parentId === "string" && layerData.parentId.length > 0;
+    if (hasParentId && typeof layerData.parentId === "string") {
       const parentLayer = this.layers.get(layerData.parentId);
-      if (parentLayer) {
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy truthy checks
+      if (typeof parentLayer === "object" && parentLayer !== null) {
+        // Pattern match: setParent accepts BaseLayer | null, but BaseLayer now uses empty object sentinel internally
         layer.setParent(parentLayer);
       }
     }
@@ -329,15 +352,20 @@ export class LayerManager {
     layer.setCompositionFps(this.compositionFPS);
 
     // Video layer: hook up metadata callback for auto-resize
-    if (layer.type === "video" && this.onVideoMetadataLoaded) {
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy truthy checks
+    if (layer.type === "video" && typeof this.onVideoMetadataLoaded === "function") {
       const videoLayer = layer as VideoLayer;
       videoLayer.setMetadataCallback((metadata) => {
-        this.onVideoMetadataLoaded?.(layerData.id, metadata);
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+        if (typeof this.onVideoMetadataLoaded === "function") {
+          this.onVideoMetadataLoaded(layerData.id, metadata);
+        }
       });
     }
 
     // Nested comp layer: provide render context
-    if (layer.type === "nestedComp" && this.nestedCompRenderContext) {
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy truthy checks
+    if (layer.type === "nestedComp" && this.nestedCompRenderContext !== undefined) {
       const nestedCompLayer = layer as NestedCompLayer;
       nestedCompLayer.setRenderContext(this.nestedCompRenderContext);
     }
@@ -358,7 +386,8 @@ export class LayerManager {
     // Particle layer: provide renderer, FPS, and spline provider
     if (layer.type === "particles") {
       const particleLayer = layer as ParticleLayer;
-      if (this.rendererRef) {
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy truthy checks
+      if (this.rendererRef !== undefined) {
         particleLayer.setRenderer(this.rendererRef);
       }
       particleLayer.setFPS(this.compositionFPS);
@@ -379,9 +408,11 @@ export class LayerManager {
     }
 
     // Any layer with effectLayer/adjustmentLayer flag: provide render context
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy logical OR/truthy checks
+    const isEffectLayer = (typeof layerData.effectLayer === "boolean" && layerData.effectLayer === true) || (typeof layerData.adjustmentLayer === "boolean" && layerData.adjustmentLayer === true);
     if (
-      (layerData.effectLayer || layerData.adjustmentLayer) &&
-      this.effectLayerRenderContext
+      isEffectLayer &&
+      this.effectLayerRenderContext !== undefined
     ) {
       // The layer might be a solid or any other type with effect layer flag
       // Type guard: EffectLayer has setRenderContext method
@@ -397,9 +428,10 @@ export class LayerManager {
       const lightLayer = layer as LightLayer;
 
       // Provide a way to get other layer positions (for POI targeting)
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy null returns
       lightLayer.setLayerPositionGetter((layerId: string) => {
         const targetLayer = this.layers.get(layerId);
-        if (targetLayer) {
+        if (typeof targetLayer === "object" && targetLayer !== null) {
           const obj = targetLayer.getObject();
           return new THREE.Vector3(
             obj.position.x,
@@ -407,7 +439,8 @@ export class LayerManager {
             obj.position.z,
           );
         }
-        return null;
+        // Pattern match: Layer not found - return zero vector instead of null
+        return new THREE.Vector3(0, 0, 0);
       });
 
       // Set up spline provider for path following
@@ -604,7 +637,11 @@ export class LayerManager {
     evaluatedLayers: readonly EvaluatedLayer[],
     frame?: number,
   ): void {
-    const frameNum = frame ?? 0;
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+    // Pattern match: frame ∈ number | undefined → number (≥ 0, frame number, never undefined)
+    const frameNum: number = (typeof frame === "number" && Number.isFinite(frame) && frame >= 0)
+      ? frame
+      : 0;
     // Store current frame for particle spline queries
     this.currentFrame = frameNum;
 
@@ -612,7 +649,10 @@ export class LayerManager {
     // This ensures animated paths are ready before text layers query them
     for (const evalLayer of evaluatedLayers) {
       const layer = this.layers.get(evalLayer.id);
-      if (layer && (layer.type === "spline" || layer.type === "path")) {
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy logical AND/truthy checks
+      const hasLayer = typeof layer === "object" && layer !== null;
+      const isValidPathType = hasLayer && (layer.type === "spline" || layer.type === "path");
+      if (hasLayer && isValidPathType) {
         layer.applyEvaluatedState(evalLayer);
       }
     }
@@ -649,9 +689,31 @@ export class LayerManager {
     for (const layer of this.layers.values()) {
       if (layer.type === "light") {
         const lightLayer = layer as LightLayer;
-        const light = lightLayer.getLight?.();
-        if (light && light.castShadow && light.shadow?.map?.texture) {
-          shadowLights.push(light);
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy null returns
+        // Pattern match: light ∈ THREE.Light (throws error if not found, never null)
+        let light: THREE.Light;
+        if ("getLight" in lightLayer && typeof lightLayer.getLight === "function") {
+          const lightValue = lightLayer.getLight();
+          if (typeof lightValue === "object" && lightValue !== null) {
+            light = lightValue;
+          } else {
+            continue; // Skip if light is invalid
+          }
+        } else {
+          continue; // Skip if getLight method doesn't exist
+        }
+        
+        if (typeof light === "object" && "castShadow" in light && light.castShadow === true && "shadow" in light) {
+          const shadow = light.shadow;
+          if (typeof shadow === "object" && shadow !== null && "map" in shadow) {
+            const map = shadow.map;
+            if (typeof map === "object" && map !== null && "texture" in map) {
+              const texture = map.texture;
+              if (typeof texture === "object" && texture !== null) {
+                shadowLights.push(light);
+              }
+            }
+          }
         }
       }
     }
@@ -693,15 +755,24 @@ export class LayerManager {
     this.processTrackMattes(frame);
 
     // Use provided getter or fall back to stored one
-    const getter = audioReactiveGetter ?? this.audioReactiveGetter;
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+    // Pattern match: audioReactiveGetter ∈ function | undefined → function (never check undefined)
+    let getter: LayerAudioReactiveGetter;
+    if (typeof audioReactiveGetter === "function") {
+      getter = audioReactiveGetter;
+    } else if (this.audioReactiveGetter !== undefined && typeof this.audioReactiveGetter === "function") {
+      getter = this.audioReactiveGetter;
+    } else {
+      // Pattern match: No getter available - skip audio reactive evaluation
+      return;
+    }
 
     for (const layer of this.layers.values()) {
       // Get audio reactive values for this layer if available
-      if (getter) {
-        const audioValues = getter(layer.id, frame);
-        if (audioValues.size > 0) {
-          layer.setAudioReactiveValues(audioValues);
-        }
+      // Pattern match: getter is guaranteed to be function here
+      const audioValues = getter(layer.id, frame);
+      if (audioValues.size > 0) {
+        layer.setAudioReactiveValues(audioValues);
       }
 
       layer.evaluateFrame(frame);
@@ -714,8 +785,11 @@ export class LayerManager {
   /**
    * Set the audio reactive getter callback
    */
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy null
+  // Pattern match: getter ∈ LayerAudioReactiveGetter | null → undefined when null
   setAudioReactiveCallback(getter: LayerAudioReactiveGetter | null): void {
-    this.audioReactiveGetter = getter;
+    // Pattern match: Convert null to undefined (type is LayerAudioReactiveGetter | undefined)
+    this.audioReactiveGetter = (typeof getter === "function") ? getter : undefined;
   }
 
   /**
@@ -734,7 +808,8 @@ export class LayerManager {
    */
   clearLayerDrivenValues(layerId: string): void {
     const layer = this.layers.get(layerId);
-    if (layer) {
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy truthy checks
+    if (typeof layer === "object" && layer !== null) {
       layer.clearDrivenValues();
     }
   }
@@ -769,8 +844,9 @@ export class LayerManager {
           const pathSourceLayer = this.layers.get(textData.pathLayerId);
 
           // Support both spline and path layer types
+          // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy truthy checks
           if (
-            pathSourceLayer &&
+            typeof pathSourceLayer === "object" && pathSourceLayer !== null &&
             (pathSourceLayer.type === "spline" ||
               pathSourceLayer.type === "path")
           ) {
@@ -778,7 +854,8 @@ export class LayerManager {
             const pathLayer = pathSourceLayer as SplineLayer | PathLayer;
 
             // Check if path is animated and we have a frame
-            if (pathLayer.isAnimated() && frame !== undefined) {
+            // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+            if (pathLayer.isAnimated() && typeof frame === "number" && Number.isFinite(frame) && frame >= 0) {
               // Get evaluated control points for this frame
               const evaluatedPoints =
                 pathLayer.getEvaluatedControlPoints(frame);
@@ -849,7 +926,11 @@ export class LayerManager {
       // Use the current frame from the layer manager
       // Note: This is evaluated at particle spawn time, so the frame is accurate
       const result = this.querySplinePath(splineId, t, this.currentFrame);
-      if (!result) return null;
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy null returns
+      // Pattern match: result ∈ { point, tangent, length } (throws error if not found, never null)
+      if (typeof result !== "object" || result === null) {
+        throw new Error(`Spline path query failed for spline ${splineId} at t=${t}`);
+      }
       
       return {
         x: result.point.x,
@@ -877,8 +958,11 @@ export class LayerManager {
     const layer = this.layers.get(layerId);
 
     // Support both spline and path layer types
-    if (!layer || (layer.type !== "spline" && layer.type !== "path")) {
-      return null;
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy logical OR/truthy checks
+    const hasLayer = typeof layer === "object" && layer !== null;
+    const isValidPathType = hasLayer && (layer.type === "spline" || layer.type === "path");
+    if (!hasLayer || !isValidPathType) {
+      throw new Error(`Spline/path layer ${layerId} not found or invalid type`);
     }
 
     const pathLayer = layer as SplineLayer | PathLayer;
@@ -894,8 +978,9 @@ export class LayerManager {
     const tangent = pathLayer.getTangentAt(t);
     const length = pathLayer.getLength();
 
-    if (!point || !tangent) {
-      return null;
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy truthy checks
+    if (typeof point !== "object" || point === null || typeof tangent !== "object" || tangent === null) {
+      throw new Error(`Failed to get point or tangent for layer ${layerId} at t=${t}`);
     }
 
     // Convert Three.js coordinates to normalized coordinates
@@ -949,15 +1034,19 @@ export class LayerManager {
    * Connect a text layer to a spline or path layer
    * Supports both 'spline' and 'path' layer types.
    */
-  connectTextToPath(textLayerId: string, pathLayerId: string | null): void {
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy null
+  // Pattern match: pathLayerId ∈ string (empty string = no path, never null)
+  connectTextToPath(textLayerId: string, pathLayerId: string): void {
     const textLayer = this.layers.get(textLayerId) as TextLayer | undefined;
 
-    if (!textLayer || textLayer.type !== "text") {
-      layerLogger.warn(`LayerManager: Text layer ${textLayerId} not found`);
-      return;
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy logical OR/truthy checks
+    const hasTextLayer = typeof textLayer === "object" && textLayer !== null;
+    if (!hasTextLayer || textLayer.type !== "text") {
+      throw new Error(`LayerManager: Text layer ${textLayerId} not found`);
     }
 
-    if (!pathLayerId) {
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy truthy checks
+    if (pathLayerId.length === 0) {
       textLayer.clearPath();
       return;
     }
@@ -965,10 +1054,10 @@ export class LayerManager {
     const pathSourceLayer = this.layers.get(pathLayerId);
 
     // Support both spline and path layer types
-    if (
-      !pathSourceLayer ||
-      (pathSourceLayer.type !== "spline" && pathSourceLayer.type !== "path")
-    ) {
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy logical OR/truthy checks
+    const hasPathSourceLayer = typeof pathSourceLayer === "object" && pathSourceLayer !== null;
+    const isValidPathType = hasPathSourceLayer && (pathSourceLayer.type === "spline" || pathSourceLayer.type === "path");
+    if (!hasPathSourceLayer || !isValidPathType) {
       layerLogger.warn(
         `LayerManager: Spline/path layer ${pathLayerId} not found`,
       );
@@ -977,7 +1066,8 @@ export class LayerManager {
 
     const pathLayer = pathSourceLayer as SplineLayer | PathLayer;
     const curve = pathLayer.getCurve();
-    if (curve) {
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy truthy checks
+    if (typeof curve === "object" && curve !== null) {
       textLayer.setPathFromCurve(curve);
     }
   }
@@ -990,14 +1080,26 @@ export class LayerManager {
    * Get a layer's Three.js object
    */
   getObject(layerId: string): THREE.Object3D | null {
-    return this.layers.get(layerId)?.getObject() ?? null;
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy null returns
+    // Pattern match: layers.get(layerId) ∈ BaseLayer | undefined → THREE.Object3D (throws error if not found, never null)
+    const layer = this.layers.get(layerId);
+    if (typeof layer === "object" && layer !== null && typeof layer.getObject === "function") {
+      return layer.getObject();
+    }
+    throw new Error(`Layer ${layerId} not found or does not have getObject method`);
   }
 
   /**
    * Get a layer instance
    */
-  getLayer(layerId: string): BaseLayer | null {
-    return this.layers.get(layerId) ?? null;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy null returns
+  // Pattern match: layers.get(layerId) ∈ BaseLayer | undefined → BaseLayer (throws error if not found, never null)
+  getLayer(layerId: string): BaseLayer {
+    const layer = this.layers.get(layerId);
+    if (typeof layer === "object" && layer !== null) {
+      return layer;
+    }
+    throw new Error(`Layer ${layerId} not found`);
   }
 
   /**
@@ -1061,10 +1163,9 @@ export class LayerManager {
     for (const layer of this.layers.values()) {
       if (layer.hasParent()) {
         // Remove from parent's group
+        // getParent() throws explicit error if parent is missing (after hasParent() check)
         const parent = layer.getParent();
-        if (parent) {
-          parent.getObject().remove(layer.getObject());
-        }
+        parent.getObject().remove(layer.getObject());
       }
     }
 
@@ -1093,10 +1194,9 @@ export class LayerManager {
 
     // Remove from current parent or scene
     if (layer.hasParent()) {
+      // getParent() throws explicit error if parent is missing (after hasParent() check)
       const oldParent = layer.getParent();
-      if (oldParent) {
-        oldParent.getObject().remove(layer.getObject());
-      }
+      oldParent.getObject().remove(layer.getObject());
     } else {
       this.scene.removeFromComposition(layer.getObject());
     }
@@ -1192,16 +1292,19 @@ export class LayerManager {
    * This enables track mattes from other compositions (nested comps)
    * to be used as matte sources.
    */
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy null
+  // Pattern match: getter returns HTMLCanvasElement (throws error if not found, never null)
   setCrossCompMatteGetter(
     getter:
       | ((
           compositionId: string,
           layerId: string,
           frame: number,
-        ) => HTMLCanvasElement | null)
-      | null,
+        ) => HTMLCanvasElement)
+      | {},
   ): void {
-    this.crossCompMatteGetter = getter;
+    // Pattern match: Use empty object sentinel instead of null
+    this.crossCompMatteGetter = (typeof getter === "function") ? getter : {};
   }
 
   /**
@@ -1226,43 +1329,59 @@ export class LayerManager {
       const matteLayerId = layer.getTrackMatteLayerId();
       const matteType = layer.getTrackMatteType();
 
-      if (!matteLayerId || matteType === "none") {
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy logical OR/truthy checks
+      const hasMatteLayerId = typeof matteLayerId === "string" && matteLayerId.length > 0;
+      if (!hasMatteLayerId || matteType === "none") {
         continue;
       }
 
-      let matteCanvas: HTMLCanvasElement | null = null;
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy null assignments
+      // Pattern match: matteCanvas ∈ HTMLCanvasElement (throws error if not found, never null)
+      let matteCanvas: HTMLCanvasElement;
 
       // Check if this is a cross-composition matte
-      if (layer.hasCrossCompMatte() && this.crossCompMatteGetter) {
-        const compositionId = layer.getTrackMatteCompositionId()!;
-        matteCanvas = this.crossCompMatteGetter(
-          compositionId,
-          matteLayerId,
-          frame,
-        );
-
-        if (!matteCanvas) {
-          layerLogger.warn(
-            `Cross-comp track matte not found: composition=${compositionId}, layer=${matteLayerId}`,
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy truthy checks
+      if (layer.hasCrossCompMatte() && typeof this.crossCompMatteGetter === "object" && this.crossCompMatteGetter !== null && Object.keys(this.crossCompMatteGetter).length > 0 && typeof (this.crossCompMatteGetter as Function) === "function") {
+        const compositionIdValue = layer.getTrackMatteCompositionId();
+        if (typeof compositionIdValue === "string" && compositionIdValue.length > 0) {
+          const compositionId = compositionIdValue;
+          const getter = this.crossCompMatteGetter as (compositionId: string, layerId: string, frame: number) => HTMLCanvasElement;
+          matteCanvas = getter(
+            compositionId,
+            matteLayerId,
+            frame,
           );
+        } else {
+          // Pattern match: Invalid composition ID - throw error instead of warning
+          throw new Error(`Invalid composition ID for cross-comp matte: ${compositionIdValue}`);
         }
       } else {
         // Same composition matte
         const matteLayer = this.layers.get(matteLayerId);
 
-        if (matteLayer) {
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy truthy checks
+        if (typeof matteLayer === "object" && matteLayer !== null) {
           // Check cache first
           if (this.matteCanvases.has(matteLayerId)) {
-            matteCanvas = this.matteCanvases.get(matteLayerId)!;
-          } else {
-            // Render and cache the matte
-            matteCanvas = this.getLayerRenderedCanvas(matteLayer, frame);
-            if (matteCanvas) {
+            // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy non-null assertion
+            const cachedMatte = this.matteCanvases.get(matteLayerId);
+            if (typeof cachedMatte === "object" && cachedMatte !== null) {
+              matteCanvas = cachedMatte;
+            } else {
+              // Pattern match: Cache miss - render matte
+              // Pattern match: getLayerRenderedCanvas returns HTMLCanvasElement (never null)
+              matteCanvas = this.getLayerRenderedCanvas(matteLayer, frame);
               this.matteCanvases.set(matteLayerId, matteCanvas);
             }
+          } else {
+            // Render and cache the matte
+            // Pattern match: getLayerRenderedCanvas returns HTMLCanvasElement (never null)
+            matteCanvas = this.getLayerRenderedCanvas(matteLayer, frame);
+            this.matteCanvases.set(matteLayerId, matteCanvas);
           }
         } else {
-          layerLogger.warn(`Matte source layer ${matteLayerId} not found`);
+          // Pattern match: Matte layer not found - throw error instead of warning
+          throw new Error(`Matte source layer ${matteLayerId} not found`);
         }
       }
 
@@ -1279,12 +1398,14 @@ export class LayerManager {
    *
    * @param layer - The layer to get canvas from
    * @param frame - Current frame for animated content
-   * @returns Canvas with layer's rendered content, or null if unavailable
+   * @returns Canvas with layer's rendered content (throws error if unavailable, never null)
    */
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy null returns
+  // Pattern match: Returns HTMLCanvasElement (throws error if not found, never null)
   private getLayerRenderedCanvas(
     layer: BaseLayer,
     _frame: number,
-  ): HTMLCanvasElement | null {
+  ): HTMLCanvasElement {
     // For layers with getSourceCanvas, use that
     // Note: This is a simplified implementation - in production,
     // this would need to render the full layer to an offscreen canvas
@@ -1293,29 +1414,46 @@ export class LayerManager {
     // Try to get the layer's source canvas through a render-to-texture approach
     // For now, we use the internal source canvas method
     // Subclasses like ImageLayer, VideoLayer, TextLayer implement getSourceCanvas()
-
-    // Type guard: Check if layer has getSourceCanvas method (protected method access)
-    // In production, BaseLayer would expose a public getRenderedCanvas() method
+    // System F/Omega proof: Runtime type guard for protected method access
+    // Type proof: BaseLayer.getSourceCanvas() is protected, but we need to call it from LayerManager
+    // Solution: Use runtime property check with type narrowing
+    
+    // Type guard: Check if layer has getSourceCanvas method
+    // Type proof: ∀ l: BaseLayer, hasGetSourceCanvas(l) → can call l.getSourceCanvas()
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy null returns
+    // Pattern match: getSourceCanvas() returns HTMLCanvasElement (throws error if not found, never null)
+    // Note: getSourceCanvas is protected, so we use a type guard with proper interface
     interface LayerWithSourceCanvas {
-      getSourceCanvas(): HTMLCanvasElement | null;
+      getSourceCanvas(): HTMLCanvasElement;
     }
-    const sourceCanvas = ("getSourceCanvas" in layer && typeof (layer as LayerWithSourceCanvas).getSourceCanvas === "function")
-      ? (layer as LayerWithSourceCanvas).getSourceCanvas()
-      : null;
-
-    if (sourceCanvas) {
-      // Clone the canvas to avoid mutation issues
-      const canvas = document.createElement("canvas");
-      canvas.width = sourceCanvas.width;
-      canvas.height = sourceCanvas.height;
-      const ctx = canvas.getContext("2d");
-      if (ctx) {
-        ctx.drawImage(sourceCanvas, 0, 0);
-        return canvas;
+    
+    // Type guard: Check if layer has getSourceCanvas method (even if protected)
+    // We use a type assertion to access the protected method since we've verified it exists
+    const layerWithMethod = layer as BaseLayer & { getSourceCanvas?: () => HTMLCanvasElement };
+    if (typeof layerWithMethod.getSourceCanvas === "function") {
+      // Call the protected method via type assertion (we've verified it exists)
+      const sourceCanvas = (layer as unknown as { getSourceCanvas: () => HTMLCanvasElement }).getSourceCanvas();
+      
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy truthy checks
+      if (typeof sourceCanvas === "object" && sourceCanvas !== null) {
+        // Clone the canvas to avoid mutation issues
+        const canvas = document.createElement("canvas");
+        canvas.width = sourceCanvas.width;
+        canvas.height = sourceCanvas.height;
+        const ctx = canvas.getContext("2d");
+        if (typeof ctx === "object" && ctx !== null) {
+          ctx.drawImage(sourceCanvas, 0, 0);
+          return canvas;
+        } else {
+          throw new Error(`Failed to get 2D context for canvas clone`);
+        }
+      } else {
+        throw new Error(`getSourceCanvas() returned invalid canvas for layer ${layer.id}`);
       }
     }
 
-    return null;
+    // Pattern match: Layer does not have getSourceCanvas method - throw error instead of returning null
+    throw new Error(`Layer ${layer.id} does not have getSourceCanvas method`);
   }
 
   /**
@@ -1423,9 +1561,10 @@ export class LayerManager {
       }
     }
 
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
     return Array.from(layerIds)
       .map((id) => this.layers.get(id))
-      .filter((layer): layer is BaseLayer => layer !== undefined);
+      .filter((layer): layer is BaseLayer => typeof layer === "object" && layer !== null);
   }
 
   // ============================================================================

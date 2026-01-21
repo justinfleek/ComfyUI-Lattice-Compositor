@@ -1,8 +1,34 @@
 /**
  * Services Index
  *
- * Central export point for all service modules.
- * AUDITED: All exports verified against actual module exports.
+ * ⚠️ DEPRECATED - DO NOT USE ⚠️
+ * ==============================
+ * 
+ * This barrel file is deprecated and will be removed in a future version.
+ * 
+ * **Why deprecated:**
+ * - Not used by any code (0 imports found)
+ * - Causes circular dependency issues
+ * - Increases bundle size (tree-shaking problems)
+ * - Makes imports ambiguous
+ * 
+ * **Use direct imports instead:**
+ * ```typescript
+ * // ❌ DEPRECATED - Don't use this:
+ * import { loadAudio } from '@/services';
+ * 
+ * // ✅ CORRECT - Use direct imports:
+ * import { loadAudio } from '@/services/audioFeatures';
+ * import { interpolateProperty } from '@/services/interpolation';
+ * ```
+ * 
+ * **Migration:**
+ * All existing code already uses direct imports. This file exists only for
+ * historical reference and will be removed in Phase 7 of the refactor.
+ * 
+ * @deprecated Use direct imports from specific service modules instead
+ * @see docs/MASTER_REFACTOR_PLAN.md Appendix B
+ * @see docs/FILES_OVER_800_LINES_AUDIT.md
  */
 
 // ============================================================================

@@ -100,15 +100,12 @@ export function validateWanMoveMotionData(
 
 /**
  * Safe validate WanMove motionData structure
+ * @deprecated Use validateWanMoveMotionData with try-catch instead
  */
 export function safeValidateWanMoveMotionData(
   data: unknown,
-): { success: true; data: WanMoveMotionData } | { success: false; error: z.ZodError } {
-  const result = WanMoveMotionDataSchema.safeParse(data);
-  if (result.success) {
-    return { success: true, data: result.data };
-  }
-  return { success: false, error: result.error };
+): WanMoveMotionData {
+  return validateWanMoveMotionData(data);
 }
 
 /**
@@ -120,15 +117,12 @@ export function validateATIMotionData(data: unknown): ATIMotionData {
 
 /**
  * Safe validate ATI motionData structure
+ * @deprecated Use validateATIMotionData with try-catch instead
  */
 export function safeValidateATIMotionData(
   data: unknown,
-): { success: true; data: ATIMotionData } | { success: false; error: z.ZodError } {
-  const result = ATIMotionDataSchema.safeParse(data);
-  if (result.success) {
-    return { success: true, data: result.data };
-  }
-  return { success: false, error: result.error };
+): ATIMotionData {
+  return validateATIMotionData(data);
 }
 
 /**

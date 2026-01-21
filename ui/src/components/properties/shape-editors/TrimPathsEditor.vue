@@ -44,13 +44,13 @@
 </template>
 
 <script setup lang="ts">
-import { useCompositorStore } from "@/stores/compositorStore";
+import { useAnimationStore } from "@/stores/animationStore";
 import { createKeyframe } from "@/types/animation";
 import type { TrimMode, TrimPathsOperator } from "@/types/shapes";
 
 const props = defineProps<{ operator: TrimPathsOperator; layerId: string }>();
 const emit = defineEmits(["update"]);
-const store = useCompositorStore();
+const animationStore = useAnimationStore();
 
 function updateNumber(prop: "start" | "end" | "offset", value: number) {
   const updated = { ...props.operator };
@@ -67,7 +67,7 @@ function updateMode(e: Event) {
 function toggleKeyframe(prop: "start" | "end" | "offset") {
   const updated = { ...props.operator };
   const animProp = updated[prop];
-  const frame = store.currentFrame;
+  const frame = animationStore.currentFrame;
 
   const hasKf = animProp.keyframes.some((k) => k.frame === frame);
   if (hasKf) {

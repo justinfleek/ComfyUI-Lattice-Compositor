@@ -4,6 +4,7 @@
  * Functions for querying keyframe state and navigation.
  */
 
+import { isFiniteNumber } from "@/utils/typeGuards";
 import type { AnimatableProperty, Keyframe, LayerTransform, PropertyValue } from "@/types/project";
 import { useProjectStore } from "../projectStore";
 
@@ -27,7 +28,7 @@ export function getKeyframesAtFrame(
   // Check transform properties
   const transformProps: Array<keyof LayerTransform> = ["position", "scale", "rotation", "anchorPoint"];
   for (const propName of transformProps) {
-    const prop = layer.transform[propName] as AnimatableProperty<unknown> | undefined;
+    const prop = layer.transform[propName] as AnimatableProperty<PropertyValue> | undefined;
     if (prop && "animated" in prop && prop.animated && prop.keyframes) {
       const kf = prop.keyframes.find((k) => k.frame === frame);
       if (kf) {
@@ -38,8 +39,12 @@ export function getKeyframesAtFrame(
   }
 
   // Check opacity
-  if (layer.opacity?.animated && layer.opacity.keyframes) {
-    const kf = layer.opacity.keyframes.find((k) => k.frame === frame);
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const layerOpacity = (layer != null && typeof layer === "object" && "opacity" in layer && layer.opacity != null && typeof layer.opacity === "object") ? layer.opacity : undefined;
+  const opacityAnimated = (layerOpacity != null && typeof layerOpacity === "object" && "animated" in layerOpacity && typeof layerOpacity.animated === "boolean" && layerOpacity.animated) ? true : false;
+  const opacityKeyframes = (layerOpacity != null && typeof layerOpacity === "object" && "keyframes" in layerOpacity && layerOpacity.keyframes != null && Array.isArray(layerOpacity.keyframes)) ? layerOpacity.keyframes : undefined;
+  if (opacityAnimated && opacityKeyframes != null) {
+    const kf = opacityKeyframes.find((k) => k.frame === frame);
     if (kf) {
       results.push({ propertyPath: "opacity", keyframe: kf });
     }
@@ -48,7 +53,7 @@ export function getKeyframesAtFrame(
   // Check 3D rotations
   const threeDProps: Array<keyof LayerTransform> = ["rotationX", "rotationY", "rotationZ", "orientation"];
   for (const propName of threeDProps) {
-    const prop = layer.transform[propName] as AnimatableProperty<unknown> | undefined;
+    const prop = layer.transform[propName] as AnimatableProperty<PropertyValue> | undefined;
     if (prop && "animated" in prop && prop.animated && prop.keyframes) {
       const kf = prop.keyframes.find((k) => k.frame === frame);
       if (kf) {
@@ -86,7 +91,7 @@ export function getAllKeyframeFrames(
   // Collect frames from transform properties
   const transformProps: Array<keyof LayerTransform> = ["position", "scale", "rotation", "anchorPoint"];
   for (const propName of transformProps) {
-    const prop = layer.transform[propName] as AnimatableProperty<unknown> | undefined;
+    const prop = layer.transform[propName] as AnimatableProperty<PropertyValue> | undefined;
     if (prop && "animated" in prop && prop.animated && prop.keyframes) {
       for (const kf of prop.keyframes) {
         frames.add(kf.frame);
@@ -95,8 +100,12 @@ export function getAllKeyframeFrames(
   }
 
   // Collect from opacity
-  if (layer.opacity?.animated && layer.opacity.keyframes) {
-    for (const kf of layer.opacity.keyframes) {
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const layerOpacity = (layer != null && typeof layer === "object" && "opacity" in layer && layer.opacity != null && typeof layer.opacity === "object") ? layer.opacity : undefined;
+  const opacityAnimated = (layerOpacity != null && typeof layerOpacity === "object" && "animated" in layerOpacity && typeof layerOpacity.animated === "boolean" && layerOpacity.animated) ? true : false;
+  const opacityKeyframes = (layerOpacity != null && typeof layerOpacity === "object" && "keyframes" in layerOpacity && layerOpacity.keyframes != null && Array.isArray(layerOpacity.keyframes)) ? layerOpacity.keyframes : undefined;
+  if (opacityAnimated && opacityKeyframes != null) {
+    for (const kf of opacityKeyframes) {
       frames.add(kf.frame);
     }
   }
@@ -104,7 +113,7 @@ export function getAllKeyframeFrames(
   // Collect from 3D properties
   const threeDProps: Array<keyof LayerTransform> = ["rotationX", "rotationY", "rotationZ", "orientation"];
   for (const propName of threeDProps) {
-    const prop = layer.transform[propName] as AnimatableProperty<unknown> | undefined;
+    const prop = layer.transform[propName] as AnimatableProperty<PropertyValue> | undefined;
     if (prop && "animated" in prop && prop.animated && prop.keyframes) {
       for (const kf of prop.keyframes) {
         frames.add(kf.frame);
@@ -129,12 +138,13 @@ export function getAllKeyframeFrames(
  *
  * @param currentFrame - The current frame
  * @param layerIds - Layer IDs to search (if empty, searches all layers)
- * @returns The next keyframe frame, or null if none found
+ * @returns The next keyframe frame
+ * @throws Error if no next keyframe found
  */
 export function findNextKeyframeFrame(
   currentFrame: number,
   layerIds: string[],
-): number | null {
+): number {
   const projectStore = useProjectStore();
   const layers = projectStore.getActiveCompLayers();
   const searchLayerIds =
@@ -148,7 +158,12 @@ export function findNextKeyframeFrame(
   }
 
   const allFrames = Array.from(frameSet).sort((a, b) => a - b);
-  return allFrames.find((f) => f > currentFrame) ?? null;
+  // Type proof: Array.find() returns number | undefined → number (throws if not found)
+  const foundFrame = allFrames.find((f) => f > currentFrame);
+  if (isFiniteNumber(foundFrame) && Number.isInteger(foundFrame) && foundFrame >= 0) {
+    return foundFrame;
+  }
+  throw new Error(`[KeyframeQuery] No next keyframe found after frame ${currentFrame} for layers: ${layerIds.join(", ")}`);
 }
 
 /**
@@ -156,12 +171,13 @@ export function findNextKeyframeFrame(
  *
  * @param currentFrame - The current frame
  * @param layerIds - Layer IDs to search (if empty, searches all layers)
- * @returns The previous keyframe frame, or null if none found
+ * @returns The previous keyframe frame
+ * @throws Error if no previous keyframe found
  */
 export function findPrevKeyframeFrame(
   currentFrame: number,
   layerIds: string[],
-): number | null {
+): number {
   const projectStore = useProjectStore();
   const layers = projectStore.getActiveCompLayers();
   const searchLayerIds =
@@ -176,7 +192,10 @@ export function findPrevKeyframeFrame(
 
   const allFrames = Array.from(frameSet).sort((a, b) => a - b);
   const prevFrames = allFrames.filter((f) => f < currentFrame);
-  return prevFrames.length > 0 ? prevFrames[prevFrames.length - 1] : null;
+  if (prevFrames.length > 0) {
+    return prevFrames[prevFrames.length - 1];
+  }
+  throw new Error(`[KeyframeQuery] No previous keyframe found before frame ${currentFrame} for layers: ${layerIds.join(", ")}`);
 }
 
 /**

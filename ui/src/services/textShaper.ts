@@ -14,6 +14,8 @@
 
 import opentype from "opentype.js";
 import { createLogger } from "@/utils/logger";
+import { isFiniteNumber } from "@/utils/typeGuards";
+import type { JSONValue } from "@/types/dataAsset";
 
 const logger = createLogger("TextShaper");
 
@@ -247,18 +249,24 @@ class TextShaper {
   private extractFontMetrics(font: opentype.Font): FontMetrics {
     // Access internal OpenType tables - not fully typed in opentype.js definitions
     type FvarAxis = { tag: string; name?: { en?: string }; minValue: number; defaultValue: number; maxValue: number };
-    const tables = font.tables as { gsub?: unknown; gpos?: unknown; fvar?: { axes?: FvarAxis[] } };
+    const tables = font.tables as { gsub?: JSONValue; gpos?: JSONValue; fvar?: { axes?: FvarAxis[] } };
     const hasGSUB = !!tables.gsub;
     const hasGPOS = !!tables.gpos;
     const fvar = tables.fvar;
     const isVariableFont = !!fvar;
 
     const variableAxes: VariableFontAxis[] = [];
-    if (isVariableFont && fvar?.axes) {
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+    if (isVariableFont && typeof fvar === "object" && fvar !== null && "axes" in fvar && Array.isArray(fvar.axes)) {
       for (const axis of fvar.axes) {
         variableAxes.push({
           tag: axis.tag,
-          name: axis.name?.en || axis.tag,
+          // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+          // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+          name: (typeof axis.name === "object" && axis.name !== null && "en" in axis.name && typeof axis.name.en === "string")
+            ? axis.name.en
+            : axis.tag,
           min: axis.minValue,
           default: axis.defaultValue,
           max: axis.maxValue,
@@ -266,16 +274,56 @@ class TextShaper {
       }
     }
 
+    // Type proof: lineGap ∈ number | undefined → number
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+    const fontTables = font.tables as { hhea?: { lineGap?: number } };
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+    const hheaTable = (typeof fontTables === "object" && fontTables !== null && "hhea" in fontTables && typeof fontTables.hhea === "object" && fontTables.hhea !== null)
+      ? fontTables.hhea
+      : null;
+    const lineGap = (hheaTable !== null && typeof hheaTable === "object" && "lineGap" in hheaTable && typeof hheaTable.lineGap === "number")
+      ? hheaTable.lineGap
+      : 0;
+    const lineGapValue = isFiniteNumber(lineGap) ? lineGap : 0;
+
+    // Type proof: capHeight ∈ number | undefined → number
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+    const fontTablesOs2 = font.tables as { os2?: { sCapHeight?: number } };
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+    const os2Table = (typeof fontTablesOs2 === "object" && fontTablesOs2 !== null && "os2" in fontTablesOs2 && typeof fontTablesOs2.os2 === "object" && fontTablesOs2.os2 !== null)
+      ? fontTablesOs2.os2
+      : null;
+    const capHeightRaw = (os2Table !== null && typeof os2Table === "object" && "sCapHeight" in os2Table && typeof os2Table.sCapHeight === "number")
+      ? os2Table.sCapHeight
+      : 0;
+    const capHeight = isFiniteNumber(capHeightRaw)
+      ? capHeightRaw
+      : font.ascender * 0.7;
+
+    // Type proof: xHeight ∈ number | undefined → number
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+    const fontTablesXHeight = font.tables as { os2?: { sxHeight?: number } };
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+    const os2TableXHeight = (typeof fontTablesXHeight === "object" && fontTablesXHeight !== null && "os2" in fontTablesXHeight && typeof fontTablesXHeight.os2 === "object" && fontTablesXHeight.os2 !== null)
+      ? fontTablesXHeight.os2
+      : null;
+    const xHeight = (os2TableXHeight !== null && typeof os2TableXHeight === "object" && "sxHeight" in os2TableXHeight && typeof os2TableXHeight.sxHeight === "number")
+      ? os2TableXHeight.sxHeight
+      : 0;
+    const xHeightValue = isFiniteNumber(xHeight)
+      ? xHeight
+      : font.ascender * 0.5;
+
     return {
       unitsPerEm: font.unitsPerEm,
       ascender: font.ascender,
       descender: font.descender,
       // Access internal OpenType tables - not fully typed in opentype.js definitions
-      lineGap: (font.tables as { hhea?: { lineGap?: number } })?.hhea?.lineGap ?? 0,
-      capHeight: (font.tables as { os2?: { sCapHeight?: number } })?.os2?.sCapHeight ?? font.ascender * 0.7,
-      xHeight: (font.tables as { os2?: { sxHeight?: number } })?.os2?.sxHeight ?? font.ascender * 0.5,
+      lineGap: lineGapValue,
+      capHeight,
+      xHeight: xHeightValue,
       hasKerning:
-        font.kerningPairs !== undefined &&
+        typeof font.kerningPairs === "object" && font.kerningPairs !== null &&
         Object.keys(font.kerningPairs).length > 0,
       hasGSUB,
       hasGPOS,
@@ -320,8 +368,16 @@ class TextShaper {
       if (!glyph) {
         // Use notdef glyph
         const notdef = font.glyphs.get(0);
-        const advanceWidth =
-          (notdef?.advanceWidth ?? font.unitsPerEm * 0.5) * scale;
+        // Type proof: advanceWidth ∈ number | undefined → number
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+        const notdefAdvanceWidth = (typeof notdef === "object" && notdef !== null && "advanceWidth" in notdef && typeof notdef.advanceWidth === "number")
+          ? notdef.advanceWidth
+          : 0;
+        const notdefAdvanceWidthValue = isFiniteNumber(notdefAdvanceWidth)
+          ? notdefAdvanceWidth
+          : font.unitsPerEm * 0.5;
+        const advanceWidth = notdefAdvanceWidthValue * scale;
         glyphs.push({
           character: char,
           charIndex: i,
@@ -339,7 +395,11 @@ class TextShaper {
       }
 
       // Get glyph metrics
-      const advanceWidth = (glyph.advanceWidth ?? 0) * scale;
+      // Type proof: advanceWidth ∈ number | undefined → number
+      const advanceWidthValue = isFiniteNumber(glyph.advanceWidth)
+        ? glyph.advanceWidth
+        : 0;
+      const advanceWidth = advanceWidthValue * scale;
       const bbox = glyph.getBoundingBox();
 
       // Apply word spacing
@@ -427,8 +487,16 @@ class TextShaper {
 
       if (!glyph) {
         const notdef = font.glyphs.get(0);
-        const advanceWidth =
-          (notdef?.advanceWidth ?? font.unitsPerEm * 0.5) * scale;
+        // Type proof: advanceWidth ∈ number | undefined → number
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+        const notdefAdvanceWidth = (typeof notdef === "object" && notdef !== null && "advanceWidth" in notdef && typeof notdef.advanceWidth === "number")
+          ? notdef.advanceWidth
+          : 0;
+        const notdefAdvanceWidthValue = isFiniteNumber(notdefAdvanceWidth)
+          ? notdefAdvanceWidth
+          : font.unitsPerEm * 0.5;
+        const advanceWidth = notdefAdvanceWidthValue * scale;
         glyphs.push({
           character: char,
           charIndex: i,
@@ -445,7 +513,11 @@ class TextShaper {
         continue;
       }
 
-      const advanceWidth = (glyph.advanceWidth ?? 0) * scale;
+      // Type proof: advanceWidth ∈ number | undefined → number
+      const advanceWidthValue = isFiniteNumber(glyph.advanceWidth)
+        ? glyph.advanceWidth
+        : 0;
+      const advanceWidth = advanceWidthValue * scale;
       const bbox = glyph.getBoundingBox();
 
       let finalAdvance = advanceWidth;
@@ -513,10 +585,24 @@ class TextShaper {
     options?: { kern?: boolean; letterSpacing?: number },
   ): number[] {
     try {
+      // Type proof: kern ∈ boolean | undefined → boolean
+      const kern =
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+        (typeof options === "object" && options !== null && "kern" in options && typeof options.kern === "boolean")
+          ? options.kern
+          : true;
+      // Type proof: letterSpacing ∈ number | undefined → number
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+      const letterSpacing = (typeof options === "object" && options !== null && "letterSpacing" in options && typeof options.letterSpacing === "number")
+        ? options.letterSpacing
+        : 0;
+      const letterSpacingValue = isFiniteNumber(letterSpacing) ? letterSpacing : 0;
+
       const shaped = this.shapeSync(text, fontFamily, {
         fontSize,
-        kern: options?.kern ?? true,
-        letterSpacing: options?.letterSpacing ?? 0,
+        kern,
+        letterSpacing,
       });
       return shaped.glyphs.map((g) => g.xAdvance);
     } catch {
@@ -535,10 +621,24 @@ class TextShaper {
     options?: { kern?: boolean; letterSpacing?: number },
   ): number[] {
     try {
+      // Type proof: kern ∈ boolean | undefined → boolean
+      const kern =
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+        (typeof options === "object" && options !== null && "kern" in options && typeof options.kern === "boolean")
+          ? options.kern
+          : true;
+      // Type proof: letterSpacing ∈ number | undefined → number
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+      const letterSpacing = (typeof options === "object" && options !== null && "letterSpacing" in options && typeof options.letterSpacing === "number")
+        ? options.letterSpacing
+        : 0;
+      const letterSpacingValue = isFiniteNumber(letterSpacing) ? letterSpacing : 0;
+
       const shaped = this.shapeSync(text, fontFamily, {
         fontSize,
-        kern: options?.kern ?? true,
-        letterSpacing: options?.letterSpacing ?? 0,
+        kern,
+        letterSpacing,
       });
       return shaped.glyphs.map((g) => g.x);
     } catch {
@@ -591,7 +691,12 @@ class TextShaper {
    */
   getFontMetrics(fontFamily: string): FontMetrics | null {
     const cached = fontCache.get(fontFamily.toLowerCase());
-    return cached?.metrics ?? null;
+    // Type proof: metrics ∈ FontMetrics | undefined → FontMetrics | null
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+    return (typeof cached === "object" && cached !== null && "metrics" in cached && typeof cached.metrics === "object" && cached.metrics !== null)
+      ? cached.metrics
+      : null;
   }
 
   /**

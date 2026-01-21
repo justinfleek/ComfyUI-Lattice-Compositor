@@ -5,6 +5,8 @@
  * Inspired by Jovi_MIDI with browser-native Web MIDI API.
  */
 
+import { isFiniteNumber, safeCoordinateDefault } from "@/utils/typeGuards";
+
 // =============================================================================
 // TYPES
 // =============================================================================
@@ -244,8 +246,14 @@ export class MIDIService {
   private handleMIDIMessage(deviceId: string, event: MIDIMessageEvent): void {
     if (!event.data || event.data.length < 1) return;
 
-    const message = this.parseMIDIMessage(event.data, event.timeStamp);
-    if (!message) return;
+    let message: MIDIMessage;
+    try {
+      message = this.parseMIDIMessage(event.data, event.timeStamp);
+    } catch (error) {
+      // Unknown MIDI message types are logged but not fatal
+      console.warn(`[MIDIService] Skipping unknown MIDI message:`, error);
+      return;
+    }
 
     // Store in history
     this.messageHistory.push(message);
@@ -269,7 +277,7 @@ export class MIDIService {
   private parseMIDIMessage(
     data: Uint8Array,
     timestamp: number,
-  ): MIDIMessage | null {
+  ): MIDIMessage {
     const status = data[0];
     const messageType = status & 0xf0;
     const channel = (status & 0x0f) + 1; // MIDI channels are 1-16
@@ -327,7 +335,7 @@ export class MIDIService {
         break;
 
       default:
-        return null;
+        throw new Error(`[MIDIService] Cannot parse MIDI message: Unknown status byte 0x${status.toString(16).padStart(2, "0")} (decimal ${status})`);
     }
 
     return message;
@@ -382,14 +390,22 @@ export class MIDIService {
     if (!this.listeners.has(deviceId)) {
       this.listeners.set(deviceId, new Set());
     }
-    this.listeners.get(deviceId)?.add(callback);
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const listenerSet = this.listeners.get(deviceId);
+    if (listenerSet != null && typeof listenerSet === "object" && typeof listenerSet.add === "function") {
+      listenerSet.add(callback);
+    }
   }
 
   /**
    * Remove a device-specific listener
    */
   removeDeviceListener(deviceId: string, callback: MIDIEventCallback): void {
-    this.listeners.get(deviceId)?.delete(callback);
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const listenerSet = this.listeners.get(deviceId);
+    if (listenerSet != null && typeof listenerSet === "object" && typeof listenerSet.delete === "function") {
+      listenerSet.delete(callback);
+    }
   }
 
   // =============================================================================
@@ -531,7 +547,12 @@ export class MIDIService {
             ? (message.value / 16383) * 127 // Normalize pitch bend to 0-127
             : message.value;
       } else if (message.controller !== undefined) {
-        inputValue = this.getCCValue(message.channel, message.controller) || 0;
+        // Type proof: MIDI CC value ∈ number | undefined → number (coordinate-like, can be negative)
+        inputValue = safeCoordinateDefault(
+          this.getCCValue(message.channel, message.controller),
+          0,
+          `getCCValue(${message.channel}, ${message.controller})`,
+        );
       }
     } else {
       // Use stored CC value (for continuous display)
@@ -548,7 +569,11 @@ export class MIDIService {
       clampedInput * (mapping.outputMax - mapping.outputMin);
 
     // Apply smoothing
-    const currentSmoothed = this.smoothedValues.get(mapping.id) ?? outputValue;
+    // Type proof: smoothedValue ∈ number | undefined → number
+    const cachedSmoothed = this.smoothedValues.get(mapping.id);
+    const currentSmoothed = isFiniteNumber(cachedSmoothed)
+      ? cachedSmoothed
+      : outputValue;
     outputValue =
       currentSmoothed +
       (outputValue - currentSmoothed) * (1 - mapping.smoothing);

@@ -3,6 +3,7 @@
  * Exports camera data to various formats including Uni3C
  */
 
+import { isFiniteNumber, hasXY } from "@/utils/typeGuards";
 import type { Camera3D, CameraKeyframe } from "../types/camera";
 import { focalLengthToFOV } from "./math3d";
 import { parseAndSanitize } from "@/services/security/jsonSanitizer";
@@ -176,21 +177,44 @@ function interpolateCamera(
  * Apply keyframe values to camera
  */
 function applyKeyframe(camera: Camera3D, keyframe: CameraKeyframe): Camera3D {
+  // Type proof: position ∈ {x, y, z} | undefined → {x, y, z}
+  const positionValue = keyframe.position;
+  const position = hasXY(positionValue) && isFiniteNumber(positionValue.z) ? positionValue : camera.position;
+  const pointOfInterestValue = keyframe.pointOfInterest;
+  const pointOfInterest = hasXY(pointOfInterestValue) && isFiniteNumber(pointOfInterestValue.z) ? pointOfInterestValue : camera.pointOfInterest;
+  const orientationValue = keyframe.orientation;
+  const orientation = hasXY(orientationValue) && isFiniteNumber(orientationValue.z) ? orientationValue : camera.orientation;
+  // Type proof: xRotation, yRotation, zRotation ∈ ℝ ∪ {undefined} → ℝ
+  const xRotationValue = keyframe.xRotation;
+  const xRotation = isFiniteNumber(xRotationValue) ? xRotationValue : camera.xRotation;
+  const yRotationValue = keyframe.yRotation;
+  const yRotation = isFiniteNumber(yRotationValue) ? yRotationValue : camera.yRotation;
+  const zRotationValue = keyframe.zRotation;
+  const zRotation = isFiniteNumber(zRotationValue) ? zRotationValue : camera.zRotation;
+  // Type proof: zoom, focalLength ∈ ℝ ∪ {undefined} → ℝ
+  const zoomValue = keyframe.zoom;
+  const zoom = isFiniteNumber(zoomValue) && zoomValue > 0 ? zoomValue : camera.zoom;
+  const focalLengthValue = keyframe.focalLength;
+  const focalLength = isFiniteNumber(focalLengthValue) && focalLengthValue > 0 ? focalLengthValue : camera.focalLength;
+  // Type proof: focusDistance, aperture ∈ ℝ ∪ {undefined} → ℝ
+  const focusDistanceValue = keyframe.focusDistance;
+  const focusDistance = isFiniteNumber(focusDistanceValue) && focusDistanceValue > 0 ? focusDistanceValue : camera.depthOfField.focusDistance;
+  const apertureValue = keyframe.aperture;
+  const aperture = isFiniteNumber(apertureValue) && apertureValue > 0 ? apertureValue : camera.depthOfField.aperture;
   return {
     ...camera,
-    position: keyframe.position ?? camera.position,
-    pointOfInterest: keyframe.pointOfInterest ?? camera.pointOfInterest,
-    orientation: keyframe.orientation ?? camera.orientation,
-    xRotation: keyframe.xRotation ?? camera.xRotation,
-    yRotation: keyframe.yRotation ?? camera.yRotation,
-    zRotation: keyframe.zRotation ?? camera.zRotation,
-    zoom: keyframe.zoom ?? camera.zoom,
-    focalLength: keyframe.focalLength ?? camera.focalLength,
+    position,
+    pointOfInterest,
+    orientation,
+    xRotation,
+    yRotation,
+    zRotation,
+    zoom,
+    focalLength,
     depthOfField: {
       ...camera.depthOfField,
-      focusDistance:
-        keyframe.focusDistance ?? camera.depthOfField.focusDistance,
-      aperture: keyframe.aperture ?? camera.depthOfField.aperture,
+      focusDistance,
+      aperture,
     },
   };
 }
@@ -203,7 +227,9 @@ function getEasedT(
   prevKeyframe: CameraKeyframe,
   nextKeyframe: CameraKeyframe,
 ): number {
-  const interpolation = prevKeyframe.temporalInterpolation ?? "linear";
+  // Type proof: temporalInterpolation ∈ string | undefined → string
+  const interpolationValue = prevKeyframe.temporalInterpolation;
+  const interpolation = typeof interpolationValue === "string" ? interpolationValue : "linear";
 
   switch (interpolation) {
     case "hold":
@@ -245,8 +271,9 @@ function interpolateBetweenKeyframes(
     b: { x: number; y: number; z: number } | undefined,
     def: { x: number; y: number; z: number },
   ) => {
-    const from = a ?? def;
-    const to = b ?? def;
+    // Type proof: a, b ∈ {x, y, z} | undefined → {x, y, z}
+    const from = hasXY(a) && isFiniteNumber(a.z) ? a : def;
+    const to = hasXY(b) && isFiniteNumber(b.z) ? b : def;
     return {
       x: lerp(from.x, to.x),
       y: lerp(from.y, to.y),
@@ -267,32 +294,38 @@ function interpolateBetweenKeyframes(
       next.orientation,
       camera.orientation,
     ),
+    // Type proof: xRotation, yRotation, zRotation ∈ ℝ ∪ {undefined} → ℝ
     xRotation: lerp(
-      prev.xRotation ?? camera.xRotation,
-      next.xRotation ?? camera.xRotation,
+      isFiniteNumber(prev.xRotation) ? prev.xRotation : camera.xRotation,
+      isFiniteNumber(next.xRotation) ? next.xRotation : camera.xRotation,
     ),
     yRotation: lerp(
-      prev.yRotation ?? camera.yRotation,
-      next.yRotation ?? camera.yRotation,
+      isFiniteNumber(prev.yRotation) ? prev.yRotation : camera.yRotation,
+      isFiniteNumber(next.yRotation) ? next.yRotation : camera.yRotation,
     ),
     zRotation: lerp(
-      prev.zRotation ?? camera.zRotation,
-      next.zRotation ?? camera.zRotation,
+      isFiniteNumber(prev.zRotation) ? prev.zRotation : camera.zRotation,
+      isFiniteNumber(next.zRotation) ? next.zRotation : camera.zRotation,
     ),
-    zoom: lerp(prev.zoom ?? camera.zoom, next.zoom ?? camera.zoom),
+    // Type proof: zoom, focalLength ∈ ℝ ∪ {undefined} → ℝ
+    zoom: lerp(
+      isFiniteNumber(prev.zoom) && prev.zoom > 0 ? prev.zoom : camera.zoom,
+      isFiniteNumber(next.zoom) && next.zoom > 0 ? next.zoom : camera.zoom,
+    ),
     focalLength: lerp(
-      prev.focalLength ?? camera.focalLength,
-      next.focalLength ?? camera.focalLength,
+      isFiniteNumber(prev.focalLength) && prev.focalLength > 0 ? prev.focalLength : camera.focalLength,
+      isFiniteNumber(next.focalLength) && next.focalLength > 0 ? next.focalLength : camera.focalLength,
     ),
     depthOfField: {
       ...camera.depthOfField,
+      // Type proof: focusDistance, aperture ∈ ℝ ∪ {undefined} → ℝ
       focusDistance: lerp(
-        prev.focusDistance ?? camera.depthOfField.focusDistance,
-        next.focusDistance ?? camera.depthOfField.focusDistance,
+        isFiniteNumber(prev.focusDistance) && prev.focusDistance > 0 ? prev.focusDistance : camera.depthOfField.focusDistance,
+        isFiniteNumber(next.focusDistance) && next.focusDistance > 0 ? next.focusDistance : camera.depthOfField.focusDistance,
       ),
       aperture: lerp(
-        prev.aperture ?? camera.depthOfField.aperture,
-        next.aperture ?? camera.depthOfField.aperture,
+        isFiniteNumber(prev.aperture) && prev.aperture > 0 ? prev.aperture : camera.depthOfField.aperture,
+        isFiniteNumber(next.aperture) && next.aperture > 0 ? next.aperture : camera.depthOfField.aperture,
       ),
     },
   };
@@ -350,18 +383,43 @@ export function exportCameraJSON(
 
 /**
  * Import camera from JSON
+ * 
+ * System F/Omega proof: Explicit validation of JSON sanitization and schema parsing
+ * Type proof: json ∈ string → { camera: Camera3D; keyframes: CameraKeyframe[] } (non-nullable)
+ * Mathematical proof: JSON must be valid and match schema to import camera
+ * Pattern proof: Invalid JSON or schema mismatch is an explicit failure condition, not a lazy null return
  */
 export function importCameraJSON(
   json: string,
-): { camera: Camera3D; keyframes: CameraKeyframe[] } | null {
+): { camera: Camera3D; keyframes: CameraKeyframe[] } {
   const sanitizeResult = parseAndSanitize(json);
+  
+  // System F/Omega proof: Explicit validation of JSON sanitization
+  // Type proof: sanitizeResult.valid ∈ boolean
+  // Mathematical proof: JSON must be valid and sanitized before parsing
   if (!sanitizeResult.valid) {
-    return null;
+    throw new Error(
+      `[CameraExport] Cannot import camera JSON: JSON sanitization failed. ` +
+      `Error: ${sanitizeResult.error || "Unknown error"}, ` +
+      `warnings: ${sanitizeResult.warnings.join("; ") || "none"}. ` +
+      `JSON must be valid and pass sanitization checks. ` +
+      `Wrap in try/catch to handle invalid JSON.`
+    );
   }
 
   const parseResult = CameraImportDataSchema.safeParse(sanitizeResult.data);
+  
+  // System F/Omega proof: Explicit validation of schema parsing
+  // Type proof: parseResult.success ∈ boolean
+  // Mathematical proof: Sanitized data must match CameraImportDataSchema
   if (!parseResult.success) {
-    return null;
+    const errors = parseResult.error.errors.map((e) => `${e.path.join(".")}: ${e.message}`).join("; ");
+    throw new Error(
+      `[CameraExport] Cannot import camera JSON: Schema validation failed. ` +
+      `Errors: ${errors}. ` +
+      `JSON must match CameraImportDataSchema structure. ` +
+      `Wrap in try/catch to handle schema validation errors.`
+    );
   }
 
   return {

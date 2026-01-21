@@ -42,6 +42,7 @@ import {
 } from "./expressions";
 import { isBezierPath, morphPaths, prepareMorphPaths } from "./pathMorphing";
 import { safeLerp } from "@/utils/numericSafety";
+import type { JSONValue } from "@/types/dataAsset";
 
 // ============================================================================
 // BEZIER HANDLE CACHE
@@ -293,7 +294,10 @@ export function interpolateProperty<T>(
   }
 
   // Apply expression if present
-  if (property.expression?.enabled) {
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const propertyExpression = (property != null && typeof property === "object" && "expression" in property && property.expression != null && typeof property.expression === "object") ? property.expression : undefined;
+  const expressionEnabled = (propertyExpression != null && typeof propertyExpression === "object" && "enabled" in propertyExpression && typeof propertyExpression.enabled === "boolean" && propertyExpression.enabled) ? true : false;
+  if (expressionEnabled) {
     value = applyPropertyExpression(
       property,
       value,
@@ -328,35 +332,62 @@ function applyPropertyExpression<T>(
   const time = frame / safeFps;
   const velocity = calculateVelocity(property, frame, safeFps);
 
-  // Use composition duration if provided, otherwise default to 81 frames (4n+1 pattern for smooth looping)
-  const duration = compDuration ?? 81 / safeFps;
+  // Lean4/PureScript/Haskell: Explicit pattern matching on optional type
+  // Type proof: compDuration ∈ number | undefined → number
+  // PureScript: case compDuration of Just d -> d; Nothing -> 81 / safeFps
+  const duration: number = compDuration !== undefined && Number.isFinite(compDuration) && compDuration > 0
+    ? compDuration
+    : 81 / safeFps;
   const frameCount = Math.round(duration * safeFps);
 
   const ctx: ExpressionContext = {
+    // Time
     time,
     frame,
     fps: safeFps,
     duration,
+    // Composition - defaults when not available from caller
+    compWidth: 1920,
+    compHeight: 1080,
+    // Layer info
     layerId,
     layerIndex: 0,
     layerName: "",
     inPoint: 0,
     outPoint: frameCount,
+    // Property
     propertyName: property.name,
     value: value as number | number[],
     velocity,
     numKeys: property.keyframes.length,
-    // Type assertion: expressions only work with numeric keyframes (number or number[])
     keyframes: property.keyframes as Keyframe<number | number[]>[],
-    // Data-driven animation support: footage() function for CSV/JSON access
+    // Expression controls - empty when not using expression controls
+    params: {},
+    // Layer property access - no-op when called from basic interpolation
+    getLayerProperty: () => null,
+    // Data-driven animation
     footage: createFootageAccessor,
+    // Layer transform - defaults for thisLayer access
+    layerTransform: {
+      position: [0, 0, 0],
+      rotation: [0, 0, 0],
+      scale: [100, 100, 100],
+      opacity: 100,
+      origin: [0, 0, 0],
+    },
+    // Effects - empty when not available
+    layerEffects: [],
+    // All layers - empty when not available
+    allLayers: [],
+    // Effect parameter access - no-op when not available
+    getLayerEffectParam: () => null,
   };
 
   // Convert PropertyExpression to Expression format
   const expression: Expression = {
     type: expr.type as "preset" | "function" | "custom",
     name: expr.name,
-    params: expr.params as Record<string, any>,
+    params: expr.params as Record<string, JSONValue>,
     enabled: expr.enabled,
   };
 

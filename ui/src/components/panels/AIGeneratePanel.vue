@@ -59,7 +59,7 @@
             @change="handleFileSelect"
             style="display: none"
           />
-          <button class="upload-btn" @click="fileInput?.click()">
+          <button class="upload-btn" @click="handleFileInputClick()">
             Select Image...
           </button>
           <span v-if="uploadedFileName" class="file-name">{{ uploadedFileName }}</span>
@@ -208,10 +208,10 @@ import {
   aiGeneration,
   type ModelInfo,
 } from "@/services/aiGeneration";
-import { useCompositorStore } from "@/stores/compositorStore";
+import { useProjectStore } from "@/stores/projectStore";
 import { useSelectionStore } from "@/stores/selectionStore";
 
-const store = useCompositorStore();
+const projectStore = useProjectStore();
 const selectionStore = useSelectionStore();
 
 // Source selection
@@ -275,8 +275,10 @@ const generationTypes = [
 const selectedLayerName = computed(() => {
   const layerId = selectionStore.selectedLayerIds[0];
   if (!layerId) return null;
-  const layer = store.layers.find((l) => l.id === layerId);
-  return layer?.name || null;
+  const layer = projectStore.getActiveCompLayers().find((l) => l.id === layerId);
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const layerName = (layer != null && typeof layer === "object" && "name" in layer && typeof layer.name === "string") ? layer.name : undefined;
+  return layerName != null ? layerName : null;
 });
 
 const availableModels = computed(() => {
@@ -321,10 +323,20 @@ const generateButtonText = computed(() => {
 });
 
 // Methods
+function handleFileInputClick() {
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const fileInputValue = fileInput.value;
+  if (fileInputValue != null && typeof fileInputValue === "object" && typeof fileInputValue.click === "function") {
+    fileInputValue.click();
+  }
+}
+
 function handleFileSelect(event: Event) {
   const input = event.target as HTMLInputElement;
-  const file = input.files?.[0];
-  if (file) {
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const files = (input != null && typeof input === "object" && "files" in input && input.files != null && input.files instanceof FileList && input.files.length > 0) ? input.files : null;
+  const file = files != null ? files[0] : undefined;
+  if (file != null) {
     uploadedFile.value = file;
     uploadedFileName.value = file.name;
   }
@@ -400,17 +412,23 @@ async function generate() {
         break;
     }
 
-    if (result?.success && result.data) {
-      statusMessage.value = `Generation complete in ${result.processingTime.toFixed(0)}ms`;
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const resultSuccess = (result != null && typeof result === "object" && "success" in result && typeof result.success === "boolean" && result.success) ? true : false;
+    const resultData = (result != null && typeof result === "object" && "data" in result && result.data != null) ? result.data : undefined;
+    if (resultSuccess && resultData != null) {
+      const resultProcessingTime = (result != null && typeof result === "object" && "processingTime" in result && typeof result.processingTime === "number") ? result.processingTime : 0;
+      statusMessage.value = `Generation complete in ${resultProcessingTime.toFixed(0)}ms`;
       statusType.value = "success";
 
       // Create preview URL
       const canvas = document.createElement("canvas");
-      canvas.width = result.data.width;
-      canvas.height = result.data.height;
+      const dataWidth = (resultData != null && typeof resultData === "object" && "width" in resultData && typeof resultData.width === "number") ? resultData.width : 0;
+      const dataHeight = (resultData != null && typeof resultData === "object" && "height" in resultData && typeof resultData.height === "number") ? resultData.height : 0;
+      canvas.width = dataWidth;
+      canvas.height = dataHeight;
       const ctx = canvas.getContext("2d");
       if (ctx) {
-        ctx.putImageData(result.data, 0, 0);
+        ctx.putImageData(resultData, 0, 0);
         previewUrl.value = canvas.toDataURL();
       }
 
@@ -424,7 +442,8 @@ async function generate() {
         statusMessage.value += " - Create layer feature pending";
       }
     } else {
-      statusMessage.value = result?.error || "Generation failed";
+      const resultError = (result != null && typeof result === "object" && "error" in result && typeof result.error === "string") ? result.error : undefined;
+      statusMessage.value = resultError != null ? resultError : "Generation failed";
       statusType.value = "error";
     }
   } catch (error) {

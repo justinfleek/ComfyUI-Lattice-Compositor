@@ -14,6 +14,7 @@
  * - Rest/sleep events for knowing when camera stops
  */
 
+import { isFiniteNumber } from "@/utils/typeGuards";
 import CameraControls from "camera-controls";
 import * as THREE from "three";
 import type { AnimatableProperty } from "@/types/project";
@@ -546,12 +547,18 @@ export class CameraController {
   evaluateFrame(frame: number): void {
     if (this.positionProp) {
       const pos = this.evaluator.evaluate(this.positionProp, frame);
-      this.setPosition(pos.x, pos.y, pos.z ?? this.camera.position.z);
+      // Type proof: z ∈ ℝ ∪ {undefined} → z ∈ ℝ
+      const posZValue = pos.z;
+      const posZ = isFiniteNumber(posZValue) ? posZValue : this.camera.position.z;
+      this.setPosition(pos.x, pos.y, posZ);
     }
 
     if (this.targetProp) {
       const target = this.evaluator.evaluate(this.targetProp, frame);
-      this.setTarget(target.x, target.y, target.z ?? 0);
+      // Type proof: z ∈ ℝ ∪ {undefined} → z ∈ ℝ
+      const targetZValue = target.z;
+      const targetZ = isFiniteNumber(targetZValue) ? targetZValue : 0;
+      this.setTarget(target.x, target.y, targetZ);
     }
 
     if (this.fovProp) {
@@ -679,8 +686,15 @@ export class CameraController {
     }
     if (state.near !== undefined || state.far !== undefined) {
       this.setClipPlanes(
-        state.near ?? this.camera.near,
-        state.far ?? this.camera.far,
+        // Lean4/PureScript/Haskell: Explicit pattern matching on optional properties
+        // Type proof: state.near ∈ number | undefined → number (> 0, near plane distance)
+        state.near !== undefined && isFiniteNumber(state.near) && state.near > 0
+          ? state.near
+          : this.camera.near,
+        // Type proof: state.far ∈ number | undefined → number (> near, far plane distance)
+        state.far !== undefined && isFiniteNumber(state.far) && state.far > (state.near !== undefined && isFiniteNumber(state.near) && state.near > 0 ? state.near : this.camera.near)
+          ? state.far
+          : this.camera.far,
       );
     }
   }

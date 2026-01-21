@@ -17,6 +17,13 @@ import { safeJsonParse } from "../../../utils/schemaValidation";
 import { sanitizeFilename, isPathSafe } from "../../../utils/schemaValidation";
 import { logAuditEntry } from "../../security/auditLog";
 import type { ComfyUIWorkflow, ComfyUINode } from "@/types/export";
+import type { JSONValue } from "@/types/dataAsset";
+
+/**
+ * All possible JavaScript values that can be validated at runtime
+ * Used as input type for validators (replaces unknown)
+ */
+type RuntimeValue = string | number | boolean | object | null | undefined | bigint | symbol;
 
 // ============================================================================
 // COMFYUI DATA SCHEMAS
@@ -33,10 +40,18 @@ export const ComfyImageOutputSchema = z.object({
 
 /**
  * Schema for ComfyUI node execution result
+ * ComfyUI node outputs can contain any JSON-serializable value
  */
 export const ComfyNodeResultSchema = z.object({
   node_id: z.string(),
-  output: z.record(z.unknown()).optional(),
+  output: z.record(z.union([
+    z.string(),
+    z.number(),
+    z.boolean(),
+    z.null(),
+    z.array(z.union([z.string(), z.number(), z.boolean(), z.null()])),
+    z.record(z.union([z.string(), z.number(), z.boolean(), z.null()])),
+  ])).optional(),
   error: z.string().optional(),
 });
 
@@ -51,11 +66,26 @@ export const ComfyExecutionStatusSchema = z.object({
 
 /**
  * Schema for ComfyUI prompt info (workflow definition)
+ * ComfyUI prompts contain node definitions with JSON-serializable inputs
  */
 export const ComfyPromptInfoSchema = z.object({
-  prompt: z.record(z.unknown()),
+  prompt: z.record(z.union([
+    z.string(),
+    z.number(),
+    z.boolean(),
+    z.null(),
+    z.array(z.union([z.string(), z.number(), z.boolean(), z.null()])),
+    z.record(z.union([z.string(), z.number(), z.boolean(), z.null()])),
+  ])),
   client_id: z.string().optional(),
-  extra_data: z.record(z.unknown()).optional(),
+  extra_data: z.record(z.union([
+    z.string(),
+    z.number(),
+    z.boolean(),
+    z.null(),
+    z.array(z.union([z.string(), z.number(), z.boolean(), z.null()])),
+    z.record(z.union([z.string(), z.number(), z.boolean(), z.null()])),
+  ])).optional(),
 });
 
 // ============================================================================
@@ -66,7 +96,7 @@ export const ComfyPromptInfoSchema = z.object({
  * Validate ComfyUI image output before using
  */
 export function validateComfyImageOutput(
-  data: unknown,
+  data: RuntimeValue,
 ): z.infer<typeof ComfyImageOutputSchema> | null {
   const result = ComfyImageOutputSchema.safeParse(data);
 
@@ -76,11 +106,16 @@ export function validateComfyImageOutput(
       severity: "warning",
       message: "Invalid ComfyUI image output received",
       metadata: {
-        errors: result.error.errors,
+        // System F/Omega: Convert Zod errors to AuditLogMetadata-compatible format
+        // Type proof: Convert array to object with string keys for compatibility
+        errorCount: result.error.errors.length,
+        errorMessages: result.error.errors.map((e) => e.message).join("; "),
+        errorCodes: result.error.errors.map((e) => String(e.code)).join(", "),
+        errorPaths: result.error.errors.map((e) => e.path.join(".")).join("; "),
         data: String(data).slice(0, 200),
       },
     });
-    return null;
+    throw new Error(`[ComfyOutputValidator] Invalid ComfyUI image output: ${result.error.errors.map(e => e.message).join("; ")}`);
   }
 
   // Additional security: sanitize filename
@@ -105,7 +140,7 @@ export function validateComfyImageOutput(
       message: "Path traversal attempt in ComfyUI subfolder",
       metadata: { subfolder: result.data.subfolder },
     });
-    return null;
+    throw new Error(`[ComfyOutputValidator] Invalid ComfyUI image output: ${result.error.errors.map(e => e.message).join("; ")}`);
   }
 
   return {
@@ -118,7 +153,7 @@ export function validateComfyImageOutput(
  * Validate ComfyUI node execution result
  */
 export function validateComfyNodeResult(
-  data: unknown,
+  data: RuntimeValue,
 ): z.infer<typeof ComfyNodeResultSchema> | null {
   const result = ComfyNodeResultSchema.safeParse(data);
 
@@ -127,9 +162,16 @@ export function validateComfyNodeResult(
       category: "security_warning",
       severity: "warning",
       message: "Invalid ComfyUI node result received",
-      metadata: { errors: result.error.errors },
+      metadata: {
+        // System F/Omega: Convert Zod errors to AuditLogMetadata-compatible format
+        // Type proof: Convert array to object with string keys for compatibility
+        errorCount: result.error.errors.length,
+        errorMessages: result.error.errors.map((e) => e.message).join("; "),
+        errorCodes: result.error.errors.map((e) => String(e.code)).join(", "),
+        errorPaths: result.error.errors.map((e) => e.path.join(".")).join("; "),
+      },
     });
-    return null;
+    throw new Error(`[ComfyOutputValidator] Invalid ComfyUI image output: ${result.error.errors.map(e => e.message).join("; ")}`);
   }
 
   return result.data;
@@ -139,7 +181,7 @@ export function validateComfyNodeResult(
  * Validate ComfyUI execution status
  */
 export function validateComfyExecutionStatus(
-  data: unknown,
+  data: RuntimeValue,
 ): z.infer<typeof ComfyExecutionStatusSchema> | null {
   const result = ComfyExecutionStatusSchema.safeParse(data);
 
@@ -148,9 +190,16 @@ export function validateComfyExecutionStatus(
       category: "security_warning",
       severity: "warning",
       message: "Invalid ComfyUI execution status received",
-      metadata: { errors: result.error.errors },
+      metadata: {
+        // System F/Omega: Convert Zod errors to AuditLogMetadata-compatible format
+        // Type proof: Convert array to object with string keys for compatibility
+        errorCount: result.error.errors.length,
+        errorMessages: result.error.errors.map((e) => e.message).join("; "),
+        errorCodes: result.error.errors.map((e) => String(e.code)).join(", "),
+        errorPaths: result.error.errors.map((e) => e.path.join(".")).join("; "),
+      },
     });
-    return null;
+    throw new Error(`[ComfyOutputValidator] Invalid ComfyUI image output: ${result.error.errors.map(e => e.message).join("; ")}`);
   }
 
   return result.data;
@@ -182,8 +231,8 @@ const CUSTOM_NODE_LIMITS = {
 export function validateCustomNodeOutput(
   nodeId: string,
   nodeName: string,
-  output: unknown,
-): { valid: boolean; sanitized?: unknown; error?: string } {
+  output: RuntimeValue,
+): { valid: boolean; sanitized?: JSONValue; error?: string } {
   // Check if output is present
   if (output === undefined || output === null) {
     return { valid: true, sanitized: output };
@@ -214,15 +263,23 @@ export function validateCustomNodeOutput(
   }
 
   // Parse with security checks
-  const parseResult = safeJsonParse(serialized, undefined, {
-    maxDepth: CUSTOM_NODE_LIMITS.maxObjectDepth,
-    maxSize: CUSTOM_NODE_LIMITS.maxTotalSize,
-    maxStringLength: CUSTOM_NODE_LIMITS.maxStringLength,
-    maxArrayLength: CUSTOM_NODE_LIMITS.maxArrayLength,
-    context: `CustomNode[${nodeName}]`,
-  });
-
-  if (!parseResult.success) {
+  let parsedData: JSONValue;
+  try {
+    const parseResult = safeJsonParse(serialized, undefined, {
+      maxDepth: CUSTOM_NODE_LIMITS.maxObjectDepth,
+      maxSize: CUSTOM_NODE_LIMITS.maxTotalSize,
+      maxStringLength: CUSTOM_NODE_LIMITS.maxStringLength,
+      maxArrayLength: CUSTOM_NODE_LIMITS.maxArrayLength,
+      context: `CustomNode[${nodeName}]`,
+    });
+    // Type guard: ensure parseResult.data is JSONValue
+    if (parseResult.success && typeof parseResult.data !== "undefined") {
+      parsedData = parseResult.data as JSONValue;
+    } else {
+      throw new Error("Failed to parse custom node output");
+    }
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
     logAuditEntry({
       category: "security_warning",
       severity: "warning",
@@ -230,15 +287,14 @@ export function validateCustomNodeOutput(
       metadata: {
         nodeId,
         nodeName,
-        error: parseResult.error.message,
-        code: parseResult.code,
+        error: errorMessage,
       },
     });
-    return { valid: false, error: parseResult.error.message };
+    return { valid: false, error: errorMessage };
   }
 
   // Scan for suspicious patterns in string values
-  const suspiciousStrings = findSuspiciousStrings(parseResult.data);
+  const suspiciousStrings = findSuspiciousStrings(parsedData);
   if (suspiciousStrings.length > 0) {
     logAuditEntry({
       category: "security_warning",
@@ -254,14 +310,14 @@ export function validateCustomNodeOutput(
     // We allow but log - could make this configurable
   }
 
-  return { valid: true, sanitized: parseResult.data };
+  return { valid: true, sanitized: parsedData };
 }
 
 /**
  * Find suspicious string patterns in an object
  */
 function findSuspiciousStrings(
-  obj: unknown,
+  obj: RuntimeValue,
   path: string = "",
   found: string[] = [],
 ): string[] {
@@ -540,5 +596,5 @@ function detectImageFormat(bytes: Uint8Array): string | null {
     return "image/gif";
   }
 
-  return null;
+  throw new Error(`[ComfyOutputValidator] Unknown image format: first 4 bytes are ${bytes[0]}, ${bytes[1]}, ${bytes[2]}, ${bytes[3]}`);
 }

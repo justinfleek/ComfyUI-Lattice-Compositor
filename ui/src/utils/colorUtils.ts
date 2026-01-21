@@ -185,10 +185,15 @@ export function rgbToHsl(r: number, g: number, b: number): HSL {
 
 /**
  * Convert hex color to RGB
+ * 
+ * System F/Omega proof: Explicit validation of hex string format
+ * Type proof: hex ∈ string → RGB (non-nullable)
+ * Mathematical proof: Hex string must be valid 3, 6, or 8 character format to parse RGB values
+ * 
  * @param hex Hex color string (#RGB, #RRGGBB, or #RRGGBBAA)
- * @returns RGB tuple or null if invalid
+ * @returns RGB tuple (throws error if invalid - wrap in try/catch for expected "invalid hex" case)
  */
-export function hexToRgb(hex: string): RGB | null {
+export function hexToRgb(hex: string): RGB {
   hex = hex.replace(/^#/, "");
 
   // Handle short format #RGB
@@ -207,15 +212,28 @@ export function hexToRgb(hex: string): RGB | null {
     }
   }
 
-  return null;
+  // System F/Omega proof: Explicit validation of hex string format
+  // Type proof: hex ∈ string → [number, number, number] (non-nullable)
+  // Mathematical proof: Hex string must be valid 3, 6, or 8 character format to parse RGB values
+  throw new Error(
+    `[colorUtils] Cannot convert hex to RGB: Invalid hex string format. ` +
+    `Hex string: "${hex}", length: ${hex.length}, expected: 3, 6, or 8 characters (after # removal). ` +
+    `Hex string must match format #RGB, #RRGGBB, or #RRGGBBAA. ` +
+    `Wrap in try/catch if "invalid hex" is an expected state.`
+  );
 }
 
 /**
  * Convert hex color to RGBA
+ * 
+ * System F/Omega proof: Explicit validation of hex string format
+ * Type proof: hex ∈ string → RGBA (non-nullable)
+ * Mathematical proof: Hex string must be valid 3, 6, or 8 character format to parse RGBA values
+ * 
  * @param hex Hex color string (#RGB, #RRGGBB, or #RRGGBBAA)
- * @returns RGBA tuple or null if invalid
+ * @returns RGBA tuple (throws error if invalid - wrap in try/catch for expected "invalid hex" case)
  */
-export function hexToRgba(hex: string): RGBA | null {
+export function hexToRgba(hex: string): RGBA {
   hex = hex.replace(/^#/, "");
 
   // Handle short format #RGB
@@ -244,7 +262,15 @@ export function hexToRgba(hex: string): RGBA | null {
     }
   }
 
-  return null;
+  // System F/Omega proof: Explicit validation of hex string format
+  // Type proof: hex ∈ string → [number, number, number, number] (non-nullable)
+  // Mathematical proof: Hex string must be valid 8 character format to parse RGBA values
+  throw new Error(
+    `[colorUtils] Cannot convert hex to RGBA: Invalid hex string format. ` +
+    `Hex string: "${hex}", length: ${hex.length}, expected: 8 characters (after # removal). ` +
+    `Hex string must match format #RRGGBBAA. ` +
+    `Wrap in try/catch if "invalid hex" is an expected state.`
+  );
 }
 
 /**
@@ -288,18 +314,26 @@ export function hsvToHex(h: number, s: number, v: number): string {
 
 /**
  * Convert hex to HSV
+ * 
+ * System F/Omega proof: Explicit validation of hex string via hexToRgb dependency
+ * Type proof: hex ∈ string → HSV (non-nullable)
+ * Mathematical proof: Hex string must be valid to convert to RGB, then to HSV
  */
-export function hexToHsv(hex: string): HSV | null {
+export function hexToHsv(hex: string): HSV {
+  // System F/Omega pattern: hexToRgb throws error for invalid hex - propagate
   const rgb = hexToRgb(hex);
-  if (!rgb) return null;
   return rgbToHsv(rgb[0], rgb[1], rgb[2]);
 }
 
 /**
  * Parse any color string to RGB
  * Supports: hex, rgb(), rgba(), hsl(), hsla()
+ * 
+ * System F/Omega proof: Explicit validation of color string format
+ * Type proof: color ∈ string → RGB (non-nullable)
+ * Mathematical proof: Color string must match hex, rgb/rgba, or hsl/hsla format
  */
-export function parseColor(color: string): RGB | null {
+export function parseColor(color: string): RGB {
   color = color.trim().toLowerCase();
 
   // Hex
@@ -329,7 +363,15 @@ export function parseColor(color: string): RGB | null {
     );
   }
 
-  return null;
+  // System F/Omega proof: Explicit validation of color string format
+  // Type proof: color ∈ string → [number, number, number] (non-nullable)
+  // Mathematical proof: Color string must match hex, rgb/rgba, or hsl/hsla format
+  throw new Error(
+    `[colorUtils] Cannot parse color string: Invalid format. ` +
+    `Color string: "${color}", expected formats: #RGB, #RRGGBB, rgb(r,g,b), rgba(r,g,b,a), hsl(h,s%,l%), hsla(h,s%,l%,a). ` +
+    `Color string must match one of the supported CSS color formats. ` +
+    `Wrap in try/catch if "invalid color" is an expected state.`
+  );
 }
 
 /**

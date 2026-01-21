@@ -9,7 +9,9 @@
  * - AI conversation history (IndexedDB)
  */
 
+import type { JSONValue } from "@/types/dataAsset";
 import type { LatticeProject } from "@/types/project";
+import { isFiniteNumber } from "@/utils/typeGuards";
 
 // ============================================================================
 // CONSTANTS
@@ -87,7 +89,7 @@ export interface AIConversation {
     role: "user" | "assistant" | "system" | "tool";
     content: string;
     timestamp: number;
-    toolCalls?: unknown[];
+    toolCalls?: JSONValue[];
   }>;
   model: string;
   createdAt: number;
@@ -208,7 +210,10 @@ export async function saveProject(
   const db = await getDB();
 
   const id = projectId || getProjectId(project);
-  const name = project.meta?.name || "Untitled Project";
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const projectMeta = (project != null && typeof project === "object" && "meta" in project && project.meta != null && typeof project.meta === "object") ? project.meta : undefined;
+  const metaName = (projectMeta != null && typeof projectMeta === "object" && "name" in projectMeta && typeof projectMeta.name === "string") ? projectMeta.name : undefined;
+  const name = metaName != null ? metaName : "Untitled Project";
 
   const stored: StoredProject = {
     id,
@@ -351,7 +356,12 @@ export async function getProjectAssets(
     const index = store.index("projectId");
     const request = index.getAll(projectId);
 
-    request.onsuccess = () => resolve(request.result || []);
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy || []
+    request.onsuccess = () => {
+      const result = request.result;
+      const resultArray = (result !== null && result !== undefined && Array.isArray(result)) ? result : [];
+      resolve(resultArray);
+    };
     request.onerror = () => reject(request.error);
   });
 }
@@ -441,7 +451,12 @@ export async function getProjectAIConversations(
     const index = store.index("projectId");
     const request = index.getAll(projectId);
 
-    request.onsuccess = () => resolve(request.result || []);
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy || []
+    request.onsuccess = () => {
+      const result = request.result;
+      const resultArray = (result !== null && result !== undefined && Array.isArray(result)) ? result : [];
+      resolve(resultArray);
+    };
     request.onerror = () => reject(request.error);
   });
 }
@@ -557,11 +572,18 @@ export function clearRecentProjects(): void {
 // LOCAL STORAGE - LAST PROJECT
 // ============================================================================
 
-export function getLastProjectId(): string | null {
+export function getLastProjectId(): string {
   try {
-    return localStorage.getItem(LOCAL_STORAGE_KEYS.LAST_PROJECT_ID);
-  } catch {
-    return null;
+    const id = localStorage.getItem(LOCAL_STORAGE_KEYS.LAST_PROJECT_ID);
+    if (id === null) {
+      throw new Error("[PersistenceService] No last project ID found in localStorage");
+    }
+    return id;
+  } catch (error) {
+    if (error instanceof Error && error.message.includes("No last project ID")) {
+      throw error;
+    }
+    throw new Error(`[PersistenceService] Failed to get last project ID: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
@@ -580,19 +602,30 @@ export function setLastProjectId(id: string): void {
 export async function getStorageEstimate(): Promise<{
   usage: number;
   quota: number;
-} | null> {
+}> {
   if ("storage" in navigator && "estimate" in navigator.storage) {
     try {
       const estimate = await navigator.storage.estimate();
+      // Type proof: storage values ∈ number | undefined → number (≥ 0, byte counts)
+      // Lean4/PureScript/Haskell: Explicit pattern matching on optional properties
+      // Type proof: usage/quota ∈ number | undefined → number (≥ 0, byte count)
+      const usageRaw = estimate.usage;
+      const usage: number = usageRaw !== undefined && isFiniteNumber(usageRaw) && usageRaw >= 0
+        ? usageRaw
+        : 0;
+      const quotaRaw = estimate.quota;
+      const quota: number = quotaRaw !== undefined && isFiniteNumber(quotaRaw) && quotaRaw >= 0
+        ? quotaRaw
+        : 0;
       return {
-        usage: estimate.usage || 0,
-        quota: estimate.quota || 0,
+        usage: Number.isFinite(usage) && usage >= 0 ? usage : 0,
+        quota: Number.isFinite(quota) && quota >= 0 ? quota : 0,
       };
-    } catch {
-      return null;
+    } catch (error) {
+      throw new Error(`[PersistenceService] Failed to get storage estimate: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
-  return null;
+  throw new Error("[PersistenceService] Storage API not available in this browser");
 }
 
 export async function clearAllData(): Promise<void> {

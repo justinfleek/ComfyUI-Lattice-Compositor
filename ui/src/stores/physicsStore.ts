@@ -18,6 +18,13 @@ import {
   createRagdollBuilder,
   type PhysicsEngine,
 } from "@/services/physics";
+import type { JSONValue } from "@/types/dataAsset";
+
+/**
+ * All possible JavaScript values that can be validated at runtime
+ * Used as input type for validators (replaces unknown)
+ */
+type RuntimeValue = string | number | boolean | object | null | undefined | bigint | symbol;
 import type {
   PhysicsSimulationState,
   PhysicsSpaceConfig,
@@ -26,6 +33,7 @@ import type {
   ForceField,
 } from "@/types/physics";
 import type { Keyframe, Layer, LayerDataUnion } from "@/types/project";
+import { isFiniteNumber, assertDefined } from "@/utils/typeGuards";
 import { storeLogger } from "@/utils/logger";
 import { useLayerStore } from "@/stores/layerStore";
 import { useProjectStore } from "./projectStore";
@@ -39,7 +47,7 @@ import { useKeyframeStore } from "./keyframeStore";
 /**
  * Type guard to check if layer data has physics property
  */
-function hasPhysicsData(data: unknown): data is { physics?: PhysicsLayerData } {
+function hasPhysicsData(data: RuntimeValue): data is { physics?: PhysicsLayerData } {
   return data !== null && data !== undefined && typeof data === "object" && "physics" in data;
 }
 
@@ -188,24 +196,57 @@ export const usePhysicsStore = defineStore("physics", {
 
       const engine = this.getPhysicsEngine();
 
+      // Type proof: position.x/y ∈ ℝ ∪ {undefined} → ℝ
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const transform = layer.transform;
+      const position = (transform != null && typeof transform === "object" && "position" in transform && transform.position != null && typeof transform.position === "object" && "value" in transform.position && transform.position.value != null && typeof transform.position.value === "object") ? transform.position.value : undefined;
+      const positionXValue = (position != null && "x" in position && typeof position.x === "number") ? position.x : undefined;
+      const positionX = isFiniteNumber(positionXValue) ? positionXValue : 0;
+      const positionYValue = (position != null && "y" in position && typeof position.y === "number") ? position.y : undefined;
+      const positionY = isFiniteNumber(positionYValue) ? positionYValue : 0;
       const position = {
-        x: layer.transform?.position?.value?.x ?? 0,
-        y: layer.transform?.position?.value?.y ?? 0,
+        x: positionX,
+        y: positionY,
       };
 
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const shape = config.shape;
       const bodyConfig =
-        config.shape?.type === "circle"
+        (shape != null && typeof shape === "object" && "type" in shape && shape.type === "circle")
           ? createCircleBody(layerId, layerId, {
               position,
-              radius: config.shape.radius ?? 50,
-              mass: config.mass ?? 1,
+              // Type proof: radius ∈ ℝ ∧ finite(radius) → radius ∈ ℝ₊
+              radius: (() => {
+                const radiusValue = config.shape.radius;
+                return isFiniteNumber(radiusValue) && radiusValue > 0 ? radiusValue : 50;
+              })(),
+              // Type proof: mass ∈ ℝ ∧ finite(mass) → mass ∈ ℝ₊
+              mass: (() => {
+                const massValue = config.mass;
+                return isFiniteNumber(massValue) && massValue > 0 ? massValue : 1;
+              })(),
               isStatic: config.type === "static",
             })
           : createBoxBody(layerId, layerId, {
               position,
-              width: config.shape?.width ?? 100,
-              height: config.shape?.height ?? 100,
-              mass: config.mass ?? 1,
+              // Type proof: width, height ∈ ℝ ∧ finite(width/height) → width/height ∈ ℝ₊
+              width: (() => {
+                // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+                const shape = config.shape;
+                const widthValue = (shape != null && typeof shape === "object" && "width" in shape && typeof shape.width === "number") ? shape.width : undefined;
+                return isFiniteNumber(widthValue) && widthValue > 0 ? widthValue : 100;
+              })(),
+              height: (() => {
+                // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+                const shape = config.shape;
+                const heightValue = (shape != null && typeof shape === "object" && "height" in shape && typeof shape.height === "number") ? shape.height : undefined;
+                return isFiniteNumber(heightValue) && heightValue > 0 ? heightValue : 100;
+              })(),
+              // Type proof: mass ∈ ℝ ∧ finite(mass) → mass ∈ ℝ₊
+              mass: (() => {
+                const massValue = config.mass;
+                return isFiniteNumber(massValue) && massValue > 0 ? massValue : 1;
+              })(),
               isStatic: config.type === "static",
             });
 
@@ -254,7 +295,8 @@ export const usePhysicsStore = defineStore("physics", {
 
       if (!hasPhysicsData(layer.data)) return;
       const physicsData = layer.data.physics;
-      if (!physicsData?.physicsEnabled || !physicsData.rigidBody) return;
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      if (physicsData == null || typeof physicsData !== "object" || !("physicsEnabled" in physicsData) || !physicsData.physicsEnabled || !physicsData.rigidBody) return;
 
       const engine = this.getPhysicsEngine();
       engine.removeRigidBody(layerId);
@@ -286,7 +328,9 @@ export const usePhysicsStore = defineStore("physics", {
       const engine = this.getPhysicsEngine();
       const compId = projectStore.activeCompositionId;
 
-      const fields = compositionForceFields.get(compId) || [];
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy || []
+      const fieldsRaw = compositionForceFields.get(compId);
+      const fields = (fieldsRaw !== null && fieldsRaw !== undefined && Array.isArray(fieldsRaw)) ? fieldsRaw : [];
       const existingIndex = fields.findIndex((f) => f.id === force.id);
 
       if (existingIndex >= 0) {
@@ -308,7 +352,9 @@ export const usePhysicsStore = defineStore("physics", {
       const engine = this.getPhysicsEngine();
       const compId = projectStore.activeCompositionId;
 
-      const fields = compositionForceFields.get(compId) || [];
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy || []
+      const fieldsRaw = compositionForceFields.get(compId);
+      const fields = (fieldsRaw !== null && fieldsRaw !== undefined && Array.isArray(fieldsRaw)) ? fieldsRaw : [];
       const newFields = fields.filter((f) => f.id !== forceId);
 
       compositionForceFields.set(compId, newFields);
@@ -330,7 +376,9 @@ export const usePhysicsStore = defineStore("physics", {
       const engine = this.getPhysicsEngine();
       const compId = projectStore.activeCompositionId;
 
-      const fields = compositionForceFields.get(compId) || [];
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy || []
+      const fieldsRaw = compositionForceFields.get(compId);
+      const fields = (fieldsRaw !== null && fieldsRaw !== undefined && Array.isArray(fieldsRaw)) ? fieldsRaw : [];
       const newFields = fields.filter((f) => f.id !== "global-gravity");
 
       const gravityForce = createGravityForce("global-gravity", {
@@ -387,13 +435,26 @@ export const usePhysicsStore = defineStore("physics", {
       for (const layer of comp.layers) {
         if (!layer.data || !hasPhysicsData(layer.data)) continue;
         const physicsData = layer.data.physics;
-        if (physicsData?.physicsEnabled && physicsData.rigidBody) {
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+        if (physicsData != null && typeof physicsData === "object" && "physicsEnabled" in physicsData && physicsData.physicsEnabled && physicsData.rigidBody) {
           const initialPos = physicsData.rigidBody.position;
-          if (layer.transform?.position) {
+          // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+          const transform = layer.transform;
+          if (transform != null && typeof transform === "object" && "position" in transform && transform.position != null && typeof transform.position === "object") {
+            // Type proof: initialPos.x/y ∈ ℝ ∪ {undefined} → ℝ, z ∈ ℝ ∪ {undefined} → ℝ
+            // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+            const initialXValue = (initialPos != null && typeof initialPos === "object" && "x" in initialPos && typeof initialPos.x === "number") ? initialPos.x : undefined;
+            const initialX = isFiniteNumber(initialXValue) ? initialXValue : 0;
+            const initialYValue = (initialPos != null && typeof initialPos === "object" && "y" in initialPos && typeof initialPos.y === "number") ? initialPos.y : undefined;
+            const initialY = isFiniteNumber(initialYValue) ? initialYValue : 0;
+            // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+            const positionValue = transform.position.value;
+            const zValue = (positionValue != null && typeof positionValue === "object" && "z" in positionValue && typeof positionValue.z === "number") ? positionValue.z : undefined;
+            const z = isFiniteNumber(zValue) ? zValue : 0;
             layer.transform.position.value = {
-              x: initialPos?.x ?? 0,
-              y: initialPos?.y ?? 0,
-              z: layer.transform.position.value?.z ?? 0,
+              x: initialX,
+              y: initialY,
+              z: z,
             };
           }
         }
@@ -415,20 +476,30 @@ export const usePhysicsStore = defineStore("physics", {
       for (const layer of comp.layers) {
         if (!layer.data || !hasPhysicsData(layer.data)) continue;
         const physicsData = layer.data.physics;
-        if (!physicsData?.physicsEnabled) continue;
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+        if (physicsData == null || typeof physicsData !== "object" || !("physicsEnabled" in physicsData) || !physicsData.physicsEnabled) continue;
 
         const bodyState = state.rigidBodies.find((b) => b.id === layer.id);
         if (!bodyState) continue;
 
-        if (layer.transform?.position) {
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+        const transform = layer.transform;
+        if (transform != null && typeof transform === "object" && "position" in transform && transform.position != null && typeof transform.position === "object" && "value" in transform.position) {
+          const positionValue = transform.position.value;
           layer.transform.position.value = {
             x: bodyState.position.x,
             y: bodyState.position.y,
-            z: layer.transform.position.value?.z ?? 0,
+            // Type proof: z ∈ ℝ ∪ {undefined} → ℝ
+            z: (() => {
+              // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+              const zValue = (positionValue != null && typeof positionValue === "object" && "z" in positionValue && typeof positionValue.z === "number") ? positionValue.z : undefined;
+              return isFiniteNumber(zValue) ? zValue : 0;
+            })(),
           };
         }
 
-        if (layer.transform?.rotation) {
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+        if (transform != null && typeof transform === "object" && "rotation" in transform && transform.rotation != null && typeof transform.rotation === "object" && "value" in transform.rotation) {
           layer.transform.rotation.value = bodyState.angle * (180 / Math.PI);
         }
       }
@@ -458,11 +529,20 @@ export const usePhysicsStore = defineStore("physics", {
         throw new Error("No active composition");
       }
 
-      const startFrame = options.startFrame ?? 0;
-      const endFrame = options.endFrame ?? comp.settings.frameCount - 1;
+      // Type proof: startFrame ∈ ℕ ∪ {undefined} → ℕ
+      const startFrameValue = options.startFrame;
+      const startFrame = isFiniteNumber(startFrameValue) && Number.isInteger(startFrameValue) && startFrameValue >= 0 ? startFrameValue : 0;
+      // Type proof: endFrame ∈ ℕ ∪ {undefined} → ℕ
+      const endFrameValue = options.endFrame;
+      const endFrame = isFiniteNumber(endFrameValue) && Number.isInteger(endFrameValue) && endFrameValue >= 0 ? endFrameValue : comp.settings.frameCount - 1;
+      // Type proof: sampleInterval is guaranteed finite and > 0 when condition is true
+      const sampleIntervalValue = options.sampleInterval;
       const sampleInterval: number =
-        Number.isFinite(options.sampleInterval) && options.sampleInterval! > 0
-          ? options.sampleInterval!
+        Number.isFinite(sampleIntervalValue) && sampleIntervalValue !== undefined && sampleIntervalValue > 0
+          ? (() => {
+              assertDefined(sampleIntervalValue, "sampleInterval must be defined when finite and > 0");
+              return sampleIntervalValue;
+            })()
           : 1;
 
       const engine = this.getPhysicsEngine();
@@ -481,7 +561,14 @@ export const usePhysicsStore = defineStore("physics", {
             value: {
               x: bodyState.position.x,
               y: bodyState.position.y,
-              z: layer.transform?.position?.value?.z ?? 0,
+              // Type proof: z ∈ ℝ ∪ {undefined} → ℝ
+              z: (() => {
+                // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+                const transform = layer.transform;
+                const position = (transform != null && typeof transform === "object" && "position" in transform && transform.position != null && typeof transform.position === "object" && "value" in transform.position && transform.position.value != null && typeof transform.position.value === "object") ? transform.position.value : undefined;
+                const zValue = (position != null && "z" in position && typeof position.z === "number") ? position.z : undefined;
+                return isFiniteNumber(zValue) ? zValue : 0;
+              })(),
             },
             interpolation: "linear",
           });
@@ -494,35 +581,12 @@ export const usePhysicsStore = defineStore("physics", {
         }
       }
 
-      // Create KeyframeStoreAccess helper for keyframeStore calls
-      const activeComp = projectStore.getActiveComp();
-      const keyframeStoreAccess = {
-        project: {
-          composition: {
-            width: comp.settings.width,
-            height: comp.settings.height,
-          },
-          meta: projectStore.project.meta,
-        },
-        getActiveComp: () => activeComp ? {
-          currentFrame: activeComp.currentFrame,
-          layers: activeComp.layers,
-          settings: activeComp.settings,
-        } : null,
-        getActiveCompLayers: () => projectStore.getActiveCompLayers(),
-        getLayerById: (id: string) => layerStore.getLayerById(id),
-        pushHistory: () => projectStore.pushHistory(),
-        get fps() {
-          return projectStore.getFps();
-        },
-      };
-
       for (const kf of positionKeyframes) {
-        keyframeStore.addKeyframe(keyframeStoreAccess, layerId, "transform.position", kf.value, kf.frame);
+        keyframeStore.addKeyframe(layerId, "transform.position", kf.value, kf.frame);
       }
 
       for (const kf of rotationKeyframes) {
-        keyframeStore.addKeyframe(keyframeStoreAccess, layerId, "transform.rotation", kf.value, kf.frame);
+        keyframeStore.addKeyframe(layerId, "transform.rotation", kf.value, kf.frame);
       }
 
       this.disableLayerPhysics(layerId);
@@ -554,7 +618,8 @@ export const usePhysicsStore = defineStore("physics", {
       for (const layer of comp.layers) {
         if (!layer.data || !hasPhysicsData(layer.data)) continue;
         const physicsData = layer.data.physics;
-        if (physicsData?.physicsEnabled) {
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+        if (physicsData != null && typeof physicsData === "object" && "physicsEnabled" in physicsData && physicsData.physicsEnabled) {
           const result = await this.bakePhysicsToKeyframes(layer.id, options);
           results.push(result);
         }
@@ -586,9 +651,17 @@ export const usePhysicsStore = defineStore("physics", {
 
       const engine = this.getPhysicsEngine();
 
+      // Type proof: position.x/y ∈ ℝ ∪ {undefined} → ℝ
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const transform = layer.transform;
+      const position = (transform != null && typeof transform === "object" && "position" in transform && transform.position != null && typeof transform.position === "object" && "value" in transform.position && transform.position.value != null && typeof transform.position.value === "object") ? transform.position.value : undefined;
+      const originXValue = (position != null && "x" in position && typeof position.x === "number") ? position.x : undefined;
+      const originX = isFiniteNumber(originXValue) ? originXValue : 0;
+      const originYValue = (position != null && "y" in position && typeof position.y === "number") ? position.y : undefined;
+      const originY = isFiniteNumber(originYValue) ? originYValue : 0;
       const origin = {
-        x: layer.transform?.position?.value?.x ?? 0,
-        y: layer.transform?.position?.value?.y ?? 0,
+        x: originX,
+        y: originY,
       };
 
       const clothConfig = createClothConfig(layerId, layerId, {

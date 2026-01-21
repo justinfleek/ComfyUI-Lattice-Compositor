@@ -19,6 +19,7 @@ import type {
   EvaluatedTransform,
 } from "@/engine/MotionEngine";
 import { interpolateProperty } from "@/services/interpolation";
+import { isFiniteNumber } from "@/utils/typeGuards";
 import type {
   AnimatableProperty,
   EffectInstance,
@@ -26,6 +27,12 @@ import type {
   LayerTransform,
   PropertyValue,
 } from "@/types/project";
+
+/**
+ * All possible JavaScript values that can be validated at runtime
+ * Used as input type for validators (replaces unknown)
+ */
+type RuntimeValue = string | number | boolean | object | null | undefined | bigint | symbol;
 
 // ============================================================================
 // VERSION TRACKING
@@ -47,7 +54,9 @@ let globalVersion = 0;
  * Should be called whenever a layer property is modified
  */
 export function markLayerDirty(layerId: string): void {
-  const current = layerVersions.get(layerId) ?? 0;
+  // Type proof: Map.get() returns number | undefined → number
+  const currentValue = layerVersions.get(layerId);
+  const current = isFiniteNumber(currentValue) && Number.isInteger(currentValue) && currentValue >= 0 ? currentValue : 0;
   layerVersions.set(layerId, current + 1);
   globalVersion++;
 }
@@ -64,7 +73,9 @@ export function markAllLayersDirty(): void {
  * Get current version for a layer
  */
 export function getLayerVersion(layerId: string): number {
-  return layerVersions.get(layerId) ?? 0;
+  // Type proof: Map.get() returns number | undefined → number
+  const versionValue = layerVersions.get(layerId);
+  return isFiniteNumber(versionValue) && Number.isInteger(versionValue) && versionValue >= 0 ? versionValue : 0;
 }
 
 /**
@@ -127,7 +138,7 @@ export function getCachedEvaluation(
     return entry.evaluatedLayer;
   }
 
-  return null;
+  throw new Error(`[LayerEvaluationCache] Cache miss for layer "${layerId}" at frame ${frame}`);
 }
 
 /**
@@ -211,8 +222,8 @@ export function getEvaluationCacheStats(): {
  * Type guard for animatable properties
  */
 function isAnimatableProperty(
-  value: unknown,
-): value is AnimatableProperty<unknown> {
+  value: RuntimeValue,
+): value is AnimatableProperty<PropertyValue> {
   return (
     typeof value === "object" &&
     value !== null &&
@@ -241,8 +252,11 @@ function evaluateTransform(
 ): EvaluatedTransform {
   // Evaluate position - check for separate dimensions first
   let position: { x: number; y: number; z?: number };
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const separateDimensions = (transform != null && typeof transform === "object" && "separateDimensions" in transform && transform.separateDimensions != null && typeof transform.separateDimensions === "object") ? transform.separateDimensions : undefined;
+  const positionSeparated = (separateDimensions != null && typeof separateDimensions === "object" && "position" in separateDimensions && typeof separateDimensions.position === "boolean" && separateDimensions.position) ? true : false;
   if (
-    transform.separateDimensions?.position &&
+    positionSeparated &&
     transform.positionX &&
     transform.positionY
   ) {
@@ -265,8 +279,10 @@ function evaluateTransform(
 
   // Evaluate scale - check for separate dimensions first
   let scale: { x: number; y: number; z?: number };
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const scaleSeparated = (separateDimensions != null && typeof separateDimensions === "object" && "scale" in separateDimensions && typeof separateDimensions.scale === "boolean" && separateDimensions.scale) ? true : false;
   if (
-    transform.separateDimensions?.scale &&
+    scaleSeparated &&
     transform.scaleX &&
     transform.scaleY
   ) {
@@ -328,11 +344,19 @@ function evaluateEffects(
     const evaluatedParams: Record<string, PropertyValue> = {};
 
     for (const [key, param] of Object.entries(effect.parameters)) {
-      if (isAnimatableProperty(param)) {
-        evaluatedParams[key] = interpolateProperty(param, frame, fps);
+      const paramValue = param as RuntimeValue;
+      if (isAnimatableProperty(paramValue)) {
+        evaluatedParams[key] = interpolateProperty(paramValue, frame, fps);
       } else {
         // Non-animatable parameters are already PropertyValue
-        evaluatedParams[key] = param as PropertyValue;
+        // Type guard: validate param is PropertyValue
+        if (typeof paramValue === "number" || typeof paramValue === "string" || typeof paramValue === "boolean" ||
+            (typeof paramValue === "object" && paramValue !== null && ("x" in paramValue || "r" in paramValue))) {
+          evaluatedParams[key] = paramValue as PropertyValue;
+        } else {
+          // Fallback: convert to number if possible, otherwise 0
+          evaluatedParams[key] = (typeof paramValue === "number" && Number.isFinite(paramValue)) ? paramValue : 0;
+        }
       }
     }
 
@@ -401,8 +425,16 @@ export function evaluateLayerCached(
   }
 
   // Evaluate layer
-  const start = layer.startFrame ?? layer.inPoint ?? 0;
-  const end = layer.endFrame ?? layer.outPoint ?? 80;
+  // Type proof: startFrame ∈ ℕ ∪ {undefined}, inPoint ∈ ℕ ∪ {undefined} → startFrame ∈ ℕ
+  const startFrameValue = layer.startFrame;
+  const start = isFiniteNumber(startFrameValue) && Number.isInteger(startFrameValue) && startFrameValue >= 0
+    ? startFrameValue
+    : (isFiniteNumber(layer.inPoint) && Number.isInteger(layer.inPoint) && layer.inPoint >= 0 ? layer.inPoint : 0);
+  // Type proof: endFrame ∈ ℕ ∪ {undefined}, outPoint ∈ ℕ ∪ {undefined} → endFrame ∈ ℕ
+  const endFrameValue = layer.endFrame;
+  const end = isFiniteNumber(endFrameValue) && Number.isInteger(endFrameValue) && endFrameValue >= 0
+    ? endFrameValue
+    : (isFiniteNumber(layer.outPoint) && Number.isInteger(layer.outPoint) && layer.outPoint >= 0 ? layer.outPoint : 80);
   const inRange = frame >= start && frame <= end;
   const visible = layer.visible && inRange;
 

@@ -5,12 +5,14 @@
  */
 
 import { markLayerDirty } from "@/services/layerEvaluationCache";
+import { isFiniteNumber } from "@/utils/typeGuards";
 import type { Keyframe } from "@/types/project";
 import { storeLogger } from "@/utils/logger";
 import { addKeyframe } from "./crud";
 import { findPropertyByPath } from "./helpers";
 import { findSurroundingKeyframes } from "./query";
-import type { KeyframeStoreAccess, RovingKeyframeStoreAccess } from "./types";
+import { useProjectStore } from "../projectStore";
+import { useLayerStore } from "../layerStore";
 
 // ============================================================================
 // KEYFRAME TIMING SCALE
@@ -20,19 +22,19 @@ import type { KeyframeStoreAccess, RovingKeyframeStoreAccess } from "./types";
  * Scale keyframe timing by a factor.
  * Used for Alt+drag last keyframe to scale all keyframes proportionally.
  *
- * @param store - The compositor store
  * @param layerId - Layer ID
  * @param propertyPath - Property path (or undefined for all transform properties)
  * @param scaleFactor - Factor to scale by (e.g., 2.0 = twice as long, 0.5 = half)
  * @param anchorFrame - Frame to anchor scaling from (default: 0)
  */
 export function scaleKeyframeTiming(
-  store: KeyframeStoreAccess,
   layerId: string,
   propertyPath: string | undefined,
   scaleFactor: number,
   anchorFrame: number = 0,
 ): number {
+  const projectStore = useProjectStore();
+  const layerStore = useLayerStore();
   // Validate numeric parameters
   if (!Number.isFinite(scaleFactor) || !Number.isFinite(anchorFrame)) {
     storeLogger.warn("scaleKeyframeTiming: Invalid parameters:", {
@@ -42,7 +44,7 @@ export function scaleKeyframeTiming(
     return 0;
   }
 
-  const layer = store.getLayerById(layerId);
+  const layer = layerStore.getLayerById(layerId);
   if (!layer) return 0;
 
   // Determine which properties to scale
@@ -56,22 +58,24 @@ export function scaleKeyframeTiming(
     // findPropertyByPath already handles path normalization
     const property = findPropertyByPath(layer, propPath);
 
-    if (property?.keyframes && property.keyframes.length > 0) {
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const propertyKeyframes = (property != null && typeof property === "object" && "keyframes" in property && property.keyframes != null && Array.isArray(property.keyframes)) ? property.keyframes : undefined;
+    if (propertyKeyframes != null && propertyKeyframes.length > 0) {
       // Scale each keyframe's frame number relative to anchor
-      for (const kf of property.keyframes) {
+      for (const kf of propertyKeyframes) {
         const relativeFrame = kf.frame - anchorFrame;
         kf.frame = Math.round(anchorFrame + relativeFrame * scaleFactor);
       }
       // Re-sort keyframes to maintain order
-      property.keyframes.sort((a, b) => a.frame - b.frame);
-      scaledCount += property.keyframes.length;
+      propertyKeyframes.sort((a, b) => a.frame - b.frame);
+      scaledCount += propertyKeyframes.length;
     }
   }
 
   if (scaledCount > 0) {
     markLayerDirty(layerId);
-    store.project.meta.modified = new Date().toISOString();
-    store.pushHistory();
+    projectStore.project.meta.modified = new Date().toISOString();
+    projectStore.pushHistory();
   }
 
   return scaledCount;
@@ -85,16 +89,16 @@ export function scaleKeyframeTiming(
  * Reverse keyframe timing (values stay at same frames, but values swap).
  * This creates the effect of playing the animation backward.
  *
- * @param store - The compositor store
  * @param layerId - Layer ID
  * @param propertyPath - Property path (or undefined for all transform properties)
  */
 export function timeReverseKeyframes(
-  store: KeyframeStoreAccess,
   layerId: string,
   propertyPath?: string,
 ): number {
-  const layer = store.getLayerById(layerId);
+  const projectStore = useProjectStore();
+  const layerStore = useLayerStore();
+  const layer = layerStore.getLayerById(layerId);
   if (!layer) return 0;
 
   // Determine which properties to reverse
@@ -107,23 +111,25 @@ export function timeReverseKeyframes(
   for (const propPath of propertiesToReverse) {
     const property = findPropertyByPath(layer, propPath);
 
-    if (property?.keyframes && property.keyframes.length >= 2) {
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const propertyKeyframes = (property != null && typeof property === "object" && "keyframes" in property && property.keyframes != null && Array.isArray(property.keyframes)) ? property.keyframes : undefined;
+    if (propertyKeyframes != null && propertyKeyframes.length >= 2) {
       // Collect values in order
-      const values = property.keyframes.map((kf) => kf.value);
+      const values = propertyKeyframes.map((kf) => kf.value);
       // Reverse the values
       values.reverse();
       // Assign reversed values back to keyframes (frames stay same)
-      for (let i = 0; i < property.keyframes.length; i++) {
-        property.keyframes[i].value = values[i];
+      for (let i = 0; i < propertyKeyframes.length; i++) {
+        propertyKeyframes[i].value = values[i];
       }
-      reversedCount += property.keyframes.length;
+      reversedCount += propertyKeyframes.length;
     }
   }
 
   if (reversedCount > 0) {
     markLayerDirty(layerId);
-    store.project.meta.modified = new Date().toISOString();
-    store.pushHistory();
+    projectStore.project.meta.modified = new Date().toISOString();
+    projectStore.pushHistory();
   }
 
   return reversedCount;
@@ -137,18 +143,19 @@ export function timeReverseKeyframes(
  * Insert a keyframe at a specific position along a motion path.
  * Used for Pen tool click on path to add control point.
  *
- * @param store - The compositor store
  * @param layerId - Layer ID
  * @param frame - Frame number to insert at
  * @returns The created keyframe ID or null
  */
 export function insertKeyframeOnPath(
-  store: KeyframeStoreAccess,
   layerId: string,
   frame: number,
-): string | null {
-  const layer = store.getLayerById(layerId);
-  if (!layer) return null;
+): string {
+  const layerStore = useLayerStore();
+  const layer = layerStore.getLayerById(layerId);
+  if (!layer) {
+    throw new Error(`[KeyframeStore] Cannot insert keyframe on path: Layer "${layerId}" not found`);
+  }
 
   const positionProp = findPropertyByPath(layer, "transform.position");
   if (
@@ -157,7 +164,7 @@ export function insertKeyframeOnPath(
     !positionProp.keyframes ||
     positionProp.keyframes.length < 2
   ) {
-    return null;
+    throw new Error(`[KeyframeStore] Cannot insert keyframe on path: Property "transform.position" is not animated or has fewer than 2 keyframes on layer "${layerId}"`);
   }
 
   // Check if keyframe already exists at this frame
@@ -166,33 +173,44 @@ export function insertKeyframeOnPath(
 
   // Find surrounding keyframes
   const { before, after } = findSurroundingKeyframes(positionProp, frame);
-  if (!before || !after) return null;
+  if (!before || !after) {
+    throw new Error(`[KeyframeStore] Cannot insert keyframe on path: No surrounding keyframes found at frame ${frame} for layer "${layerId}"`);
+  }
 
   // Guard against division by zero (identical frames)
   const frameDiff = after.frame - before.frame;
-  if (frameDiff === 0) return null;
+  if (frameDiff === 0) {
+    throw new Error(`[KeyframeStore] Cannot insert keyframe on path: Surrounding keyframes have identical frames (${before.frame})`);
+  }
 
   // Interpolate the value at this frame
   const t = (frame - before.frame) / frameDiff;
   const beforeVal = before.value as { x: number; y: number; z?: number };
   const afterVal = after.value as { x: number; y: number; z?: number };
 
+  // Type proof: z ∈ ℝ ∪ {undefined} → z ∈ ℝ
+  const beforeZValue = beforeVal.z;
+  const beforeZ = isFiniteNumber(beforeZValue) ? beforeZValue : 0;
+  const afterZValue = afterVal.z;
+  const afterZ = isFiniteNumber(afterZValue) ? afterZValue : 0;
   const interpolatedValue = {
     x: beforeVal.x + (afterVal.x - beforeVal.x) * t,
     y: beforeVal.y + (afterVal.y - beforeVal.y) * t,
-    z: (beforeVal.z ?? 0) + ((afterVal.z ?? 0) - (beforeVal.z ?? 0)) * t,
+    z: beforeZ + (afterZ - beforeZ) * t,
   };
 
   // Create the keyframe
   const newKf = addKeyframe(
-    store,
     layerId,
     "transform.position",
     interpolatedValue,
     frame,
   );
 
-  return newKf?.id ?? null;
+  // Type proof: newKf?.id ∈ string | undefined → string | null
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const newKfId = (newKf != null && typeof newKf === "object" && "id" in newKf && typeof newKf.id === "string") ? newKf.id : undefined;
+  return typeof newKfId === "string" ? newKfId : null;
 }
 
 // ============================================================================
@@ -203,15 +221,15 @@ export function insertKeyframeOnPath(
  * Apply roving keyframes to a position property.
  * Redistributes intermediate keyframe timing for constant velocity.
  *
- * @param store - Store with layer access
  * @param layerId - Target layer ID
  * @returns true if roving was applied successfully
  */
 export function applyRovingToPosition(
-  store: RovingKeyframeStoreAccess,
   layerId: string,
 ): boolean {
-  const layer = store.getLayerById(layerId);
+  const projectStore = useProjectStore();
+  const layerStore = useLayerStore();
+  const layer = layerStore.getLayerById(layerId);
   if (!layer) {
     storeLogger.debug("applyRovingToPosition: layer not found");
     return false;
@@ -240,8 +258,10 @@ export function applyRovingToPosition(
     if (result.success) {
       // Update keyframe frames in place
       result.keyframes.forEach((newKf, index) => {
-        if (positionProp.keyframes?.[index]) {
-          positionProp.keyframes[index].frame = newKf.frame;
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+        const positionPropKeyframes = (positionProp != null && typeof positionProp === "object" && "keyframes" in positionProp && positionProp.keyframes != null && Array.isArray(positionProp.keyframes)) ? positionProp.keyframes : undefined;
+        if (positionPropKeyframes != null && index >= 0 && index < positionPropKeyframes.length) {
+          positionPropKeyframes[index].frame = newKf.frame;
         }
       });
 
@@ -249,8 +269,8 @@ export function applyRovingToPosition(
       markLayerDirty(layerId);
 
       // Update modified timestamp
-      store.project.meta.modified = new Date().toISOString();
-      store.pushHistory();
+      projectStore.project.meta.modified = new Date().toISOString();
+      projectStore.pushHistory();
 
       storeLogger.info("applyRovingToPosition: applied roving keyframes", {
         layerId,
@@ -268,15 +288,14 @@ export function applyRovingToPosition(
 /**
  * Check if roving would significantly change keyframe timing.
  *
- * @param store - Store with layer access
  * @param layerId - Target layer ID
  * @returns true if roving would make significant changes
  */
 export function checkRovingImpact(
-  store: RovingKeyframeStoreAccess,
   layerId: string,
 ): boolean {
-  const layer = store.getLayerById(layerId);
+  const layerStore = useLayerStore();
+  const layer = layerStore.getLayerById(layerId);
   if (!layer) return false;
 
   const positionProp = findPropertyByPath(layer, "transform.position");

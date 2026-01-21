@@ -15,6 +15,7 @@
  */
 
 import type { AnimatableProperty, Keyframe } from "@/types/project";
+import { isFiniteNumber } from "@/utils/typeGuards";
 
 // ============================================================================
 // Types
@@ -270,7 +271,11 @@ function ticksToSecondsWithTempoMap(
 
   let totalSeconds = 0;
   let lastTick = 0;
-  let currentBpm = tempoChanges[0]?.bpm ?? 120;
+  // Type proof: currentBpm ∈ number | undefined → number
+  const currentBpm = tempoChanges.length > 0 &&
+    isFiniteNumber(tempoChanges[0].bpm) && tempoChanges[0].bpm > 0
+    ? tempoChanges[0].bpm
+    : 120;
 
   // Process each tempo change up to the target tick
   for (const change of tempoChanges) {
@@ -657,10 +662,16 @@ export function midiNotesToKeyframes(
 
       case "notePitch": {
         // Value based on note number
-        const pitchRange =
-          (config.noteRange?.max ?? 127) - (config.noteRange?.min ?? 0);
-        const normalizedPitch =
-          (note.noteNumber - (config.noteRange?.min ?? 0)) / pitchRange;
+        // Type proof: noteRange.max ∈ number | undefined → number
+        const maxNote = config.noteRange && isFiniteNumber(config.noteRange.max)
+          ? config.noteRange.max
+          : 127;
+        // Type proof: noteRange.min ∈ number | undefined → number
+        const minNote = config.noteRange && isFiniteNumber(config.noteRange.min)
+          ? config.noteRange.min
+          : 0;
+        const pitchRange = maxNote - minNote;
+        const normalizedPitch = (note.noteNumber - minNote) / pitchRange;
         value =
           config.valueMin +
           normalizedPitch * (config.valueMax - config.valueMin);

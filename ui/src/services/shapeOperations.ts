@@ -17,6 +17,7 @@ import type {
   Point2D,
 } from "@/types/shapes";
 import { createLogger } from "@/utils/logger";
+import { isFiniteNumber } from "@/utils/typeGuards";
 import * as bezierBoolean from "./bezierBoolean";
 
 // Import path modifiers
@@ -291,11 +292,18 @@ export function getPointAtDistance(
   path: BezierPath,
   targetDistance: number,
   totalLength?: number,
-): { point: Point2D; tangent: Point2D; t: number } | null {
-  if (path.vertices.length < 2) return null;
+): { point: Point2D; tangent: Point2D; t: number } {
+  if (path.vertices.length < 2) {
+    throw new Error(`[ShapeOperations] Cannot get point at distance: Path has fewer than 2 vertices`);
+  }
 
-  const pathLength = totalLength ?? getPathLength(path);
-  if (pathLength < 0.0001) return null;
+  // Type proof: totalLength ∈ number | undefined → number
+  const pathLength = isFiniteNumber(totalLength) && totalLength >= 0
+    ? totalLength
+    : getPathLength(path);
+  if (pathLength < 0.0001) {
+    throw new Error(`[ShapeOperations] Cannot get point at distance: Path length is too small (${pathLength})`);
+  }
 
   // Clamp distance
   targetDistance = Math.max(0, Math.min(pathLength, targetDistance));
@@ -614,51 +622,91 @@ export function booleanOperation(
 
 /**
  * Try to perform boolean operation using Paper.js bezier-aware booleans
- * Returns null if operation fails
+ * 
+ * System F/Omega proof: Bezier boolean operation with fallback strategy
+ * Type proof: paths ∈ BezierPath[], operation ∈ BooleanOperationType → BezierPath[]
+ * Mathematical proof: Boolean operation is deterministic - either succeeds or throws error for fallback
+ * Geometric proof: Bezier boolean operations may fail for degenerate cases, triggering polygon-clipping fallback
+ * 
+ * @param paths - Array of Bezier paths to operate on (must be non-empty)
+ * @param operation - Boolean operation type (union, subtract, intersect, exclude)
+ * @returns BezierPath[] result of boolean operation
+ * @throws Error if operation fails (triggers fallback to polygon-clipping in caller)
  */
 function tryBezierBoolean(
   paths: BezierPath[],
   operation: BooleanOperationType,
-): BezierPath[] | null {
-  try {
-    // Map operation type to bezierBoolean operation
-    const opMap: Record<BooleanOperationType, bezierBoolean.BooleanOperation> =
-      {
-        union: "unite",
-        subtract: "subtract",
-        intersect: "intersect",
-        exclude: "exclude",
-      };
+): BezierPath[] {
+  // System F/Omega proof: Explicit validation of input parameters
+  // Type proof: paths ∈ BezierPath[] → paths.length ∈ ℕ
+  // Mathematical proof: Boolean operation requires at least one path
+  if (typeof paths !== "object" || paths === null || !Array.isArray(paths)) {
+    throw new Error(`[ShapeOperations] Cannot perform bezier boolean operation: paths parameter is not a valid array (got ${typeof paths}). Paths must be a non-null array of BezierPath objects. Operation: ${operation}.`);
+  }
+  
+  if (paths.length === 0) {
+    throw new Error(`[ShapeOperations] Cannot perform bezier boolean operation: Path array is empty (length: 0). Boolean operation requires at least one path. Operation: ${operation}.`);
+  }
 
-    const bezierOp = opMap[operation];
-    if (!bezierOp) return null;
+  // Map operation type to bezierBoolean operation
+  // System F/Omega proof: Explicit validation of operation type
+  // Type proof: operation ∈ BooleanOperationType → must match known operations
+  const opMap: Record<BooleanOperationType, bezierBoolean.BooleanOperation> =
+    {
+      union: "unite",
+      subtract: "subtract",
+      intersect: "intersect",
+      exclude: "exclude",
+    };
 
-    // Perform operation pairwise
-    let resultPaths = [paths[0]];
+  const bezierOp = opMap[operation];
+  if (!bezierOp) {
+    throw new Error(`[ShapeOperations] Cannot perform bezier boolean operation: Invalid operation type "${operation}". Type proof violation: operation must be one of: union, subtract, intersect, exclude.`);
+  }
 
-    for (let i = 1; i < paths.length; i++) {
-      const newResults: BezierPath[] = [];
+  // Perform operation pairwise
+  let resultPaths = [paths[0]];
 
-      for (const currentPath of resultPaths) {
+  for (let i = 1; i < paths.length; i++) {
+    const newResults: BezierPath[] = [];
+
+    for (const currentPath of resultPaths) {
+      // System F/Omega proof: Explicit error handling for bezier boolean operation
+      // Type proof: booleanOperation returns result with success flag
+      // Mathematical proof: Operation either succeeds (success = true) or fails (success = false)
+      try {
         const opResult = bezierBoolean.booleanOperation(
           currentPath,
           paths[i],
           bezierOp,
         );
+        
+        // System F/Omega proof: Explicit validation of operation result
+        // Mathematical proof: Operation success ⟺ result.success = true
         if (!opResult.success) {
-          return null; // Fallback to polygon-clipping
+          throw new Error(`[ShapeOperations] Cannot perform bezier boolean operation: Bezier boolean operation failed (success: false). Operation: ${operation}, path index: ${i}, current path vertices: ${currentPath.vertices.length}, target path vertices: ${paths[i].vertices.length}. This triggers fallback to polygon-clipping.`);
         }
+        
         newResults.push(...opResult.paths);
+      } catch (error) {
+        // Bezier boolean operation failed - throw error to trigger fallback in caller
+        if (error instanceof Error && error.message.startsWith("[ShapeOperations]")) {
+          throw error;
+        }
+        throw new Error(`[ShapeOperations] Cannot perform bezier boolean operation: Bezier boolean operation threw error. Operation: ${operation}, path index: ${i}, current path vertices: ${currentPath.vertices.length}, target path vertices: ${paths[i].vertices.length}. Error: ${error instanceof Error ? error.message : String(error)}. This triggers fallback to polygon-clipping.`);
       }
-
-      resultPaths = newResults;
     }
 
-    return resultPaths.length > 0 ? resultPaths : null;
-  } catch (error) {
-    logger.warn("Bezier boolean operation failed:", error);
-    return null;
+    resultPaths = newResults;
   }
+
+  // System F/Omega proof: Explicit validation of result
+  // Mathematical proof: Result must contain at least one path
+  if (resultPaths.length === 0) {
+    throw new Error(`[ShapeOperations] Cannot perform bezier boolean operation: Operation produced no result paths (length: 0). Boolean operation should produce at least one path. Operation: ${operation}, input paths: ${paths.length}. This triggers fallback to polygon-clipping.`);
+  }
+
+  return resultPaths;
 }
 
 /**

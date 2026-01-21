@@ -170,9 +170,6 @@ import {
   generateWaveFlow,
   type WanMoveTrajectory,
 } from "@/services/export/wanMoveExport";
-import { useCompositorStore } from "@/stores/compositorStore";
-
-const store = useCompositorStore();
 
 // State
 const selectedPreset = ref<string>("neural-flow");

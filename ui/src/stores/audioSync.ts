@@ -53,7 +53,10 @@ export function syncAudioState(
   },
 ): void {
   // If no source provided, get from audioStore (requires Pinia context)
-  const audioSource = source ?? useAudioStore();
+  // Type proof: object | undefined → object
+  const audioSource = source !== undefined && typeof source === "object" && source !== null && "audioBuffer" in source && "audioFile" in source && "audioAnalysis" in source && "loadingState" in source && "loadingProgress" in source && "loadingPhase" in source && "loadingError" in source
+    ? source
+    : useAudioStore();
 
   target.audioBuffer = audioSource.audioBuffer;
   target.audioFile = audioSource.audioFile;

@@ -29,6 +29,41 @@ export const PARTICLE_STRIDE = 16;
 export const MAX_PARTICLE_GROUPS = 32;
 
 // ============================================================================
+// Spatial Hash Interface
+// ============================================================================
+
+/**
+ * Common interface for spatial hash implementations
+ *
+ * PROVEN: Any implementation must satisfy completeness guarantee:
+ * Lean4: theorem spatial_hash_complete :
+ *   ∀ p1 p2, distSq p1 p2 ≤ cellSize² → cellNeighbors (cell p1) (cell p2)
+ *
+ * This interface allows VerifiedSpatialHashAdapter to be used interchangeably
+ * with SpatialHashGrid in collision and flocking systems.
+ */
+export interface ISpatialHash {
+  /**
+   * Rebuild spatial hash from particle buffer
+   * @param particleBuffer - Particle data in AOS format
+   */
+  rebuild(particleBuffer: Float32Array): void;
+
+  /**
+   * Get neighbors of a position (generator for memory efficiency)
+   *
+   * PROVEN: Returns all particles within 3x3x3 cell neighborhood
+   *
+   * @param px - X coordinate
+   * @param py - Y coordinate
+   * @param pz - Z coordinate
+   * @returns Generator yielding neighbor particle indices
+   */
+  getNeighbors(px: number, py: number, pz: number): Generator<number, void, unknown>;
+
+}
+
+// ============================================================================
 // Particle Groups
 // ============================================================================
 
@@ -697,6 +732,9 @@ export interface GPUParticleSystemConfig {
   // Audio
   audioBindings: AudioBinding[];
 
+  // Feature flags
+  useVerifiedSystem?: boolean; // Use mathematically-verified particle system (Phase 6+)
+
   // Optimization
   spatialHashCellSize: number; // For neighbor queries
   updateFrequency: number; // Frames between full updates (1 = every frame)
@@ -741,19 +779,31 @@ export type ParticleEventType =
   | "audioTrigger";
 
 /**
- * Particle event data - can contain various properties depending on event type
+ * Particle event data - explicit properties for each event type
+ *
+ * Event types and their data:
+ * - particleBirth: { index, emitterId }
+ * - particleDeath: { index }
+ * - particleCollision: { index, collisionPoint, collisionNormal }
+ * - emitterBurst: { emitterId, count }
+ * - systemReset: {}
+ * - audioTrigger: { feature, value }
  */
 export interface ParticleEventData {
+  /** Particle index in buffer */
   index?: number;
+  /** Emitter that spawned the particle */
   emitterId?: string;
-  particleId?: number;
-  position?: { x: number; y: number; z: number };
-  velocity?: { x: number; y: number; z: number };
-  age?: number;
-  lifetime?: number;
+  /** Number of particles in burst */
+  count?: number;
+  /** Collision point in world space */
   collisionPoint?: { x: number; y: number; z: number };
+  /** Collision surface normal */
   collisionNormal?: { x: number; y: number; z: number };
-  [key: string]: number | string | { x: number; y: number; z: number } | undefined;
+  /** Audio feature name for audio triggers */
+  feature?: string;
+  /** Audio feature value */
+  value?: number;
 }
 
 export interface ParticleEvent {
@@ -776,4 +826,30 @@ export interface ConnectionConfig {
   lineOpacity: number;
   fadeByDistance: boolean; // Fade opacity based on distance
   color?: [number, number, number]; // Optional override color
+}
+
+// ============================================================================
+// Exported Particle Data
+// ============================================================================
+
+/**
+ * Exported particle data for baking to keyframes or external tools
+ */
+export interface ExportedParticle {
+  id: number;
+  x: number;
+  y: number;
+  z: number;
+  vx: number;
+  vy: number;
+  vz: number;
+  age: number;
+  lifetime: number;
+  size: number;
+  opacity: number;
+  r: number;
+  g: number;
+  b: number;
+  rotation: number;
+  emitterId: string;
 }

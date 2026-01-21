@@ -80,8 +80,9 @@ describe("Opacity Range Contracts", () => {
     });
 
     it("should handle undefined opacity as default (100)", () => {
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
       const opacity = undefined;
-      const safeOpacity = opacity ?? 100;
+      const safeOpacity = (opacity !== null && opacity !== undefined && typeof opacity === "number" && Number.isFinite(opacity)) ? opacity : 100;
       const globalAlpha = safeOpacity / 100;
       expect(globalAlpha).toBe(1);
     });

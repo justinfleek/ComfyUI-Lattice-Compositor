@@ -110,7 +110,7 @@ const arbitraryTestLayer = (): fc.Arbitrary<Layer> =>
   }).map(layer => ({
     ...layer,
     endFrame: Math.max(layer.endFrame, layer.startFrame + 1),
-  })) as unknown as fc.Arbitrary<Layer>;
+  })) as fc.Arbitrary<Layer>;
 
 /**
  * Generate a minimal project for testing
@@ -153,7 +153,7 @@ const arbitraryTestProject = (layers?: Layer[]): fc.Arbitrary<LatticeProject> =>
       assets: fc.constant({}),
       layers: fc.constant([]),
       currentFrame: fc.constant(0),
-    }).map(project => project as unknown as LatticeProject);
+    }).map(project => project as LatticeProject);
   });
 };
 
@@ -310,31 +310,38 @@ describe('STRICT: Temporal Correctness', () => {
     };
     
     const engine = new MotionEngine();
-    const startFrame = layer.startFrame ?? 0;
-    const endFrame = layer.endFrame ?? 300;
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+    const startFrame = (layer.startFrame !== null && layer.startFrame !== undefined && typeof layer.startFrame === "number" && Number.isFinite(layer.startFrame)) ? layer.startFrame : 0;
+    const endFrame = (layer.endFrame !== null && layer.endFrame !== undefined && typeof layer.endFrame === "number" && Number.isFinite(layer.endFrame)) ? layer.endFrame : 300;
     
     // Test before start
     if (startFrame > 0) {
       const beforeResult = engine.evaluate(startFrame - 1, project, null, null, false);
       const evaluatedLayer = beforeResult.layers.find(l => l.id === layer.id);
-      expect(evaluatedLayer?.inRange).toBe(false);
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const inRange = (evaluatedLayer != null && typeof evaluatedLayer === "object" && "inRange" in evaluatedLayer && typeof evaluatedLayer.inRange === "boolean") ? evaluatedLayer.inRange : undefined;
+      expect(inRange).toBe(false);
     }
     
     // Test at start
     const atStartResult = engine.evaluate(startFrame, project, null, null, false);
     const atStartLayer = atStartResult.layers.find(l => l.id === layer.id);
-    expect(atStartLayer?.inRange).toBe(true);
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const atStartInRange = (atStartLayer != null && typeof atStartLayer === "object" && "inRange" in atStartLayer && typeof atStartLayer.inRange === "boolean") ? atStartLayer.inRange : undefined;
+    expect(atStartInRange).toBe(true);
     
     // Test at end
     const atEndResult = engine.evaluate(endFrame, project, null, null, false);
     const atEndLayer = atEndResult.layers.find(l => l.id === layer.id);
-    expect(atEndLayer?.inRange).toBe(true);
+    const atEndInRange = (atEndLayer != null && typeof atEndLayer === "object" && "inRange" in atEndLayer && typeof atEndLayer.inRange === "boolean") ? atEndLayer.inRange : undefined;
+    expect(atEndInRange).toBe(true);
     
     // Test after end
     if (endFrame < 299) {
       const afterResult = engine.evaluate(endFrame + 1, project, null, null, false);
       const afterLayer = afterResult.layers.find(l => l.id === layer.id);
-      expect(afterLayer?.inRange).toBe(false);
+      const afterInRange = (afterLayer != null && typeof afterLayer === "object" && "inRange" in afterLayer && typeof afterLayer.inRange === "boolean") ? afterLayer.inRange : undefined;
+      expect(afterInRange).toBe(false);
     }
   });
 
@@ -457,7 +464,9 @@ describe('STRICT: Temporal Correctness', () => {
     const evaluatedLayer = result.layers.find(l => l.id === 'test-layer');
     
     // At keyframe frame, should return keyframe value
-    expect(evaluatedLayer?.opacity).toBe(kfValue);
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const evaluatedOpacity = (evaluatedLayer != null && typeof evaluatedLayer === "object" && "opacity" in evaluatedLayer && typeof evaluatedLayer.opacity === "number") ? evaluatedLayer.opacity : undefined;
+    expect(evaluatedOpacity).toBe(kfValue);
   });
 });
 
@@ -965,8 +974,11 @@ describe('STRICT: Visibility Logic', () => {
     const evaluatedLayer = result.layers.find(l => l.id === 'zero-opacity');
     
     // Layer should be visible (visibility != opacity)
-    expect(evaluatedLayer?.visible).toBe(true);
-    expect(evaluatedLayer?.opacity).toBe(0);
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const evaluatedVisible = (evaluatedLayer != null && typeof evaluatedLayer === "object" && "visible" in evaluatedLayer && typeof evaluatedLayer.visible === "boolean") ? evaluatedLayer.visible : undefined;
+    const evaluatedOpacity2 = (evaluatedLayer != null && typeof evaluatedLayer === "object" && "opacity" in evaluatedLayer && typeof evaluatedLayer.opacity === "number") ? evaluatedLayer.opacity : undefined;
+    expect(evaluatedVisible).toBe(true);
+    expect(evaluatedOpacity2).toBe(0);
   });
 });
 

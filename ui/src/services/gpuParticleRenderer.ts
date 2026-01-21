@@ -20,6 +20,7 @@
 
 import * as THREE from "three";
 import type { Particle, RenderOptions } from "./particleSystem";
+import { isFiniteNumber } from "@/utils/typeGuards";
 
 // ============================================================================
 // TYPES
@@ -210,14 +211,45 @@ export class GPUParticleRenderer {
   private activeCount: number = 0;
 
   constructor(config: Partial<GPUParticleRendererConfig> = {}) {
+    // Type proof: maxParticles ∈ number | undefined → number
+    const maxParticles = isFiniteNumber(config.maxParticles) &&
+      config.maxParticles > 0
+      ? Math.floor(config.maxParticles)
+      : 100000;
+    // Type proof: softParticles ∈ boolean | undefined → boolean
+    const softParticles =
+      typeof config.softParticles === "boolean" ? config.softParticles : false;
+    // Type proof: softParticleDistance ∈ number | undefined → number
+    const softParticleDistance = isFiniteNumber(config.softParticleDistance) &&
+      config.softParticleDistance > 0
+      ? config.softParticleDistance
+      : 50;
+    // Type proof: velocityMotionBlur ∈ boolean | undefined → boolean
+    const velocityMotionBlur =
+      typeof config.velocityMotionBlur === "boolean"
+        ? config.velocityMotionBlur
+        : true;
+    // Type proof: motionBlurStrength ∈ number | undefined → number
+    const motionBlurStrength = isFiniteNumber(config.motionBlurStrength)
+      ? Math.max(0, config.motionBlurStrength)
+      : 0.5;
+    // Type proof: emissive ∈ boolean | undefined → boolean
+    const emissive =
+      typeof config.emissive === "boolean" ? config.emissive : false;
+    // Type proof: emissiveIntensity ∈ number | undefined → number
+    const emissiveIntensity = isFiniteNumber(config.emissiveIntensity) &&
+      config.emissiveIntensity > 0
+      ? config.emissiveIntensity
+      : 2.0;
+
     this.config = {
-      maxParticles: config.maxParticles ?? 100000,
-      softParticles: config.softParticles ?? false,
-      softParticleDistance: config.softParticleDistance ?? 50,
-      velocityMotionBlur: config.velocityMotionBlur ?? true,
-      motionBlurStrength: config.motionBlurStrength ?? 0.5,
-      emissive: config.emissive ?? false,
-      emissiveIntensity: config.emissiveIntensity ?? 2.0,
+      maxParticles,
+      softParticles,
+      softParticleDistance,
+      velocityMotionBlur,
+      motionBlurStrength,
+      emissive,
+      emissiveIntensity,
     };
 
     // Create geometry with pre-allocated buffers

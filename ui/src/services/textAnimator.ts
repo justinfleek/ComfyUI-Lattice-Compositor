@@ -21,7 +21,62 @@ import type {
   TextWigglySelector,
 } from "@/types/project";
 import { evaluateSimpleExpression } from "./expressions/sesEvaluator";
+import type { ExpressionContext } from "./expressions/types";
 import { SeededRandom } from "./particleSystem";
+import { isFiniteNumber } from "@/utils/typeGuards";
+
+/**
+ * Create a base ExpressionContext with default values for text animator use.
+ * The text animator adds textIndex, textTotal, selectorValue to this context.
+ */
+function createTextAnimatorBaseContext(
+  frame: number,
+  fps: number,
+): ExpressionContext {
+  const time = frame / fps;
+  return {
+    // Time
+    time,
+    frame,
+    fps,
+    duration: 300 / fps, // Default 10 seconds at given fps
+    // Composition
+    compWidth: 1920,
+    compHeight: 1080,
+    // Layer info (defaults for text animator - not used by expressions)
+    layerId: "text-animator-layer",
+    layerIndex: 0,
+    layerName: "Text Animator",
+    inPoint: 0,
+    outPoint: 300 / fps,
+    // Property
+    propertyName: "amount",
+    value: 0,
+    velocity: 0,
+    numKeys: 0,
+    keyframes: [],
+    // Expression controls
+    params: {},
+    // Layer access (no-op for text animator)
+    getLayerProperty: () => null,
+    // Data-driven animation (no-op for text animator)
+    footage: () => null,
+    // Layer transform
+    layerTransform: {
+      position: [0, 0, 0],
+      rotation: [0, 0, 0],
+      scale: [100, 100, 100],
+      opacity: 100,
+      origin: [0, 0, 0],
+    },
+    // Effects
+    layerEffects: [],
+    // All layers
+    allLayers: [],
+    // Effect parameter access (no-op for text animator)
+    getLayerEffectParam: () => null,
+  };
+}
 
 // ============================================================================
 // UTILITY FUNCTIONS
@@ -812,15 +867,25 @@ export function calculateExpressionInfluence(
     return rangeValue;
   }
 
-  // Evaluate through central sesEvaluator (handles SES sandbox, length limit)
-  // NOTE: No DoS protection - expressions CAN hang with infinite loops
-  const result = evaluateSimpleExpression(expr, {
+  // Create base context with all required ExpressionContext properties
+  const baseContext = createTextAnimatorBaseContext(frame, fps);
+
+  // Add text animator specific values as additional context properties
+  // These will be available to expressions via sesEvaluator's context iteration
+  const contextWithTextVars = {
+    ...baseContext,
     textIndex: charIndex,
     textTotal: totalChars,
     selectorValue: rangeValue * 100, // 0-100 scale for expressions
-    time,
-    frame,
-  });
+  };
+
+  // Evaluate through central sesEvaluator (handles SES sandbox, length limit)
+  // NOTE: No DoS protection - expressions CAN hang with infinite loops
+  // The contextWithTextVars includes ExpressionContext + text animator vars
+  const result = evaluateSimpleExpression(
+    expr,
+    contextWithTextVars as ExpressionContext,
+  );
 
   // Fail closed: null means evaluation failed
   if (result === null) {
@@ -893,38 +958,50 @@ export function calculateCompleteCharacterInfluence(
   );
 
   // Apply amount modifier
-  const amount = animator.rangeSelector.amount ?? 100;
+  // Type proof: number | undefined → number
+  const amount = isFiniteNumber(animator.rangeSelector.amount) && animator.rangeSelector.amount >= 0 && animator.rangeSelector.amount <= 100
+    ? animator.rangeSelector.amount
+    : 100;
   influence *= amount / 100;
 
   // Apply smoothness (interpolate towards 0.5 for more smoothing)
-  const smoothness = animator.rangeSelector.smoothness ?? 100;
+  // Type proof: number | undefined → number
+  const smoothness = isFiniteNumber(animator.rangeSelector.smoothness) && animator.rangeSelector.smoothness >= 0 && animator.rangeSelector.smoothness <= 100
+    ? animator.rangeSelector.smoothness
+    : 100;
   if (smoothness < 100) {
     const smoothFactor = smoothness / 100;
     influence = influence * smoothFactor + 0.5 * (1 - smoothFactor);
   }
 
   // Apply Wiggly Selector if enabled
-  if (animator.wigglySelector?.enabled) {
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const wigglySelector = (animator != null && typeof animator === "object" && "wigglySelector" in animator && animator.wigglySelector != null && typeof animator.wigglySelector === "object") ? animator.wigglySelector : undefined;
+  const wigglyEnabled = (wigglySelector != null && typeof wigglySelector === "object" && "enabled" in wigglySelector && typeof wigglySelector.enabled === "boolean" && wigglySelector.enabled) ? true : false;
+  if (wigglyEnabled) {
     const wigglyInfluence = calculateWigglyInfluence(
       charIndex,
       totalChars,
-      animator.wigglySelector,
+      wigglySelector,
       frame,
       fps,
     );
     influence = combineSelectorValues(
       influence,
       wigglyInfluence,
-      animator.wigglySelector.mode,
+      wigglySelector.mode,
     );
   }
 
   // Apply Expression Selector if enabled
-  if (animator.expressionSelector?.enabled) {
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const expressionSelector = (animator != null && typeof animator === "object" && "expressionSelector" in animator && animator.expressionSelector != null && typeof animator.expressionSelector === "object") ? animator.expressionSelector : undefined;
+  const expressionEnabled = (expressionSelector != null && typeof expressionSelector === "object" && "enabled" in expressionSelector && typeof expressionSelector.enabled === "boolean" && expressionSelector.enabled) ? true : false;
+  if (expressionEnabled) {
     influence = calculateExpressionInfluence(
       charIndex,
       totalChars,
-      animator.expressionSelector,
+      expressionSelector,
       influence,
       frame,
       fps,
@@ -941,10 +1018,14 @@ export function calculateCompleteCharacterInfluence(
 export function createWigglySelector(
   overrides?: Partial<TextWigglySelector>,
 ): TextWigglySelector {
+  // Type proof: number | undefined → number
+  const randomSeed = overrides !== undefined && isFiniteNumber(overrides.randomSeed) && overrides.randomSeed >= 0
+    ? overrides.randomSeed
+    : Math.floor(Math.random() * 99999);
   return {
     ...DEFAULT_WIGGLY_SELECTOR,
     ...overrides,
-    randomSeed: overrides?.randomSeed ?? Math.floor(Math.random() * 99999),
+    randomSeed,
   };
 }
 

@@ -110,7 +110,7 @@
                   Depth
                   <input
                     type="number"
-                    :value="selectedSvg.layerConfigs[i]?.depth || 0"
+                    :value="getLayerDepth(i)"
                     @input="updatePathDepth(i, $event)"
                     step="1"
                   />
@@ -119,7 +119,7 @@
                   Extrusion
                   <input
                     type="number"
-                    :value="selectedSvg.layerConfigs[i]?.extrusionDepth || 2"
+                    :value="getLayerExtrusionDepth(i)"
                     @input="updatePathExtrusion(i, $event)"
                     step="0.5"
                   />
@@ -334,6 +334,7 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
+import { safeCoordinateDefault, safeNonNegativeDefault } from "@/utils/typeGuards";
 import type { PBRMaterialConfig } from "@/services/materialSystem";
 import {
   loadImageFromFile,
@@ -342,11 +343,9 @@ import {
   validateLoadedSpritesheet,
 } from "@/services/spriteValidation";
 import { useAssetStore, type EnvironmentState } from "@/stores/assetStore";
-import { useCompositorStore } from "@/stores/compositorStore";
 import type { AssetType } from "@/types/assets";
 
 const assetStore = useAssetStore();
-const compositorStore = useCompositorStore();
 
 // Tab configuration
 const tabs = [
@@ -454,11 +453,12 @@ function onTextureUpload(textureType: string, file: File) {
 }
 
 function getMaterialPreviewStyle(mat: (typeof materials.value)[0]) {
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const maps = (mat != null && typeof mat === "object" && "config" in mat && mat.config != null && typeof mat.config === "object" && "maps" in mat.config && mat.config.maps != null && typeof mat.config.maps === "object") ? mat.config.maps : undefined;
+  const albedo = (maps != null && typeof maps === "object" && "albedo" in maps && typeof maps.albedo === "string") ? maps.albedo : undefined;
   return {
     backgroundColor: mat.config.color || "#808080",
-    backgroundImage: mat.config.maps?.albedo
-      ? `url(${mat.config.maps.albedo})`
-      : "none",
+    backgroundImage: albedo != null ? `url(${albedo})` : "none",
     backgroundSize: "cover",
   };
 }
@@ -479,9 +479,31 @@ function deleteSvg(id: string) {
   assetStore.deleteSvgDocument(id);
 }
 
+// Type proof: depth/z coordinate ∈ number | undefined → number (coordinate-like, can be negative)
+function getLayerDepth(index: number): number {
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const selectedSvg = assetStore.selectedSvgDocument;
+  const layerConfigs = (selectedSvg != null && typeof selectedSvg === "object" && "layerConfigs" in selectedSvg && selectedSvg.layerConfigs != null && Array.isArray(selectedSvg.layerConfigs)) ? selectedSvg.layerConfigs : undefined;
+  const layerConfig = (layerConfigs != null && index >= 0 && index < layerConfigs.length) ? layerConfigs[index] : undefined;
+  const depth = (layerConfig != null && typeof layerConfig === "object" && "depth" in layerConfig && typeof layerConfig.depth === "number") ? layerConfig.depth : undefined;
+  return safeCoordinateDefault(depth, 0, `layerConfigs[${index}].depth`);
+}
+
+// Type proof: extrusionDepth ∈ number | undefined → number (≥ 0, extrusion depth)
+function getLayerExtrusionDepth(index: number): number {
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const selectedSvgValue = selectedSvg.value;
+  const layerConfigs = (selectedSvgValue != null && typeof selectedSvgValue === "object" && "layerConfigs" in selectedSvgValue && selectedSvgValue.layerConfigs != null && Array.isArray(selectedSvgValue.layerConfigs)) ? selectedSvgValue.layerConfigs : undefined;
+  const layerConfig = (layerConfigs != null && index >= 0 && index < layerConfigs.length) ? layerConfigs[index] : undefined;
+  const extrusionDepth = (layerConfig != null && typeof layerConfig === "object" && "extrusionDepth" in layerConfig && typeof layerConfig.extrusionDepth === "number") ? layerConfig.extrusionDepth : undefined;
+  return extrusionDepth != null ? extrusionDepth : 2;
+}
+
 function updatePathDepth(pathIndex: number, event: Event) {
   if (!assetStore.selectedSvgId) return;
-  const value = parseFloat((event.target as HTMLInputElement).value) || 0;
+  // Type proof: depth value ∈ number | NaN → number (coordinate-like, can be negative)
+  const parsedValue = parseFloat((event.target as HTMLInputElement).value);
+  const value = Number.isFinite(parsedValue) ? parsedValue : 0;
   assetStore.updateSvgLayerConfig(assetStore.selectedSvgId, pathIndex, {
     depth: value,
   });

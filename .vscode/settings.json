@@ -61,5 +61,81 @@
     "${workspaceFolder}/src"
   ],
   "cursorpyright.analysis.stubPath": "${workspaceFolder}/src",
-  "cursorpyright.analysis.typeCheckingMode": "basic"
+  "cursorpyright.analysis.typeCheckingMode": "basic",
+
+  // MEMORY OPTIMIZATION: Prevent OOM errors
+  // TypeScript/JavaScript language server memory limits
+  "typescript.tsserver.maxTsServerMemory": 4096,
+  "typescript.tsserver.watchOptions": {
+    "excludeDirectories": [
+      "**/node_modules",
+      "**/.git",
+      "**/dist",
+      "**/build",
+      "**/.vscode",
+      "**/web/js",
+      "**/__pycache__",
+      "**/.venv",
+      "**/venv",
+      "**/__tests__",
+      "**/test",
+      "**/tests",
+      "**/docs",
+      "**/leancomfy",
+      "**/.nix"
+    ]
+  },
+  "typescript.preferences.includePackageJsonAutoImports": "off",
+  "typescript.suggest.autoImports": false,
+  "typescript.updateImportsOnFileMove.enabled": "never",
+  "typescript.preferences.useLabelDetailsInCompletionEntries": false,
+  "typescript.preferences.quoteStyle": "single",
+  "typescript.tsserver.experimental.enableProjectDiagnostics": false,
+  "typescript.tsserver.useSyntaxServer": "auto",
+  "typescript.validate.enable": true,
+  "javascript.validate.enable": true,
+  
+  // Reduce file watching overhead
+  "files.watcherExclude": {
+    "**/.git/objects/**": true,
+    "**/.git/subtree-cache/**": true,
+    "**/node_modules/**": true,
+    "**/dist/**": true,
+    "**/build/**": true,
+    "**/web/js/**": true,
+    "**/__pycache__/**": true,
+    "**/.venv/**": true,
+    "**/venv/**": true,
+    "**/.nix/**": true,
+    "**/flake.lock": true
+  },
+  
+  // Search exclusions to reduce indexing overhead
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/dist": true,
+    "**/build": true,
+    "**/web/js": true,
+    "**/__pycache__": true,
+    "**/.venv": true,
+    "**/venv": true,
+    "**/.git": true,
+    "**/flake.lock": true,
+    "**/.nix": true
+  },
+  
+  // Python/Pyright memory optimization
+  "python.analysis.diagnosticMode": "openFilesOnly",
+  "python.analysis.indexing": false,
+  "python.analysis.packageIndexDepths": [
+    {
+      "name": "",
+      "depth": 1,
+      "includeAllSymbols": false
+    }
+  ],
+  
+  // Cursor-specific memory optimizations
+  "cursor.chat.maxContextLength": 50000,
+  "cursor.general.maxOpenFiles": 20
 }

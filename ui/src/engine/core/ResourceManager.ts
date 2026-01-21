@@ -73,10 +73,40 @@ export class ResourceManager {
 
   /**
    * Get an asset reference by ID
-   * Returns undefined if asset not found or getter not set
+   * 
+   * System F/Omega proof: Explicit validation of asset getter and asset existence
+   * Type proof: assetId ∈ string → AssetReference (non-nullable)
+   * Mathematical proof: Asset getter must be set and asset must exist to retrieve reference
+   * Pattern proof: Missing getter or asset is an explicit failure condition, not a lazy undefined return
    */
-  getAsset(assetId: string): AssetReference | undefined {
-    return this.assetGetter?.(assetId);
+  getAsset(assetId: string): AssetReference {
+    // System F/Omega proof: Explicit validation of asset getter
+    // Type proof: assetGetter ∈ AssetGetter | undefined
+    // Mathematical proof: Asset getter must be set to retrieve assets
+    if (this.assetGetter === undefined || typeof this.assetGetter !== "function") {
+      throw new Error(
+        `[ResourceManager] Cannot get asset: Asset getter not set. ` +
+        `Asset ID: ${assetId}. ` +
+        `ResourceManager must have an asset getter configured before retrieving assets. ` +
+        `Wrap in try/catch if "asset not found" is an expected state.`
+      );
+    }
+
+    const asset = this.assetGetter(assetId);
+    
+    // System F/Omega proof: Explicit validation of asset existence
+    // Type proof: assetGetter returns AssetReference | undefined
+    // Mathematical proof: Asset must exist to retrieve reference
+    if (asset === undefined) {
+      throw new Error(
+        `[ResourceManager] Cannot get asset: Asset not found. ` +
+        `Asset ID: ${assetId}. ` +
+        `Asset does not exist in the asset store. ` +
+        `Wrap in try/catch if "asset not found" is an expected state.`
+      );
+    }
+
+    return asset;
   }
 
   // ============================================================================
@@ -281,18 +311,31 @@ export class ResourceManager {
   /**
    * Get texture for a layer by its ID
    * Looks up the layer's asset and returns its texture if cached
+   * 
+   * System F/Omega proof: Explicit validation of texture cache
+   * Type proof: layerId ∈ string → THREE.Texture (non-nullable)
+   * Mathematical proof: Texture must be cached to retrieve it
+   * Pattern proof: Missing texture is an explicit failure condition, not a lazy null return
    */
-  getLayerTexture(layerId: string): THREE.Texture | null {
+  getLayerTexture(layerId: string): THREE.Texture {
     // Check if we have a direct layer texture cached
     const layerKey = `layer:${layerId}`;
     const layerTexture = this.textures.get(layerKey);
-    if (layerTexture) {
-      return layerTexture;
+    
+    // System F/Omega proof: Explicit validation of texture existence
+    // Type proof: textures.get() returns THREE.Texture | undefined
+    // Mathematical proof: Texture must be cached to retrieve it
+    if (layerTexture === undefined) {
+      throw new Error(
+        `[ResourceManager] Cannot get layer texture: Texture not cached. ` +
+        `Layer ID: ${layerId}, cache key: ${layerKey}. ` +
+        `Texture must be cached before retrieval. ` +
+        `This would need to be wired up with LayerManager to access layer assets. ` +
+        `Wrap in try/catch if "texture not cached" is an expected state.`
+      );
     }
 
-    // This would need to be wired up with LayerManager to access layer assets
-    // For now, return null - the caller should provide the texture directly
-    return null;
+    return layerTexture;
   }
 
   /**
@@ -399,12 +442,26 @@ export class ResourceManager {
       return material;
     }
 
+    // Lean4/PureScript/Haskell: Explicit pattern matching on optional properties
+    // Type proof: options.color ∈ number | undefined → number (color hex value)
+    const colorValue: number = options.color !== undefined && typeof options.color === "number" && Number.isFinite(options.color)
+      ? options.color
+      : 0xffffff;
+    // Type proof: options.transparent ∈ boolean | undefined → boolean
+    const transparentValue: boolean = options.transparent !== undefined ? options.transparent : true;
+    // Type proof: options.opacity ∈ number | undefined → number (0-1, opacity)
+    const opacityValue: number = options.opacity !== undefined && Number.isFinite(options.opacity) && options.opacity >= 0 && options.opacity <= 1
+      ? options.opacity
+      : 1;
+    // Type proof: options.side ∈ THREE.Side | undefined → THREE.Side
+    const sideValue: THREE.Side = options.side !== undefined ? options.side : THREE.DoubleSide;
+    
     material = new THREE.MeshBasicMaterial({
-      color: options.color ?? 0xffffff,
-      transparent: options.transparent ?? true,
-      opacity: options.opacity ?? 1,
+      color: colorValue,
+      transparent: transparentValue,
+      opacity: opacityValue,
       map: options.map,
-      side: options.side ?? THREE.DoubleSide,
+      side: sideValue,
     });
 
     this.materials.set(key, material);

@@ -215,9 +215,10 @@ function onPointMouseDown(point: { trackId: string }, event: MouseEvent) {
   const handleMouseMove = (moveEvent: MouseEvent) => {
     if (!isDragging.value || !dragTrackId.value) return;
 
-    const rect = (
-      event.target as SVGElement
-    ).ownerSVGElement?.getBoundingClientRect();
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const svgElement = (event.target as SVGElement);
+    const ownerSVGElement = (svgElement != null && typeof svgElement === "object" && "ownerSVGElement" in svgElement && svgElement.ownerSVGElement != null && typeof svgElement.ownerSVGElement === "object") ? svgElement.ownerSVGElement : undefined;
+    const rect = (ownerSVGElement != null && typeof ownerSVGElement === "object" && typeof ownerSVGElement.getBoundingClientRect === "function") ? ownerSVGElement.getBoundingClientRect() : undefined;
     if (!rect) return;
 
     const x = (moveEvent.clientX - rect.left) / props.width;

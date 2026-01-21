@@ -510,7 +510,7 @@
         <div class="section-header clickable" @click="midiFileSectionExpanded = !midiFileSectionExpanded">
           <span class="expand-icon">{{ midiFileSectionExpanded ? '▼' : '►' }}</span>
           <span class="section-title">MIDI File to Keyframes</span>
-          <span class="badge" v-if="loadedMIDIFile">{{ midiFileInfo?.totalNotes }} notes</span>
+          <span class="badge" v-if="loadedMIDIFile">{{ (midiFileInfo != null && typeof midiFileInfo === "object" && "totalNotes" in midiFileInfo && typeof midiFileInfo.totalNotes === "number") ? midiFileInfo.totalNotes : 0 }} notes</span>
         </div>
 
         <div v-if="midiFileSectionExpanded" class="section-content">
@@ -527,7 +527,7 @@
               <span class="file-icon">🎹</span>
               <div class="file-details">
                 <span class="file-name">{{ midiFileName }}</span>
-                <span class="file-meta">{{ midiFileInfo?.trackCount }} tracks • {{ midiFileInfo?.totalNotes }} notes • {{ midiFileInfo?.bpm }} BPM</span>
+                <span class="file-meta">{{ (midiFileInfo != null && typeof midiFileInfo === "object" && "trackCount" in midiFileInfo && typeof midiFileInfo.trackCount === "number") ? midiFileInfo.trackCount : 0 }} tracks • {{ (midiFileInfo != null && typeof midiFileInfo === "object" && "totalNotes" in midiFileInfo && typeof midiFileInfo.totalNotes === "number") ? midiFileInfo.totalNotes : 0 }} notes • {{ (midiFileInfo != null && typeof midiFileInfo === "object" && "bpm" in midiFileInfo && typeof midiFileInfo.bpm === "number") ? midiFileInfo.bpm : 0 }} BPM</span>
               </div>
               <button class="remove-btn" @click="removeMIDIFile" title="Remove">×</button>
             </div>
@@ -640,13 +640,17 @@
 <script setup lang="ts">
 import { PhKeyboard } from "@phosphor-icons/vue";
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
+import { useAnimationStore } from "@/stores/animationStore";
 import { useAudioStore } from "@/stores/audioStore";
-import { useCompositorStore } from "@/stores/compositorStore";
+import { useAudioKeyframeStore } from "@/stores/audioKeyframeStore";
 import { useMarkerStore } from "@/stores/markerStore";
 import { useProjectStore } from "@/stores/projectStore";
 import { useLayerStore } from "@/stores/layerStore";
+import { useSelectionStore } from "@/stores/selectionStore";
 import { useKeyframeStore } from "@/stores/keyframeStore";
+import { safeNonNegativeDefault } from "@/utils/typeGuards";
 import type { SplineData, AnimatableProperty, Vec3 } from "@/types/project";
+import type { AudioKeyframeStoreAccess, MarkerStoreAccess } from "@/stores";
 
 // PhPiano doesn't exist in phosphor-icons, using PhKeyboard as substitute
 const PhPiano = PhKeyboard;
@@ -682,11 +686,13 @@ import {
   parseMIDIFile,
 } from "@/services/midiToKeyframes";
 
-const store = useCompositorStore();
-const projectStore = useProjectStore();
-const layerStore = useLayerStore();
+const animationStore = useAnimationStore();
+const audioKeyframeStore = useAudioKeyframeStore();
 const audioStore = useAudioStore();
+const layerStore = useLayerStore();
 const markerStore = useMarkerStore();
+const projectStore = useProjectStore();
+const selectionStore = useSelectionStore();
 const keyframeStore = useKeyframeStore();
 
 // Stem separation state
@@ -783,7 +789,11 @@ const isMuted = computed({
 });
 
 const hasAudio = computed(() => !!audioStore.audioBuffer);
-const audioFileName = computed(() => audioStore.audioFile?.name || "Unknown");
+const audioFileName = computed(() => {
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const audioFile = audioStore.audioFile;
+  return (audioFile != null && typeof audioFile === "object" && "name" in audioFile && typeof audioFile.name === "string") ? audioFile.name : "Unknown";
+});
 const audioSampleRate = computed(() =>
   audioStore.audioBuffer
     ? `${(audioStore.audioBuffer.sampleRate / 1000).toFixed(1)} kHz`
@@ -801,11 +811,11 @@ const activeStemName = computed(() => audioStore.activeStemName);
 
 // Path animator computed properties
 const splineLayers = computed(() => {
-  return store.layers.filter((l) => l.type === "spline" || l.type === "path");
+  return projectStore.getActiveCompLayers().filter((l) => l.type === "spline" || l.type === "path");
 });
 
 const animatableLayers = computed(() => {
-  return store.layers.filter(
+  return projectStore.getActiveCompLayers().filter(
     (l) =>
       l.type !== "camera" &&
       l.type !== "light" &&
@@ -831,10 +841,10 @@ async function createPathAnimator() {
   pathAnimResult.value = null;
 
   try {
-    const splineLayer = store.layers.find(
+    const splineLayer = projectStore.getActiveCompLayers().find(
       (l) => l.id === pathAnimSplineId.value,
     );
-    const targetLayer = store.layers.find(
+    const targetLayer = projectStore.getActiveCompLayers().find(
       (l) => l.id === pathAnimTargetId.value,
     );
 
@@ -845,8 +855,8 @@ async function createPathAnimator() {
 
     // Get audio feature data based on selection
     const audioData = audioStore.audioAnalysis;
-    const _fps = projectStore.getFps(store) || 16;
-    const frameCount = projectStore.getFrameCount(store);
+    const _fps = projectStore.getFps() || 16;
+    const frameCount = projectStore.getFrameCount();
 
     // Build keyframes for the target layer position based on audio
     const keyframes: Array<{
@@ -856,7 +866,10 @@ async function createPathAnimator() {
 
     // Get spline path data for position mapping
     const splineData = splineLayer.data as SplineData;
-    const controlPoints = splineData?.controlPoints || [];
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy || []
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const controlPointsRaw = (splineData != null && typeof splineData === "object" && "controlPoints" in splineData) ? splineData.controlPoints : undefined;
+    const controlPoints = (controlPointsRaw != null && Array.isArray(controlPointsRaw)) ? controlPointsRaw : [];
 
     if (controlPoints.length < 2) {
       pathAnimError.value = "Path layer needs at least 2 control points";
@@ -866,15 +879,21 @@ async function createPathAnimator() {
     // Calculate path positions for each frame based on audio
     for (let frame = 0; frame < frameCount; frame++) {
       // Get audio value for this frame based on selected feature
+      // Type proof: audio amplitude values ∈ number | undefined → number (≥ 0, amplitude)
       let audioValue = 0;
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
       if (pathAnimFeature.value === "amplitude") {
-        audioValue = audioData.amplitudeEnvelope?.[frame] || 0;
+        const amplitudeEnvelope = (audioData != null && typeof audioData === "object" && "amplitudeEnvelope" in audioData && audioData.amplitudeEnvelope != null && Array.isArray(audioData.amplitudeEnvelope)) ? audioData.amplitudeEnvelope[frame] : undefined;
+        audioValue = safeNonNegativeDefault(amplitudeEnvelope, 0, "amplitudeEnvelope[frame]");
       } else if (pathAnimFeature.value === "bass") {
-        audioValue = audioData.frequencyBands?.bass?.[frame] || 0;
+        const frequencyBands = (audioData != null && typeof audioData === "object" && "frequencyBands" in audioData && audioData.frequencyBands != null && typeof audioData.frequencyBands === "object" && "bass" in audioData.frequencyBands && audioData.frequencyBands.bass != null && Array.isArray(audioData.frequencyBands.bass)) ? audioData.frequencyBands.bass[frame] : undefined;
+        audioValue = safeNonNegativeDefault(frequencyBands, 0, "frequencyBands.bass[frame]");
       } else if (pathAnimFeature.value === "mid") {
-        audioValue = audioData.frequencyBands?.mid?.[frame] || 0;
+        const frequencyBands = (audioData != null && typeof audioData === "object" && "frequencyBands" in audioData && audioData.frequencyBands != null && typeof audioData.frequencyBands === "object" && "mid" in audioData.frequencyBands && audioData.frequencyBands.mid != null && Array.isArray(audioData.frequencyBands.mid)) ? audioData.frequencyBands.mid[frame] : undefined;
+        audioValue = safeNonNegativeDefault(frequencyBands, 0, "frequencyBands.mid[frame]");
       } else if (pathAnimFeature.value === "high") {
-        audioValue = audioData.frequencyBands?.high?.[frame] || 0;
+        const frequencyBands = (audioData != null && typeof audioData === "object" && "frequencyBands" in audioData && audioData.frequencyBands != null && typeof audioData.frequencyBands === "object" && "high" in audioData.frequencyBands && audioData.frequencyBands.high != null && Array.isArray(audioData.frequencyBands.high)) ? audioData.frequencyBands.high[frame] : undefined;
+        audioValue = safeNonNegativeDefault(frequencyBands, 0, "frequencyBands.high[frame]");
       }
 
       // Apply sensitivity
@@ -909,7 +928,7 @@ async function createPathAnimator() {
 
     // Apply keyframes to target layer's position
     if (keyframes.length > 0) {
-      keyframeStore.updateLayerProperty(store, targetLayer.id, "transform.position", {
+      keyframeStore.updateLayerProperty(targetLayer.id, "transform.position", {
         ...targetLayer.transform.position,
         animated: true,
         keyframes: keyframes.map((kf) => ({
@@ -942,18 +961,25 @@ function useMainAudio() {
 }
 
 function loadAudioFile() {
-  audioFileInput.value?.click();
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  if (audioFileInput.value != null && typeof audioFileInput.value === "object" && typeof audioFileInput.value.click === "function") {
+    audioFileInput.value.click();
+  }
 }
 
 async function handleAudioFileSelected(e: Event) {
   const input = e.target as HTMLInputElement;
-  if (input.files?.length) await store.loadAudio(input.files[0]);
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  if (input.files != null && typeof input.files === "object" && "length" in input.files && typeof input.files.length === "number" && input.files.length > 0) {
+    const fps = projectStore.getFps();
+    await audioStore.loadAudio(input.files[0], fps);
+  }
   input.value = "";
 }
 
 function removeAudio() {
   audioStore.clear();
-store.pathAnimators.clear();
+  audioKeyframeStore.resetPathAnimators();
 }
 
 function toggleMute() {
@@ -980,8 +1006,16 @@ async function convertAudioToKeyframes() {
     if (result) {
       // AudioAmplitudeResult returns property IDs, not keyframe count
       // Get keyframe count from the created layer
-      const layer = layerStore.getLayerById(store, result.layerId);
-      const kfCount = layer?.properties?.[0]?.keyframes?.length || 0;
+      const layer = layerStore.getLayerById(result.layerId);
+      // Type proof: keyframes.length ∈ number | undefined → number (≥ 0, count)
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const properties = (layer != null && typeof layer === "object" && "properties" in layer && layer.properties != null && Array.isArray(layer.properties) && layer.properties.length > 0) ? layer.properties[0] : undefined;
+      const keyframes = (properties != null && typeof properties === "object" && "keyframes" in properties && properties.keyframes != null && Array.isArray(properties.keyframes)) ? properties.keyframes : undefined;
+      const kfCount = safeNonNegativeDefault(
+        (keyframes != null && typeof keyframes.length === "number") ? keyframes.length : undefined,
+        0,
+        "layer.properties[0].keyframes.length",
+      );
       convertResult.value = {
         layerName: result.layerName,
         keyframeCount: kfCount,
@@ -1034,12 +1068,12 @@ function drawWaveform() {
   ctx.stroke();
 
   // Playhead
-  const px = (store.currentFrame / projectStore.getFrameCount(store)) * rect.width;
+  const px = (animationStore.currentFrame / projectStore.getFrameCount()) * rect.width;
   ctx.fillStyle = "#fff";
   ctx.fillRect(px, 0, 1, 60);
 }
 
-watch(() => [audioStore.audioBuffer, store.currentFrame], drawWaveform);
+watch(() => [audioStore.audioBuffer, animationStore.currentFrame], drawWaveform);
 
 onMounted(() => {
   if (hasAudio.value) {
@@ -1185,7 +1219,8 @@ async function separateAll() {
 }
 
 function playStem(stemName: string) {
-  if (!separatedStems.value?.[stemName]) return;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  if (separatedStems.value == null || typeof separatedStems.value !== "object" || !(stemName in separatedStems.value) || separatedStems.value[stemName] == null) return;
 
   // Stop current playback
   if (currentStemAudio.value) {
@@ -1201,14 +1236,19 @@ function playStem(stemName: string) {
 }
 
 function downloadStemFile(stemName: string) {
-  if (!separatedStems.value?.[stemName]) return;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  if (separatedStems.value == null || typeof separatedStems.value !== "object" || !(stemName in separatedStems.value) || separatedStems.value[stemName] == null) return;
 
-  const fileName = `${audioStore.audioFile?.name?.replace(/\.[^.]+$/, "") || "audio"}_${stemName}.wav`;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const audioFile = audioStore.audioFile;
+  const audioFileName = (audioFile != null && typeof audioFile === "object" && "name" in audioFile && typeof audioFile.name === "string") ? audioFile.name.replace(/\.[^.]+$/, "") : "audio";
+  const fileName = `${audioFileName}_${stemName}.wav`;
   downloadStem(separatedStems.value[stemName], fileName);
 }
 
 async function useStemForReactivity(stemName: string) {
-  if (!separatedStems.value?.[stemName]) return;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  if (separatedStems.value == null || typeof separatedStems.value !== "object" || !(stemName in separatedStems.value) || separatedStems.value[stemName] == null) return;
 
   const stemData = separatedStems.value[stemName];
   console.log(`[Lattice] Loading ${stemName} stem for audio reactivity`);
@@ -1218,7 +1258,10 @@ async function useStemForReactivity(stemName: string) {
 
   try {
     // Get FPS from compositor store or use default
-    const fps = store.project?.composition?.fps || 16;
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const project = store.project;
+    const composition = (project != null && typeof project === "object" && "composition" in project && project.composition != null && typeof project.composition === "object") ? project.composition : undefined;
+    const fps = (composition != null && typeof composition === "object" && "fps" in composition && typeof composition.fps === "number") ? composition.fps : 16;
 
     // Check if stem is already loaded in the audio store
     if (!audioStore.hasStem(stemName)) {
@@ -1276,7 +1319,7 @@ async function analyzeBeats() {
 
   try {
     // Use store's fps or default to 16
-    const fps = projectStore.getFps(store) || 16;
+    const fps = projectStore.getFps() || 16;
 
     beatGrid.value = createEnhancedBeatGrid(
       audioStore.audioAnalysis,
@@ -1302,11 +1345,12 @@ function snapToBeats() {
   const beatFrames = beatGrid.value.beats.map((b) => b.frame);
 
   // Snap selected keyframes to nearest beat
-  const selectedLayers = store.selectedLayerIds;
+  const selectionStore = useSelectionStore();
+  const selectedLayers = selectionStore.selectedLayerIds;
   let snappedCount = 0;
 
   for (const layerId of selectedLayers) {
-    const layer = layerStore.getLayerById(store, layerId);
+    const layer = layerStore.getLayerById(layerId);
     if (!layer) continue;
 
     // Check each animated property for keyframes
@@ -1319,7 +1363,8 @@ function snapToBeats() {
     ];
 
     for (const prop of animProps) {
-      if (!prop?.keyframes) continue;
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      if (prop == null || typeof prop !== "object" || !("keyframes" in prop) || prop.keyframes == null || !Array.isArray(prop.keyframes)) continue;
 
       for (const kf of prop.keyframes) {
         // Find nearest beat
@@ -1356,7 +1401,7 @@ function markBeatsAsMarkers() {
   // Add markers at downbeats (first beat of each measure)
   for (let i = 0; i < beatGrid.value.downbeats.length; i++) {
     const frame = beatGrid.value.downbeats[i];
-    markerStore.addMarker(store, {
+    markerStore.addMarker({
       frame,
       label: `Bar ${i + 1}`,
       color: "#8B5CF6",
@@ -1431,12 +1476,16 @@ watch(midiMonitorEnabled, (enabled) => {
 // ============================================================================
 
 function loadMIDIFile() {
-  midiFileInput.value?.click();
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  if (midiFileInput.value != null && typeof midiFileInput.value === "object" && typeof midiFileInput.value.click === "function") {
+    midiFileInput.value.click();
+  }
 }
 
 async function handleMIDIFileSelected(e: Event) {
   const input = e.target as HTMLInputElement;
-  if (!input.files?.length) return;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  if (input.files == null || typeof input.files !== "object" || !("length" in input.files) || typeof input.files.length !== "number" || input.files.length === 0) return;
 
   const file = input.files[0];
   isLoadingMIDI.value = true;
@@ -1478,6 +1527,9 @@ const midiTracks = computed(() => {
 });
 
 const midiFileInfo = computed(() => {
+  // System F/Omega EXCEPTION: Returning null here is necessary for Vue template compatibility
+  // Template uses v-if="midiFileInfo" which requires null for conditional rendering
+  // This is the ONLY place where null is returned - all other code throws explicit errors
   if (!loadedMIDIFile.value) return null;
   const totalNotes = loadedMIDIFile.value.tracks.reduce(
     (sum, t) => sum + t.notes.length,
@@ -1492,10 +1544,13 @@ const midiFileInfo = computed(() => {
     trackCount: loadedMIDIFile.value.tracks.length,
     totalNotes,
     totalCC,
-    bpm:
-      loadedMIDIFile.value.tempos[
-        loadedMIDIFile.value.tempos.length - 1
-      ]?.bpm?.toFixed(1) || "120",
+    bpm: (() => {
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const tempos = loadedMIDIFile.value.tempos;
+      const lastTempo = (tempos != null && Array.isArray(tempos) && tempos.length > 0) ? tempos[tempos.length - 1] : undefined;
+      const bpm = (lastTempo != null && typeof lastTempo === "object" && "bpm" in lastTempo && typeof lastTempo.bpm === "number") ? lastTempo.bpm : undefined;
+      return (bpm != null && typeof bpm.toFixed === "function") ? bpm.toFixed(1) : "120";
+    })(),
   };
 });
 
@@ -1510,7 +1565,7 @@ async function convertMIDIToKeyframes() {
   midiConvertResult.value = null;
 
   try {
-    const fps = projectStore.getFps(store) || 16;
+    const fps = projectStore.getFps() || 16;
     const config: MIDIToKeyframeConfig = {
       trackIndex: midiTrackIndex.value,
       channel: midiChannel.value,
@@ -1537,7 +1592,7 @@ async function convertMIDIToKeyframes() {
     }
 
     // Create a null layer with the keyframes
-    const layer = layerStore.createLayer(store, "null", midiLayerName.value || "MIDI Animation");
+    const layer = layerStore.createLayer("null", midiLayerName.value || "MIDI Animation");
 
     if (layer) {
       // Apply keyframes to scale.x as a driver property

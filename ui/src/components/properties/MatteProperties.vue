@@ -109,7 +109,7 @@
 
 <script setup lang="ts">
 import { computed } from "vue";
-import { useCompositorStore } from "@/stores/compositorStore";
+import { useProjectStore } from "@/stores/projectStore";
 import type { Layer, MatteLayerData } from "@/types/project";
 
 const props = defineProps<{
@@ -119,13 +119,13 @@ const props = defineProps<{
 const emit =
   defineEmits<(e: "update", data: Partial<MatteLayerData>) => void>();
 
-const store = useCompositorStore();
+const projectStore = useProjectStore();
 
 const matteData = computed(() => props.layer.data as MatteLayerData);
 
 // Get layers that can be matte sources
 const sourceLayers = computed(() => {
-  return store.layers.filter(
+  return projectStore.getActiveCompLayers().filter(
     (l) =>
       l.id !== props.layer.id &&
       ["image", "video", "solid", "text", "shape", "spline"].includes(l.type),

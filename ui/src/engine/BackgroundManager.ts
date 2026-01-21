@@ -78,10 +78,15 @@ export class BackgroundManager {
     image: HTMLImageElement,
     options: { colormap?: ColormapType; opacity?: number; visible?: boolean },
   ): void {
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+    const currentSettings = this.depthMapSettings;
+    const colormap = (options.colormap !== null && options.colormap !== undefined) ? options.colormap : currentSettings.colormap;
+    const opacity = (typeof options.opacity === "number" && Number.isFinite(options.opacity)) ? options.opacity : currentSettings.opacity;
+    const visible = (typeof options.visible === "boolean") ? options.visible : currentSettings.visible;
     this.depthMapSettings = {
-      colormap: options.colormap ?? this.depthMapSettings.colormap,
-      opacity: options.opacity ?? this.depthMapSettings.opacity,
-      visible: options.visible ?? this.depthMapSettings.visible,
+      colormap,
+      opacity,
+      visible,
     };
 
     // Remove existing depth map mesh

@@ -423,9 +423,11 @@ export class ParticleSimulationRegistry {
     let controller = this.controllers.get(layerId);
 
     if (!controller) {
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+      const seedValue = (seed !== null && seed !== undefined && typeof seed === "number" && Number.isFinite(seed)) ? seed : this.generateSeed(layerId);
       controller = new ParticleSimulationController(
         config,
-        seed ?? this.generateSeed(layerId),
+        seedValue,
       );
       this.controllers.set(layerId, controller);
     }

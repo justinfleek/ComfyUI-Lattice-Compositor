@@ -1,3 +1,5 @@
+import { isFiniteNumber } from "@/utils/typeGuards";
+
 /**
  * Vector Math Expressions
  *
@@ -17,8 +19,9 @@ export function vectorAdd(a: number[], b: number[]): number[] {
   const maxLen = Math.max(a.length, b.length);
   const result: number[] = [];
   for (let i = 0; i < maxLen; i++) {
-    const aVal = a[i] ?? 0;
-    const bVal = b[i] ?? 0;
+    // Type proof: array element access ∈ ℝ ∪ {undefined} → ℝ
+    const aVal = isFiniteNumber(a[i]) ? a[i] : 0;
+    const bVal = isFiniteNumber(b[i]) ? b[i] : 0;
     result.push(aVal + bVal);
   }
   return result;
@@ -32,8 +35,9 @@ export function vectorSub(a: number[], b: number[]): number[] {
   const maxLen = Math.max(a.length, b.length);
   const result: number[] = [];
   for (let i = 0; i < maxLen; i++) {
-    const aVal = a[i] ?? 0;
-    const bVal = b[i] ?? 0;
+    // Type proof: array element access ∈ ℝ ∪ {undefined} → ℝ
+    const aVal = isFiniteNumber(a[i]) ? a[i] : 0;
+    const bVal = isFiniteNumber(b[i]) ? b[i] : 0;
     result.push(aVal - bVal);
   }
   return result;
@@ -57,8 +61,9 @@ export function vectorMul(
     const maxLen = Math.max(a.length, b.length);
     const result: number[] = [];
     for (let i = 0; i < maxLen; i++) {
-      const aVal = a[i] ?? 0;
-      const bVal = b[i] ?? 0;
+      // Type proof: array element access ∈ ℝ ∪ {undefined} → ℝ
+      const aVal = isFiniteNumber(a[i]) ? a[i] : 0;
+      const bVal = isFiniteNumber(b[i]) ? b[i] : 0;
       result.push(aVal * bVal);
     }
     return result;
@@ -84,8 +89,9 @@ export function vectorDiv(
     const maxLen = Math.max(a.length, b.length);
     const result: number[] = [];
     for (let i = 0; i < maxLen; i++) {
-      const aVal = a[i] ?? 0;
-      const bVal = b[i] ?? 1;
+      // Type proof: array element access ∈ ℝ ∪ {undefined} → ℝ
+      const aVal = isFiniteNumber(a[i]) ? a[i] : 0;
+      const bVal = isFiniteNumber(b[i]) ? b[i] : 1;
       result.push(aVal / bVal);
     }
     return result;
@@ -111,8 +117,9 @@ export function vectorDot(a: number[], b: number[]): number {
   let sum = 0;
   const maxLen = Math.min(a.length, b.length);
   for (let i = 0; i < maxLen; i++) {
-    const aVal = a[i] ?? 0;
-    const bVal = b[i] ?? 0;
+    // Type proof: array element access ∈ ℝ ∪ {undefined} → ℝ
+    const aVal = isFiniteNumber(a[i]) ? a[i] : 0;
+    const bVal = isFiniteNumber(b[i]) ? b[i] : 0;
     sum += aVal * bVal;
   }
   return sum;
@@ -124,12 +131,13 @@ export function vectorDot(a: number[], b: number[]): number {
  */
 export function vectorCross(a: number[], b: number[]): number[] {
   // Ensure 3D vectors
-  const ax = a[0] ?? 0;
-  const ay = a[1] ?? 0;
-  const az = a[2] ?? 0;
-  const bx = b[0] ?? 0;
-  const by = b[1] ?? 0;
-  const bz = b[2] ?? 0;
+  // Type proof: array element access ∈ ℝ ∪ {undefined} → ℝ
+  const ax = isFiniteNumber(a[0]) ? a[0] : 0;
+  const ay = isFiniteNumber(a[1]) ? a[1] : 0;
+  const az = isFiniteNumber(a[2]) ? a[2] : 0;
+  const bx = isFiniteNumber(b[0]) ? b[0] : 0;
+  const by = isFiniteNumber(b[1]) ? b[1] : 0;
+  const bz = isFiniteNumber(b[2]) ? b[2] : 0;
 
   return [ay * bz - az * by, az * bx - ax * bz, ax * by - ay * bx];
 }
@@ -147,8 +155,9 @@ export function vectorLength(a: number[], b?: number[]): number {
   let sum = 0;
   const maxLen = Math.max(a.length, b.length);
   for (let i = 0; i < maxLen; i++) {
-    const aVal = a[i] ?? 0;
-    const bVal = b[i] ?? 0;
+    // Type proof: array element access ∈ ℝ ∪ {undefined} → ℝ
+    const aVal = isFiniteNumber(a[i]) ? a[i] : 0;
+    const bVal = isFiniteNumber(b[i]) ? b[i] : 0;
     const diff = aVal - bVal;
     sum += diff * diff;
   }
@@ -166,8 +175,9 @@ export function vectorClamp(
 ): number[] {
   // Use ±Infinity defaults for missing array elements (pass through unclamped)
   return vec.map((v, i) => {
-    const minVal = Array.isArray(min) ? (min[i] ?? -Infinity) : min;
-    const maxVal = Array.isArray(max) ? (max[i] ?? Infinity) : max;
+    // Type proof: array element access ∈ ℝ ∪ {undefined} → ℝ
+    const minVal = Array.isArray(min) ? (isFiniteNumber(min[i]) ? min[i] : -Infinity) : min;
+    const maxVal = Array.isArray(max) ? (isFiniteNumber(max[i]) ? max[i] : Infinity) : max;
     return Math.max(minVal, Math.min(maxVal, v));
   });
 }

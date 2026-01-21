@@ -16,10 +16,14 @@ import {
 } from "../../stores/particlePreferences";
 
 // Mock localStorage
+// Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
 const localStorageMock = (() => {
   let store: Record<string, string> = {};
   return {
-    getItem: vi.fn((key: string) => store[key] ?? null),
+    getItem: vi.fn((key: string) => {
+      const value = store[key];
+      return (value !== null && value !== undefined && typeof value === "string") ? value : null;
+    }),
     setItem: vi.fn((key: string, value: string) => {
       store[key] = value;
     }),
@@ -32,7 +36,11 @@ const localStorageMock = (() => {
     get length() {
       return Object.keys(store).length;
     },
-    key: vi.fn((index: number) => Object.keys(store)[index] ?? null),
+    key: vi.fn((index: number) => {
+      const keys = Object.keys(store);
+      const key = keys[index];
+      return (key !== null && key !== undefined && typeof key === "string") ? key : null;
+    }),
   };
 })();
 

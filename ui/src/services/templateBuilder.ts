@@ -89,11 +89,23 @@ export const EXPOSABLE_PROPERTIES: Record<string, ExposablePropertyDef[]> = {
     { path: "transform.position", name: "Position", type: "point" },
     { path: "transform.position.x", name: "Position X", type: "number" },
     { path: "transform.position.y", name: "Position Y", type: "number" },
+    { path: "transform.position.z", name: "Position Z", type: "number" },
     { path: "transform.rotation", name: "Rotation", type: "number" },
+    { path: "transform.rotationX", name: "Rotation X", type: "number" },
+    { path: "transform.rotationY", name: "Rotation Y", type: "number" },
+    { path: "transform.rotationZ", name: "Rotation Z", type: "number" },
     { path: "transform.scale", name: "Scale", type: "point" },
     { path: "transform.scale.x", name: "Scale X", type: "number" },
     { path: "transform.scale.y", name: "Scale Y", type: "number" },
+    { path: "transform.scale.z", name: "Scale Z", type: "number" },
     { path: "transform.anchor", name: "Anchor Point", type: "point" },
+    { path: "transform.anchor.x", name: "Anchor Point X", type: "number" },
+    { path: "transform.anchor.y", name: "Anchor Point Y", type: "number" },
+    { path: "transform.anchor.z", name: "Anchor Point Z", type: "number" },
+    { path: "transform.origin", name: "Origin", type: "point" },
+    { path: "transform.origin.x", name: "Origin X", type: "number" },
+    { path: "transform.origin.y", name: "Origin Y", type: "number" },
+    { path: "transform.origin.z", name: "Origin Z", type: "number" },
     { path: "transform.opacity", name: "Opacity", type: "number" },
   ],
 
@@ -412,24 +424,34 @@ type PropertyValue =
 
 /**
  * Get the value of a property at a path
+ * @throws Error if property path is invalid or property not found
  */
 export function getPropertyValue(
   layer: Layer,
   propertyPath: string,
-): PropertyValue | undefined {
+): PropertyValue {
   const parts = propertyPath.split(".");
   let current: PropertyValue | Layer | Record<string, PropertyValue> = layer;
 
   for (const part of parts) {
-    if (current === undefined || current === null) return undefined;
+    if (current === undefined || current === null) {
+      throw new Error(`[TemplateBuilder] Cannot get property value: Path "${propertyPath}" is invalid - intermediate value is null or undefined at "${part}"`);
+    }
 
     const arrayMatch = part.match(/^(\d+)$/);
     if (arrayMatch && Array.isArray(current)) {
-      current = current[parseInt(arrayMatch[1], 10)] as PropertyValue;
+      const index = parseInt(arrayMatch[1], 10);
+      if (index < 0 || index >= current.length) {
+        throw new Error(`[TemplateBuilder] Cannot get property value: Array index ${index} out of bounds for path "${propertyPath}"`);
+      }
+      current = current[index] as PropertyValue;
     } else if (typeof current === "object" && current !== null && !Array.isArray(current)) {
+      if (!(part in current)) {
+        throw new Error(`[TemplateBuilder] Cannot get property value: Property "${part}" not found in path "${propertyPath}"`);
+      }
       current = (current as Record<string, PropertyValue>)[part];
     } else {
-      return undefined;
+      throw new Error(`[TemplateBuilder] Cannot get property value: Invalid path segment "${part}" in path "${propertyPath}" - current value is not an object or array`);
     }
   }
 
@@ -437,7 +459,11 @@ export function getPropertyValue(
     return (current as AnimatableProperty<number>).value as PropertyValue;
   }
 
-  return current as PropertyValue | undefined;
+  if (current === undefined || current === null) {
+    throw new Error(`[TemplateBuilder] Cannot get property value: Property at path "${propertyPath}" is null or undefined`);
+  }
+
+  return current as PropertyValue;
 }
 
 /**
@@ -499,17 +525,23 @@ export function getEffectControlValue(
   layer: Layer,
   effectName: string,
   parameterName: string,
-): EffectParameterValue | null {
-  if (!layer.effects) return null;
+): EffectParameterValue {
+  if (!layer.effects) {
+    throw new Error(`[TemplateBuilder] Cannot get effect control value: Layer "${layer.id}" has no effects`);
+  }
 
   // Find effect by name
   const effect = layer.effects.find((e) => e.name === effectName);
-  if (!effect) return null;
+  if (!effect) {
+    throw new Error(`[TemplateBuilder] Cannot get effect control value: Effect "${effectName}" not found on layer "${layer.id}"`);
+  }
 
   // Find parameter by name
   const paramKey = parameterName.toLowerCase().replace(/\s+/g, "_");
   const param = effect.parameters[paramKey];
-  if (!param) return null;
+  if (!param) {
+    throw new Error(`[TemplateBuilder] Cannot get effect control value: Parameter "${parameterName}" (key: "${paramKey}") not found in effect "${effectName}" on layer "${layer.id}"`);
+  }
 
   return param.value;
 }
@@ -543,12 +575,9 @@ export function prepareTemplateExport(
   composition: Composition,
   assets: Record<string, AssetReference>,
   posterImageData: string,
-): LatticeTemplate | null {
+): LatticeTemplate {
   if (!composition.templateConfig) {
-    console.error(
-      "[TemplateBuilder] Cannot export - no template configuration",
-    );
-    return null;
+    throw new Error(`[TemplateBuilder] Cannot export template: Composition "${composition.id}" has no template configuration`);
   }
 
   const config = composition.templateConfig;
@@ -564,8 +593,10 @@ export function prepareTemplateExport(
       continue;
     }
 
-    const value = getPropertyValue(layer, prop.sourcePropertyPath);
-    if (value === undefined) {
+    let value: PropertyValue;
+    try {
+      value = getPropertyValue(layer, prop.sourcePropertyPath);
+    } catch {
       console.warn(
         `[TemplateBuilder] Skipping property "${prop.name}" - property not found`,
       );
@@ -802,9 +833,8 @@ export async function exportTemplate(
   composition: Composition,
   assets: Record<string, AssetReference>,
   posterImageData: string,
-): Promise<Blob | null> {
+): Promise<Blob> {
   const template = prepareTemplateExport(composition, assets, posterImageData);
-  if (!template) return null;
 
   // Create JSON blob
   const json = JSON.stringify(template, null, 2);
@@ -845,8 +875,9 @@ export function validateTemplate(
       return;
     }
 
-    const value = getPropertyValue(layer, prop.sourcePropertyPath);
-    if (value === undefined) {
+    try {
+      getPropertyValue(layer, prop.sourcePropertyPath);
+    } catch {
       errors.push(
         `Property "${prop.name}" path not found: ${prop.sourcePropertyPath}`,
       );
@@ -897,7 +928,11 @@ export function getOrganizedProperties(
   // Organize properties
   config.exposedProperties.forEach((prop) => {
     if (prop.groupId && groups.has(prop.groupId)) {
-      groups.get(prop.groupId)?.push(prop);
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const groupArray = groups.get(prop.groupId);
+      if (groupArray != null && Array.isArray(groupArray)) {
+        groupArray.push(prop);
+      }
     } else {
       ungrouped.push(prop);
     }
@@ -906,7 +941,11 @@ export function getOrganizedProperties(
   // Organize comments
   config.comments.forEach((comment) => {
     if (comment.groupId && groups.has(comment.groupId)) {
-      groups.get(comment.groupId)?.push(comment);
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const groupArray = groups.get(comment.groupId);
+      if (groupArray != null && Array.isArray(groupArray)) {
+        groupArray.push(comment);
+      }
     } else {
       ungrouped.push(comment);
     }
@@ -920,10 +959,15 @@ export function getOrganizedProperties(
 
   return {
     ungrouped,
-    groups: config.groups.map((group) => ({
-      group,
-      items: groups.get(group.id) || [],
-    })),
+    groups: config.groups.map((group) => {
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy || []
+      const groupItems = groups.get(group.id);
+      const items = (groupItems !== null && groupItems !== undefined && Array.isArray(groupItems)) ? groupItems : [];
+      return {
+        group,
+        items,
+      };
+    }),
   };
 }
 

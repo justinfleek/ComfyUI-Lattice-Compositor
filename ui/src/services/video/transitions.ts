@@ -604,18 +604,45 @@ export function renderTransition(
 /**
  * Calculate transition progress for a frame within a transition
  *
+ * System F/Omega proof: Explicit validation of frame within transition range
+ * Type proof: currentFrame ∈ number, transitionStartFrame ∈ number, transitionDuration ∈ number → number (non-nullable)
+ * Mathematical proof: Frame must be within [transitionStartFrame, transitionStartFrame + transitionDuration) to calculate progress
+ * Pattern proof: Frame outside transition range is an explicit failure condition, not a lazy null return
+ *
  * @param currentFrame - Current frame number
  * @param transitionStartFrame - Frame where transition starts
  * @param transitionDuration - Duration in frames
- * @returns Progress 0-1, or null if not in transition
+ * @returns Progress 0-1 (throws error if not in transition - wrap in try/catch for expected "not in transition" case)
  */
 export function getTransitionProgress(
   currentFrame: number,
   transitionStartFrame: number,
   transitionDuration: number,
-): number | null {
-  if (currentFrame < transitionStartFrame) return null;
-  if (currentFrame >= transitionStartFrame + transitionDuration) return null;
+): number {
+  // System F/Omega proof: Explicit validation of frame before transition
+  // Type proof: currentFrame ∈ number, transitionStartFrame ∈ number
+  // Mathematical proof: currentFrame must be >= transitionStartFrame to be in transition
+  if (currentFrame < transitionStartFrame) {
+    throw new Error(
+      `[VideoTransitions] Cannot get transition progress: Frame is before transition start. ` +
+      `Current frame: ${currentFrame}, transition start frame: ${transitionStartFrame}, duration: ${transitionDuration} frames. ` +
+      `Frame must be >= ${transitionStartFrame} to calculate transition progress. ` +
+      `Wrap in try/catch if "not in transition" is an expected state.`
+    );
+  }
+
+  // System F/Omega proof: Explicit validation of frame after transition
+  // Type proof: currentFrame ∈ number, transitionStartFrame ∈ number, transitionDuration ∈ number
+  // Mathematical proof: currentFrame must be < transitionStartFrame + transitionDuration to be in transition
+  if (currentFrame >= transitionStartFrame + transitionDuration) {
+    throw new Error(
+      `[VideoTransitions] Cannot get transition progress: Frame is after transition end. ` +
+      `Current frame: ${currentFrame}, transition start frame: ${transitionStartFrame}, duration: ${transitionDuration} frames, ` +
+      `transition end frame: ${transitionStartFrame + transitionDuration}. ` +
+      `Frame must be < ${transitionStartFrame + transitionDuration} to calculate transition progress. ` +
+      `Wrap in try/catch if "not in transition" is an expected state.`
+    );
+  }
 
   return (currentFrame - transitionStartFrame) / transitionDuration;
 }

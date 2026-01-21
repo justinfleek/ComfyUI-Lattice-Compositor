@@ -6,6 +6,7 @@
 
 import type { ControlPoint, Layer, SplineData } from "@/types/project";
 import { createLogger } from "@/utils/logger";
+import { isFiniteNumber, safeCoordinateDefault } from "@/utils/typeGuards";
 
 const _logger = createLogger("SVGExport");
 
@@ -54,9 +55,13 @@ export class SVGExportService {
     }
 
     const splineData = layer.data as SplineData;
+    // Type proof: closed ∈ boolean | undefined → boolean
+    const closed = typeof splineData.closed === "boolean"
+      ? splineData.closed
+      : false;
     const pathData = this.controlPointsToPathData(
       splineData.controlPoints,
-      splineData.closed ?? false,
+      closed,
       opts.precision,
     );
 
@@ -163,9 +168,13 @@ export class SVGExportService {
       if (layer.type !== "spline" || !layer.data) continue;
 
       const splineData = layer.data as SplineData;
+      // Type proof: closed ∈ boolean | undefined → boolean
+      const closed = typeof splineData.closed === "boolean"
+        ? splineData.closed
+        : false;
       const pathData = this.controlPointsToPathData(
         splineData.controlPoints,
-        splineData.closed ?? false,
+        closed,
         opts.precision,
       );
 
@@ -262,18 +271,25 @@ export class SVGExportService {
     const t = layer.transform;
     if (!t) return "";
 
-    const pos = t.position?.value as { x?: number; y?: number } | undefined;
-    if (pos && (pos.x || pos.y)) {
-      transforms.push(`translate(${pos.x || 0},${pos.y || 0})`);
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const position = (t != null && typeof t === "object" && "position" in t && t.position != null && typeof t.position === "object") ? t.position : undefined;
+    const pos = (position != null && typeof position === "object" && "value" in position && position.value != null) ? position.value as { x?: number; y?: number } : undefined;
+    if (pos != null && (pos.x !== undefined || pos.y !== undefined)) {
+      // Type proof: position coordinates ∈ number | undefined → number (coordinate-like, can be negative)
+      const x = safeCoordinateDefault(pos.x, 0, "pos.x");
+      const y = safeCoordinateDefault(pos.y, 0, "pos.y");
+      transforms.push(`translate(${x},${y})`);
     }
 
-    const rot = t.rotation?.value as number | undefined;
-    if (rot) {
+    const rotation = (t != null && typeof t === "object" && "rotation" in t && t.rotation != null && typeof t.rotation === "object") ? t.rotation : undefined;
+    const rot = (rotation != null && typeof rotation === "object" && "value" in rotation && typeof rotation.value === "number") ? rotation.value : undefined;
+    if (rot != null) {
       transforms.push(`rotate(${rot})`);
     }
 
-    const scale = t.scale?.value as { x?: number; y?: number } | undefined;
-    if (scale && (scale.x !== 100 || scale.y !== 100)) {
+    const scaleProp = (t != null && typeof t === "object" && "scale" in t && t.scale != null && typeof t.scale === "object") ? t.scale : undefined;
+    const scale = (scaleProp != null && typeof scaleProp === "object" && "value" in scaleProp && scaleProp.value != null) ? scaleProp.value as { x?: number; y?: number } : undefined;
+    if (scale != null && (scale.x !== 100 || scale.y !== 100)) {
       transforms.push(
         `scale(${(scale.x || 100) / 100},${(scale.y || 100) / 100})`,
       );
@@ -344,10 +360,18 @@ export function exportLayers(
   layers: Layer[],
   options?: SVGExportOptions,
 ): string {
+  // Type proof: width ∈ number | undefined → number
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const viewBox = (options != null && typeof options === "object" && "viewBox" in options && options.viewBox != null && typeof options.viewBox === "object") ? options.viewBox : undefined;
+  const viewBoxWidth = (viewBox != null && typeof viewBox === "object" && "width" in viewBox && typeof viewBox.width === "number") ? viewBox.width : undefined;
+  const width = (viewBoxWidth != null && isFiniteNumber(viewBoxWidth) && viewBoxWidth > 0) ? viewBoxWidth : 1920;
+  // Type proof: height ∈ number | undefined → number
+  const viewBoxHeight = (viewBox != null && typeof viewBox === "object" && "height" in viewBox && typeof viewBox.height === "number") ? viewBox.height : undefined;
+  const height = (viewBoxHeight != null && isFiniteNumber(viewBoxHeight) && viewBoxHeight > 0) ? viewBoxHeight : 1080;
   const composition = {
     settings: {
-      width: options?.viewBox?.width ?? 1920,
-      height: options?.viewBox?.height ?? 1080,
+      width,
+      height,
     },
   };
   return svgExportService.exportComposition(composition, layers, options).svg;

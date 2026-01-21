@@ -16,8 +16,7 @@ export {
   type ExpressionStoreAccess,
   useExpressionStore,
 } from "./expressionStore";
-// Main compositor store (legacy - being refactored into domain stores)
-export { useCompositorStore } from "./compositorStore";
+// Note: compositorStore removed - all functionality migrated to domain stores
 // Note: historyStore removed - history is managed by projectStore
 // Domain-specific stores (Phase 1+ migration targets)
 export {

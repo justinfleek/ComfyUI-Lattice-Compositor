@@ -238,7 +238,8 @@ export function createKeyframeSVG(
   const height = def.height * scale;
   const transform = scale !== 1 ? `transform="scale(${scale})"` : "";
 
-  const fill = def.fill ?? color;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+  const fill = (def.fill !== null && def.fill !== undefined && typeof def.fill === "string" && def.fill.length > 0) ? def.fill : color;
   const stroke = def.stroke
     ? `stroke="${color}" stroke-width="2" fill="none"`
     : `fill="${fill}"`;

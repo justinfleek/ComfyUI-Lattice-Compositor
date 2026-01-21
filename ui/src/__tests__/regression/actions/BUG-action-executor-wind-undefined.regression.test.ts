@@ -4,19 +4,20 @@
  * @fixed 2026-01-06
  * @file services/ai/actionExecutor.ts
  * @rootCause wind.x or wind.y could be undefined, causing NaN when calculating windStrength (sqrt(undefined^2 + undefined^2))
- * @fix Added nullish coalescing (wind.x ?? 0, wind.y ?? 0) to default to 0
+ * @fix Added explicit pattern matching (wind.x !== undefined ? wind.x : 0, wind.y !== undefined ? wind.y : 0) to default to 0
  * @counterexample executeConfigureParticles with physics.wind={x: undefined, y: 4} produced NaN
  */
 
 import { describe, test, expect } from 'vitest';
 
 // Helper function to calculate wind strength (matches the fix in actionExecutor.ts)
+// Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
 function calculateWindStrength(wind: { x?: number; y?: number } | undefined): number {
   if (!wind) return 0;
   
-  // BUG FIX: Use nullish coalescing to prevent NaN
-  const windX = wind.x ?? 0;
-  const windY = wind.y ?? 0;
+  // BUG FIX: Explicit pattern matching to prevent NaN
+  const windX = (wind.x !== null && wind.x !== undefined && typeof wind.x === "number" && Number.isFinite(wind.x)) ? wind.x : 0;
+  const windY = (wind.y !== null && wind.y !== undefined && typeof wind.y === "number" && Number.isFinite(wind.y)) ? wind.y : 0;
   return Math.sqrt(windX ** 2 + windY ** 2);
 }
 
@@ -24,9 +25,9 @@ function calculateWindStrength(wind: { x?: number; y?: number } | undefined): nu
 function calculateWindDirection(wind: { x?: number; y?: number } | undefined): number {
   if (!wind) return 0;
   
-  // BUG FIX: Use nullish coalescing to prevent NaN
-  const windX = wind.x ?? 0;
-  const windY = wind.y ?? 0;
+  // BUG FIX: Explicit pattern matching to prevent NaN
+  const windX = (wind.x !== null && wind.x !== undefined && typeof wind.x === "number" && Number.isFinite(wind.x)) ? wind.x : 0;
+  const windY = (wind.y !== null && wind.y !== undefined && typeof wind.y === "number" && Number.isFinite(wind.y)) ? wind.y : 0;
   return Math.atan2(windY, windX) * (180 / Math.PI);
 }
 
@@ -95,7 +96,7 @@ describe('BUG Regression: Wind Undefined NaN', () => {
     const wind: { x?: number; y?: number } = {}; // Both properties omitted
     const strength = calculateWindStrength(wind);
     
-    // Should handle gracefully (undefined ?? 0 = 0)
+    // Should handle gracefully (explicit pattern matching: undefined → 0)
     expect(Number.isFinite(strength)).toBe(true);
     expect(strength).toBe(0);
   });

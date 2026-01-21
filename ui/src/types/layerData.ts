@@ -6,20 +6,26 @@
  */
 
 import type { AnimatableProperty } from "./animation";
+import type { JSONValue } from "./dataAsset";
 
 // ============================================================
 // IMAGE LAYER DATA
 // ============================================================
 
 export interface ImageLayerData {
-  assetId: string | null;
+  // Asset reference - empty string if using inline source
+  assetId: string;
+
+  // Inline data URL - empty string if using assetId
+  // Used for temporary/generated images before asset creation
+  source: string;
 
   // Display options
-  fit: "none" | "contain" | "cover" | "fill"; // How to fit image in layer bounds
+  fit: "none" | "contain" | "cover" | "fill";
 
-  // Optional cropping (for segmented regions)
-  cropEnabled?: boolean;
-  cropRect?: {
+  // Cropping (for segmented regions)
+  cropEnabled: boolean;
+  cropRect: {
     x: number;
     y: number;
     width: number;
@@ -27,8 +33,8 @@ export interface ImageLayerData {
   };
 
   // Source info (for regeneration/editing)
-  sourceType?: "file" | "generated" | "segmented";
-  segmentationMaskId?: string; // If created via segmentation
+  sourceType: "file" | "generated" | "segmented" | "inline";
+  segmentationMaskId: string; // Empty string if not from segmentation
 }
 
 // ============================================================
@@ -210,7 +216,7 @@ export interface GeneratedMapData {
   sourceLayerId: string; // Which layer to generate from
   mapType: GeneratedMapType;
   modelId: string; // Which model to use
-  parameters: Record<string, any>;
+  parameters: Record<string, JSONValue>;
   cachedResult?: string; // Base64 cached output
   lastGenerated?: string; // ISO timestamp
 }
@@ -236,7 +242,7 @@ export interface GeneratedLayerData {
   model: string;
 
   /** Generation parameters (model-specific) */
-  parameters: Record<string, unknown>;
+  parameters: Record<string, JSONValue>;
 
   /** Generated asset ID (output) */
   generatedAssetId: string | null;

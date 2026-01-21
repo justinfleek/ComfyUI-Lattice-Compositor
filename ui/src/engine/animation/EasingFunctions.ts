@@ -183,9 +183,11 @@ export const easingFunctions: Record<string, EasingFunction> = {
 
 /**
  * Get easing function by name
+ * Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
  */
 export function getEasing(name: string): EasingFunction {
-  return easingFunctions[name] ?? easingFunctions.linear;
+  const easing = easingFunctions[name];
+  return (easing !== null && easing !== undefined && typeof easing === "function") ? easing : easingFunctions.linear;
 }
 
 /**

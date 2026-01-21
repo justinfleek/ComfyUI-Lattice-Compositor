@@ -54,12 +54,12 @@ export type {
   ModulationCurve,
   ParticleRenderMode,
 } from "./particles";
-// GPU Particle System
+// GPU Particle System - VerifiedGPUParticleSystem is the new system
 export {
+  VerifiedGPUParticleSystem,
   createDefaultConfig as createDefaultParticleConfig,
   createDefaultEmitter,
   createDefaultForceField,
-  GPUParticleSystem,
 } from "./particles";
 // Types
 export type {

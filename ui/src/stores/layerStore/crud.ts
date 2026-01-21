@@ -7,6 +7,7 @@
  * @see docs/graphs/layerActions.md
  */
 
+import { isFiniteNumber } from "@/utils/typeGuards";
 import { toRaw } from "vue";
 import type {
   AnimatableProperty,
@@ -67,13 +68,21 @@ export function createLayer(
     layerProperties = [
       createAnimatableProperty(
         "Stroke Width",
-        splineData.strokeWidth ?? 2,
+        (() => {
+          // Type proof: strokeWidth ∈ ℝ ∪ {undefined} → ℝ
+          const strokeWidthValue = splineData.strokeWidth;
+          return isFiniteNumber(strokeWidthValue) && strokeWidthValue >= 0 ? strokeWidthValue : 2;
+        })(),
         "number",
         "Stroke",
       ),
       createAnimatableProperty(
         "Stroke Opacity",
-        splineData.strokeOpacity ?? 100,
+        (() => {
+          // Type proof: strokeOpacity ∈ ℝ ∪ {undefined} → ℝ
+          const strokeOpacityValue = splineData.strokeOpacity;
+          return isFiniteNumber(strokeOpacityValue) && strokeOpacityValue >= 0 && strokeOpacityValue <= 100 ? strokeOpacityValue : 100;
+        })(),
         "number",
         "Stroke",
       ),
@@ -87,10 +96,12 @@ export function createLayer(
   const layers = projectStore.getActiveCompLayers();
 
   // Create transform with position centered in composition
-  const compWidth =
-    comp?.settings.width || projectStore.project.composition.width || 1920;
-  const compHeight =
-    comp?.settings.height || projectStore.project.composition.height || 1080;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const compSettings = (comp != null && typeof comp === "object" && "settings" in comp && comp.settings != null && typeof comp.settings === "object") ? comp.settings : undefined;
+  const compWidthValue = (compSettings != null && typeof compSettings === "object" && "width" in compSettings && typeof compSettings.width === "number") ? compSettings.width : undefined;
+  const compWidth = compWidthValue != null ? compWidthValue : (projectStore.project.composition.width != null ? projectStore.project.composition.width : 1920);
+  const compHeightValue = (compSettings != null && typeof compSettings === "object" && "height" in compSettings && typeof compSettings.height === "number") ? compSettings.height : undefined;
+  const compHeight = compHeightValue != null ? compHeightValue : (projectStore.project.composition.height != null ? projectStore.project.composition.height : 1080);
   const centeredTransform = createDefaultTransform();
   centeredTransform.position.value = { x: compWidth / 2, y: compHeight / 2 };
 
@@ -106,9 +117,9 @@ export function createLayer(
     threeD: false,
     motionBlur: false,
     startFrame: 0,
-    endFrame: (comp?.settings.frameCount || 81) - 1,
+    endFrame: ((compSettings != null && typeof compSettings === "object" && "frameCount" in compSettings && typeof compSettings.frameCount === "number") ? compSettings.frameCount : 81) - 1,
     inPoint: 0,
-    outPoint: (comp?.settings.frameCount || 81) - 1,
+    outPoint: ((compSettings != null && typeof compSettings === "object" && "frameCount" in compSettings && typeof compSettings.frameCount === "number") ? compSettings.frameCount : 81) - 1,
     parentId: null,
     blendMode: "normal",
     opacity: createAnimatableProperty("opacity", 100, "number"),
@@ -167,7 +178,10 @@ export function deleteLayer(
       layer.matteLayerId = undefined;
       layer.matteType = undefined;
     }
-    if (layer.followPath?.pathLayerId === layerId) {
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const followPath = (layer != null && typeof layer === "object" && "followPath" in layer && layer.followPath != null && typeof layer.followPath === "object") ? layer.followPath : undefined;
+    const followPathLayerId = (followPath != null && typeof followPath === "object" && "pathLayerId" in followPath && typeof followPath.pathLayerId === "string") ? followPath.pathLayerId : undefined;
+    if (followPathLayerId === layerId) {
       layer.followPath.enabled = false;
       layer.followPath.pathLayerId = "";
     }
@@ -176,13 +190,16 @@ export function deleteLayer(
       layer.data &&
       (layer.data as TextData).pathLayerId === layerId
     ) {
-      (layer.data as TextData).pathLayerId = null;
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy null assignments
+      (layer.data as TextData).pathLayerId = "";
     }
   }
 
   // Remove from selection
-  if (options?.onRemoveFromSelection) {
-    options.onRemoveFromSelection(layerId);
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const onRemoveFromSelection = (options != null && typeof options === "object" && "onRemoveFromSelection" in options && typeof options.onRemoveFromSelection === "function") ? options.onRemoveFromSelection : undefined;
+  if (onRemoveFromSelection != null) {
+    onRemoveFromSelection(layerId);
   } else {
     useSelectionStore().removeFromSelection(layerId);
   }
@@ -190,7 +207,8 @@ export function deleteLayer(
   clearLayerCache(layerId);
   projectStore.project.meta.modified = new Date().toISOString();
 
-  if (!options?.skipHistory) {
+  const skipHistory = (options != null && typeof options === "object" && "skipHistory" in options && typeof options.skipHistory === "boolean") ? options.skipHistory : undefined;
+  if (!skipHistory) {
     projectStore.pushHistory();
   }
 }
@@ -288,7 +306,8 @@ export function regenerateKeyframeIds(layer: Layer): void {
     ];
 
     for (const prop of transformProps) {
-      if (prop?.keyframes) {
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      if (prop != null && typeof prop === "object" && "keyframes" in prop && prop.keyframes != null && Array.isArray(prop.keyframes)) {
         prop.keyframes = prop.keyframes.map((kf: Keyframe<PropertyValue>) => ({
           ...kf,
           id: crypto.randomUUID(),
@@ -317,11 +336,13 @@ export function regenerateKeyframeIds(layer: Layer): void {
  */
 export function duplicateLayer(
   layerId: string,
-): Layer | null {
+): Layer {
   const projectStore = useProjectStore();
   const layers = projectStore.getActiveCompLayers();
   const original = layers.find((l: Layer) => l.id === layerId);
-  if (!original) return null;
+  if (!original) {
+    throw new Error(`[LayerStore] Cannot duplicate layer: Layer "${layerId}" not found`);
+  }
 
   // Deep clone the layer - use toRaw to handle Vue reactive proxies
   const duplicate: Layer = structuredClone(toRaw(original));
@@ -436,7 +457,8 @@ export function updateLayerTransform(
 ): void {
   const projectStore = useProjectStore();
   const layer = getLayerById(layerId);
-  if (!layer?.transform) return;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  if (layer == null || typeof layer !== "object" || !("transform" in layer) || layer.transform == null) return;
 
   // Cannot update transform of locked layers
   if (layer.locked) {
@@ -486,7 +508,8 @@ export function updateLayerTransform(
     }
   }
   // Handle origin/anchor (anchor is alias for origin)
-  const originUpdate = updates.origin ?? updates.anchor;
+  // Type proof: originUpdate ∈ {x, y, z?} | undefined
+  const originUpdate = updates.origin !== undefined ? updates.origin : updates.anchor;
   if (originUpdate !== undefined && layer.transform.origin) {
     // Validate origin values are finite
     const { x, y, z } = originUpdate;

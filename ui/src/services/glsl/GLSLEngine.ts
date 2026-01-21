@@ -477,10 +477,20 @@ export class GLSLEngine {
 
     // Get WebGL context
     if (!this.gl) {
+      // Type proof: boolean | undefined → boolean
+      const alpha = typeof this.options.alpha === "boolean"
+        ? this.options.alpha
+        : true;
+      const premultipliedAlpha = typeof this.options.premultipliedAlpha === "boolean"
+        ? this.options.premultipliedAlpha
+        : false;
+      const preserveDrawingBuffer = typeof this.options.preserveDrawingBuffer === "boolean"
+        ? this.options.preserveDrawingBuffer
+        : true;
       this.gl = this.canvas.getContext("webgl", {
-        alpha: this.options.alpha ?? true,
-        premultipliedAlpha: this.options.premultipliedAlpha ?? false,
-        preserveDrawingBuffer: this.options.preserveDrawingBuffer ?? true,
+        alpha,
+        premultipliedAlpha,
+        preserveDrawingBuffer,
       }) as WebGLRenderingContext | null;
 
       if (!this.gl) return false;
@@ -555,10 +565,14 @@ export class GLSLEngine {
     includeLibrary: boolean = true,
   ): ShaderCompileResult {
     if (!this.init(1, 1)) {
-      return { success: false, program: null, error: "WebGL not available" };
+      throw new Error(`[GLSLEngine] WebGL not available. WebGL context initialization failed. Check browser support and GPU drivers.`);
     }
 
-    const gl = this.gl!;
+    // Type proof: gl is guaranteed non-null by init() returning true
+    if (!this.gl) {
+      throw new TypeError("gl must exist after successful init()");
+    }
+    const gl = this.gl;
 
     // Build full fragment shader source
     let fullSource = SHADER_HEADER;
@@ -577,11 +591,7 @@ export class GLSLEngine {
       const error =
         gl.getShaderInfoLog(vertexShader) || "Unknown vertex shader error";
       gl.deleteShader(vertexShader);
-      return {
-        success: false,
-        program: null,
-        error: `Vertex shader: ${error}`,
-      };
+      throw new Error(`[GLSLEngine] Vertex shader compilation failed: ${error}. Check shader syntax and WebGL compatibility.`);
     }
 
     // Compile fragment shader
@@ -598,8 +608,9 @@ export class GLSLEngine {
       // Try to extract line number from error
       const lineMatch = error.match(/ERROR: \d+:(\d+)/);
       const errorLine = lineMatch ? parseInt(lineMatch[1], 10) : undefined;
+      const lineInfo = errorLine ? ` at line ${errorLine}` : "";
 
-      return { success: false, program: null, error, errorLine };
+      throw new Error(`[GLSLEngine] Fragment shader compilation failed${lineInfo}: ${error}. Check shader syntax and WebGL compatibility.`);
     }
 
     // Create program
@@ -616,7 +627,7 @@ export class GLSLEngine {
       const error =
         gl.getProgramInfoLog(program) || "Unknown program link error";
       gl.deleteProgram(program);
-      return { success: false, program: null, error: `Program link: ${error}` };
+      throw new Error(`[GLSLEngine] Shader program linking failed: ${error}. Check shader compatibility and uniform/varying declarations.`);
     }
 
     // Cache uniform locations
@@ -644,17 +655,20 @@ export class GLSLEngine {
   /**
    * Get or cache uniform location
    */
-  private getUniformLocation(name: string): WebGLUniformLocation | null {
-    if (!this.gl || !this.program) return null;
+  private getUniformLocation(name: string): WebGLUniformLocation {
+    if (!this.gl || !this.program) {
+      throw new Error(`[GLSL Engine] Cannot get uniform location "${name}": WebGL context or program not initialized`);
+    }
 
     if (this.uniformLocations.has(name)) {
       return this.uniformLocations.get(name)!;
     }
 
     const location = this.gl.getUniformLocation(this.program, name);
-    if (location) {
-      this.uniformLocations.set(name, location);
+    if (!location) {
+      throw new Error(`[GLSL Engine] Uniform "${name}" not found in shader program`);
     }
+    this.uniformLocations.set(name, location);
     return location;
   }
 
@@ -704,10 +718,14 @@ export class GLSLEngine {
       input instanceof HTMLCanvasElement ? input.height : input.height;
 
     if (!this.init(width, height) || !this.program) {
-      return null;
+      throw new Error(`[GLSL Engine] Failed to initialize or program not available for processing (${width}x${height})`);
     }
 
-    const gl = this.gl!;
+    // Type proof: gl is guaranteed non-null by init() returning true
+    if (!this.gl) {
+      throw new TypeError("gl must exist after successful init()");
+    }
+    const gl = this.gl;
 
     // Set viewport
     gl.viewport(0, 0, width, height);

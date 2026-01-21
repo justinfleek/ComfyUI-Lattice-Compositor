@@ -1,4 +1,5 @@
-import type { SESCompartment } from "@/types/ses-ambient";
+import type { JSONValue, RuntimeValue, SESCompartment } from "@/types/ses-ambient";
+import { isFiniteNumber } from "@/utils/typeGuards";
 
 /**
  * Safe context type - only allows primitive values for security
@@ -236,7 +237,11 @@ export function createExpressionCompartment(
       const arrB = Array.isArray(b) ? b : [b];
       let sum = 0;
       for (let i = 0; i < Math.max(arrA.length, arrB.length); i++) {
-        const diff = (arrA[i] ?? 0) - (arrB[i] ?? 0);
+        // Type proof: arrA[i] ∈ number | undefined → number
+        const valA = isFiniteNumber(arrA[i]) ? arrA[i] : 0;
+        // Type proof: arrB[i] ∈ number | undefined → number
+        const valB = isFiniteNumber(arrB[i]) ? arrB[i] : 0;
+        const diff = valA - valB;
         sum += diff * diff;
       }
       return Math.sqrt(sum);
@@ -250,7 +255,11 @@ export function createExpressionCompartment(
       const len = Math.max(arrA.length, arrB.length);
       const result = [];
       for (let i = 0; i < len; i++) {
-        result.push((arrA[i] ?? 0) + (arrB[i] ?? 0));
+        // Type proof: arrA[i] ∈ number | undefined → number
+        const valA = isFiniteNumber(arrA[i]) ? arrA[i] : 0;
+        // Type proof: arrB[i] ∈ number | undefined → number
+        const valB = isFiniteNumber(arrB[i]) ? arrB[i] : 0;
+        result.push(valA + valB);
       }
       return result;
     },
@@ -263,7 +272,11 @@ export function createExpressionCompartment(
       const len = Math.max(arrA.length, arrB.length);
       const result = [];
       for (let i = 0; i < len; i++) {
-        result.push((arrA[i] ?? 0) - (arrB[i] ?? 0));
+        // Type proof: arrA[i] ∈ number | undefined → number
+        const valA = isFiniteNumber(arrA[i]) ? arrA[i] : 0;
+        // Type proof: arrB[i] ∈ number | undefined → number
+        const valB = isFiniteNumber(arrB[i]) ? arrB[i] : 0;
+        result.push(valA - valB);
       }
       return result;
     },
@@ -282,7 +295,11 @@ export function createExpressionCompartment(
       const len = Math.max(arrA.length, arrB.length);
       const result = [];
       for (let i = 0; i < len; i++) {
-        result.push((arrA[i] ?? 0) * (arrB[i] ?? 0));
+        // Type proof: arrA[i] ∈ number | undefined → number
+        const valA = isFiniteNumber(arrA[i]) ? arrA[i] : 0;
+        // Type proof: arrB[i] ∈ number | undefined → number
+        const valB = isFiniteNumber(arrB[i]) ? arrB[i] : 0;
+        result.push(valA * valB);
       }
       return result;
     },
@@ -303,14 +320,20 @@ export function createExpressionCompartment(
       const len = Math.max(arrA.length, arrB.length);
       const result = [];
       for (let i = 0; i < len; i++) {
-        const divisor = arrB[i] ?? 1;
-        result.push(divisor !== 0 ? (arrA[i] ?? 0) / divisor : 0);
+        // Type proof: arrA[i] ∈ number | undefined → number
+        const valA = isFiniteNumber(arrA[i]) ? arrA[i] : 0;
+        // Type proof: arrB[i] ∈ number | undefined → number
+        const divisor = isFiniteNumber(arrB[i]) ? arrB[i] : 1;
+        result.push(divisor !== 0 ? valA / divisor : 0);
       }
       return result;
     },
   });
 
   // Create the compartment with safe globals only
+  // System F/Omega: Type assertion needed - SES Compartment accepts functions/objects at runtime
+  // but TypeScript type definition only allows JSONValue. This is safe because SES handles
+  // these values correctly at runtime (harden() ensures immutability).
   const compartment = new Compartment({
     // Safe Math
     Math: safeMath,
@@ -353,8 +376,8 @@ export function createExpressionCompartment(
 
     // Console for debugging (limited)
     console: harden({
-      log: (...args: unknown[]) => console.log("[Expression]", ...args),
-      warn: (...args: unknown[]) => console.warn("[Expression]", ...args),
+      log: (...args: JSONValue[]) => console.log("[Expression]", ...args),
+      warn: (...args: JSONValue[]) => console.warn("[Expression]", ...args),
     }),
 
     // SECURITY: Explicitly block dangerous intrinsics
@@ -376,7 +399,7 @@ export function createExpressionCompartment(
     process: undefined,
     Deno: undefined,
     Bun: undefined,
-  });
+  } as unknown as Record<PropertyKey, JSONValue>);
 
   return compartment;
 }
@@ -452,9 +475,15 @@ export function evaluateInSES(
     const wrappedCode = `(function() { ${processedCode} })()`;
 
     // Evaluate in compartment
-    const result = compartment.evaluate(wrappedCode);
+    const result = compartment.evaluate(wrappedCode) as RuntimeValue;
 
-    return result;
+    // Type guard: validate result is string | number | number[]
+    if (typeof result === "string" || typeof result === "number" || Array.isArray(result)) {
+      return result as string | number | number[];
+    }
+    
+    // Fallback: convert to string if result is not expected type
+    return String(result);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     console.warn("[SES] Expression error:", message);
@@ -477,32 +506,25 @@ export function evaluateInSES(
 export function evaluateSimpleExpression(
   expr: string,
   context: ExpressionContext,
-): number | null {
+): number {
   // SECURITY: Type check - defense in depth for JS callers
   if (typeof expr !== "string") {
-    console.warn("[SECURITY] evaluateSimpleExpression: expr is not a string");
-    return null;
+    throw new Error(`[SESEvaluator] Expression must be a string, got ${typeof expr}`);
   }
 
   // SECURITY: Empty expression = fail closed
   if (!expr || expr.trim() === "") {
-    return null;
+    throw new Error("[SESEvaluator] Expression cannot be empty");
   }
 
   // SECURITY: If SES is not initialized, DO NOT evaluate
   if (!sesInitialized) {
-    console.error(
-      "[SECURITY] SES not initialized - expression evaluation DISABLED",
-    );
-    return null;
+    throw new Error("[SESEvaluator] SES not initialized - expression evaluation DISABLED");
   }
 
   // SECURITY: Length limit to prevent payload attacks
   if (expr.length > MAX_EXPRESSION_LENGTH) {
-    console.warn(
-      `[SECURITY] Expression too long (${expr.length} bytes, max ${MAX_EXPRESSION_LENGTH})`,
-    );
-    return null;
+    throw new Error(`[SESEvaluator] Expression too long (${expr.length} bytes, max ${MAX_EXPRESSION_LENGTH})`);
   }
 
   // WARNING: This is SYNC evaluation - no timeout protection.
@@ -510,8 +532,7 @@ export function evaluateSimpleExpression(
 
   // Get SES globals - types declared via `declare global`
   if (!globalThis.Compartment || !globalThis.harden) {
-    console.error("[SECURITY] SES Compartment or harden not available");
-    return null;
+    throw new Error("[SESEvaluator] SES Compartment or harden not available");
   }
 
   const { Compartment, harden } = globalThis;
@@ -564,6 +585,9 @@ export function evaluateSimpleExpression(
     }
 
     // Create compartment with minimal globals
+    // System F/Omega: Type assertion needed - SES Compartment accepts functions/objects at runtime
+    // but TypeScript type definition only allows JSONValue. This is safe because SES handles
+    // these values correctly at runtime (harden() ensures immutability).
     const compartment = new Compartment(
       harden({
         Math: safeMath,
@@ -595,7 +619,7 @@ export function evaluateSimpleExpression(
         process: undefined,
         Deno: undefined,
         Bun: undefined,
-      }),
+      }) as unknown as Record<PropertyKey, JSONValue>,
     );
 
     // Evaluate expression (auto-return single expression)
@@ -609,21 +633,21 @@ export function evaluateSimpleExpression(
     // SECURITY: Validate result is a primitive number
     // Using typeof check - NOT Number(result) which could trigger valueOf
     if (typeof result !== "number") {
-      console.warn("[SES] Expression did not return a number:", typeof result);
-      return null;
+      throw new Error(`[SESEvaluator] Expression did not return a number, got ${typeof result}`);
     }
 
     // SECURITY: Check for NaN/Infinity
     if (!Number.isFinite(result)) {
-      console.warn("[SES] Expression returned non-finite number:", result);
-      return null;
+      throw new Error(`[SESEvaluator] Expression returned non-finite number: ${result}`);
     }
 
     return result;
   } catch (error) {
+    if (error instanceof Error && error.message.startsWith("[SESEvaluator]")) {
+      throw error;
+    }
     const message = error instanceof Error ? error.message : String(error);
-    console.warn("[SES] Simple expression error:", message);
-    return null;
+    throw new Error(`[SESEvaluator] Expression evaluation failed: ${message}`);
   }
 }
 

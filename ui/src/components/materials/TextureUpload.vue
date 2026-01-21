@@ -38,15 +38,13 @@
         <label>Repeat</label>
         <div class="repeat-inputs">
           <ScrubableNumber
-            :modelValue="repeatX ?? 1"
-            @update:modelValue="$emit('update:repeatX', $event)"
+            v-model="repeatXValue"
             :min="0.01"
             :step="0.1"
           />
           <span class="separator">x</span>
           <ScrubableNumber
-            :modelValue="repeatY ?? 1"
-            @update:modelValue="$emit('update:repeatY', $event)"
+            v-model="repeatYValue"
             :min="0.01"
             :step="0.1"
           />
@@ -57,14 +55,12 @@
         <label>Offset</label>
         <div class="offset-inputs">
           <ScrubableNumber
-            :modelValue="offsetX ?? 0"
-            @update:modelValue="$emit('update:offsetX', $event)"
+            v-model="offsetXValue"
             :step="0.01"
           />
           <span class="separator">,</span>
           <ScrubableNumber
-            :modelValue="offsetY ?? 0"
-            @update:modelValue="$emit('update:offsetY', $event)"
+            v-model="offsetYValue"
             :step="0.01"
           />
         </div>
@@ -73,8 +69,7 @@
       <div class="setting-row" v-if="mapType === 'normal'">
         <label>Strength</label>
         <SliderInput
-          :modelValue="normalScale ?? 1"
-          @update:modelValue="$emit('update:normalScale', $event)"
+          v-model="normalScaleValue"
           :min="0"
           :max="2"
           :step="0.1"
@@ -99,6 +94,29 @@ const props = defineProps<{
   normalScale?: number;
   showSettings?: boolean;
 }>();
+
+// Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+// Computed properties for optional props with defaults
+const repeatXValue = computed({
+  get: () => (typeof props.repeatX === "number" && Number.isFinite(props.repeatX)) ? props.repeatX : 1,
+  set: (value: number) => emit("update:repeatX", value),
+});
+const repeatYValue = computed({
+  get: () => (typeof props.repeatY === "number" && Number.isFinite(props.repeatY)) ? props.repeatY : 1,
+  set: (value: number) => emit("update:repeatY", value),
+});
+const offsetXValue = computed({
+  get: () => (typeof props.offsetX === "number" && Number.isFinite(props.offsetX)) ? props.offsetX : 0,
+  set: (value: number) => emit("update:offsetX", value),
+});
+const offsetYValue = computed({
+  get: () => (typeof props.offsetY === "number" && Number.isFinite(props.offsetY)) ? props.offsetY : 0,
+  set: (value: number) => emit("update:offsetY", value),
+});
+const normalScaleValue = computed({
+  get: () => (typeof props.normalScale === "number" && Number.isFinite(props.normalScale)) ? props.normalScale : 1,
+  set: (value: number) => emit("update:normalScale", value),
+});
 
 const emit = defineEmits<{
   upload: [file: File, dataUrl: string];
@@ -133,7 +151,11 @@ const hasTexture = computed(() => !!previewUrl.value || !!props.textureUrl);
 const acceptedFormats = "image/png,image/jpeg,image/webp,image/exr";
 
 function openFilePicker() {
-  fileInput.value?.click();
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const fileInputValue = fileInput.value;
+  if (fileInputValue != null && typeof fileInputValue === "object" && typeof fileInputValue.click === "function") {
+    fileInputValue.click();
+  }
 }
 
 function onDragOver(_e: DragEvent) {
@@ -146,8 +168,10 @@ function onDragLeave(_e: DragEvent) {
 
 function onDrop(e: DragEvent) {
   isDragging.value = false;
-  const files = e.dataTransfer?.files;
-  if (files && files.length > 0) {
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const dataTransfer = (e != null && typeof e === "object" && "dataTransfer" in e && e.dataTransfer != null && typeof e.dataTransfer === "object") ? e.dataTransfer : undefined;
+  const files = (dataTransfer != null && typeof dataTransfer === "object" && "files" in dataTransfer && dataTransfer.files != null) ? dataTransfer.files : null;
+  if (files != null && files.length > 0) {
     handleFile(files[0]);
   }
 }
@@ -169,7 +193,10 @@ function handleFile(file: File) {
   // Create preview URL
   const reader = new FileReader();
   reader.onload = (e) => {
-    const dataUrl = e.target?.result as string;
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const target = (e != null && typeof e === "object" && "target" in e && e.target != null) ? e.target : undefined;
+    const result = (target != null && typeof target === "object" && "result" in target && target.result != null) ? target.result : undefined;
+    const dataUrl = (result != null && typeof result === "string") ? result : "";
     previewUrl.value = dataUrl;
 
     // Get image dimensions

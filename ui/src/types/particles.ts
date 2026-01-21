@@ -390,7 +390,8 @@ export type EmitterShape =
   | "mask"
   | "cone" // Cone-shaped emission volume
   | "image" // Emit from non-transparent pixels of an image/layer
-  | "depthEdge"; // Emit from depth discontinuities (silhouette edges)
+  | "depthEdge" // Emit from depth discontinuities (silhouette edges)
+  | "mesh"; // Emit from mesh vertices
 
 // Depth map emission configuration
 export interface DepthMapEmission {
@@ -541,6 +542,14 @@ export interface ParticleEmitterConfig {
   endOpacity?: number;
   /** Velocity spread/variance */
   velocitySpread?: number;
+
+  // ============================================================
+  // MESH SHAPE PROPERTIES (when shape = 'mesh')
+  // ============================================================
+  /** Mesh vertices for mesh emission (Float32Array) */
+  meshVertices?: Float32Array;
+  /** Mesh normals for mesh emission (Float32Array) */
+  meshNormals?: Float32Array;
 }
 
 export interface GravityWellConfig {

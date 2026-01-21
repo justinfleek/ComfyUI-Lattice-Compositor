@@ -190,9 +190,9 @@ import type {
   RenderQueueManager,
   RenderQueueStats,
 } from "@/services/renderQueue";
-import { useCompositorStore } from "@/stores/compositorStore";
+import { useProjectStore } from "@/stores/projectStore";
 
-const store = useCompositorStore();
+const projectStore = useProjectStore();
 
 // Queue manager instance
 let queueManager: RenderQueueManager | null = null;
@@ -226,7 +226,7 @@ const newJob = reactive({
 
 // Initialize from composition
 function initFromComposition() {
-  const comp = store.getActiveComp();
+  const comp = projectStore.getActiveComp();
   if (comp) {
     newJob.name = comp.name || "Render Job";
     newJob.startFrame = 0;
@@ -273,7 +273,11 @@ onMounted(async () => {
 });
 
 onUnmounted(() => {
-  queueManager?.stop();
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const manager = queueManager.value;
+  if (manager != null && typeof manager === "object" && typeof manager.stop === "function") {
+    manager.stop();
+  }
 });
 
 // Refresh job list
@@ -303,18 +307,30 @@ function updateStats() {
 
 // Queue controls
 function startQueue() {
-  queueManager?.start();
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const manager = queueManager.value;
+  if (manager != null && typeof manager === "object" && typeof manager.start === "function") {
+    manager.start();
+  }
   isRunning.value = true;
   isPaused.value = false;
 }
 
 function pauseQueue() {
-  queueManager?.pause();
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const manager = queueManager.value;
+  if (manager != null && typeof manager === "object" && typeof manager.pause === "function") {
+    manager.pause();
+  }
   isPaused.value = true;
 }
 
 function stopQueue() {
-  queueManager?.stop();
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const manager = queueManager.value;
+  if (manager != null && typeof manager === "object" && typeof manager.stop === "function") {
+    manager.stop();
+  }
   isRunning.value = false;
   isPaused.value = false;
   refreshJobs();
@@ -324,7 +340,7 @@ function stopQueue() {
 async function addJob() {
   if (!queueManager) return;
 
-  const comp = store.getActiveComp();
+  const comp = projectStore.getActiveComp();
   if (!comp) {
     console.error("No active composition");
     return;
@@ -348,17 +364,29 @@ async function addJob() {
 }
 
 function pauseJob(_jobId: string) {
-  queueManager?.pause();
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const manager = queueManager.value;
+  if (manager != null && typeof manager === "object" && typeof manager.pause === "function") {
+    manager.pause();
+  }
   isPaused.value = true;
 }
 
 function resumeJob(_jobId: string) {
-  queueManager?.resume();
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const manager = queueManager.value;
+  if (manager != null && typeof manager === "object" && typeof manager.resume === "function") {
+    manager.resume();
+  }
   isPaused.value = false;
 }
 
 async function removeJob(jobId: string) {
-  await queueManager?.removeJob(jobId);
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const manager = queueManager.value;
+  if (manager != null && typeof manager === "object" && typeof manager.removeJob === "function") {
+    await manager.removeJob(jobId);
+  }
   refreshJobs();
 }
 

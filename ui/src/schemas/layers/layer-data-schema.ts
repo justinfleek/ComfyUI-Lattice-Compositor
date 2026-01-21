@@ -1176,7 +1176,9 @@ export const TextDataSchema = z.object({
   textAlign: TextAlignSchema,
 
   // Path Options
-  pathLayerId: entityId.nullable(),
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy null
+  // Pattern match: pathLayerId ∈ string (empty string = no path, never null)
+  pathLayerId: z.string(),
   pathReversed: z.boolean(),
   pathPerpendicularToPath: z.boolean(),
   pathForceAlignment: z.boolean(),

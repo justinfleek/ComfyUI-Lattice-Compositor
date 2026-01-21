@@ -33,20 +33,20 @@
       <!-- Handle lines for selected mask's selected vertex -->
       <template v-if="selectedMask && selectedVertexIndex !== null">
         <line
-          v-if="selectedVertex?.inTangentX || selectedVertex?.inTangentY"
+          v-if="hasSelectedVertexInTangent"
           :x1="selectedVertex.x"
           :y1="selectedVertex.y"
-          :x2="selectedVertex.x + (selectedVertex.inTangentX || 0)"
-          :y2="selectedVertex.y + (selectedVertex.inTangentY || 0)"
+          :x2="selectedVertex.x + selectedVertexInTangentX"
+          :y2="selectedVertex.y + selectedVertexInTangentY"
           class="handle-line"
           :style="{ stroke: selectedMask.color }"
         />
         <line
-          v-if="selectedVertex?.outTangentX || selectedVertex?.outTangentY"
+          v-if="hasSelectedVertexOutTangent"
           :x1="selectedVertex.x"
           :y1="selectedVertex.y"
-          :x2="selectedVertex.x + (selectedVertex.outTangentX || 0)"
-          :y2="selectedVertex.y + (selectedVertex.outTangentY || 0)"
+          :x2="selectedVertex.x + selectedVertexOutTangentX"
+          :y2="selectedVertex.y + selectedVertexOutTangentY"
           class="handle-line"
           :style="{ stroke: selectedMask.color }"
         />
@@ -55,22 +55,22 @@
       <!-- Handle points for selected vertex -->
       <template v-if="selectedMask && selectedVertexIndex !== null">
         <circle
-          v-if="selectedVertex?.inTangentX || selectedVertex?.inTangentY"
-          :cx="selectedVertex.x + (selectedVertex.inTangentX || 0)"
-          :cy="selectedVertex.y + (selectedVertex.inTangentY || 0)"
+          v-if="hasSelectedVertexInTangent"
+          :cx="selectedVertex.x + selectedVertexInTangentX"
+          :cy="selectedVertex.y + selectedVertexInTangentY"
           r="4"
           class="handle-point"
-          :class="{ active: dragTarget?.type === 'handleIn' }"
+          :class="{ active: dragTargetType === 'handleIn' }"
           :style="{ fill: selectedMask.color }"
           @mousedown.stop="startDragHandle('in', $event)"
         />
         <circle
-          v-if="selectedVertex?.outTangentX || selectedVertex?.outTangentY"
-          :cx="selectedVertex.x + (selectedVertex.outTangentX || 0)"
-          :cy="selectedVertex.y + (selectedVertex.outTangentY || 0)"
+          v-if="hasSelectedVertexOutTangent"
+          :cx="selectedVertex.x + selectedVertexOutTangentX"
+          :cy="selectedVertex.y + selectedVertexOutTangentY"
           r="4"
           class="handle-point"
-          :class="{ active: dragTarget?.type === 'handleOut' }"
+          :class="{ active: dragTargetType === 'handleOut' }"
           :style="{ fill: selectedMask.color }"
           @mousedown.stop="startDragHandle('out', $event)"
         />
@@ -127,7 +127,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
-import { useCompositorStore } from "@/stores/compositorStore";
+import { assertDefined, safeCoordinateDefault } from "@/utils/typeGuards";
 import { useLayerStore } from "@/stores/layerStore";
 import type { LayerMask, MaskPath, MaskVertex } from "@/types/project";
 
@@ -149,7 +149,6 @@ const emit = defineEmits<{
   (e: "pathClosed", maskId: string): void;
 }>();
 
-const store = useCompositorStore();
 const layerStore = useLayerStore();
 
 // State
@@ -167,29 +166,80 @@ const dragTarget = ref<{
 const visibleMasks = computed<LayerMask[]>(() => {
   if (!props.layerId) return [];
 
-  const layer = layerStore.getLayerById(store, props.layerId);
+  const layer = layerStore.getLayerById(props.layerId);
   if (!layer) return [];
 
-  return layer.masks ?? [];
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+  return (typeof layer === "object" && layer !== null && "masks" in layer && Array.isArray(layer.masks)) ? layer.masks : [];
 });
 
 // Get the selected mask
+// Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
 const selectedMask = computed<LayerMask | null>(() => {
   if (!selectedMaskId.value) return null;
-  return visibleMasks.value.find((m) => m.id === selectedMaskId.value) ?? null;
+  const found = visibleMasks.value.find((m) => m.id === selectedMaskId.value);
+  return found !== undefined ? found : null;
 });
 
 // Get vertices of selected mask
+// Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??/?.
 const selectedMaskVertices = computed<MaskVertex[]>(() => {
   if (!selectedMask.value) return [];
   const path = getMaskPathValue(selectedMask.value);
-  return path?.vertices ?? [];
+  return (path !== null && path !== undefined && typeof path === "object" && "vertices" in path && Array.isArray(path.vertices)) ? path.vertices : [];
 });
 
 // Get the selected vertex
+// Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
 const selectedVertex = computed<MaskVertex | null>(() => {
   if (selectedVertexIndex.value === null) return null;
-  return selectedMaskVertices.value[selectedVertexIndex.value] ?? null;
+  const index = selectedVertexIndex.value;
+  const vertices = selectedMaskVertices.value;
+  const vertex = (typeof index === "number" && index >= 0 && index < vertices.length) ? vertices[index] : undefined;
+  return vertex !== undefined ? vertex : null;
+});
+
+// Type proof: Tangent offsets are unbounded (can be negative for backwards along curve)
+const selectedVertexInTangentX = computed(() => {
+  const vertex = selectedVertex.value;
+  return vertex ? safeCoordinateDefault(vertex.inTangentX, 0, "inTangentX") : 0;
+});
+
+const selectedVertexInTangentY = computed(() => {
+  const vertex = selectedVertex.value;
+  return vertex ? safeCoordinateDefault(vertex.inTangentY, 0, "inTangentY") : 0;
+});
+
+const selectedVertexOutTangentX = computed(() => {
+  const vertex = selectedVertex.value;
+  return vertex ? safeCoordinateDefault(vertex.outTangentX, 0, "outTangentX") : 0;
+});
+
+const selectedVertexOutTangentY = computed(() => {
+  const vertex = selectedVertex.value;
+  return vertex ? safeCoordinateDefault(vertex.outTangentY, 0, "outTangentY") : 0;
+});
+
+// Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+const hasSelectedVertexInTangent = computed(() => {
+  const vertex = selectedVertex.value;
+  if (vertex == null || typeof vertex !== "object") return false;
+  const inTangentX = ("inTangentX" in vertex && typeof vertex.inTangentX === "number") ? vertex.inTangentX : undefined;
+  const inTangentY = ("inTangentY" in vertex && typeof vertex.inTangentY === "number") ? vertex.inTangentY : undefined;
+  return (inTangentX != null && inTangentX !== 0) || (inTangentY != null && inTangentY !== 0);
+});
+
+const hasSelectedVertexOutTangent = computed(() => {
+  const vertex = selectedVertex.value;
+  if (vertex == null || typeof vertex !== "object") return false;
+  const outTangentX = ("outTangentX" in vertex && typeof vertex.outTangentX === "number") ? vertex.outTangentX : undefined;
+  const outTangentY = ("outTangentY" in vertex && typeof vertex.outTangentY === "number") ? vertex.outTangentY : undefined;
+  return (outTangentX != null && outTangentX !== 0) || (outTangentY != null && outTangentY !== 0);
+});
+
+const dragTargetType = computed(() => {
+  const target = dragTarget.value;
+  return (target != null && typeof target === "object" && "type" in target && typeof target.type === "string") ? target.type : undefined;
 });
 
 // Compute CSS transform to keep mask overlay aligned with canvas during pan/zoom.
@@ -230,10 +280,11 @@ function getMaskPathData(mask: LayerMask): string {
     if (!path.closed && i === vertices.length - 1) break;
 
     // Control points for cubic bezier
-    const cp1x = current.x + (current.outTangentX || 0);
-    const cp1y = current.y + (current.outTangentY || 0);
-    const cp2x = next.x + (next.inTangentX || 0);
-    const cp2y = next.y + (next.inTangentY || 0);
+    // Type proof: Tangent offsets are unbounded (can be negative for backwards along curve)
+    const cp1x = current.x + safeCoordinateDefault(current.outTangentX, 0, "current.outTangentX");
+    const cp1y = current.y + safeCoordinateDefault(current.outTangentY, 0, "current.outTangentY");
+    const cp2x = next.x + safeCoordinateDefault(next.inTangentX, 0, "next.inTangentX");
+    const cp2y = next.y + safeCoordinateDefault(next.inTangentY, 0, "next.inTangentY");
 
     // Use cubic bezier if any tangents exist
     if (
@@ -381,7 +432,9 @@ function handleMouseUp() {
 
 function startDragVertex(index: number, event: MouseEvent) {
   selectedVertexIndex.value = index;
-  emit("vertexSelected", selectedMaskId.value!, index);
+  // Type proof: selectedMaskId must exist when dragging a vertex
+  assertDefined(selectedMaskId.value, "selectedMaskId must exist when dragging a vertex");
+  emit("vertexSelected", selectedMaskId.value, index);
 
   if (!props.isMaskPenMode) {
     const pos = getMousePos(event);
@@ -462,10 +515,12 @@ function createNewMask(x: number, y: number) {
   };
 
   // Add mask to layer via store
-  const layer = layerStore.getLayerById(store, props.layerId);
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+  const layer = layerStore.getLayerById(props.layerId);
   if (layer) {
-    const masks = [...(layer.masks ?? []), newMask];
-    layerStore.updateLayer(store, props.layerId, { masks });
+    const layerMasks = (typeof layer === "object" && layer !== null && "masks" in layer && Array.isArray(layer.masks)) ? layer.masks : [];
+    const masks = [...layerMasks, newMask];
+    layerStore.updateLayer(props.layerId, { masks });
     selectedMaskId.value = maskId;
     selectedVertexIndex.value = 0;
     emit("maskSelected", maskId);
@@ -507,8 +562,10 @@ function updateMaskVertices(vertices: MaskVertex[]) {
     m.id === selectedMaskId.value ? updatedMask : m,
   );
 
-  layerStore.updateLayer(store, props.layerId, { masks });
-  emit("maskUpdated", selectedMaskId.value!);
+  layerStore.updateLayer(props.layerId, { masks });
+  // Type proof: selectedMaskId must exist when updating mask
+  assertDefined(selectedMaskId.value, "selectedMaskId must exist when updating mask");
+  emit("maskUpdated", selectedMaskId.value);
 }
 
 // Close the mask path
@@ -528,8 +585,10 @@ function closePath() {
     m.id === selectedMaskId.value ? updatedMask : m,
   );
 
-  layerStore.updateLayer(store, props.layerId, { masks });
-  emit("pathClosed", selectedMaskId.value.value!);
+  layerStore.updateLayer(props.layerId, { masks });
+  // Type proof: selectedMaskId must exist when closing path
+  assertDefined(selectedMaskId.value, "selectedMaskId must exist when closing path");
+  emit("pathClosed", selectedMaskId.value);
 }
 
 // Get next mask color from palette
@@ -555,7 +614,9 @@ function deleteSelectedVertex() {
 
   if (vertices.length === 0) {
     // Delete entire mask if no vertices left
-    deleteMask(selectedMaskId.value!);
+    // Type proof: selectedMaskId must exist when deleting mask
+    assertDefined(selectedMaskId.value, "selectedMaskId must exist when deleting mask");
+    deleteMask(selectedMaskId.value);
   } else {
     updateMaskVertices(vertices);
     selectedVertexIndex.value = Math.min(
@@ -570,7 +631,7 @@ function deleteMask(maskId: string) {
   if (!props.layerId) return;
 
   const masks = visibleMasks.value.filter((m) => m.id !== maskId);
-  layerStore.updateLayer(store, props.layerId, { masks });
+  layerStore.updateLayer(props.layerId, { masks });
 
   if (selectedMaskId.value === maskId) {
     selectedMaskId.value = masks.length > 0 ? masks[0].id : null;

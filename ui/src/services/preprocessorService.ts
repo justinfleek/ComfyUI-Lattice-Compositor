@@ -27,7 +27,7 @@
  * ============================================================================
  */
 
-import { useCompositorStore } from "@/stores/compositorStore";
+import { useProjectStore } from "@/stores/projectStore";
 
 export interface PreprocessorInfo {
   id: string;
@@ -642,7 +642,9 @@ export async function fetchPreprocessorList(): Promise<PreprocessorInfo[]> {
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
     const data = await response.json();
-    return data.preprocessors || [];
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy || []
+    const preprocessors = data.preprocessors;
+    return (preprocessors !== null && preprocessors !== undefined && Array.isArray(preprocessors)) ? preprocessors : [];
   } catch (error) {
     console.warn(
       "[PreprocessorService] Failed to fetch from backend, using local registry:",
@@ -721,11 +723,9 @@ export async function executePreprocessor(
       execution_time: Date.now() - startTime,
     };
   } catch (error) {
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : "Unknown error",
-      execution_time: Date.now() - startTime,
-    };
+    // Re-throw with context - don't silently fail
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    throw new Error(`[PreprocessorService] Failed to execute preprocessor "${preprocessorId}": ${errorMessage}. Check preprocessor availability and input image format.`);
   }
 }
 
@@ -737,27 +737,42 @@ export async function renderLayerToImage(
   layerId: string,
   frame: number,
   resolution: number = 512,
-): Promise<string | null> {
+): Promise<string> {
   try {
     // Get the canvas from the engine (type-safe - Window.__latticeEngine is typed in vite-env.d.ts)
     const engine = window.__latticeEngine;
     if (!engine) {
-      console.error("[PreprocessorService] Engine not available");
-      return null;
+      throw new Error("[PreprocessorService] Engine not available");
+    }
+
+    // TODO: renderLayerToCanvas not yet implemented in LatticeEngine
+    // Check if method exists at runtime (future implementation)
+    type EngineWithLayerRender = typeof engine & {
+      renderLayerToCanvas?: (
+        layerId: string,
+        frame: number,
+        resolution: number
+      ) => Promise<HTMLCanvasElement | null>;
+    };
+
+    const engineExt = engine as EngineWithLayerRender;
+    if (typeof engineExt.renderLayerToCanvas !== "function") {
+      throw new Error("[PreprocessorService] renderLayerToCanvas not implemented in LatticeEngine");
     }
 
     // Render the specific layer
-    const canvas = await engine.renderLayerToCanvas(layerId, frame, resolution);
+    const canvas = await engineExt.renderLayerToCanvas(layerId, frame, resolution);
     if (!canvas) {
-      console.error("[PreprocessorService] Failed to render layer");
-      return null;
+      throw new Error(`[PreprocessorService] Failed to render layer "${layerId}" at frame ${frame}`);
     }
 
     // Convert to base64
     return canvas.toDataURL("image/png");
   } catch (error) {
-    console.error("[PreprocessorService] Error rendering layer:", error);
-    return null;
+    if (error instanceof Error && error.message.startsWith("[PreprocessorService]")) {
+      throw error;
+    }
+    throw new Error(`[PreprocessorService] Error rendering layer: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
@@ -778,7 +793,11 @@ export async function generateFromLayer(
   error?: string;
 }> {
   try {
-    onProgress?.("Rendering source layer...");
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const onProgressCallback = onProgress;
+    if (onProgressCallback != null && typeof onProgressCallback === "function") {
+      onProgressCallback("Rendering source layer...");
+    }
 
     // Get source layer image
     const sourceImage = await renderLayerToImage(
@@ -786,16 +805,14 @@ export async function generateFromLayer(
       frame,
       options.resolution || 512,
     );
-    if (!sourceImage) {
-      return { success: false, error: "Failed to render source layer" };
-    }
 
-    onProgress?.(
-      "Processing with " +
-        (PREPROCESSOR_REGISTRY[preprocessorId]?.display_name ||
-          preprocessorId) +
-        "...",
-    );
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const preprocessorRegistryEntry = (PREPROCESSOR_REGISTRY != null && typeof PREPROCESSOR_REGISTRY === "object" && preprocessorId in PREPROCESSOR_REGISTRY && PREPROCESSOR_REGISTRY[preprocessorId] != null && typeof PREPROCESSOR_REGISTRY[preprocessorId] === "object") ? PREPROCESSOR_REGISTRY[preprocessorId] : undefined;
+    const displayName = (preprocessorRegistryEntry != null && typeof preprocessorRegistryEntry === "object" && "display_name" in preprocessorRegistryEntry && typeof preprocessorRegistryEntry.display_name === "string") ? preprocessorRegistryEntry.display_name : undefined;
+    const progressMessage = "Processing with " + (displayName != null ? displayName : preprocessorId) + "...";
+    if (onProgressCallback != null && typeof onProgressCallback === "function") {
+      onProgressCallback(progressMessage);
+    }
 
     // Execute preprocessor
     const result = await executePreprocessor(
@@ -804,11 +821,15 @@ export async function generateFromLayer(
       options,
     );
 
-    if (!result.success || !result.result_image) {
-      return { success: false, error: result.error || "Preprocessor failed" };
+    // executePreprocessor now throws on errors instead of returning success: false
+    if (!result.result_image) {
+      throw new Error(`[PreprocessorService] Preprocessor "${preprocessorId}" returned no result image. Preprocessor execution may have failed silently.`);
     }
 
-    onProgress?.("Creating asset...");
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    if (onProgressCallback != null && typeof onProgressCallback === "function") {
+      onProgressCallback("Creating asset...");
+    }
 
     // Create asset from result
     const assetId = await createAssetFromBase64(
@@ -816,16 +837,11 @@ export async function generateFromLayer(
       `generated_${preprocessorId}_${Date.now()}.png`,
     );
 
-    if (!assetId) {
-      return { success: false, error: "Failed to create asset" };
-    }
-
     return { success: true, assetId };
   } catch (error) {
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : "Unknown error",
-    };
+    // Re-throw with context - don't silently fail
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    throw new Error(`[PreprocessorService] Failed to generate from layer "${sourceLayerId}" using preprocessor "${preprocessorId}": ${errorMessage}.`);
   }
 }
 
@@ -835,9 +851,9 @@ export async function generateFromLayer(
 async function createAssetFromBase64(
   base64Data: string,
   filename: string,
-): Promise<string | null> {
+): Promise<string> {
   try {
-    const store = useCompositorStore();
+    const projectStore = useProjectStore();
 
     // Create a unique asset ID
     const assetId = `generated_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
@@ -859,12 +875,12 @@ async function createAssetFromBase64(
     };
 
     // Store in project assets
-    store.project.assets[assetId] = asset;
+    projectStore.project.assets[assetId] = asset;
 
     return assetId;
   } catch (error) {
-    console.error("[PreprocessorService] Error creating asset:", error);
-    return null;
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    throw new Error(`[PreprocessorService] Cannot create asset from base64 data: ${errorMessage}. Check image data format and project store availability.`);
   }
 }
 

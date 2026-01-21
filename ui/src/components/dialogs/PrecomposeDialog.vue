@@ -55,8 +55,14 @@ watch(
     if (visible) {
       compName.value = props.defaultName || "Pre-comp 1";
       nextTick(() => {
-        nameInput.value?.focus();
-        nameInput.value?.select();
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+        const nameInputValue = nameInput.value;
+        if (nameInputValue != null && typeof nameInputValue === "object" && typeof nameInputValue.focus === "function") {
+          nameInputValue.focus();
+        }
+        if (nameInputValue != null && typeof nameInputValue === "object" && typeof nameInputValue.select === "function") {
+          nameInputValue.select();
+        }
       });
     }
   },

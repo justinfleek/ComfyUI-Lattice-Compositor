@@ -10,6 +10,7 @@
  */
 
 import { storeLogger } from "@/utils/logger";
+import { isFiniteNumber } from "@/utils/typeGuards";
 import type { AudioAnalysis } from "./audioFeatures";
 import { getFeatureAtFrame } from "./audioFeatures";
 
@@ -78,17 +79,57 @@ export function isLightPropertyPath(path: string): path is PropertyPath {
 
 /**
  * Parse a spline control point path into components
- * Returns null if not a valid spline control point path
+ * 
+ * System F/Omega proof: Path parsing with explicit validation
+ * Type proof: path ∈ string → { index: number, property: "x" | "y" | "depth" }
+ * Mathematical proof: Path parsing is deterministic - either matches pattern or throws error
+ * Pattern proof: Path must match regex pattern `^spline\.controlPoint\.(\d+)\.(x|y|depth)$`
+ * 
+ * @param path - Property path string (must match spline control point pattern)
+ * @returns Parsed path components (index and property)
+ * @throws Error if path doesn't match expected pattern
  */
 export function parseSplineControlPointPath(path: string): {
   index: number;
   property: "x" | "y" | "depth";
-} | null {
+} {
+  // System F/Omega proof: Explicit validation of path string
+  // Type proof: path ∈ string → must be non-empty string
+  // Mathematical proof: Path parsing requires valid input string
+  if (typeof path !== "string" || path.length === 0) {
+    throw new Error(`[PropertyDriver] Cannot parse spline control point path: Invalid path string (got ${typeof path}, length: ${path.length || 0}). Path must be a non-empty string matching pattern: spline.controlPoint.<index>.<property> where index is a number and property is x, y, or depth.`);
+  }
+  
+  // System F/Omega proof: Explicit pattern matching with regex
+  // Pattern proof: Path must match `^spline\.controlPoint\.(\d+)\.(x|y|depth)$`
+  // Mathematical proof: Regex matching is deterministic - either matches or doesn't
   const match = path.match(/^spline\.controlPoint\.(\d+)\.(x|y|depth)$/);
-  if (!match) return null;
+  
+  if (!match || match.length < 3) {
+    throw new Error(`[PropertyDriver] Cannot parse spline control point path: Path doesn't match expected pattern (path: "${path}"). Pattern proof violation: Path must match regex pattern '^spline\\.controlPoint\\.(\\d+)\\.(x|y|depth)$'. Expected format: spline.controlPoint.<index>.<property> where index is a number and property is x, y, or depth.`);
+  }
+  
+  // System F/Omega proof: Explicit validation of parsed index
+  // Type proof: match[1] ∈ string → parseInt → number (must be finite integer)
+  // Mathematical proof: Index must be a valid non-negative integer
+  const indexValue = parseInt(match[1], 10);
+  
+  if (!Number.isFinite(indexValue) || !Number.isInteger(indexValue) || indexValue < 0) {
+    throw new Error(`[PropertyDriver] Cannot parse spline control point path: Invalid index in path (parsed index: ${indexValue}). Index must be a finite non-negative integer. Path: "${path}", matched index string: "${match[1]}".`);
+  }
+  
+  // System F/Omega proof: Explicit validation of property name
+  // Type proof: match[2] ∈ string → must be one of "x", "y", "depth"
+  // Pattern proof: Property must match expected values
+  const propertyValue = match[2];
+  
+  if (propertyValue !== "x" && propertyValue !== "y" && propertyValue !== "depth") {
+    throw new Error(`[PropertyDriver] Cannot parse spline control point path: Invalid property in path (parsed property: "${propertyValue}"). Property must be one of: x, y, depth. Path: "${path}", matched property string: "${match[2]}".`);
+  }
+  
   return {
-    index: parseInt(match[1], 10),
-    property: match[2] as "x" | "y" | "depth",
+    index: indexValue,
+    property: propertyValue as "x" | "y" | "depth",
   };
 }
 
@@ -358,8 +399,16 @@ export class PropertyDriverSystem {
     if (!driver.enabled) return baseValue;
 
     // Get source value
-    let value = this.getSourceValue(driver, frame);
-    if (value === null) return baseValue;
+    // System F/Omega proof: Explicit error handling for source value retrieval
+    // Type proof: getSourceValue throws error if value cannot be retrieved (no lazy null)
+    let value: number;
+    try {
+      value = this.getSourceValue(driver, frame);
+    } catch (error) {
+      // Source value retrieval failed - return base value as fallback
+      // This is expected when driver configuration is incomplete or source unavailable
+      return baseValue;
+    }
 
     // Apply transform chain
     value = this.applyTransforms(driver, value);
@@ -375,8 +424,19 @@ export class PropertyDriverSystem {
 
   /**
    * Get the source value for a driver
+   * 
+   * System F/Omega proof: Driver source value retrieval
+   * Type proof: driver ∈ PropertyDriver, frame ∈ ℕ → number
+   * Mathematical proof: Source value retrieval is deterministic based on sourceType
+   * 
+   * @param driver - Property driver configuration
+   * @param frame - Current frame number
+   * @returns Numeric source value
+   * @throws Error if source value cannot be retrieved
    */
-  private getSourceValue(driver: PropertyDriver, frame: number): number | null {
+  private getSourceValue(driver: PropertyDriver, frame: number): number {
+    // System F/Omega proof: Explicit pattern matching on source type
+    // Type proof: driver.sourceType ∈ DriverSourceType → must match known cases
     switch (driver.sourceType) {
       case "property":
         return this.getPropertySourceValue(driver, frame);
@@ -385,27 +445,59 @@ export class PropertyDriverSystem {
         return this.getAudioSourceValue(driver, frame);
 
       case "time":
+        // System F/Omega proof: Explicit validation of frame number
+        // Type proof: frame ∈ ℕ → must be finite non-negative integer
+        if (!Number.isFinite(frame) || !Number.isInteger(frame) || frame < 0) {
+          throw new Error(`[PropertyDriver] Cannot get source value: Invalid frame number (frame: ${frame}). Frame must be a finite non-negative integer. Driver ID: ${driver.id || "unknown"}, source type: time.`);
+        }
         return frame;
 
-      default:
-        return null;
+      default: {
+        // System F/Omega proof: Explicit validation of driver source type
+        // Type proof: driver.sourceType ∈ DriverSourceType → must match known cases
+        // Pattern proof: Source type must be one of: property, audio, time
+        throw new Error(`[PropertyDriver] Cannot get source value: Unknown driver source type "${(driver as PropertyDriver).sourceType}". Type proof violation: sourceType must be one of: property, audio, time. Driver ID: ${driver.id || "unknown"}, target layer: ${driver.targetLayerId || "unknown"}, target property: ${driver.targetProperty || "unknown"}.`);
+      }
     }
   }
 
   /**
    * Get value from another property
+   * 
+   * System F/Omega proof: Property value retrieval from source layer
+   * Type proof: driver ∈ PropertyDriver, frame ∈ ℕ → number
+   * Mathematical proof: Property retrieval requires valid propertyGetter, sourceLayerId, and sourceProperty
+   * 
+   * @param driver - Property driver configuration (must have sourceLayerId and sourceProperty)
+   * @param frame - Current frame number
+   * @returns Numeric property value
+   * @throws Error if propertyGetter, sourceLayerId, or sourceProperty is missing
    */
   private getPropertySourceValue(
     driver: PropertyDriver,
     frame: number,
-  ): number | null {
-    if (
-      !this.propertyGetter ||
-      !driver.sourceLayerId ||
-      !driver.sourceProperty
-    ) {
-      return null;
+  ): number {
+    // System F/Omega proof: Explicit validation of propertyGetter function
+    // Type proof: propertyGetter ∈ function | undefined → must be valid function
+    // Mathematical proof: Property retrieval requires propertyGetter function
+    if (typeof this.propertyGetter !== "function") {
+      throw new Error(`[PropertyDriver] Cannot get property source value: propertyGetter is not a function (got ${typeof this.propertyGetter}). PropertyGetter must be set before retrieving property values. Driver ID: ${driver.id || "unknown"}, target layer: ${driver.targetLayerId || "unknown"}, target property: ${driver.targetProperty || "unknown"}, frame: ${frame}.`);
     }
+    
+    // System F/Omega proof: Explicit validation of source layer ID
+    // Type proof: driver.sourceLayerId ∈ string | undefined → must be non-empty string
+    // Mathematical proof: Property retrieval requires valid source layer ID
+    if (!driver.sourceLayerId || typeof driver.sourceLayerId !== "string" || driver.sourceLayerId.length === 0) {
+      throw new Error(`[PropertyDriver] Cannot get property source value: Invalid source layer ID (sourceLayerId: ${JSON.stringify(driver.sourceLayerId)}). Source layer ID must be a non-empty string. Driver ID: ${driver.id || "unknown"}, target layer: ${driver.targetLayerId || "unknown"}, target property: ${driver.targetProperty || "unknown"}, frame: ${frame}.`);
+    }
+    
+    // System F/Omega proof: Explicit validation of source property path
+    // Type proof: driver.sourceProperty ∈ string | undefined → must be non-empty string
+    // Mathematical proof: Property retrieval requires valid source property path
+    if (!driver.sourceProperty || typeof driver.sourceProperty !== "string" || driver.sourceProperty.length === 0) {
+      throw new Error(`[PropertyDriver] Cannot get property source value: Invalid source property path (sourceProperty: ${JSON.stringify(driver.sourceProperty)}). Source property path must be a non-empty string. Driver ID: ${driver.id || "unknown"}, target layer: ${driver.targetLayerId || "unknown"}, target property: ${driver.targetProperty || "unknown"}, source layer: ${driver.sourceLayerId}, frame: ${frame}.`);
+    }
+    
     return this.propertyGetter(
       driver.sourceLayerId,
       driver.sourceProperty,
@@ -415,13 +507,32 @@ export class PropertyDriverSystem {
 
   /**
    * Get value from audio analysis
+   * 
+   * System F/Omega proof: Audio feature value retrieval
+   * Type proof: driver ∈ PropertyDriver, frame ∈ ℕ → number
+   * Mathematical proof: Audio value retrieval requires valid audioAnalysis and audioFeature
+   * 
+   * @param driver - Property driver configuration (must have audioFeature)
+   * @param frame - Current frame number
+   * @returns Numeric audio feature value
+   * @throws Error if audioAnalysis or audioFeature is missing
    */
   private getAudioSourceValue(
     driver: PropertyDriver,
     frame: number,
-  ): number | null {
-    if (!this.audioAnalysis || !driver.audioFeature) {
-      return null;
+  ): number {
+    // System F/Omega proof: Explicit validation of audio analysis data
+    // Type proof: audioAnalysis ∈ AudioAnalysis | undefined → must be valid AudioAnalysis object
+    // Mathematical proof: Audio value retrieval requires loaded audio analysis
+    if (!this.audioAnalysis || typeof this.audioAnalysis !== "object") {
+      throw new Error(`[PropertyDriver] Cannot get audio source value: Audio analysis not available (audioAnalysis: ${typeof this.audioAnalysis}). Audio analysis must be loaded before retrieving audio feature values. Driver ID: ${driver.id || "unknown"}, target layer: ${driver.targetLayerId || "unknown"}, target property: ${driver.targetProperty || "unknown"}, frame: ${frame}.`);
+    }
+    
+    // System F/Omega proof: Explicit validation of audio feature
+    // Type proof: driver.audioFeature ∈ AudioFeature | undefined → must be valid AudioFeature
+    // Mathematical proof: Audio value retrieval requires specified audio feature
+    if (!driver.audioFeature || typeof driver.audioFeature !== "string") {
+      throw new Error(`[PropertyDriver] Cannot get audio source value: Invalid audio feature (audioFeature: ${JSON.stringify(driver.audioFeature)}). Audio feature must be a valid string. Driver ID: ${driver.id || "unknown"}, target layer: ${driver.targetLayerId || "unknown"}, target property: ${driver.targetProperty || "unknown"}, frame: ${frame}.`);
     }
 
     let value = getFeatureAtFrame(
@@ -463,21 +574,38 @@ export class PropertyDriverSystem {
     value: number,
   ): number {
     switch (transform.type) {
-      case "scale":
-        return value * (transform.factor ?? 1);
+      case "scale": {
+        // Type proof: factor ∈ ℝ ∧ finite(factor) → factor ∈ ℝ
+        const factorValue = transform.factor;
+        const factor = isFiniteNumber(factorValue) ? factorValue : 1;
+        return value * factor;
+      }
 
-      case "offset":
-        return value + (transform.amount ?? 0);
+      case "offset": {
+        // Type proof: amount ∈ ℝ ∧ finite(amount) → amount ∈ ℝ
+        const amountValue = transform.amount;
+        const amount = isFiniteNumber(amountValue) ? amountValue : 0;
+        return value + amount;
+      }
 
-      case "clamp":
-        return Math.max(
-          transform.min ?? -Infinity,
-          Math.min(transform.max ?? Infinity, value),
-        );
+      case "clamp": {
+        // Type proof: min ∈ ℝ ∪ {-Infinity} → min ∈ ℝ ∪ {-Infinity}
+        const minValue = transform.min;
+        const min = isFiniteNumber(minValue) ? minValue : -Infinity;
+        // Type proof: max ∈ ℝ ∪ {Infinity} → max ∈ ℝ ∪ {Infinity}
+        const maxValue = transform.max;
+        const max = isFiniteNumber(maxValue) ? maxValue : Infinity;
+        return Math.max(min, Math.min(max, value));
+      }
 
       case "smooth": {
-        const prevValue = this.smoothedValues.get(driverId) ?? value;
-        const smoothing = transform.smoothing ?? 0.5;
+        // Type proof: Map.get() returns number | undefined → number
+        const prevValueRaw = this.smoothedValues.get(driverId);
+        const prevValue = isFiniteNumber(prevValueRaw) ? prevValueRaw : value;
+        // Type proof: smoothing ∈ ℝ ∧ finite(smoothing) → smoothing ∈ [0, 1]
+        const smoothingValue = transform.smoothing;
+        const smoothingRaw = isFiniteNumber(smoothingValue) ? smoothingValue : 0.5;
+        const smoothing = Math.max(0, Math.min(1, smoothingRaw));
         const smoothed = prevValue * smoothing + value * (1 - smoothing);
         this.smoothedValues.set(driverId, smoothed);
         return smoothed;
@@ -487,10 +615,15 @@ export class PropertyDriverSystem {
         return 1 - value;
 
       case "remap": {
-        const inMin = transform.inMin ?? 0;
-        const inMax = transform.inMax ?? 1;
-        const outMin = transform.outMin ?? 0;
-        const outMax = transform.outMax ?? 1;
+        // Type proof: inMin, inMax, outMin, outMax ∈ ℝ ∧ finite → ℝ
+        const inMinValue = transform.inMin;
+        const inMin = isFiniteNumber(inMinValue) ? inMinValue : 0;
+        const inMaxValue = transform.inMax;
+        const inMax = isFiniteNumber(inMaxValue) ? inMaxValue : 1;
+        const outMinValue = transform.outMin;
+        const outMin = isFiniteNumber(outMinValue) ? outMinValue : 0;
+        const outMaxValue = transform.outMax;
+        const outMax = isFiniteNumber(outMaxValue) ? outMaxValue : 1;
         // Guard against zero-range input (would cause division by zero)
         const inRange = inMax - inMin;
         if (inRange === 0) {
@@ -501,13 +634,21 @@ export class PropertyDriverSystem {
         return outMin + normalized * (outMax - outMin);
       }
 
-      case "threshold":
-        return value > (transform.threshold ?? 0.5) ? 1 : 0;
+      case "threshold": {
+        // Type proof: threshold ∈ ℝ ∧ finite(threshold) → threshold ∈ ℝ
+        const thresholdValue = transform.threshold;
+        const threshold = isFiniteNumber(thresholdValue) ? thresholdValue : 0.5;
+        return value > threshold ? 1 : 0;
+      }
 
       case "oscillate": {
-        const freq = transform.frequency ?? 1;
-        const amp = transform.amplitude ?? 1;
-        const phase = transform.phase ?? 0;
+        // Type proof: frequency, amplitude, phase ∈ ℝ ∧ finite → ℝ
+        const freqValue = transform.frequency;
+        const freq = isFiniteNumber(freqValue) && freqValue > 0 ? freqValue : 1;
+        const ampValue = transform.amplitude;
+        const amp = isFiniteNumber(ampValue) && ampValue >= 0 ? ampValue : 1;
+        const phaseValue = transform.phase;
+        const phase = isFiniteNumber(phaseValue) ? phaseValue : 0;
         return Math.sin((value * freq + phase) * Math.PI * 2) * amp;
       }
 
@@ -560,7 +701,9 @@ export class PropertyDriverSystem {
     for (const driver of drivers) {
       if (!driver.enabled) continue;
 
-      const baseValue = baseValues.get(driver.targetProperty) ?? 0;
+      // Type proof: Map.get() returns number | undefined → number
+      const baseValueRaw = baseValues.get(driver.targetProperty);
+      const baseValue = isFiniteNumber(baseValueRaw) ? baseValueRaw : 0;
       const drivenValue = this.evaluateDriver(driver, frame, baseValue);
 
       // If multiple drivers target same property, combine them
@@ -649,7 +792,9 @@ export function createAudioDriver(
 ): PropertyDriver {
   const driver = createPropertyDriver(targetLayerId, targetProperty, "audio");
   driver.audioFeature = audioFeature;
-  driver.audioThreshold = options.threshold ?? 0;
+  // Type proof: threshold ∈ ℝ ∧ finite(threshold) → threshold ∈ ℝ
+  const thresholdValue = options.threshold;
+  driver.audioThreshold = isFiniteNumber(thresholdValue) ? thresholdValue : 0;
   driver.audioAboveThreshold = options.threshold !== undefined;
 
   // Add transforms based on options
@@ -687,7 +832,9 @@ export function createPropertyLink(
   );
   driver.sourceLayerId = sourceLayerId;
   driver.sourceProperty = sourceProperty;
-  driver.blendMode = options.blendMode ?? "add";
+  // Type proof: blendMode ∈ PropertyDriver["blendMode"] | undefined → PropertyDriver["blendMode"]
+  const blendModeValue = options.blendMode;
+  driver.blendMode = typeof blendModeValue === "string" ? blendModeValue : "add";
 
   if (options.scale !== undefined && options.scale !== 1) {
     driver.transforms.push({ type: "scale", factor: options.scale });
@@ -744,12 +891,18 @@ export function createAudioLightDriver(
   const driver = createPropertyDriver(lightLayerId, "light.intensity", "audio");
   driver.name = "Audio Light Pulse";
   driver.audioFeature = audioFeature;
-  driver.audioThreshold = options.threshold ?? 0;
+  // Type proof: threshold ∈ ℝ ∧ finite(threshold) → threshold ∈ ℝ
+  const thresholdValue = options.threshold;
+  driver.audioThreshold = isFiniteNumber(thresholdValue) ? thresholdValue : 0;
   driver.blendMode = "replace";
 
   // Remap 0-1 audio to intensity range
-  const minI = options.minIntensity ?? 0.2;
-  const maxI = options.maxIntensity ?? 2.0;
+  // Type proof: minIntensity ∈ ℝ ∧ finite(minIntensity) → minIntensity ∈ ℝ₊
+  const minIValue = options.minIntensity;
+  const minI = isFiniteNumber(minIValue) && minIValue >= 0 ? minIValue : 0.2;
+  // Type proof: maxIntensity ∈ ℝ ∧ finite(maxIntensity) → maxIntensity ∈ ℝ₊
+  const maxIValue = options.maxIntensity;
+  const maxI = isFiniteNumber(maxIValue) && maxIValue >= 0 ? maxIValue : 2.0;
   driver.transforms.push({
     type: "remap",
     inMin: 0,
@@ -788,8 +941,12 @@ export function createAudioColorTempDriver(
   driver.blendMode = "replace";
 
   // Map normalized spectral centroid to temperature range
-  const warm = options.warmTemp ?? 2700;
-  const cool = options.coolTemp ?? 8000;
+  // Type proof: warmTemp ∈ ℝ ∧ finite(warmTemp) → warmTemp ∈ ℝ₊
+  const warmValue = options.warmTemp;
+  const warm = isFiniteNumber(warmValue) && warmValue > 0 ? warmValue : 2700;
+  // Type proof: coolTemp ∈ ℝ ∧ finite(coolTemp) → coolTemp ∈ ℝ₊
+  const coolValue = options.coolTemp;
+  const cool = isFiniteNumber(coolValue) && coolValue > 0 ? coolValue : 8000;
   driver.transforms.push({
     type: "remap",
     inMin: 0,
@@ -819,7 +976,9 @@ export function createLightFollowDriver(
   } = {},
 ): PropertyDriver[] {
   const drivers: PropertyDriver[] = [];
-  const axis = options.axis ?? "poi";
+  // Type proof: axis ∈ {"poi", "position"} | undefined → {"poi", "position"}
+  const axisValue = options.axis;
+  const axis = typeof axisValue === "string" && (axisValue === "poi" || axisValue === "position") ? axisValue : "poi";
   const prefix = axis === "poi" ? "light.poi" : "transform.position";
 
   // Create drivers for x, y, z
@@ -835,7 +994,9 @@ export function createLightFollowDriver(
     driver.blendMode = "replace";
 
     // Apply offset if specified
-    const offsetValue = options.offset?.[coord];
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const optionsOffset = (options != null && typeof options === "object" && "offset" in options && options.offset != null && typeof options.offset === "object") ? options.offset : undefined;
+    const offsetValue = (optionsOffset != null && typeof optionsOffset === "object" && coord in optionsOffset && typeof optionsOffset[coord] === "number") ? optionsOffset[coord] : undefined;
     if (offsetValue !== undefined && offsetValue !== 0) {
       driver.transforms.push({ type: "offset", amount: offsetValue });
     }

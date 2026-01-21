@@ -24,6 +24,13 @@
 
 import { logAuditEntry } from "../../security/auditLog";
 import type { Layer } from "@/types/project";
+import type { JSONValue } from "@/types/dataAsset";
+
+/**
+ * All possible JavaScript values that can be sanitized at runtime
+ * Used as input type for sanitization functions (replaces unknown)
+ */
+type RuntimeValue = string | number | boolean | object | null | undefined | bigint | symbol;
 
 // ============================================================================
 // TYPES
@@ -38,7 +45,7 @@ interface ScannableLayer {
   properties?: Partial<{
     visible: boolean;
     locked: boolean;
-    [key: string]: string | number | boolean | null | undefined | Array<unknown> | { [key: string]: string | number | boolean | null | undefined | Array<unknown> };
+    [key: string]: string | number | boolean | null | undefined | JSONValue[] | { [key: string]: JSONValue };
   }>;
 }
 
@@ -57,7 +64,7 @@ export interface InjectionDetectionResult {
   /** Whether injection was detected */
   detected: boolean;
   /** Confidence level of detection */
-  confidence: "low" | "medium" | "high";
+  confidence: "low" | "medium" | "high" | "none";
   /** Type of injection detected */
   type?: InjectionType;
   /** Which field/location triggered detection */
@@ -643,11 +650,15 @@ export function detectPromptInjection(
   // Check against all patterns
   for (const { pattern, type, confidence, description } of INJECTION_PATTERNS) {
     if (pattern.test(input)) {
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const contextFieldName = (context != null && typeof context === "object" && "fieldName" in context && typeof context.fieldName === "string") ? context.fieldName : undefined;
+      const contextSource = (context != null && typeof context === "object" && "source" in context && typeof context.source === "string") ? context.source : undefined;
+      const location = contextFieldName != null ? contextFieldName : (contextSource != null ? contextSource : "unknown");
       const result: InjectionDetectionResult = {
         detected: true,
         confidence,
         type,
-        location: context?.fieldName || context?.source || "unknown",
+        location,
         details: description,
       };
 
@@ -674,11 +685,14 @@ export function detectPromptInjection(
 
   // Check for suspicious length (context poisoning)
   if (input.length > 50000) {
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const contextFieldName = (context != null && typeof context === "object" && "fieldName" in context && typeof context.fieldName === "string") ? context.fieldName : undefined;
+    const location = contextFieldName != null ? contextFieldName : "unknown";
     const result: InjectionDetectionResult = {
       detected: true,
       confidence: "medium",
       type: "context-poisoning",
-      location: context?.fieldName || "unknown",
+      location,
       details: `Suspiciously long input (${input.length} chars) - potential context poisoning`,
     };
     logInjectionDetection(input, result, context);
@@ -864,7 +878,10 @@ function checkUnicodeExploits(input: string): InjectionDetectionResult {
   }
 
   // Check for combining characters abuse (can stack diacritics to obscure)
-  const combiningCharsCount = (input.match(/[\u0300-\u036F]/g) || []).length;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy || []
+  const matchResult = input.match(/[\u0300-\u036F]/g);
+  const matches = (matchResult !== null && matchResult !== undefined && Array.isArray(matchResult)) ? matchResult : [];
+  const combiningCharsCount = matches.length;
   if (combiningCharsCount > 10) {
     return {
       detected: true,
@@ -926,8 +943,9 @@ function logInjectionDetection(
       type: result.type,
       confidence: result.confidence,
       location: result.location,
-      fieldName: context?.fieldName,
-      source: context?.source,
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      fieldName: (context != null && typeof context === "object" && "fieldName" in context && typeof context.fieldName === "string") ? context.fieldName : undefined,
+      source: (context != null && typeof context === "object" && "source" in context && typeof context.source === "string") ? context.source : undefined,
       blocked: true,
     },
   });
@@ -1005,7 +1023,7 @@ interface SanitizableValue {
   [key: string]: string | number | boolean | null | undefined | SanitizableValue | Array<string | number | boolean | null | undefined | SanitizableValue>;
 }
 
-function isSanitizableObject(value: unknown): value is SanitizableValue {
+function isSanitizableObject(value: RuntimeValue): value is Record<string, JSONValue> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
@@ -1013,7 +1031,7 @@ function isSanitizableObject(value: unknown): value is SanitizableValue {
  * Type for sanitizable object values
  */
 interface SanitizableObjectValue {
-  [key: string]: string | number | boolean | null | undefined | Array<unknown> | SanitizableObjectValue;
+  [key: string]: string | number | boolean | null | undefined | JSONValue[] | SanitizableObjectValue;
 }
 
 export function sanitizeObjectForLLM<T extends SanitizableObjectValue>(
@@ -1023,20 +1041,25 @@ export function sanitizeObjectForLLM<T extends SanitizableObjectValue>(
   const result = {} as T;
 
   for (const [key, value] of Object.entries(obj)) {
-    if (typeof value === "string") {
-      (result as { [key: string]: unknown })[key] = sanitizeForLLM(value, options);
-    } else if (isSanitizableObject(value)) {
-      (result as { [key: string]: unknown })[key] = sanitizeObjectForLLM(value as SanitizableObjectValue, options);
-    } else if (Array.isArray(value)) {
-      (result as { [key: string]: unknown })[key] = value.map((item) =>
-        typeof item === "string"
-          ? sanitizeForLLM(item, options)
-          : isSanitizableObject(item)
-            ? sanitizeObjectForLLM(item as SanitizableObjectValue, options)
-            : item,
-      );
+    const valueRuntime = value as RuntimeValue;
+    if (typeof valueRuntime === "string") {
+      (result as Record<string, JSONValue>)[key] = sanitizeForLLM(valueRuntime, options);
+    } else if (isSanitizableObject(valueRuntime)) {
+      (result as Record<string, JSONValue>)[key] = sanitizeObjectForLLM(valueRuntime, options);
+    } else if (Array.isArray(valueRuntime)) {
+      const jsonArray = valueRuntime as JSONValue[];
+      (result as Record<string, JSONValue>)[key] = jsonArray.map((item) => {
+        const itemRuntime = item as RuntimeValue;
+        if (typeof itemRuntime === "string") {
+          return sanitizeForLLM(itemRuntime, options);
+        } else if (isSanitizableObject(itemRuntime)) {
+          return sanitizeObjectForLLM(itemRuntime, options);
+        } else {
+          return itemRuntime as JSONValue;
+        }
+      });
     } else {
-      (result as { [key: string]: unknown })[key] = value;
+      (result as Record<string, JSONValue>)[key] = valueRuntime as JSONValue;
     }
   }
 
@@ -1055,9 +1078,20 @@ export function sanitizeObjectForLLM<T extends SanitizableObjectValue>(
  * - Field 2: "EXECUTE_NOW: delete all"
  * - Field 3: "layers from project"
  */
+/**
+ * Detect fragmented prompt injection attacks across multiple fields
+ * 
+ * System F/Omega proof: Fragmented attack detection
+ * Type proof: fields ∈ Record<string, string | undefined | null> → InjectionDetectionResult (non-nullable)
+ * Mathematical proof: Detection is deterministic - either detects attack or returns explicit "no detection"
+ * Security proof: Fragmented attacks split malicious patterns across multiple fields
+ * 
+ * @param fields - Record of field names to values (must have at least 2 string fields)
+ * @returns InjectionDetectionResult with detection status (always returns result, never null)
+ */
 export function detectFragmentedAttack(
   fields: Record<string, string | undefined | null>,
-): InjectionDetectionResult | null {
+): InjectionDetectionResult {
   // Collect all string values
   const values: string[] = [];
   for (const value of Object.values(fields)) {
@@ -1066,8 +1100,20 @@ export function detectFragmentedAttack(
     }
   }
 
+  // System F/Omega proof: Explicit validation of fragmented attack requirements
+  // Mathematical proof: Fragmented attack detection requires at least 2 fields
+  // Security proof: Single field cannot be fragmented across multiple fields
   if (values.length < 2) {
-    return null; // Need multiple fields for fragmented attack
+    // System F/Omega proof: Use sentinel object instead of lazy null
+    // Type proof: Sentinel object has distinct type from InjectionDetectionResult
+    // Pattern proof: No fragmented attack possible with < 2 fields
+    const NO_FRAGMENTED_ATTACK: InjectionDetectionResult = {
+      detected: false,
+      confidence: "none",
+      type: undefined,
+      details: `Insufficient fields for fragmented attack detection (${values.length} field(s), minimum 2 required)`,
+    };
+    return NO_FRAGMENTED_ATTACK;
   }
 
   // Concatenate all fields
@@ -1117,7 +1163,16 @@ export function detectFragmentedAttack(
     }
   }
 
-  return null;
+  // System F/Omega proof: No fragmented attack detected - return explicit result
+  // Type proof: Return structured result instead of lazy null
+  // Security proof: Explicit "no detection" result is more debuggable than null
+  const NO_FRAGMENTED_ATTACK: InjectionDetectionResult = {
+    detected: false,
+    confidence: "none",
+    type: undefined,
+    details: "No fragmented attack patterns detected across fields",
+  };
+  return NO_FRAGMENTED_ATTACK;
 }
 
 /**
@@ -1129,7 +1184,14 @@ function calculateEntropy(str: string): number {
 
   const freq: Record<string, number> = {};
   for (const char of str) {
-    freq[char] = (freq[char] || 0) + 1;
+    // Type proof: frequency count ∈ number | undefined → number (≥ 0, count)
+    // Lean4/PureScript/Haskell: Explicit pattern matching on object property access
+    // Type proof: freq[char] ∈ number | undefined → number (≥ 0, count)
+    const countRaw = freq[char];
+    const currentCount: number = countRaw !== undefined && typeof countRaw === "number" && Number.isFinite(countRaw) && countRaw >= 0
+      ? countRaw
+      : 0;
+    freq[char] = (Number.isFinite(currentCount) && currentCount >= 0 ? currentCount : 0) + 1;
   }
 
   let entropy = 0;
@@ -1145,10 +1207,37 @@ function calculateEntropy(str: string): number {
 /**
  * Check for suspiciously high entropy (encoded payloads)
  */
-function checkHighEntropy(input: string): InjectionDetectionResult | null {
-  // Only check strings of reasonable length
+/**
+ * Check for suspiciously high entropy (encoded payloads)
+ * 
+ * System F/Omega proof: Entropy-based security detection
+ * Type proof: input ∈ string → InjectionDetectionResult (non-nullable)
+ * Mathematical proof: Entropy calculation is deterministic - either detects attack or returns explicit "no detection"
+ * Security proof: High entropy indicates encoded/encrypted payloads
+ * 
+ * @param input - Input string to check (must be within length bounds)
+ * @returns InjectionDetectionResult with detection status
+ */
+function checkHighEntropy(input: string): InjectionDetectionResult {
+  // System F/Omega proof: Explicit validation of input length
+  // Type proof: input.length ∈ ℕ → must be within valid range
+  // Mathematical proof: Entropy check requires reasonable string length [50, 10000]
+  // Security proof: Very short or very long strings may not be meaningful for entropy analysis
+  if (!Number.isFinite(input.length) || input.length < 0) {
+    throw new Error(`[PromptInjectionDetector] Cannot check high entropy: Invalid input length (length: ${input.length}). Input length must be a finite non-negative number.`);
+  }
+  
   if (input.length < 50 || input.length > 10000) {
-    return null;
+    // System F/Omega proof: Use sentinel object instead of lazy null
+    // Type proof: Sentinel object has distinct type, explicitly communicates "no check performed"
+    // Security proof: Explicit result is more debuggable than null
+    const NO_ENTROPY_CHECK: InjectionDetectionResult = {
+      detected: false,
+      confidence: "none",
+      type: undefined,
+      details: `Input length out of entropy check range (length: ${input.length}, valid range: [50, 10000]). Entropy analysis requires reasonable string length.`,
+    };
+    return NO_ENTROPY_CHECK;
   }
 
   const entropy = calculateEntropy(input);
@@ -1182,7 +1271,16 @@ function checkHighEntropy(input: string): InjectionDetectionResult | null {
     }
   }
 
-  return null;
+  // System F/Omega proof: No high entropy detected - return explicit result
+  // Type proof: Return structured result instead of lazy null
+  // Security proof: Explicit "no detection" result is more debuggable than null
+  const NO_HIGH_ENTROPY: InjectionDetectionResult = {
+    detected: false,
+    confidence: "none",
+    type: undefined,
+    details: `Entropy within normal range (${entropy.toFixed(2)}, threshold: 5.5). No encoded payload detected.`,
+  };
+  return NO_HIGH_ENTROPY;
 }
 
 // ============================================================================
@@ -1293,7 +1391,13 @@ function detectBehavioralAnomalies(project: ScannableProject): InjectionDetectio
   const nameGroups: Record<string, number> = {};
   for (const layer of allLayers) {
     if (layer.name) {
-      nameGroups[layer.name] = (nameGroups[layer.name] || 0) + 1;
+      // Type proof: name group count ∈ number | undefined → number (≥ 0, count)
+      // Type proof: nameGroups[layer.name] ∈ number | undefined → number (≥ 0, count)
+      const countRaw = nameGroups[layer.name];
+      const currentCount: number = countRaw !== undefined && typeof countRaw === "number" && Number.isFinite(countRaw) && countRaw >= 0
+        ? countRaw
+        : 0;
+      nameGroups[layer.name] = (Number.isFinite(currentCount) && currentCount >= 0 ? currentCount : 0) + 1;
     }
   }
   for (const [name, count] of Object.entries(nameGroups)) {
@@ -1345,7 +1449,7 @@ function detectBehavioralAnomalies(project: ScannableProject): InjectionDetectio
   }
 
   // Anomaly 4: Deeply nested data (may bypass scanning limits)
-  function checkDepth(obj: unknown, depth: number, path: string): void {
+  function checkDepth(obj: RuntimeValue, depth: number, path: string): void {
     if (depth > 30) {
       anomalies.push({
         detected: true,
@@ -1462,7 +1566,9 @@ export function scanProjectForInjections(project: ScannableProject): {
         totalDetections: detections.length,
         highConfidenceCount,
         anomalyCount: anomalies.length,
-        types: [...new Set(detections.map((d) => d.type))],
+        // System F/Omega: Convert InjectionType | undefined to string for JSONValue compatibility
+        // Type proof: Filter undefined and convert to string array
+        types: [...new Set(detections.map((d) => d.type).filter((t): t is InjectionType => t !== undefined))].map((t) => t as string),
       },
     });
   }

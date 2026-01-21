@@ -56,13 +56,13 @@
 </template>
 
 <script setup lang="ts">
-import { useCompositorStore } from "@/stores/compositorStore";
+import { useAnimationStore } from "@/stores/animationStore";
 import { createKeyframe } from "@/types/animation";
 import type { RectangleShape } from "@/types/shapes";
 
 const props = defineProps<{ shape: RectangleShape; layerId: string }>();
 const emit = defineEmits(["update"]);
-const store = useCompositorStore();
+const animationStore = useAnimationStore();
 
 function updatePoint(
   prop: "position" | "size",
@@ -94,7 +94,7 @@ function updateDirection(e: Event) {
 function toggleKeyframe(prop: "position" | "size" | "roundness") {
   const updated = { ...props.shape };
   const animProp = updated[prop];
-  const frame = store.currentFrame;
+  const frame = animationStore.currentFrame;
 
   const hasKf = animProp.keyframes.some((k) => k.frame === frame);
   if (hasKf) {

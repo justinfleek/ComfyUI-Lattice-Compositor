@@ -9,6 +9,7 @@ import type {
   ComfyUIWorkflow,
   GenerationProgress,
 } from "@/types/export";
+import type { JSONValue } from "@/types/dataAsset";
 import { parseAndSanitize } from "@/services/security/jsonSanitizer";
 import { createLogger } from "@/utils/logger";
 import { secureUUID } from "@/utils/security";
@@ -61,7 +62,7 @@ export class ComfyUIClient {
   private serverAddress: string;
   private clientId: string;
   private ws: WebSocket | null = null;
-  private messageHandlers: Map<string, (data: unknown) => void> = new Map();
+  private messageHandlers: Map<string, (data: JSONValue) => void> = new Map();
 
   constructor(config: ComfyUIClientConfig) {
     this.serverAddress = config.serverAddress.replace(/\/$/, "");
@@ -98,26 +99,30 @@ export class ComfyUIClient {
   /**
    * Get system stats (GPU, memory, etc.)
    */
-  async getSystemStats(): Promise<SystemStats | null> {
+  async getSystemStats(): Promise<SystemStats> {
     try {
       const response = await fetch(`http://${this.serverAddress}/system_stats`);
-      if (!response.ok) return null;
+      if (!response.ok) {
+        throw new Error(`[ComfyUIClient] Failed to get system stats: HTTP ${response.status} ${response.statusText}`);
+      }
       return response.json();
-    } catch {
-      return null;
+    } catch (error) {
+      throw new Error(`[ComfyUIClient] Failed to get system stats: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
   /**
    * Get queue status
    */
-  async getQueueStatus(): Promise<QueueStatus | null> {
+  async getQueueStatus(): Promise<QueueStatus> {
     try {
       const response = await fetch(`http://${this.serverAddress}/prompt`);
-      if (!response.ok) return null;
+      if (!response.ok) {
+        throw new Error(`[ComfyUIClient] Failed to get queue status: HTTP ${response.status} ${response.statusText}`);
+      }
       return response.json();
-    } catch {
-      return null;
+    } catch (error) {
+      throw new Error(`[ComfyUIClient] Failed to get queue status: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
@@ -411,7 +416,7 @@ export class ComfyUIClient {
   /**
    * Register a message handler for a specific message type
    */
-  onMessage(type: string, handler: (data: unknown) => void): void {
+  onMessage(type: string, handler: (data: JSONValue) => void): void {
     this.messageHandlers.set(type, handler);
   }
 
@@ -422,7 +427,7 @@ export class ComfyUIClient {
     this.messageHandlers.delete(type);
   }
 
-  private handleWebSocketMessage(data: unknown): void {
+  private handleWebSocketMessage(data: JSONValue): void {
     if (typeof data !== "object" || data === null || !("type" in data)) return;
     const { type } = data as { type: string };
 
@@ -521,12 +526,15 @@ export class ComfyUIClient {
         checkTimeout();
         if (typeof data === "object" && data !== null && "data" in data) {
           const progressData = data.data as { value: number; max: number };
-          onProgress?.({
-            status: "executing",
-            currentStep: progressData.value,
-            totalSteps: progressData.max,
-            percentage: (progressData.value / progressData.max) * 100,
-          });
+          // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+          if (onProgress != null && typeof onProgress === "function") {
+            onProgress({
+              status: "executing",
+              currentStep: progressData.value,
+              totalSteps: progressData.max,
+              percentage: (progressData.value / progressData.max) * 100,
+            });
+          }
         }
       });
 
@@ -536,11 +544,14 @@ export class ComfyUIClient {
         if (typeof data === "object" && data !== null && "data" in data) {
           const execData = data.data as { prompt_id?: string; node?: string };
           if (execData.prompt_id === promptId) {
-            onProgress?.({
-              status: "executing",
-              currentNode: execData.node,
-              percentage: 10, // Approximate
-            });
+            // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+            if (onProgress != null && typeof onProgress === "function") {
+              onProgress({
+                status: "executing",
+                currentNode: execData.node,
+                percentage: 10, // Approximate
+              });
+            }
           }
         }
       });
@@ -553,10 +564,13 @@ export class ComfyUIClient {
             completed = true;
             cleanup();
 
-            onProgress?.({
-              status: "completed",
-              percentage: 100,
-            });
+            // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+            if (onProgress != null && typeof onProgress === "function") {
+              onProgress({
+                status: "completed",
+                percentage: 100,
+              });
+            }
 
             // Fetch final history
             const history = await this.getHistory(promptId);
@@ -572,10 +586,13 @@ export class ComfyUIClient {
           if (errorData.prompt_id === promptId) {
             cleanup();
 
-            onProgress?.({
-              status: "error",
-              percentage: 0,
-            });
+            // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+            if (onProgress != null && typeof onProgress === "function") {
+              onProgress({
+                status: "error",
+                percentage: 0,
+              });
+            }
 
             reject(new Error(errorData.exception_message || "Execution failed"));
           }
@@ -598,10 +615,13 @@ export class ComfyUIClient {
     // Queue the prompt
     const { prompt_id } = await this.queuePrompt(workflow);
 
-    onProgress?.({
-      status: "queued",
-      percentage: 0,
-    });
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    if (onProgress != null && typeof onProgress === "function") {
+      onProgress({
+        status: "queued",
+        percentage: 0,
+      });
+    }
 
     // Wait for completion
     const history = await this.waitForPrompt(prompt_id, onProgress);

@@ -172,7 +172,11 @@ function computeMagnitudeSpectrum(
   // Apply Hanning window and copy samples
   for (let i = 0; i < n; i++) {
     const windowValue = 0.5 * (1 - Math.cos((2 * Math.PI * i) / (n - 1)));
-    real[i] = (samples[i] || 0) * windowValue;
+    // Type proof: audio sample ∈ number | undefined → number (coordinate-like, can be negative)
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+    const sampleRaw = samples[i];
+    const sample = (sampleRaw !== null && sampleRaw !== undefined && typeof sampleRaw === "number" && Number.isFinite(sampleRaw)) ? sampleRaw : 0;
+    real[i] = (Number.isFinite(sample) ? sample : 0) * windowValue;
     imag[i] = 0;
   }
 

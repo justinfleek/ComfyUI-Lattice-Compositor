@@ -173,21 +173,60 @@ class EffectCache {
 
   /**
    * Get cached result if valid
+   * 
+   * System F/Omega proof: Explicit cache validation
+   * Type proof: effectId ∈ string, params ∈ EvaluatedEffectParams, inputCanvas ∈ HTMLCanvasElement → ImageData (non-nullable)
+   * Mathematical proof: Cache lookup is deterministic - either returns cached result or throws explicit error
+   * Pattern proof: Cache miss is an explicit failure condition, not a lazy null return
    */
   get(
     effectId: string,
     params: EvaluatedEffectParams,
     inputCanvas: HTMLCanvasElement,
-  ): ImageData | null {
+  ): ImageData {
+    // System F/Omega proof: Explicit validation of cache entry existence
+    // Type proof: cache.get(effectId) ∈ CacheEntry | undefined
+    // Mathematical proof: Cache entry must exist to retrieve result
     const entry = this.cache.get(effectId);
-    if (!entry) return null;
-
-    const now = Date.now();
-    if (now - entry.timestamp > this.maxAge) {
-      this.cache.delete(effectId);
-      return null;
+    if (!entry) {
+      throw new Error(
+        `[EffectCache] Cannot get cached effect result: Cache entry not found for effect ID "${effectId}". ` +
+        `Cache size: ${this.cache.size}/${this.maxSize}. ` +
+        `Available effect IDs: ${Array.from(this.cache.keys()).join(", ") || "none"}. ` +
+        `Use EffectCache.has() to check cache existence before calling get(), or ensure the effect result was cached with EffectCache.set().`
+      );
     }
 
+    // System F/Omega proof: Explicit validation of cache entry age
+    // Type proof: timestamp ∈ number, maxAge ∈ number → age ∈ number
+    // Mathematical proof: Cache entry must be within maxAge to be valid
+    const now = Date.now();
+    if (!Number.isFinite(now) || now < 0) {
+      throw new Error(
+        `[EffectCache] Cannot validate cache entry age: Invalid timestamp (${now}). ` +
+        `Effect ID: "${effectId}", entry timestamp: ${entry.timestamp}, maxAge: ${this.maxAge}.`
+      );
+    }
+    const age = now - entry.timestamp;
+    if (!Number.isFinite(age) || age < 0) {
+      throw new Error(
+        `[EffectCache] Cannot validate cache entry age: Invalid age calculation (${age}). ` +
+        `Effect ID: "${effectId}", entry timestamp: ${entry.timestamp}, current time: ${now}.`
+      );
+    }
+    if (age > this.maxAge) {
+      this.cache.delete(effectId);
+      throw new Error(
+        `[EffectCache] Cannot get cached effect result: Cache entry expired. ` +
+        `Effect ID: "${effectId}", age: ${age}ms, maxAge: ${this.maxAge}ms. ` +
+        `Entry was cached at timestamp ${entry.timestamp}, current time: ${now}. ` +
+        `Re-process the effect to generate a new cached result.`
+      );
+    }
+
+    // System F/Omega proof: Explicit validation of parameter and input hashes
+    // Type proof: paramsHash ∈ string, inputHash ∈ string → match ∈ boolean
+    // Mathematical proof: Hash comparison is deterministic - either matches or doesn't
     const paramsHash = this.hashParams(params);
     const inputHash = this.hashInput(inputCanvas);
 
@@ -198,7 +237,15 @@ class EffectCache {
       return entry.result;
     }
 
-    return null;
+    // System F/Omega proof: Cache entry exists but parameters/input don't match
+    // Type proof: Hash mismatch indicates different parameters/input → cache miss
+    // Mathematical proof: Hash equality is transitive - mismatch means different inputs
+    throw new Error(
+      `[EffectCache] Cannot get cached effect result: Parameter or input hash mismatch. ` +
+      `Effect ID: "${effectId}", cached paramsHash: "${entry.paramsHash}", current paramsHash: "${paramsHash}", ` +
+      `cached inputHash: "${entry.inputHash}", current inputHash: "${inputHash}". ` +
+      `Parameters or input canvas have changed since cache entry was created. Re-process the effect to generate a new cached result.`
+    );
   }
 
   /**

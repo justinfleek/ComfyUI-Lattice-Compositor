@@ -22,6 +22,7 @@
 import * as THREE from "three";
 import { PCDLoader } from "three/examples/jsm/loaders/PCDLoader.js";
 import { PLYLoader } from "three/examples/jsm/loaders/PLYLoader.js";
+import { assertDefined } from "@/utils/typeGuards";
 import { interpolateProperty } from "@/services/interpolation";
 import type {
   Layer,
@@ -120,30 +121,60 @@ export class PointCloudLayer extends BaseLayer {
       keyframes: [],
     };
 
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining/nullish coalescing
+    // Pattern match: data ∈ PointCloudLayerData | null → PointCloudLayerData (with explicit defaults)
+    const dataValue = (layerData.data !== null && typeof layerData.data === "object") ? layerData.data as PointCloudLayerData : null;
+    
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+    // Pattern match: Extract each property with explicit type narrowing and defaults
+    const assetIdValue = (dataValue !== null && typeof dataValue === "object" && "assetId" in dataValue && typeof dataValue.assetId === "string") ? dataValue.assetId : "";
+    const formatValue = (dataValue !== null && typeof dataValue === "object" && "format" in dataValue && typeof dataValue.format === "string") ? dataValue.format : "ply";
+    const pointCountValue = (dataValue !== null && typeof dataValue === "object" && "pointCount" in dataValue && typeof dataValue.pointCount === "number" && Number.isFinite(dataValue.pointCount)) ? dataValue.pointCount : 0;
+    const pointSizeValue = (dataValue !== null && typeof dataValue === "object" && "pointSize" in dataValue && typeof dataValue.pointSize === "number" && Number.isFinite(dataValue.pointSize)) ? dataValue.pointSize : defaultPointSize;
+    const sizeAttenuationValue = (dataValue !== null && typeof dataValue === "object" && "sizeAttenuation" in dataValue && typeof dataValue.sizeAttenuation === "boolean") ? dataValue.sizeAttenuation : true;
+    const minPointSizeValue = (dataValue !== null && typeof dataValue === "object" && "minPointSize" in dataValue && typeof dataValue.minPointSize === "number" && Number.isFinite(dataValue.minPointSize)) ? dataValue.minPointSize : 1;
+    const maxPointSizeValue = (dataValue !== null && typeof dataValue === "object" && "maxPointSize" in dataValue && typeof dataValue.maxPointSize === "number" && Number.isFinite(dataValue.maxPointSize)) ? dataValue.maxPointSize : 64;
+    const colorModeValue = (dataValue !== null && typeof dataValue === "object" && "colorMode" in dataValue && typeof dataValue.colorMode === "string") ? dataValue.colorMode : "rgb";
+    const uniformColorValue = (dataValue !== null && typeof dataValue === "object" && "uniformColor" in dataValue && typeof dataValue.uniformColor === "string" && dataValue.uniformColor.length > 0) ? dataValue.uniformColor : "#ffffff";
+    const colorGradientValue = (dataValue !== null && typeof dataValue === "object" && "colorGradient" in dataValue) ? dataValue.colorGradient : undefined;
+    const renderModeValue = (dataValue !== null && typeof dataValue === "object" && "renderMode" in dataValue && typeof dataValue.renderMode === "string") ? dataValue.renderMode : "circles";
+    const opacityValue = (dataValue !== null && typeof dataValue === "object" && "opacity" in dataValue && typeof dataValue.opacity === "number" && Number.isFinite(dataValue.opacity)) ? dataValue.opacity : defaultOpacity;
+    const depthTestValue = (dataValue !== null && typeof dataValue === "object" && "depthTest" in dataValue && typeof dataValue.depthTest === "boolean") ? dataValue.depthTest : true;
+    const depthWriteValue = (dataValue !== null && typeof dataValue === "object" && "depthWrite" in dataValue && typeof dataValue.depthWrite === "boolean") ? dataValue.depthWrite : true;
+    const boundingBoxValue = (dataValue !== null && typeof dataValue === "object" && "boundingBox" in dataValue) ? dataValue.boundingBox : undefined;
+    const showBoundingBoxValue = (dataValue !== null && typeof dataValue === "object" && "showBoundingBox" in dataValue && typeof dataValue.showBoundingBox === "boolean") ? dataValue.showBoundingBox : false;
+    const lodValue = (dataValue !== null && typeof dataValue === "object" && "lod" in dataValue) ? dataValue.lod : undefined;
+    const octreeValue = (dataValue !== null && typeof dataValue === "object" && "octree" in dataValue) ? dataValue.octree : undefined;
+    const pointBudgetValue = (dataValue !== null && typeof dataValue === "object" && "pointBudget" in dataValue && typeof dataValue.pointBudget === "number" && Number.isFinite(dataValue.pointBudget)) ? dataValue.pointBudget : 1000000;
+    const edlValue = (dataValue !== null && typeof dataValue === "object" && "edl" in dataValue) ? dataValue.edl : undefined;
+    const clipPlanesValue = (dataValue !== null && typeof dataValue === "object" && "clipPlanes" in dataValue) ? dataValue.clipPlanes : undefined;
+    const classificationFilterValue = (dataValue !== null && typeof dataValue === "object" && "classificationFilter" in dataValue) ? dataValue.classificationFilter : undefined;
+
     return {
-      assetId: data?.assetId ?? "",
-      format: data?.format ?? "ply",
-      pointCount: data?.pointCount ?? 0,
-      pointSize: data?.pointSize ?? defaultPointSize,
-      sizeAttenuation: data?.sizeAttenuation ?? true,
-      minPointSize: data?.minPointSize ?? 1,
-      maxPointSize: data?.maxPointSize ?? 64,
-      colorMode: data?.colorMode ?? "rgb",
-      uniformColor: data?.uniformColor ?? "#ffffff",
-      colorGradient: data?.colorGradient,
-      renderMode: data?.renderMode ?? "circles",
-      opacity: data?.opacity ?? defaultOpacity,
-      depthTest: data?.depthTest ?? true,
-      depthWrite: data?.depthWrite ?? true,
-      boundingBox: data?.boundingBox,
-      showBoundingBox: data?.showBoundingBox ?? false,
-      lod: data?.lod,
-      octree: data?.octree,
-      pointBudget: data?.pointBudget ?? 1000000,
-      edl: data?.edl,
-      clipPlanes: data?.clipPlanes,
-      classificationFilter: data?.classificationFilter,
-      intensityRange: data?.intensityRange,
+      assetId: assetIdValue,
+      format: formatValue,
+      pointCount: pointCountValue,
+      pointSize: pointSizeValue,
+      sizeAttenuation: sizeAttenuationValue,
+      minPointSize: minPointSizeValue,
+      maxPointSize: maxPointSizeValue,
+      colorMode: colorModeValue,
+      uniformColor: uniformColorValue,
+      colorGradient: colorGradientValue,
+      renderMode: renderModeValue,
+      opacity: opacityValue,
+      depthTest: depthTestValue,
+      depthWrite: depthWriteValue,
+      boundingBox: boundingBoxValue,
+      showBoundingBox: showBoundingBoxValue,
+      lod: lodValue,
+      octree: octreeValue,
+      pointBudget: pointBudgetValue,
+      edl: edlValue,
+      clipPlanes: clipPlanesValue,
+      classificationFilter: classificationFilterValue,
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      intensityRange: (dataValue != null && typeof dataValue === "object" && "intensityRange" in dataValue && dataValue.intensityRange != null) ? dataValue.intensityRange : undefined,
     };
   }
 
@@ -209,7 +240,13 @@ export class PointCloudLayer extends BaseLayer {
    */
   private loadPLY(url: string): Promise<THREE.BufferGeometry> {
     return new Promise((resolve, reject) => {
-      PointCloudLayer.plyLoader?.load(url, resolve, undefined, reject);
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const plyLoader = PointCloudLayer.plyLoader;
+      if (plyLoader != null && typeof plyLoader === "object" && typeof plyLoader.load === "function") {
+        plyLoader.load(url, resolve, undefined, reject);
+      } else {
+        reject(new Error("PLY loader not initialized"));
+      }
     });
   }
 
@@ -218,14 +255,20 @@ export class PointCloudLayer extends BaseLayer {
    */
   private loadPCD(url: string): Promise<THREE.BufferGeometry> {
     return new Promise((resolve, reject) => {
-      PointCloudLayer.pcdLoader?.load(
-        url,
-        (points: THREE.Points) => {
-          resolve(points.geometry);
-        },
-        undefined,
-        reject,
-      );
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const pcdLoader = PointCloudLayer.pcdLoader;
+      if (pcdLoader != null && typeof pcdLoader === "object" && typeof pcdLoader.load === "function") {
+        pcdLoader.load(
+          url,
+          (points: THREE.Points) => {
+            resolve(points.geometry);
+          },
+          undefined,
+          reject,
+        );
+      } else {
+        reject(new Error("PCD loader not initialized"));
+      }
     });
   }
 
@@ -502,8 +545,10 @@ export class PointCloudLayer extends BaseLayer {
     // Create material
     this.createMaterial();
 
+    // Type proof: material is guaranteed non-null by createMaterial() setting it
+    assertDefined(this.material, "material must exist after createMaterial()");
     // Create point cloud
-    this.pointCloud = new THREE.Points(this.geometry, this.material!);
+    this.pointCloud = new THREE.Points(this.geometry, this.material);
     this.pointCloud.name = `pointcloud_${this.id}`;
 
     // Calculate bounding box
@@ -663,7 +708,10 @@ export class PointCloudLayer extends BaseLayer {
     const size = 256;
     const data = new Uint8Array(size * 4);
 
-    const stops = this.cloudData.colorGradient?.stops ?? [
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining/nullish coalescing
+    // Pattern match: colorGradient.stops ∈ GradientStop[] | undefined → GradientStop[] (default stops)
+    const colorGradientData = (typeof this.cloudData.colorGradient === "object" && this.cloudData.colorGradient !== null && "stops" in this.cloudData.colorGradient && Array.isArray(this.cloudData.colorGradient.stops)) ? this.cloudData.colorGradient.stops : undefined;
+    const stops = (colorGradientData !== undefined && colorGradientData.length > 0) ? colorGradientData : [
       { position: 0, color: "#0000ff" },
       { position: 0.5, color: "#00ff00" },
       { position: 1, color: "#ff0000" },
@@ -989,7 +1037,11 @@ export class PointCloudLayer extends BaseLayer {
 
       for (let i = 0; i < count; i++) {
         const classId = classifications[i];
-        const color = classColors[classId] ?? [0.5, 0.5, 0.5];
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+        // Pattern match: classColors[classId] ∈ [number, number, number] | undefined → [number, number, number] (default gray)
+        // Note: classColors is a Record<number, [number, number, number]>, so check if key exists
+        const classColorEntry = (classId in classColors && Array.isArray(classColors[classId]) && classColors[classId].length === 3 && typeof classColors[classId][0] === "number" && typeof classColors[classId][1] === "number" && typeof classColors[classId][2] === "number") ? classColors[classId] as [number, number, number] : [0.5, 0.5, 0.5];
+        const color = classColorEntry;
         colors[i * 3] = color[0];
         colors[i * 3 + 1] = color[1];
         colors[i * 3 + 2] = color[2];

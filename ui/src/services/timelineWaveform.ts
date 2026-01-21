@@ -11,6 +11,7 @@
  */
 
 import { createLogger } from "@/utils/logger";
+import { isFiniteNumber } from "@/utils/typeGuards";
 
 const logger = createLogger("TimelineWaveform");
 
@@ -275,7 +276,11 @@ export function renderWaveform(
   const centerY = height / 2;
 
   // Set styles
-  ctx.globalAlpha = options.opacity ?? 1;
+  // Type proof: opacity ∈ number | undefined → number (clamped 0-1)
+  const opacity = options !== undefined && typeof options === "object" && options !== null && "opacity" in options && isFiniteNumber(options.opacity) && options.opacity >= 0 && options.opacity <= 1
+    ? options.opacity
+    : 1;
+  ctx.globalAlpha = opacity;
   ctx.fillStyle = color;
   ctx.strokeStyle = color;
 

@@ -56,7 +56,11 @@ export async function detectGPUTier(): Promise<GPUTier> {
         if ("info" in adapter) {
           // Type-safe access to adapter info
           const adapterWithInfo = adapter as GPUAdapterWithInfo;
-          deviceName = adapterWithInfo.info?.device || adapterWithInfo.info?.description || "";
+          // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+          const adapterInfo = (adapterWithInfo != null && typeof adapterWithInfo === "object" && "info" in adapterWithInfo && adapterWithInfo.info != null && typeof adapterWithInfo.info === "object") ? adapterWithInfo.info : undefined;
+          const infoDevice = (adapterInfo != null && typeof adapterInfo === "object" && "device" in adapterInfo && typeof adapterInfo.device === "string") ? adapterInfo.device : undefined;
+          const infoDescription = (adapterInfo != null && typeof adapterInfo === "object" && "description" in adapterInfo && typeof adapterInfo.description === "string") ? adapterInfo.description : undefined;
+          deviceName = infoDevice != null ? infoDevice : (infoDescription != null ? infoDescription : "");
         }
 
         // Detect Blackwell (RTX 50 series)

@@ -13,9 +13,11 @@ import { PhysicsEngine } from '@/services/physics/PhysicsEngine';
 import type { RigidBodyConfig } from '@/types/physics';
 
 // Helper to create a complete RigidBodyConfig with sensible defaults
+// Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
 function createRigidBodyConfig(overrides: Partial<RigidBodyConfig> & { id: string }): RigidBodyConfig {
+  const layerId = (overrides.layerId !== null && overrides.layerId !== undefined && typeof overrides.layerId === "string" && overrides.layerId.length > 0) ? overrides.layerId : `layer-${overrides.id}`;
   return {
-    layerId: overrides.layerId ?? `layer-${overrides.id}`,
+    layerId,
     type: 'dynamic',
     position: { x: 0, y: 0 },
     velocity: { x: 0, y: 0 },

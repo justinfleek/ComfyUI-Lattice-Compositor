@@ -18,6 +18,7 @@ import type {
 } from "@/types/project";
 import type { BezierPath, BezierVertex, Point2D } from "@/types/shapes";
 import { createLogger } from "@/utils/logger";
+import { isFiniteNumber } from "@/utils/typeGuards";
 
 const logger = createLogger("TextToVector");
 
@@ -252,8 +253,11 @@ function getCharacterPaths(
     };
 
     // Calculate advance width
-    const advanceWidth =
-      (glyph.advanceWidth ?? 0) * (opts.fontSize / font.unitsPerEm);
+    // Type proof: advanceWidth ∈ number | undefined → number
+    const advanceWidthValue = isFiniteNumber(glyph.advanceWidth)
+      ? glyph.advanceWidth
+      : 0;
+    const advanceWidth = advanceWidthValue * (opts.fontSize / font.unitsPerEm);
 
     groups.push({
       character: char,
@@ -391,18 +395,40 @@ export async function textLayerToSplines(
 
   const text = textData.text || "";
   const fontFamily = textData.font || "Arial";
-  const fontSize = options?.fontSize ?? textData.fontSize ?? 72;
+  // Type proof: fontSize ∈ number | undefined → number
+  const fontSize = (() => {
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+    if (typeof options === "object" && options !== null && "fontSize" in options && typeof options.fontSize === "number" && isFiniteNumber(options.fontSize)) {
+      return Math.max(1, Math.min(1000, options.fontSize));
+    }
+    if (isFiniteNumber(textData.fontSize)) {
+      return Math.max(1, Math.min(1000, textData.fontSize));
+    }
+    return 72;
+  })();
 
   const result = await textToVector(text, fontFamily, { ...options, fontSize });
 
   const layers: Partial<Layer>[] = [];
-  const groupByCharacter = options?.groupByCharacter ?? true;
+  // Type proof: groupByCharacter ∈ boolean | undefined → boolean
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+  const groupByCharacter =
+    (typeof options === "object" && options !== null && "groupByCharacter" in options && typeof options.groupByCharacter === "boolean")
+      ? options.groupByCharacter
+      : true;
 
   // Type-safe access to transform position value
   // LayerTransform.position.value is AnimatableProperty<{ x: number; y: number; z?: number }>.value
-  const positionValue = textLayer.transform?.position?.value;
-  const layerX = (typeof positionValue === "object" && positionValue !== null && "x" in positionValue) ? positionValue.x : 0;
-  const layerY = (typeof positionValue === "object" && positionValue !== null && "y" in positionValue) ? positionValue.y : 0;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+  const transform = (typeof textLayer.transform === "object" && textLayer.transform !== null && "position" in textLayer.transform && typeof textLayer.transform.position === "object" && textLayer.transform.position !== null && "value" in textLayer.transform.position)
+    ? textLayer.transform.position.value
+    : null;
+  const positionValue = (transform !== null && typeof transform === "object") ? transform : null;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+  const layerX = (typeof positionValue === "object" && positionValue !== null && "x" in positionValue && typeof positionValue.x === "number") ? positionValue.x : 0;
+  const layerY = (typeof positionValue === "object" && positionValue !== null && "y" in positionValue && typeof positionValue.y === "number") ? positionValue.y : 0;
 
   if (groupByCharacter) {
     for (const charGroup of result.characters) {
@@ -410,10 +436,19 @@ export async function textLayerToSplines(
 
       const controlPoints = bezierPathsToControlPoints(charGroup.paths);
 
+      // Type proof: closed ∈ boolean | undefined → boolean
+      const closed =
+        Array.isArray(charGroup.paths) &&
+        charGroup.paths.length > 0 &&
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+        (charGroup.paths.length > 0 && typeof charGroup.paths[0] === "object" && charGroup.paths[0] !== null && "closed" in charGroup.paths[0] && typeof charGroup.paths[0].closed === "boolean")
+          ? charGroup.paths[0].closed
+          : false;
+
       const splineData: SplineData = {
         pathData: "",
         controlPoints,
-        closed: charGroup.paths[0]?.closed ?? false,
+        closed,
         stroke: "#ffffff",
         strokeWidth: 2,
         fill: "transparent",
@@ -433,12 +468,16 @@ export async function textLayerToSplines(
             },
             "position",
           ),
+          // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
           rotation:
-            textLayer.transform?.rotation ??
-            createAnimatableProperty("Rotation", 0, "number"),
+            (typeof textLayer.transform === "object" && textLayer.transform !== null && "rotation" in textLayer.transform && typeof textLayer.transform.rotation === "object" && textLayer.transform.rotation !== null)
+              ? textLayer.transform.rotation
+              : createAnimatableProperty("Rotation", 0, "number"),
+          // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
           scale:
-            textLayer.transform?.scale ??
-            createAnimatableProperty("Scale", { x: 100, y: 100 }, "position"),
+            (typeof textLayer.transform === "object" && textLayer.transform !== null && "scale" in textLayer.transform && typeof textLayer.transform.scale === "object" && textLayer.transform.scale !== null)
+              ? textLayer.transform.scale
+              : createAnimatableProperty("Scale", { x: 100, y: 100 }, "position"),
           anchorPoint: createAnimatableProperty(
             "Anchor Point",
             { x: 0, y: 0, z: 0 },
@@ -452,10 +491,19 @@ export async function textLayerToSplines(
   } else {
     const allControlPoints = bezierPathsToControlPoints(result.allPaths);
 
+    // Type proof: closed ∈ boolean | undefined → boolean
+    const closed =
+      Array.isArray(result.allPaths) &&
+      result.allPaths.length > 0 &&
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+      (result.allPaths.length > 0 && typeof result.allPaths[0] === "object" && result.allPaths[0] !== null && "closed" in result.allPaths[0] && typeof result.allPaths[0].closed === "boolean")
+          ? result.allPaths[0].closed
+          : false;
+
     const splineData: SplineData = {
       pathData: "",
       controlPoints: allControlPoints,
-      closed: result.allPaths[0]?.closed ?? false,
+      closed,
       stroke: "#ffffff",
       strokeWidth: 2,
       fill: "transparent",
@@ -465,28 +513,32 @@ export async function textLayerToSplines(
       name: `${textLayer.name} - Vectorized`,
       type: "spline",
       data: splineData,
-      transform: {
-        position: createAnimatableProperty(
-          "Position",
-          {
-            x: layerX + result.bounds.x,
-            y: layerY + result.bounds.y,
-            z: 0,
-          },
-          "position",
-        ),
-        rotation:
-          textLayer.transform?.rotation ??
-          createAnimatableProperty("Rotation", 0, "number"),
-        scale:
-          textLayer.transform?.scale ??
-          createAnimatableProperty("Scale", { x: 100, y: 100 }, "position"),
-        anchorPoint: createAnimatableProperty(
-          "Anchor Point",
-          { x: 0, y: 0, z: 0 },
-          "position",
-        ),
-      },
+        transform: {
+          position: createAnimatableProperty(
+            "Position",
+            {
+              x: layerX + result.bounds.x,
+              y: layerY + result.bounds.y,
+              z: 0,
+            },
+            "position",
+          ),
+          // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+          rotation:
+            (typeof textLayer.transform === "object" && textLayer.transform !== null && "rotation" in textLayer.transform && typeof textLayer.transform.rotation === "object" && textLayer.transform.rotation !== null)
+              ? textLayer.transform.rotation
+              : createAnimatableProperty("Rotation", 0, "number"),
+          // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+          scale:
+            (typeof textLayer.transform === "object" && textLayer.transform !== null && "scale" in textLayer.transform && typeof textLayer.transform.scale === "object" && textLayer.transform.scale !== null)
+              ? textLayer.transform.scale
+              : createAnimatableProperty("Scale", { x: 100, y: 100 }, "position"),
+          anchorPoint: createAnimatableProperty(
+            "Anchor Point",
+            { x: 0, y: 0, z: 0 },
+            "position",
+          ),
+        },
       inPoint: textLayer.inPoint,
       outPoint: textLayer.outPoint,
     } as Partial<Layer>);
@@ -574,11 +626,31 @@ export async function textToVectorFromUrl(
   fontSize: number,
   options?: TextToVectorFromUrlOptions,
 ): Promise<TextToVectorResult> {
+  // Type proof: x ∈ number | undefined → number
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+  const x = (typeof options === "object" && options !== null && "x" in options && typeof options.x === "number" && isFiniteNumber(options.x))
+    ? options.x
+    : 0;
+  const y = (typeof options === "object" && options !== null && "y" in options && typeof options.y === "number" && isFiniteNumber(options.y))
+    ? options.y
+    : 0;
+  const kerning =
+    (typeof options === "object" && options !== null && "kerning" in options && typeof options.kerning === "boolean")
+      ? options.kerning
+      : true;
+  const letterSpacingRaw = (typeof options === "object" && options !== null && "letterSpacing" in options && typeof options.letterSpacing === "number")
+    ? options.letterSpacing
+    : 0;
+  const letterSpacing = isFiniteNumber(letterSpacingRaw) && letterSpacingRaw > 0
+    ? options.letterSpacing
+    : 0;
+
   const opts = {
-    x: options?.x ?? 0,
-    y: options?.y ?? 0,
-    kerning: options?.kerning ?? true,
-    letterSpacing: options?.letterSpacing ?? 0,
+    x,
+    y,
+    kerning,
+    letterSpacing,
   };
 
   // Load font from URL
@@ -622,8 +694,11 @@ export async function textToVectorFromUrl(
     };
 
     // Calculate advance width
-    const advanceWidth =
-      (glyph.advanceWidth ?? 0) * (fontSize / font.unitsPerEm);
+    // Type proof: advanceWidth ∈ number | undefined → number
+    const advanceWidthValue = isFiniteNumber(glyph.advanceWidth)
+      ? glyph.advanceWidth
+      : 0;
+    const advanceWidth = advanceWidthValue * (fontSize / font.unitsPerEm);
 
     characters.push({
       character: char,
@@ -660,7 +735,12 @@ export async function textToVectorFromUrl(
     characters,
     bounds,
     text,
-    fontFamily: font.names.fontFamily?.en || "Unknown",
+    // Type proof: fontFamily ∈ string | undefined → string
+    fontFamily:
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+      (typeof font.names === "object" && font.names !== null && "fontFamily" in font.names && typeof font.names.fontFamily === "object" && font.names.fontFamily !== null && "en" in font.names.fontFamily && typeof font.names.fontFamily.en === "string" && font.names.fontFamily.en.length > 0)
+        ? font.names.fontFamily.en
+        : "Unknown",
     fontSize,
   };
 }

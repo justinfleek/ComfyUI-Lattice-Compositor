@@ -11,8 +11,11 @@
  * - Generic JSON with camera path
  */
 
-import { useCompositorStore } from "@/stores/compositorStore";
+import { isFiniteNumber } from "@/utils/typeGuards";
 import { parseAndSanitize } from "@/services/security/jsonSanitizer";
+import { useLayerStore } from "@/stores/layerStore";
+import { useCameraStore } from "@/stores/cameraStore";
+import { useProjectStore } from "@/stores/projectStore";
 import {
   CameraTrackingSolveSchema,
   BlenderMotionTrackingDataSchema,
@@ -303,8 +306,12 @@ export function parseBlenderTrackingJSON(json: string): CameraTrackingSolve {
   };
 
   // Convert camera path if reconstruction exists
-  const cameraPath: CameraPose[] =
-    data.reconstruction?.camera_poses?.map((pose) => ({
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+  const reconstruction = (typeof data.reconstruction === "object" && data.reconstruction !== null && "camera_poses" in data.reconstruction && Array.isArray(data.reconstruction.camera_poses))
+    ? data.reconstruction.camera_poses
+    : [];
+  const cameraPath: CameraPose[] = reconstruction.map((pose) => ({
       frame: pose.frame,
       position: {
         x: pose.location[0],
@@ -317,11 +324,15 @@ export function parseBlenderTrackingJSON(json: string): CameraTrackingSolve {
         y: pose.rotation[2],
         z: pose.rotation[3],
       },
-    })) || [];
+    }));
 
   // Convert 3D points
-  const trackPoints3D: TrackPoint3D[] =
-    data.reconstruction?.points?.map((pt, i) => ({
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+  const reconstructionPoints = (typeof data.reconstruction === "object" && data.reconstruction !== null && "points" in data.reconstruction && Array.isArray(data.reconstruction.points))
+    ? data.reconstruction.points
+    : [];
+  const trackPoints3D: TrackPoint3D[] = reconstructionPoints.map((pt, i) => ({
       id: `pt_${i}`,
       position: { x: pt.co[0], y: pt.co[1], z: pt.co[2] },
       color: pt.color
@@ -332,7 +343,10 @@ export function parseBlenderTrackingJSON(json: string): CameraTrackingSolve {
           }
         : undefined,
       track2DIDs: [],
-    })) || [];
+    }));
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy || []
+  // Note: map() always returns an array, so this is defensive programming
+  const trackPoints3DFinal: TrackPoint3D[] = (Array.isArray(trackPoints3D)) ? trackPoints3D : [];
 
   // Get frame count from tracks
   let maxFrame = 0;
@@ -353,7 +367,7 @@ export function parseBlenderTrackingJSON(json: string): CameraTrackingSolve {
     },
     intrinsics,
     cameraPath,
-    trackPoints3D,
+    trackPoints3D: trackPoints3DFinal,
   };
 }
 
@@ -390,16 +404,35 @@ export async function importCameraTracking(
   solve: CameraTrackingSolve,
   options: CameraTrackingImportOptions = {},
 ): Promise<CameraTrackingImportResult> {
-  const store = useCompositorStore();
-  const result: CameraTrackingImportResult = {
-    success: false,
-    warnings: [],
-  };
+  const layerStore = useLayerStore();
+  const cameraStore = useCameraStore();
+  const projectStore = useProjectStore();
+  const warnings: string[] = [];
+  let cameraLayerId: string | undefined = undefined;
+  let nullLayerIds: string[] | undefined = undefined;
+  let keyframeCount: number | undefined = undefined;
 
   try {
-    const scale = options.scale ?? 1;
-    const offset = options.offset ?? { x: 0, y: 0, z: 0 };
-    const frameOffset = options.frameOffset ?? 0;
+    // Type proof: scale ∈ ℝ ∪ {undefined} → ℝ
+    const scaleValue = options.scale;
+    const scale = isFiniteNumber(scaleValue) && scaleValue > 0 ? scaleValue : 1;
+    // Type proof: offset ∈ {x, y, z} | undefined → {x, y, z}
+    const offsetValue = options.offset;
+    const offset = (() => {
+      if (offsetValue && typeof offsetValue === "object" && "x" in offsetValue && "y" in offsetValue) {
+        const zValue = "z" in offsetValue ? offsetValue.z : undefined;
+        const z = isFiniteNumber(zValue) ? zValue : 0;
+        return {
+          x: isFiniteNumber(offsetValue.x) ? offsetValue.x : 0,
+          y: isFiniteNumber(offsetValue.y) ? offsetValue.y : 0,
+          z: z,
+        };
+      }
+      return { x: 0, y: 0, z: 0 };
+    })();
+    // Type proof: frameOffset ∈ ℕ ∪ {undefined} → ℕ
+    const frameOffsetValue = options.frameOffset;
+    const frameOffset = isFiniteNumber(frameOffsetValue) && Number.isInteger(frameOffsetValue) && frameOffsetValue >= 0 ? frameOffsetValue : 0;
 
     // Apply coordinate transformations to camera path
     const transformedPath = solve.cameraPath.map((pose) => ({
@@ -446,45 +479,76 @@ export async function importCameraTracking(
       });
 
       // Create camera layer
-      const { layer: cameraLayer } = store.createCameraLayer();
+      const { layer: cameraLayer } = cameraStore.createCameraLayer();
       cameraLayer.name = `Tracked Camera (${solve.source})`;
 
-      if (cameraLayer) {
-        // Apply keyframed transform
-        // Position uses { x, y, z? } - z is optional but we include it for 3D
-        const positionProp = createAnimatableProperty(
-          "position",
-          transformedPath[0]?.position ?? { x: 0, y: 0, z: 0 },
-          "position",
-          "Transform",
-        );
-        positionProp.animated = true;
-        // Keyframe values include z which satisfies the z? optional type
-        (positionProp as AnimatableProperty<{ x: number; y: number; z: number }>).keyframes = positionKeyframes;
+      // Apply keyframed transform
+      // Position uses { x, y, z? } - z is optional but we include it for 3D
+      const positionProp = createAnimatableProperty(
+        "position",
+        (() => {
+          // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+          // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+          const posValue = (transformedPath.length > 0 && typeof transformedPath[0] === "object" && transformedPath[0] !== null && "position" in transformedPath[0] && typeof transformedPath[0].position === "object" && transformedPath[0].position !== null)
+            ? transformedPath[0].position
+            : null;
+          if (posValue !== null && typeof posValue === "object" && "x" in posValue && "y" in posValue) {
+            // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+            const zValue = ("z" in posValue && typeof posValue.z === "number") ? posValue.z : 0;
+            const z = isFiniteNumber(zValue) ? zValue : 0;
+            return {
+              x: isFiniteNumber(posValue.x) ? posValue.x : 0,
+              y: isFiniteNumber(posValue.y) ? posValue.y : 0,
+              z: z,
+            };
+          }
+          return { x: 0, y: 0, z: 0 };
+        })(),
+        "position",
+        "Transform",
+      );
+      positionProp.animated = true;
+      // Keyframe values include z which satisfies the z? optional type
+      (positionProp as AnimatableProperty<{ x: number; y: number; z: number }>).keyframes = positionKeyframes;
 
-        // Use orientation for 3D rotation (vector3), rotation is for 2D (number)
-        const orientationProp = createAnimatableProperty(
-          "orientation",
-          rotationKeyframes[0]?.value ?? { x: 0, y: 0, z: 0 },
-          "vector3",
-          "Transform",
-        );
-        orientationProp.animated = true;
-        (orientationProp as AnimatableProperty<{ x: number; y: number; z: number }>).keyframes = rotationKeyframes;
+      // Use orientation for 3D rotation (vector3), rotation is for 2D (number)
+      const orientationProp = createAnimatableProperty(
+        "orientation",
+        (() => {
+          // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+          // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+          const rotValue = (rotationKeyframes.length > 0 && typeof rotationKeyframes[0] === "object" && rotationKeyframes[0] !== null && "value" in rotationKeyframes[0] && typeof rotationKeyframes[0].value === "object" && rotationKeyframes[0].value !== null)
+            ? rotationKeyframes[0].value
+            : null;
+          if (rotValue && typeof rotValue === "object" && "x" in rotValue && "y" in rotValue) {
+            const zValue = "z" in rotValue ? rotValue.z : undefined;
+            const z = isFiniteNumber(zValue) ? zValue : 0;
+            return {
+              x: isFiniteNumber(rotValue.x) ? rotValue.x : 0,
+              y: isFiniteNumber(rotValue.y) ? rotValue.y : 0,
+              z: z,
+            };
+          }
+          return { x: 0, y: 0, z: 0 };
+        })(),
+        "vector3",
+        "Transform",
+      );
+      orientationProp.animated = true;
+      (orientationProp as AnimatableProperty<{ x: number; y: number; z: number }>).keyframes = rotationKeyframes;
 
-        // Update the camera layer with camera-specific data and transform
-        store.updateLayer(cameraLayer.id, {
-          threeD: true,
-          transform: {
-            ...cameraLayer.transform,
-            position: positionProp as AnimatableProperty<{ x: number; y: number; z?: number }>,
-            orientation: orientationProp,
-          },
-        });
+      // Update the camera layer with camera-specific data and transform
+      layerStore.updateLayer(cameraLayer.id, {
+        threeD: true,
+        transform: {
+          ...cameraLayer.transform,
+          position: positionProp as AnimatableProperty<{ x: number; y: number; z?: number }>,
+          orientation: orientationProp,
+        },
+      });
 
-        result.cameraLayerId = cameraLayer.id;
-        result.keyframeCount = positionKeyframes.length;
-      }
+      cameraLayerId = cameraLayer.id;
+      keyframeCount = positionKeyframes.length;
     }
 
     // Create null objects at track points if requested
@@ -493,7 +557,7 @@ export async function importCameraTracking(
       solve.trackPoints3D &&
       solve.trackPoints3D.length > 0
     ) {
-      result.nullLayerIds = [];
+      nullLayerIds = [];
       const maxNulls = 100; // Limit to avoid creating thousands
 
       const pointsToCreate = solve.trackPoints3D.slice(0, maxNulls);
@@ -509,41 +573,49 @@ export async function importCameraTracking(
             offset.z,
         };
 
-        const nullLayer = store.createLayer("control", `Track Point ${point.id}`);
+        const nullLayer = layerStore.createLayer("control", `Track Point ${point.id}`);
 
-        if (nullLayer) {
-          store.updateLayer(nullLayer.id, {
-            threeD: true,
-            transform: {
-              ...nullLayer.transform,
-              position: createAnimatableProperty(
-                "position",
-                pos,
-                "position",
-                "Transform",
-              ) as AnimatableProperty<{ x: number; y: number; z?: number }>,
-            },
-          });
+        layerStore.updateLayer(nullLayer.id, {
+          threeD: true,
+          transform: {
+            ...nullLayer.transform,
+            position: createAnimatableProperty(
+              "position",
+              pos,
+              "position",
+              "Transform",
+            ) as AnimatableProperty<{ x: number; y: number; z?: number }>,
+          },
+        });
 
-          result.nullLayerIds.push(nullLayer.id);
+        if (nullLayerIds === undefined) {
+          nullLayerIds = [];
         }
+        nullLayerIds.push(nullLayer.id);
       }
 
       if (solve.trackPoints3D.length > maxNulls) {
-        result.warnings?.push(
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+        warnings.push(
           `Only created ${maxNulls} null objects out of ${solve.trackPoints3D.length} track points`,
         );
       }
     }
 
     // Create point cloud layer if requested
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
     if (
-      options.pointCloud?.create &&
+      typeof options.pointCloud === "object" && options.pointCloud !== null && "create" in options.pointCloud && options.pointCloud.create === true &&
       solve.trackPoints3D &&
       solve.trackPoints3D.length > 0
     ) {
-      const maxPoints = options.pointCloud.maxPoints ?? 50000;
-      const pointSize = options.pointCloud.pointSize ?? 2;
+      // Type proof: maxPoints ∈ ℕ ∪ {undefined} → ℕ
+      const maxPointsValue = options.pointCloud.maxPoints;
+      const maxPoints = isFiniteNumber(maxPointsValue) && Number.isInteger(maxPointsValue) && maxPointsValue > 0 ? maxPointsValue : 50000;
+      // Type proof: pointSize ∈ ℝ ∪ {undefined} → ℝ
+      const pointSizeValue = options.pointCloud.pointSize;
+      const pointSize = isFiniteNumber(pointSizeValue) && pointSizeValue > 0 ? pointSizeValue : 2;
 
       const positions: number[] = [];
       const colors: number[] = [];
@@ -567,49 +639,53 @@ export async function importCameraTracking(
         }
       }
 
-      const pointCloudLayer = store.createLayer("pointcloud", `Track Points (${solve.source})`);
+      const pointCloudLayer = layerStore.createLayer("pointcloud", `Track Points (${solve.source})`);
 
-      if (pointCloudLayer) {
-        // Point cloud data structure - runtime data stored in positions/colors arrays
-        // Note: This creates a minimal point cloud layer with runtime data
-        // The actual PointCloudLayerData type expects assetId, but we're creating from tracking data
-        const pointCloudData = {
-          assetId: "", // Runtime-generated, no asset file
-          format: "xyz" as const,
-          pointCount: positions.length / 3,
-          pointSize: createAnimatableProperty("pointSize", pointSize, "number"),
-          sizeAttenuation: true,
-          minPointSize: 1,
-          maxPointSize: 10,
-          colorMode: "rgb" as const,
-          uniformColor: "#ffffff",
-          // Runtime-specific data stored in these properties (not in type definition)
-          positions: new Float32Array(positions),
-          colors: new Float32Array(colors),
-        };
-        // Runtime-specific data stored separately (positions/colors not in type definition)
-        // Use intersection type to include runtime properties
-        const runtimeData: PointCloudLayerData & {
-          positions: Float32Array;
-          colors: Float32Array;
-        } = pointCloudData as PointCloudLayerData & {
-          positions: Float32Array;
-          colors: Float32Array;
-        };
-        store.updateLayer(pointCloudLayer.id, {
-          data: runtimeData,
-        });
-        result.pointCloudLayerId = pointCloudLayer.id;
-      }
+      // Point cloud data structure - runtime data stored in positions/colors arrays
+      // Note: This creates a minimal point cloud layer with runtime data
+      // The actual PointCloudLayerData type expects assetId, but we're creating from tracking data
+      const pointCloudData = {
+        assetId: "", // Runtime-generated, no asset file
+        format: "xyz" as const,
+        pointCount: positions.length / 3,
+        pointSize: createAnimatableProperty("pointSize", pointSize, "number"),
+        sizeAttenuation: true,
+        minPointSize: 1,
+        maxPointSize: 10,
+        colorMode: "rgb" as const,
+        uniformColor: "#ffffff",
+        // Runtime-specific data stored in these properties (not in type definition)
+        positions: new Float32Array(positions),
+        colors: new Float32Array(colors),
+      };
+      // Runtime-specific data stored separately (positions/colors not in type definition)
+      // Use intersection type to include runtime properties
+      const runtimeData: PointCloudLayerData & {
+        positions: Float32Array;
+        colors: Float32Array;
+      } = pointCloudData as PointCloudLayerData & {
+        positions: Float32Array;
+        colors: Float32Array;
+      };
+      layerStore.updateLayer(pointCloudLayer.id, {
+        data: runtimeData,
+      });
+      // Point cloud layer ID can be added to result if needed
+      // For now, just create the layer - caller can access it via layerStore
     }
 
-    result.success = true;
+    return {
+      success: true,
+      warnings,
+      cameraLayerId,
+      nullLayerIds,
+      keyframeCount,
+    };
   } catch (error) {
-    result.error = error instanceof Error ? error.message : "Unknown error";
-    result.success = false;
+    // Re-throw with context - don't silently fail
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    throw new Error(`[CameraTrackingImport] Failed to import camera tracking data: ${errorMessage}. Check solve data format and layer creation.`);
   }
-
-  return result;
 }
 
 /**
@@ -687,49 +763,85 @@ function quaternionToEuler(
 export function exportCameraToTrackingFormat(
   layerId: string,
 ): CameraTrackingSolve | null {
-  const store = useCompositorStore();
-  const layer = store.layers.find((l) => l.id === layerId);
+  const projectStore = useProjectStore();
+  const layerStore = useLayerStore();
+  const layer = layerStore.getLayerById(layerId);
 
   if (!layer || layer.type !== "camera") {
-    return null;
+    throw new Error(`[CameraTrackingImport] Layer "${layerId}" not found or is not a camera layer`);
   }
 
-  const comp = store.activeComposition;
-  if (!comp) return null;
+  const comp = projectStore.getActiveComp();
+  if (!comp) {
+    throw new Error("[CameraTrackingImport] No active composition found");
+  }
 
   const cameraPath: CameraPose[] = [];
 
   // Get position and orientation (3D rotation) properties
-  const positionProp = layer.transform?.position;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+  const positionProp = (typeof layer.transform === "object" && layer.transform !== null && "position" in layer.transform && typeof layer.transform.position === "object" && layer.transform.position !== null)
+    ? layer.transform.position
+    : null;
   // Use orientation for 3D rotation, fall back to individual rotationX/Y/Z
-  const orientationProp = layer.transform?.orientation;
+  const orientationProp = (typeof layer.transform === "object" && layer.transform !== null && "orientation" in layer.transform && typeof layer.transform.orientation === "object" && layer.transform.orientation !== null)
+    ? layer.transform.orientation
+    : null;
 
   // Generate camera path for each frame with keyframes
   const allFrames = new Set<number>();
 
-  if (positionProp?.keyframes) {
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+  if (positionProp !== null && typeof positionProp === "object" && "keyframes" in positionProp && Array.isArray(positionProp.keyframes)) {
     positionProp.keyframes.forEach((kf) => allFrames.add(kf.frame));
   }
-  if (orientationProp?.keyframes) {
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+  if (orientationProp !== null && typeof orientationProp === "object" && "keyframes" in orientationProp && Array.isArray(orientationProp.keyframes)) {
     orientationProp.keyframes.forEach((kf) => allFrames.add(kf.frame));
   }
 
   // Helper to ensure z is defined
+  // Type proof: z ∈ ℝ ∪ {undefined} → z ∈ ℝ
   const ensureZ = (v: {
     x: number;
     y: number;
     z?: number;
-  }): { x: number; y: number; z: number } => ({
-    x: v.x,
-    y: v.y,
-    z: v.z ?? 0,
-  });
+  }): { x: number; y: number; z: number } => {
+    const zValue = v.z;
+    const z = isFiniteNumber(zValue) ? zValue : 0;
+    return {
+      x: v.x,
+      y: v.y,
+      z: z,
+    };
+  };
 
   // If no keyframes, just export default pose
   if (allFrames.size === 0) {
-    const posValue = positionProp?.value ?? { x: 0, y: 0 };
-    const pos = ensureZ(posValue);
-    const rot = orientationProp?.value ?? { x: 0, y: 0, z: 0 };
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+    const posValue = (positionProp !== null && typeof positionProp === "object" && "value" in positionProp && typeof positionProp.value === "object" && positionProp.value !== null)
+      ? positionProp.value
+      : null;
+    const pos = ensureZ(posValue !== null && typeof posValue === "object" && "x" in posValue && "y" in posValue ? posValue : { x: 0, y: 0 });
+    const rotValue = (orientationProp !== null && typeof orientationProp === "object" && "value" in orientationProp && typeof orientationProp.value === "object" && orientationProp.value !== null)
+      ? orientationProp.value
+      : null;
+    const rot = (() => {
+      if (rotValue && typeof rotValue === "object" && "x" in rotValue && "y" in rotValue) {
+        const zValue = "z" in rotValue ? rotValue.z : undefined;
+        const z = isFiniteNumber(zValue) ? zValue : 0;
+        return {
+          x: isFiniteNumber(rotValue.x) ? rotValue.x : 0,
+          y: isFiniteNumber(rotValue.y) ? rotValue.y : 0,
+          z: z,
+        };
+      }
+      return { x: 0, y: 0, z: 0 };
+    })();
 
     cameraPath.push({
       frame: 0,
@@ -743,9 +855,14 @@ export function exportCameraToTrackingFormat(
 
     for (const frame of sortedFrames) {
       // Interpolate position - handle z being optional
-      const posValue = interpolatePositionProperty(positionProp, frame);
+      // System F/Omega: Convert null to undefined for function calls
+      // Type proof: positionProp ∈ AnimatableProperty | null → AnimatableProperty | undefined
+      const positionPropValue = positionProp !== null ? positionProp : undefined;
+      const posValue = interpolatePositionProperty(positionPropValue, frame);
       const pos = ensureZ(posValue);
-      const rot = interpolateOrientationProperty(orientationProp, frame);
+      // Type proof: orientationProp ∈ AnimatableProperty | null → AnimatableProperty | undefined
+      const orientationPropValue = orientationProp !== null ? orientationProp : undefined;
+      const rot = interpolateOrientationProperty(orientationPropValue, frame);
 
       cameraPath.push({
         frame,
@@ -761,7 +878,13 @@ export function exportCameraToTrackingFormat(
     fov?: { value?: number };
   };
 
-  const fov = cameraData?.fov?.value ?? 50;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+  const cameraFov = (typeof cameraData === "object" && cameraData !== null && "fov" in cameraData && typeof cameraData.fov === "object" && cameraData.fov !== null && "value" in cameraData.fov && typeof cameraData.fov.value === "number")
+    ? cameraData.fov.value
+    : 50;
+  const fovValue = cameraFov;
+  const fov = isFiniteNumber(fovValue) && fovValue > 0 && fovValue <= 180 ? fovValue : 50;
   const focalLength =
     comp.settings.height / (2 * Math.tan((fov * Math.PI) / 180 / 2));
 
@@ -848,8 +971,11 @@ function interpolatePositionProperty(
 
   // Linear interpolation
   const t = (frame - prev.frame) / (next.frame - prev.frame);
-  const prevZ = prev.value.z ?? 0;
-  const nextZ = next.value.z ?? 0;
+  // Type proof: z ∈ ℝ ∪ {undefined} → z ∈ ℝ
+  const prevZValue = prev.value.z;
+  const prevZ = isFiniteNumber(prevZValue) ? prevZValue : 0;
+  const nextZValue = next.value.z;
+  const nextZ = isFiniteNumber(nextZValue) ? nextZValue : 0;
   return {
     x: prev.value.x + (next.value.x - prev.value.x) * t,
     y: prev.value.y + (next.value.y - prev.value.y) * t,

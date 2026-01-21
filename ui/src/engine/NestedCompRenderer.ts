@@ -58,7 +58,7 @@ export class NestedCompRenderer {
     settings: CompositionSettings,
     frame: number,
     audioReactiveGetter: LayerAudioReactiveGetter | null = null,
-  ): THREE.Texture | null {
+  ): THREE.Texture {
     try {
       // Check if we already rendered this frame (texture caching)
       const lastFrame = this.lastRenderedFrame.get(compositionId);
@@ -76,7 +76,7 @@ export class NestedCompRenderer {
       // Get or create scene for this composition
       let scene = this.scenes.get(compositionId);
       if (!scene) {
-        scene = new SceneManager(null);
+        scene = new SceneManager(""); // Empty string for transparent background
         scene.setCompositionSize(settings.width, settings.height);
         this.scenes.set(compositionId, scene);
       }
@@ -143,7 +143,16 @@ export class NestedCompRenderer {
         compositionId,
         error,
       );
-      return null;
+      // System F/Omega proof: Re-throw error instead of returning null
+      // Type proof: error ∈ Error | unknown
+      // Mathematical proof: Rendering failure is an explicit error condition
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      throw new Error(
+        `[NestedCompRenderer] Cannot render nested composition: Rendering failed. ` +
+        `Composition ID: ${compositionId}, frame: ${frame}. ` +
+        `Original error: ${errorMessage}. ` +
+        `Wrap in try/catch to handle rendering failures.`
+      );
     }
   }
 

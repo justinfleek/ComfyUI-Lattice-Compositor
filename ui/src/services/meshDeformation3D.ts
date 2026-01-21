@@ -13,6 +13,7 @@ import type * as THREE from "three";
 import type { AnimatableProperty, Vec3 } from "@/types/project";
 import { createLogger } from "@/utils/logger";
 import { interpolateProperty } from "./interpolation";
+import { isFiniteNumber } from "@/utils/typeGuards";
 
 const logger = createLogger("MeshDeformation3D");
 
@@ -481,7 +482,9 @@ export class MeshDeformation3DService {
    * Add a pin to a layer
    */
   addPin(layerId: string, position: Vec3): Deformation3DPin {
-    const pins = this.pinsByLayer.get(layerId) ?? [];
+    // Type proof: Map.get() ∈ T | undefined → T[]
+    const existingPins = this.pinsByLayer.get(layerId);
+    const pins = Array.isArray(existingPins) ? existingPins : [];
     const id = `pin_${layerId}_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
     const pin = createDefault3DPin(id, position);
     pins.push(pin);
@@ -493,7 +496,9 @@ export class MeshDeformation3DService {
    * Get pins for a layer
    */
   getPins(layerId: string): Deformation3DPin[] {
-    return this.pinsByLayer.get(layerId) ?? [];
+    // Type proof: Map.get() ∈ T | undefined → T[]
+    const pins = this.pinsByLayer.get(layerId);
+    return Array.isArray(pins) ? pins : [];
   }
 
   /**
@@ -505,8 +510,12 @@ export class MeshDeformation3DService {
     position: AnimatableProperty<Vec3>,
     fps: number = 30,
   ): Deformation3DResult {
+    // Type proof: Map.get() ∈ T | undefined → T
+    const config = this.squashStretchConfigs.get(layerId);
     const squashConfig =
-      this.squashStretchConfigs.get(layerId) ?? DEFAULT_SQUASH_STRETCH;
+      typeof config === "object" && config !== null && "enabled" in config
+        ? config
+        : DEFAULT_SQUASH_STRETCH;
 
     // Calculate velocity for squash/stretch
     const velocity = calculateVelocityAtFrame(position, frame, fps);

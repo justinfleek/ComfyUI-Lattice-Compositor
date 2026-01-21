@@ -109,7 +109,7 @@
       <div class="property-row">
         <label>Highlight</label>
         <ScrubableNumber
-          :modelValue="shape.gradient.value.highlightLength || 0"
+          :modelValue="getHighlightLength()"
           @update:modelValue="updateHighlightLength"
           :min="0"
           :max="100"
@@ -119,7 +119,7 @@
       <div class="property-row">
         <label>Highlight Angle</label>
         <ScrubableNumber
-          :modelValue="shape.gradient.value.highlightAngle || 0"
+          :modelValue="getHighlightAngle()"
           @update:modelValue="updateHighlightAngle"
           :min="-180"
           :max="180"
@@ -132,13 +132,24 @@
 
 <script setup lang="ts">
 import { computed } from "vue";
-import { useCompositorStore } from "@/stores/compositorStore";
+import { safeNonNegativeDefault, safeCoordinateDefault } from "@/utils/typeGuards";
+import { useAnimationStore } from "@/stores/animationStore";
 import { createKeyframe } from "@/types/animation";
 import type { FillRule, GradientFillShape, ShapeColor } from "@/types/shapes";
 
 const props = defineProps<{ shape: GradientFillShape; layerId: string }>();
 const emit = defineEmits(["update"]);
-const store = useCompositorStore();
+const animationStore = useAnimationStore();
+
+// Type proof: highlightLength ∈ number | undefined → number (0-100 range, non-negative)
+function getHighlightLength(): number {
+  return safeNonNegativeDefault(props.shape.gradient.value.highlightLength, 0, "shape.gradient.value.highlightLength");
+}
+
+// Type proof: highlightAngle ∈ number | undefined → number (coordinate-like, can be negative)
+function getHighlightAngle(): number {
+  return safeCoordinateDefault(props.shape.gradient.value.highlightAngle, 0, "shape.gradient.value.highlightAngle");
+}
 
 // Gradient preview CSS
 const gradientPreviewStyle = computed(() => {
@@ -200,7 +211,7 @@ function updateNumber(prop: "opacity", value: number) {
 function toggleKeyframe(prop: "opacity") {
   const updated = { ...props.shape };
   const animProp = updated[prop];
-  const frame = store.currentFrame;
+  const frame = animationStore.currentFrame;
   const hasKf = animProp.keyframes.some((k) => k.frame === frame);
   if (hasKf) {
     animProp.keyframes = animProp.keyframes.filter((k) => k.frame !== frame);

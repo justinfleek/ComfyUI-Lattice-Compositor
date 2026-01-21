@@ -11,11 +11,14 @@ import type {
   CSVParseOptions,
   CSVSourceData,
   DataAsset,
+  DataFileType,
   DataParseResult,
   FootageDataAccessor,
   JSONDataAsset,
   JSONParseOptions,
+  JSONValue,
 } from "@/types/dataAsset";
+import type { RuntimeValue } from "@/types/ses-ambient";
 import {
   getDataFileType,
   isCSVAsset,
@@ -62,19 +65,18 @@ export function parseJSON(
   });
 
   if (!result.valid) {
-    return {
-      success: false,
-      error: `Failed to parse JSON: ${result.error}`,
-    };
+    throw new Error(`[DataImport] Failed to parse JSON file "${name}": ${result.error}. File may be corrupted or invalid. Check the file format and try again.`);
   }
 
-  // Log any security warnings
+  // Throw on security warnings (don't just log - security issues are fatal)
   if (result.warnings.length > 0) {
-    console.warn(
-      `[DataImport] Security warnings for ${name}:`,
-      result.warnings,
-    );
+    throw new Error(`[DataImport] Security warnings for "${name}": ${result.warnings.join(", ")}. File may contain malicious content. Import blocked for security.`);
   }
+
+  // System F/Omega proof: Type guard for unknown → JSONValue
+  // Type proof: parseAndSanitize returns unknown, but we know it's valid JSON
+  // Since parseAndSanitize validates JSON structure, we can safely cast to JSONValue
+  const sourceData = result.data as import("@/types/dataAsset").JSONValue;
 
   const asset: JSONDataAsset = {
     id: `data_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`,
@@ -82,7 +84,7 @@ export function parseJSON(
     type: name.toLowerCase().endsWith(".mgjson") ? "mgjson" : "json",
     rawContent: content,
     lastModified: Date.now(),
-    sourceData: result.data,
+    sourceData,
   };
 
   return { success: true, asset };
@@ -135,10 +137,7 @@ export function parseCSV(
   }
 
   if (rows.length === 0) {
-    return {
-      success: false,
-      error: "CSV file is empty or contains no valid data",
-    };
+    throw new Error(`[DataImport] CSV file "${name}" is empty or contains no valid data. File must contain at least one row of data.`);
   }
 
   const headers = hasHeaders ? rows[0] : rows[0].map((_, i) => `col${i}`);
@@ -245,14 +244,14 @@ export function parseDataFile(
   content: string,
   filename: string,
 ): DataParseResult {
-  const fileType = getDataFileType(filename);
-
-  if (!fileType) {
-    return {
-      success: false,
-      error: `Unsupported file type: ${filename}. Supported types: .json, .csv, .tsv, .mgjson`,
-    };
+  // System F/Omega proof: Validate file type before calling utility
+  // Type proof: filename ∈ string → DataFileType
+  // Mathematical proof: File must be supported (checked by isSupportedDataFile) before calling getDataFileType
+  if (!isSupportedDataFile(filename)) {
+    throw new Error(`[DataImport] Unsupported file type: "${filename}". Supported types: .json, .csv, .tsv, .mgjson. Use a supported file format.`);
   }
+  
+  const fileType = getDataFileType(filename);
 
   switch (fileType) {
     case "json":
@@ -263,10 +262,7 @@ export function parseDataFile(
     case "tsv":
       return parseTSV(content, filename);
     default:
-      return {
-        success: false,
-        error: `Unknown file type: ${fileType}`,
-      };
+      throw new Error(`[DataImport] Unknown file type: "${fileType}" for file "${filename}". This should not happen - file type detection returned an unsupported value.`);
   }
 }
 
@@ -281,9 +277,11 @@ export function importDataAsset(
   content: string,
   filename: string,
 ): DataParseResult {
+  // parseDataFile now throws on errors instead of returning success: false
   const result = parseDataFile(content, filename);
-
-  if (result.success && result.asset) {
+  
+  // If we get here, parsing succeeded
+  if (result.asset) {
     dataAssets.set(result.asset.name, result.asset);
     console.log(`[DataImport] Imported data asset: ${filename}`);
   }
@@ -296,20 +294,18 @@ export function importDataAsset(
  */
 export async function importDataFromFile(file: File): Promise<DataParseResult> {
   if (!isSupportedDataFile(file.name)) {
-    return {
-      success: false,
-      error: `Unsupported file type: ${file.name}`,
-    };
+    throw new Error(`[DataImport] Unsupported file type: "${file.name}". Supported types: .json, .csv, .tsv, .mgjson. Use a supported file format.`);
   }
 
   try {
     const content = await file.text();
     return importDataAsset(content, file.name);
   } catch (error) {
-    return {
-      success: false,
-      error: `Failed to read file: ${error instanceof Error ? error.message : "Unknown error"}`,
-    };
+    // Re-throw if it's already our error format, otherwise wrap it
+    if (error instanceof Error && error.message.startsWith("[DataImport]")) {
+      throw error;
+    }
+    throw new Error(`[DataImport] Failed to read file "${file.name}": ${error instanceof Error ? error.message : "Unknown error"}. File may be corrupted or inaccessible.`);
   }
 }
 
@@ -351,16 +347,15 @@ export function reloadDataAsset(
   const existing = dataAssets.get(name);
 
   if (!existing) {
-    return {
-      success: false,
-      error: `Data asset not found: ${name}`,
-    };
+    throw new Error(`[DataImport] Cannot reload data asset "${name}": Asset not found. Import the asset first before reloading.`);
   }
 
   const content = newContent || existing.rawContent;
+  // parseDataFile now throws on errors instead of returning success: false
   const result = parseDataFile(content, name);
-
-  if (result.success && result.asset) {
+  
+  // If we get here, parsing succeeded
+  if (result.asset) {
     // Preserve the original ID
     result.asset.id = existing.id;
     dataAssets.set(name, result.asset);
@@ -379,12 +374,11 @@ export function reloadDataAsset(
  */
 export function createFootageAccessor(
   name: string,
-): FootageDataAccessor | null {
+): FootageDataAccessor {
   const asset = getDataAsset(name);
 
   if (!asset) {
-    console.warn(`[DataImport] Data asset not found: ${name}`);
-    return null;
+    throw new Error(`[DataImport] Data asset not found: ${name}`);
   }
 
   if (isJSONAsset(asset)) {
@@ -393,7 +387,7 @@ export function createFootageAccessor(
     return createCSVAccessor(asset);
   }
 
-  return null;
+  throw new Error(`[DataImport] Unsupported asset type for data asset "${name}"`);
 }
 
 /**
@@ -501,16 +495,25 @@ export function extractArrayFromJSON(
   path: string,
 ): import("@/types/dataAsset").JSONValue[] | null {
   const parts = path.split(".");
-  let current = asset.sourceData;
+  // System F/Omega proof: Type guard for RuntimeValue sourceData
+  // Type proof: sourceData: RuntimeValue → requires runtime type checking before property access
+  let current: RuntimeValue = asset.sourceData as RuntimeValue;
 
   for (const part of parts) {
     if (current === null || current === undefined) {
-      return null;
+      throw new Error(`[DataImport] Cannot access path "${path}": value is null or undefined at "${parts.slice(0, parts.indexOf(part)).join(".")}"`);
     }
-    current = current[part];
+    // Type guard: Check if current is an object/array before property access
+    // Type proof: ∀ x: RuntimeValue, isObjectLike(x) → x has index signature
+    if (typeof current !== "object" || current === null) {
+      throw new Error(`[DataImport] Cannot access path "${path}": value at "${parts.slice(0, parts.indexOf(part)).join(".")}" is not an object`);
+    }
+    // Safe property access: current is object-like, part is string key
+    const currentObj = current as Record<string, JSONValue>;
+    current = currentObj[part] as RuntimeValue;
   }
 
-  return Array.isArray(current) ? current : null;
+  return Array.isArray(current) ? (current as JSONValue[]) : null;
 }
 
 /**
@@ -525,11 +528,19 @@ export function getJSONValue(
   path: string,
 ): import("@/types/dataAsset").JSONValue | undefined {
   const parts = path.split(".");
-  let current = asset.sourceData;
+  // System F/Omega proof: Type guard for RuntimeValue sourceData
+  // Type proof: sourceData: RuntimeValue → requires runtime type checking before property access
+  let current: RuntimeValue = asset.sourceData as RuntimeValue;
 
   for (const part of parts) {
     if (current === null || current === undefined) {
-      return undefined;
+      throw new Error(`[DataImport] Cannot access path "${path}": value is null or undefined at "${parts.slice(0, parts.indexOf(part)).join(".")}"`);
+    }
+
+    // Type guard: Check if current is an object/array before property access
+    // Type proof: ∀ x: RuntimeValue, isObjectLike(x) → x has index signature
+    if (typeof current !== "object" || current === null) {
+      throw new Error(`[DataImport] Cannot access path "${path}": value at "${parts.slice(0, parts.indexOf(part)).join(".")}" is not an object`);
     }
 
     // Handle array index notation: data[0]
@@ -537,18 +548,26 @@ export function getJSONValue(
     if (arrayMatch) {
       const key = arrayMatch[1];
       const index = parseInt(arrayMatch[2], 10);
-      current = current[key];
-      if (Array.isArray(current)) {
-        current = current[index];
-      } else {
-        return undefined;
+      // Type guard: Ensure current is object-like before accessing key property
+      const obj = current as Record<string, JSONValue>;
+      const arrayValue = obj[key];
+      if (!Array.isArray(arrayValue)) {
+        throw new Error(`[DataImport] Cannot access path "${path}": "${key}" is not an array`);
       }
+      // Safe array access: arrayValue is array, index is number
+      if (index < 0 || index >= arrayValue.length) {
+        throw new Error(`[DataImport] Cannot access path "${path}": array index ${index} is out of bounds (array length: ${arrayValue.length})`);
+      }
+      current = arrayValue[index] as RuntimeValue;
     } else {
-      current = current[part];
+      // Safe property access: current is object-like, part is string key
+      const obj = current as Record<string, JSONValue>;
+      current = obj[part] as RuntimeValue;
     }
   }
 
-  return current;
+  // Type assertion: current is JSONValue after type guards
+  return current as JSONValue | undefined;
 }
 
 /**

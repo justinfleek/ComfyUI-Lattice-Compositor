@@ -126,14 +126,19 @@ function animatablePropertyArb<T>(
 
 // Helper to create keyframe with required fields
 function createTestKeyframe<T>(overrides: Partial<Keyframe<T>> & { frame: number; value: T }): Keyframe<T> {
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+  const interpolation = (overrides.interpolation !== null && overrides.interpolation !== undefined && typeof overrides.interpolation === "string" && overrides.interpolation.length > 0) ? overrides.interpolation : "linear";
+  const outHandle = (overrides.outHandle !== null && overrides.outHandle !== undefined && typeof overrides.outHandle === "object") ? overrides.outHandle : { frame: 0, value: 0, enabled: false };
+  const inHandle = (overrides.inHandle !== null && overrides.inHandle !== undefined && typeof overrides.inHandle === "object") ? overrides.inHandle : { frame: 0, value: 0, enabled: false };
+  const controlMode = (overrides.controlMode !== null && overrides.controlMode !== undefined && typeof overrides.controlMode === "string" && overrides.controlMode.length > 0) ? overrides.controlMode : "smooth";
   return {
     id: `kf-${overrides.frame}`,
     frame: overrides.frame,
     value: overrides.value,
-    interpolation: overrides.interpolation ?? "linear",
-    outHandle: overrides.outHandle ?? { frame: 0, value: 0, enabled: false },
-    inHandle: overrides.inHandle ?? { frame: 0, value: 0, enabled: false },
-    controlMode: overrides.controlMode ?? "smooth",
+    interpolation,
+    outHandle,
+    inHandle,
+    controlMode,
   };
 }
 

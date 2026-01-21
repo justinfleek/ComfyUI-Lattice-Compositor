@@ -14,7 +14,10 @@ import type {
 } from "@/types/project";
 import { storeLogger } from "@/utils/logger";
 import { findPropertyByPath } from "./helpers";
-import type { ClipboardKeyframeStoreAccess, KeyframeState } from "./types";
+import type { KeyframeState } from "./types";
+import { useProjectStore } from "../projectStore";
+import { useAnimationStore } from "../animationStore";
+import { useKeyframeStore } from "./index";
 
 // ============================================================================
 // KEYFRAME CLIPBOARD (COPY/PASTE)
@@ -23,18 +26,18 @@ import type { ClipboardKeyframeStoreAccess, KeyframeState } from "./types";
 /**
  * Copy keyframes to clipboard.
  *
- * @param store - The compositor store with clipboard access
  * @param keyframeSelections - Array of keyframe selections with layerId, propertyPath, and keyframeId
  * @returns Number of keyframes copied
  */
 export function copyKeyframes(
-  store: ClipboardKeyframeStoreAccess,
   keyframeSelections: Array<{
     layerId: string;
     propertyPath: string;
     keyframeId: string;
   }>,
 ): number {
+  const projectStore = useProjectStore();
+  const keyframeStore = useKeyframeStore();
   if (keyframeSelections.length === 0) {
     storeLogger.debug("copyKeyframes: No keyframes selected");
     return 0;
@@ -55,7 +58,11 @@ export function copyKeyframes(
         keyframeIds: [],
       });
     }
-    groupedByProperty.get(key)?.keyframeIds.push(sel.keyframeId);
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const groupEntry = groupedByProperty.get(key);
+    if (groupEntry != null && typeof groupEntry === "object" && "keyframeIds" in groupEntry && Array.isArray(groupEntry.keyframeIds)) {
+      groupEntry.keyframeIds.push(sel.keyframeId);
+    }
   }
 
   // Find the earliest frame among all selected keyframes (for relative timing)
@@ -63,15 +70,17 @@ export function copyKeyframes(
   const clipboardEntries: ClipboardKeyframe[] = [];
 
   for (const [, group] of groupedByProperty) {
-    const layer = store
+    const layer = projectStore
       .getActiveCompLayers()
       .find((l) => l.id === group.layerId);
     if (!layer) continue;
 
     const property = findPropertyByPath(layer, group.propertyPath);
-    if (!property?.keyframes) continue;
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const propertyKeyframes = (property != null && typeof property === "object" && "keyframes" in property && property.keyframes != null && Array.isArray(property.keyframes)) ? property.keyframes : undefined;
+    if (propertyKeyframes == null) continue;
 
-    const selectedKeyframes = property.keyframes.filter((kf) =>
+    const selectedKeyframes = propertyKeyframes.filter((kf) =>
       group.keyframeIds.includes(kf.id),
     );
     for (const kf of selectedKeyframes) {
@@ -88,15 +97,17 @@ export function copyKeyframes(
 
   // Build clipboard entries with relative frame offsets
   for (const [, group] of groupedByProperty) {
-    const layer = store
+    const layer = projectStore
       .getActiveCompLayers()
       .find((l) => l.id === group.layerId);
     if (!layer) continue;
 
     const property = findPropertyByPath(layer, group.propertyPath);
-    if (!property?.keyframes) continue;
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const propertyKeyframes = (property != null && typeof property === "object" && "keyframes" in property && property.keyframes != null && Array.isArray(property.keyframes)) ? property.keyframes : undefined;
+    if (propertyKeyframes == null) continue;
 
-    const selectedKeyframes = property.keyframes.filter((kf) =>
+    const selectedKeyframes = propertyKeyframes.filter((kf) =>
       group.keyframeIds.includes(kf.id),
     );
     if (selectedKeyframes.length === 0) continue;
@@ -119,7 +130,7 @@ export function copyKeyframes(
   }
 
   // Store in clipboard
-  store.clipboard.keyframes = clipboardEntries;
+  keyframeStore.clipboard.keyframes = clipboardEntries;
 
   const totalCopied = clipboardEntries.reduce(
     (sum, entry) => sum + entry.keyframes.length,
@@ -133,22 +144,23 @@ export function copyKeyframes(
 /**
  * Paste keyframes from clipboard to a target property.
  *
- * @param store - The compositor store with clipboard access
  * @param targetLayerId - Target layer ID to paste to
  * @param targetPropertyPath - Target property path (optional - uses original if matching type)
  * @returns Array of newly created keyframes
  */
 export function pasteKeyframes(
-  store: ClipboardKeyframeStoreAccess,
   targetLayerId: string,
   targetPropertyPath?: string,
 ): Keyframe<PropertyValue>[] {
-  if (store.clipboard.keyframes.length === 0) {
+  const projectStore = useProjectStore();
+  const animationStore = useAnimationStore();
+  const keyframeStore = useKeyframeStore();
+  if (keyframeStore.clipboard.keyframes.length === 0) {
     storeLogger.debug("pasteKeyframes: No keyframes in clipboard");
     return [];
   }
 
-  const targetLayer = store
+  const targetLayer = projectStore
     .getActiveCompLayers()
     .find((l) => l.id === targetLayerId);
   if (!targetLayer) {
@@ -156,10 +168,10 @@ export function pasteKeyframes(
     return [];
   }
 
-  const currentFrame = store.currentFrame;
+  const currentFrame = animationStore.currentFrame;
   const createdKeyframes: Keyframe<PropertyValue>[] = [];
 
-  for (const clipboardEntry of store.clipboard.keyframes) {
+  for (const clipboardEntry of keyframeStore.clipboard.keyframes) {
     // Determine which property to paste to
     const propPath = targetPropertyPath || clipboardEntry.propertyPath;
     const property = findPropertyByPath(targetLayer, propPath) as
@@ -211,8 +223,8 @@ export function pasteKeyframes(
   }
 
   if (createdKeyframes.length > 0) {
-    store.project.meta.modified = new Date().toISOString();
-    store.pushHistory();
+    projectStore.project.meta.modified = new Date().toISOString();
+    projectStore.pushHistory();
     storeLogger.debug(`Pasted ${createdKeyframes.length} keyframe(s)`);
   }
 

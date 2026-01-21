@@ -13,6 +13,57 @@ import type { AnimatableProperty, LatticeProject } from "@/types/project";
 import type { TextAnimator, TextExpressionSelector } from "@/types/text";
 import type { EvalResult } from "./workerEvaluator";
 import { evaluateWithTimeout, isWorkerAvailable } from "./workerEvaluator";
+import type { ExpressionContext } from "./types";
+
+/**
+ * Create a test ExpressionContext with all required values for validation.
+ * Values are typical defaults - the actual values don't matter for validation,
+ * we just need a complete context to avoid TypeScript errors.
+ */
+function createTestContext(): ExpressionContext {
+  return {
+    // Time
+    time: 0,
+    frame: 0,
+    fps: 30,
+    duration: 10,
+    // Composition
+    compWidth: 1920,
+    compHeight: 1080,
+    // Layer info
+    layerId: "test-layer",
+    layerIndex: 0,
+    layerName: "Test Layer",
+    inPoint: 0,
+    outPoint: 300,
+    // Property
+    propertyName: "value",
+    value: 0,
+    velocity: 0,
+    numKeys: 0,
+    keyframes: [],
+    // Expression controls
+    params: {},
+    // Layer access (no-op for validation)
+    getLayerProperty: () => null,
+    // Data-driven animation (no-op for validation)
+    footage: () => null,
+    // Layer transform
+    layerTransform: {
+      position: [0, 0, 0],
+      rotation: [0, 0, 0],
+      scale: [100, 100, 100],
+      opacity: 100,
+      origin: [0, 0, 0],
+    },
+    // Effects
+    layerEffects: [],
+    // All layers
+    allLayers: [],
+    // Effect parameter access (no-op for validation)
+    getLayerEffectParam: () => null,
+  };
+}
 
 export interface ValidationResult {
   valid: boolean;
@@ -42,15 +93,19 @@ function extractExpressions(
     expr: PropertyExpression | undefined,
     location: string,
   ) {
-    if (!expr?.enabled) return;
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const exprEnabled = (expr != null && typeof expr === "object" && "enabled" in expr && typeof expr.enabled === "boolean" && expr.enabled) ? true : false;
+    if (!exprEnabled) return;
 
     // Only custom type has user code - presets/functions are safe (hardcoded)
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const params = (expr != null && typeof expr === "object" && "params" in expr && expr.params != null && typeof expr.params === "object") ? expr.params : undefined;
+    const code = (params != null && typeof params === "object" && "code" in params && typeof params.code === "string") ? params.code : undefined;
     if (
       expr.type === "custom" &&
-      expr.params?.code &&
-      typeof expr.params.code === "string"
+      code != null
     ) {
-      expressions.push({ location, code: expr.params.code });
+      expressions.push({ location, code });
     }
   }
 
@@ -59,8 +114,10 @@ function extractExpressions(
     prop: AnimatableProperty<unknown> | undefined,
     location: string,
   ) {
-    if (!prop?.expression) return;
-    checkPropertyExpression(prop.expression as PropertyExpression, location);
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const propExpression = (prop != null && typeof prop === "object" && "expression" in prop && prop.expression != null) ? prop.expression : undefined;
+    if (!propExpression) return;
+    checkPropertyExpression(propExpression as PropertyExpression, location);
   }
 
   // Check all layers
@@ -98,16 +155,21 @@ function extractExpressions(
     // Text layer - check text animators' expression selectors
     if (layer.type === "text") {
       const data = layer.data as { animators?: TextAnimator[] };
-      if (data?.animators) {
-        data.animators.forEach((anim, i) => {
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const animators = (data != null && typeof data === "object" && "animators" in data && Array.isArray(data.animators)) ? data.animators : undefined;
+      if (animators != null) {
+        animators.forEach((anim, i) => {
           // Check expression selector
           const exprSel = anim.expressionSelector as
             | TextExpressionSelector
             | undefined;
-          if (exprSel?.enabled && exprSel.amountExpression) {
+          // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+          const exprSelEnabled = (exprSel != null && typeof exprSel === "object" && "enabled" in exprSel && typeof exprSel.enabled === "boolean" && exprSel.enabled) ? true : false;
+          const amountExpression = (exprSel != null && typeof exprSel === "object" && "amountExpression" in exprSel && typeof exprSel.amountExpression === "string") ? exprSel.amountExpression : undefined;
+          if (exprSelEnabled && amountExpression != null) {
             expressions.push({
               location: `${layerLoc}.textAnimator[${anim.name || i}].expressionSelector`,
-              code: exprSel.amountExpression,
+              code: amountExpression,
             });
           }
 
@@ -132,9 +194,11 @@ function extractExpressions(
         if (effect.parameters) {
           for (const [key, param] of Object.entries(effect.parameters)) {
             const p = param as AnimatableProperty<unknown>;
-            if (p?.expression) {
+            // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+            const pExpression = (p != null && typeof p === "object" && "expression" in p && p.expression != null) ? p.expression : undefined;
+            if (pExpression != null) {
               checkPropertyExpression(
-                p.expression as PropertyExpression,
+                pExpression as PropertyExpression,
                 `${layerLoc}.effect[${effect.name || ei}].${key}`,
               );
             }
@@ -166,22 +230,8 @@ export async function validateProjectExpressions(
   const expressions = extractExpressions(project);
   const dangerous: DangerousExpression[] = [];
 
-  // Test context with typical values
-  const testContext = {
-    value: 0,
-    frame: 0,
-    time: 0,
-    index: 0,
-    numLayers: 1,
-    fps: 30,
-    duration: 10,
-    width: 1920,
-    height: 1080,
-    // Text animator context
-    textIndex: 0,
-    textTotal: 10,
-    selectorValue: 1,
-  };
+  // Test context with all required values
+  const testContext = createTestContext();
 
   for (const { location, code } of expressions) {
     const result: EvalResult = await evaluateWithTimeout(code, testContext);
@@ -222,6 +272,6 @@ export async function validateProjectExpressions(
 export async function isExpressionSafe(code: string): Promise<boolean> {
   if (!isWorkerAvailable()) return true; // Can't validate without worker
 
-  const result = await evaluateWithTimeout(code, { value: 0, frame: 0 });
+  const result = await evaluateWithTimeout(code, createTestContext());
   return !result.timedOut && !result.error;
 }

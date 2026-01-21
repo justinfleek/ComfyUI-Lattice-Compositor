@@ -7,6 +7,7 @@
  * @see docs/MASTER_REFACTOR_PLAN.md
  */
 
+import { isFiniteNumber } from "@/utils/typeGuards";
 import { defineStore } from "pinia";
 import type {
   Composition,
@@ -69,18 +70,53 @@ export const useCompositionStore = defineStore("composition", {
       const id = `comp_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
       const activeComp = projectStore.project.compositions[projectStore.activeCompositionId];
 
-      const rawFps = settings?.fps ?? activeComp?.settings.fps ?? DEFAULT_FPS;
+      // Type proof: fps ∈ ℝ ∪ {undefined} → ℝ
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const settingsFpsValue = (settings != null && typeof settings === "object" && "fps" in settings && typeof settings.fps === "number") ? settings.fps : undefined;
+      const activeCompSettings = (activeComp != null && typeof activeComp === "object" && "settings" in activeComp && activeComp.settings != null && typeof activeComp.settings === "object") ? activeComp.settings : undefined;
+      const activeCompFpsValue = (activeCompSettings != null && typeof activeCompSettings === "object" && "fps" in activeCompSettings && typeof activeCompSettings.fps === "number") ? activeCompSettings.fps : undefined;
+      const rawFps = isFiniteNumber(settingsFpsValue) && settingsFpsValue > 0
+        ? settingsFpsValue
+        : (isFiniteNumber(activeCompFpsValue) && activeCompFpsValue > 0 ? activeCompFpsValue : DEFAULT_FPS);
       const validFps = validateFps(rawFps);
 
+      // Type proof: width ∈ ℕ ∪ {undefined} → ℕ
+      const settingsWidthValue = (settings != null && typeof settings === "object" && "width" in settings && typeof settings.width === "number") ? settings.width : undefined;
+      const activeCompWidthValue = (activeCompSettings != null && typeof activeCompSettings === "object" && "width" in activeCompSettings && typeof activeCompSettings.width === "number") ? activeCompSettings.width : undefined;
+      const width = isFiniteNumber(settingsWidthValue) && Number.isInteger(settingsWidthValue) && settingsWidthValue > 0
+        ? settingsWidthValue
+        : (isFiniteNumber(activeCompWidthValue) && Number.isInteger(activeCompWidthValue) && activeCompWidthValue > 0 ? activeCompWidthValue : 1024);
+      // Type proof: height ∈ ℕ ∪ {undefined} → ℕ
+      const settingsHeightValue = (settings != null && typeof settings === "object" && "height" in settings && typeof settings.height === "number") ? settings.height : undefined;
+      const activeCompHeightValue = (activeCompSettings != null && typeof activeCompSettings === "object" && "height" in activeCompSettings && typeof activeCompSettings.height === "number") ? activeCompSettings.height : undefined;
+      const height = isFiniteNumber(settingsHeightValue) && Number.isInteger(settingsHeightValue) && settingsHeightValue > 0
+        ? settingsHeightValue
+        : (isFiniteNumber(activeCompHeightValue) && Number.isInteger(activeCompHeightValue) && activeCompHeightValue > 0 ? activeCompHeightValue : 1024);
+      // Type proof: frameCount ∈ ℕ ∪ {undefined} → ℕ
+      const settingsFrameCountValue = (settings != null && typeof settings === "object" && "frameCount" in settings && typeof settings.frameCount === "number") ? settings.frameCount : undefined;
+      const activeCompFrameCountValue = (activeCompSettings != null && typeof activeCompSettings === "object" && "frameCount" in activeCompSettings && typeof activeCompSettings.frameCount === "number") ? activeCompSettings.frameCount : undefined;
+      const frameCount = isFiniteNumber(settingsFrameCountValue) && Number.isInteger(settingsFrameCountValue) && settingsFrameCountValue > 0
+        ? settingsFrameCountValue
+        : (isFiniteNumber(activeCompFrameCountValue) && Number.isInteger(activeCompFrameCountValue) && activeCompFrameCountValue > 0 ? activeCompFrameCountValue : 81);
+      // Type proof: backgroundColor ∈ string | undefined → string
+      const backgroundColorValue = (settings != null && typeof settings === "object" && "backgroundColor" in settings && typeof settings.backgroundColor === "string") ? settings.backgroundColor : undefined;
+      const backgroundColor = typeof backgroundColorValue === "string" && backgroundColorValue.length > 0 ? backgroundColorValue : "#050505";
+      // Type proof: autoResizeToContent ∈ boolean | undefined → boolean
+      const autoResizeToContentValue = (settings != null && typeof settings === "object" && "autoResizeToContent" in settings && typeof settings.autoResizeToContent === "boolean") ? settings.autoResizeToContent : undefined;
+      const autoResizeToContent = autoResizeToContentValue === true;
+      // Type proof: frameBlendingEnabled ∈ boolean | undefined → boolean
+      const frameBlendingEnabledValue = (settings != null && typeof settings === "object" && "frameBlendingEnabled" in settings && typeof settings.frameBlendingEnabled === "boolean") ? settings.frameBlendingEnabled : undefined;
+      const frameBlendingEnabled = frameBlendingEnabledValue === true;
+
       const defaultSettings: CompositionSettings = {
-        width: settings?.width ?? activeComp?.settings.width ?? 1024,
-        height: settings?.height ?? activeComp?.settings.height ?? 1024,
-        frameCount: settings?.frameCount ?? activeComp?.settings.frameCount ?? 81,
+        width: width,
+        height: height,
+        frameCount: frameCount,
         fps: validFps,
         duration: 0,
-        backgroundColor: settings?.backgroundColor ?? "#050505",
-        autoResizeToContent: settings?.autoResizeToContent ?? true,
-        frameBlendingEnabled: settings?.frameBlendingEnabled ?? false,
+        backgroundColor: backgroundColor,
+        autoResizeToContent: autoResizeToContent,
+        frameBlendingEnabled: frameBlendingEnabled,
       };
       defaultSettings.duration = defaultSettings.frameCount / defaultSettings.fps;
 
@@ -320,12 +356,13 @@ export const useCompositionStore = defineStore("composition", {
       const selectionStore = useSelectionStore();
 
       if (selectionStore.selectedLayerIds.length === 0) {
-        storeLogger.warn("No layers selected for nesting");
-        return null;
+        throw new Error("[CompositionStore] Cannot nest layers: No layers selected");
       }
 
       const activeComp = projectStore.project.compositions[projectStore.activeCompositionId];
-      if (!activeComp) return null;
+      if (!activeComp) {
+        throw new Error("[CompositionStore] Cannot nest layers: No active composition found");
+      }
 
       const nestedComp = this.createComposition(
         name || "Nested Comp",
@@ -338,17 +375,33 @@ export const useCompositionStore = defineStore("composition", {
       );
 
       if (selectedLayers.length === 0) {
-        storeLogger.warn("Selected layers not found in active composition");
-        return null;
+        throw new Error("[CompositionStore] Cannot nest layers: Selected layers not found in active composition");
       }
 
+      // Type proof: earliestIn ∈ ℕ (computed from layer timing)
       const earliestIn = Math.min(
-        ...selectedLayers.map((l) => l.startFrame ?? l.inPoint ?? 0),
+        ...selectedLayers.map((l) => {
+          const startFrameValue = l.startFrame;
+          const inPointValue = l.inPoint;
+          return isFiniteNumber(startFrameValue) && Number.isInteger(startFrameValue) && startFrameValue >= 0
+            ? startFrameValue
+            : (isFiniteNumber(inPointValue) && Number.isInteger(inPointValue) && inPointValue >= 0 ? inPointValue : 0);
+        }),
       );
 
       for (const layer of selectedLayers) {
-        const layerStart = layer.startFrame ?? layer.inPoint ?? 0;
-        const layerEnd = layer.endFrame ?? layer.outPoint ?? 80;
+        // Type proof: layerStart ∈ ℕ ∪ {undefined} → ℕ
+        const startFrameValue = layer.startFrame;
+        const inPointValue = layer.inPoint;
+        const layerStart = isFiniteNumber(startFrameValue) && Number.isInteger(startFrameValue) && startFrameValue >= 0
+          ? startFrameValue
+          : (isFiniteNumber(inPointValue) && Number.isInteger(inPointValue) && inPointValue >= 0 ? inPointValue : 0);
+        // Type proof: layerEnd ∈ ℕ ∪ {undefined} → ℕ
+        const endFrameValue = layer.endFrame;
+        const outPointValue = layer.outPoint;
+        const layerEnd = isFiniteNumber(endFrameValue) && Number.isInteger(endFrameValue) && endFrameValue >= 0
+          ? endFrameValue
+          : (isFiniteNumber(outPointValue) && Number.isInteger(outPointValue) && outPointValue >= 0 ? outPointValue : 80);
         layer.startFrame = layerStart - earliestIn;
         layer.endFrame = layerEnd - earliestIn;
         layer.inPoint = layer.startFrame;
@@ -360,8 +413,15 @@ export const useCompositionStore = defineStore("composition", {
         nestedComp.layers.push(layer);
       }
 
+      // Type proof: maxOut ∈ ℕ (computed from layer timing)
       const maxOut = Math.max(
-        ...nestedComp.layers.map((l) => l.endFrame ?? l.outPoint ?? 80),
+        ...nestedComp.layers.map((l) => {
+          const endFrameValue = l.endFrame;
+          const outPointValue = l.outPoint;
+          return isFiniteNumber(endFrameValue) && Number.isInteger(endFrameValue) && endFrameValue >= 0
+            ? endFrameValue
+            : (isFiniteNumber(outPointValue) && Number.isInteger(outPointValue) && outPointValue >= 0 ? outPointValue : 80);
+        }),
       );
       nestedComp.settings.frameCount = maxOut + 1;
       nestedComp.settings.duration = nestedComp.settings.frameCount / nestedComp.settings.fps;

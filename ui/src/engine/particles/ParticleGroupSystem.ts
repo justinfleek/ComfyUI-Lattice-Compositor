@@ -67,11 +67,14 @@ export class ParticleGroupSystem {
       }
     }
 
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+    const collisionMask = (typeof config.collisionMask === "number" && Number.isFinite(config.collisionMask)) ? config.collisionMask : 0xFFFFFFFF;
+    const connectionMask = (typeof config.connectionMask === "number" && Number.isFinite(config.connectionMask)) ? config.connectionMask : 0xFFFFFFFF;
     this.groups.set(config.id, {
       ...config,
       index,
-      collisionMask: config.collisionMask ?? 0xFFFFFFFF,
-      connectionMask: config.connectionMask ?? 0xFFFFFFFF,
+      collisionMask,
+      connectionMask,
     });
   }
 
@@ -157,15 +160,31 @@ export class ParticleGroupSystem {
 
   /**
    * Get the group ID for a particle
+   * 
+   * System F/Omega proof: Explicit validation of group existence
+   * Type proof: particleIndex ∈ number → string (non-nullable)
+   * Mathematical proof: Group must exist for the particle's group index
+   * Pattern proof: Missing group is an explicit failure condition, not a lazy undefined return
    */
-  getParticleGroupId(particleIndex: number): string | undefined {
+  getParticleGroupId(particleIndex: number): string {
     const groupIndex = this.getParticleGroupIndex(particleIndex);
+    
     for (const group of this.groups.values()) {
       if (group.index === groupIndex) {
         return group.id;
       }
     }
-    return undefined;
+    
+    // System F/Omega proof: Explicit validation of group existence
+    // Type proof: groups.values() returns IterableIterator<Group>
+    // Mathematical proof: Group must exist for the calculated group index
+    throw new Error(
+      `[ParticleGroupSystem] Cannot get particle group ID: Group not found. ` +
+      `Particle index: ${particleIndex}, group index: ${groupIndex}, ` +
+      `groups available: ${Array.from(this.groups.values()).map(g => `index=${g.index}, id=${g.id}`).join("; ") || "none"}. ` +
+      `Group must exist for the particle's group index. ` +
+      `Wrap in try/catch if "group not found" is an expected state.`
+    );
   }
 
   // ============================================================================
@@ -193,8 +212,9 @@ export class ParticleGroupSystem {
     // Check if both groups have collision enabled and mask allows
     if (!groupA.enableCollision || !groupB.enableCollision) return false;
 
-    const maskA = groupA.collisionMask ?? 0xFFFFFFFF;
-    const maskB = groupB.collisionMask ?? 0xFFFFFFFF;
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+    const maskA = (typeof groupA.collisionMask === "number" && Number.isFinite(groupA.collisionMask)) ? groupA.collisionMask : 0xFFFFFFFF;
+    const maskB = (typeof groupB.collisionMask === "number" && Number.isFinite(groupB.collisionMask)) ? groupB.collisionMask : 0xFFFFFFFF;
 
     // Check if A's mask includes B's index AND B's mask includes A's index
     return ((maskA & (1 << groupIndexB)) !== 0) && ((maskB & (1 << groupIndexA)) !== 0);
@@ -221,8 +241,9 @@ export class ParticleGroupSystem {
     // Check if both groups have connections enabled and mask allows
     if (!groupA.enableConnections || !groupB.enableConnections) return false;
 
-    const maskA = groupA.connectionMask ?? 0xFFFFFFFF;
-    const maskB = groupB.connectionMask ?? 0xFFFFFFFF;
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+    const maskA = (typeof groupA.connectionMask === "number" && Number.isFinite(groupA.connectionMask)) ? groupA.connectionMask : 0xFFFFFFFF;
+    const maskB = (typeof groupB.connectionMask === "number" && Number.isFinite(groupB.connectionMask)) ? groupB.connectionMask : 0xFFFFFFFF;
 
     // Check if A's mask includes B's index AND B's mask includes A's index
     return ((maskA & (1 << groupIndexB)) !== 0) && ((maskB & (1 << groupIndexA)) !== 0);

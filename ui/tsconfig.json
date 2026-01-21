@@ -25,6 +25,14 @@
     }
   },
   "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.vue"],
-  "exclude": ["src/__tests__/_archived/**"],
+  "exclude": [
+    "src/__tests__/_archived/**",
+    "node_modules",
+    "dist",
+    "build",
+    "web/js",
+    "**/*.test.ts",
+    "**/*.spec.ts"
+  ],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

@@ -111,15 +111,49 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 import type { DriverTransform, PropertyPath } from "@/services/propertyDriver";
-import { useCompositorStore } from "@/stores/compositorStore";
 import { useExpressionStore } from "@/stores/expressionStore";
+import { useProjectStore } from "@/stores/projectStore";
+import { useAnimationStore } from "@/stores/animationStore";
 
 const props = defineProps<{
   layerId: string;
 }>();
 
-const store = useCompositorStore();
 const expressionStore = useExpressionStore();
+const projectStore = useProjectStore();
+const animationStore = useAnimationStore();
+
+// Helper function to create ExpressionStoreAccess
+function getExpressionStoreAccess() {
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const activeComp = projectStore.getActiveComp();
+  const activeCompSettings = (activeComp != null && typeof activeComp === "object" && "settings" in activeComp && activeComp.settings != null && typeof activeComp.settings === "object") ? activeComp.settings : undefined;
+  const compWidth = (activeCompSettings != null && typeof activeCompSettings === "object" && "width" in activeCompSettings && typeof activeCompSettings.width === "number") ? activeCompSettings.width : undefined;
+  const compHeight = (activeCompSettings != null && typeof activeCompSettings === "object" && "height" in activeCompSettings && typeof activeCompSettings.height === "number") ? activeCompSettings.height : undefined;
+  return {
+    project: {
+      composition: {
+        width: compWidth != null ? compWidth : 1920,
+        height: compHeight != null ? compHeight : 1080,
+      },
+      meta: { modified: projectStore.project.meta.modified },
+    },
+    getActiveComp: () => {
+      const comp = projectStore.getActiveComp();
+      if (!comp) return null;
+      return {
+        currentFrame: animationStore.currentFrame,
+        settings: comp.settings,
+        layers: comp.layers,
+      };
+    },
+    getActiveCompLayers: () => projectStore.getActiveCompLayers(),
+    getLayerById: (id: string) => {
+      const layers = projectStore.getActiveCompLayers();
+      return layers.find(l => l.id === id) || null;
+    },
+  };
+}
 const expanded = ref(true);
 const showAddMenu = ref(false);
 
@@ -131,7 +165,7 @@ const newDriver = ref({
 });
 
 const drivers = computed(() => {
-  return expressionStore.getDriversForLayer(store, props.layerId);
+  return expressionStore.getDriversForLayer(getExpressionStoreAccess(), props.layerId);
 });
 
 function formatProperty(prop?: PropertyPath | string): string {
@@ -153,8 +187,10 @@ function formatProperty(prop?: PropertyPath | string): string {
 
 function getSourceLayerName(layerId?: string): string {
   if (!layerId) return "?";
-  const layer = store.layers.find((l) => l.id === layerId);
-  return layer?.name || layerId.slice(0, 8);
+  const layer = projectStore.getActiveCompLayers().find((l) => l.id === layerId);
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const layerName = (layer != null && typeof layer === "object" && "name" in layer && typeof layer.name === "string") ? layer.name : undefined;
+  return layerName != null ? layerName : layerId.slice(0, 8);
 }
 
 function formatTransform(t: DriverTransform): string {
@@ -175,16 +211,16 @@ function formatTransform(t: DriverTransform): string {
 }
 
 function toggleDriver(driverId: string) {
-  expressionStore.togglePropertyDriver(store, driverId);
+  expressionStore.togglePropertyDriver(getExpressionStoreAccess(), driverId);
 }
 
 function removeDriver(driverId: string) {
-  expressionStore.removePropertyDriver(store, driverId);
+  expressionStore.removePropertyDriver(getExpressionStoreAccess(), driverId);
 }
 
 function createAudioDriver() {
   expressionStore.createAudioPropertyDriver(
-    store,
+    getExpressionStoreAccess(),
     props.layerId,
     newDriver.value.targetProperty,
     newDriver.value.audioFeature,

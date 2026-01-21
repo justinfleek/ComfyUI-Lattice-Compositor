@@ -174,10 +174,13 @@ export class ParticleSubEmitter {
 
           // Velocity - combination of inherited and new emission direction
           // Validate all config values
+          // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
           const overrides = subEmitter.overrides;
-          const rawSpeed = overrides.initialSpeed ?? 100;
+          const initialSpeedRaw = (overrides !== null && overrides !== undefined && typeof overrides === "object" && "initialSpeed" in overrides) ? overrides.initialSpeed : undefined;
+          const rawSpeed = (typeof initialSpeedRaw === "number" && Number.isFinite(initialSpeedRaw)) ? initialSpeedRaw : 100;
           const speed = (Number.isFinite(rawSpeed) && rawSpeed >= 0) ? rawSpeed : 100;
-          const rawSpread = overrides.emissionSpread ?? 180;
+          const emissionSpreadRaw = (overrides !== null && overrides !== undefined && typeof overrides === "object" && "emissionSpread" in overrides) ? overrides.emissionSpread : undefined;
+          const rawSpread = (typeof emissionSpreadRaw === "number" && Number.isFinite(emissionSpreadRaw)) ? emissionSpreadRaw : 180;
           const spread = Number.isFinite(rawSpread) ? Math.max(0, Math.min(360, rawSpread)) : 180;
 
           // Random direction within spread cone (spherical for death = explosion)
@@ -197,44 +200,56 @@ export class ParticleSubEmitter {
           particleBuffer[subOffset + 5] = newVelZ + parentVel.z * inheritVel;
 
           // Life (validate lifetime)
+          // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
           particleBuffer[subOffset + 6] = 0; // age
-          const rawLifetime = overrides.lifetime ?? 30;
+          const lifetimeRaw = (overrides !== null && overrides !== undefined && typeof overrides === "object" && "lifetime" in overrides) ? overrides.lifetime : undefined;
+          const rawLifetime = (typeof lifetimeRaw === "number" && Number.isFinite(lifetimeRaw)) ? lifetimeRaw : 30;
           const lifetime = (Number.isFinite(rawLifetime) && rawLifetime > 0) ? rawLifetime : 30;
           particleBuffer[subOffset + 7] = lifetime;
 
           // Physical - validate mass and size to prevent division by zero
           // Must check Number.isFinite before using - Math.max(NaN, x) = NaN
-          const rawMass = overrides.initialMass ?? 1;
+          // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+          const initialMassRaw = (overrides !== null && overrides !== undefined && typeof overrides === "object" && "initialMass" in overrides) ? overrides.initialMass : undefined;
+          const rawMass = (typeof initialMassRaw === "number" && Number.isFinite(initialMassRaw)) ? initialMassRaw : 1;
           const safeMass = (Number.isFinite(rawMass) && rawMass > 0) ? rawMass : 1;
           particleBuffer[subOffset + 8] = safeMass; // mass
 
-          const rawInitialSize = overrides.initialSize ?? 5;
+          const initialSizeRaw = (overrides !== null && overrides !== undefined && typeof overrides === "object" && "initialSize" in overrides) ? overrides.initialSize : undefined;
+          const rawInitialSize = (typeof initialSizeRaw === "number" && Number.isFinite(initialSizeRaw)) ? initialSizeRaw : 5;
           const safeInitialSize = (Number.isFinite(rawInitialSize) && rawInitialSize > 0) ? rawInitialSize : 5;
-          const rawInheritSize = subEmitter.inheritSize ?? 0;
+          const inheritSizeRaw = (typeof subEmitter.inheritSize === "number" && Number.isFinite(subEmitter.inheritSize)) ? subEmitter.inheritSize : undefined;
+          const rawInheritSize = inheritSizeRaw !== undefined ? inheritSizeRaw : 0;
           const safeInheritSize = Number.isFinite(rawInheritSize) ? rawInheritSize : 0;
           const rawSize = safeInitialSize * (safeInheritSize > 0 ? parentSize * safeInheritSize : 1);
           particleBuffer[subOffset + 9] = Number.isFinite(rawSize) ? Math.max(rawSize, 0.001) : 5; // size
 
           // Rotation (validate inheritRotation)
-          const rawInheritRot = subEmitter.inheritRotation ?? 0;
+          // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+          const inheritRotationRaw = (typeof subEmitter.inheritRotation === "number" && Number.isFinite(subEmitter.inheritRotation)) ? subEmitter.inheritRotation : undefined;
+          const rawInheritRot = inheritRotationRaw !== undefined ? inheritRotationRaw : 0;
           const inheritRot = Number.isFinite(rawInheritRot) ? rawInheritRot : 0;
           particleBuffer[subOffset + 10] =
             inheritRot > 0
               ? parentRotation * inheritRot
               : this.rng() * Math.PI * 2;
-          const rawAngVel = overrides.initialAngularVelocity ?? 0;
+          const initialAngularVelocityRaw = (overrides !== null && overrides !== undefined && typeof overrides === "object" && "initialAngularVelocity" in overrides) ? overrides.initialAngularVelocity : undefined;
+          const rawAngVel = (typeof initialAngularVelocityRaw === "number" && Number.isFinite(initialAngularVelocityRaw)) ? initialAngularVelocityRaw : 0;
           const angVel = Number.isFinite(rawAngVel) ? rawAngVel : 0;
           particleBuffer[subOffset + 11] = angVel;
 
           // Color inheritance (validate inheritColor and colorStart)
-          const rawColorStart = overrides.colorStart ?? [1, 1, 1, 1];
+          // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+          const colorStartRaw = (overrides !== null && overrides !== undefined && typeof overrides === "object" && "colorStart" in overrides && Array.isArray(overrides.colorStart) && overrides.colorStart.length >= 4) ? overrides.colorStart : undefined;
+          const rawColorStart = colorStartRaw !== undefined ? colorStartRaw : [1, 1, 1, 1];
           const colorStart: [number, number, number, number] = [
             Number.isFinite(rawColorStart[0]) ? rawColorStart[0] : 1,
             Number.isFinite(rawColorStart[1]) ? rawColorStart[1] : 1,
             Number.isFinite(rawColorStart[2]) ? rawColorStart[2] : 1,
             Number.isFinite(rawColorStart[3]) ? rawColorStart[3] : 1,
           ];
-          const rawInheritCol = subEmitter.inheritColor ?? 0;
+          const inheritColorRaw = (typeof subEmitter.inheritColor === "number" && Number.isFinite(subEmitter.inheritColor)) ? subEmitter.inheritColor : undefined;
+          const rawInheritCol = inheritColorRaw !== undefined ? inheritColorRaw : 0;
           const inheritCol = Number.isFinite(rawInheritCol) ? rawInheritCol : 0;
           if (inheritCol > 0) {
             particleBuffer[subOffset + 12] =

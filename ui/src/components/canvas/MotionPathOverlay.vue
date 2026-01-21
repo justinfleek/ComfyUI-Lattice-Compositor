@@ -67,7 +67,7 @@
         :cy="kf.position.y + kf.inTangent.y"
         r="4"
         class="tangent-handle"
-        :class="{ dragging: draggingHandle?.keyframeId === kf.id && draggingHandle?.type === 'in' }"
+        :class="{ dragging: draggingHandleKeyframeId === kf.id && draggingHandleType === 'in' }"
         @mousedown.stop="startDragTangent($event, kf.id, 'in')"
       />
       <!-- Out tangent handle -->
@@ -77,7 +77,7 @@
         :cy="kf.position.y + kf.outTangent.y"
         r="4"
         class="tangent-handle"
-        :class="{ dragging: draggingHandle?.keyframeId === kf.id && draggingHandle?.type === 'out' }"
+        :class="{ dragging: draggingHandleKeyframeId === kf.id && draggingHandleType === 'out' }"
         @mousedown.stop="startDragTangent($event, kf.id, 'out')"
       />
     </template>
@@ -120,8 +120,10 @@
 
 <script setup lang="ts">
 import { computed, ref } from "vue";
-import { useCompositorStore } from "@/stores/compositorStore";
+import { assertDefined, safeCoordinateDefault } from "@/utils/typeGuards";
 import { useLayerStore } from "@/stores/layerStore";
+import { useSelectionStore } from "@/stores/selectionStore";
+import { useKeyframeStore } from "@/stores/keyframeStore";
 import type { AnimatableProperty, Keyframe } from "@/types/project";
 
 interface Props {
@@ -149,8 +151,9 @@ const emit = defineEmits<{
   ): void;
 }>();
 
-const store = useCompositorStore();
 const layerStore = useLayerStore();
+const selectionStore = useSelectionStore();
+const keyframeStore = useKeyframeStore();
 
 // Drag state
 const draggingHandle = ref<{ keyframeId: string; type: "in" | "out" } | null>(
@@ -158,9 +161,22 @@ const draggingHandle = ref<{ keyframeId: string; type: "in" | "out" } | null>(
 );
 const dragStart = ref<{ x: number; y: number } | null>(null);
 
+// Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+const draggingHandleKeyframeId = computed(() => {
+  const handle = draggingHandle.value;
+  return (handle != null && typeof handle === "object" && "keyframeId" in handle && typeof handle.keyframeId === "string") ? handle.keyframeId : undefined;
+});
+
+const draggingHandleType = computed(() => {
+  const handle = draggingHandle.value;
+  return (handle != null && typeof handle === "object" && "type" in handle && typeof handle.type === "string") ? handle.type : undefined;
+});
+
 // Selected keyframes (from store or local state)
+// Lean4/PureScript/Haskell: Explicit pattern matching - no lazy || []
 const selectedKeyframeIds = computed(() => {
-  return store.selectedKeyframeIds || [];
+  const keyframeIds = selectionStore.selectedKeyframeIds;
+  return (keyframeIds !== null && keyframeIds !== undefined && Array.isArray(keyframeIds)) ? keyframeIds : [];
 });
 
 // Position value type
@@ -170,9 +186,12 @@ type PositionValue = { x: number; y: number; z?: number };
 const positionProperty = computed(
   (): AnimatableProperty<PositionValue> | null => {
     if (!props.layerId) return null;
-    const layer = layerStore.getLayerById(store, props.layerId);
-    if (!layer?.transform?.position) return null;
-    return layer.transform.position;
+    const layer = layerStore.getLayerById(props.layerId);
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    if (layer == null || typeof layer !== "object" || !("transform" in layer)) return null;
+    const transform = layer.transform;
+    if (transform == null || typeof transform !== "object" || !("position" in transform)) return null;
+    return transform.position;
   },
 );
 
@@ -186,26 +205,33 @@ const hasPositionKeyframes = computed(() => {
 // Get keyframes with their positions
 const keyframeMarkers = computed(() => {
   const prop = positionProperty.value;
-  if (!prop?.keyframes) return [];
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  if (prop == null || typeof prop !== "object" || !("keyframes" in prop) || prop.keyframes == null || !Array.isArray(prop.keyframes)) return [];
 
-  return prop.keyframes.map((kf: Keyframe<PositionValue>) => ({
-    id: kf.id,
-    frame: kf.frame,
-    position: {
-      x: kf.value.x || 0,
-      y: kf.value.y || 0,
-      z: kf.value.z || 0,
-    },
-  }));
+  return prop.keyframes.map((kf: Keyframe<PositionValue>) => {
+    // Type proof: Position coordinates are unbounded (can be 0, negative, any ℝ)
+    const x = safeCoordinateDefault(kf.value.x, 0, "kf.value.x");
+    const y = safeCoordinateDefault(kf.value.y, 0, "kf.value.y");
+    const z = safeCoordinateDefault(kf.value.z, 0, "kf.value.z");
+    return {
+      id: kf.id,
+      frame: kf.frame,
+      position: { x, y, z },
+    };
+  });
 });
 
 // Get keyframes with tangent info for display
 const keyframesWithTangents = computed(() => {
   const prop = positionProperty.value;
-  if (!prop?.keyframes) return [];
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  if (prop == null || typeof prop !== "object" || !("keyframes" in prop) || prop.keyframes == null || !Array.isArray(prop.keyframes)) return [];
 
   return prop.keyframes.map((kf: Keyframe<PositionValue>, index: number) => {
-    const pos = { x: kf.value.x || 0, y: kf.value.y || 0 };
+    // Type proof: Position coordinates are unbounded (can be 0, negative, any ℝ)
+    const posX = safeCoordinateDefault(kf.value.x, 0, "kf.value.x");
+    const posY = safeCoordinateDefault(kf.value.y, 0, "kf.value.y");
+    const pos = { x: posX, y: posY };
     const isSelected = selectedKeyframeIds.value.includes(kf.id);
 
     // Calculate tangent vectors based on neighboring keyframes
@@ -213,12 +239,17 @@ const keyframesWithTangents = computed(() => {
     let inTangent: { x: number; y: number } | null = null;
     let outTangent: { x: number; y: number } | null = null;
 
-    const keyframes = prop.keyframes!;
+    // Type proof: keyframes is guaranteed non-null by prop?.keyframes check above
+    assertDefined(prop.keyframes, "keyframes must exist when prop exists");
+    const keyframes = prop.keyframes;
 
     // In tangent (from previous keyframe)
     if (index > 0) {
       const prevKf = keyframes[index - 1];
-      const prevPos = { x: prevKf.value.x || 0, y: prevKf.value.y || 0 };
+      // Type proof: Previous position coordinates are unbounded
+      const prevX = safeCoordinateDefault(prevKf.value.x, 0, "prevKf.value.x");
+      const prevY = safeCoordinateDefault(prevKf.value.y, 0, "prevKf.value.y");
+      const prevPos = { x: prevX, y: prevY };
       const dx = pos.x - prevPos.x;
       const dy = pos.y - prevPos.y;
       // Tangent is 1/3 of the distance back towards previous keyframe
@@ -228,7 +259,10 @@ const keyframesWithTangents = computed(() => {
     // Out tangent (to next keyframe)
     if (index < keyframes.length - 1) {
       const nextKf = keyframes[index + 1];
-      const nextPos = { x: nextKf.value.x || 0, y: nextKf.value.y || 0 };
+      // Type proof: Next position coordinates are unbounded
+      const nextX = safeCoordinateDefault(nextKf.value.x, 0, "nextKf.value.x");
+      const nextY = safeCoordinateDefault(nextKf.value.y, 0, "nextKf.value.y");
+      const nextPos = { x: nextX, y: nextY };
       const dx = nextPos.x - pos.x;
       const dy = nextPos.y - pos.y;
       // Tangent is 1/3 of the distance forward towards next keyframe
@@ -277,23 +311,27 @@ const pathData = computed(() => {
 // Current interpolated position
 const currentPosition = computed(() => {
   const prop = positionProperty.value;
-  if (!prop) return null;
+  if (!prop || !props.layerId) return null;
 
   // Get current value at frame
-  const value = store.evaluatePropertyAtFrame?.(
-    props.layerId!,
+  const value = keyframeStore.evaluatePropertyAtFrame(
+    props.layerId,
     "transform.position",
     props.currentFrame,
   );
   if (!value || !Array.isArray(value)) return null;
 
-  return { x: value[0] || 0, y: value[1] || 0 };
+  // Type proof: Position coordinates from array are unbounded (can be 0, negative, any ℝ)
+  const x = safeCoordinateDefault(value[0], 0, "value[0]");
+  const y = safeCoordinateDefault(value[1], 0, "value[1]");
+  return { x, y };
 });
 
 // Frame ticks along the path (every 5 frames)
 const frameTicks = computed(() => {
   const prop = positionProperty.value;
-  if (!prop?.keyframes || prop.keyframes.length < 2) return [];
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  if (prop == null || typeof prop !== "object" || !("keyframes" in prop) || prop.keyframes == null || !Array.isArray(prop.keyframes) || prop.keyframes.length < 2) return [];
 
   const ticks: { frame: number; x: number; y: number }[] = [];
   const firstFrame = prop.keyframes[0].frame;
@@ -308,13 +346,17 @@ const frameTicks = computed(() => {
       continue;
 
     // Interpolate position at this frame
-    const value = store.evaluatePropertyAtFrame?.(
-      props.layerId!,
+    if (!props.layerId) continue;
+    const value = keyframeStore.evaluatePropertyAtFrame(
+      props.layerId,
       "transform.position",
       frame,
     );
     if (value && Array.isArray(value)) {
-      ticks.push({ frame, x: value[0] || 0, y: value[1] || 0 });
+      // Type proof: Position coordinates from array are unbounded (can be 0, negative, any ℝ)
+      const x = safeCoordinateDefault(value[0], 0, "value[0]");
+      const y = safeCoordinateDefault(value[1], 0, "value[1]");
+      ticks.push({ frame, x, y });
     }
   }
 
@@ -323,8 +365,9 @@ const frameTicks = computed(() => {
 
 // SVG overlay style (matches viewport transform)
 const overlayStyle = computed(() => {
-  const tx = props.viewportTransform[4] || 0; // translateX
-  const ty = props.viewportTransform[5] || 0; // translateY
+  // Type proof: Viewport transform coordinates are unbounded (can be 0, negative for panning)
+  const tx = safeCoordinateDefault(props.viewportTransform[4], 0, "viewportTransform[4]"); // translateX
+  const ty = safeCoordinateDefault(props.viewportTransform[5], 0, "viewportTransform[5]"); // translateY
 
   return {
     position: "absolute" as const,

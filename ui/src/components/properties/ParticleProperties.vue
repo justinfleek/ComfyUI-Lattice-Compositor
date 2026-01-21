@@ -241,13 +241,13 @@
               <label title="Depth position of the emitter (CC Particle World Producer Z). Negative = closer to camera.">Position Z</label>
               <input
                 type="range"
-                :value="emitter.z ?? 0"
+                :value="getEmitterZ(emitter)"
                 min="-500"
                 max="500"
                 step="10"
                 @input="updateEmitter(emitter.id, 'z', Number(($event.target as HTMLInputElement).value))"
               />
-              <span class="value-display">{{ (emitter.z ?? 0).toFixed(0) }}</span>
+              <span class="value-display">{{ getEmitterZ(emitter).toFixed(0) }}</span>
             </div>
             <div class="property-row">
               <label title="Primary emission direction in degrees. 0° = right, 90° = down, 180° = left, 270° = up.">Direction</label>
@@ -412,92 +412,92 @@
               <label title="Outer radius of the emission shape as a fraction of composition size.">Radius</label>
               <input
                 type="range"
-                :value="emitter.shapeRadius || 0.1"
+                :value="getShapeRadius(emitter)"
                 min="0.01"
                 max="0.5"
                 step="0.01"
                 @input="updateEmitter(emitter.id, 'shapeRadius', Number(($event.target as HTMLInputElement).value))"
               />
-              <span class="value-display">{{ (emitter.shapeRadius || 0.1).toFixed(2) }}</span>
+              <span class="value-display">{{ getShapeRadius(emitter).toFixed(2) }}</span>
             </div>
             <div v-if="emitter.shape === 'ring'" class="property-row">
               <label title="Inner radius of the ring. Particles emit in the area between inner and outer radius.">Inner Radius</label>
               <input
                 type="range"
-                :value="emitter.shapeInnerRadius || 0.05"
+                :value="getShapeInnerRadius(emitter)"
                 min="0"
                 max="0.4"
                 step="0.01"
                 @input="updateEmitter(emitter.id, 'shapeInnerRadius', Number(($event.target as HTMLInputElement).value))"
               />
-              <span class="value-display">{{ (emitter.shapeInnerRadius || 0.05).toFixed(2) }}</span>
+              <span class="value-display">{{ getShapeInnerRadius(emitter).toFixed(2) }}</span>
             </div>
             <div v-if="emitter.shape === 'box'" class="property-row">
               <label title="Width of the box emission area as a fraction of composition width.">Width</label>
               <input
                 type="range"
-                :value="emitter.shapeWidth || 0.2"
+                :value="getShapeWidth(emitter)"
                 min="0.01"
                 max="1"
                 step="0.01"
                 @input="updateEmitter(emitter.id, 'shapeWidth', Number(($event.target as HTMLInputElement).value))"
               />
-              <span class="value-display">{{ (emitter.shapeWidth || 0.2).toFixed(2) }}</span>
+              <span class="value-display">{{ getShapeWidth(emitter).toFixed(2) }}</span>
             </div>
             <div v-if="emitter.shape === 'box'" class="property-row">
               <label title="Height of the box emission area as a fraction of composition height.">Height</label>
               <input
                 type="range"
-                :value="emitter.shapeHeight || 0.2"
+                :value="getShapeHeight(emitter)"
                 min="0.01"
                 max="1"
                 step="0.01"
                 @input="updateEmitter(emitter.id, 'shapeHeight', Number(($event.target as HTMLInputElement).value))"
               />
-              <span class="value-display">{{ (emitter.shapeHeight || 0.2).toFixed(2) }}</span>
+              <span class="value-display">{{ getShapeHeight(emitter).toFixed(2) }}</span>
             </div>
             <div v-if="emitter.shape === 'line'" class="property-row">
               <label title="Length of the line emission area as a fraction of composition size.">Length</label>
               <input
                 type="range"
-                :value="emitter.shapeWidth || 0.2"
+                :value="getShapeWidth(emitter)"
                 min="0.01"
                 max="1"
                 step="0.01"
                 @input="updateEmitter(emitter.id, 'shapeWidth', Number(($event.target as HTMLInputElement).value))"
               />
-              <span class="value-display">{{ (emitter.shapeWidth || 0.2).toFixed(2) }}</span>
+              <span class="value-display">{{ getShapeWidth(emitter).toFixed(2) }}</span>
             </div>
             <div v-if="emitter.shape === 'cone'" class="property-row">
               <label title="Opening angle of the cone in degrees. 90° = hemisphere, 180° = full sphere.">Cone Angle</label>
               <input
                 type="range"
-                :value="emitter.coneAngle || 45"
+                :value="getConeAngle(emitter)"
                 min="1"
                 max="180"
                 step="1"
                 @input="updateEmitter(emitter.id, 'coneAngle', Number(($event.target as HTMLInputElement).value))"
               />
-              <span class="value-display">{{ emitter.coneAngle || 45 }}°</span>
+              <span class="value-display">{{ getConeAngle(emitter) }}°</span>
             </div>
             <div v-if="emitter.shape === 'cone'" class="property-row">
               <label title="Base radius of the cone as a fraction of composition size.">Cone Radius</label>
               <input
                 type="range"
-                :value="emitter.coneRadius || 0.1"
+                :value="getConeRadius(emitter)"
                 min="0.01"
                 max="0.5"
                 step="0.01"
                 @input="updateEmitter(emitter.id, 'coneRadius', Number(($event.target as HTMLInputElement).value))"
               />
-              <span class="value-display">{{ (emitter.coneRadius || 0.1).toFixed(2) }}</span>
+              <span class="value-display">{{ getConeRadius(emitter).toFixed(2) }}</span>
             </div>
             <!-- Spline Path emission controls -->
             <div v-if="emitter.shape === 'spline'" class="spline-emission-controls">
               <div class="property-row">
                 <label title="Select a spline or path layer to emit particles along.">Path Layer</label>
                 <select
-                  :value="emitter.splinePath?.layerId || ''"
+                  :value="(emitter.splinePath != null && typeof emitter.splinePath === 'object' && 'layerId' in emitter.splinePath && typeof emitter.splinePath.layerId === 'string') ? emitter.splinePath.layerId : ''"
                   @change="updateEmitterSplinePath(emitter.id, 'layerId', ($event.target as HTMLSelectElement).value)"
                 >
                   <option value="">Select path...</option>
@@ -513,7 +513,7 @@
               <div class="property-row">
                 <label title="How particles are distributed along the path.">Emit Mode</label>
                 <select
-                  :value="emitter.splinePath?.emitMode || 'random'"
+                  :value="(emitter.splinePath != null && typeof emitter.splinePath === 'object' && 'emitMode' in emitter.splinePath && typeof emitter.splinePath.emitMode === 'string') ? emitter.splinePath.emitMode : 'random'"
                   @change="updateEmitterSplinePath(emitter.id, 'emitMode', ($event.target as HTMLSelectElement).value)"
                 >
                   <option value="random">Random</option>
@@ -527,7 +527,7 @@
                 <label title="Align particle emission direction with the path tangent.">
                   <input
                     type="checkbox"
-                    :checked="emitter.splinePath?.alignToPath ?? true"
+                    :checked="getSplinePathAlignToPath(emitter)"
                     @change="updateEmitterSplinePath(emitter.id, 'alignToPath', ($event.target as HTMLInputElement).checked)"
                   />
                   Align to Path
@@ -537,13 +537,13 @@
                 <label title="Perpendicular offset from the path (positive = outward, negative = inward).">Offset</label>
                 <input
                   type="range"
-                  :value="emitter.splinePath?.offset || 0"
+                  :value="getSplinePathOffset(emitter)"
                   min="-100"
                   max="100"
                   step="1"
                   @input="updateEmitterSplinePath(emitter.id, 'offset', Number(($event.target as HTMLInputElement).value))"
                 />
-                <span class="value-display">{{ emitter.splinePath?.offset || 0 }}px</span>
+                <span class="value-display">{{ getSplinePathOffset(emitter) }}px</span>
               </div>
             </div>
             <!-- Image/Mask emission controls -->
@@ -564,13 +564,13 @@
                 <label title="Minimum alpha value (0-1) for a pixel to be considered for emission.">Alpha Threshold</label>
                 <input
                   type="range"
-                  :value="emitter.emissionThreshold || 0.1"
+                  :value="getEmissionThreshold(emitter, 0.1)"
                   min="0.01"
                   max="1"
                   step="0.01"
                   @input="updateEmitter(emitter.id, 'emissionThreshold', Number(($event.target as HTMLInputElement).value))"
                 />
-                <span class="value-display">{{ (emitter.emissionThreshold || 0.1).toFixed(2) }}</span>
+                <span class="value-display">{{ getEmissionThreshold(emitter, 0.1).toFixed(2) }}</span>
               </div>
               <div class="property-row checkbox-row">
                 <label title="Emit only from the edges of the masked area instead of filling it.">
@@ -601,25 +601,25 @@
                 <label title="Minimum depth gradient magnitude to be considered an edge. Lower = more edges detected.">Edge Threshold</label>
                 <input
                   type="range"
-                  :value="emitter.emissionThreshold || 0.05"
+                  :value="getEmissionThreshold(emitter, 0.05)"
                   min="0.01"
                   max="0.5"
                   step="0.01"
                   @input="updateEmitter(emitter.id, 'emissionThreshold', Number(($event.target as HTMLInputElement).value))"
                 />
-                <span class="value-display">{{ (emitter.emissionThreshold || 0.05).toFixed(2) }}</span>
+                <span class="value-display">{{ getEmissionThreshold(emitter, 0.05).toFixed(2) }}</span>
               </div>
               <div class="property-row">
                 <label title="Scale factor for converting depth values to Z position. Higher = more 3D separation.">Depth Scale</label>
                 <input
                   type="range"
-                  :value="emitter.depthScale || 500"
+                  :value="getDepthScale(emitter)"
                   min="0"
                   max="2000"
                   step="50"
                   @input="updateEmitter(emitter.id, 'depthScale', Number(($event.target as HTMLInputElement).value))"
                 />
-                <span class="value-display">{{ emitter.depthScale || 500 }}</span>
+                <span class="value-display">{{ getDepthScale(emitter) }}</span>
               </div>
             </div>
             <div v-if="emitter.shape !== 'point' && emitter.shape !== 'spline' && emitter.shape !== 'image' && emitter.shape !== 'depthEdge'" class="property-row checkbox-row">
@@ -863,9 +863,10 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from "vue";
+import { safeCoordinateDefault, safeNonNegativeDefault, safePositiveDefault } from "@/utils/typeGuards";
 import { ParticleGPUCompute } from "@/services/particleGPU";
-import { useCompositorStore } from "@/stores/compositorStore";
 import { usePresetStore } from "@/stores/presetStore";
+import { useProjectStore } from "@/stores/projectStore";
 import type { ParticlePreset } from "@/types/presets";
 import ParticleLODSection from "./particle/ParticleLODSection.vue";
 import ParticleDOFSection from "./particle/ParticleDOFSection.vue";
@@ -889,24 +890,25 @@ import type {
   TurbulenceFieldConfig,
   VortexConfig,
 } from "@/types/project";
+import type { SplinePathEmission, VisualizationConfig } from "@/services/particles/particleTypes";
 
 // Preset Store
 const presetStore = usePresetStore();
 presetStore.initialize();
 
-// Compositor Store - for layer list
-const compositorStore = useCompositorStore();
+// Project Store - for layer list
+const projectStore = useProjectStore();
 
 // Computed: Image layers for mask emission
 const imageLayers = computed(() =>
-  compositorStore.layers.filter(
+  projectStore.getActiveCompLayers().filter(
     (l) => l.type === "image" || l.type === "video" || l.type === "solid",
   ),
 );
 
 // Computed: Depth layers for depth edge emission
 const depthLayers = computed(() =>
-  compositorStore.layers.filter(
+  projectStore.getActiveCompLayers().filter(
     (l) =>
       l.type === "image" &&
       (l.name.toLowerCase().includes("depth") ||
@@ -916,7 +918,7 @@ const depthLayers = computed(() =>
 
 // Computed: Spline and path layers for spline emission
 const availableSplineLayers = computed(() =>
-  compositorStore.layers.filter(
+  projectStore.getActiveCompLayers().filter(
     (l) => l.type === "spline" || l.type === "path",
   ),
 );
@@ -945,7 +947,9 @@ const userPresets = computed(() =>
 const isBuiltInPreset = computed(() => {
   if (!selectedPresetId.value) return false;
   const preset = presetStore.getPreset(selectedPresetId.value);
-  return preset?.isBuiltIn ?? false;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining/nullish coalescing
+  // Pattern match: preset.isBuiltIn ∈ boolean | undefined → boolean (default false)
+  return (typeof preset === "object" && preset !== null && "isBuiltIn" in preset && typeof preset.isBuiltIn === "boolean") ? preset.isBuiltIn : false;
 });
 
 interface Props {
@@ -968,7 +972,9 @@ const forceTab = ref<"wells" | "vortices">("wells");
 // Get/set expanded sections for current layer
 const expandedSections = computed({
   get: () => {
-    const layerId = props.layer?.id;
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const layer = props.layer;
+    const layerId = (layer != null && typeof layer === "object" && "id" in layer && typeof layer.id === "string") ? layer.id : undefined;
     if (!layerId) return new Set(["system", "emitters"]);
     if (!expandedSectionsMap.value.has(layerId)) {
       expandedSectionsMap.value.set(layerId, new Set(["system", "emitters"]));
@@ -976,7 +982,9 @@ const expandedSections = computed({
     return expandedSectionsMap.value.get(layerId)!;
   },
   set: (val: Set<string>) => {
-    const layerId = props.layer?.id;
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const layer = props.layer;
+    const layerId = (layer != null && typeof layer === "object" && "id" in layer && typeof layer.id === "string") ? layer.id : undefined;
     if (layerId) {
       expandedSectionsMap.value.set(layerId, val);
     }
@@ -985,7 +993,9 @@ const expandedSections = computed({
 
 const expandedEmitters = computed({
   get: () => {
-    const layerId = props.layer?.id;
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const layer = props.layer;
+    const layerId = (layer != null && typeof layer === "object" && "id" in layer && typeof layer.id === "string") ? layer.id : undefined;
     if (!layerId) return new Set<string>();
     if (!expandedEmittersMap.value.has(layerId)) {
       expandedEmittersMap.value.set(layerId, new Set<string>());
@@ -993,7 +1003,9 @@ const expandedEmitters = computed({
     return expandedEmittersMap.value.get(layerId)!;
   },
   set: (val: Set<string>) => {
-    const layerId = props.layer?.id;
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const layer = props.layer;
+    const layerId = (layer != null && typeof layer === "object" && "id" in layer && typeof layer.id === "string") ? layer.id : undefined;
     if (layerId) {
       expandedEmittersMap.value.set(layerId, val);
     }
@@ -1002,7 +1014,11 @@ const expandedEmitters = computed({
 
 // Watch for layer changes to ensure UI stays in sync
 watch(
-  () => props.layer?.id,
+  () => {
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const layer = props.layer;
+    return (layer != null && typeof layer === "object" && "id" in layer && typeof layer.id === "string") ? layer.id : undefined;
+  },
   (newId, oldId) => {
     if (newId && newId !== oldId) {
       // Initialize expanded sections for new layer if not already set
@@ -1019,7 +1035,11 @@ watch(
 
 // Deep watch for layer data changes to ensure computed properties update
 watch(
-  () => props.layer?.data,
+  () => {
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const layer = props.layer;
+    return (layer != null && typeof layer === "object" && "data" in layer) ? layer.data : undefined;
+  },
   () => {
     // Force re-evaluation of computed properties when layer data changes externally
   },
@@ -1086,8 +1106,15 @@ const gravityWells = computed(() => layerData.value.gravityWells);
 const vortices = computed(() => layerData.value.vortices);
 const modulations = computed(() => layerData.value.modulations);
 const renderOptions = computed(() => layerData.value.renderOptions);
-const turbulenceFields = computed(() => layerData.value.turbulenceFields || []);
-const subEmitters = computed(() => layerData.value.subEmitters || []);
+// Lean4/PureScript/Haskell: Explicit pattern matching - no lazy || []
+const turbulenceFields = computed(() => {
+  const fields = layerData.value.turbulenceFields;
+  return (fields !== null && fields !== undefined && Array.isArray(fields)) ? fields : [];
+});
+const subEmitters = computed(() => {
+  const emitters = layerData.value.subEmitters;
+  return (emitters !== null && emitters !== undefined && Array.isArray(emitters)) ? emitters : [];
+});
 
 // Flocking config with defaults
 const flocking = computed(
@@ -1132,7 +1159,11 @@ const connections = computed(
       fadeByDistance: true,
     },
 );
-const audioBindings = computed(() => layerData.value.audioBindings || []);
+// Lean4/PureScript/Haskell: Explicit pattern matching - no lazy || []
+const audioBindings = computed(() => {
+  const bindings = layerData.value.audioBindings;
+  return (bindings !== null && bindings !== undefined && Array.isArray(bindings)) ? bindings : [];
+});
 const particleCount = computed(() => props.particleCount);
 
 // LOD config with defaults
@@ -1155,9 +1186,11 @@ const dofConfig = computed(() =>
 );
 
 // Collision planes with defaults
-const collisionPlanes = computed((): CollisionPlane[] =>
-  layerData.value.collisionPlanes || [],
-);
+// Lean4/PureScript/Haskell: Explicit pattern matching - no lazy || []
+const collisionPlanes = computed((): CollisionPlane[] => {
+  const planes = layerData.value.collisionPlanes;
+  return (planes !== null && planes !== undefined && Array.isArray(planes)) ? planes : [];
+});
 
 // Particle groups with defaults
 const particleGroups = computed((): ParticleGroup[] =>
@@ -1189,15 +1222,30 @@ const visualization = computed(
 import type { LODConfig } from "./particle/ParticleLODSection.vue";
 import type { DOFConfig } from "./particle/ParticleDOFSection.vue";
 
-const lodConfigForSection = computed<LODConfig>(() => ({
-  enabled: lodConfig.value.enabled,
-  nearDistance: lodConfig.value.distances[0] ?? 100,
-  midDistance: lodConfig.value.distances[1] ?? 300,
-  farDistance: lodConfig.value.distances[2] ?? 600,
-  nearSizeMultiplier: lodConfig.value.sizeMultipliers[0] ?? 1.0,
-  midSizeMultiplier: lodConfig.value.sizeMultipliers[1] ?? 0.5,
-  farSizeMultiplier: lodConfig.value.sizeMultipliers[2] ?? 0.25,
-}));
+const lodConfigForSection = computed<LODConfig>(() => {
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+  // Pattern match: distances[i] ∈ number | undefined → number (with defaults)
+  const distancesArray = (lodConfig.value.distances !== null && typeof lodConfig.value.distances === "object" && Array.isArray(lodConfig.value.distances)) ? lodConfig.value.distances : [];
+  const nearDistanceValue = (distancesArray.length > 0 && typeof distancesArray[0] === "number" && Number.isFinite(distancesArray[0])) ? distancesArray[0] : 100;
+  const midDistanceValue = (distancesArray.length > 1 && typeof distancesArray[1] === "number" && Number.isFinite(distancesArray[1])) ? distancesArray[1] : 300;
+  const farDistanceValue = (distancesArray.length > 2 && typeof distancesArray[2] === "number" && Number.isFinite(distancesArray[2])) ? distancesArray[2] : 600;
+  
+  // Pattern match: sizeMultipliers[i] ∈ number | undefined → number (with defaults)
+  const sizeMultipliersArray = (lodConfig.value.sizeMultipliers !== null && typeof lodConfig.value.sizeMultipliers === "object" && Array.isArray(lodConfig.value.sizeMultipliers)) ? lodConfig.value.sizeMultipliers : [];
+  const nearSizeMultiplierValue = (sizeMultipliersArray.length > 0 && typeof sizeMultipliersArray[0] === "number" && Number.isFinite(sizeMultipliersArray[0])) ? sizeMultipliersArray[0] : 1.0;
+  const midSizeMultiplierValue = (sizeMultipliersArray.length > 1 && typeof sizeMultipliersArray[1] === "number" && Number.isFinite(sizeMultipliersArray[1])) ? sizeMultipliersArray[1] : 0.5;
+  const farSizeMultiplierValue = (sizeMultipliersArray.length > 2 && typeof sizeMultipliersArray[2] === "number" && Number.isFinite(sizeMultipliersArray[2])) ? sizeMultipliersArray[2] : 0.25;
+  
+  return {
+    enabled: lodConfig.value.enabled,
+    nearDistance: nearDistanceValue,
+    midDistance: midDistanceValue,
+    farDistance: farDistanceValue,
+    nearSizeMultiplier: nearSizeMultiplierValue,
+    midSizeMultiplier: midSizeMultiplierValue,
+    farSizeMultiplier: farSizeMultiplierValue,
+  };
+});
 
 const dofConfigForSection = computed<DOFConfig>(() => ({
   enabled: dofConfig.value.enabled,
@@ -1289,10 +1337,13 @@ function applySelectedPreset(): void {
   // Apply gravity if specified
   if (config.gravity !== undefined) {
     // Handle gravity as either a number or an object with y property
-    const gravityValue =
-      typeof config.gravity === "number"
-        ? config.gravity
-        : ((config.gravity as { y?: number })?.y ?? 0);
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining/nullish coalescing
+    // Pattern match: config.gravity ∈ number | {y?: number} → number
+    const gravityValue = (typeof config.gravity === "number" && Number.isFinite(config.gravity))
+      ? config.gravity
+      : ((typeof config.gravity === "object" && config.gravity !== null && "y" in config.gravity && typeof (config.gravity as { y?: number }).y === "number" && Number.isFinite((config.gravity as { y?: number }).y))
+        ? (config.gravity as { y: number }).y
+        : 0);
     updates.systemConfig = {
       ...(updates.systemConfig || systemConfig.value),
       gravity: gravityValue,
@@ -1307,16 +1358,26 @@ function applySelectedPreset(): void {
     config.endSize
   ) {
     const defaultEmitter = emitters.value[0] || createDefaultEmitter();
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+    // Pattern match: config.property ∈ PropertyType | undefined → PropertyType (fallback to defaultEmitter property)
+    const emissionRateValue = (typeof config.emissionRate === "number" && Number.isFinite(config.emissionRate)) ? config.emissionRate : defaultEmitter.emissionRate;
+    const lifespanValue = (typeof config.lifespan === "number" && Number.isFinite(config.lifespan)) ? config.lifespan : defaultEmitter.lifespan;
+    const startSizeValue = (typeof config.startSize === "number" && Number.isFinite(config.startSize)) ? config.startSize : defaultEmitter.startSize;
+    const endSizeValue = (typeof config.endSize === "number" && Number.isFinite(config.endSize)) ? config.endSize : defaultEmitter.endSize;
+    const startColorValue = (typeof config.startColor === "string" && config.startColor.length > 0) ? config.startColor : defaultEmitter.startColor;
+    const endColorValue = (typeof config.endColor === "string" && config.endColor.length > 0) ? config.endColor : defaultEmitter.endColor;
+    const velocitySpreadValue = (typeof config.velocitySpread === "number" && Number.isFinite(config.velocitySpread)) ? config.velocitySpread : defaultEmitter.velocitySpread;
+    
     updates.emitters = [
       {
         ...defaultEmitter,
-        emissionRate: config.emissionRate ?? defaultEmitter.emissionRate,
-        lifespan: config.lifespan ?? defaultEmitter.lifespan,
-        startSize: config.startSize ?? defaultEmitter.startSize,
-        endSize: config.endSize ?? defaultEmitter.endSize,
-        startColor: config.startColor ?? defaultEmitter.startColor,
-        endColor: config.endColor ?? defaultEmitter.endColor,
-        velocitySpread: config.velocitySpread ?? defaultEmitter.velocitySpread,
+        emissionRate: emissionRateValue,
+        lifespan: lifespanValue,
+        startSize: startSizeValue,
+        endSize: endSizeValue,
+        startColor: startColorValue,
+        endColor: endColorValue,
+        velocitySpread: velocitySpreadValue,
       },
     ];
   }
@@ -1411,19 +1472,29 @@ function saveCurrentAsPreset(): void {
   const emitter = emitters.value[0];
   const turbulence = turbulenceFields.value[0];
 
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const emitterEmissionRate = (emitter != null && typeof emitter === "object" && "emissionRate" in emitter) ? emitter.emissionRate : undefined;
+  const emitterLifespan = (emitter != null && typeof emitter === "object" && "lifespan" in emitter) ? emitter.lifespan : undefined;
+  const emitterStartSize = (emitter != null && typeof emitter === "object" && "startSize" in emitter) ? emitter.startSize : undefined;
+  const emitterEndSize = (emitter != null && typeof emitter === "object" && "endSize" in emitter) ? emitter.endSize : undefined;
+  const emitterStartColor = (emitter != null && typeof emitter === "object" && "startColor" in emitter) ? emitter.startColor : undefined;
+  const emitterEndColor = (emitter != null && typeof emitter === "object" && "endColor" in emitter) ? emitter.endColor : undefined;
+  const emitterVelocitySpread = (emitter != null && typeof emitter === "object" && "velocitySpread" in emitter) ? emitter.velocitySpread : undefined;
+  const turbulenceStrength = (turbulence != null && typeof turbulence === "object" && "strength" in turbulence) ? turbulence.strength : undefined;
+  
   presetStore.saveParticlePreset(
     newPresetName.value.trim(),
     {
       maxParticles: systemConfig.value.maxParticles,
-      emissionRate: emitter?.emissionRate,
-      lifespan: emitter?.lifespan,
-      startSize: emitter?.startSize,
-      endSize: emitter?.endSize,
-      startColor: emitter?.startColor,
-      endColor: emitter?.endColor,
+      emissionRate: emitterEmissionRate,
+      lifespan: emitterLifespan,
+      startSize: emitterStartSize,
+      endSize: emitterEndSize,
+      startColor: emitterStartColor,
+      endColor: emitterEndColor,
       gravity: systemConfig.value.gravity,
-      turbulenceStrength: turbulence?.strength,
-      velocitySpread: emitter?.velocitySpread,
+      turbulenceStrength: turbulenceStrength,
+      velocitySpread: emitterVelocitySpread,
     },
     {
       description: newPresetDescription.value.trim() || undefined,
@@ -1448,24 +1519,71 @@ function deleteSelectedPreset(): void {
 }
 
 // Update functions
-function updateSystemConfig(
-  key: keyof ParticleSystemLayerConfig,
-  value: any,
+function updateSystemConfig<K extends keyof ParticleSystemLayerConfig>(
+  key: K,
+  value: ParticleSystemLayerConfig[K],
 ): void {
   emit("update", {
     systemConfig: { ...systemConfig.value, [key]: value },
   });
 }
 
-function updateEmitter(
+function updateEmitter<K extends keyof ParticleEmitterConfig>(
   id: string,
-  key: keyof ParticleEmitterConfig,
-  value: any,
+  key: K,
+  value: ParticleEmitterConfig[K],
 ): void {
   const updated = emitters.value.map((e) =>
     e.id === id ? { ...e, [key]: value } : e,
   );
   emit("update", { emitters: updated });
+}
+
+// Helper functions for safe numeric defaults in template
+// Type proof: shapeRadius ∈ number | undefined → number (> 0, must be positive)
+function getShapeRadius(emitter: ParticleEmitterConfig): number {
+  return safePositiveDefault(emitter.shapeRadius, 0.1, "emitter.shapeRadius");
+}
+
+// Type proof: shapeInnerRadius ∈ number | undefined → number (≥ 0, can be 0 for solid circle)
+function getShapeInnerRadius(emitter: ParticleEmitterConfig): number {
+  return safeNonNegativeDefault(emitter.shapeInnerRadius, 0.05, "emitter.shapeInnerRadius");
+}
+
+// Type proof: shapeWidth ∈ number | undefined → number (> 0, must be positive)
+function getShapeWidth(emitter: ParticleEmitterConfig): number {
+  return safePositiveDefault(emitter.shapeWidth, 0.2, "emitter.shapeWidth");
+}
+
+// Type proof: shapeHeight ∈ number | undefined → number (> 0, must be positive)
+function getShapeHeight(emitter: ParticleEmitterConfig): number {
+  return safePositiveDefault(emitter.shapeHeight, 0.2, "emitter.shapeHeight");
+}
+
+// Type proof: coneAngle ∈ number | undefined → number (> 0, must be positive)
+function getConeAngle(emitter: ParticleEmitterConfig): number {
+  return safePositiveDefault(emitter.coneAngle, 45, "emitter.coneAngle");
+}
+
+// Type proof: coneRadius ∈ number | undefined → number (> 0, must be positive)
+function getConeRadius(emitter: ParticleEmitterConfig): number {
+  return safePositiveDefault(emitter.coneRadius, 0.1, "emitter.coneRadius");
+}
+
+// Type proof: splinePath.offset ∈ number | undefined → number (coordinate offset, can be negative)
+function getSplinePathOffset(emitter: ParticleEmitterConfig): number {
+  if (!emitter.splinePath) return 0;
+  return safeCoordinateDefault(emitter.splinePath.offset, 0, "emitter.splinePath.offset");
+}
+
+// Type proof: emissionThreshold ∈ number | undefined → number (≥ 0, threshold 0-1)
+function getEmissionThreshold(emitter: ParticleEmitterConfig, defaultValue: number): number {
+  return safeNonNegativeDefault(emitter.emissionThreshold, defaultValue, "emitter.emissionThreshold");
+}
+
+// Type proof: depthScale ∈ number | undefined → number (> 0, scale factor)
+function getDepthScale(emitter: ParticleEmitterConfig): number {
+  return safePositiveDefault(emitter.depthScale, 500, "emitter.depthScale");
 }
 
 function updateEmitterColor(id: string, hex: string): void {
@@ -1474,25 +1592,25 @@ function updateEmitterColor(id: string, hex: string): void {
 }
 
 // Update spline path emission settings
-function updateEmitterSplinePath(
+function updateEmitterSplinePath<K extends keyof SplinePathEmission>(
   emitterId: string,
-  key: string,
-  value: any,
+  key: K,
+  value: SplinePathEmission[K],
 ): void {
   const emitter = emitters.value.find((e) => e.id === emitterId);
   if (!emitter) return;
 
   // Create or update the splinePath object
-  const currentSplinePath = emitter.splinePath || {
+  const currentSplinePath: SplinePathEmission = emitter.splinePath || {
     layerId: "",
-    emitMode: "random" as const,
+    emitMode: "random",
     parameter: 0,
     alignToPath: true,
     offset: 0,
     bidirectional: false,
   };
 
-  const updatedSplinePath = {
+  const updatedSplinePath: SplinePathEmission = {
     ...currentSplinePath,
     [key]: value,
   };
@@ -1559,10 +1677,10 @@ function removeEmitter(id: string): void {
   emit("update", { emitters: emitters.value.filter((e) => e.id !== id) });
 }
 
-function updateGravityWell(
+function updateGravityWell<K extends keyof GravityWellConfig>(
   id: string,
-  key: keyof GravityWellConfig,
-  value: any,
+  key: K,
+  value: GravityWellConfig[K],
 ): void {
   const updated = gravityWells.value.map((w) =>
     w.id === id ? { ...w, [key]: value } : w,
@@ -1590,7 +1708,7 @@ function removeGravityWell(id: string): void {
   });
 }
 
-function updateVortex(id: string, key: keyof VortexConfig, value: any): void {
+function updateVortex<K extends keyof VortexConfig>(id: string, key: K, value: VortexConfig[K]): void {
   const updated = vortices.value.map((v) =>
     v.id === id ? { ...v, [key]: value } : v,
   );
@@ -1616,10 +1734,10 @@ function removeVortex(id: string): void {
   emit("update", { vortices: vortices.value.filter((v) => v.id !== id) });
 }
 
-function updateModulation(
+function updateModulation<K extends keyof ParticleModulationConfig>(
   id: string,
-  key: keyof ParticleModulationConfig,
-  value: any,
+  key: K,
+  value: ParticleModulationConfig[K],
 ): void {
   const updated = modulations.value.map((m) =>
     m.id === id ? { ...m, [key]: value } : m,
@@ -1643,9 +1761,9 @@ function removeModulation(id: string): void {
   emit("update", { modulations: modulations.value.filter((m) => m.id !== id) });
 }
 
-function updateRenderOption(
-  key: keyof ParticleRenderOptions,
-  value: any,
+function updateRenderOption<K extends keyof ParticleRenderOptions>(
+  key: K,
+  value: ParticleRenderOptions[K],
 ): void {
   emit("update", {
     renderOptions: { ...renderOptions.value, [key]: value },
@@ -1653,9 +1771,9 @@ function updateRenderOption(
 }
 
 // Connection functions
-function updateConnection(
-  key: keyof ConnectionRenderConfig,
-  value: any,
+function updateConnection<K extends keyof ConnectionRenderConfig>(
+  key: K,
+  value: ConnectionRenderConfig[K],
 ): void {
   emit("update", {
     renderOptions: {
@@ -1666,10 +1784,10 @@ function updateConnection(
 }
 
 // Turbulence functions
-function updateTurbulence(
+function updateTurbulence<K extends keyof TurbulenceFieldConfig>(
   id: string,
-  key: keyof TurbulenceFieldConfig,
-  value: any,
+  key: K,
+  value: TurbulenceFieldConfig[K],
 ): void {
   const updated = turbulenceFields.value.map((t) =>
     t.id === id ? { ...t, [key]: value } : t,
@@ -1695,31 +1813,25 @@ function removeTurbulence(id: string): void {
 }
 
 // Flocking functions
-function updateFlocking(key: keyof FlockingConfig, value: any): void {
+function updateFlocking<K extends keyof FlockingConfig>(key: K, value: FlockingConfig[K]): void {
   emit("update", {
     flocking: { ...flocking.value, [key]: value },
   });
 }
 
 // Collision functions
-function updateCollision(key: keyof CollisionConfig, value: any): void {
+function updateCollision<K extends keyof CollisionConfig>(key: K, value: CollisionConfig[K]): void {
   emit("update", {
     collision: { ...collision.value, [key]: value },
   });
 }
 
 // Visualization functions (CC Particle World style)
-interface VisualizationConfig {
-  showHorizon: boolean;
-  showGrid: boolean;
-  showAxis: boolean;
-  gridSize: number;
-  gridDepth: number;
-}
+// Note: VisualizationConfig imported from @/services/particles/particleTypes
 
-function updateVisualization(
-  key: keyof VisualizationConfig,
-  value: any,
+function updateVisualization<K extends keyof VisualizationConfig>(
+  key: K,
+  value: VisualizationConfig[K],
 ): void {
   emit("update", {
     visualization: { ...visualization.value, [key]: value },
@@ -1736,7 +1848,11 @@ function addAudioBinding(): void {
     min: 0,
     max: 1,
     target: "emitter",
-    targetId: emitters.value[0]?.id || "",
+    targetId: (() => {
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const firstEmitter = (emitters.value != null && Array.isArray(emitters.value) && emitters.value.length > 0) ? emitters.value[0] : undefined;
+      return (firstEmitter != null && typeof firstEmitter === "object" && "id" in firstEmitter && typeof firstEmitter.id === "string") ? firstEmitter.id : "";
+    })(),
     parameter: "emissionRate",
     outputMin: 1,
     outputMax: 50,
@@ -1748,10 +1864,10 @@ function addAudioBinding(): void {
   emit("update", { audioBindings: [...audioBindings.value, newBinding] });
 }
 
-function updateAudioBinding(
+function updateAudioBinding<K extends keyof AudioBindingConfig>(
   id: string,
-  key: keyof AudioBindingConfig,
-  value: any,
+  key: K,
+  value: AudioBindingConfig[K],
 ): void {
   const updated = audioBindings.value.map((b) =>
     b.id === id ? { ...b, [key]: value } : b,
@@ -1766,10 +1882,10 @@ function removeAudioBinding(id: string): void {
 }
 
 // Sub-emitter functions
-function updateSubEmitter(
+function updateSubEmitter<K extends keyof SubEmitterConfig>(
   id: string,
-  key: keyof SubEmitterConfig,
-  value: any,
+  key: K,
+  value: SubEmitterConfig[K],
 ): void {
   const updated = subEmitters.value.map((s) =>
     s.id === id ? { ...s, [key]: value } : s,
@@ -2000,7 +2116,7 @@ async function bakeToTrajectories(): Promise<void> {
 
   try {
     // Get the particle layer instance from the engine
-    const engine = (window as any).__latticeEngine;
+    const engine = window.__latticeEngine;
     if (!engine) {
       throw new Error("Engine not available");
     }
@@ -2021,7 +2137,19 @@ async function bakeToTrajectories(): Promise<void> {
     );
 
     // Convert to baked trajectories format
-    const particleLifetimes = new Map<number, { birth: number; death: number; keyframes: any[] }>();
+    interface ParticleKeyframe {
+      frame: number;
+      x: number;
+      y: number;
+      z: number;
+      size: number;
+      opacity: number;
+      rotation: number;
+      r: number;
+      g: number;
+      b: number;
+    }
+    const particleLifetimes = new Map<number, { birth: number; death: number; keyframes: ParticleKeyframe[] }>();
 
     // Process each frame's particles
     for (const [frame, particles] of trajectoryData) {
@@ -2096,16 +2224,27 @@ async function bakeToTrajectories(): Promise<void> {
  * Clear cache and reset simulation
  */
 function clearAndRebake(): void {
-  const engine = (window as any).__latticeEngine;
+  const engine = window.__latticeEngine;
   if (!engine) return;
 
   const particleLayer = engine.getLayer(props.layer.id);
   if (particleLayer && "clearCache" in particleLayer) {
-    (particleLayer as any).clearCache();
+    (particleLayer as { clearCache: () => void }).clearCache();
   }
 
   lastBakeResult.value = null;
   bakeProgressText.value = "Cache cleared";
+}
+
+// Lean4/PureScript/Haskell: Helper functions for Vue template bindings - explicit pattern matching
+// Pattern match: emitter.z ∈ number | undefined → number (default 0)
+function getEmitterZ(emitter: ParticleEmitterConfig): number {
+  return (typeof emitter.z === "number" && Number.isFinite(emitter.z)) ? emitter.z : 0;
+}
+
+// Pattern match: emitter.splinePath.alignToPath ∈ boolean | undefined → boolean (default true)
+function getSplinePathAlignToPath(emitter: ParticleEmitterConfig): boolean {
+  return (typeof emitter.splinePath === "object" && emitter.splinePath !== null && "alignToPath" in emitter.splinePath && typeof emitter.splinePath.alignToPath === "boolean") ? emitter.splinePath.alignToPath : true;
 }
 </script>
 

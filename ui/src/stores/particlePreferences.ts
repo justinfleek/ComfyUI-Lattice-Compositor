@@ -115,14 +115,22 @@ export const useParticlePreferencesStore = defineStore("particlePreferences", ()
     // Check WebGPU
     if (typeof navigator !== "undefined" && "gpu" in navigator) {
       try {
-        const adapter = await navigator.gpu?.requestAdapter();
-        if (adapter) {
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+        const navigatorGpu = (navigator != null && typeof navigator === "object" && "gpu" in navigator && navigator.gpu != null && typeof navigator.gpu === "object") ? navigator.gpu : undefined;
+        const requestAdapter = (navigatorGpu != null && typeof navigatorGpu === "object" && typeof navigatorGpu.requestAdapter === "function") ? navigatorGpu.requestAdapter : undefined;
+        const adapter = requestAdapter != null ? await requestAdapter() : undefined;
+        if (adapter != null) {
           hasWebGPU.value = true;
           // requestAdapterInfo is not available in all implementations
           try {
             const adapterWithInfo = adapter as GPUAdapterWithInfo;
-            const info = await adapterWithInfo.requestAdapterInfo?.();
-            gpuName.value = info?.device || info?.description || "WebGPU Device";
+            // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+            const requestAdapterInfo = (adapterWithInfo != null && typeof adapterWithInfo === "object" && typeof adapterWithInfo.requestAdapterInfo === "function") ? adapterWithInfo.requestAdapterInfo : undefined;
+            const info = requestAdapterInfo != null ? await requestAdapterInfo() : undefined;
+            // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+            const infoDevice = (info != null && typeof info === "object" && "device" in info && typeof info.device === "string") ? info.device : undefined;
+            const infoDescription = (info != null && typeof info === "object" && "description" in info && typeof info.description === "string") ? info.description : undefined;
+            gpuName.value = infoDevice != null ? infoDevice : (infoDescription != null ? infoDescription : "WebGPU Device");
           } catch {
             gpuName.value = "WebGPU Device";
           }

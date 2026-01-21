@@ -508,7 +508,8 @@ function loadLayerPhysics() {
   const layerData = layer.data as { physics?: import("@/types/physics").PhysicsLayerData };
   const data = layerData.physics;
   if (data) {
-    physicsEnabled.value = data.physicsEnabled ?? false;
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+    physicsEnabled.value = (typeof data === "object" && data !== null && "physicsEnabled" in data && typeof data.physicsEnabled === "boolean") ? data.physicsEnabled : false;
     
     // Determine physics type based on which config exists
     if (data.ragdoll) {

@@ -14,7 +14,7 @@
         </div>
         <div class="info-row">
           <span class="info-label">Frame Rate</span>
-          <span class="info-value">{{ assetInfo.fps?.toFixed(2) || '?' }} fps</span>
+          <span class="info-value">{{ getFpsDisplay() }} fps</span>
         </div>
         <div class="info-row">
           <span class="info-label">Has Audio</span>
@@ -46,7 +46,7 @@
         <div class="property-row">
           <label>End Time</label>
           <ScrubableNumber
-            :modelValue="videoData.endTime || assetInfo?.duration || 0"
+            :modelValue="getEndTime()"
             @update:modelValue="updateEndTime"
             :min="0" :step="0.1" :precision="2" unit="s"
           />
@@ -161,7 +161,7 @@
     </div>
 
     <!-- Audio -->
-    <div class="property-section" v-if="assetInfo?.hasAudio !== false">
+    <div class="property-section" v-if="getHasAudio() !== false">
       <div class="section-header">Audio</div>
       <div class="section-content">
         <div class="checkbox-group">
@@ -211,9 +211,9 @@
 
 <script setup lang="ts">
 import { computed } from "vue";
-import { useCompositorStore } from "@/stores/compositorStore";
+import { safeNonNegativeDefault } from "@/utils/typeGuards";
 import { useProjectStore } from "@/stores/projectStore";
-import { useLayerStore } from "@/stores/layerStore";
+import { useVideoStore } from "@/stores/videoStore";
 import type {
   AnimatableProperty,
   AssetReference,
@@ -223,8 +223,8 @@ import type {
 
 const props = defineProps<{ layer: Layer }>();
 const emit = defineEmits(["update"]);
-const store = useCompositorStore();
 const projectStore = useProjectStore();
+const videoStore = useVideoStore();
 
 const videoData = computed<VideoData>(() => {
   return (
@@ -251,22 +251,45 @@ const videoData = computed<VideoData>(() => {
 const assetInfo = computed<AssetReference | null>(() => {
   const assetId = videoData.value.assetId;
   if (!assetId) return null;
-  return store.assets[assetId] || null;
+  return projectStore.project.assets[assetId] || null;
 });
 
+// Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+function getFpsDisplay(): string {
+  const assetInfoValue = assetInfo.value;
+  const fps = (assetInfoValue != null && typeof assetInfoValue === "object" && "fps" in assetInfoValue && typeof assetInfoValue.fps === "number") ? assetInfoValue.fps : undefined;
+  return (fps != null) ? fps.toFixed(2) : "?";
+}
+
+function getHasAudio(): boolean | undefined {
+  const assetInfoValue = assetInfo.value;
+  return (assetInfoValue != null && typeof assetInfoValue === "object" && "hasAudio" in assetInfoValue && typeof assetInfoValue.hasAudio === "boolean") ? assetInfoValue.hasAudio : undefined;
+}
+
 const audioLevel = computed<AnimatableProperty<number> | undefined>(() => {
-  return props.layer.audio?.level;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const audio = (props.layer != null && typeof props.layer === "object" && "audio" in props.layer && props.layer.audio != null && typeof props.layer.audio === "object") ? props.layer.audio : undefined;
+  const level = (audio != null && typeof audio === "object" && "level" in audio && audio.level != null) ? audio.level : undefined;
+  return level;
 });
 
 // Speed map computed properties (with backwards compatibility)
+// Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
 const speedMapEnabled = computed(() => {
-  return (
-    videoData.value.speedMapEnabled ?? videoData.value.timeRemapEnabled ?? false
-  );
+  const data = videoData.value;
+  const speedMapEnabledValue = (typeof data === "object" && data !== null && "speedMapEnabled" in data && typeof data.speedMapEnabled === "boolean") ? data.speedMapEnabled : undefined;
+  if (speedMapEnabledValue !== undefined) return speedMapEnabledValue;
+  const timeRemapEnabledValue = (typeof data === "object" && data !== null && "timeRemapEnabled" in data && typeof data.timeRemapEnabled === "boolean") ? data.timeRemapEnabled : undefined;
+  return timeRemapEnabledValue !== undefined ? timeRemapEnabledValue : false;
 });
 
 const speedMapProperty = computed(() => {
-  return videoData.value.speedMap ?? videoData.value.timeRemap;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+  const data = videoData.value;
+  const speedMap = (typeof data === "object" && data !== null && "speedMap" in data && data.speedMap !== null && data.speedMap !== undefined) ? data.speedMap : undefined;
+  if (speedMap !== undefined) return speedMap;
+  const timeRemap = (typeof data === "object" && data !== null && "timeRemap" in data && data.timeRemap !== null && data.timeRemap !== undefined) ? data.timeRemap : undefined;
+  return timeRemap;
 });
 
 const speedMapValue = computed(() => {
@@ -275,44 +298,58 @@ const speedMapValue = computed(() => {
   return prop.value;
 });
 
+// Type proof: endTime ∈ number | undefined → number (≥ 0, time in seconds)
+// Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??/?.
+function getEndTime(): number {
+  const data = videoData.value;
+  const endTime = (typeof data === "object" && data !== null && "endTime" in data && typeof data.endTime === "number" && Number.isFinite(data.endTime)) ? data.endTime : undefined;
+  const asset = assetInfo.value;
+  const duration = (asset !== null && asset !== undefined && typeof asset === "object" && "duration" in asset && typeof asset.duration === "number" && Number.isFinite(asset.duration)) ? asset.duration : undefined;
+  const finalValue = endTime !== undefined ? endTime : duration;
+  return safeNonNegativeDefault(finalValue, 0, "videoData.endTime || assetInfo.duration");
+}
+
 function formatDuration(seconds: number | undefined): string {
   if (!seconds) return "0:00";
   const mins = Math.floor(seconds / 60);
   const secs = Math.floor(seconds % 60);
-  const frames = Math.floor((seconds % 1) * (assetInfo.value?.fps || 30));
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const assetInfoValue = assetInfo.value;
+  const fps = (assetInfoValue != null && typeof assetInfoValue === "object" && "fps" in assetInfoValue && typeof assetInfoValue.fps === "number") ? assetInfoValue.fps : undefined;
+  const frames = Math.floor((seconds % 1) * (fps != null ? fps : 30));
   return `${mins}:${secs.toString().padStart(2, "0")}:${frames.toString().padStart(2, "0")}`;
 }
 
 function updateSpeed(val: number) {
-  store.updateVideoLayerData(props.layer.id, { speed: val });
+  videoStore.updateVideoLayerData(props.layer.id, { speed: val });
   emit("update");
 }
 
 function updateStartTime(val: number) {
-  store.updateVideoLayerData(props.layer.id, { startTime: val });
+  videoStore.updateVideoLayerData(props.layer.id, { startTime: val });
   emit("update");
 }
 
 function updateEndTime(val: number) {
-  store.updateVideoLayerData(props.layer.id, { endTime: val });
+  videoStore.updateVideoLayerData(props.layer.id, { endTime: val });
   emit("update");
 }
 
 function updateLoop(e: Event) {
   const target = e.target as HTMLInputElement;
-  store.updateVideoLayerData(props.layer.id, { loop: target.checked });
+  videoStore.updateVideoLayerData(props.layer.id, { loop: target.checked });
   emit("update");
 }
 
 function updatePingPong(e: Event) {
   const target = e.target as HTMLInputElement;
-  store.updateVideoLayerData(props.layer.id, { pingPong: target.checked });
+  videoStore.updateVideoLayerData(props.layer.id, { pingPong: target.checked });
   emit("update");
 }
 
 function toggleSpeedMap(e: Event) {
   const target = e.target as HTMLInputElement;
-  store.updateVideoLayerData(props.layer.id, {
+  videoStore.updateVideoLayerData(props.layer.id, {
     speedMapEnabled: target.checked,
     timeRemapEnabled: target.checked, // Backwards compatibility
   });
@@ -332,21 +369,23 @@ function updateSpeedMap(val: number) {
     updates.timeRemap = { ...data.timeRemap, value: val };
   }
 
-  store.updateVideoLayerData(props.layer.id, updates);
+  videoStore.updateVideoLayerData(props.layer.id, updates);
   emit("update");
 }
 
 function updateFrameBlending(e: Event) {
   const target = e.target as HTMLSelectElement;
-  store.updateVideoLayerData(props.layer.id, {
-    frameBlending: target.value as VideoData["frameBlending"],
-  });
+    videoStore.updateVideoLayerData(props.layer.id, {
+      frameBlending: target.value as VideoData["frameBlending"],
+    });
   emit("update");
 }
 
 // Timewarp computed properties
+// Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
 const timewarpEnabled = computed(() => {
-  return videoData.value.timewarpEnabled ?? false;
+  const data = videoData.value;
+  return (typeof data === "object" && data !== null && "timewarpEnabled" in data && typeof data.timewarpEnabled === "boolean") ? data.timewarpEnabled : false;
 });
 
 const timewarpSpeedProperty = computed(() => {
@@ -378,7 +417,7 @@ function toggleTimewarp(e: Event) {
     updates.timewarpMethod = "frame-mix";
   }
 
-  store.updateVideoLayerData(props.layer.id, updates);
+  videoStore.updateVideoLayerData(props.layer.id, updates);
   emit("update");
 }
 
@@ -386,7 +425,7 @@ function updateTimewarpSpeed(val: number) {
   // Use store method to ensure history tracking
   const data = props.layer.data as VideoData;
   if (data.timewarpSpeed) {
-    store.updateVideoLayerData(props.layer.id, {
+    videoStore.updateVideoLayerData(props.layer.id, {
       timewarpSpeed: { ...data.timewarpSpeed, value: val },
     });
   }
@@ -395,9 +434,9 @@ function updateTimewarpSpeed(val: number) {
 
 function updateTimewarpMethod(e: Event) {
   const target = e.target as HTMLSelectElement;
-  store.updateVideoLayerData(props.layer.id, {
-    timewarpMethod: target.value as
-      | "whole-frames"
+    videoStore.updateVideoLayerData(props.layer.id, {
+      timewarpMethod: target.value as
+        | "whole-frames"
       | "frame-mix"
       | "pixel-motion",
   });
@@ -409,8 +448,10 @@ function applyTimewarpPreset(
 ) {
   // Import the preset creator
   import("@/services/timewarp").then(({ createSpeedRampPreset }) => {
-    const layerStart = props.layer.startFrame ?? 0;
-    const layerEnd = props.layer.endFrame ?? projectStore.getFrameCount(store);
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+    const layer = props.layer;
+    const layerStart = (typeof layer === "object" && layer !== null && "startFrame" in layer && typeof layer.startFrame === "number" && Number.isFinite(layer.startFrame)) ? layer.startFrame : 0;
+    const layerEnd = (typeof layer === "object" && layer !== null && "endFrame" in layer && typeof layer.endFrame === "number" && Number.isFinite(layer.endFrame)) ? layer.endFrame : projectStore.getFrameCount(store);
     const duration = layerEnd - layerStart;
     const fps = projectStore.getFps(store) || 30;
 
@@ -421,7 +462,7 @@ function applyTimewarpPreset(
       fps,
     );
 
-    store.updateVideoLayerData(props.layer.id, {
+    videoStore.updateVideoLayerData(props.layer.id, {
       timewarpEnabled: true,
       timewarpSpeed: presetProperty,
       timewarpMethod: "pixel-motion",
@@ -432,22 +473,25 @@ function applyTimewarpPreset(
 
 function updateAudioEnabled(e: Event) {
   const target = e.target as HTMLInputElement;
-  store.updateVideoLayerData(props.layer.id, { audioEnabled: target.checked });
+  videoStore.updateVideoLayerData(props.layer.id, { audioEnabled: target.checked });
   emit("update");
 }
 
 function updateAudioLevel(val: number) {
-  store.updateVideoLayerData(props.layer.id, { audioLevel: val });
+  videoStore.updateVideoLayerData(props.layer.id, { audioLevel: val });
   emit("update");
 }
 
 function updateLevel(val: number) {
   // Use store method to ensure history tracking
-  if (props.layer.audio?.level) {
-    layerStore.updateLayer(store, props.layer.id, {
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const audio = (props.layer != null && typeof props.layer === "object" && "audio" in props.layer && props.layer.audio != null && typeof props.layer.audio === "object") ? props.layer.audio : undefined;
+  const level = (audio != null && typeof audio === "object" && "level" in audio && audio.level != null) ? audio.level : undefined;
+  if (level != null) {
+    layerStore.updateLayer(props.layer.id, {
       audio: {
-        ...props.layer.audio,
-        level: { ...props.layer.audio.level, value: val },
+        ...audio,
+        level: { ...level, value: val },
       },
     });
     emit("update");

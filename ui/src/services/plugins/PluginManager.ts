@@ -11,6 +11,8 @@
  */
 
 import { createLogger } from "@/utils/logger";
+import type { AssetReference, Composition, Layer, LatticeProject } from "@/types/project";
+import type { Component } from "vue";
 
 const logger = createLogger("PluginManager");
 
@@ -56,16 +58,16 @@ export type PluginPermission =
 
 export interface LatticePluginAPI {
   // Read-only project access
-  getProject(): any;
+  getProject(): LatticeProject;
   getCurrentFrame(): number;
   getSelectedLayers(): string[];
-  getLayer(id: string): any;
-  getComposition(id: string): any;
-  getAsset(id: string): any;
+  getLayer(id: string): Layer;
+  getComposition(id: string): Composition;
+  getAsset(id: string): AssetReference;
 
-  // Events
-  on(event: PluginEvent, callback: (...args: any[]) => void): () => void;
-  off(event: PluginEvent, callback: (...args: any[]) => void): void;
+  // Events - type-safe callbacks
+  on<T extends PluginEvent>(event: T, callback: PluginEventCallback<T>): () => void;
+  off<T extends PluginEvent>(event: T, callback: PluginEventCallback<T>): void;
 
   // UI registration
   registerPanel(panel: PanelDefinition): void;
@@ -87,12 +89,12 @@ export interface LatticePluginAPI {
     type?: "info" | "success" | "warning" | "error",
   ): void;
 
-  // Logging
+  // Logging - accepts serializable values
   log: {
-    debug(...args: any[]): void;
-    info(...args: any[]): void;
-    warn(...args: any[]): void;
-    error(...args: any[]): void;
+    debug(...args: LoggableValue[]): void;
+    info(...args: LoggableValue[]): void;
+    warn(...args: LoggableValue[]): void;
+    error(...args: LoggableValue[]): void;
   };
 }
 
@@ -104,11 +106,33 @@ export type PluginEvent =
   | "projectSave"
   | "compositionChange";
 
+/** Event payload types for each plugin event */
+export interface PluginEventPayloads {
+  frameChange: { frame: number; previousFrame: number };
+  selectionChange: { layerIds: string[]; previousLayerIds: string[] };
+  layerChange: { layerId: string; layer: Layer };
+  projectLoad: { project: LatticeProject };
+  projectSave: { project: LatticeProject };
+  compositionChange: { compositionId: string; composition: Composition };
+}
+
+/** Type-safe event callback */
+export type PluginEventCallback<T extends PluginEvent> = (payload: PluginEventPayloads[T]) => void;
+
+/** Serializable values that can be logged */
+export type LoggableValue =
+  | string
+  | number
+  | boolean
+  | Error
+  | (string | number | boolean)[]
+  | Record<string, string | number | boolean>;
+
 export interface PanelDefinition {
   id: string;
   name: string;
   icon?: string;
-  component: any; // Vue component
+  component: Component;
   position?: "left" | "right" | "bottom";
 }
 
@@ -122,13 +146,23 @@ export interface MenuItemDefinition {
   action: () => void;
 }
 
+/** Context data passed to context menu actions */
+export type ContextMenuData =
+  | { context: "layer"; layerId: string; layer: Layer }
+  | { context: "keyframe"; layerId: string; propertyId: string; keyframeId: string }
+  | { context: "composition"; compositionId: string; composition: Composition }
+  | { context: "asset"; assetId: string; asset: AssetReference };
+
 export interface ContextMenuDefinition {
   id: string;
   label: string;
   icon?: string;
   context: "layer" | "keyframe" | "composition" | "asset";
-  action: (contextData: any) => void;
+  action: (contextData: ContextMenuData) => void;
 }
+
+/** Effect parameter value types based on parameter type */
+export type EffectParameterValue = number | string | boolean | { x: number; y: number } | [number, number, number];
 
 export interface EffectDefinition {
   id: string;
@@ -137,7 +171,7 @@ export interface EffectDefinition {
   parameters: EffectParameter[];
   render: (
     input: ImageData,
-    params: Record<string, any>,
+    params: Record<string, EffectParameterValue>,
     frame: number,
   ) => ImageData | Promise<ImageData>;
 }
@@ -146,11 +180,18 @@ export interface EffectParameter {
   id: string;
   name: string;
   type: "number" | "color" | "point" | "angle" | "dropdown" | "checkbox";
-  defaultValue: any;
+  defaultValue: EffectParameterValue;
   min?: number;
   max?: number;
   step?: number;
-  options?: { label: string; value: any }[];
+  options?: { label: string; value: EffectParameterValue }[];
+}
+
+/** Export options passed to exporter plugins */
+export interface ExportOptions {
+  fps: number;
+  quality: number;
+  [key: string]: string | number | boolean | string[] | number[];
 }
 
 export interface ExporterDefinition {
@@ -158,7 +199,7 @@ export interface ExporterDefinition {
   name: string;
   extension: string;
   mimeType: string;
-  export: (frames: ImageData[], options: any) => Promise<Blob>;
+  export: (frames: ImageData[], options: ExportOptions) => Promise<Blob>;
 }
 
 export interface ToolDefinition {
@@ -194,7 +235,7 @@ export interface LoadedPlugin {
     effects: string[];
     exporters: string[];
     tools: string[];
-    events: Map<PluginEvent, Set<Function>>;
+    events: Map<PluginEvent, Set<(payload: PluginEventPayloads[PluginEvent]) => void>>;
   };
 }
 
@@ -204,7 +245,10 @@ export interface LoadedPlugin {
 
 export class PluginManager {
   private plugins: Map<string, LoadedPlugin> = new Map();
-  private eventListeners: Map<PluginEvent, Set<Function>> = new Map();
+  private eventListeners: Map<
+    PluginEvent,
+    Set<(payload: PluginEventPayloads[PluginEvent]) => void>
+  > = new Map();
 
   // External callbacks for UI registration
   private onRegisterPanel?: (panel: PanelDefinition) => void;
@@ -216,12 +260,12 @@ export class PluginManager {
   private onShowNotification?: (message: string, type: string) => void;
 
   // Store access (injected)
-  private getProjectFn?: () => any;
+  private getProjectFn?: () => LatticeProject | null;
   private getCurrentFrameFn?: () => number;
   private getSelectedLayersFn?: () => string[];
-  private getLayerFn?: (id: string) => any;
-  private getCompositionFn?: (id: string) => any;
-  private getAssetFn?: (id: string) => any;
+  private getLayerFn?: (id: string) => Layer | null;
+  private getCompositionFn?: (id: string) => Composition | null;
+  private getAssetFn?: (id: string) => AssetReference | null;
 
   constructor() {
     // Initialize event listener maps
@@ -246,12 +290,12 @@ export class PluginManager {
    * Set store access functions
    */
   setStoreAccess(access: {
-    getProject: () => any;
+    getProject: () => LatticeProject | null;
     getCurrentFrame: () => number;
     getSelectedLayers: () => string[];
-    getLayer: (id: string) => any;
-    getComposition: (id: string) => any;
-    getAsset: (id: string) => any;
+    getLayer: (id: string) => Layer | null;
+    getComposition: (id: string) => Composition | null;
+    getAsset: (id: string) => AssetReference | null;
   }): void {
     this.getProjectFn = access.getProject;
     this.getCurrentFrameFn = access.getCurrentFrame;
@@ -379,70 +423,163 @@ export class PluginManager {
    */
   private createPluginAPI(plugin: LoadedPlugin): LatticePluginAPI {
     return {
-      // Read-only access
-      getProject: () => this.getProjectFn?.() ?? null,
-      getCurrentFrame: () => this.getCurrentFrameFn?.() ?? 0,
-      getSelectedLayers: () => this.getSelectedLayersFn?.() ?? [],
-      getLayer: (id) => this.getLayerFn?.(id) ?? null,
-      getComposition: (id) => this.getCompositionFn?.(id) ?? null,
-      getAsset: (id) => this.getAssetFn?.(id) ?? null,
+      getProject: () => {
+        if (!this.getProjectFn) {
+          throw new Error("Plugin API: Store access not configured");
+        }
+        const result = this.getProjectFn();
+        if (result === null) {
+          throw new Error("Plugin API: Project not available");
+        }
+        return result;
+      },
+      getCurrentFrame: () => {
+        if (!this.getCurrentFrameFn) {
+          throw new Error("Plugin API: Store access not configured");
+        }
+        return this.getCurrentFrameFn();
+      },
+      getSelectedLayers: () => {
+        if (!this.getSelectedLayersFn) {
+          throw new Error("Plugin API: Store access not configured");
+        }
+        return this.getSelectedLayersFn();
+      },
+      getLayer: (id) => {
+        if (!this.getLayerFn) {
+          throw new Error("Plugin API: Store access not configured");
+        }
+        const result = this.getLayerFn(id);
+        if (result === null) {
+          throw new Error(`Plugin API: Layer with id "${id}" not found`);
+        }
+        return result;
+      },
+      getComposition: (id) => {
+        if (!this.getCompositionFn) {
+          throw new Error("Plugin API: Store access not configured");
+        }
+        const result = this.getCompositionFn(id);
+        if (result === null) {
+          throw new Error(`Plugin API: Composition with id "${id}" not found`);
+        }
+        return result;
+      },
+      getAsset: (id) => {
+        if (!this.getAssetFn) {
+          throw new Error("Plugin API: Store access not configured");
+        }
+        const result = this.getAssetFn(id);
+        if (result === null) {
+          throw new Error(`Plugin API: Asset with id "${id}" not found`);
+        }
+        return result;
+      },
 
-      // Events
-      on: (event, callback) => {
+      // Events - type-safe implementation
+      on: <T extends PluginEvent>(event: T, callback: PluginEventCallback<T>) => {
         const listeners = this.eventListeners.get(event);
         if (listeners) {
-          listeners.add(callback);
+          listeners.add(callback as (payload: PluginEventPayloads[PluginEvent]) => void);
           plugin.registrations.events.set(
             event,
             plugin.registrations.events.get(event) || new Set(),
           );
-          plugin.registrations.events.get(event)?.add(callback);
+          // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+          const eventSet = plugin.registrations.events.get(event);
+          // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+          if (typeof eventSet === "object" && eventSet !== null && "add" in eventSet && typeof eventSet.add === "function") {
+            eventSet.add(callback as (payload: PluginEventPayloads[PluginEvent]) => void);
+          }
         }
-        return () => this.eventListeners.get(event)?.delete(callback);
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+        return () => {
+          const eventSet = this.eventListeners.get(event);
+          // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+          if (typeof eventSet === "object" && eventSet !== null && "delete" in eventSet && typeof eventSet.delete === "function") {
+            eventSet.delete(callback as (payload: PluginEventPayloads[PluginEvent]) => void);
+          }
+        };
       },
 
-      off: (event, callback) => {
-        this.eventListeners.get(event)?.delete(callback);
-        plugin.registrations.events.get(event)?.delete(callback);
+      off: <T extends PluginEvent>(event: T, callback: PluginEventCallback<T>) => {
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+        const eventSet1 = this.eventListeners.get(event);
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+        if (typeof eventSet1 === "object" && eventSet1 !== null && "delete" in eventSet1 && typeof eventSet1.delete === "function") {
+          eventSet1.delete(callback as (payload: PluginEventPayloads[PluginEvent]) => void);
+        }
+        const eventSet2 = plugin.registrations.events.get(event);
+        if (typeof eventSet2 === "object" && eventSet2 !== null && "delete" in eventSet2 && typeof eventSet2.delete === "function") {
+          eventSet2.delete(callback as (payload: PluginEventPayloads[PluginEvent]) => void);
+        }
       },
 
       // UI registration
       registerPanel: (panel) => {
         plugin.registrations.panels.push(panel.id);
-        this.onRegisterPanel?.(panel);
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+        if (typeof this.onRegisterPanel === "function") {
+          this.onRegisterPanel(panel);
+        }
       },
 
       registerMenuItem: (item) => {
         plugin.registrations.menuItems.push(item.id);
-        this.onRegisterMenuItem?.(item);
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+        if (typeof this.onRegisterMenuItem === "function") {
+          this.onRegisterMenuItem(item);
+        }
       },
 
       registerContextMenu: (menu) => {
         plugin.registrations.contextMenus.push(menu.id);
-        this.onRegisterContextMenu?.(menu);
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+        if (typeof this.onRegisterContextMenu === "function") {
+          this.onRegisterContextMenu(menu);
+        }
       },
 
       // Effect registration
       registerEffect: (effect) => {
         plugin.registrations.effects.push(effect.id);
-        this.onRegisterEffect?.(effect);
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+        if (typeof this.onRegisterEffect === "function") {
+          this.onRegisterEffect(effect);
+        }
       },
 
       // Exporter registration
       registerExporter: (exporter) => {
         plugin.registrations.exporters.push(exporter.id);
-        this.onRegisterExporter?.(exporter);
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+        if (typeof this.onRegisterExporter === "function") {
+          this.onRegisterExporter(exporter);
+        }
       },
 
       // Tool registration
       registerTool: (tool) => {
         plugin.registrations.tools.push(tool.id);
-        this.onRegisterTool?.(tool);
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+        if (typeof this.onRegisterTool === "function") {
+          this.onRegisterTool(tool);
+        }
       },
 
       // Notifications
       showNotification: (message, type = "info") => {
-        this.onShowNotification?.(message, type);
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+        if (typeof this.onShowNotification === "function") {
+          this.onShowNotification(message, type);
+        }
       },
 
       // Logging
@@ -480,13 +617,13 @@ export class PluginManager {
   /**
    * Emit an event to all plugins
    */
-  emit(event: PluginEvent, ...args: any[]): void {
+  emit<T extends PluginEvent>(event: T, payload: PluginEventPayloads[T]): void {
     const listeners = this.eventListeners.get(event);
     if (!listeners) return;
 
     for (const callback of listeners) {
       try {
-        callback(...args);
+        callback(payload);
       } catch (error) {
         logger.error(`Error in plugin event handler for ${event}:`, error);
       }
@@ -507,8 +644,12 @@ export class PluginManager {
   /**
    * Get a specific plugin
    */
-  getPlugin(id: string): LoadedPlugin | undefined {
-    return this.plugins.get(id);
+  getPlugin(id: string): LoadedPlugin {
+    const plugin = this.plugins.get(id);
+    if (!plugin) {
+      throw new Error(`Plugin with id "${id}" not found`);
+    }
+    return plugin;
   }
 
   /**
@@ -531,7 +672,9 @@ export class PluginManager {
   hasPermission(pluginId: string, permission: PluginPermission): boolean {
     const plugin = this.plugins.get(pluginId);
     if (!plugin) return false;
-    return plugin.manifest.permissions?.includes(permission) ?? false;
+    // Type proof: permissions?.includes(...) ∈ boolean | undefined → boolean
+    const permissions = plugin.manifest.permissions;
+    return Array.isArray(permissions) && permissions.includes(permission);
   }
 }
 
@@ -542,7 +685,7 @@ export class PluginManager {
 let managerInstance: PluginManager | null = null;
 
 export function getPluginManager(): PluginManager {
-  if (!managerInstance) {
+  if (managerInstance === null) {
     managerInstance = new PluginManager();
   }
   return managerInstance;

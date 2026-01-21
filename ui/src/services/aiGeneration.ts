@@ -318,12 +318,7 @@ class AIGenerationService {
     // Ensure model is loaded
     const loaded = await this.loadModel(options.model);
     if (!loaded) {
-      return {
-        success: false,
-        error: `Failed to load ${options.model}`,
-        processingTime: performance.now() - startTime,
-        modelUsed: options.model,
-      };
+      throw new Error(`[AIGeneration] Failed to load model "${options.model}". Model may not be available or initialization failed.`);
     }
 
     try {
@@ -350,12 +345,8 @@ class AIGenerationService {
         modelUsed: options.model,
       };
     } catch (error) {
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : "Unknown error",
-        processingTime: performance.now() - startTime,
-        modelUsed: options.model,
-      };
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      throw new Error(`[AIGeneration] Depth estimation failed: ${errorMessage}. Check model availability and input image format.`);
     }
   }
 
@@ -374,12 +365,7 @@ class AIGenerationService {
 
     const loaded = await this.loadModel(options.model);
     if (!loaded) {
-      return {
-        success: false,
-        error: `Failed to load ${options.model}`,
-        processingTime: performance.now() - startTime,
-        modelUsed: options.model,
-      };
+      throw new Error(`[AIGeneration] Failed to load model "${options.model}". Model may not be available or initialization failed.`);
     }
 
     try {
@@ -406,12 +392,8 @@ class AIGenerationService {
         modelUsed: options.model,
       };
     } catch (error) {
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : "Unknown error",
-        processingTime: performance.now() - startTime,
-        modelUsed: options.model,
-      };
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      throw new Error(`[AIGeneration] Normal map generation failed: ${errorMessage}. Check model availability and input image format.`);
     }
   }
 
@@ -430,12 +412,7 @@ class AIGenerationService {
 
     const loaded = await this.loadModel(options.model);
     if (!loaded) {
-      return {
-        success: false,
-        error: `Failed to load ${options.model}`,
-        processingTime: performance.now() - startTime,
-        modelUsed: options.model,
-      };
+      throw new Error(`[AIGeneration] Failed to load model "${options.model}". Model may not be available or initialization failed.`);
     }
 
     try {
@@ -455,8 +432,11 @@ class AIGenerationService {
       const result = await response.json();
 
       // Convert mask data to ImageData
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy || []
+      const masksRaw = result.masks;
+      const masksArray = (masksRaw !== null && masksRaw !== undefined && Array.isArray(masksRaw)) ? masksRaw : [];
       const masks = await Promise.all(
-        (result.masks || []).map((maskBase64: string) =>
+        masksArray.map((maskBase64: string) =>
           this.base64ToImageData(maskBase64),
         ),
       );
@@ -471,12 +451,8 @@ class AIGenerationService {
         modelUsed: options.model,
       };
     } catch (error) {
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : "Unknown error",
-        processingTime: performance.now() - startTime,
-        modelUsed: options.model,
-      };
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      throw new Error(`[AIGeneration] Segmentation failed: ${errorMessage}. Check model availability and input image format.`);
     }
   }
 
@@ -509,12 +485,7 @@ class AIGenerationService {
 
     const loaded = await this.loadModel(options.model);
     if (!loaded) {
-      return {
-        success: false,
-        error: `Failed to load ${options.model}`,
-        processingTime: performance.now() - startTime,
-        modelUsed: options.model,
-      };
+      throw new Error(`[AIGeneration] Failed to load model "${options.model}". Model may not be available or initialization failed.`);
     }
 
     try {
@@ -538,12 +509,8 @@ class AIGenerationService {
         modelUsed: options.model,
       };
     } catch (error) {
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : "Unknown error",
-        processingTime: performance.now() - startTime,
-        modelUsed: options.model,
-      };
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      throw new Error(`[AIGeneration] Depth estimation failed: ${errorMessage}. Check model availability and input image format.`);
     }
   }
 
@@ -646,14 +613,21 @@ export default aiGeneration;
 // CONVENIENCE FUNCTIONS
 // ============================================================================
 
+import { assertDefined } from "@/utils/typeGuards";
+
 /**
  * Quick depth estimation with default settings
  */
 export async function estimateDepth(
   image: ImageData | HTMLCanvasElement | Blob,
-): Promise<ImageData | null> {
+): Promise<ImageData> {
   const result = await aiGeneration.estimateDepth(image);
-  return result.success ? result.data! : null;
+  if (result.success) {
+    // Type proof: data is guaranteed non-null when success is true
+    assertDefined(result.data, "data must exist when result.success is true");
+    return result.data;
+  }
+  throw new Error(`[AIGeneration] Failed to estimate depth: ${result.error || "Unknown error"}`);
 }
 
 /**
@@ -661,9 +635,14 @@ export async function estimateDepth(
  */
 export async function generateNormalMap(
   image: ImageData | HTMLCanvasElement | Blob,
-): Promise<ImageData | null> {
+): Promise<ImageData> {
   const result = await aiGeneration.generateNormalMap(image);
-  return result.success ? result.data! : null;
+  if (result.success) {
+    // Type proof: data is guaranteed non-null when success is true
+    assertDefined(result.data, "data must exist when result.success is true");
+    return result.data;
+  }
+  throw new Error(`[AIGeneration] Cannot generate normal map: Generation failed. ${result.error || "Unknown error"}`);
 }
 
 /**
@@ -673,9 +652,14 @@ export async function segmentAtPoint(
   image: ImageData | HTMLCanvasElement | Blob,
   x: number,
   y: number,
-): Promise<ImageData | null> {
+): Promise<ImageData> {
   const result = await aiGeneration.segmentInteractive(image, { x, y });
-  return result.success ? result.data! : null;
+  if (result.success) {
+    // Type proof: data is guaranteed non-null when success is true
+    assertDefined(result.data, "data must exist when result.success is true");
+    return result.data;
+  }
+  throw new Error(`[AIGeneration] Cannot segment at point (${x}, ${y}): Segmentation failed. ${result.error || "Unknown error"}`);
 }
 
 /**

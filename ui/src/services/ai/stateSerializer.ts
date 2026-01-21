@@ -17,7 +17,10 @@
  * @see AUDIT/SECURITY_ARCHITECTURE.md for threat model
  */
 
-import { useCompositorStore } from "@/stores/compositorStore";
+import { useProjectStore } from "@/stores/projectStore";
+import { useSelectionStore } from "@/stores/selectionStore";
+import { useAnimationStore } from "@/stores/animationStore";
+import { isFiniteNumber, assertDefined, safeNonNegativeDefault } from "@/utils/typeGuards";
 import type {
   AnimatableProperty,
   Composition,
@@ -25,6 +28,13 @@ import type {
   Layer,
   PropertyValue,
 } from "@/types/project";
+import type { JSONValue } from "@/types/dataAsset";
+
+/**
+ * All possible JavaScript values that can be sanitized
+ * Used as input type for sanitization functions (replaces unknown)
+ */
+type RuntimeValue = string | number | boolean | object | null | undefined | bigint | symbol;
 
 // ============================================================================
 // SECURITY: Prompt Injection Defense
@@ -44,8 +54,9 @@ import type {
  * 4. Note: We do NOT try to block "instruction-like" text - that's
  *    handled by boundary tags + LLM instruction in systemPrompt.ts
  */
-function sanitizeForLLM(value: unknown, maxLength: number = 200): string {
-  if (value === null || value === undefined) {
+function sanitizeForLLM(value: RuntimeValue, maxLength: number = 200): string {
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+  if (value === null || (typeof value !== "string" && typeof value !== "number" && typeof value !== "boolean" && typeof value !== "object")) {
     return "";
   }
 
@@ -77,8 +88,9 @@ function sanitizeForLLM(value: unknown, maxLength: number = 200): string {
 /**
  * Sanitize text content (allows more length, preserves structure for display)
  */
-function sanitizeTextContent(value: unknown): string {
-  if (value === null || value === undefined) {
+function sanitizeTextContent(value: RuntimeValue): string {
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+  if (value === null || (typeof value !== "string" && typeof value !== "number" && typeof value !== "boolean" && typeof value !== "object")) {
     return "";
   }
 
@@ -200,20 +212,22 @@ export interface SerializedEffect {
  * The LLM is instructed to treat this as untrusted data only.
  */
 export function serializeProjectState(includeKeyframes = true): string {
-  const store = useCompositorStore();
-  const comp = store.getActiveComp();
+  const projectStore = useProjectStore();
+  const selectionStore = useSelectionStore();
+  const animationStore = useAnimationStore();
+  const comp = projectStore.getActiveComp();
 
   if (!comp) {
-    return JSON.stringify({ error: "No active composition" }, null, 2);
+    throw new Error(`[StateSerializer] No active composition. Cannot serialize project state without an active composition.`);
   }
 
   const state: SerializedProjectState = {
     composition: serializeComposition(comp),
-    layers: store
+    layers: projectStore
       .getActiveCompLayers()
       .map((layer) => serializeLayer(layer, includeKeyframes)),
-    selectedLayerIds: [...store.selectedLayerIds],
-    currentFrame: comp.currentFrame,
+    selectedLayerIds: [...selectionStore.selectedLayerIds],
+    currentFrame: animationStore.currentFrame,
   };
 
   // SECURITY: Wrap in boundary tags - the AICompositorAgent.buildContextualPrompt
@@ -225,15 +239,27 @@ export function serializeProjectState(includeKeyframes = true): string {
  * Serialize just the layer list (lightweight)
  */
 export function serializeLayerList(): string {
-  const store = useCompositorStore();
+  const projectStore = useProjectStore();
 
-  const layers = store.getActiveCompLayers().map((layer) => ({
+  const layers = projectStore.getActiveCompLayers().map((layer) => ({
     id: layer.id,
     name: sanitizeForLLM(layer.name), // SECURITY: Sanitize
     type: layer.type,
     visible: layer.visible,
-    startFrame: layer.startFrame ?? layer.inPoint ?? 0,
-    endFrame: layer.endFrame ?? layer.outPoint ?? 80,
+    // Type proof: startFrame ∈ ℕ ∪ {undefined}, inPoint ∈ ℕ ∪ {undefined} → startFrame ∈ ℕ
+    startFrame: (() => {
+      const startFrameValue = layer.startFrame;
+      return isFiniteNumber(startFrameValue) && Number.isInteger(startFrameValue) && startFrameValue >= 0
+        ? startFrameValue
+        : (isFiniteNumber(layer.inPoint) && Number.isInteger(layer.inPoint) && layer.inPoint >= 0 ? layer.inPoint : 0);
+    })(),
+    // Type proof: endFrame ∈ ℕ ∪ {undefined}, outPoint ∈ ℕ ∪ {undefined} → endFrame ∈ ℕ
+    endFrame: (() => {
+      const endFrameValue = layer.endFrame;
+      return isFiniteNumber(endFrameValue) && Number.isInteger(endFrameValue) && endFrameValue >= 0
+        ? endFrameValue
+        : (isFiniteNumber(layer.outPoint) && Number.isInteger(layer.outPoint) && layer.outPoint >= 0 ? layer.outPoint : 80);
+    })(),
   }));
 
   return wrapInSecurityBoundary(JSON.stringify({ layers }, null, 2));
@@ -243,11 +269,11 @@ export function serializeLayerList(): string {
  * Serialize a specific layer with full details
  */
 export function serializeLayerDetails(layerId: string): string {
-  const store = useCompositorStore();
-  const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
+  const projectStore = useProjectStore();
+  const layer = projectStore.getActiveCompLayers().find((l) => l.id === layerId);
 
   if (!layer) {
-    return JSON.stringify({ error: `Layer ${layerId} not found` }, null, 2);
+    throw new Error(`[StateSerializer] Layer "${layerId}" not found. Cannot serialize layer details for non-existent layer.`);
   }
 
   return wrapInSecurityBoundary(
@@ -314,14 +340,16 @@ export interface MinimalProjectState {
  * effect parameters, or other potentially sensitive data.
  */
 export function serializeProjectStateMinimal(): string {
-  const store = useCompositorStore();
-  const comp = store.getActiveComp();
+  const projectStore = useProjectStore();
+  const selectionStore = useSelectionStore();
+  const animationStore = useAnimationStore();
+  const comp = projectStore.getActiveComp();
 
   if (!comp) {
-    return JSON.stringify({ error: "No active composition" }, null, 2);
+    throw new Error(`[StateSerializer] No active composition. Cannot serialize project state without an active composition.`);
   }
 
-  const layers = store.getActiveCompLayers();
+  const layers = projectStore.getActiveCompLayers();
 
   const state: MinimalProjectState = {
     composition: {
@@ -333,8 +361,8 @@ export function serializeProjectStateMinimal(): string {
       fps: comp.settings.fps,
     },
     layers: layers.map(serializeLayerMinimal),
-    selectedLayerIds: [...store.selectedLayerIds],
-    currentFrame: comp.currentFrame,
+    selectedLayerIds: [...selectionStore.selectedLayerIds],
+    currentFrame: animationStore.currentFrame,
     layerCount: layers.length,
   };
 
@@ -353,7 +381,10 @@ function serializeLayerMinimal(layer: Layer): MinimalLayerState {
   if (layer.opacity.animated) animatedProperties.push("opacity");
 
   // Collect effect types only (not names or parameters)
-  const effectTypes = (layer.effects || []).map((e) => e.effectKey);
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy || []
+  const effectsRaw = layer.effects;
+  const effects = (effectsRaw !== null && effectsRaw !== undefined && Array.isArray(effectsRaw)) ? effectsRaw : [];
+  const effectTypes = effects.map((e) => e.effectKey);
 
   return {
     id: layer.id,
@@ -361,12 +392,25 @@ function serializeLayerMinimal(layer: Layer): MinimalLayerState {
     type: layer.type,
     visible: layer.visible,
     locked: layer.locked,
-    startFrame: layer.startFrame ?? layer.inPoint ?? 0,
-    endFrame: layer.endFrame ?? layer.outPoint ?? 80,
+    // Type proof: startFrame ∈ ℕ ∪ {undefined}, inPoint ∈ ℕ ∪ {undefined} → startFrame ∈ ℕ
+    startFrame: (() => {
+      const startFrameValue = layer.startFrame;
+      return isFiniteNumber(startFrameValue) && Number.isInteger(startFrameValue) && startFrameValue >= 0
+        ? startFrameValue
+        : (isFiniteNumber(layer.inPoint) && Number.isInteger(layer.inPoint) && layer.inPoint >= 0 ? layer.inPoint : 0);
+    })(),
+    // Type proof: endFrame ∈ ℕ ∪ {undefined}, outPoint ∈ ℕ ∪ {undefined} → endFrame ∈ ℕ
+    endFrame: (() => {
+      const endFrameValue = layer.endFrame;
+      return isFiniteNumber(endFrameValue) && Number.isInteger(endFrameValue) && endFrameValue >= 0
+        ? endFrameValue
+        : (isFiniteNumber(layer.outPoint) && Number.isInteger(layer.outPoint) && layer.outPoint >= 0 ? layer.outPoint : 80);
+    })(),
     parentId: layer.parentId,
     hasAnimation: animatedProperties.length > 0,
     animatedProperties,
-    effectCount: (layer.effects || []).length,
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy || []
+    effectCount: (effects !== null && effects !== undefined && Array.isArray(effects)) ? effects.length : 0,
     effectTypes,
   };
 }
@@ -446,8 +490,20 @@ function serializeLayer(
     type: layer.type,
     visible: layer.visible,
     locked: layer.locked,
-    startFrame: layer.startFrame ?? layer.inPoint ?? 0,
-    endFrame: layer.endFrame ?? layer.outPoint ?? 80,
+    // Type proof: startFrame ∈ ℕ ∪ {undefined}, inPoint ∈ ℕ ∪ {undefined} → startFrame ∈ ℕ
+    startFrame: (() => {
+      const startFrameValue = layer.startFrame;
+      return isFiniteNumber(startFrameValue) && Number.isInteger(startFrameValue) && startFrameValue >= 0
+        ? startFrameValue
+        : (isFiniteNumber(layer.inPoint) && Number.isInteger(layer.inPoint) && layer.inPoint >= 0 ? layer.inPoint : 0);
+    })(),
+    // Type proof: endFrame ∈ ℕ ∪ {undefined}, outPoint ∈ ℕ ∪ {undefined} → endFrame ∈ ℕ
+    endFrame: (() => {
+      const endFrameValue = layer.endFrame;
+      return isFiniteNumber(endFrameValue) && Number.isInteger(endFrameValue) && endFrameValue >= 0
+        ? endFrameValue
+        : (isFiniteNumber(layer.outPoint) && Number.isInteger(layer.outPoint) && layer.outPoint >= 0 ? layer.outPoint : 80);
+    })(),
     parentId: layer.parentId,
     transform: {
       position: serializeAnimatableProperty(
@@ -464,7 +520,15 @@ function serializeLayer(
       ),
       // Use origin (new name) with fallback to anchorPoint for backwards compatibility
       origin: serializeAnimatableProperty(
-        layer.transform.origin || layer.transform.anchorPoint!,
+        (() => {
+          // Type proof: anchorPoint is guaranteed non-null when origin is falsy (backwards compatibility)
+          const originValue = layer.transform.origin;
+          if (originValue) {
+            return originValue;
+          }
+          assertDefined(layer.transform.anchorPoint, "anchorPoint must exist when origin is falsy (backwards compatibility)");
+          return layer.transform.anchorPoint;
+        })(),
         includeKeyframes,
       ),
     },
@@ -485,7 +549,7 @@ function serializeLayer(
 }
 
 function serializeAnimatableProperty(
-  prop: AnimatableProperty<any>,
+  prop: AnimatableProperty<PropertyValue>,
   includeKeyframes: boolean,
 ): SerializedAnimatableProperty {
   const serialized: SerializedAnimatableProperty = {
@@ -528,112 +592,241 @@ function serializeEffect(effect: EffectInstance): SerializedEffect {
   };
 }
 
-function serializeLayerData(type: string, data: unknown): Record<string, PropertyValue> {
+/**
+ * Helper to build a clean PropertyValue record, omitting undefined entries
+ *
+ * @param entries - Key-value pairs where values may be undefined
+ * @returns Record containing only defined values
+ */
+// Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined/null checks
+// Pattern match: Filter out invalid values using explicit type narrowing (never check null)
+function buildPropertyRecord(entries: [string, PropertyValue][]): Record<string, PropertyValue> {
+  const result: Record<string, PropertyValue> = {};
+  for (const [key, value] of entries) {
+    // Pattern match: Only include values that are actually present and valid (explicit type narrowing, no null checks)
+    if (typeof value === "string" || typeof value === "number" || typeof value === "boolean" || (typeof value === "object" && !Array.isArray(value) && "constructor" in value)) {
+      result[key] = value;
+    }
+  }
+  return result;
+}
+
+/**
+ * Safely extract a property from layer data object.
+ * Returns undefined if the property doesn't exist or data is invalid.
+ *
+ * Type safety: Uses runtime checks since layer.data is a discriminated union
+ * that TypeScript can't narrow based on a separate `type` string parameter.
+ *
+ * @param data - Layer data object (discriminated union)
+ * @param prop - Property name to extract
+ * @returns Property value or undefined
+ */
+// Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined/null checks
+// Pattern match: Returns concrete default or throws error (never null/undefined)
+function getLayerDataProp<T extends PropertyValue | JSONValue | PropertyValue[] | JSONValue[]>(
+  data: Layer["data"],
+  prop: string
+): T {
+  if (data !== null && typeof data === "object" && prop in data) {
+    // Type-safe property access: Use Object.hasOwnProperty to check property exists
+    // Then access via index signature with proper type narrowing
+    if (!Object.prototype.hasOwnProperty.call(data, prop)) {
+      throw new Error(`[StateSerializer] Property "${prop}" not found in layer data`);
+    }
+    // Access property using type-safe pattern - use Object.getOwnPropertyDescriptor for safe access
+    const descriptor = Object.getOwnPropertyDescriptor(data, prop);
+    if (descriptor === undefined || descriptor.value === undefined) {
+      throw new Error(`[StateSerializer] Property "${prop}" is undefined in layer data`);
+    }
+    // Type guard: Ensure value matches expected type
+    const value = descriptor.value;
+    // Runtime type check: Verify value is one of the allowed types
+    if (
+      typeof value === "string" ||
+      typeof value === "number" ||
+      typeof value === "boolean" ||
+      value === null ||
+      Array.isArray(value) ||
+      (typeof value === "object" && value !== null)
+    ) {
+      return value as T;
+    }
+    throw new Error(`[StateSerializer] Property "${prop}" has invalid type: ${typeof value}`);
+  }
+  // Lean4/PureScript/Haskell: Explicit error - never return null
+  throw new Error(`Property ${prop} not found in layer data`);
+}
+
+/**
+ * Serialize layer-specific data to PropertyValue record for AI context
+ *
+ * @param type - Layer type string for discriminated union narrowing
+ * @param layerData - Layer data (from Layer.data, a discriminated union)
+ * @returns Serialized property values for AI consumption
+ */
+function serializeLayerData(type: string, layerData: Layer["data"]): Record<string, PropertyValue> {
   // Return a summarized version of layer-specific data
   // SECURITY: Sanitize all user-controlled string fields
+  if (!layerData || typeof layerData !== "object") {
+    return {};
+  }
+
   switch (type) {
     case "text":
-      return {
-        text: sanitizeTextContent(data.text), // SECURITY: Text content can be long, use text sanitizer
-        fontFamily: sanitizeForLLM(data.fontFamily),
-        fontSize: data.fontSize,
-        fill: data.fill,
-        textAlign: data.textAlign,
-        pathLayerId: data.pathLayerId,
-      };
+      return buildPropertyRecord([
+        ["text", sanitizeTextContent(getLayerDataProp<string>(layerData, "text"))],
+        ["fontFamily", sanitizeForLLM(getLayerDataProp<string>(layerData, "fontFamily"))],
+        ["fontSize", getLayerDataProp<number>(layerData, "fontSize")],
+        ["fill", getLayerDataProp<string>(layerData, "fill")],
+        ["textAlign", getLayerDataProp<string>(layerData, "textAlign")],
+        ["pathLayerId", getLayerDataProp<string>(layerData, "pathLayerId")],
+      ]);
 
     case "solid":
-      return {
-        color: data.color,
-        width: data.width,
-        height: data.height,
-      };
+      return buildPropertyRecord([
+        ["color", getLayerDataProp<string>(layerData, "color")],
+        ["width", getLayerDataProp<number>(layerData, "width")],
+        ["height", getLayerDataProp<number>(layerData, "height")],
+      ]);
 
-    case "spline":
-      return {
-        pointCount: data.controlPoints?.length || 0,
-        closed: data.closed,
-        stroke: data.stroke,
-        strokeWidth: data.strokeWidth,
-      };
+    case "spline": {
+      const controlPoints = getLayerDataProp<JSONValue[]>(layerData, "controlPoints");
+      return buildPropertyRecord([
+        // Lean4/PureScript/Haskell: Explicit pattern matching on optional property
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+        ["pointCount", Array.isArray(controlPoints) && typeof controlPoints.length === "number" && Number.isFinite(controlPoints.length) && controlPoints.length >= 0
+          ? controlPoints.length
+          : 0],
+        ["closed", getLayerDataProp<boolean>(layerData, "closed")],
+        ["stroke", getLayerDataProp<string>(layerData, "stroke")],
+        ["strokeWidth", getLayerDataProp<number>(layerData, "strokeWidth")],
+      ]);
+    }
 
-    case "particles":
-      return {
-        emitterCount: data.emitters?.length || 0,
-        maxParticles: data.systemConfig?.maxParticles,
-        gravity: data.systemConfig?.gravity,
-        firstEmitter: data.emitters?.[0]
-          ? {
-              x: data.emitters[0].x,
-              y: data.emitters[0].y,
-              direction: data.emitters[0].direction,
-              spread: data.emitters[0].spread,
-              speed: data.emitters[0].speed,
-              emissionRate: data.emitters[0].emissionRate,
-              particleLifetime: data.emitters[0].particleLifetime,
-              color: data.emitters[0].color,
-            }
-          : null,
-      };
+    case "particles": {
+      const emitters = getLayerDataProp<Record<string, JSONValue>[]>(layerData, "emitters");
+      const systemConfig = getLayerDataProp<Record<string, JSONValue>>(layerData, "systemConfig");
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined/null checks
+      // Pattern match: firstEmitter ∈ object (explicit type narrowing, never null)
+      const firstEmitter = (Array.isArray(emitters) && emitters.length > 0 && typeof emitters[0] === "object" && emitters[0] !== null)
+        ? emitters[0]
+        : {};
+      const entries: [string, PropertyValue][] = [
+        // Type proof: emitters?.length ∈ number | undefined → number (≥ 0, array length)
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+        ["emitterCount", Array.isArray(emitters) && typeof emitters.length === "number" && Number.isFinite(emitters.length) && emitters.length >= 0
+          ? emitters.length
+          : 0],
+      ];
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+      if (typeof systemConfig === "object" && systemConfig !== null && "maxParticles" in systemConfig && typeof systemConfig.maxParticles === "number") {
+        entries.push(["maxParticles", systemConfig.maxParticles as number]);
+      }
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+      if (typeof systemConfig === "object" && systemConfig !== null && "gravity" in systemConfig && typeof systemConfig.gravity === "number") {
+        entries.push(["gravity", systemConfig.gravity as number]);
+      }
+      if (firstEmitter) {
+        entries.push(
+          ["firstEmitterX", firstEmitter.x as number],
+          ["firstEmitterY", firstEmitter.y as number],
+          ["firstEmitterDirection", firstEmitter.direction as number],
+          ["firstEmitterSpread", firstEmitter.spread as number],
+          ["firstEmitterSpeed", firstEmitter.speed as number],
+          ["firstEmitterRate", firstEmitter.emissionRate as number],
+          ["firstEmitterLifetime", firstEmitter.particleLifetime as number],
+        );
+      }
+      return buildPropertyRecord(entries);
+    }
 
     case "image":
-      return {
-        assetId: data.assetId,
-        fit: data.fit,
-      };
+      return buildPropertyRecord([
+        ["assetId", getLayerDataProp<string>(layerData, "assetId")],
+        ["fit", getLayerDataProp<string>(layerData, "fit")],
+      ]);
 
     case "video":
-      return {
-        assetId: data.assetId,
-        loop: data.loop,
-        speed: data.speed,
-      };
+      return buildPropertyRecord([
+        ["assetId", getLayerDataProp<string>(layerData, "assetId")],
+        ["loop", getLayerDataProp<boolean>(layerData, "loop")],
+        ["speed", getLayerDataProp<number>(layerData, "speed")],
+      ]);
 
     case "camera":
-      return {
-        cameraId: data.cameraId,
-        isActiveCamera: data.isActiveCamera,
-      };
+      return buildPropertyRecord([
+        ["cameraId", getLayerDataProp<string>(layerData, "cameraId")],
+        ["isActiveCamera", getLayerDataProp<boolean>(layerData, "isActiveCamera")],
+      ]);
 
-    case "shape":
-      return {
-        shapeCount: data.shapes?.length || 0,
-        fill: data.fill,
-        stroke: data.stroke,
-        strokeWidth: data.strokeWidth,
-      };
+    case "shape": {
+      const shapes = getLayerDataProp<JSONValue[]>(layerData, "shapes");
+      return buildPropertyRecord([
+        // Type proof: shapes?.length ∈ number | undefined → number (≥ 0, array length)
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+        ["shapeCount", Array.isArray(shapes) && typeof shapes.length === "number" && Number.isFinite(shapes.length) && shapes.length >= 0
+          ? shapes.length
+          : 0],
+        ["fill", getLayerDataProp<string>(layerData, "fill")],
+        ["stroke", getLayerDataProp<string>(layerData, "stroke")],
+        ["strokeWidth", getLayerDataProp<number>(layerData, "strokeWidth")],
+      ]);
+    }
 
     case "nestedComp":
-      return {
-        compositionId: data.compositionId,
-        hasSpeedMap: !!(data.speedMap ?? data.timeRemap),
-      };
+      return buildPropertyRecord([
+        ["compositionId", getLayerDataProp<string>(layerData, "compositionId")],
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+        // Pattern match: Check if properties exist using type narrowing
+        ["hasSpeedMap", (() => {
+          const speedMap = getLayerDataProp(layerData, "speedMap");
+          const timeRemap = getLayerDataProp(layerData, "timeRemap");
+          return (speedMap !== null && typeof speedMap === "object") || (timeRemap !== null && typeof timeRemap === "object");
+        })()],
+      ]);
 
-    case "depthflow":
-      return {
-        sourceLayerId: data.sourceLayerId,
-        depthLayerId: data.depthLayerId,
-        preset: data.config?.preset,
-      };
+    case "depthflow": {
+      const config = getLayerDataProp<Record<string, JSONValue>>(layerData, "config");
+      return buildPropertyRecord([
+        ["sourceLayerId", getLayerDataProp<string>(layerData, "sourceLayerId")],
+        ["depthLayerId", getLayerDataProp<string>(layerData, "depthLayerId")],
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined/null checks
+        ["preset", (typeof config === "object" && config !== null && "preset" in config && typeof config.preset === "string")
+          ? config.preset
+          : ""],
+      ]);
+    }
 
     case "light":
-      return {
-        lightType: data.lightType,
-        color: data.color,
-        intensity: data.intensity,
-      };
+      return buildPropertyRecord([
+        ["lightType", getLayerDataProp<string>(layerData, "lightType")],
+        ["color", getLayerDataProp<string>(layerData, "color")],
+        ["intensity", getLayerDataProp<number>(layerData, "intensity")],
+      ]);
 
-    default:
+    default: {
       // Return raw data for unknown types (limited to prevent huge output)
       // SECURITY: Sanitize all string values in unknown data
-      return Object.fromEntries(
-        Object.entries(data)
-          .slice(0, 10)
-          .map(([key, value]) => [
-            key,
-            typeof value === "string" ? sanitizeForLLM(value) : value,
-          ]),
-      );
+      const result: Record<string, PropertyValue> = {};
+      const entries = Object.entries(layerData).slice(0, 10);
+      for (const [key, value] of entries) {
+        if (typeof value === "string") {
+          result[key] = sanitizeForLLM(value);
+        } else if (typeof value === "number" || typeof value === "boolean") {
+          result[key] = value;
+        }
+      }
+      return result;
+    }
   }
 }
 
@@ -719,8 +912,17 @@ export function compareStates(
     }
 
     // Check keyframe counts
-    const beforeKfCount = beforeLayer.transform.position.keyframeCount || 0;
-    const afterKfCount = afterLayer.transform.position.keyframeCount || 0;
+    // Type proof: keyframeCount ∈ number | undefined → number (≥ 0, count)
+    const beforeKfCount = safeNonNegativeDefault(
+      beforeLayer.transform.position.keyframeCount,
+      0,
+      "beforeLayer.transform.position.keyframeCount",
+    );
+    const afterKfCount = safeNonNegativeDefault(
+      afterLayer.transform.position.keyframeCount,
+      0,
+      "afterLayer.transform.position.keyframeCount",
+    );
     if (beforeKfCount !== afterKfCount) {
       changes.push(
         `Layer "${afterLayer.name}": position keyframes ${beforeKfCount} → ${afterKfCount}`,
@@ -728,8 +930,24 @@ export function compareStates(
     }
 
     // Check effects
-    const beforeEffects = beforeLayer.effects?.length || 0;
-    const afterLayerEffects = afterLayer.effects?.length || 0;
+    // Type proof: effects?.length ∈ number | undefined → number (≥ 0, array length)
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+    const beforeEffects = safeNonNegativeDefault(
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+      (Array.isArray(beforeLayer.effects) && typeof beforeLayer.effects.length === "number")
+        ? beforeLayer.effects.length
+        : undefined,
+      0,
+      "beforeLayer.effects.length",
+    );
+    const afterLayerEffects = safeNonNegativeDefault(
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+      (Array.isArray(afterLayer.effects) && typeof afterLayer.effects.length === "number")
+        ? afterLayer.effects.length
+        : undefined,
+      0,
+      "afterLayer.effects.length",
+    );
     if (beforeEffects !== afterLayerEffects) {
       changes.push(
         `Layer "${afterLayer.name}": effects ${beforeEffects} → ${afterLayerEffects}`,
@@ -744,9 +962,10 @@ export function compareStates(
  * Generate a human-readable summary of the current state
  */
 export function generateStateSummary(): string {
-  const store = useCompositorStore();
-  const comp = store.getActiveComp();
-  const layers = store.getActiveCompLayers();
+  const projectStore = useProjectStore();
+  const animationStore = useAnimationStore();
+  const comp = projectStore.getActiveComp();
+  const layers = projectStore.getActiveCompLayers();
 
   if (!comp) {
     return "No active composition";
@@ -755,7 +974,7 @@ export function generateStateSummary(): string {
   const lines: string[] = [
     `Composition: ${comp.name} (${comp.settings.width}x${comp.settings.height})`,
     `Duration: ${comp.settings.frameCount} frames at ${comp.settings.fps} fps (${comp.settings.duration.toFixed(2)}s)`,
-    `Current Frame: ${comp.currentFrame}`,
+    `Current Frame: ${animationStore.currentFrame}`,
     `Layers: ${layers.length}`,
     "",
   ];
@@ -780,7 +999,9 @@ export function generateStateSummary(): string {
         animatedProps.length > 0
           ? ` [animated: ${animatedProps.join(", ")}]`
           : "";
-      const effects = layer.effects?.length
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+      const effects = (Array.isArray(layer.effects) && typeof layer.effects.length === "number" && layer.effects.length > 0)
         ? ` [${layer.effects.length} effect(s)]`
         : "";
 

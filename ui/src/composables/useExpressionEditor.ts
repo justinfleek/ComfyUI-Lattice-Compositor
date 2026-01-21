@@ -1,6 +1,5 @@
 import { ref, shallowRef } from "vue";
 import { isExpressionSafe } from "@/services/expressions/expressionValidator";
-import { useCompositorStore } from "@/stores/compositorStore";
 import { useKeyframeStore } from "@/stores/keyframeStore";
 import type { AnimatableProperty, PropertyExpression } from "@/types/project";
 
@@ -50,7 +49,8 @@ export function useExpressionEditor() {
     }
 
     // SECURITY: Validate custom expressions before applying
-    if (expression.type === "custom" && expression.params?.code) {
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+    if (expression.type === "custom" && expression.params !== undefined && typeof expression.params === "object" && "code" in expression.params && expression.params.code !== null && expression.params.code !== undefined) {
       const code = expression.params.code as string;
       const safe = await isExpressionSafe(code);
       if (!safe) {
@@ -64,9 +64,7 @@ export function useExpressionEditor() {
       }
     }
 
-    const store = useCompositorStore();
     useKeyframeStore().setPropertyExpression(
-      store,
       currentLayerId.value,
       currentPropertyPath.value,
       expression,
@@ -81,9 +79,7 @@ export function useExpressionEditor() {
    */
   function removeExpression() {
     if (currentLayerId.value && currentPropertyPath.value) {
-      const store = useCompositorStore();
       useKeyframeStore().removePropertyExpression(
-        store,
         currentLayerId.value,
         currentPropertyPath.value,
       );

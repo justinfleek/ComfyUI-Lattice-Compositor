@@ -12,6 +12,7 @@ import type {
   RenderOptions,
   SpatialGrid,
 } from "./particleTypes";
+import { isFiniteNumber } from "@/utils/typeGuards";
 
 // ============================================================================
 // Types
@@ -86,7 +87,10 @@ export function renderParticlesToCanvas(
   }
 
   // Render particle connections first, before particles
-  if (options.connections?.enabled && spatialGrid) {
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const connections = (options != null && typeof options === "object" && "connections" in options && options.connections != null && typeof options.connections === "object") ? options.connections : undefined;
+  const connectionsEnabled = (connections != null && typeof connections === "object" && "enabled" in connections && typeof connections.enabled === "boolean" && connections.enabled) ? true : false;
+  if (connectionsEnabled && spatialGrid) {
     renderConnections(
       ctx,
       width,
@@ -198,7 +202,11 @@ export function renderParticleWithMotionBlur(
   // Calculate blur stretch based on velocity
   const stretchFactor = options.motionBlurStrength * velocityMag * 500;
   // Ensure at least 2 samples to avoid division by zero
-  const samples = Math.max(2, Math.min(options.motionBlurSamples ?? 4, 16));
+  // Type proof: number | undefined → number
+  const motionBlurSamples = isFiniteNumber(options.motionBlurSamples) && options.motionBlurSamples >= 2 && options.motionBlurSamples <= 16
+    ? options.motionBlurSamples
+    : 4;
+  const samples = Math.max(2, Math.min(motionBlurSamples, 16));
 
   // Direction of motion
   const dirX = p.vx / velocityMag;
@@ -369,7 +377,10 @@ export function renderSprite(
   spriteCache: Map<string, HTMLImageElement | ImageBitmap>,
 ): void {
   const emitter = emitters.get(particle.emitterId);
-  if (!emitter?.sprite?.enabled) {
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const emitterSprite = (emitter != null && typeof emitter === "object" && "sprite" in emitter && emitter.sprite != null && typeof emitter.sprite === "object") ? emitter.sprite : undefined;
+  const spriteEnabled = (emitterSprite != null && typeof emitterSprite === "object" && "enabled" in emitterSprite && typeof emitterSprite.enabled === "boolean" && emitterSprite.enabled) ? true : false;
+  if (!spriteEnabled) {
     // Fallback to circle if no sprite
     ctx.beginPath();
     ctx.arc(x, y, size / 2, 0, Math.PI * 2);
@@ -390,11 +401,17 @@ export function renderSprite(
   ctx.save();
 
   // Set image smoothing
-  ctx.imageSmoothingEnabled = options?.spriteSmoothing ?? true;
+  // Type proof: boolean | undefined → boolean
+  const spriteSmoothing = options !== undefined && typeof options.spriteSmoothing === "boolean"
+    ? options.spriteSmoothing
+    : true;
+  ctx.imageSmoothingEnabled = spriteSmoothing;
 
   // Apply opacity based on particle age if enabled
   let alpha = particle.color[3] / 255;
-  if (options?.spriteOpacityByAge) {
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const spriteOpacityByAge = (options != null && typeof options === "object" && "spriteOpacityByAge" in options && typeof options.spriteOpacityByAge === "boolean" && options.spriteOpacityByAge) ? true : false;
+  if (spriteOpacityByAge) {
     // Guard against lifetime=0 to prevent division by zero
     const safeLifetime = particle.lifetime > 0 ? particle.lifetime : 1;
     const lifeRatio = particle.age / safeLifetime;
@@ -559,7 +576,9 @@ export function renderParticlesToMask(
 
   // Draw connections as black (exclude) if enabled
   const connConfig = renderOptions.connections;
-  if (connConfig?.enabled && particles.length >= 2) {
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const connConfigEnabled = (connConfig != null && typeof connConfig === "object" && "enabled" in connConfig && typeof connConfig.enabled === "boolean" && connConfig.enabled) ? true : false;
+  if (connConfigEnabled && particles.length >= 2) {
     ctx.strokeStyle = "#000000";
     ctx.lineWidth = connConfig.lineWidth * 2; // Slightly thicker for matte
     // Note: For mask rendering, we use a simplified connection approach

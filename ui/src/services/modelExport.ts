@@ -9,6 +9,7 @@
  * - camera-comfyUI (4x4 matrices)
  */
 
+import { isFiniteNumber, safeNonNegativeDefault } from "@/utils/typeGuards";
 import * as THREE from "three";
 import type { Camera3D } from "@/types/camera";
 import type { Layer, SplineData } from "@/types/project";
@@ -99,9 +100,27 @@ export function exportCameraTrajectory(
     metadata: {
       frameCount: cameras.length,
       fps,
-      fov: cameras[0]?.angleOfView ?? 39.6,
-      nearClip: cameras[0]?.nearClip ?? 1,
-      farClip: cameras[0]?.farClip ?? 10000,
+      // Type proof: fov ∈ ℝ ∪ {undefined} → ℝ
+      fov: (() => {
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+        const firstCamera = (cameras != null && Array.isArray(cameras) && cameras.length > 0) ? cameras[0] : undefined;
+        const angleOfViewValue = (firstCamera != null && typeof firstCamera === "object" && "angleOfView" in firstCamera && typeof firstCamera.angleOfView === "number") ? firstCamera.angleOfView : undefined;
+        return isFiniteNumber(angleOfViewValue) && angleOfViewValue > 0 && angleOfViewValue <= 180 ? angleOfViewValue : 39.6;
+      })(),
+      // Type proof: nearClip ∈ ℝ ∪ {undefined} → ℝ
+      nearClip: (() => {
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+        const firstCamera = (cameras != null && Array.isArray(cameras) && cameras.length > 0) ? cameras[0] : undefined;
+        const nearClipValue = (firstCamera != null && typeof firstCamera === "object" && "nearClip" in firstCamera && typeof firstCamera.nearClip === "number") ? firstCamera.nearClip : undefined;
+        return isFiniteNumber(nearClipValue) && nearClipValue > 0 ? nearClipValue : 1;
+      })(),
+      // Type proof: farClip ∈ ℝ ∪ {undefined} → ℝ
+      farClip: (() => {
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+        const firstCamera = (cameras != null && Array.isArray(cameras) && cameras.length > 0) ? cameras[0] : undefined;
+        const farClipValue = (firstCamera != null && typeof firstCamera === "object" && "farClip" in firstCamera && typeof firstCamera.farClip === "number") ? firstCamera.farClip : undefined;
+        return isFiniteNumber(farClipValue) && farClipValue > 0 ? farClipValue : 10000;
+      })(),
       width,
       height,
     },
@@ -138,7 +157,11 @@ export function convertPointTrajectoriesToWanMove(
   height: number,
   fps: number,
 ): WanMoveTrajectory {
-  const numFrames = trajectories[0]?.points.length ?? 0;
+  // Type proof: numFrames ∈ ℕ ∪ {undefined} → ℕ
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const firstTrajectory = (trajectories != null && Array.isArray(trajectories) && trajectories.length > 0) ? trajectories[0] : undefined;
+  const firstTrajectoryPoints = (firstTrajectory != null && typeof firstTrajectory === "object" && "points" in firstTrajectory && Array.isArray(firstTrajectory.points)) ? firstTrajectory.points : undefined;
+  const numFrames = Array.isArray(firstTrajectoryPoints) && isFiniteNumber(firstTrajectoryPoints.length) && Number.isInteger(firstTrajectoryPoints.length) && firstTrajectoryPoints.length >= 0 ? firstTrajectoryPoints.length : 0;
 
   return {
     tracks: trajectories.map((t) => t.points.map((p) => [p.x, p.y])),
@@ -248,8 +271,18 @@ export function extractLayerTrajectory(
   const scale: Array<{ frame: number; x: number; y: number }> = [];
 
   for (let frame = startFrame; frame <= endFrame; frame++) {
-    const layerStart = layer.startFrame ?? layer.inPoint ?? 0;
-    const layerEnd = layer.endFrame ?? layer.outPoint ?? 80;
+    // Type proof: layerStart ∈ ℕ ∪ {undefined} → ℕ
+    const startFrameValue = layer.startFrame;
+    const inPointValue = layer.inPoint;
+    const layerStart = isFiniteNumber(startFrameValue) && Number.isInteger(startFrameValue) && startFrameValue >= 0
+      ? startFrameValue
+      : (isFiniteNumber(inPointValue) && Number.isInteger(inPointValue) && inPointValue >= 0 ? inPointValue : 0);
+    // Type proof: layerEnd ∈ ℕ ∪ {undefined} → ℕ
+    const endFrameValue = layer.endFrame;
+    const outPointValue = layer.outPoint;
+    const layerEnd = isFiniteNumber(endFrameValue) && Number.isInteger(endFrameValue) && endFrameValue >= 0
+      ? endFrameValue
+      : (isFiniteNumber(outPointValue) && Number.isInteger(outPointValue) && outPointValue >= 0 ? outPointValue : 80);
     const inRange = frame >= layerStart && frame <= layerEnd;
     visibility.push(inRange && layer.visible);
 
@@ -315,8 +348,10 @@ export function extractSplineTrajectories(
   const frameCount = endFrame - startFrame + 1;
 
   // Check if using animated control points
-  if (splineData.animated && splineData.animatedControlPoints?.length) {
-    return splineData.animatedControlPoints.map((acp) => {
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const animatedControlPoints = (splineData != null && typeof splineData === "object" && "animatedControlPoints" in splineData && Array.isArray(splineData.animatedControlPoints) && splineData.animatedControlPoints.length > 0) ? splineData.animatedControlPoints : undefined;
+  if (splineData.animated && animatedControlPoints != null) {
+    return animatedControlPoints.map((acp) => {
       const points: Array<{ frame: number; x: number; y: number }> = [];
 
       for (let i = 0; i < frameCount; i++) {
@@ -440,7 +475,12 @@ export function generateMotionMask(
   ctx.fillRect(0, 0, compWidth, compHeight);
 
   // Draw white rectangle for layer bounds (motion region)
-  const layerStart = layer.startFrame ?? layer.inPoint ?? 0;
+  // Type proof: layerStart ∈ ℕ ∪ {undefined} → ℕ
+  const startFrameValue = layer.startFrame;
+  const inPointValue = layer.inPoint;
+  const layerStart = isFiniteNumber(startFrameValue) && Number.isInteger(startFrameValue) && startFrameValue >= 0
+    ? startFrameValue
+    : (isFiniteNumber(inPointValue) && Number.isInteger(inPointValue) && inPointValue >= 0 ? inPointValue : 0);
   const bounds = getLayerBounds(layer, layerStart);
   ctx.fillStyle = "white";
   ctx.fillRect(bounds.x, bounds.y, bounds.width, bounds.height);
@@ -473,7 +513,12 @@ export function generateCombinedMotionMask(
   // Draw each layer's bounds in white
   ctx.fillStyle = "white";
   for (const layer of layers) {
-    const layerStartFrame = layer.startFrame ?? layer.inPoint ?? 0;
+    // Type proof: layerStartFrame ∈ ℕ ∪ {undefined} → ℕ
+    const startFrameValue = layer.startFrame;
+    const inPointValue = layer.inPoint;
+    const layerStartFrame = isFiniteNumber(startFrameValue) && Number.isInteger(startFrameValue) && startFrameValue >= 0
+      ? startFrameValue
+      : (isFiniteNumber(inPointValue) && Number.isInteger(inPointValue) && inPointValue >= 0 ? inPointValue : 0);
     const bounds = getLayerBounds(layer, layerStartFrame);
     ctx.fillRect(bounds.x, bounds.y, bounds.width, bounds.height);
   }
@@ -686,6 +731,47 @@ export interface UnifiedExportResult<T extends ModelTarget = ModelTarget> {
 export async function exportForModel(
   options: UnifiedExportOptions,
 ): Promise<UnifiedExportResult> {
+  // ============================================================================
+  // VALIDATION - Throw explicit errors for invalid inputs
+  // ============================================================================
+  
+  // Validate required inputs
+  if (!options.layers || !Array.isArray(options.layers)) {
+    throw new Error(`[ModelExport] Invalid layers: expected array, got ${typeof options.layers}. At least one layer is required for export.`);
+  }
+  
+  if (!Number.isFinite(options.compWidth) || options.compWidth <= 0) {
+    throw new Error(`[ModelExport] Invalid compWidth: ${options.compWidth}. Must be a positive finite number (got ${typeof options.compWidth}).`);
+  }
+  
+  if (!Number.isFinite(options.compHeight) || options.compHeight <= 0) {
+    throw new Error(`[ModelExport] Invalid compHeight: ${options.compHeight}. Must be a positive finite number (got ${typeof options.compHeight}).`);
+  }
+  
+  if (!Number.isFinite(options.fps) || options.fps <= 0 || options.fps > 120) {
+    throw new Error(`[ModelExport] Invalid fps: ${options.fps}. Must be between 0 and 120 (got ${typeof options.fps}).`);
+  }
+  
+  if (!Number.isFinite(options.startFrame) || options.startFrame < 0) {
+    throw new Error(`[ModelExport] Invalid startFrame: ${options.startFrame}. Must be a non-negative integer (got ${typeof options.startFrame}).`);
+  }
+  
+  if (!Number.isFinite(options.endFrame) || options.endFrame < options.startFrame) {
+    throw new Error(`[ModelExport] Invalid endFrame: ${options.endFrame}. Must be >= startFrame (${options.startFrame}) and a finite number (got ${typeof options.endFrame}).`);
+  }
+  
+  if (!options.cameras || !Array.isArray(options.cameras)) {
+    throw new Error(`[ModelExport] Invalid cameras: expected array, got ${typeof options.cameras}. Provide an array of camera objects (can be empty for non-camera exports).`);
+  }
+  
+  if (typeof options.getPositionAtFrame !== "function") {
+    throw new Error(`[ModelExport] Invalid getPositionAtFrame: expected function, got ${typeof options.getPositionAtFrame}. This callback is required for trajectory exports.`);
+  }
+  
+  if (typeof options.getLayerBounds !== "function") {
+    throw new Error(`[ModelExport] Invalid getLayerBounds: expected function, got ${typeof options.getLayerBounds}. This callback is required for layer bounds calculation.`);
+  }
+
   const {
     target,
     layers,
@@ -733,6 +819,11 @@ export async function exportForModel(
             ),
           );
         }
+      }
+
+      // Validate trajectories found
+      if (trajectories.length === 0) {
+        throw new Error(`[ModelExport] WanMove export failed: No animated layers found. At least one layer with animated position keyframes is required for WanMove export. Found ${layers.length} total layers, but none have animated position.`);
       }
 
       // Convert to WanMoveTrajectory format and export as JSON with {x,y} objects
@@ -783,6 +874,11 @@ export async function exportForModel(
             ),
           );
         }
+      }
+
+      // Validate trajectories found
+      if (trajectories.length === 0 && cameras.length <= 1) {
+        throw new Error(`[ModelExport] ATI export failed: No animated layers found. At least one layer with animated position keyframes is required for ATI export. Found ${layers.length} total layers, but none have animated position.`);
       }
 
       // Also export camera as trajectory if animated
@@ -838,13 +934,7 @@ export async function exportForModel(
       );
 
       if (animatedLayers.length === 0) {
-        return {
-          success: false,
-          target,
-          data: null,
-          files: [],
-          error: "No animated layers found for TTM export",
-        };
+        throw new Error(`[ModelExport] TTM export failed: No animated layers found. At least one layer with animated position keyframes is required for TTM export. Found ${layers.length} total layers, but none have animated position.`);
       }
 
       // Export each layer separately
@@ -878,9 +968,21 @@ export async function exportForModel(
         combinedMotionMask: combinedMaskBase64,
         modelConfig: {
           model: options.ttmModel || "wan",
-          tweakIndex: options.ttmTweakIndex ?? 10,
-          tstrongIndex: options.ttmTstrongIndex ?? 20,
-          inferenceSteps: options.ttmInferenceSteps ?? 50,
+          // Type proof: tweakIndex ∈ ℕ ∪ {undefined} → ℕ
+          tweakIndex: (() => {
+            const tweakIndexValue = options.ttmTweakIndex;
+            return isFiniteNumber(tweakIndexValue) && Number.isInteger(tweakIndexValue) && tweakIndexValue >= 0 ? tweakIndexValue : 10;
+          })(),
+          // Type proof: tstrongIndex ∈ ℕ ∪ {undefined} → ℕ
+          tstrongIndex: (() => {
+            const tstrongIndexValue = options.ttmTstrongIndex;
+            return isFiniteNumber(tstrongIndexValue) && Number.isInteger(tstrongIndexValue) && tstrongIndexValue >= 0 ? tstrongIndexValue : 20;
+          })(),
+          // Type proof: inferenceSteps ∈ ℕ ∪ {undefined} → ℕ
+          inferenceSteps: (() => {
+            const inferenceStepsValue = options.ttmInferenceSteps;
+            return isFiniteNumber(inferenceStepsValue) && Number.isInteger(inferenceStepsValue) && inferenceStepsValue > 0 ? inferenceStepsValue : 50;
+          })(),
         },
         metadata: {
           layerCount: animatedLayers.length,
@@ -1065,13 +1167,7 @@ export async function exportForModel(
     case "particles": {
       // Export particle trajectory data
       if (!options.particleData) {
-        return {
-          success: false,
-          target,
-          data: null,
-          files: [],
-          error: "No particle data provided for export",
-        };
+        throw new Error(`[ModelExport] Particle export failed: No particle data provided. The particleData option is required for "particles" export target.`);
       }
 
       const particleData = options.particleData;
@@ -1134,12 +1230,7 @@ export async function exportForModel(
     }
 
     default:
-      return {
-        success: false,
-        target,
-        data: null,
-        files: [],
-      };
+      throw new Error(`[ModelExport] Unknown export target: "${target}". Supported targets: "camera-comfyui", "wan-move", "ati", "wan-move-3d", "ttm", "ttm-wan", "ttm-cogvideox", "ttm-svd", "light-x", "particles".`);
   }
 }
 
@@ -1200,7 +1291,12 @@ export function trajectoriesToNpy(trajectories: number[][][]): Blob {
     }
   }
 
-  const shape = [trajectories.length, trajectories[0]?.length || 0, 2];
+  // Type proof: trajectory length ∈ number | undefined → number (≥ 0, count)
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const firstTrajectory = (trajectories != null && Array.isArray(trajectories) && trajectories.length > 0) ? trajectories[0] : undefined;
+  const firstTrajectoryLengthValue = (firstTrajectory != null && typeof firstTrajectory === "object" && "length" in firstTrajectory && typeof firstTrajectory.length === "number") ? firstTrajectory.length : undefined;
+  const firstTrajectoryLength = safeNonNegativeDefault(firstTrajectoryLengthValue, 0, "trajectories[0].length");
+  const shape = [trajectories.length, firstTrajectoryLength, 2];
   const header = createNpyHeader(shape, "<f4");
 
   // Create float32 data

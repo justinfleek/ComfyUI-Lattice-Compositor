@@ -42,7 +42,13 @@
             <div class="vec-item">
               <span class="label z-label">Z</span>
               <ScrubableNumber
-                :modelValue="property.value?.z ?? 0"
+                :modelValue="(() => {
+                  // Type proof: z ∈ ℝ ∪ {undefined} → ℝ
+                  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+                  const value = property.value;
+                  const zValue = (value != null && typeof value === 'object' && 'z' in value && typeof value.z === 'number') ? value.z : undefined;
+                  return isFiniteNumber(zValue) ? zValue : 0;
+                })()"
                 @update:modelValue="(v: number) => updateValByIndex('z', v)"
               />
             </div>
@@ -148,13 +154,13 @@
        <!-- Keyframe Context Menu -->
        <div v-if="contextMenu.visible" class="keyframe-context-menu" :style="contextMenuStyle">
          <div class="menu-header">Interpolation</div>
-         <div class="menu-item" :class="{ active: contextMenu.keyframe?.interpolation === 'linear' }" @click="setInterpolation('linear')">
+         <div class="menu-item" :class="{ active: (contextMenu.keyframe != null && typeof contextMenu.keyframe === 'object' && 'interpolation' in contextMenu.keyframe && contextMenu.keyframe.interpolation === 'linear') }" @click="setInterpolation('linear')">
            <span class="icon">📈</span> Linear
          </div>
-         <div class="menu-item" :class="{ active: contextMenu.keyframe?.interpolation === 'bezier' }" @click="setInterpolation('bezier')">
+         <div class="menu-item" :class="{ active: (contextMenu.keyframe != null && typeof contextMenu.keyframe === 'object' && 'interpolation' in contextMenu.keyframe && contextMenu.keyframe.interpolation === 'bezier') }" @click="setInterpolation('bezier')">
            <span class="icon">〰️</span> Bezier
          </div>
-         <div class="menu-item" :class="{ active: contextMenu.keyframe?.interpolation === 'hold' }" @click="setInterpolation('hold')">
+         <div class="menu-item" :class="{ active: (contextMenu.keyframe != null && typeof contextMenu.keyframe === 'object' && 'interpolation' in contextMenu.keyframe && contextMenu.keyframe.interpolation === 'hold') }" @click="setInterpolation('hold')">
            <span class="icon">⏸️</span> Hold
          </div>
          <div class="menu-divider"></div>
@@ -208,19 +214,24 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from "vue";
 import { findNearestSnap } from "@/services/timelineSnap";
-import { useCompositorStore } from "@/stores/compositorStore";
-import { useLayerStore } from "@/stores/layerStore";
+import { useAnimationStore } from "@/stores/animationStore";
+import type { AnimationStoreAccess } from "@/stores/animationStore/types";
 import { useAudioStore } from "@/stores/audioStore";
 import { useKeyframeStore } from "@/stores/keyframeStore";
-import { useAnimationStore } from "@/stores/animationStore";
+import { useLayerStore } from "@/stores/layerStore";
+import { usePlaybackStore } from "@/stores/playbackStore";
 import { useProjectStore } from "@/stores/projectStore";
+import { isFiniteNumber, safeNonNegativeDefault } from "@/utils/typeGuards";
+import { useSelectionStore } from "@/stores/selectionStore";
 import { getShapeForEasing, KEYFRAME_SHAPES } from "@/styles/keyframe-shapes";
 import type { Keyframe, PropertyValue } from "@/types/project";
 
 // Get keyframe shape path for a given interpolation type
 function getKeyframeShapePath(interpolation: string = "linear"): string {
   const shapeKey = getShapeForEasing(interpolation);
-  return KEYFRAME_SHAPES[shapeKey]?.path || KEYFRAME_SHAPES.diamond.path;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const shape = (shapeKey != null && typeof shapeKey === "string" && shapeKey in KEYFRAME_SHAPES && KEYFRAME_SHAPES[shapeKey] != null && typeof KEYFRAME_SHAPES[shapeKey] === "object" && "path" in KEYFRAME_SHAPES[shapeKey] && typeof KEYFRAME_SHAPES[shapeKey].path === "string") ? KEYFRAME_SHAPES[shapeKey].path : undefined;
+  return shape || KEYFRAME_SHAPES.diamond.path;
 }
 
 function getKeyframeShapeViewBox(interpolation: string = "linear"): string {
@@ -231,7 +242,9 @@ function getKeyframeShapeViewBox(interpolation: string = "linear"): string {
 
 function isStrokeShape(interpolation: string = "linear"): boolean {
   const shapeKey = getShapeForEasing(interpolation);
-  return KEYFRAME_SHAPES[shapeKey]?.stroke || false;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const shape = (shapeKey != null && typeof shapeKey === "string" && shapeKey in KEYFRAME_SHAPES && KEYFRAME_SHAPES[shapeKey] != null && typeof KEYFRAME_SHAPES[shapeKey] === "object" && "stroke" in KEYFRAME_SHAPES[shapeKey] && typeof KEYFRAME_SHAPES[shapeKey].stroke === "boolean") ? KEYFRAME_SHAPES[shapeKey].stroke : undefined;
+  return shape || false;
 }
 
 const props = defineProps([
@@ -244,12 +257,43 @@ const props = defineProps([
   "gridStyle",
 ]);
 const emit = defineEmits(["selectKeyframe", "deleteKeyframe", "moveKeyframe"]);
-const store = useCompositorStore();
-const layerStore = useLayerStore();
+const animationStore = useAnimationStore();
 const audioStore = useAudioStore();
 const keyframeStore = useKeyframeStore();
-const animationStore = useAnimationStore();
+const layerStore = useLayerStore();
+const playbackStore = usePlaybackStore();
 const projectStore = useProjectStore();
+const selectionStore = useSelectionStore();
+
+// Helper to create AnimationStoreAccess for animation operations
+function getAnimationStoreAccess(): AnimationStoreAccess {
+  const activeComp = projectStore.getActiveComp();
+  return {
+    isPlaying: playbackStore.isPlaying,
+    getActiveComp: () => projectStore.getActiveComp(),
+    get currentFrame() {
+      return animationStore.currentFrame;
+    },
+    get frameCount() {
+      return projectStore.getFrameCount();
+    },
+    get fps() {
+      return projectStore.getFps();
+    },
+    getActiveCompLayers: () => projectStore.getActiveCompLayers(),
+    getLayerById: (id: string) => {
+      return layerStore.getLayerById(id);
+    },
+    project: {
+      composition: {
+        width: projectStore.project.composition.width,
+        height: projectStore.project.composition.height,
+      },
+      meta: projectStore.project.meta,
+    },
+    pushHistory: () => projectStore.pushHistory(),
+  };
+}
 
 const selectedKeyframeIds = ref<Set<string>>(new Set());
 const trackRef = ref<HTMLElement | null>(null);
@@ -297,14 +341,27 @@ const trackContextMenuStyle = computed(() => ({
 
 // Check if this is a position property (for "Insert on Path" option)
 const isPositionProperty = computed(
-  () =>
-    props.propertyPath?.includes("position") ||
-    props.name?.toLowerCase().includes("position"),
+  () => {
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const propertyPath = props.propertyPath;
+    const name = props.name;
+    return (propertyPath != null && typeof propertyPath === "string" && propertyPath.includes("position")) ||
+      (name != null && typeof name === "string" && name.toLowerCase().includes("position"));
+  },
 );
+
+// Type proof: keyframes.length ∈ number | undefined → number (≥ 0, count)
+function getKeyframeCount(): number {
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const property = props.property;
+  const keyframes = (property != null && typeof property === "object" && "keyframes" in property && property.keyframes != null && Array.isArray(property.keyframes)) ? property.keyframes : undefined;
+  const length = (keyframes != null && typeof keyframes.length === "number") ? keyframes.length : undefined;
+  return safeNonNegativeDefault(length, 0, "property.keyframes.length");
+}
 
 // Check if there are multiple keyframes (needed for path interpolation)
 const hasMultipleKeyframes = computed(
-  () => (props.property?.keyframes?.length || 0) >= 2,
+  () => getKeyframeCount() >= 2,
 );
 
 const selectionBoxStyle = computed(() => {
@@ -316,33 +373,41 @@ const selectionBoxStyle = computed(() => {
   };
 });
 
-const hasKeyframeAtCurrent = computed(() =>
-  props.property.keyframes?.some((k: Keyframe<PropertyValue>) => k.frame === store.currentFrame),
-);
+const hasKeyframeAtCurrent = computed(() => {
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const property = props.property;
+  const keyframes = (property != null && typeof property === "object" && "keyframes" in property && property.keyframes != null && Array.isArray(property.keyframes)) ? property.keyframes : undefined;
+  return (keyframes != null && typeof keyframes.some === "function") ? keyframes.some((k: Keyframe<PropertyValue>) => k.frame === animationStore.currentFrame) : false;
+});
 const isSelected = computed(
-  () => store.selectedPropertyPath === props.propertyPath,
+  () => selectionStore.selectedPropertyPath === props.propertyPath,
 );
 
 // Keyframe navigator computed properties
+// Lean4/PureScript/Haskell: Explicit pattern matching - no lazy || []
 const sortedKeyframes = computed(() => {
-  const kfs = props.property.keyframes || [];
-  return [...kfs].sort((a: Keyframe<PropertyValue>, b: Keyframe<PropertyValue>) => a.frame - b.frame);
+  const kfs = props.property.keyframes;
+  const keyframes = (kfs !== null && kfs !== undefined && Array.isArray(kfs)) ? kfs : [];
+  return [...keyframes].sort((a: Keyframe<PropertyValue>, b: Keyframe<PropertyValue>) => a.frame - b.frame);
 });
 
 const hasPrevKeyframe = computed(() => {
-  return sortedKeyframes.value.some((kf: Keyframe<PropertyValue>) => kf.frame < store.currentFrame);
+  return sortedKeyframes.value.some((kf: Keyframe<PropertyValue>) => kf.frame < animationStore.currentFrame);
 });
 
 const hasNextKeyframe = computed(() => {
-  return sortedKeyframes.value.some((kf: Keyframe<PropertyValue>) => kf.frame > store.currentFrame);
+  return sortedKeyframes.value.some((kf: Keyframe<PropertyValue>) => kf.frame > animationStore.currentFrame);
 });
 
 // Check if multiple keyframes are selected (for reverse/scale operations)
 const hasMultipleSelected = computed(() => selectedKeyframeIds.value.size >= 2);
 
 // Check if any selected keyframe has bezier interpolation (for auto-tangent)
+// Lean4/PureScript/Haskell: Explicit pattern matching - no lazy || []
 const hasBezierSelected = computed(() => {
-  const keyframes = props.property?.keyframes || [];
+  const property = props.property;
+  const keyframesRaw = (property !== null && property !== undefined && typeof property === "object" && "keyframes" in property) ? property.keyframes : undefined;
+  const keyframes = (keyframesRaw !== null && keyframesRaw !== undefined && Array.isArray(keyframesRaw)) ? keyframesRaw : [];
   return keyframes.some(
     (kf: Keyframe<PropertyValue>) => selectedKeyframeIds.value.has(kf.id) && kf.interpolation === "bezier"
   );
@@ -350,55 +415,54 @@ const hasBezierSelected = computed(() => {
 
 // Check if roving can be applied (position property with 3+ keyframes)
 const canApplyRoving = computed(() => {
-  return isPositionProperty.value && (props.property?.keyframes?.length || 0) >= 3;
+  return isPositionProperty.value && getKeyframeCount() >= 3;
 });
 
 // Keyframe navigator functions
 function goToPrevKeyframe() {
   const prevKfs = sortedKeyframes.value.filter(
-    (kf: Keyframe<PropertyValue>) => kf.frame < store.currentFrame,
+    (kf: Keyframe<PropertyValue>) => kf.frame < animationStore.currentFrame,
   );
   if (prevKfs.length > 0) {
     const prevKf = prevKfs[prevKfs.length - 1];
-    animationStore.setFrame(store, prevKf.frame);
+    animationStore.setFrame(getAnimationStoreAccess(), prevKf.frame);
   }
 }
 
 function goToNextKeyframe() {
   const nextKf = sortedKeyframes.value.find(
-    (kf: Keyframe<PropertyValue>) => kf.frame > store.currentFrame,
+    (kf: Keyframe<PropertyValue>) => kf.frame > animationStore.currentFrame,
   );
   if (nextKf) {
-    animationStore.setFrame(store, nextKf.frame);
+    animationStore.setFrame(getAnimationStoreAccess(), nextKf.frame);
   }
 }
 
 function toggleAnim() {
   keyframeStore.setPropertyAnimated(
-    store,
     props.layerId,
     props.propertyPath,
     !props.property.animated,
   );
 }
 function addKeyframeAtCurrent() {
-  keyframeStore.addKeyframe(store, props.layerId, props.propertyPath, props.property.value);
+  keyframeStore.addKeyframe(props.layerId, props.propertyPath, props.property.value);
 }
 function updateValDirect(v: PropertyValue) {
   // Handle data.* properties differently - they're stored directly on layer.data
   if (props.propertyPath.startsWith("data.")) {
     const dataKey = props.propertyPath.replace("data.", "");
-    layerStore.updateLayerData(store, props.layerId, { [dataKey]: v });
+    layerStore.updateLayerData(props.layerId, { [dataKey]: v });
   } else {
-    keyframeStore.setPropertyValue(store, props.layerId, props.propertyPath, v);
+    keyframeStore.setPropertyValue(props.layerId, props.propertyPath, v);
   }
 }
 function updateValByIndex(axis: string, v: number) {
   const newVal = { ...props.property.value, [axis]: v };
-  keyframeStore.setPropertyValue(store, props.layerId, props.propertyPath, newVal);
+  keyframeStore.setPropertyValue(props.layerId, props.propertyPath, newVal);
 }
 function selectProp() {
-  store.selectProperty(props.propertyPath);
+  selectionStore.setSelectedPropertyPath(props.propertyPath);
 }
 
 // Format dropdown option label (capitalize first letter)
@@ -457,7 +521,10 @@ function handleTrackMouseDown(e: MouseEvent) {
       selectedKeyframeIds.value.clear();
     }
 
-    for (const kf of props.property.keyframes || []) {
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy || []
+    const keyframesRaw = props.property.keyframes;
+    const keyframes = (keyframesRaw !== null && keyframesRaw !== undefined && Array.isArray(keyframesRaw)) ? keyframesRaw : [];
+    for (const kf of keyframes) {
       if (kf.frame >= minFrame && kf.frame <= maxFrame) {
         selectedKeyframeIds.value.add(kf.id);
       }
@@ -471,7 +538,7 @@ function handleTrackMouseDown(e: MouseEvent) {
     const dragDistance = Math.abs(boxCurrentX.value - boxStartX.value);
     if (dragDistance < 5) {
       const frame = Math.round(boxStartX.value / props.pixelsPerFrame);
-      animationStore.setFrame(store, Math.max(0, Math.min(projectStore.getFrameCount(store) - 1, frame)));
+      animationStore.setFrame(Math.max(0, Math.min(projectStore.getFrameCount(store) - 1, frame)));
     }
 
     window.removeEventListener("mousemove", onMove);
@@ -513,8 +580,11 @@ function startKeyframeDrag(e: MouseEvent, kf: Keyframe<PropertyValue>) {
   // Capture the starting frame for each selected keyframe (for bulk move)
   const startingFrames = new Map<string, number>();
   if (isBulkMove) {
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const property = props.property;
+    const keyframes = (property != null && typeof property === "object" && "keyframes" in property && property.keyframes != null && Array.isArray(property.keyframes)) ? property.keyframes : undefined;
     for (const kfId of selectedKeyframeIds.value) {
-      const keyframe = props.property?.keyframes?.find((k: { id: string }) => k.id === kfId);
+      const keyframe = (keyframes != null && typeof keyframes.find === "function") ? keyframes.find((k: { id: string }) => k.id === kfId) : undefined;
       if (keyframe) {
         startingFrames.set(kfId, keyframe.frame);
       }
@@ -522,11 +592,15 @@ function startKeyframeDrag(e: MouseEvent, kf: Keyframe<PropertyValue>) {
   }
 
   // For scale mode, capture original keyframe positions
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy || []
+  const property = props.property;
+  const keyframesRaw = (property !== null && property !== undefined && typeof property === "object" && "keyframes" in property) ? property.keyframes : undefined;
+  const keyframes = (keyframesRaw !== null && keyframesRaw !== undefined && Array.isArray(keyframesRaw)) ? keyframesRaw : [];
   const originalKeyframes: { id: string; frame: number }[] = isScaleMode
-    ? props.property?.keyframes?.map((k: { id: string; frame: number }) => ({
+    ? keyframes.map((k: { id: string; frame: number }) => ({
         id: k.id,
         frame: k.frame,
-      })) || []
+      }))
     : [];
   const anchorFrame = isScaleMode
     ? Math.min(
@@ -561,9 +635,12 @@ function startKeyframeDrag(e: MouseEvent, kf: Keyframe<PropertyValue>) {
           );
           if (newFrame !== orig.frame) {
             // Find current keyframe position and update
-            const currentKf = props.property?.keyframes?.find(
+            // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+            const property = props.property;
+            const keyframes = (property != null && typeof property === "object" && "keyframes" in property && property.keyframes != null && Array.isArray(property.keyframes)) ? property.keyframes : undefined;
+            const currentKf = (keyframes != null && typeof keyframes.find === "function") ? keyframes.find(
               (k: { id: string }) => k.id === orig.id,
-            );
+            ) : undefined;
             if (currentKf && currentKf.frame !== newFrame) {
               keyframeStore.moveKeyframe(
                 store,
@@ -597,7 +674,7 @@ function startKeyframeDrag(e: MouseEvent, kf: Keyframe<PropertyValue>) {
         const deltaDiff = frameDelta - lastAppliedDelta;
 
         // Use bulk moveKeyframes for all selected keyframes
-        keyframeStore.moveKeyframes(store, keyframesToMove, deltaDiff);
+        keyframeStore.moveKeyframes(keyframesToMove, deltaDiff);
         lastAppliedDelta = frameDelta;
       }
       return;
@@ -606,30 +683,35 @@ function startKeyframeDrag(e: MouseEvent, kf: Keyframe<PropertyValue>) {
     // Single keyframe drag mode
     let newFrame = Math.max(
       0,
-      Math.min(projectStore.getFrameCount(store) - 1, startFrame + frameDelta),
+      Math.min(projectStore.getFrameCount() - 1, startFrame + frameDelta),
     );
 
     // Apply snapping if enabled (hold Alt/Option to disable temporarily)
     if (!ev.altKey && animationStore.snapConfig.enabled) {
-      const snap = findNearestSnap(
-        newFrame,
-        animationStore.snapConfig,
-        props.pixelsPerFrame,
-        {
-          layers: store.layers,
-          selectedLayerId: props.layerId,
-          currentFrame: store.currentFrame,
-          audioAnalysis: audioStore.audioAnalysis,
-          peakData: audioStore.peakData,
-        },
-      );
-      if (snap) {
+      // System F/Omega pattern: Wrap in try/catch for expected "no snap" case
+      // When no snap targets are found, it's a valid state (snapping is optional)
+      try {
+        const snap = findNearestSnap(
+          newFrame,
+          animationStore.snapConfig,
+          props.pixelsPerFrame,
+          {
+            layers: projectStore.getActiveCompLayers(),
+            selectedLayerId: props.layerId,
+            currentFrame: animationStore.currentFrame,
+            audioAnalysis: audioStore.audioAnalysis,
+            peakData: audioStore.peakData,
+          },
+        );
         newFrame = snap.frame;
+      } catch (error) {
+        // No snap target found - this is expected when no targets are within threshold
+        // Skip snapping and use the original frame
       }
     }
 
     if (newFrame !== kf.frame) {
-      keyframeStore.moveKeyframe(store, props.layerId, props.propertyPath, kf.id, newFrame);
+      keyframeStore.moveKeyframe(props.layerId, props.propertyPath, kf.id, newFrame);
     }
   };
 
@@ -644,7 +726,7 @@ function startKeyframeDrag(e: MouseEvent, kf: Keyframe<PropertyValue>) {
 
 // Delete keyframe
 function deleteKeyframe(kfId: string) {
-  keyframeStore.removeKeyframe(store, props.layerId, props.propertyPath, kfId);
+  keyframeStore.removeKeyframe(props.layerId, props.propertyPath, kfId);
   selectedKeyframeIds.value.delete(kfId);
 }
 
@@ -657,7 +739,9 @@ function showContextMenu(e: MouseEvent, kf: Keyframe<PropertyValue>) {
   }
 
   // Position relative to track
-  const trackRect = trackRef.value?.getBoundingClientRect();
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const trackRefVal = trackRef.value;
+  const trackRect = (trackRefVal != null && typeof trackRefVal === "object" && typeof trackRefVal.getBoundingClientRect === "function") ? trackRefVal.getBoundingClientRect() : null;
   if (trackRect) {
     contextMenu.value = {
       visible: true,
@@ -683,7 +767,9 @@ function showTrackContextMenu(e: MouseEvent) {
   const target = e.target as HTMLElement;
   if (target.closest(".keyframe")) return;
 
-  const rect = trackRef.value?.getBoundingClientRect();
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const trackRefVal = trackRef.value;
+  const rect = (trackRefVal != null && typeof trackRefVal === "object" && typeof trackRefVal.getBoundingClientRect === "function") ? trackRefVal.getBoundingClientRect() : null;
   if (!rect) return;
 
   // Calculate frame from click position
@@ -704,15 +790,19 @@ function showTrackContextMenu(e: MouseEvent) {
 // Add a keyframe at the clicked frame with interpolated value
 function addKeyframeAtFrame() {
   const frame = trackContextMenu.value.frame;
-  const currentValue = props.property?.value ?? 0;
-  keyframeStore.addKeyframe(store, props.layerId, props.propertyPath, currentValue, frame);
+  // Type proof: value ∈ PropertyValue | undefined → PropertyValue
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const property = props.property;
+  const valueRaw = (property != null && typeof property === "object" && "value" in property) ? property.value : undefined;
+  const currentValue = isFiniteNumber(valueRaw) ? valueRaw : (typeof valueRaw === "boolean" ? valueRaw : (typeof valueRaw === "string" ? valueRaw : (Array.isArray(valueRaw) ? valueRaw : 0)));
+  keyframeStore.addKeyframe(props.layerId, props.propertyPath, currentValue, frame);
   hideTrackContextMenu();
 }
 
 // Insert keyframe by interpolating the position motion path
 function insertKeyframeOnPath() {
   const frame = trackContextMenu.value.frame;
-  const newKfId = keyframeStore.insertKeyframeOnPath(store, props.layerId, frame);
+  const newKfId = keyframeStore.insertKeyframeOnPath(props.layerId, frame);
   if (newKfId) {
     console.log(`[Lattice] Inserted keyframe on path at frame ${frame}`);
   }
@@ -721,7 +811,7 @@ function insertKeyframeOnPath() {
 
 // Navigate to the clicked frame
 function goToClickedFrame() {
-  animationStore.setFrame(store, trackContextMenu.value.frame);
+  animationStore.setFrame(trackContextMenu.value.frame);
   hideTrackContextMenu();
 }
 
@@ -741,14 +831,14 @@ function setInterpolation(type: "linear" | "bezier" | "hold") {
 
 function goToKeyframe() {
   if (contextMenu.value.keyframe) {
-    animationStore.setFrame(store, contextMenu.value.keyframe.frame);
+    animationStore.setFrame(contextMenu.value.keyframe.frame);
   }
   hideContextMenu();
 }
 
 function deleteSelectedKeyframes() {
   for (const kfId of selectedKeyframeIds.value) {
-    keyframeStore.removeKeyframe(store, props.layerId, props.propertyPath, kfId);
+    keyframeStore.removeKeyframe(props.layerId, props.propertyPath, kfId);
   }
   selectedKeyframeIds.value.clear();
   hideContextMenu();
@@ -761,7 +851,7 @@ function autoCalculateTangents() {
 
   // Call the store action for each selected keyframe
   for (const kfId of selectedIds) {
-    keyframeStore.autoCalculateBezierTangents(store, props.layerId, props.propertyPath, kfId);
+    keyframeStore.autoCalculateBezierTangents(props.layerId, props.propertyPath, kfId);
   }
 
   console.log(`[Lattice] Auto-calculated tangents for ${selectedIds.length} keyframes`);
@@ -770,14 +860,14 @@ function autoCalculateTangents() {
 
 // Reverse the timing of selected keyframes
 function reverseSelectedKeyframes() {
-  const count = keyframeStore.timeReverseKeyframes(store, props.layerId, props.propertyPath);
+  const count = keyframeStore.timeReverseKeyframes(props.layerId, props.propertyPath);
   console.log(`[Lattice] Reversed ${count} keyframes for ${props.propertyPath}`);
   hideContextMenu();
 }
 
 // Clear all keyframes from this property (single undo entry)
 function clearAllKeyframes() {
-  keyframeStore.clearKeyframes(store, props.layerId, props.propertyPath);
+  keyframeStore.clearKeyframes(props.layerId, props.propertyPath);
   selectedKeyframeIds.value.clear();
   console.log(`[Lattice] Cleared all keyframes from ${props.propertyPath}`);
   hideContextMenu();
@@ -786,7 +876,7 @@ function clearAllKeyframes() {
 // Apply roving keyframes (constant-speed motion)
 function applyRovingKeyframes() {
   // Check if roving would have impact before applying
-  const wouldChange = keyframeStore.checkRovingImpact(store, props.layerId);
+  const wouldChange = keyframeStore.checkRovingImpact(props.layerId);
 
   if (!wouldChange) {
     console.log("[Lattice] Roving keyframes: no changes needed (already uniform speed)");
@@ -794,7 +884,7 @@ function applyRovingKeyframes() {
     return;
   }
 
-  const success = keyframeStore.applyRovingToPosition(store, props.layerId);
+  const success = keyframeStore.applyRovingToPosition(props.layerId);
   if (success) {
     console.log("[Lattice] Applied roving keyframes to position");
   } else {
@@ -824,9 +914,8 @@ function scaleKeyframeTiming() {
   }
 
   // Use current frame as anchor point
-  const anchorFrame = store.currentFrame;
+  const anchorFrame = animationStore.currentFrame;
   const count = keyframeStore.scaleKeyframeTiming(
-    store,
     props.layerId,
     props.propertyPath,
     scaleFactor,

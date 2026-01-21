@@ -16,7 +16,14 @@ import { RectAreaLightHelper } from "three/addons/helpers/RectAreaLightHelper.js
 import { RectAreaLightUniformsLib } from "three/addons/lights/RectAreaLightUniformsLib.js";
 import type { AnimatableProperty, Layer } from "@/types/project";
 import { layerLogger } from "@/utils/logger";
+import type { JSONValue } from "@/types/dataAsset";
 import { BaseLayer } from "./BaseLayer";
+
+/**
+ * All possible JavaScript values that can be validated at runtime
+ * Used as input type for validators (replaces unknown)
+ */
+type RuntimeValue = string | number | boolean | object | null | undefined | bigint | symbol;
 
 // Initialize RectAreaLight uniforms (required for area lights)
 let rectAreaLightInitialized = false;
@@ -42,12 +49,12 @@ interface Disposable {
   dispose(): void;
 }
 
-function hasDispose(obj: unknown): obj is Disposable {
+function hasDispose(obj: RuntimeValue): obj is Disposable {
   return (
     typeof obj === "object" &&
     obj !== null &&
     "dispose" in obj &&
-    typeof (obj as { dispose: unknown }).dispose === "function"
+    typeof (obj as { dispose: JSONValue }).dispose === "function"
   );
 }
 
@@ -315,7 +322,7 @@ export class LightLayer extends BaseLayer {
         },
         pathFollowing: {
           enabled: false,
-          splineLayerId: undefined,
+          splineLayerId: "",
           progress: {
             id: "path_progress",
             name: "Path Progress",
@@ -352,84 +359,294 @@ export class LightLayer extends BaseLayer {
         },
       };
     }
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining/null checks
+    // Pattern match: data ∈ object | null → LightData (explicit defaults)
     const data = layerData.data as Partial<LightData> & { castShadows?: boolean; shadowDarkness?: number; shadowDiffusion?: number };
-
-    return {
-      lightType: data?.lightType ?? "point",
-      color: data?.color ?? "#ffffff",
-      colorTemperature: data?.colorTemperature,
-      useColorTemperature: data?.useColorTemperature ?? false,
-      intensity: data?.intensity ?? 100,
-      physicalIntensity: data?.physicalIntensity,
-      usePhysicalIntensity: data?.usePhysicalIntensity ?? false,
-      radius: data?.radius ?? 500,
-      falloff: data?.falloff ?? "none",
-      falloffDistance: data?.falloffDistance ?? 500,
-      coneAngle: data?.coneAngle ?? 90,
-      coneFeather: data?.coneFeather ?? 50,
-      areaWidth: data?.areaWidth ?? 100,
-      areaHeight: data?.areaHeight ?? 100,
-
-      pointOfInterest: {
-        enabled: data?.pointOfInterest?.enabled ?? false,
-        targetType: data?.pointOfInterest?.targetType ?? "position",
-        position: data?.pointOfInterest?.position ?? {
+    
+    // Pattern match: lightType ∈ string | undefined → string
+    const lightTypeValue = (typeof data === "object" && data !== null && "lightType" in data && typeof data.lightType === "string")
+      ? data.lightType
+      : "point";
+    const lightType = lightTypeValue === "point" || lightTypeValue === "spot" || lightTypeValue === "parallel" || lightTypeValue === "ambient" || lightTypeValue === "area"
+      ? lightTypeValue
+      : "point";
+    
+    // Pattern match: color ∈ string | undefined → string
+    const color = (typeof data === "object" && data !== null && "color" in data && typeof data.color === "string")
+      ? data.color
+      : "#ffffff";
+    
+    // Pattern match: colorTemperature ∈ number | undefined → number | 0 (explicit default)
+    const colorTemperature = (typeof data === "object" && data !== null && "colorTemperature" in data && typeof data.colorTemperature === "number")
+      ? data.colorTemperature
+      : 0;
+    
+    // Pattern match: useColorTemperature ∈ boolean | undefined → boolean
+    const useColorTemperature = (typeof data === "object" && data !== null && "useColorTemperature" in data && typeof data.useColorTemperature === "boolean")
+      ? data.useColorTemperature
+      : false;
+    
+    // Pattern match: intensity ∈ number | undefined → number
+    const intensity = (typeof data === "object" && data !== null && "intensity" in data && typeof data.intensity === "number")
+      ? data.intensity
+      : 100;
+    
+    // Pattern match: physicalIntensity ∈ number | undefined → number | 0 (explicit default)
+    const physicalIntensity = (typeof data === "object" && data !== null && "physicalIntensity" in data && typeof data.physicalIntensity === "number")
+      ? data.physicalIntensity
+      : 0;
+    
+    // Pattern match: usePhysicalIntensity ∈ boolean | undefined → boolean
+    const usePhysicalIntensity = (typeof data === "object" && data !== null && "usePhysicalIntensity" in data && typeof data.usePhysicalIntensity === "boolean")
+      ? data.usePhysicalIntensity
+      : false;
+    
+    // Pattern match: radius ∈ number | undefined → number
+    const radius = (typeof data === "object" && data !== null && "radius" in data && typeof data.radius === "number")
+      ? data.radius
+      : 500;
+    
+    // Pattern match: falloff ∈ string | undefined → string
+    const falloffValue = (typeof data === "object" && data !== null && "falloff" in data && typeof data.falloff === "string")
+      ? data.falloff
+      : "none";
+    const falloff = falloffValue === "none" || falloffValue === "smooth" || falloffValue === "inverseSquareClamped"
+      ? falloffValue
+      : "none";
+    
+    // Pattern match: falloffDistance ∈ number | undefined → number
+    const falloffDistance = (typeof data === "object" && data !== null && "falloffDistance" in data && typeof data.falloffDistance === "number")
+      ? data.falloffDistance
+      : 500;
+    
+    // Pattern match: coneAngle ∈ number | undefined → number
+    const coneAngle = (typeof data === "object" && data !== null && "coneAngle" in data && typeof data.coneAngle === "number")
+      ? data.coneAngle
+      : 90;
+    
+    // Pattern match: coneFeather ∈ number | undefined → number
+    const coneFeather = (typeof data === "object" && data !== null && "coneFeather" in data && typeof data.coneFeather === "number")
+      ? data.coneFeather
+      : 50;
+    
+    // Pattern match: areaWidth ∈ number | undefined → number
+    const areaWidth = (typeof data === "object" && data !== null && "areaWidth" in data && typeof data.areaWidth === "number")
+      ? data.areaWidth
+      : 100;
+    
+    // Pattern match: areaHeight ∈ number | undefined → number
+    const areaHeight = (typeof data === "object" && data !== null && "areaHeight" in data && typeof data.areaHeight === "number")
+      ? data.areaHeight
+      : 100;
+    
+    // Pattern match: pointOfInterest ∈ object | undefined → PointOfInterest
+    const pointOfInterestData = (typeof data === "object" && data !== null && "pointOfInterest" in data && typeof data.pointOfInterest === "object" && data.pointOfInterest !== null)
+      ? data.pointOfInterest
+      : {};
+    const poiEnabled = ("enabled" in pointOfInterestData && typeof pointOfInterestData.enabled === "boolean")
+      ? pointOfInterestData.enabled
+      : false;
+    const poiTargetTypeValue = ("targetType" in pointOfInterestData && typeof pointOfInterestData.targetType === "string")
+      ? pointOfInterestData.targetType
+      : "position";
+    const poiTargetType = poiTargetTypeValue === "position" || poiTargetTypeValue === "layer"
+      ? poiTargetTypeValue
+      : "position";
+    const poiPosition = ("position" in pointOfInterestData && typeof pointOfInterestData.position === "object" && pointOfInterestData.position !== null)
+      ? pointOfInterestData.position
+      : {
           id: "poi_pos",
           name: "POI Position",
           type: "vector3",
           value: { x: 0, y: 0, z: 0 },
           animated: false,
           keyframes: [],
-        },
-        targetLayerId: data?.pointOfInterest?.targetLayerId,
-        offset: data?.pointOfInterest?.offset ?? { x: 0, y: 0, z: 0 },
-        smoothing: data?.pointOfInterest?.smoothing ?? 0,
-      },
-
-      pathFollowing: {
-        enabled: data?.pathFollowing?.enabled ?? false,
-        splineLayerId: data?.pathFollowing?.splineLayerId,
-        progress: data?.pathFollowing?.progress ?? {
+        };
+    const poiTargetLayerId = ("targetLayerId" in pointOfInterestData && typeof pointOfInterestData.targetLayerId === "string")
+      ? pointOfInterestData.targetLayerId
+      : "";
+    const poiOffsetRaw = ("offset" in pointOfInterestData && typeof pointOfInterestData.offset === "object" && pointOfInterestData.offset !== null && "x" in pointOfInterestData.offset && "y" in pointOfInterestData.offset && "z" in pointOfInterestData.offset)
+      ? pointOfInterestData.offset
+      : null;
+    // Type guard: validate offset has numeric x, y, z properties
+    const poiOffset: { x: number; y: number; z: number } = (poiOffsetRaw !== null &&
+      typeof (poiOffsetRaw as { x?: JSONValue; y?: JSONValue; z?: JSONValue }).x === "number" &&
+      typeof (poiOffsetRaw as { x?: JSONValue; y?: JSONValue; z?: JSONValue }).y === "number" &&
+      typeof (poiOffsetRaw as { x?: JSONValue; y?: JSONValue; z?: JSONValue }).z === "number")
+      ? {
+          x: (poiOffsetRaw as { x: number; y: number; z: number }).x,
+          y: (poiOffsetRaw as { x: number; y: number; z: number }).y,
+          z: (poiOffsetRaw as { x: number; y: number; z: number }).z,
+        }
+      : { x: 0, y: 0, z: 0 };
+    const poiSmoothing = ("smoothing" in pointOfInterestData && typeof pointOfInterestData.smoothing === "number")
+      ? pointOfInterestData.smoothing
+      : 0;
+    
+    // Pattern match: pathFollowing ∈ object | undefined → PathFollowing
+    const pathFollowingData = (typeof data === "object" && data !== null && "pathFollowing" in data && typeof data.pathFollowing === "object" && data.pathFollowing !== null)
+      ? data.pathFollowing
+      : {};
+    const pathEnabled = ("enabled" in pathFollowingData && typeof pathFollowingData.enabled === "boolean")
+      ? pathFollowingData.enabled
+      : false;
+    const pathSplineLayerId = ("splineLayerId" in pathFollowingData && typeof pathFollowingData.splineLayerId === "string")
+      ? pathFollowingData.splineLayerId
+      : "";
+    const pathProgress = ("progress" in pathFollowingData && typeof pathFollowingData.progress === "object" && pathFollowingData.progress !== null)
+      ? pathFollowingData.progress
+      : {
           id: "path_progress",
           name: "Path Progress",
           type: "number",
           value: 0,
           animated: false,
           keyframes: [],
-        },
-        autoOrient: data?.pathFollowing?.autoOrient ?? true,
-        bankAngle: data?.pathFollowing?.bankAngle ?? {
+        };
+    const pathAutoOrient = ("autoOrient" in pathFollowingData && typeof pathFollowingData.autoOrient === "boolean")
+      ? pathFollowingData.autoOrient
+      : true;
+    const pathBankAngle = ("bankAngle" in pathFollowingData && typeof pathFollowingData.bankAngle === "object" && pathFollowingData.bankAngle !== null)
+      ? pathFollowingData.bankAngle
+      : {
           id: "bank_angle",
           name: "Bank Angle",
           type: "number",
           value: 0,
           animated: false,
           keyframes: [],
-        },
+        };
+    
+    // Pattern match: shadow ∈ object | undefined → ShadowConfig
+    const shadowData = (typeof data === "object" && data !== null && "shadow" in data && typeof data.shadow === "object" && data.shadow !== null)
+      ? data.shadow
+      : {};
+    const castShadowsValue = (typeof data === "object" && data !== null && "castShadows" in data && typeof data.castShadows === "boolean")
+      ? data.castShadows
+      : false;
+    const shadowEnabled = ("enabled" in shadowData && typeof shadowData.enabled === "boolean")
+      ? shadowData.enabled
+      : castShadowsValue;
+    const shadowTypeValue = ("type" in shadowData && typeof shadowData.type === "string")
+      ? shadowData.type
+      : "pcf";
+    const shadowType = shadowTypeValue === "basic" || shadowTypeValue === "pcf" || shadowTypeValue === "pcfSoft" || shadowTypeValue === "vsm"
+      ? shadowTypeValue
+      : "pcf";
+    const shadowMapSize = ("mapSize" in shadowData && typeof shadowData.mapSize === "number")
+      ? shadowData.mapSize
+      : 1024;
+    const shadowDarknessValue = (typeof data === "object" && data !== null && "shadowDarkness" in data && typeof data.shadowDarkness === "number")
+      ? data.shadowDarkness
+      : 100;
+    const shadowDarkness = ("darkness" in shadowData && typeof shadowData.darkness === "number")
+      ? shadowData.darkness
+      : shadowDarknessValue;
+    const shadowDiffusionValue = (typeof data === "object" && data !== null && "shadowDiffusion" in data && typeof data.shadowDiffusion === "number")
+      ? data.shadowDiffusion
+      : 1;
+    const shadowRadius = ("radius" in shadowData && typeof shadowData.radius === "number")
+      ? shadowData.radius
+      : shadowDiffusionValue;
+    const shadowBias = ("bias" in shadowData && typeof shadowData.bias === "number")
+      ? shadowData.bias
+      : -0.0001;
+    const shadowNormalBias = ("normalBias" in shadowData && typeof shadowData.normalBias === "number")
+      ? shadowData.normalBias
+      : 0;
+    const shadowCameraNear = ("cameraNear" in shadowData && typeof shadowData.cameraNear === "number")
+      ? shadowData.cameraNear
+      : 1;
+    const shadowCameraFar = ("cameraFar" in shadowData && typeof shadowData.cameraFar === "number")
+      ? shadowData.cameraFar
+      : 1000;
+    const shadowCameraSize = ("cameraSize" in shadowData && typeof shadowData.cameraSize === "number")
+      ? shadowData.cameraSize
+      : 500;
+    
+    // Pattern match: lightLinking ∈ object | undefined → LightLinking
+    const lightLinkingData = (typeof data === "object" && data !== null && "lightLinking" in data && typeof data.lightLinking === "object" && data.lightLinking !== null)
+      ? data.lightLinking
+      : {};
+    const linkingModeValue = ("mode" in lightLinkingData && typeof lightLinkingData.mode === "string")
+      ? lightLinkingData.mode
+      : "include";
+    const linkingMode = linkingModeValue === "include" || linkingModeValue === "exclude"
+      ? linkingModeValue
+      : "include";
+    const linkingLayers = ("layers" in lightLinkingData && Array.isArray(lightLinkingData.layers))
+      ? lightLinkingData.layers
+      : [];
+    
+    // Pattern match: animated properties ∈ object | undefined → AnimatableProperty | {}
+    const animatedIntensity = (typeof data === "object" && data !== null && "animatedIntensity" in data && typeof data.animatedIntensity === "object" && data.animatedIntensity !== null)
+      ? data.animatedIntensity
+      : {};
+    const animatedConeAngle = (typeof data === "object" && data !== null && "animatedConeAngle" in data && typeof data.animatedConeAngle === "object" && data.animatedConeAngle !== null)
+      ? data.animatedConeAngle
+      : {};
+    const animatedColor = (typeof data === "object" && data !== null && "animatedColor" in data && typeof data.animatedColor === "object" && data.animatedColor !== null)
+      ? data.animatedColor
+      : {};
+    const animatedColorTemperature = (typeof data === "object" && data !== null && "animatedColorTemperature" in data && typeof data.animatedColorTemperature === "object" && data.animatedColorTemperature !== null)
+      ? data.animatedColorTemperature
+      : {};
+
+    return {
+      lightType,
+      color,
+      colorTemperature,
+      useColorTemperature,
+      intensity,
+      physicalIntensity,
+      usePhysicalIntensity,
+      radius,
+      falloff,
+      falloffDistance,
+      coneAngle,
+      coneFeather,
+      areaWidth,
+      areaHeight,
+
+      pointOfInterest: {
+        enabled: poiEnabled,
+        targetType: poiTargetType,
+        position: poiPosition,
+        targetLayerId: poiTargetLayerId,
+        offset: poiOffset,
+        smoothing: poiSmoothing,
+      },
+
+      pathFollowing: {
+        enabled: pathEnabled,
+        splineLayerId: pathSplineLayerId,
+        progress: pathProgress,
+        autoOrient: pathAutoOrient,
+        bankAngle: pathBankAngle,
       },
 
       shadow: {
-        enabled: data?.shadow?.enabled ?? data?.castShadows ?? false,
-        type: data?.shadow?.type ?? "pcf",
-        mapSize: data?.shadow?.mapSize ?? 1024,
-        darkness: data?.shadow?.darkness ?? data?.shadowDarkness ?? 100,
-        radius: data?.shadow?.radius ?? data?.shadowDiffusion ?? 1,
-        bias: data?.shadow?.bias ?? -0.0001,
-        normalBias: data?.shadow?.normalBias ?? 0,
-        cameraNear: data?.shadow?.cameraNear ?? 1,
-        cameraFar: data?.shadow?.cameraFar ?? 1000,
-        cameraSize: data?.shadow?.cameraSize ?? 500,
+        enabled: shadowEnabled,
+        type: shadowType,
+        mapSize: shadowMapSize,
+        darkness: shadowDarkness,
+        radius: shadowRadius,
+        bias: shadowBias,
+        normalBias: shadowNormalBias,
+        cameraNear: shadowCameraNear,
+        cameraFar: shadowCameraFar,
+        cameraSize: shadowCameraSize,
       },
 
       lightLinking: {
-        mode: data?.lightLinking?.mode ?? "include",
-        layers: data?.lightLinking?.layers ?? [],
+        mode: linkingMode,
+        layers: linkingLayers,
       },
 
-      animatedIntensity: data?.animatedIntensity,
-      animatedConeAngle: data?.animatedConeAngle,
-      animatedColor: data?.animatedColor,
-      animatedColorTemperature: data?.animatedColorTemperature,
+      animatedIntensity,
+      animatedConeAngle,
+      animatedColor,
+      animatedColorTemperature,
     };
   }
 
@@ -460,10 +677,13 @@ export class LightLayer extends BaseLayer {
             ? 0
             : this.lightData.falloffDistance;
         light.decay = this.lightData.falloff === "inverseSquareClamped" ? 2 : 1;
-        light.angle = THREE.MathUtils.degToRad(
-          (this.lightData.coneAngle ?? 90) / 2,
-        );
-        light.penumbra = (this.lightData.coneFeather ?? 50) / 100;
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+        // Pattern match: coneAngle ∈ number | undefined → number (default 90)
+        const coneAngleValue = (typeof this.lightData.coneAngle === "number" && Number.isFinite(this.lightData.coneAngle)) ? this.lightData.coneAngle : 90;
+        light.angle = THREE.MathUtils.degToRad(coneAngleValue / 2);
+        // Pattern match: coneFeather ∈ number | undefined → number (default 50)
+        const coneFeatherValue = (typeof this.lightData.coneFeather === "number" && Number.isFinite(this.lightData.coneFeather)) ? this.lightData.coneFeather : 50;
+        light.penumbra = coneFeatherValue / 100;
         this.configureShadows(light);
         return light;
       }
@@ -480,11 +700,16 @@ export class LightLayer extends BaseLayer {
 
       case "area": {
         initRectAreaLight();
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+        // Pattern match: areaWidth ∈ number | undefined → number (default 100)
+        const areaWidthValue = (typeof this.lightData.areaWidth === "number" && Number.isFinite(this.lightData.areaWidth)) ? this.lightData.areaWidth : 100;
+        // Pattern match: areaHeight ∈ number | undefined → number (default 100)
+        const areaHeightValue = (typeof this.lightData.areaHeight === "number" && Number.isFinite(this.lightData.areaHeight)) ? this.lightData.areaHeight : 100;
         const light = new THREE.RectAreaLight(
           color,
           intensity,
-          this.lightData.areaWidth ?? 100,
-          this.lightData.areaHeight ?? 100,
+          areaWidthValue,
+          areaHeightValue,
         );
         // Area lights don't cast shadows in Three.js by default
         return light;
@@ -876,7 +1101,9 @@ export class LightLayer extends BaseLayer {
   }
 
   setPathSpline(splineLayerId: string | null): void {
-    this.lightData.pathFollowing.splineLayerId = splineLayerId ?? undefined;
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+    // Pattern match: splineLayerId ∈ string | null → string | undefined
+    this.lightData.pathFollowing.splineLayerId = (typeof splineLayerId === "string" && splineLayerId.length > 0) ? splineLayerId : undefined;
   }
 
   // ============================================================================
@@ -898,11 +1125,15 @@ export class LightLayer extends BaseLayer {
       case "light.color.b":
         return this.light.color.b * 255;
       case "light.colorTemperature":
-        return this.lightData.colorTemperature ?? 6500;
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+        // Pattern match: colorTemperature ∈ number | undefined → number (default 6500)
+        return (typeof this.lightData.colorTemperature === "number" && Number.isFinite(this.lightData.colorTemperature)) ? this.lightData.colorTemperature : 6500;
       case "light.coneAngle":
-        return this.lightData.coneAngle ?? 90;
+        // Pattern match: coneAngle ∈ number | undefined → number (default 90)
+        return (typeof this.lightData.coneAngle === "number" && Number.isFinite(this.lightData.coneAngle)) ? this.lightData.coneAngle : 90;
       case "light.penumbra":
-        return this.lightData.coneFeather ?? 50;
+        // Pattern match: coneFeather ∈ number | undefined → number (default 50)
+        return (typeof this.lightData.coneFeather === "number" && Number.isFinite(this.lightData.coneFeather)) ? this.lightData.coneFeather : 50;
       case "light.falloff":
         return this.lightData.falloffDistance;
       case "light.shadow.intensity":
@@ -918,15 +1149,17 @@ export class LightLayer extends BaseLayer {
       case "light.poi.z":
         return this.poiTarget.z;
       case "light.areaSize.width":
-        return this.lightData.areaWidth ?? 100;
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+        // Pattern match: areaWidth ∈ number | undefined → number (default 100)
+        return (typeof this.lightData.areaWidth === "number" && Number.isFinite(this.lightData.areaWidth)) ? this.lightData.areaWidth : 100;
       case "light.areaSize.height":
-        return this.lightData.areaHeight ?? 100;
+        // Pattern match: areaHeight ∈ number | undefined → number (default 100)
+        return (typeof this.lightData.areaHeight === "number" && Number.isFinite(this.lightData.areaHeight)) ? this.lightData.areaHeight : 100;
       case "light.physicalIntensity":
-        return (
-          this.lightData.physicalIntensity ?? this.lightData.intensity * 100
-        );
+        // Pattern match: physicalIntensity ∈ number | undefined → number (fallback to intensity * 100)
+        return (typeof this.lightData.physicalIntensity === "number" && Number.isFinite(this.lightData.physicalIntensity)) ? this.lightData.physicalIntensity : (typeof this.lightData.intensity === "number" && Number.isFinite(this.lightData.intensity) ? this.lightData.intensity * 100 : 100);
       default:
-        return null;
+        throw new Error(`[LightLayer] Invalid property path: "${path}". Expected one of: "light.intensity", "light.color", "light.distance", "light.decay", "light.angle", "light.penumbra", "light.shadowMapSize", "light.shadowBias", "light.shadowRadius", "light.areaWidth", "light.areaHeight", "light.physicalIntensity"`);
     }
   }
 
@@ -997,10 +1230,15 @@ export class LightLayer extends BaseLayer {
         this.updatePointOfInterest(0);
         break;
       case "light.areaSize.width":
-        this.setAreaSize(value, this.lightData.areaHeight ?? 100);
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+        // Pattern match: areaHeight ∈ number | undefined → number (default 100)
+        const areaHeightForWidth = (typeof this.lightData.areaHeight === "number" && Number.isFinite(this.lightData.areaHeight)) ? this.lightData.areaHeight : 100;
+        this.setAreaSize(value, areaHeightForWidth);
         break;
       case "light.areaSize.height":
-        this.setAreaSize(this.lightData.areaWidth ?? 100, value);
+        // Pattern match: areaWidth ∈ number | undefined → number (default 100)
+        const areaWidthForHeight = (typeof this.lightData.areaWidth === "number" && Number.isFinite(this.lightData.areaWidth)) ? this.lightData.areaWidth : 100;
+        this.setAreaSize(areaWidthForHeight, value);
         break;
       case "light.physicalIntensity":
         this.lightData.physicalIntensity = value;
@@ -1069,7 +1307,10 @@ export class LightLayer extends BaseLayer {
     }
 
     // Animated intensity
-    if (this.lightData.animatedIntensity?.animated) {
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const animatedIntensity = (this.lightData != null && typeof this.lightData === "object" && "animatedIntensity" in this.lightData && this.lightData.animatedIntensity != null && typeof this.lightData.animatedIntensity === "object") ? this.lightData.animatedIntensity : undefined;
+    const animatedIntensityAnimated = (animatedIntensity != null && typeof animatedIntensity === "object" && "animated" in animatedIntensity && typeof animatedIntensity.animated === "boolean" && animatedIntensity.animated) ? true : false;
+    if (animatedIntensityAnimated) {
       const intensity = this.evaluator.evaluate(
         this.lightData.animatedIntensity,
         frame,
@@ -1078,8 +1319,10 @@ export class LightLayer extends BaseLayer {
     }
 
     // Animated cone angle
+    const animatedConeAngle = (this.lightData != null && typeof this.lightData === "object" && "animatedConeAngle" in this.lightData && this.lightData.animatedConeAngle != null && typeof this.lightData.animatedConeAngle === "object") ? this.lightData.animatedConeAngle : undefined;
+    const animatedConeAngleAnimated = (animatedConeAngle != null && typeof animatedConeAngle === "object" && "animated" in animatedConeAngle && typeof animatedConeAngle.animated === "boolean" && animatedConeAngle.animated) ? true : false;
     if (
-      this.lightData.animatedConeAngle?.animated &&
+      animatedConeAngleAnimated &&
       this.light instanceof THREE.SpotLight
     ) {
       const angle = this.evaluator.evaluate(
@@ -1093,7 +1336,9 @@ export class LightLayer extends BaseLayer {
     }
 
     // Animated color
-    if (this.lightData.animatedColor?.animated) {
+    const animatedColor = (this.lightData != null && typeof this.lightData === "object" && "animatedColor" in this.lightData && this.lightData.animatedColor != null && typeof this.lightData.animatedColor === "object") ? this.lightData.animatedColor : undefined;
+    const animatedColorAnimated = (animatedColor != null && typeof animatedColor === "object" && "animated" in animatedColor && typeof animatedColor.animated === "boolean" && animatedColor.animated) ? true : false;
+    if (animatedColorAnimated) {
       const color = this.evaluator.evaluate(
         this.lightData.animatedColor,
         frame,
@@ -1102,8 +1347,10 @@ export class LightLayer extends BaseLayer {
     }
 
     // Animated color temperature
+    const animatedColorTemperature = (this.lightData != null && typeof this.lightData === "object" && "animatedColorTemperature" in this.lightData && this.lightData.animatedColorTemperature != null && typeof this.lightData.animatedColorTemperature === "object") ? this.lightData.animatedColorTemperature : undefined;
+    const animatedColorTemperatureAnimated = (animatedColorTemperature != null && typeof animatedColorTemperature === "object" && "animated" in animatedColorTemperature && typeof animatedColorTemperature.animated === "boolean" && animatedColorTemperature.animated) ? true : false;
     if (
-      this.lightData.animatedColorTemperature?.animated &&
+      animatedColorTemperatureAnimated &&
       this.lightData.useColorTemperature
     ) {
       const kelvin = this.evaluator.evaluate(
@@ -1182,11 +1429,14 @@ export class LightLayer extends BaseLayer {
       props["poi.y"] !== undefined ||
       props["poi.z"] !== undefined
     ) {
-      this.poiTarget.set(
-        (props["poi.x"] as number) ?? this.poiTarget.x,
-        (props["poi.y"] as number) ?? this.poiTarget.y,
-        (props["poi.z"] as number) ?? this.poiTarget.z,
-      );
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+      // Pattern match: props["poi.x"] ∈ PropertyValue | undefined → number (fallback to poiTarget.x)
+      const poiXValue = (typeof props["poi.x"] === "number" && Number.isFinite(props["poi.x"])) ? props["poi.x"] : this.poiTarget.x;
+      // Pattern match: props["poi.y"] ∈ PropertyValue | undefined → number (fallback to poiTarget.y)
+      const poiYValue = (typeof props["poi.y"] === "number" && Number.isFinite(props["poi.y"])) ? props["poi.y"] : this.poiTarget.y;
+      // Pattern match: props["poi.z"] ∈ PropertyValue | undefined → number (fallback to poiTarget.z)
+      const poiZValue = (typeof props["poi.z"] === "number" && Number.isFinite(props["poi.z"])) ? props["poi.z"] : this.poiTarget.z;
+      this.poiTarget.set(poiXValue, poiYValue, poiZValue);
       this.updatePointOfInterest(0);
     }
   }
@@ -1232,10 +1482,12 @@ export class LightLayer extends BaseLayer {
     }
 
     if (data.areaWidth !== undefined || data.areaHeight !== undefined) {
-      this.setAreaSize(
-        data.areaWidth ?? this.lightData.areaWidth ?? 100,
-        data.areaHeight ?? this.lightData.areaHeight ?? 100,
-      );
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+      // Pattern match: areaWidth ∈ number | undefined → number (fallback chain: lightData.areaWidth → 100)
+      const areaWidthUpdate = (typeof data.areaWidth === "number" && Number.isFinite(data.areaWidth)) ? data.areaWidth : ((typeof this.lightData.areaWidth === "number" && Number.isFinite(this.lightData.areaWidth)) ? this.lightData.areaWidth : 100);
+      // Pattern match: areaHeight ∈ number | undefined → number (fallback chain: lightData.areaHeight → 100)
+      const areaHeightUpdate = (typeof data.areaHeight === "number" && Number.isFinite(data.areaHeight)) ? data.areaHeight : ((typeof this.lightData.areaHeight === "number" && Number.isFinite(this.lightData.areaHeight)) ? this.lightData.areaHeight : 100);
+      this.setAreaSize(areaWidthUpdate, areaHeightUpdate);
     }
 
     if (data.shadow !== undefined) {

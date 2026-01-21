@@ -493,13 +493,14 @@ except Exception:
       }
       return web.json_response({"status": "success"})
 
-    return web.json_response({"status": "error", "message": "No node_id"}, status=400)
+    if routes is not None:
+      return web.json_response({"status": "error", "message": "No node_id"}, status=400)
 
-  @routes.post("/lattice/compositor/save_project")
-  async def save_project(request):
-    """Save compositor project state with validation."""
-    try:
-      # Check content length before parsing
+    @routes.post("/lattice/compositor/save_project")
+    async def save_project(request):
+      """Save compositor project state with validation."""
+      try:
+        # Check content length before parsing
       content_length = request.content_length or 0
       if content_length > MAX_PROJECT_SIZE_BYTES:
         security_logger.warning(
@@ -554,6 +555,8 @@ except Exception:
         json.dump(validated_project, f, indent=2)
 
       security_logger.info(f"Project saved: {project_id}")
+
+      # 'web' is already imported at the module level; no need to re-import here
 
       return web.json_response(
         {

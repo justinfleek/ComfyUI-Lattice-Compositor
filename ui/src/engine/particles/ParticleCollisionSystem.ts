@@ -8,8 +8,7 @@
  * Extracted from GPUParticleSystem.ts for modularity.
  */
 
-import type { SpatialHashGrid } from "./SpatialHashGrid";
-import { PARTICLE_STRIDE } from "./types";
+import { PARTICLE_STRIDE, type ISpatialHash } from "./types";
 
 // ============================================================================
 // TYPES
@@ -69,24 +68,34 @@ export class ParticleCollisionSystem {
   private config: CollisionConfig;
 
   // Reference to shared spatial hash (set externally)
-  private spatialHash: SpatialHashGrid | null = null;
+  private spatialHash: ISpatialHash | null = null;
 
   constructor(maxParticles: number, config: Partial<CollisionConfig> = {}) {
     // Validate maxParticles to prevent infinite loop
     this.maxParticles = Number.isFinite(maxParticles) && maxParticles > 0
       ? Math.min(Math.floor(maxParticles), 10_000_000)
       : 10000;
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+    const enabled = (typeof config.enabled === "boolean") ? config.enabled : true;
+    const particleCollision = (typeof config.particleCollision === "boolean") ? config.particleCollision : false;
+    const particleRadius = (typeof config.particleRadius === "number" && Number.isFinite(config.particleRadius) && config.particleRadius > 0) ? config.particleRadius : 5;
+    const bounciness = (typeof config.bounciness === "number" && Number.isFinite(config.bounciness) && config.bounciness >= 0) ? config.bounciness : 0.5;
+    const friction = (typeof config.friction === "number" && Number.isFinite(config.friction) && config.friction >= 0) ? config.friction : 0.1;
+    const collisionResponse = (typeof config.collisionResponse === "number" && Number.isFinite(config.collisionResponse) && config.collisionResponse >= 0) ? config.collisionResponse : 0.5;
+    const bounceDamping = (typeof config.bounceDamping === "number" && Number.isFinite(config.bounceDamping) && config.bounceDamping >= 0) ? config.bounceDamping : 0.8;
+    const boundsBehavior = (typeof config.boundsBehavior === "string" && config.boundsBehavior.length > 0) ? config.boundsBehavior : "none";
+    const planes = (Array.isArray(config.planes)) ? config.planes : [];  // Must explicitly copy - collision planes wouldn't work otherwise
     this.config = {
-      enabled: config.enabled ?? true,
-      particleCollision: config.particleCollision ?? false,
-      particleRadius: config.particleRadius ?? 5,
-      bounciness: config.bounciness ?? 0.5,
-      friction: config.friction ?? 0.1,
-      collisionResponse: config.collisionResponse ?? 0.5,
-      bounceDamping: config.bounceDamping ?? 0.8,
+      enabled,
+      particleCollision,
+      particleRadius,
+      bounciness,
+      friction,
+      collisionResponse,
+      bounceDamping,
       bounds: config.bounds,
-      boundsBehavior: config.boundsBehavior ?? "none",
-      planes: config.planes ?? [],  // Must explicitly copy - collision planes wouldn't work otherwise
+      boundsBehavior,
+      planes,
     };
   }
 
@@ -94,7 +103,7 @@ export class ParticleCollisionSystem {
    * Set the shared spatial hash grid reference
    * This should be called once during initialization
    */
-  setSpatialHash(hash: SpatialHashGrid): void {
+  setSpatialHash(hash: ISpatialHash): void {
     this.spatialHash = hash;
   }
 
@@ -362,7 +371,8 @@ export class ParticleCollisionSystem {
         const dist = dpx * normalX + dpy * normalY + dpz * normalZ;
 
         // Check if particle has crossed the plane (dist < 0 means behind plane)
-        const particleRadius = this.config.particleRadius ?? 5;
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+        const particleRadius = (typeof this.config.particleRadius === "number" && Number.isFinite(this.config.particleRadius) && this.config.particleRadius > 0) ? this.config.particleRadius : 5;
         if (dist < particleRadius) {
           // Particle is touching or behind plane
           const bounciness = Number.isFinite(plane.bounciness) ? plane.bounciness : 0.5;
@@ -624,8 +634,10 @@ export class ParticleCollisionSystem {
 
   /**
    * Get all collision planes
+   * Lean4/PureScript/Haskell: Explicit pattern matching - no lazy || []
    */
   getPlanes(): CollisionPlane[] {
-    return [...(this.config.planes || [])];
+    const planes = (Array.isArray(this.config.planes)) ? this.config.planes : [];
+    return [...planes];
   }
 }

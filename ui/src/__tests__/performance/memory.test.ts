@@ -14,8 +14,10 @@
 
 import { describe, test, expect, beforeEach } from 'vitest';
 import { setActivePinia, createPinia } from 'pinia';
-import { useCompositorStore } from '@/stores/compositorStore';
+import { useProjectStore } from '@/stores/projectStore';
 import { useLayerStore } from '@/stores/layerStore';
+import { useAnimationStore } from '@/stores/animationStore';
+import { useKeyframeStore } from '@/stores/keyframeStore';
 import { motionEngine } from '@/engine/MotionEngine';
 
 // Helper to get current heap usage
@@ -96,15 +98,15 @@ describe('Memory: Layer Operations', () => {
   // Note: Without --expose-gc, these tests measure accumulated garbage, not true leaks.
   // Run with: node --expose-gc node_modules/.bin/vitest run performance/memory.test.ts
   test('create/delete 1000 layers does not leak', async () => {
-    const store = useCompositorStore();
+    const projectStore = useProjectStore();
     await waitForGC();
     const initialHeap = getHeapUsed();
 
     // Stress test: create and delete many layers
     const layerStore = useLayerStore();
     for (let i = 0; i < 1000; i++) {
-      const layer = layerStore.createLayer(store, 'solid', `Layer ${i}`);
-      layerStore.deleteLayer(store, layer.id);
+      const layer = layerStore.createLayer('solid', `Layer ${i}`);
+      layerStore.deleteLayer(layer.id);
     }
 
     await waitForGC();
@@ -120,24 +122,24 @@ describe('Memory: Layer Operations', () => {
   });
 
   test('nested group creation/deletion does not leak', async () => {
-    const store = useCompositorStore();
+    const projectStore = useProjectStore();
     const layerStore = useLayerStore();
     await waitForGC();
     const initialHeap = getHeapUsed();
 
     for (let i = 0; i < 100; i++) {
       // Create nested structure
-      const groupLayer = layerStore.createLayer(store, 'group', `Group ${i}`);
+      const groupLayer = layerStore.createLayer('group', `Group ${i}`);
       const groupId = groupLayer.id;
 
       // Add child layers
       for (let j = 0; j < 10; j++) {
-        const child = layerStore.createLayer(store, 'solid', `Child ${j}`);
-        layerStore.deleteLayer(store, child.id);
+        const child = layerStore.createLayer('solid', `Child ${j}`);
+        layerStore.deleteLayer(child.id);
       }
 
       // Delete entire group
-      layerStore.deleteLayer(store, groupId);
+      layerStore.deleteLayer(groupId);
     }
 
     await waitForGC();
@@ -158,22 +160,24 @@ describe('Memory: Frame Playback', () => {
   });
 
   test('playing 10000 frames does not leak', async () => {
-    const store = useCompositorStore();
+    const projectStore = useProjectStore();
+    const layerStore = useLayerStore();
+    const keyframeStore = useKeyframeStore();
     await waitForGC();
     const initialHeap = getHeapUsed();
 
     // Setup a composition with layers
-    const layerStore = useLayerStore();
-    const layer = layerStore.createLayer(store, 'solid', 'Test Layer');
+    const layer = layerStore.createLayer('solid', 'Test Layer');
 
     // Add keyframes for opacity animation
-    store.setFrame(0);
-    store.addKeyframe(layer.id, 'opacity', 0);
-    store.setFrame(100);
-    store.addKeyframe(layer.id, 'opacity', 100);
+    const comp = projectStore.getActiveComp();
+    if (comp) comp.currentFrame = 0;
+    keyframeStore.addKeyframe(layer.id, 'opacity', 0);
+    if (comp) comp.currentFrame = 100;
+    keyframeStore.addKeyframe(layer.id, 'opacity', 100);
 
     // Play through many frames
-    const project = store.project;
+    const project = projectStore.project;
     for (let frame = 0; frame < 10000; frame++) {
       motionEngine.evaluate(frame % 100, project);
     }
@@ -212,24 +216,24 @@ describe('Memory: Undo/Redo', () => {
    * NO SHORTCUTS OR HALF-MEASURES ACCEPTED.
    */
   test.fails('500 undo/redo cycles does not leak (KNOWN BUG)', async () => {
-    const store = useCompositorStore();
+    const projectStore = useProjectStore();
     await waitForGC();
     const initialHeap = getHeapUsed();
 
     const layerStore = useLayerStore();
     for (let i = 0; i < 500; i++) {
       // Make a change
-      layerStore.createLayer(store, 'solid', `Layer ${i}`);
-      store.pushHistory();
+      layerStore.createLayer('solid', `Layer ${i}`);
+      projectStore.pushHistory();
 
       // Undo
-      store.undo();
+      projectStore.undo();
 
       // Redo
-      store.redo();
+      projectStore.redo();
 
       // Undo again
-      store.undo();
+      projectStore.undo();
     }
 
     await waitForGC();
@@ -249,18 +253,18 @@ describe('Memory: Effect Processing', () => {
   test.skip('processing 1000 effect stacks does not leak', async () => {
     // TODO: Implement when effect processing API is available
     // This requires canvas/ImageData creation which may not be available in Node.js
-    const store = useCompositorStore();
+    const projectStore = useProjectStore();
     await waitForGC();
     const initialHeap = getHeapUsed();
 
     // Create test layer with effects
     const layerStore = useLayerStore();
-    const layer = layerStore.createLayer(store, 'solid', 'Effect Test');
+    const layer = layerStore.createLayer('solid', 'Effect Test');
     // Add effects (when API is available)
     // store.addEffect(layer.id, 'blur', { radius: 10 });
 
     // Process many effect stacks
-    const project = store.project;
+    const project = projectStore.project;
     for (let i = 0; i < 1000; i++) {
       // Evaluate frame with effects
       motionEngine.evaluate(i % 100, project);

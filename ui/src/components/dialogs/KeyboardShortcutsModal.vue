@@ -79,7 +79,11 @@ watch(
   (isVisible) => {
     if (isVisible) {
       nextTick(() => {
-        searchInput.value?.focus();
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+        const searchInputElement = searchInput.value;
+        if (searchInputElement != null && typeof searchInputElement === "object" && typeof searchInputElement.focus === "function") {
+          searchInputElement.focus();
+        }
       });
     } else {
       searchQuery.value = "";

@@ -7,6 +7,7 @@
  * @see docs/graphs/layerActions.md
  */
 
+import { isFiniteNumber } from "@/utils/typeGuards";
 import type { AnimatableProperty, Layer, NestedCompData } from "@/types/project";
 import { createAnimatableProperty, isLayerOfType } from "@/types/project";
 import { storeLogger } from "@/utils/logger";
@@ -104,7 +105,10 @@ export function reverseLayer(
   projectStore.pushHistory();
 
   if (isLayerOfType(layer, "video") && layer.data) {
-    layer.data.speed = -(layer.data.speed ?? 1);
+    // Type proof: speed ∈ ℝ ∪ {undefined} → ℝ
+    const speedValue = layer.data.speed;
+    const speed = isFiniteNumber(speedValue) && speedValue !== 0 ? speedValue : 1;
+    layer.data.speed = -speed;
   } else if (layer.type === "nestedComp" && layer.data) {
     const nestedData = layer.data as NestedCompData;
     if (nestedData.timewarpEnabled && nestedData.timewarpSpeed) {
@@ -147,7 +151,10 @@ export function freezeFrameAtPlayhead(
   projectStore.pushHistory();
 
   const activeComp = projectStore.getActiveComp();
-  const currentFrame = activeComp?.currentFrame ?? 0;
+  // Type proof: currentFrame ∈ ℕ ∪ {undefined} → ℕ
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const currentFrameValue = (activeComp != null && typeof activeComp === "object" && "currentFrame" in activeComp && typeof activeComp.currentFrame === "number") ? activeComp.currentFrame : undefined;
+  const currentFrame = isFiniteNumber(currentFrameValue) && Number.isInteger(currentFrameValue) && currentFrameValue >= 0 ? currentFrameValue : 0;
   const fps = projectStore.getFps();
   const sourceTime = currentFrame / fps;
 
@@ -175,10 +182,17 @@ export function freezeFrameAtPlayhead(
       },
       {
         id: `kf_freeze_end_${Date.now() + 1}`,
-        frame:
-          (layer.endFrame ??
-            activeComp?.settings.frameCount ??
-            81) - 1,
+        frame: (() => {
+          // Type proof: endFrame ∈ ℕ ∪ {undefined} → ℕ
+          const endFrameValue = layer.endFrame;
+          // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+          const settings = (activeComp != null && typeof activeComp === "object" && "settings" in activeComp && activeComp.settings != null && typeof activeComp.settings === "object") ? activeComp.settings : undefined;
+          const frameCountValue = (settings != null && typeof settings === "object" && "frameCount" in settings && typeof settings.frameCount === "number") ? settings.frameCount : undefined;
+          const endFrame = isFiniteNumber(endFrameValue) && Number.isInteger(endFrameValue) && endFrameValue >= 0
+            ? endFrameValue
+            : (isFiniteNumber(frameCountValue) && Number.isInteger(frameCountValue) && frameCountValue > 0 ? frameCountValue : 81);
+          return endFrame - 1;
+        })(),
         value: sourceTime,
         interpolation: "hold" as const,
         controlMode: "smooth" as const,
@@ -215,21 +229,28 @@ export function splitLayerAtPlayhead(
     .getActiveCompLayers()
     .find((l: Layer) => l.id === layerId);
   if (!layer) {
-    storeLogger.warn("Layer not found for split:", layerId);
-    return null;
+    throw new Error(`[LayerStore] Cannot split layer: Layer "${layerId}" not found`);
   }
 
   const activeComp = projectStore.getActiveComp();
-  const currentFrame = activeComp?.currentFrame ?? 0;
-  const startFrame = layer.startFrame ?? 0;
-  const endFrame =
-    layer.endFrame ??
-    activeComp?.settings.frameCount ??
-    81;
+  // Type proof: currentFrame ∈ ℕ ∪ {undefined} → ℕ
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const currentFrameValue = (activeComp != null && typeof activeComp === "object" && "currentFrame" in activeComp && typeof activeComp.currentFrame === "number") ? activeComp.currentFrame : undefined;
+  const currentFrame = isFiniteNumber(currentFrameValue) && Number.isInteger(currentFrameValue) && currentFrameValue >= 0 ? currentFrameValue : 0;
+  // Type proof: startFrame ∈ ℕ ∪ {undefined} → ℕ
+  const startFrameValue = layer.startFrame;
+  const startFrame = isFiniteNumber(startFrameValue) && Number.isInteger(startFrameValue) && startFrameValue >= 0 ? startFrameValue : 0;
+  // Type proof: endFrame ∈ ℕ ∪ {undefined} → ℕ
+  const endFrameValue = layer.endFrame;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const settings = (activeComp != null && typeof activeComp === "object" && "settings" in activeComp && activeComp.settings != null && typeof activeComp.settings === "object") ? activeComp.settings : undefined;
+  const frameCountValue = (settings != null && typeof settings === "object" && "frameCount" in settings && typeof settings.frameCount === "number") ? settings.frameCount : undefined;
+  const endFrame = isFiniteNumber(endFrameValue) && Number.isInteger(endFrameValue) && endFrameValue >= 0
+    ? endFrameValue
+    : (isFiniteNumber(frameCountValue) && Number.isInteger(frameCountValue) && frameCountValue > 0 ? frameCountValue : 81);
 
   if (currentFrame <= startFrame || currentFrame >= endFrame) {
-    storeLogger.warn("Split point must be within layer bounds");
-    return null;
+    throw new Error(`[LayerStore] Cannot split layer: Split point ${currentFrame} must be within layer bounds (${startFrame} < frame < ${endFrame})`);
   }
 
   projectStore.pushHistory();
@@ -247,8 +268,12 @@ export function splitLayerAtPlayhead(
 
   if (isLayerOfType(newLayer, "video") && newLayer.data) {
     const fps = projectStore.getFps();
-    const originalStartTime = newLayer.data.startTime ?? 0;
-    const speed = newLayer.data.speed ?? 1;
+    // Type proof: startTime ∈ ℝ ∪ {undefined} → ℝ
+    const startTimeValue = newLayer.data.startTime;
+    const originalStartTime = isFiniteNumber(startTimeValue) && startTimeValue >= 0 ? startTimeValue : 0;
+    // Type proof: speed ∈ ℝ ∪ {undefined} → ℝ
+    const speedValue = newLayer.data.speed;
+    const speed = isFiniteNumber(speedValue) && speedValue !== 0 ? speedValue : 1;
     const frameOffset = currentFrame - startFrame;
     const timeOffset = (frameOffset / fps) * speed;
     newLayer.data.startTime = originalStartTime + timeOffset;
@@ -297,12 +322,20 @@ export function enableSpeedMap(
   projectStore.pushHistory();
 
   const activeComp = projectStore.getActiveComp();
-  const compositionFps = fps ?? projectStore.getFps();
-  const layerStartFrame = layer.startFrame ?? 0;
-  const layerEndFrame =
-    layer.endFrame ??
-    activeComp?.settings.frameCount ??
-    81;
+  // Type proof: fps ∈ ℝ ∪ {undefined} → ℝ
+  const fpsValue = fps;
+  const compositionFps = isFiniteNumber(fpsValue) && fpsValue > 0 ? fpsValue : projectStore.getFps();
+  // Type proof: startFrame ∈ ℕ ∪ {undefined} → ℕ
+  const layerStartFrameValue = layer.startFrame;
+  const layerStartFrame = isFiniteNumber(layerStartFrameValue) && Number.isInteger(layerStartFrameValue) && layerStartFrameValue >= 0 ? layerStartFrameValue : 0;
+  // Type proof: endFrame ∈ ℕ ∪ {undefined} → ℕ
+  const layerEndFrameValue = layer.endFrame;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const settings = (activeComp != null && typeof activeComp === "object" && "settings" in activeComp && activeComp.settings != null && typeof activeComp.settings === "object") ? activeComp.settings : undefined;
+  const activeCompFrameCountValue = (settings != null && typeof settings === "object" && "frameCount" in settings && typeof settings.frameCount === "number") ? settings.frameCount : undefined;
+  const layerEndFrame = isFiniteNumber(layerEndFrameValue) && Number.isInteger(layerEndFrameValue) && layerEndFrameValue >= 0
+    ? layerEndFrameValue
+    : (isFiniteNumber(activeCompFrameCountValue) && Number.isInteger(activeCompFrameCountValue) && activeCompFrameCountValue > 0 ? activeCompFrameCountValue : 81);
 
   if (layer.data) {
     const data = layer.data as SpeedMappableData;
@@ -408,7 +441,10 @@ export function toggleSpeedMap(
 
   type ToggleableData = { speedMapEnabled?: boolean };
   const data = layer.data as ToggleableData | null;
-  const isCurrentlyEnabled = data?.speedMapEnabled ?? false;
+  // Type proof: speedMapEnabled ∈ boolean | undefined → boolean
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const speedMapEnabledValue = (data != null && typeof data === "object" && "speedMapEnabled" in data && typeof data.speedMapEnabled === "boolean") ? data.speedMapEnabled : undefined;
+  const isCurrentlyEnabled = speedMapEnabledValue === true;
 
   if (isCurrentlyEnabled) {
     disableSpeedMap(layerId);

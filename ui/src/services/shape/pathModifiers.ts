@@ -206,16 +206,52 @@ function getPathLength(path: BezierPath): number {
   return totalLength;
 }
 
-/** Get point and tangent at distance along path */
+/**
+ * Get point and tangent at distance along path
+ * 
+ * System F/Omega proof: Explicit validation of path validity and distance
+ * Type proof: path ∈ BezierPath, targetDistance ∈ number → { point: Point2D; tangent: Point2D } (non-nullable)
+ * Mathematical proof: Path must have at least 2 vertices and non-zero length to calculate point at distance
+ * Geometric proof: Point at distance requires valid bezier path with measurable length
+ * Pattern proof: Invalid path or zero length is an explicit failure condition, not a lazy null return
+ */
 function getPointAtDistance(
   path: BezierPath,
   targetDistance: number,
   totalLength?: number,
-): { point: Point2D; tangent: Point2D } | null {
-  if (path.vertices.length < 2) return null;
+): { point: Point2D; tangent: Point2D } {
+  // System F/Omega proof: Explicit validation of path vertex count
+  // Type proof: path.vertices ∈ Array<BezierVertex>
+  // Mathematical proof: Path must have at least 2 vertices to form a bezier segment
+  // Geometric proof: A bezier curve requires at least 2 control points
+  if (!Array.isArray(path.vertices) || path.vertices.length < 2) {
+    throw new Error(
+      `[PathModifiers] Cannot get point at distance: Path has insufficient vertices. ` +
+      `Path vertices length: ${Array.isArray(path.vertices) ? path.vertices.length : "invalid"}, minimum required: 2. ` +
+      `Target distance: ${targetDistance}. ` +
+      `Path must have at least 2 vertices to form a bezier segment. ` +
+      `Wrap in try/catch if "invalid path" is an expected state.`
+    );
+  }
 
-  const pathLen = totalLength ?? getPathLength(path);
-  if (pathLen < 0.001) return null;
+  // Type proof: totalLength ∈ number | undefined → number
+  const pathLen = (typeof totalLength === "number" && Number.isFinite(totalLength) && totalLength >= 0)
+    ? totalLength
+    : getPathLength(path);
+  
+  // System F/Omega proof: Explicit validation of path length
+  // Type proof: pathLen ∈ number
+  // Mathematical proof: Path length must be > 0 to calculate point at distance
+  // Geometric proof: Zero-length path has no measurable distance
+  if (typeof pathLen !== "number" || !Number.isFinite(pathLen) || pathLen < 0.001) {
+    throw new Error(
+      `[PathModifiers] Cannot get point at distance: Path length is zero or invalid. ` +
+      `Path length: ${pathLen}, minimum required: 0.001. ` +
+      `Target distance: ${targetDistance}, path vertices: ${path.vertices.length}. ` +
+      `Path must have measurable length (> 0.001) to calculate point at distance. ` +
+      `Wrap in try/catch if "zero-length path" is an expected state.`
+    );
+  }
 
   let accumulatedLength = 0;
   const numSegments = path.closed
@@ -479,12 +515,24 @@ export function zigZagPath(
     totalLength /
     (ridgesPerSegment * (path.vertices.length - (path.closed ? 0 : 1)));
 
+  // System F/Omega proof: Validate path before calling utility
+  // Type proof: path.vertices.length ∈ number
+  // Mathematical proof: Path must have at least 2 vertices for getPointAtDistance
+  if (path.vertices.length < 2) {
+    return clonePath(path);
+  }
+  
+  // Validate path length
+  if (typeof totalLength !== "number" || !Number.isFinite(totalLength) || totalLength < 0.001) {
+    return clonePath(path);
+  }
+
   let currentDistance = 0;
   let zigDirection = 1;
 
   while (currentDistance < totalLength) {
+    // Path validated above - safe to call utility
     const pointData = getPointAtDistance(path, currentDistance, totalLength);
-    if (!pointData) break;
 
     // Calculate perpendicular offset
     const perp = perpendicular(pointData.tangent);
@@ -636,10 +684,22 @@ export function wavePath(
 
   const result: BezierVertex[] = [];
 
+  // System F/Omega proof: Validate path before calling utility
+  // Type proof: path.vertices.length ∈ number
+  // Mathematical proof: Path must have at least 2 vertices for getPointAtDistance
+  if (path.vertices.length < 2) {
+    return clonePath(path);
+  }
+  
+  // Validate path length
+  if (typeof totalLength !== "number" || !Number.isFinite(totalLength) || totalLength < 0.001) {
+    return clonePath(path);
+  }
+
   for (let i = 0; i <= totalSamples; i++) {
     const distance = Math.min(i * sampleDistance, totalLength - 0.001);
+    // Path validated above - safe to call utility
     const pointData = getPointAtDistance(path, distance, totalLength);
-    if (!pointData) continue;
 
     // Calculate wave position (0 to 1 along path)
     const t = distance / totalLength;

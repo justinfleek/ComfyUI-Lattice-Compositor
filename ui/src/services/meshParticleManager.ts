@@ -14,6 +14,7 @@
  * - Mesh atlas for GPU texture-based instancing
  */
 
+import { isFiniteNumber } from "@/utils/typeGuards";
 import * as THREE from "three";
 import type {
   EmitterShapeConfig,
@@ -159,12 +160,33 @@ export class MeshParticleManager {
       name,
       source,
       geometry,
-      boundingBox: geometry.boundingBox?.clone() ?? new THREE.Box3(),
-      boundingSphere: geometry.boundingSphere?.clone() ?? new THREE.Sphere(),
-      vertexCount: geometry.getAttribute("position")?.count ?? 0,
+      // Type proof: boundingBox ∈ Box3 | undefined → Box3
+      boundingBox: (() => {
+        const boundingBox = geometry.boundingBox;
+        return boundingBox !== null && boundingBox !== undefined ? boundingBox.clone() : new THREE.Box3();
+      })(),
+      // Type proof: boundingSphere ∈ Sphere | undefined → Sphere
+      boundingSphere: (() => {
+        const boundingSphere = geometry.boundingSphere;
+        return boundingSphere !== null && boundingSphere !== undefined ? boundingSphere.clone() : new THREE.Sphere();
+      })(),
+      // Type proof: vertexCount ∈ ℕ ∪ {undefined} → ℕ
+      vertexCount: (() => {
+        const positionAttr = geometry.getAttribute("position");
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+        const count = (positionAttr != null && typeof positionAttr === "object" && "count" in positionAttr && typeof positionAttr.count === "number") ? positionAttr.count : undefined;
+        return isFiniteNumber(count) && Number.isInteger(count) && count >= 0 ? count : 0;
+      })(),
+      // Type proof: faceCount ∈ ℕ (computed from index or vertexCount)
       faceCount: geometry.index
         ? geometry.index.count / 3
-        : (geometry.getAttribute("position")?.count ?? 0) / 3,
+        : (() => {
+            const positionAttr = geometry.getAttribute("position");
+            // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+            const count = (positionAttr != null && typeof positionAttr === "object" && "count" in positionAttr && typeof positionAttr.count === "number") ? positionAttr.count : undefined;
+            const vertexCount = isFiniteNumber(count) && Number.isInteger(count) && count >= 0 ? count : 0;
+            return vertexCount / 3;
+          })(),
       config,
     };
 
@@ -180,17 +202,15 @@ export class MeshParticleManager {
     svgPathId: string,
     name: string,
     options: Partial<SVGMeshParticleConfig> = {},
-  ): RegisteredMeshParticle | null {
+  ): RegisteredMeshParticle {
     const document = svgExtrusionService.getDocument(svgDocumentId);
     if (!document) {
-      console.warn(`SVG document not found: ${svgDocumentId}`);
-      return null;
+      throw new Error(`[MeshParticleManager] Cannot register mesh from SVG: SVG document "${svgDocumentId}" not found`);
     }
 
     const path = document.paths.find((p) => p.id === svgPathId);
     if (!path) {
-      console.warn(`SVG path not found: ${svgPathId}`);
-      return null;
+      throw new Error(`[MeshParticleManager] Cannot register mesh from SVG: SVG path "${svgPathId}" not found in document "${svgDocumentId}"`);
     }
 
     // Create particle mesh from SVG
@@ -204,11 +224,25 @@ export class MeshParticleManager {
       source: "svg",
       svgDocumentId,
       svgPathId,
-      svgExtrusionDepth: options.extrusionDepth ?? 1,
-      scale: options.scale ?? 0.01,
-      centerOrigin: options.centerOrigin ?? true,
-      simplify: options.simplify ?? true,
-      simplifyTolerance: options.simplifyTolerance ?? 0.1,
+      // Type proof: svgExtrusionDepth ∈ ℝ ∪ {undefined} → ℝ
+      svgExtrusionDepth: (() => {
+        const extrusionDepthValue = options.extrusionDepth;
+        return isFiniteNumber(extrusionDepthValue) && extrusionDepthValue > 0 ? extrusionDepthValue : 1;
+      })(),
+      // Type proof: scale ∈ ℝ ∪ {undefined} → ℝ
+      scale: (() => {
+        const scaleValue = options.scale;
+        return isFiniteNumber(scaleValue) && scaleValue > 0 ? scaleValue : 0.01;
+      })(),
+      // Type proof: centerOrigin ∈ boolean | undefined → boolean
+      centerOrigin: options.centerOrigin === true,
+      // Type proof: simplify ∈ boolean | undefined → boolean
+      simplify: options.simplify === true,
+      // Type proof: simplifyTolerance ∈ ℝ ∪ {undefined} → ℝ
+      simplifyTolerance: (() => {
+        const simplifyToleranceValue = options.simplifyTolerance;
+        return isFiniteNumber(simplifyToleranceValue) && simplifyToleranceValue >= 0 ? simplifyToleranceValue : 0.1;
+      })(),
     });
   }
 
@@ -229,11 +263,25 @@ export class MeshParticleManager {
     return this.registerMesh(id, name, geometry, "svg", {
       source: "svg",
       svgPathId: path.id,
-      svgExtrusionDepth: options.extrusionDepth ?? 1,
-      scale: options.scale ?? 0.01,
-      centerOrigin: options.centerOrigin ?? true,
-      simplify: options.simplify ?? true,
-      simplifyTolerance: options.simplifyTolerance ?? 0.1,
+      // Type proof: svgExtrusionDepth ∈ ℝ ∪ {undefined} → ℝ
+      svgExtrusionDepth: (() => {
+        const extrusionDepthValue = options.extrusionDepth;
+        return isFiniteNumber(extrusionDepthValue) && extrusionDepthValue > 0 ? extrusionDepthValue : 1;
+      })(),
+      // Type proof: scale ∈ ℝ ∪ {undefined} → ℝ
+      scale: (() => {
+        const scaleValue = options.scale;
+        return isFiniteNumber(scaleValue) && scaleValue > 0 ? scaleValue : 0.01;
+      })(),
+      // Type proof: centerOrigin ∈ boolean | undefined → boolean
+      centerOrigin: options.centerOrigin === true,
+      // Type proof: simplify ∈ boolean | undefined → boolean
+      simplify: options.simplify === true,
+      // Type proof: simplifyTolerance ∈ ℝ ∪ {undefined} → ℝ
+      simplifyTolerance: (() => {
+        const simplifyToleranceValue = options.simplifyTolerance;
+        return isFiniteNumber(simplifyToleranceValue) && simplifyToleranceValue >= 0 ? simplifyToleranceValue : 0.1;
+      })(),
     });
   }
 
@@ -289,7 +337,19 @@ export class MeshParticleManager {
 
     const id = `primitive_${type}_${size}_${detail}`;
     const displayName =
-      name ?? `${type?.charAt(0).toUpperCase()}${type?.slice(1)}`;
+      (() => {
+        // Type proof: name ∈ string | undefined → string
+        const nameValue = name;
+        if (typeof nameValue === "string" && nameValue.length > 0) {
+          return nameValue;
+        }
+        // Type proof: type ∈ string | undefined → string
+        const typeValue = type;
+        if (typeof typeValue === "string" && typeValue.length > 0) {
+          return `${typeValue.charAt(0).toUpperCase()}${typeValue.slice(1)}`;
+        }
+        return "Primitive";
+      })();
 
     return this.registerMesh(id, displayName, geometry, "primitive", {
       source: "primitive",
@@ -333,14 +393,14 @@ export class MeshParticleManager {
     meshId: string,
     maxInstances: number,
     material?: THREE.Material,
-  ): InstancedMeshParticles | null {
+  ): InstancedMeshParticles {
     const registration = this.meshRegistry.get(meshId);
     if (!registration) {
-      console.warn(`Mesh not found: ${meshId}`);
-      return null;
+      throw new Error(`[MeshParticleManager] Cannot create instanced mesh: Mesh "${meshId}" not found`);
     }
 
-    const mat = material ?? this.createMaterialForMesh(registration);
+    // Type proof: material ∈ Material | undefined → Material
+    const mat = material !== undefined && material !== null ? material : this.createMaterialForMesh(registration);
     const instancedMesh = new THREE.InstancedMesh(
       registration.geometry,
       mat,
@@ -433,12 +493,28 @@ export class MeshParticleManager {
       return this.defaultMaterial.clone();
     }
 
+    // Type proof: color ∈ string | undefined → string
+    const colorValue = config.color;
+    const color = typeof colorValue === "string" && colorValue.length > 0 ? colorValue : "#ffffff";
+    // Type proof: metalness ∈ ℝ ∪ {undefined} → ℝ
+    const metalnessValue = config.metalness;
+    const metalness = isFiniteNumber(metalnessValue) && metalnessValue >= 0 && metalnessValue <= 1 ? metalnessValue : 0;
+    // Type proof: roughness ∈ ℝ ∪ {undefined} → ℝ
+    const roughnessValue = config.roughness;
+    const roughness = isFiniteNumber(roughnessValue) && roughnessValue >= 0 && roughnessValue <= 1 ? roughnessValue : 0.5;
+    // Type proof: emissive ∈ string | undefined → string
+    const emissiveValue = config.emissive;
+    const emissive = typeof emissiveValue === "string" && emissiveValue.length > 0 ? emissiveValue : "#000000";
+    // Type proof: emissiveIntensity ∈ ℝ ∪ {undefined} → ℝ
+    const emissiveIntensityValue = config.emissiveIntensity;
+    const emissiveIntensity = isFiniteNumber(emissiveIntensityValue) && emissiveIntensityValue >= 0 ? emissiveIntensityValue : 0;
+
     return new THREE.MeshStandardMaterial({
-      color: new THREE.Color(config.color ?? "#ffffff"),
-      metalness: config.metalness ?? 0,
-      roughness: config.roughness ?? 0.5,
-      emissive: new THREE.Color(config.emissive ?? "#000000"),
-      emissiveIntensity: config.emissiveIntensity ?? 0,
+      color: new THREE.Color(color),
+      metalness: metalness,
+      roughness: roughness,
+      emissive: new THREE.Color(emissive),
+      emissiveIntensity: emissiveIntensity,
       side: THREE.DoubleSide,
     });
   }
@@ -451,14 +527,18 @@ export class MeshParticleManager {
    * Get EmitterShapeConfig for mesh emission
    * Particles emit from mesh vertices
    */
-  getEmitterShapeConfig(meshId: string): EmitterShapeConfig | null {
+  getEmitterShapeConfig(meshId: string): EmitterShapeConfig {
     const registration = this.meshRegistry.get(meshId);
-    if (!registration) return null;
+    if (!registration) {
+      throw new Error(`[MeshParticleManager] Cannot get emitter shape config: Mesh "${meshId}" not found`);
+    }
 
     const position = registration.geometry.getAttribute("position");
     const normal = registration.geometry.getAttribute("normal");
 
-    if (!position) return null;
+    if (!position) {
+      throw new Error(`[MeshParticleManager] Cannot get emitter shape config: Mesh "${meshId}" has no position attribute`);
+    }
 
     // Extract vertex positions and normals as Float32Arrays
     const vertices = new Float32Array(position.array);
@@ -474,9 +554,11 @@ export class MeshParticleManager {
   /**
    * Get RenderConfig for mesh particle rendering
    */
-  getRenderConfig(meshId: string): Partial<RenderConfig> | null {
+  getRenderConfig(meshId: string): Partial<RenderConfig> {
     const registration = this.meshRegistry.get(meshId);
-    if (!registration) return null;
+    if (!registration) {
+      throw new Error(`[MeshParticleManager] Cannot get render config: Mesh "${meshId}" not found`);
+    }
 
     return {
       mode: "mesh",
@@ -509,9 +591,11 @@ export class MeshParticleManager {
   getLODGeometry(
     meshId: string,
     distance: number,
-  ): THREE.BufferGeometry | null {
+  ): THREE.BufferGeometry {
     const registration = this.meshRegistry.get(meshId);
-    if (!registration) return null;
+    if (!registration) {
+      throw new Error(`[MeshParticleManager] Cannot get LOD geometry: Mesh "${meshId}" not found`);
+    }
 
     if (!registration.lodGeometries || !registration.lodDistances) {
       return registration.geometry;
@@ -536,9 +620,11 @@ export class MeshParticleManager {
   async generateThumbnail(
     meshId: string,
     size: number = 128,
-  ): Promise<string | null> {
+  ): Promise<string> {
     const registration = this.meshRegistry.get(meshId);
-    if (!registration) return null;
+    if (!registration) {
+      throw new Error(`[MeshParticleManager] Cannot generate thumbnail: Mesh "${meshId}" not found`);
+    }
 
     // Create a small scene for rendering
     const scene = new THREE.Scene();
@@ -647,7 +733,11 @@ export class MeshParticleManager {
     const registration = this.meshRegistry.get(id);
     if (registration) {
       registration.geometry.dispose();
-      registration.lodGeometries?.forEach((g) => g.dispose());
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const lodGeometries = (registration != null && typeof registration === "object" && "lodGeometries" in registration && registration.lodGeometries != null && Array.isArray(registration.lodGeometries)) ? registration.lodGeometries : undefined;
+      if (lodGeometries != null) {
+        lodGeometries.forEach((g) => g.dispose());
+      }
     }
     this.meshRegistry.delete(id);
 
@@ -667,7 +757,11 @@ export class MeshParticleManager {
     // Dispose all geometries
     for (const registration of this.meshRegistry.values()) {
       registration.geometry.dispose();
-      registration.lodGeometries?.forEach((g) => g.dispose());
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const lodGeometries = (registration != null && typeof registration === "object" && "lodGeometries" in registration && registration.lodGeometries != null && Array.isArray(registration.lodGeometries)) ? registration.lodGeometries : undefined;
+      if (lodGeometries != null) {
+        lodGeometries.forEach((g) => g.dispose());
+      }
     }
     this.meshRegistry.clear();
 

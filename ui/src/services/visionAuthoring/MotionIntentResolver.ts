@@ -17,6 +17,7 @@
  */
 
 import { createLogger } from "@/utils/logger";
+import { isFiniteNumber } from "@/utils/typeGuards";
 import type {
   CameraMotionIntent,
   ControlPoint,
@@ -81,12 +82,45 @@ export class MotionIntentResolver {
   private lastResult: MotionIntentResult | null = null;
 
   constructor(config?: Partial<VisionModelConfig>) {
+    // Type proof: modelId ∈ VisionModelId | undefined → VisionModelId
+    const validModelIds: VisionModelId[] = [
+      "rule-based",
+      "gpt-4v",
+      "gpt-4o",
+      "claude-vision",
+      "qwen-vl",
+      "qwen2-vl",
+      "llava",
+      "local-vlm",
+    ];
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const configModelId = (config != null && typeof config === "object" && "modelId" in config && typeof config.modelId === "string") ? config.modelId : undefined;
+    const modelId =
+      configModelId != null &&
+      validModelIds.includes(configModelId as VisionModelId)
+        ? (configModelId as VisionModelId)
+        : "rule-based";
+
+    // Type proof: maxTokens ∈ number | undefined → number
+    const configMaxTokens = (config != null && typeof config === "object" && "maxTokens" in config && typeof config.maxTokens === "number") ? config.maxTokens : undefined;
+    const maxTokens = isFiniteNumber(configMaxTokens)
+      ? Math.max(1, Math.min(32000, Math.floor(configMaxTokens)))
+      : 2048;
+
+    // Type proof: temperature ∈ number | undefined → number
+    const configTemperature = (config != null && typeof config === "object" && "temperature" in config && typeof config.temperature === "number") ? config.temperature : undefined;
+    const temperature = isFiniteNumber(configTemperature)
+      ? Math.max(0, Math.min(2, configTemperature))
+      : 0.7;
+
+    const configApiEndpoint = (config != null && typeof config === "object" && "apiEndpoint" in config && typeof config.apiEndpoint === "string") ? config.apiEndpoint : undefined;
+    const configApiKey = (config != null && typeof config === "object" && "apiKey" in config && typeof config.apiKey === "string") ? config.apiKey : undefined;
     this.config = {
-      modelId: config?.modelId ?? "rule-based",
-      apiEndpoint: config?.apiEndpoint,
-      apiKey: config?.apiKey,
-      maxTokens: config?.maxTokens ?? 2048,
-      temperature: config?.temperature ?? 0.7,
+      modelId,
+      apiEndpoint: configApiEndpoint,
+      apiKey: configApiKey,
+      maxTokens,
+      temperature,
     };
   }
 
@@ -98,7 +132,22 @@ export class MotionIntentResolver {
     context: SceneContext,
     modelOverride?: VisionModelId,
   ): Promise<MotionIntentResult> {
-    const modelId = modelOverride ?? this.config.modelId;
+    // Type proof: modelId ∈ VisionModelId | undefined → VisionModelId
+    const validModelIds: VisionModelId[] = [
+      "rule-based",
+      "gpt-4v",
+      "gpt-4o",
+      "claude-vision",
+      "qwen-vl",
+      "qwen2-vl",
+      "llava",
+      "local-vlm",
+    ];
+    const modelId =
+      typeof modelOverride === "string" &&
+      validModelIds.includes(modelOverride as VisionModelId)
+        ? (modelOverride as VisionModelId)
+        : this.config.modelId;
 
     logger.info(`Resolving motion intent with ${modelId}:`, prompt);
 
@@ -336,7 +385,11 @@ export class MotionIntentResolver {
 
       // Sample depth at this position
       const pixelIndex = Math.floor(y) * width + Math.floor(x);
-      const depth = depthMap[pixelIndex] ?? 0.5;
+      // Type proof: depth ∈ number | undefined → number
+      const depthValue = depthMap[pixelIndex];
+      const depth = isFiniteNumber(depthValue)
+        ? Math.max(0, Math.min(1, depthValue))
+        : 0.5;
 
       points.push(this.createControlPoint(`dp${i}`, x, y, depth));
     }
@@ -413,7 +466,11 @@ export class MotionIntentResolver {
         );
       }
 
-      const content = result.data.choices[0]?.message?.content;
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const choices = (result.data != null && typeof result.data === "object" && "choices" in result.data && Array.isArray(result.data.choices)) ? result.data.choices : undefined;
+      const firstChoice = (choices != null && choices.length > 0) ? choices[0] : undefined;
+      const message = (firstChoice != null && typeof firstChoice === "object" && "message" in firstChoice && firstChoice.message != null && typeof firstChoice.message === "object") ? firstChoice.message : undefined;
+      const content = (message != null && typeof message === "object" && "content" in message && typeof message.content === "string") ? message.content : undefined;
 
       return this.parseAIResponse(content, prompt);
     } catch (error) {
@@ -480,7 +537,10 @@ export class MotionIntentResolver {
         );
       }
 
-      const responseContent = result.data.content[0]?.text;
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const content = (result.data != null && typeof result.data === "object" && "content" in result.data && Array.isArray(result.data.content)) ? result.data.content : undefined;
+      const firstContent = (content != null && content.length > 0) ? content[0] : undefined;
+      const responseContent = (firstContent != null && typeof firstContent === "object" && "text" in firstContent && typeof firstContent.text === "string") ? firstContent.text : undefined;
 
       return this.parseAIResponse(responseContent, prompt);
     } catch (error) {
@@ -499,7 +559,12 @@ export class MotionIntentResolver {
     model: VisionModelId,
   ): Promise<MotionIntentResult> {
     // Use ComfyUI's lattice endpoint (relative path works when running in ComfyUI)
-    const endpoint = this.config.apiEndpoint ?? "/lattice/vlm";
+    // Type proof: endpoint ∈ string | undefined → string
+    const endpoint =
+      typeof this.config.apiEndpoint === "string" &&
+      this.config.apiEndpoint.length > 0
+        ? this.config.apiEndpoint
+        : "/lattice/vlm";
 
     const imageBase64 = context.frameImage
       ? this.imageDataToBase64(context.frameImage)
@@ -522,10 +587,19 @@ export class MotionIntentResolver {
       }
 
       const data = await response.json();
-      return this.parseAIResponse(
-        data.response ?? data.text ?? data.content,
-        prompt,
-      );
+      // Type proof: content ∈ string | undefined → string
+      let content: string | undefined;
+      if (typeof data.response === "string") {
+        content = data.response;
+      } else if (typeof data.text === "string") {
+        content = data.text;
+      } else if (typeof data.content === "string") {
+        content = data.content;
+      }
+      // Type proof: content ∈ string | undefined → string
+      const finalContent =
+        typeof content === "string" && content.length > 0 ? content : "";
+      return this.parseAIResponse(finalContent, prompt);
     } catch (error) {
       logger.error("Local VLM API call failed:", error);
       return this.resolveWithRules(prompt, context);
@@ -545,13 +619,45 @@ export class MotionIntentResolver {
       const jsonMatch = content.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         const parsed = JSON.parse(jsonMatch[0]);
+        // Type proof: description ∈ string | undefined → string
+        const description =
+          typeof parsed.description === "string" &&
+          parsed.description.length > 0
+            ? parsed.description
+            : "AI-generated motion suggestion";
+
+        // Type proof: confidence ∈ number | undefined → number
+        const confidence = isFiniteNumber(parsed.confidence)
+          ? Math.max(0, Math.min(1, parsed.confidence))
+          : 0.8;
+
+        // Type proof: cameraIntents ∈ CameraMotionIntent[] | undefined → CameraMotionIntent[]
+        const cameraIntents = Array.isArray(parsed.cameraIntents)
+          ? parsed.cameraIntents
+          : [];
+
+        // Type proof: splineIntents ∈ SplineMotionIntent[] | undefined → SplineMotionIntent[]
+        const splineIntents = Array.isArray(parsed.splineIntents)
+          ? parsed.splineIntents
+          : [];
+
+        // Type proof: particleIntents ∈ ParticleMotionIntent[] | undefined → ParticleMotionIntent[]
+        const particleIntents = Array.isArray(parsed.particleIntents)
+          ? parsed.particleIntents
+          : [];
+
+        // Type proof: layerIntents ∈ unknown[] | undefined → unknown[]
+        const layerIntents = Array.isArray(parsed.layerIntents)
+          ? parsed.layerIntents
+          : [];
+
         return {
-          description: parsed.description ?? "AI-generated motion suggestion",
-          confidence: parsed.confidence ?? 0.8,
-          cameraIntents: parsed.cameraIntents ?? [],
-          splineIntents: parsed.splineIntents ?? [],
-          particleIntents: parsed.particleIntents ?? [],
-          layerIntents: parsed.layerIntents ?? [],
+          description,
+          confidence,
+          cameraIntents,
+          splineIntents,
+          particleIntents,
+          layerIntents,
           rawResponse: content,
         };
       }

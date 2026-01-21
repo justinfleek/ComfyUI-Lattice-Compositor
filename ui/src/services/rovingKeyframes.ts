@@ -28,16 +28,37 @@
 
 import * as THREE from "three";
 import type { Keyframe } from "@/types/project";
+import { isFiniteNumber } from "@/utils/typeGuards";
 
 /** Position can be either an array [x, y, z] or an object {x, y, z} */
 export type PositionValue = number[] | { x: number; y: number; z?: number };
 
 /** Extract x, y, z from either position format */
 function extractXYZ(value: PositionValue): [number, number, number] {
+  // Lean4/PureScript/Haskell: Explicit pattern matching on union type
+  // Type proof: coordinates ∈ number | undefined → number (coordinate-like, can be negative)
   if (Array.isArray(value)) {
-    return [value[0] || 0, value[1] || 0, value[2] || 0];
+    // PureScript: case value[0] of Just x -> x; Nothing -> 0
+    const xRaw = value[0];
+    const x: number = xRaw !== undefined && isFiniteNumber(xRaw) ? xRaw : 0;
+    const yRaw = value[1];
+    const y: number = yRaw !== undefined && isFiniteNumber(yRaw) ? yRaw : 0;
+    const zRaw = value[2];
+    const z: number = zRaw !== undefined && isFiniteNumber(zRaw) ? zRaw : 0;
+    return [x, y, z];
   }
-  return [value.x || 0, value.y || 0, value.z || 0];
+  // Type proof: value.x/y/z ∈ number | undefined → number (coordinate-like, can be negative)
+  const xRaw = value.x;
+  const x: number = xRaw !== undefined && isFiniteNumber(xRaw) ? xRaw : 0;
+  const yRaw = value.y;
+  const y: number = yRaw !== undefined && isFiniteNumber(yRaw) ? yRaw : 0;
+  const zRaw = value.z;
+  const z: number = zRaw !== undefined && isFiniteNumber(zRaw) ? zRaw : 0;
+  return [
+    Number.isFinite(x) ? x : 0,
+    Number.isFinite(y) ? y : 0,
+    Number.isFinite(z) ? z : 0,
+  ];
 }
 
 export interface RovingOptions {
@@ -145,15 +166,11 @@ export function applyRovingKeyframes<T extends PositionValue>(
 ): RovingResult<T> {
   const { anchorFirst = true, anchorLast = true, minKeyframes = 3 } = options;
 
-  // Validate input
+  // Validate input - throw explicit error for invalid input
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??/?.
   if (!keyframes || keyframes.length < minKeyframes) {
-    return {
-      keyframes,
-      totalLength: 0,
-      segmentLengths: [],
-      success: false,
-      error: `Roving requires at least ${minKeyframes} keyframes`,
-    };
+    const keyframesLength = (keyframes !== null && keyframes !== undefined && Array.isArray(keyframes)) ? keyframes.length : 0;
+    throw new Error(`[RovingKeyframes] Invalid input: Roving requires at least ${minKeyframes} keyframes, got ${keyframesLength}. Add more keyframes before applying roving.`);
   }
 
   // Sort keyframes by frame number
@@ -165,13 +182,7 @@ export function applyRovingKeyframes<T extends PositionValue>(
   const totalFrames = lastFrame - firstFrame;
 
   if (totalFrames <= 0) {
-    return {
-      keyframes: sorted,
-      totalLength: 0,
-      segmentLengths: [],
-      success: false,
-      error: "First and last keyframes must have different frame numbers",
-    };
+    throw new Error(`[RovingKeyframes] Invalid keyframe timing: First and last keyframes must have different frame numbers. First frame: ${firstFrame}, last frame: ${lastFrame}.`);
   }
 
   // Build curve path and calculate total length
@@ -179,13 +190,7 @@ export function applyRovingKeyframes<T extends PositionValue>(
   const totalLength = curvePath.getLength();
 
   if (totalLength <= 0) {
-    return {
-      keyframes: sorted,
-      totalLength: 0,
-      segmentLengths: [],
-      success: false,
-      error: "Motion path has zero length",
-    };
+    throw new Error(`[RovingKeyframes] Invalid motion path: Motion path has zero length. All keyframes are at the same position. Move keyframes to different positions before applying roving.`);
   }
 
   // Calculate cumulative arc lengths at each keyframe position
@@ -228,7 +233,7 @@ export function applyRovingKeyframes<T extends PositionValue>(
     totalLength,
     segmentLengths,
     success: true,
-  };
+  } as RovingResult<T>;
 }
 
 /**

@@ -152,9 +152,9 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
-import { useCompositorStore } from "@/stores/compositorStore";
 import { useLayerStore } from "@/stores/layerStore";
 import { useKeyframeStore } from "@/stores/keyframeStore";
+import { useSelectionStore } from "@/stores/selectionStore";
 import type { Keyframe, PropertyValue } from "@/types/project";
 
 const props = defineProps<{
@@ -168,8 +168,9 @@ const emit = defineEmits<{
   apply: [];
 }>();
 
-const store = useCompositorStore();
 const layerStore = useLayerStore();
+const keyframeStore = useKeyframeStore();
+const selectionStore = useSelectionStore();
 
 // Settings
 const spatialSmoothing = ref(50);
@@ -181,41 +182,50 @@ const applyScope = ref<"selected" | "all">("all");
 // Computed
 const targetLayerName = computed(() => {
   if (props.layerId) {
-    const layer = layerStore.getLayerById(store, props.layerId);
-    return layer?.name || "Unknown";
+    const layer = layerStore.getLayerById(props.layerId);
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const layerName = (layer != null && typeof layer === "object" && "name" in layer && typeof layer.name === "string") ? layer.name : undefined;
+    return layerName != null ? layerName : "Unknown";
   }
-  const selectedIds = store.selectedLayerIds;
+  const selectedIds = selectionStore.selectedLayerIds;
   if (selectedIds.length === 0) return null;
-  const layer = layerStore.getLayerById(store, selectedIds[0]);
-  return layer?.name || "Unknown";
+  const layer = layerStore.getLayerById(selectedIds[0]);
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const layerName = (layer != null && typeof layer === "object" && "name" in layer && typeof layer.name === "string") ? layer.name : undefined;
+  return layerName != null ? layerName : "Unknown";
 });
 
 const targetKeyframes = computed<Keyframe<PropertyValue>[]>(() => {
-  const layerId = props.layerId || store.selectedLayerIds[0];
+  const layerId = props.layerId || selectionStore.selectedLayerIds[0];
   if (!layerId) return [];
 
-  const layer = layerStore.getLayerById(store, layerId);
+  const layer = layerStore.getLayerById(layerId);
   if (!layer) return [];
 
   // Get position keyframes by default
   const propertyPath = props.propertyPath || "transform.position";
   let property = null;
 
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const layerTransform = (layer != null && typeof layer === "object" && "transform" in layer && layer.transform != null && typeof layer.transform === "object") ? layer.transform : undefined;
+
   if (propertyPath === "transform.position" || propertyPath === "position") {
-    property = layer.transform?.position;
+    property = (layerTransform != null && typeof layerTransform === "object" && "position" in layerTransform && layerTransform.position != null) ? layerTransform.position : undefined;
   } else if (propertyPath === "transform.scale" || propertyPath === "scale") {
-    property = layer.transform?.scale;
+    property = (layerTransform != null && typeof layerTransform === "object" && "scale" in layerTransform && layerTransform.scale != null) ? layerTransform.scale : undefined;
   } else if (
     propertyPath === "transform.rotation" ||
     propertyPath === "rotation"
   ) {
-    property = layer.transform?.rotation;
+    property = (layerTransform != null && typeof layerTransform === "object" && "rotation" in layerTransform && layerTransform.rotation != null) ? layerTransform.rotation : undefined;
   } else if (propertyPath === "opacity") {
     property = layer.opacity;
   }
 
   if (!property || !property.animated) return [];
-  return property.keyframes || [];
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy || []
+  const keyframes = property.keyframes;
+  return (keyframes !== null && keyframes !== undefined && Array.isArray(keyframes)) ? keyframes : [];
 });
 
 const originalKeyframeCount = computed(() => targetKeyframes.value.length);
@@ -240,7 +250,7 @@ const reductionPercent = computed(() => {
 
 // Methods
 function applySmoothing() {
-  const layerId = props.layerId || store.selectedLayerIds[0];
+  const layerId = props.layerId || selectionStore.selectedLayerIds[0];
   if (!layerId) return;
 
   const propertyPath = props.propertyPath || "transform.position";
@@ -313,12 +323,12 @@ function applySmoothing() {
 
   // Update keyframes in store
   // First clear existing keyframes
-  const layer = layerStore.getLayerById(store, layerId);
+  const layer = layerStore.getLayerById(layerId);
   if (!layer) return;
 
   // Apply the smoothed/simplified keyframes
   finalKeyframes.forEach((kf) => {
-    keyframeStore.setKeyframeValue(store, layerId, propertyPath, kf.id, kf.value);
+    keyframeStore.setKeyframeValue(layerId, propertyPath, kf.id, kf.value);
   });
 
   // If simplification removed keyframes, delete them
@@ -326,7 +336,7 @@ function applySmoothing() {
     const keptIds = new Set(finalKeyframes.map((kf) => kf.id));
     keyframes.forEach((kf) => {
       if (!keptIds.has(kf.id)) {
-        keyframeStore.removeKeyframe(store, layerId, propertyPath, kf.id);
+        keyframeStore.removeKeyframe(layerId, propertyPath, kf.id);
       }
     });
   }

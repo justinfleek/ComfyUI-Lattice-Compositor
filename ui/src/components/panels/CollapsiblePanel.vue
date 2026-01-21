@@ -22,7 +22,8 @@ const props = defineProps<{
 
 const emit = defineEmits<(e: "toggle", expanded: boolean) => void>();
 
-const isExpanded = ref(props.expanded ?? true);
+// Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+const isExpanded = ref((typeof props.expanded === "boolean") ? props.expanded : true);
 
 watch(
   () => props.expanded,

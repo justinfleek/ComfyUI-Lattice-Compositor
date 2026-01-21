@@ -93,8 +93,11 @@ function sortedKeyframesArb<T>(
       }
     }
     
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??/?.
     while (unique.length < minLength && sorted.length > 0) {
-      const newFrame = (unique[unique.length - 1]?.frame ?? 0) + 10;
+      const lastKeyframe = unique[unique.length - 1];
+      const lastFrame = (lastKeyframe !== null && lastKeyframe !== undefined && typeof lastKeyframe === "object" && "frame" in lastKeyframe && typeof lastKeyframe.frame === "number" && Number.isFinite(lastKeyframe.frame)) ? lastKeyframe.frame : 0;
+      const newFrame = lastFrame + 10;
       unique.push({
         ...sorted[0],
         id: `kf_pad_${unique.length}`,

@@ -40,13 +40,14 @@
 </template>
 
 <script setup lang="ts">
-import { useCompositorStore } from "@/stores/compositorStore";
+import { useAnimationStore } from "@/stores/animationStore";
 import { createKeyframe } from "@/types/animation";
 import type { WigglePathsOperator } from "@/types/shapes";
+import type { JSONValue } from "@/types/dataAsset";
 
 const props = defineProps<{ operator: WigglePathsOperator; layerId: string }>();
 const emit = defineEmits(["update"]);
-const store = useCompositorStore();
+const animationStore = useAnimationStore();
 
 function updateNumber(
   prop: "size" | "detail" | "correlation" | "temporalPhase" | "spatialPhase",
@@ -57,7 +58,7 @@ function updateNumber(
   emit("update", updated);
 }
 
-function updateMeta(key: string, value: unknown) {
+function updateMeta(key: string, value: JSONValue) {
   const updated = { ...props.operator, [key]: value };
   emit("update", updated);
 }
@@ -67,7 +68,7 @@ function toggleKeyframe(
 ) {
   const updated = { ...props.operator };
   const animProp = updated[prop];
-  const frame = store.currentFrame;
+  const frame = animationStore.currentFrame;
   const hasKf = animProp.keyframes.some((k) => k.frame === frame);
   if (hasKf) {
     animProp.keyframes = animProp.keyframes.filter((k) => k.frame !== frame);

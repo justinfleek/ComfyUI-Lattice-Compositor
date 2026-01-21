@@ -12,8 +12,11 @@
  * - Smooth handle interpolation
  */
 
+import type { JSONValue } from "@/types/dataAsset";
+import type { RuntimeValue } from "@/types/ses-ambient";
 import type { BezierPath, BezierVertex, Point2D } from "@/types/shapes";
 import { createLogger } from "@/utils/logger";
+import { isFiniteNumber } from "@/utils/typeGuards";
 
 const logger = createLogger("PathMorphing");
 
@@ -571,9 +574,12 @@ export function prepareMorphPaths(
       }
 
       case "resample": {
-        const count = cfg.resampleCount ?? Math.max(sourceCount, targetCount);
-        preparedSource = resamplePath(preparedSource, count);
-        preparedTarget = resamplePath(preparedTarget, count);
+        // Type proof: number | undefined → number
+        const resampleCount = isFiniteNumber(cfg.resampleCount) && cfg.resampleCount >= 2
+          ? cfg.resampleCount
+          : Math.max(sourceCount, targetCount);
+        preparedSource = resamplePath(preparedSource, resampleCount);
+        preparedTarget = resamplePath(preparedTarget, resampleCount);
         break;
       }
     }
@@ -751,23 +757,23 @@ export function getCorrespondence(
 /**
  * Type guard for objects that might be BezierVertex
  */
-function isBezierVertex(value: unknown): value is BezierVertex {
+function isBezierVertex(value: RuntimeValue): value is BezierVertex {
   if (typeof value !== "object" || value === null) return false;
-  const v = value as { point?: { x?: unknown; y?: unknown } };
+  const v = value as { point?: { x?: JSONValue; y?: JSONValue } };
   return (
     typeof v.point === "object" &&
     v.point !== null &&
-    typeof (v.point as { x?: unknown }).x === "number" &&
-    typeof (v.point as { x?: unknown; y?: unknown }).y === "number"
+    typeof (v.point as { x?: JSONValue }).x === "number" &&
+    typeof (v.point as { x?: JSONValue; y?: JSONValue }).y === "number"
   );
 }
 
-export function isBezierPath(value: unknown): value is BezierPath {
+export function isBezierPath(value: RuntimeValue): value is BezierPath {
   if (typeof value !== "object" || value === null) {
     return false;
   }
 
-  const obj = value as { vertices?: unknown; closed?: unknown };
+  const obj = value as { vertices?: JSONValue; closed?: JSONValue };
 
   // Must have 'vertices' array and 'closed' boolean
   if (!Array.isArray(obj.vertices) || typeof obj.closed !== "boolean") {

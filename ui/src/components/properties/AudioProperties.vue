@@ -192,7 +192,7 @@
                 max="4"
                 step="0.1"
               />
-              <span class="value-display">{{ mapping.amplitudeCurve?.toFixed(1) || '1.0' }}</span>
+              <span class="value-display">{{ getAmplitudeCurveDisplay(mapping) }}</span>
             </div>
 
             <!-- Release Envelope -->
@@ -205,7 +205,7 @@
                 max="1"
                 step="0.01"
               />
-              <span class="value-display">{{ mapping.release?.toFixed(2) || '0.50' }}</span>
+              <span class="value-display">{{ getReleaseDisplay(mapping) }}</span>
             </div>
 
             <!-- Value Curve Shaping -->
@@ -243,7 +243,7 @@
                 max="1"
                 step="0.01"
               />
-              <span class="value-display">{{ mapping.beatThreshold?.toFixed(2) || '0.50' }}</span>
+              <span class="value-display">{{ getBeatThresholdDisplay(mapping) }}</span>
             </div>
 
             <div class="property-row checkbox-row">
@@ -302,6 +302,10 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from "vue";
 import {
+  safeArrayDefault,
+  safeNonNegativeDefault,
+} from "@/utils/typeGuards";
+import {
   detectPeaks as detectAudioPeaks,
   getFeatureAtFrame,
   type PeakData,
@@ -317,11 +321,13 @@ import {
   getFeatureDisplayName,
   getTargetDisplayName,
 } from "@/services/audioReactiveMapping";
-import { useCompositorStore } from "@/stores/compositorStore";
+import { useAnimationStore } from "@/stores/animationStore";
 import { useAudioStore } from "@/stores/audioStore";
+import { useProjectStore } from "@/stores/projectStore";
 
-const store = useCompositorStore();
+const animationStore = useAnimationStore();
 const audioStore = useAudioStore();
+const projectStore = useProjectStore();
 
 // UI State
 const expandedSections = ref(new Set(["peaks", "mappings"]));
@@ -350,7 +356,7 @@ const featuresByCategory = computed(() => getFeaturesByCategory());
 const targetsByCategory = computed(() => getTargetsByCategory());
 
 const playheadPosition = computed(
-  () => (store.currentFrame / store.frameCount) * 100,
+  () => (animationStore.currentFrame / projectStore.getFrameCount()) * 100,
 );
 
 const currentFeatureValue = computed(() => {
@@ -358,28 +364,48 @@ const currentFeatureValue = computed(() => {
   return getFeatureAtFrame(
     audioStore.audioAnalysis,
     visualizerFeature.value,
-    store.currentFrame,
+    animationStore.currentFrame,
   );
 });
 
 // Layer and emitter selection helpers for per-emitter audio targeting UI
-const allLayers = computed(() => store.layers);
+const allLayers = computed(() => projectStore.getActiveCompLayers());
+
+// Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+function getAmplitudeCurveDisplay(mapping: AudioMapping): string {
+  const amplitudeCurve = (mapping != null && typeof mapping === "object" && "amplitudeCurve" in mapping && typeof mapping.amplitudeCurve === "number") ? mapping.amplitudeCurve : undefined;
+  return (amplitudeCurve != null && typeof amplitudeCurve === "number") ? amplitudeCurve.toFixed(1) : "1.0";
+}
+
+function getReleaseDisplay(mapping: AudioMapping): string {
+  const release = (mapping != null && typeof mapping === "object" && "release" in mapping && typeof mapping.release === "number") ? mapping.release : undefined;
+  return (release != null && typeof release === "number") ? release.toFixed(2) : "0.50";
+}
+
+function getBeatThresholdDisplay(mapping: AudioMapping): string {
+  const beatThreshold = (mapping != null && typeof mapping === "object" && "beatThreshold" in mapping && typeof mapping.beatThreshold === "number") ? mapping.beatThreshold : undefined;
+  return (beatThreshold != null && typeof beatThreshold === "number") ? beatThreshold.toFixed(2) : "0.50";
+}
 
 function isParticleLayer(layerId: string | undefined): boolean {
   if (!layerId) return false;
-  const layer = store.layers.find((l) => l.id === layerId);
-  return layer?.type === "particles";
+  const layer = projectStore.getActiveCompLayers().find((l) => l.id === layerId);
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  return (layer != null && typeof layer === "object" && "type" in layer && typeof layer.type === "string" && layer.type === "particles") ? true : false;
 }
 
 function getEmittersForLayer(
   layerId: string | undefined,
 ): Array<{ id: string; name: string }> {
   if (!layerId) return [];
-  const layer = store.layers.find((l) => l.id === layerId);
+  const layer = projectStore.getActiveCompLayers().find((l) => l.id === layerId);
   if (!layer || layer.type !== "particles") return [];
   // ParticleLayerData has emitters array with id and name
   const data = layer.data as { emitters?: Array<{ id: string; name: string }> };
-  return data?.emitters || [];
+  // System F/Omega: Use safeArrayDefault instead of lazy || [] fallback
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const emitters = (data != null && typeof data === "object" && "emitters" in data && Array.isArray(data.emitters)) ? data.emitters : undefined;
+  return safeArrayDefault(emitters, [], "particleLayer.emitters");
 }
 
 function onTargetLayerChange(mapping: AudioMapping): void {
@@ -411,7 +437,7 @@ function detectPeaks(): void {
   peakData.value = detectAudioPeaks(weights, peakConfig.value);
 
   // Store in compositor store
-  store.setPeakData(peakData.value);
+  audioStore.setPeakData(peakData.value);
 }
 
 function addMapping(): void {
@@ -420,7 +446,7 @@ function addMapping(): void {
   expandedMappings.value.add(mapping.id);
 
   // Update store
-  store.addAudioMapping(mapping);
+  audioStore.addMapping(mapping);
 }
 
 function removeMapping(id: string): void {
@@ -430,7 +456,7 @@ function removeMapping(id: string): void {
     expandedMappings.value.delete(id);
 
     // Update store
-    store.removeAudioMapping(id);
+    audioStore.removeMapping(id);
   }
 }
 
@@ -482,19 +508,47 @@ function drawVisualizer(): void {
       break;
     // New enhanced features
     case "spectralFlux":
-      featureData = analysis.spectralFlux || [];
+      // System F/Omega: Use safeArrayDefault instead of lazy || [] fallback
+      featureData = safeArrayDefault(
+        analysis.spectralFlux,
+        [],
+        "analysis.spectralFlux",
+      );
       break;
     case "zeroCrossingRate":
-      featureData = analysis.zeroCrossingRate || [];
+      // System F/Omega: Use safeArrayDefault instead of lazy || [] fallback
+      featureData = safeArrayDefault(
+        analysis.zeroCrossingRate,
+        [],
+        "analysis.zeroCrossingRate",
+      );
       break;
     case "spectralRolloff":
-      featureData = analysis.spectralRolloff || [];
+      // System F/Omega: Use safeArrayDefault instead of lazy || [] fallback
+      featureData = safeArrayDefault(
+        analysis.spectralRolloff,
+        [],
+        "analysis.spectralRolloff",
+      );
       break;
     case "spectralFlatness":
-      featureData = analysis.spectralFlatness || [];
+      // System F/Omega: Use safeArrayDefault instead of lazy || [] fallback
+      featureData = safeArrayDefault(
+        analysis.spectralFlatness,
+        [],
+        "analysis.spectralFlatness",
+      );
       break;
     case "chromaEnergy":
-      featureData = analysis.chromaFeatures?.chromaEnergy || [];
+      // System F/Omega: Use safeArrayDefault instead of lazy || [] fallback
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const chromaFeatures = (analysis != null && typeof analysis === "object" && "chromaFeatures" in analysis && analysis.chromaFeatures != null && typeof analysis.chromaFeatures === "object") ? analysis.chromaFeatures : undefined;
+      const chromaEnergy = (chromaFeatures != null && typeof chromaFeatures === "object" && "chromaEnergy" in chromaFeatures && Array.isArray(chromaFeatures.chromaEnergy)) ? chromaFeatures.chromaEnergy : undefined;
+      featureData = safeArrayDefault(
+        chromaEnergy,
+        [],
+        "analysis.chromaFeatures.chromaEnergy",
+      );
       break;
     // Chroma pitch classes
     case "chromaC":
@@ -509,7 +563,10 @@ function drawVisualizer(): void {
     case "chromaA":
     case "chromaAs":
     case "chromaB":
-      if (analysis.chromaFeatures?.chroma) {
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const chromaFeaturesForChroma = (analysis != null && typeof analysis === "object" && "chromaFeatures" in analysis && analysis.chromaFeatures != null && typeof analysis.chromaFeatures === "object") ? analysis.chromaFeatures : undefined;
+      const chroma = (chromaFeaturesForChroma != null && typeof chromaFeaturesForChroma === "object" && "chroma" in chromaFeaturesForChroma && chromaFeaturesForChroma.chroma != null && Array.isArray(chromaFeaturesForChroma.chroma)) ? chromaFeaturesForChroma.chroma : undefined;
+      if (chroma != null) {
         const pitchIndex = [
           "chromaC",
           "chromaCs",
@@ -524,8 +581,9 @@ function drawVisualizer(): void {
           "chromaAs",
           "chromaB",
         ].indexOf(visualizerFeature.value);
-        featureData = analysis.chromaFeatures.chroma.map(
-          (frame) => frame[pitchIndex] || 0,
+        // Type proof: chroma pitch value ∈ number | undefined → number (≥ 0, chroma energy)
+        featureData = chroma.map(
+          (frame) => safeNonNegativeDefault(frame[pitchIndex], 0, `frame[${pitchIndex}]`),
         );
       }
       break;
@@ -592,7 +650,7 @@ watch(
   mappings,
   (newMappings) => {
     for (const mapping of newMappings) {
-      store.updateAudioMapping(mapping.id, mapping);
+      audioStore.updateMapping(mapping.id, mapping);
     }
   },
   { deep: true },
@@ -603,7 +661,7 @@ onMounted(() => {
   drawVisualizer();
 
   // Load existing mappings from store
-  const existingMappings = store.getAudioMappings();
+  const existingMappings = audioStore.getMappings();
   if (existingMappings.length > 0) {
     mappings.value = [...existingMappings];
   }

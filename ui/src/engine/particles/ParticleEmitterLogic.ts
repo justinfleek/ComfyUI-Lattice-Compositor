@@ -7,6 +7,7 @@
  * Extracted from GPUParticleSystem.ts for modularity.
  */
 
+import { isFiniteNumber } from "@/utils/typeGuards";
 import * as THREE from "three";
 import type { EmitterConfig } from "./types";
 
@@ -50,7 +51,10 @@ export function getEmitterPosition(
     case "circle": {
       const angle = rng() * Math.PI * 2;
       // Validate radius
-      const rawRadius = shape.radius ?? 50;
+      // Type proof: radius ∈ number | undefined → number
+      const rawRadius = shape !== undefined && typeof shape === "object" && shape !== null && "radius" in shape && isFiniteNumber(shape.radius) && shape.radius >= 0
+        ? shape.radius
+        : 50;
       let radius = (Number.isFinite(rawRadius) && rawRadius > 0) ? rawRadius : 50;
       if (!shape.emitFromEdge) {
         radius *= Math.sqrt(rng()); // Uniform distribution in circle
@@ -68,7 +72,10 @@ export function getEmitterPosition(
       const theta = rng() * Math.PI * 2;
       const phi = Math.acos(2 * rng() - 1);
       // Validate radius
-      const rawRadius = shape.radius ?? 50;
+      // Type proof: radius ∈ number | undefined → number
+      const rawRadius = shape !== undefined && typeof shape === "object" && shape !== null && "radius" in shape && isFiniteNumber(shape.radius) && shape.radius >= 0
+        ? shape.radius
+        : 50;
       let radius = (Number.isFinite(rawRadius) && rawRadius > 0) ? rawRadius : 50;
       if (!shape.emitFromEdge) {
         radius *= Math.cbrt(rng()); // Uniform distribution in sphere
@@ -83,11 +90,14 @@ export function getEmitterPosition(
     }
 
     case "box": {
-      const size = shape.boxSize ?? { x: 100, y: 100, z: 100 };
+      // Type proof: boxSize ∈ { x: number; y: number; z: number } | undefined → { x: number; y: number; z: number }
+      const boxSize = shape !== undefined && typeof shape === "object" && shape !== null && "boxSize" in shape && shape.boxSize !== undefined && typeof shape.boxSize === "object" && shape.boxSize !== null && "x" in shape.boxSize && "y" in shape.boxSize && "z" in shape.boxSize && isFiniteNumber(shape.boxSize.x) && isFiniteNumber(shape.boxSize.y) && isFiniteNumber(shape.boxSize.z)
+        ? shape.boxSize
+        : { x: 100, y: 100, z: 100 };
       // Validate box dimensions
-      const sx = Number.isFinite(size.x) ? size.x : 100;
-      const sy = Number.isFinite(size.y) ? size.y : 100;
-      const sz = Number.isFinite(size.z) ? size.z : 100;
+      const sx = Number.isFinite(boxSize.x) ? boxSize.x : 100;
+      const sy = Number.isFinite(boxSize.y) ? boxSize.y : 100;
+      const sz = Number.isFinite(boxSize.z) ? boxSize.z : 100;
       return base.add(
         new THREE.Vector3(
           (rng() - 0.5) * sx,
@@ -98,8 +108,14 @@ export function getEmitterPosition(
     }
 
     case "line": {
-      const start = shape.lineStart ?? { x: -50, y: 0, z: 0 };
-      const end = shape.lineEnd ?? { x: 50, y: 0, z: 0 };
+      // Type proof: lineStart ∈ { x: number; y: number; z: number } | undefined → { x: number; y: number; z: number }
+      const start = shape !== undefined && typeof shape === "object" && shape !== null && "lineStart" in shape && shape.lineStart !== undefined && typeof shape.lineStart === "object" && shape.lineStart !== null && "x" in shape.lineStart && "y" in shape.lineStart && "z" in shape.lineStart && isFiniteNumber(shape.lineStart.x) && isFiniteNumber(shape.lineStart.y) && isFiniteNumber(shape.lineStart.z)
+        ? shape.lineStart
+        : { x: -50, y: 0, z: 0 };
+      // Type proof: lineEnd ∈ { x: number; y: number; z: number } | undefined → { x: number; y: number; z: number }
+      const end = shape !== undefined && typeof shape === "object" && shape !== null && "lineEnd" in shape && shape.lineEnd !== undefined && typeof shape.lineEnd === "object" && shape.lineEnd !== null && "x" in shape.lineEnd && "y" in shape.lineEnd && "z" in shape.lineEnd && isFiniteNumber(shape.lineEnd.x) && isFiniteNumber(shape.lineEnd.y) && isFiniteNumber(shape.lineEnd.z)
+        ? shape.lineEnd
+        : { x: 50, y: 0, z: 0 };
       const t = rng();
       return base.add(
         new THREE.Vector3(
@@ -114,9 +130,15 @@ export function getEmitterPosition(
       const angle = rng() * Math.PI * 2;
       const t = rng();
       // Validate cone dimensions
-      const rawConeRadius = shape.coneRadius ?? 50;
+      // Type proof: coneRadius ∈ number | undefined → number
+      const rawConeRadius = shape !== undefined && typeof shape === "object" && shape !== null && "coneRadius" in shape && isFiniteNumber(shape.coneRadius) && shape.coneRadius >= 0
+        ? shape.coneRadius
+        : 50;
       const coneRadius = (Number.isFinite(rawConeRadius) && rawConeRadius > 0) ? rawConeRadius : 50;
-      const rawConeLength = shape.coneLength ?? 100;
+      // Type proof: coneLength ∈ number | undefined → number
+      const rawConeLength = shape !== undefined && typeof shape === "object" && shape !== null && "coneLength" in shape && isFiniteNumber(shape.coneLength) && shape.coneLength >= 0
+        ? shape.coneLength
+        : 100;
       const coneLength = (Number.isFinite(rawConeLength) && rawConeLength > 0) ? rawConeLength : 100;
       const radius = t * coneRadius;
       const height = t * coneLength;
@@ -135,7 +157,10 @@ export function getEmitterPosition(
 
       const { width, height, data } = shape.imageData;
       // Validate threshold
-      const rawThreshold = shape.emissionThreshold ?? 0.1;
+      // Type proof: emissionThreshold ∈ number | undefined → number (clamped 0-1)
+      const rawThreshold = shape !== undefined && typeof shape === "object" && shape !== null && "emissionThreshold" in shape && isFiniteNumber(shape.emissionThreshold) && shape.emissionThreshold >= 0 && shape.emissionThreshold <= 1
+        ? shape.emissionThreshold
+        : 0.1;
       const threshold = Number.isFinite(rawThreshold) ? rawThreshold : 0.1;
 
       // Try up to 100 times to find a valid pixel
@@ -170,7 +195,10 @@ export function getEmitterPosition(
 
       const depthData = shape.depthData;
       // Validate threshold
-      const rawThreshold = shape.emissionThreshold ?? 0.05;
+      // Type proof: emissionThreshold ∈ number | undefined → number (clamped 0-1)
+      const rawThreshold = shape !== undefined && typeof shape === "object" && shape !== null && "emissionThreshold" in shape && isFiniteNumber(shape.emissionThreshold) && shape.emissionThreshold >= 0 && shape.emissionThreshold <= 1
+        ? shape.emissionThreshold
+        : 0.05;
       const threshold = Number.isFinite(rawThreshold) ? rawThreshold : 0.05;
 
       // Try up to 100 times to find an edge pixel
@@ -213,14 +241,21 @@ export function getEmitterPosition(
       if (!shape.splineId || !splineProvider) return base;
 
       // Get point along spline
-      let t = shape.splineOffset ?? rng(); // Use offset or random position
-      if (shape.splineOffset === undefined) {
+      // Type proof: splineOffset ∈ number | undefined → number (clamped 0-1)
+      const splineOffset = shape !== undefined && typeof shape === "object" && shape !== null && "splineOffset" in shape && isFiniteNumber(shape.splineOffset) && shape.splineOffset >= 0 && shape.splineOffset <= 1
+        ? shape.splineOffset
+        : undefined;
+      let t = splineOffset !== undefined ? splineOffset : rng(); // Use offset or random position
+      if (splineOffset === undefined) {
         t = rng(); // Random position along path
       }
 
       const point = splineProvider(shape.splineId, t);
       if (point) {
-        return new THREE.Vector3(point.x, -point.y, point.z ?? 0);
+        // Type proof: z ∈ ℝ ∪ {undefined} → z ∈ ℝ
+        const zValue = point.z;
+        const z = isFiniteNumber(zValue) ? zValue : 0;
+        return new THREE.Vector3(point.x, -point.y, z);
       }
       return base;
     }

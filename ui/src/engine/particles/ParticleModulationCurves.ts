@@ -131,11 +131,14 @@ export class ParticleModulationCurves {
         const h3 = t3 - 2 * t2 + localT;
         const h4 = t3 - t2;
 
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+        const p0OutTangent = (typeof p0.outTangent === "number" && Number.isFinite(p0.outTangent)) ? p0.outTangent : 0;
+        const p1InTangent = (typeof p1.inTangent === "number" && Number.isFinite(p1.inTangent)) ? p1.inTangent : 0;
         return (
           h1 * p0.value +
           h2 * p1.value +
-          h3 * (p0.outTangent ?? 0) +
-          h4 * (p1.inTangent ?? 0)
+          h3 * p0OutTangent +
+          h4 * p1InTangent
         );
       }
 

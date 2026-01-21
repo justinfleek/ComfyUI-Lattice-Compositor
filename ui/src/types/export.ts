@@ -290,7 +290,7 @@ export type NodeConnection = [string, number];
 
 export interface ComfyUINode {
   class_type: string;
-  inputs: Record<string, string | number | boolean | string[] | number[] | null | undefined>;
+  inputs: Record<string, string | number | boolean | string[] | number[] | NodeConnection | NodeConnection[] | null | undefined>;
   _meta?: {
     title: string;
   };

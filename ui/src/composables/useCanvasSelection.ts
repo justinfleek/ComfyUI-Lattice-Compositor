@@ -197,7 +197,10 @@ export function useCanvasSelection(options: UseCanvasSelectionOptions) {
     selectedIds: string[],
     mode: SelectionMode,
   ): string[] {
-    const current = currentSelection?.value || [];
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+    const current = (currentSelection !== undefined && typeof currentSelection === "object" && "value" in currentSelection && Array.isArray(currentSelection.value))
+      ? currentSelection.value
+      : [];
 
     switch (mode) {
       case "replace":
@@ -347,8 +350,26 @@ export function useCanvasSelection(options: UseCanvasSelectionOptions) {
   // COMPUTED
   // ============================================================================
 
+  /**
+   * Selection rectangle style for rendering
+   * 
+   * System F/Omega proof: Explicit validation of selection rectangle
+   * Type proof: state.value.selectionRect ∈ SelectionRect | null → CSSProperties (non-nullable)
+   * Mathematical proof: Selection rectangle must exist to generate style
+   * Pattern proof: Missing selection rectangle is an explicit failure condition, not a lazy null return
+   */
   const selectionRectStyle = computed(() => {
-    if (!state.value.selectionRect) return null;
+    // System F/Omega proof: Explicit validation of selection rectangle
+    // Type proof: state.value.selectionRect ∈ SelectionRect | null
+    // Mathematical proof: Selection rectangle must exist to generate style
+    if (!state.value.selectionRect) {
+      throw new Error(
+        `[useCanvasSelection] Cannot get selection rect style: Selection rectangle not set. ` +
+        `Selection state: ${JSON.stringify(state.value)}. ` +
+        `Selection rectangle must be set before generating style. ` +
+        `Wrap in try/catch if "no selection" is an expected state.`
+      );
+    }
 
     const { x, y, width, height } = state.value.selectionRect;
 

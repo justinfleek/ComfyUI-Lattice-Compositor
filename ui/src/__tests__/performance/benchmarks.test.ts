@@ -14,8 +14,10 @@ import { interpolateProperty } from '@/services/interpolation';
 import { interpolateWithEasing, applyEasing } from '@/services/easing';
 import { multiplyMat4, identityMat4, translateMat4, scaleMat4, type Mat4 } from '@/services/math3d';
 import { motionEngine } from '@/engine/MotionEngine';
-import { useCompositorStore } from '@/stores/compositorStore';
+import { useProjectStore } from '@/stores/projectStore';
 import { useLayerStore } from '@/stores/layerStore';
+import { useAnimationStore } from '@/stores/animationStore';
+import { useKeyframeStore } from '@/stores/keyframeStore';
 import { createAnimatableProperty } from '@/types/animation';
 import { SeededRandom } from '@/services/particles/SeededRandom';
 import type { AnimatableProperty } from '@/types/project';
@@ -143,19 +145,21 @@ describe('Performance: Frame Evaluation', () => {
   });
 
   test('MotionEngine.evaluate() meets target (per layer)', () => {
-    const store = useCompositorStore();
+    const projectStore = useProjectStore();
     const layerStore = useLayerStore();
+    const animationStore = useAnimationStore();
+    const keyframeStore = useKeyframeStore();
     
     // Create 10 layers
     for (let i = 0; i < 10; i++) {
-      const layer = layerStore.createLayer(store, 'solid', `Layer ${i}`);
-      store.setFrame(0);
-      store.addKeyframe(layer.id, 'opacity', 0);
-      store.setFrame(100);
-      store.addKeyframe(layer.id, 'opacity', 100);
+      const layer = layerStore.createLayer('solid', `Layer ${i}`);
+      animationStore.setFrame(0);
+      keyframeStore.addKeyframe(layer.id, 'opacity', 0);
+      animationStore.setFrame(100);
+      keyframeStore.addKeyframe(layer.id, 'opacity', 100);
     }
     
-    const project = store.project;
+    const project = projectStore.project;
     
     const result = benchmark(() => {
       motionEngine.evaluate(Math.floor(Math.random() * 100), project);
@@ -173,15 +177,15 @@ describe('Performance: Serialization', () => {
   });
 
   test('project serialization meets target', () => {
-    const store = useCompositorStore();
+    const projectStore = useProjectStore();
     const layerStore = useLayerStore();
     
     // Create a project with 100 layers
     for (let i = 0; i < 100; i++) {
-      layerStore.createLayer(store, 'solid', `Layer ${i}`);
+      layerStore.createLayer('solid', `Layer ${i}`);
     }
     
-    const project = store.project;
+    const project = projectStore.project;
     
     const result = benchmark(() => {
       JSON.stringify(project);
@@ -192,15 +196,15 @@ describe('Performance: Serialization', () => {
   });
 
   test('project deserialization meets target', () => {
-    const store = useCompositorStore();
+    const projectStore = useProjectStore();
     const layerStore = useLayerStore();
     
     // Create a project with 100 layers
     for (let i = 0; i < 100; i++) {
-      layerStore.createLayer(store, 'solid', `Layer ${i}`);
+      layerStore.createLayer('solid', `Layer ${i}`);
     }
     
-    const project = store.project;
+    const project = projectStore.project;
     const json = JSON.stringify(project);
     
     const result = benchmark(() => {

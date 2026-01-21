@@ -103,13 +103,13 @@
 </template>
 
 <script setup lang="ts">
-import { useCompositorStore } from "@/stores/compositorStore";
+import { useAnimationStore } from "@/stores/animationStore";
 import { createKeyframe } from "@/types/animation";
 import type { RepeaterComposite, RepeaterOperator } from "@/types/shapes";
 
 const props = defineProps<{ operator: RepeaterOperator; layerId: string }>();
 const emit = defineEmits(["update"]);
-const store = useCompositorStore();
+const animationStore = useAnimationStore();
 
 function updateNumber(prop: "copies" | "offset", value: number) {
   const updated = { ...props.operator };
@@ -151,7 +151,7 @@ function updateTransformNumber(
 function toggleKeyframe(prop: "copies" | "offset") {
   const updated = { ...props.operator };
   const animProp = updated[prop];
-  const frame = store.currentFrame;
+  const frame = animationStore.currentFrame;
 
   const hasKf = animProp.keyframes.some((k) => k.frame === frame);
   if (hasKf) {
@@ -180,7 +180,7 @@ function toggleTransformKeyframe(
   const updated = { ...props.operator };
   updated.transform = { ...updated.transform };
   const animProp = updated.transform[prop];
-  const frame = store.currentFrame;
+  const frame = animationStore.currentFrame;
 
   const hasKf = animProp.keyframes.some((k) => k.frame === frame);
   if (hasKf) {

@@ -111,7 +111,8 @@ export interface SplineData {
   trimOffset?: number | AnimatableProperty<number>; // Trim offset in degrees
 
   // Path Effects (applied in order before trim)
-  pathEffects?: SplinePathEffect[];
+  // Uses SplinePathEffectInstance union for proper type narrowing on effect.type
+  pathEffects?: SplinePathEffectInstance[];
 
   // Animated spline support (Phase 1)
   animatedControlPoints?: AnimatableControlPoint[];
@@ -326,11 +327,14 @@ export function controlPointToAnimatable(
 export function animatableToControlPoint(
   acp: AnimatableControlPoint,
 ): ControlPoint {
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const acpDepth = (acp != null && typeof acp === "object" && "depth" in acp && acp.depth != null && typeof acp.depth === "object") ? acp.depth : undefined;
+  const depthValue = (acpDepth != null && typeof acpDepth === "object" && "value" in acpDepth && typeof acpDepth.value === "number") ? acpDepth.value : undefined;
   return {
     id: acp.id,
     x: acp.x.value,
     y: acp.y.value,
-    depth: acp.depth?.value,
+    depth: depthValue,
     handleIn: acp.handleIn
       ? {
           x: acp.handleIn.x.value,

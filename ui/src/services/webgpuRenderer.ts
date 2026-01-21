@@ -14,6 +14,7 @@
  */
 
 import { engineLogger } from "@/utils/logger";
+import { isFiniteNumber, assertDefined } from "@/utils/typeGuards";
 
 // ============================================================================
 // TYPES
@@ -756,21 +757,31 @@ class WebGPURenderer {
       });
 
     // Create all pipelines
+    // Type proof: All modules must exist after createShaderModules()
+    assertDefined(this.blurModule, "blurModule must exist after createShaderModules");
+    assertDefined(this.colorModule, "colorModule must exist after createShaderModules");
+    assertDefined(this.radialBlurModule, "radialBlurModule must exist after createShaderModules");
+    assertDefined(this.directionalBlurModule, "directionalBlurModule must exist after createShaderModules");
+    assertDefined(this.warpModule, "warpModule must exist after createShaderModules");
+    assertDefined(this.glowModule, "glowModule must exist after createShaderModules");
+    assertDefined(this.levelsModule, "levelsModule must exist after createShaderModules");
+    assertDefined(this.displacementModule, "displacementModule must exist after createShaderModules");
+
     this.blurPipeline = createPipeline(this.blurModule, standardLayout);
-    this.colorPipeline = createPipeline(this.colorModule!, standardLayout);
+    this.colorPipeline = createPipeline(this.colorModule, standardLayout);
     this.radialBlurPipeline = createPipeline(
-      this.radialBlurModule!,
+      this.radialBlurModule,
       standardLayout,
     );
     this.directionalBlurPipeline = createPipeline(
-      this.directionalBlurModule!,
+      this.directionalBlurModule,
       standardLayout,
     );
-    this.warpPipeline = createPipeline(this.warpModule!, standardLayout);
-    this.glowPipeline = createPipeline(this.glowModule!, standardLayout);
-    this.levelsPipeline = createPipeline(this.levelsModule!, standardLayout);
+    this.warpPipeline = createPipeline(this.warpModule, standardLayout);
+    this.glowPipeline = createPipeline(this.glowModule, standardLayout);
+    this.levelsPipeline = createPipeline(this.levelsModule, standardLayout);
     this.displacementPipeline = createPipeline(
-      this.displacementModule!,
+      this.displacementModule,
       displacementLayout,
     );
   }
@@ -813,7 +824,9 @@ class WebGPURenderer {
     source: ImageData | HTMLCanvasElement,
     params: BlurParams,
   ): Promise<ImageData> {
-    const device = this.capabilities.device!;
+    // Type proof: device must exist when capabilities.available is true
+    assertDefined(this.capabilities.device, "device must exist when WebGPU is available");
+    const device = this.capabilities.device;
     const imageData = this.toImageData(source);
     const { width, height } = imageData;
 
@@ -854,8 +867,10 @@ class WebGPURenderer {
     paramsBuffer.unmap();
 
     // Create bind group
+    // Type proof: bindGroupLayout must exist after createPipelines()
+    assertDefined(this.blurBindGroupLayout, "blurBindGroupLayout must exist after createPipelines");
     const bindGroup = device.createBindGroup({
-      layout: this.blurBindGroupLayout!,
+      layout: this.blurBindGroupLayout,
       entries: [
         { binding: 0, resource: inputTexture.createView() },
         { binding: 1, resource: outputTexture.createView() },
@@ -864,9 +879,11 @@ class WebGPURenderer {
     });
 
     // Run compute shader
+    // Type proof: pipeline must exist after createPipelines()
+    assertDefined(this.blurPipeline, "blurPipeline must exist after createPipelines");
     const commandEncoder = device.createCommandEncoder();
     const passEncoder = commandEncoder.beginComputePass();
-    passEncoder.setPipeline(this.blurPipeline!);
+    passEncoder.setPipeline(this.blurPipeline);
     passEncoder.setBindGroup(0, bindGroup);
     passEncoder.dispatchWorkgroups(
       Math.ceil(width / 16),
@@ -942,7 +959,9 @@ class WebGPURenderer {
     source: ImageData | HTMLCanvasElement,
     params: ColorCorrectionParams,
   ): Promise<ImageData> {
-    const device = this.capabilities.device!;
+    // Type proof: device must exist when capabilities.available is true
+    assertDefined(this.capabilities.device, "device must exist when WebGPU is available");
+    const device = this.capabilities.device;
     const imageData = this.toImageData(source);
     const { width, height } = imageData;
 
@@ -982,8 +1001,10 @@ class WebGPURenderer {
     paramsBuffer.unmap();
 
     // Create bind group
+    // Type proof: bindGroupLayout must exist after createPipelines()
+    assertDefined(this.colorBindGroupLayout, "colorBindGroupLayout must exist after createPipelines");
     const bindGroup = device.createBindGroup({
-      layout: this.colorBindGroupLayout!,
+      layout: this.colorBindGroupLayout,
       entries: [
         { binding: 0, resource: inputTexture.createView() },
         { binding: 1, resource: outputTexture.createView() },
@@ -992,9 +1013,11 @@ class WebGPURenderer {
     });
 
     // Run compute shader
+    // Type proof: pipeline must exist after createPipelines()
+    assertDefined(this.colorPipeline, "colorPipeline must exist after createPipelines");
     const commandEncoder = device.createCommandEncoder();
     const passEncoder = commandEncoder.beginComputePass();
-    passEncoder.setPipeline(this.colorPipeline!);
+    passEncoder.setPipeline(this.colorPipeline);
     passEncoder.setBindGroup(0, bindGroup);
     passEncoder.dispatchWorkgroups(
       Math.ceil(width / 16),
@@ -1082,11 +1105,19 @@ class WebGPURenderer {
     if (!this.capabilities.available || !this.radialBlurPipeline) {
       return this.radialBlurCanvas2D(source, params);
     }
+    // Type proof: samples ∈ number | undefined → number
+    const samples = isFiniteNumber(params.samples) && params.samples > 0
+      ? Math.floor(params.samples)
+      : 32;
+
+    // Type proof: pipeline and layout must exist when radialBlurPipeline is checked above
+    assertDefined(this.radialBlurPipeline, "radialBlurPipeline must exist when available");
+    assertDefined(this.radialBlurBindGroupLayout, "radialBlurBindGroupLayout must exist after createPipelines");
     return this.runStandardCompute(
       source,
-      this.radialBlurPipeline!,
-      this.radialBlurBindGroupLayout!,
-      [params.centerX, params.centerY, params.amount, params.samples ?? 32],
+      this.radialBlurPipeline,
+      this.radialBlurBindGroupLayout,
+      [params.centerX, params.centerY, params.amount, samples],
     );
   }
 
@@ -1100,7 +1131,10 @@ class WebGPURenderer {
     const output = new Uint8ClampedArray(data.length);
     const centerX = params.centerX * width;
     const centerY = params.centerY * height;
-    const samples = params.samples ?? 32;
+    // Type proof: samples ∈ number | undefined → number
+    const samples = isFiniteNumber(params.samples) && params.samples > 0
+      ? Math.floor(params.samples)
+      : 32;
 
     for (let y = 0; y < height; y++) {
       for (let x = 0; x < width; x++) {
@@ -1144,14 +1178,23 @@ class WebGPURenderer {
     if (!this.capabilities.available || !this.directionalBlurPipeline) {
       return this.directionalBlurCanvas2D(source, params);
     }
+    // Type proof: pipeline and layout must exist when directionalBlurPipeline is checked above
+    assertDefined(this.directionalBlurPipeline, "directionalBlurPipeline must exist when available");
+    assertDefined(this.directionalBlurBindGroupLayout, "directionalBlurBindGroupLayout must exist after createPipelines");
     return this.runStandardCompute(
       source,
-      this.directionalBlurPipeline!,
-      this.directionalBlurBindGroupLayout!,
+      this.directionalBlurPipeline,
+      this.directionalBlurBindGroupLayout,
       [
         params.angle,
         params.length,
-        params.samples ?? 32,
+        // Type proof: samples ∈ number | undefined → number
+        (() => {
+          const samples = isFiniteNumber(params.samples) && params.samples > 0
+            ? Math.floor(params.samples)
+            : 32;
+          return samples;
+        })(),
         0, // padding
       ],
     );
@@ -1167,7 +1210,10 @@ class WebGPURenderer {
     const angleRad = (params.angle * Math.PI) / 180;
     const dirX = Math.cos(angleRad) * params.length;
     const dirY = Math.sin(angleRad) * params.length;
-    const samples = params.samples ?? 32;
+    // Type proof: samples ∈ number | undefined → number
+    const samples = isFiniteNumber(params.samples) && params.samples > 0
+      ? Math.floor(params.samples)
+      : 32;
 
     for (let y = 0; y < height; y++) {
       for (let x = 0; x < width; x++) {
@@ -1208,17 +1254,31 @@ class WebGPURenderer {
     if (!this.capabilities.available || !this.warpPipeline) {
       return this.warpCanvas2D(source, params);
     }
-    const styleMap = { bulge: 0, wave: 1, fisheye: 2, twist: 3 };
+    const styleMap: Record<"bulge" | "wave" | "fisheye" | "twist", number> = {
+      bulge: 0,
+      wave: 1,
+      fisheye: 2,
+      twist: 3,
+    };
+    // Type proof: styleIndex ∈ number | undefined → number
+    const styleIndex =
+      typeof params.style === "string" &&
+      params.style in styleMap
+        ? styleMap[params.style as keyof typeof styleMap]
+        : 0;
+    // Type proof: hDistort ∈ number | undefined → number
+    const hDistort = isFiniteNumber(params.hDistort) ? params.hDistort : 0;
+    // Type proof: vDistort ∈ number | undefined → number
+    const vDistort = isFiniteNumber(params.vDistort) ? params.vDistort : 0;
+
+    // Type proof: pipeline and layout must exist when warpPipeline is checked above
+    assertDefined(this.warpPipeline, "warpPipeline must exist when available");
+    assertDefined(this.warpBindGroupLayout, "warpBindGroupLayout must exist after createPipelines");
     return this.runStandardCompute(
       source,
-      this.warpPipeline!,
-      this.warpBindGroupLayout!,
-      [
-        styleMap[params.style] ?? 0,
-        params.bend,
-        params.hDistort ?? 0,
-        params.vDistort ?? 0,
-      ],
+      this.warpPipeline,
+      this.warpBindGroupLayout,
+      [styleIndex, params.bend, hDistort, vDistort],
     );
   }
 
@@ -1241,26 +1301,53 @@ class WebGPURenderer {
     if (!this.capabilities.available || !this.glowPipeline) {
       return this.glowCanvas2D(source, params);
     }
-    const _device = this.capabilities.device!;
+    // Type proof: device must exist when capabilities.available is true
+    assertDefined(this.capabilities.device, "device must exist when WebGPU is available");
+    const _device = this.capabilities.device;
     const imageData = this.toImageData(source);
     const { width, height } = imageData;
+
+    // Type proof: threshold ∈ number | undefined → number
+    const threshold = isFiniteNumber(params.threshold)
+      ? Math.max(0, Math.min(1, params.threshold))
+      : 0.5;
+    // Type proof: color.r ∈ number | undefined → number
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const paramsColor = (params != null && typeof params === "object" && "color" in params && params.color != null && typeof params.color === "object") ? params.color : undefined;
+    const colorRValue = (paramsColor != null && typeof paramsColor === "object" && "r" in paramsColor && typeof paramsColor.r === "number") ? paramsColor.r : undefined;
+    const colorR = isFiniteNumber(colorRValue)
+      ? Math.max(0, Math.min(1, colorRValue))
+      : 1;
+    // Type proof: color.g ∈ number | undefined → number
+    const colorGValue = (paramsColor != null && typeof paramsColor === "object" && "g" in paramsColor && typeof paramsColor.g === "number") ? paramsColor.g : undefined;
+    const colorG = isFiniteNumber(colorGValue)
+      ? Math.max(0, Math.min(1, colorGValue))
+      : 1;
+    // Type proof: color.b ∈ number | undefined → number
+    const colorBValue = (paramsColor != null && typeof paramsColor === "object" && "b" in paramsColor && typeof paramsColor.b === "number") ? paramsColor.b : undefined;
+    const colorB = isFiniteNumber(colorBValue)
+      ? Math.max(0, Math.min(1, colorBValue))
+      : 1;
 
     // Glow needs 32 bytes (8 floats) for params
     const paramsData = new Float32Array([
       params.radius,
       params.intensity,
-      params.threshold ?? 0.5,
+      threshold,
       0, // padding
-      params.color?.r ?? 1,
-      params.color?.g ?? 1,
-      params.color?.b ?? 1,
+      colorR,
+      colorG,
+      colorB,
       1, // alpha
     ]);
 
+    // Type proof: pipeline and layout must exist when glowPipeline is checked above
+    assertDefined(this.glowPipeline, "glowPipeline must exist when available");
+    assertDefined(this.glowBindGroupLayout, "glowBindGroupLayout must exist after createPipelines");
     return this.runStandardComputeWithParams(
       source,
-      this.glowPipeline!,
-      this.glowBindGroupLayout!,
+      this.glowPipeline,
+      this.glowBindGroupLayout,
       paramsData,
     );
   }
@@ -1283,10 +1370,13 @@ class WebGPURenderer {
     if (!this.capabilities.available || !this.levelsPipeline) {
       return this.levelsCanvas2D(source, params);
     }
+    // Type proof: pipeline and layout must exist when levelsPipeline is checked above
+    assertDefined(this.levelsPipeline, "levelsPipeline must exist when available");
+    assertDefined(this.levelsBindGroupLayout, "levelsBindGroupLayout must exist after createPipelines");
     return this.runStandardComputeWithParams(
       source,
-      this.levelsPipeline!,
-      this.levelsBindGroupLayout!,
+      this.levelsPipeline,
+      this.levelsBindGroupLayout,
       new Float32Array([
         params.inputBlack,
         params.inputWhite,
@@ -1352,7 +1442,9 @@ class WebGPURenderer {
     layout: GPUBindGroupLayout,
     paramsData: Float32Array,
   ): Promise<ImageData> {
-    const device = this.capabilities.device!;
+    // Type proof: device must exist when capabilities.available is true
+    assertDefined(this.capabilities.device, "device must exist when WebGPU is available");
+    const device = this.capabilities.device;
     const imageData = this.toImageData(source);
     const { width, height } = imageData;
 
@@ -1441,7 +1533,11 @@ class WebGPURenderer {
     if (source instanceof ImageData) {
       return source;
     }
-    const ctx = source.getContext("2d")!;
+    // Type proof: getContext("2d") returns non-null for HTMLCanvasElement
+    const ctx = source.getContext("2d");
+    if (!ctx) {
+      throw new TypeError("Failed to get 2d context from HTMLCanvasElement");
+    }
     return ctx.getImageData(0, 0, source.width, source.height);
   }
 

@@ -86,14 +86,17 @@ function createValidLayer(overrides: Partial<Layer> = {}): Layer {
 function createDepthResult(
   overrides: Partial<DepthRenderResult> = {},
 ): DepthRenderResult {
-  const width = overrides.width ?? 512;
-  const height = overrides.height ?? 512;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+  const width = (overrides.width !== null && overrides.width !== undefined && typeof overrides.width === "number" && Number.isFinite(overrides.width) && overrides.width > 0) ? overrides.width : 512;
+  const height = (overrides.height !== null && overrides.height !== undefined && typeof overrides.height === "number" && Number.isFinite(overrides.height) && overrides.height > 0) ? overrides.height : 512;
+  const minDepth = (overrides.minDepth !== null && overrides.minDepth !== undefined && typeof overrides.minDepth === "number" && Number.isFinite(overrides.minDepth)) ? overrides.minDepth : 100;
+  const maxDepth = (overrides.maxDepth !== null && overrides.maxDepth !== undefined && typeof overrides.maxDepth === "number" && Number.isFinite(overrides.maxDepth)) ? overrides.maxDepth : 1000;
   return {
     depthBuffer: new Float32Array(width * height).fill(500),
     width,
     height,
-    minDepth: overrides.minDepth ?? 100,
-    maxDepth: overrides.maxDepth ?? 1000,
+    minDepth,
+    maxDepth,
     ...overrides,
   };
 }

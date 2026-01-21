@@ -4,6 +4,7 @@
  * Operations for copying spline paths to position keyframes.
  */
 
+import { isFiniteNumber } from "@/utils/typeGuards";
 import type { ControlPoint, Keyframe, SplineData } from "@/types/project";
 import { markLayerDirty } from "@/services/layerEvaluationCache";
 import { storeLogger } from "@/utils/logger";
@@ -43,47 +44,55 @@ export function copyPathToPosition(
   sourceSplineLayerId: string,
   targetLayerId: string,
   options: CopyPathToPositionOptions = {},
-): number | null {
+): number {
   const projectStore = useProjectStore();
   const comp = projectStore.getActiveComp();
   if (!comp) {
-    storeLogger.error("copyPathToPosition: No active composition");
-    return null;
+    throw new Error("[LayerStore] Cannot copy path to position: No active composition found");
   }
 
   // Get source spline layer
   const sourceLayer = comp.layers.find((l) => l.id === sourceSplineLayerId);
   if (!sourceLayer || sourceLayer.type !== "spline" || !sourceLayer.data) {
-    storeLogger.error(
-      "copyPathToPosition: Source layer not found or not a spline",
-    );
-    return null;
+    throw new Error(`[LayerStore] Cannot copy path to position: Source layer "${sourceSplineLayerId}" not found or is not a spline layer`);
   }
 
   // Get target layer
   const targetLayer = comp.layers.find((l) => l.id === targetLayerId);
   if (!targetLayer) {
-    storeLogger.error("copyPathToPosition: Target layer not found");
-    return null;
+    throw new Error(`[LayerStore] Cannot copy path to position: Target layer "${targetLayerId}" not found`);
   }
 
   const splineData = sourceLayer.data as SplineData;
-  const controlPoints = splineData.controlPoints || [];
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy || []
+  const controlPointsRaw = splineData.controlPoints;
+  const controlPoints = (controlPointsRaw !== null && controlPointsRaw !== undefined && Array.isArray(controlPointsRaw)) ? controlPointsRaw : [];
 
   if (controlPoints.length < 2) {
-    storeLogger.error(
-      "copyPathToPosition: Path needs at least 2 control points",
-    );
-    return null;
+    throw new Error(`[LayerStore] Cannot copy path to position: Path needs at least 2 control points (found ${controlPoints.length})`);
   }
 
   // Configuration
-  const useFullDuration = options.useFullDuration ?? true;
-  const startFrame = options.startFrame ?? 0;
-  const endFrame = options.endFrame ?? comp.settings.frameCount - 1;
-  const interpolation = options.interpolation ?? "bezier";
-  const useSpatialTangents = options.useSpatialTangents ?? true;
-  const reversed = options.reversed ?? false;
+  // Type proof: useFullDuration ∈ boolean | undefined → boolean
+  const useFullDurationValue = options.useFullDuration;
+  const useFullDuration = useFullDurationValue === true;
+  // Type proof: startFrame ∈ ℕ ∪ {undefined} → ℕ
+  const startFrameValue = options.startFrame;
+  const startFrame = isFiniteNumber(startFrameValue) && Number.isInteger(startFrameValue) && startFrameValue >= 0 ? startFrameValue : 0;
+  // Type proof: endFrame ∈ ℕ ∪ {undefined} → ℕ
+  const endFrameValue = options.endFrame;
+  const frameCountValue = comp.settings.frameCount;
+  const defaultEndFrame = isFiniteNumber(frameCountValue) && Number.isInteger(frameCountValue) && frameCountValue > 0 ? frameCountValue - 1 : 0;
+  const endFrame = isFiniteNumber(endFrameValue) && Number.isInteger(endFrameValue) && endFrameValue >= 0 ? endFrameValue : defaultEndFrame;
+  // Type proof: interpolation ∈ "linear" | "bezier" | "hold" | undefined → "linear" | "bezier" | "hold"
+  const interpolationValue = options.interpolation;
+  const interpolation = interpolationValue === "linear" || interpolationValue === "bezier" || interpolationValue === "hold" ? interpolationValue : "bezier";
+  // Type proof: useSpatialTangents ∈ boolean | undefined → boolean
+  const useSpatialTangentsValue = options.useSpatialTangents;
+  const useSpatialTangents = useSpatialTangentsValue === true;
+  // Type proof: reversed ∈ boolean | undefined → boolean
+  const reversedValue = options.reversed;
+  const reversed = reversedValue === true;
 
   // Calculate frame range
   const frameStart = useFullDuration ? 0 : startFrame;
@@ -95,13 +104,19 @@ export function copyPathToPosition(
     controlPoints.length,
     Math.ceil(frameDuration / 5), // At least one keyframe every 5 frames
   );
-  const keyframeCount = options.keyframeCount ?? defaultKeyframeCount;
+  // Type proof: keyframeCount ∈ ℕ ∪ {undefined} → ℕ
+  const keyframeCountValue = options.keyframeCount;
+  const keyframeCount = isFiniteNumber(keyframeCountValue) && Number.isInteger(keyframeCountValue) && keyframeCountValue > 0 ? keyframeCountValue : defaultKeyframeCount;
 
   // Sample points along the path
   const sampledPoints = samplePathPoints(
     controlPoints,
     keyframeCount,
-    splineData.closed ?? false,
+    (() => {
+      // Type proof: closed ∈ boolean | undefined → boolean
+      const closedValue = splineData.closed;
+      return closedValue === true;
+    })(),
   );
   if (reversed) {
     sampledPoints.reverse();
@@ -126,7 +141,13 @@ export function copyPathToPosition(
     const point = sampledPoints[i];
 
     // Calculate frame distance to neighboring keyframes for handle influence
-    const prevFrame = i > 0 ? (keyframes[i - 1]?.frame ?? 0) : 0;
+    // Type proof: prevFrame ∈ ℕ ∪ {undefined} → ℕ
+    const prevFrame = i > 0 ? (() => {
+      const prevKeyframe = keyframes[i - 1];
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const prevFrameValue = (prevKeyframe != null && typeof prevKeyframe === "object" && "frame" in prevKeyframe && typeof prevKeyframe.frame === "number") ? prevKeyframe.frame : undefined;
+      return isFiniteNumber(prevFrameValue) && Number.isInteger(prevFrameValue) && prevFrameValue >= 0 ? prevFrameValue : 0;
+    })() : 0;
     const nextFrame =
       i < sampledPoints.length - 1
         ? Math.round(
@@ -140,7 +161,12 @@ export function copyPathToPosition(
     const keyframe: (typeof keyframes)[0] = {
       id: `kf_${Date.now()}_${i}`,
       frame,
-      value: { x: point.x, y: point.y, z: point.depth ?? 0 },
+      // Type proof: depth ∈ ℝ ∪ {undefined} → z ∈ ℝ
+      value: (() => {
+        const depthValue = point.depth;
+        const z = isFiniteNumber(depthValue) ? depthValue : 0;
+        return { x: point.x, y: point.y, z: z };
+      })(),
       interpolation,
       inHandle: { frame: -inInfluence, value: 0, enabled: true },
       outHandle: { frame: outInfluence, value: 0, enabled: true },

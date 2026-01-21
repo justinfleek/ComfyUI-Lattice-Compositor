@@ -13,7 +13,9 @@
  * 5. Render deformed triangles with texture mapping
  */
 
+import { isFiniteNumber } from "@/utils/typeGuards";
 import type { WarpPin } from "@/types/meshWarp";
+import type { EffectInstance, MeshDeformEffectInstance } from "@/types/effects";
 import { createLogger } from "@/utils/logger";
 import {
   generateMeshFromAlpha,
@@ -104,9 +106,15 @@ function getOrGenerateMesh(
   params: EvaluatedEffectParams,
   pins: WarpPin[],
 ): { mesh: MeshFromAlphaResult; weights: Float32Array } {
-  const triangleCount = params.triangle_count ?? 200;
-  const expansion = params.expansion ?? 3;
-  const alphaThreshold = params.alpha_threshold ?? 128;
+  // Type proof: triangle_count ∈ ℕ ∧ finite(triangle_count) → triangle_count ∈ ℕ₊
+  const triangleCountValue = params.triangle_count;
+  const triangleCount = isFiniteNumber(triangleCountValue) && Number.isInteger(triangleCountValue) && triangleCountValue > 0 ? triangleCountValue : 200;
+  // Type proof: expansion ∈ ℝ ∧ finite(expansion) → expansion ∈ ℝ₊
+  const expansionValue = params.expansion;
+  const expansion = isFiniteNumber(expansionValue) && expansionValue > 0 ? expansionValue : 3;
+  // Type proof: alpha_threshold ∈ ℕ ∧ finite(alpha_threshold) → alpha_threshold ∈ [0, 255]
+  const alphaThresholdValue = params.alpha_threshold;
+  const alphaThreshold = isFiniteNumber(alphaThresholdValue) && Number.isInteger(alphaThresholdValue) && alphaThresholdValue >= 0 && alphaThresholdValue <= 255 ? alphaThresholdValue : 128;
 
   const inputHash = hashCanvas(inputCanvas);
 
@@ -179,8 +187,12 @@ function calculatePinWeights(
     return new Float32Array(0);
   }
 
-  const falloffMethod = params.pin_falloff ?? "inverse-distance";
-  const falloffPower = params.falloff_power ?? 2;
+  // Type proof: pin_falloff ∈ string | undefined → string
+  const falloffMethodValue = params.pin_falloff;
+  const falloffMethod = typeof falloffMethodValue === "string" ? falloffMethodValue : "inverse-distance";
+  // Type proof: falloff_power ∈ ℝ ∧ finite(falloff_power) → falloff_power ∈ ℝ₊
+  const falloffPowerValue = params.falloff_power;
+  const falloffPower = isFiniteNumber(falloffPowerValue) && falloffPowerValue > 0 ? falloffPowerValue : 2;
 
   const weights = new Float32Array(mesh.vertexCount * pins.length);
 
@@ -769,12 +781,24 @@ export function meshDeformRenderer(
   params: EvaluatedEffectParams,
 ): EffectStackResult {
   const effectInstance = params._effectInstance;
-  const frame = params._frame ?? 0;
-  const showMesh = params.show_mesh ?? false;
-  const showPins = params.show_pins ?? true;
+  // Type proof: _frame ∈ ℕ ∪ {undefined} → ℕ
+  const frameValue = params._frame;
+  const frame = isFiniteNumber(frameValue) && Number.isInteger(frameValue) && frameValue >= 0 ? frameValue : 0;
+  // Type proof: show_mesh ∈ boolean | undefined → boolean
+  const showMesh = typeof params.show_mesh === "boolean" ? params.show_mesh : false;
+  // Type proof: show_pins ∈ boolean | undefined → boolean
+  const showPins = typeof params.show_pins === "boolean" ? params.show_pins : true;
 
   // Get pins from effect instance (injected by render pipeline)
-  const pins: WarpPin[] = effectInstance?.pins ?? [];
+  // Type proof: effectInstance is MeshDeformEffectInstance when effectKey === 'mesh-deform'
+  // pins ∈ WarpPin[] | undefined → WarpPin[]
+  const isMeshDeformInstance = (
+    inst: EffectInstance | undefined
+  ): inst is MeshDeformEffectInstance =>
+    inst !== undefined && inst.effectKey === "mesh-deform" && "pins" in inst;
+
+  const pinsValue = isMeshDeformInstance(effectInstance) ? effectInstance.pins : undefined;
+  const pins: WarpPin[] = Array.isArray(pinsValue) ? pinsValue : [];
 
   // No pins = no deformation
   if (pins.length === 0) {
@@ -784,7 +808,10 @@ export function meshDeformRenderer(
       output.ctx.drawImage(input.canvas, 0, 0);
 
       if (showMesh) {
-        const effectId = effectInstance?.id ?? "temp";
+        // Type proof: id ∈ string | undefined → string
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+        const effectIdValue = (effectInstance != null && typeof effectInstance === "object" && "id" in effectInstance && typeof effectInstance.id === "string") ? effectInstance.id : undefined;
+        const effectId = typeof effectIdValue === "string" ? effectIdValue : "temp";
         const { mesh } = getOrGenerateMesh(effectId, input.canvas, params, []);
         renderMeshWireframe(
           output.ctx,
@@ -800,7 +827,10 @@ export function meshDeformRenderer(
     return input;
   }
 
-  const effectId = effectInstance?.id ?? `temp-${Date.now()}`;
+  // Type proof: id ∈ string | undefined → string
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const effectIdValue = (effectInstance != null && typeof effectInstance === "object" && "id" in effectInstance && typeof effectInstance.id === "string") ? effectInstance.id : undefined;
+  const effectId = typeof effectIdValue === "string" ? effectIdValue : `temp-${Date.now()}`;
 
   // Get or generate mesh
   const { mesh, weights } = getOrGenerateMesh(
@@ -814,7 +844,8 @@ export function meshDeformRenderer(
   const deformedVertices = deformMesh(mesh, pins, weights, frame);
 
   // Check if overlap depth sorting is enabled
-  const enableOverlap = params.enable_overlap ?? false;
+  // Type proof: enable_overlap ∈ boolean | undefined → boolean
+  const enableOverlap = typeof params.enable_overlap === "boolean" ? params.enable_overlap : false;
 
   // Create output and render deformed mesh
   const output = createMatchingCanvas(input.canvas);

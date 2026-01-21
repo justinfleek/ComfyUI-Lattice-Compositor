@@ -31,9 +31,9 @@
         <div class="slider-control">
           <input
             type="range"
-            :min="property.config.min ?? 0"
-            :max="property.config.max ?? 100"
-            :step="property.config.step ?? 1"
+            :min="propertyConfigMin"
+            :max="propertyConfigMax"
+            :step="propertyConfigStep"
             :value="currentValue"
             @input="updateValue(parseFloat(($event.target as HTMLInputElement).value))"
             class="slider"
@@ -96,7 +96,7 @@
             X:
             <input
               type="number"
-              :value="currentValue?.x ?? 0"
+              :value="currentValueX"
               @input="updatePointValue('x', parseFloat(($event.target as HTMLInputElement).value))"
               class="point-input"
             />
@@ -105,7 +105,7 @@
             Y:
             <input
               type="number"
-              :value="currentValue?.y ?? 0"
+              :value="currentValueY"
               @input="updatePointValue('y', parseFloat(($event.target as HTMLInputElement).value))"
               class="point-input"
             />
@@ -187,7 +187,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
 import { getPropertyValue, setPropertyValue } from "@/services/templateBuilder";
-import { useCompositorStore } from "@/stores/compositorStore";
+import { useProjectStore } from "@/stores/projectStore";
 import type { Layer } from "@/types/project";
 import type { ExposedProperty } from "@/types/templateBuilder";
 
@@ -201,7 +201,7 @@ const emit = defineEmits<{
   (e: "remove"): void;
 }>();
 
-const compositorStore = useCompositorStore();
+const projectStore = useProjectStore();
 
 // Local state
 const localName = ref(props.property.name);
@@ -221,11 +221,39 @@ const currentValue = computed(() => {
   return getPropertyValue(props.layer, props.property.sourcePropertyPath);
 });
 
+// Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??/?.
+// Computed properties for property.config values
+const propertyConfigMin = computed(() => {
+  const config = props.property.config;
+  return (config !== null && typeof config === "object" && "min" in config && typeof config.min === "number" && Number.isFinite(config.min)) ? config.min : 0;
+});
+const propertyConfigMax = computed(() => {
+  const config = props.property.config;
+  return (config !== null && typeof config === "object" && "max" in config && typeof config.max === "number" && Number.isFinite(config.max)) ? config.max : 100;
+});
+const propertyConfigStep = computed(() => {
+  const config = props.property.config;
+  return (config !== null && typeof config === "object" && "step" in config && typeof config.step === "number" && Number.isFinite(config.step) && config.step > 0) ? config.step : 1;
+});
+
+// Computed properties for currentValue point coordinates
+const currentValueX = computed(() => {
+  const value = currentValue.value;
+  return (value !== null && value !== undefined && typeof value === "object" && "x" in value && typeof value.x === "number" && Number.isFinite(value.x)) ? value.x : 0;
+});
+const currentValueY = computed(() => {
+  const value = currentValue.value;
+  return (value !== null && value !== undefined && typeof value === "object" && "y" in value && typeof value.y === "number" && Number.isFinite(value.y)) ? value.y : 0;
+});
+
 // Available layers for layer picker (exclude current layer)
 const availableLayers = computed(() => {
-  const comp = compositorStore.activeComposition;
+  const comp = projectStore.getActiveComp();
   if (!comp) return [];
-  return comp.layers.filter((l) => l.id !== props.layer?.id);
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const propsLayer = (props != null && typeof props === "object" && "layer" in props && props.layer != null && typeof props.layer === "object") ? props.layer : undefined;
+  const layerId = (propsLayer != null && typeof propsLayer === "object" && "id" in propsLayer && typeof propsLayer.id === "string") ? propsLayer.id : undefined;
+  return comp.layers.filter((l) => l.id !== layerId);
 });
 
 // Selected layer info for display
@@ -287,10 +315,15 @@ function colorToHex(
     "g" in color &&
     "b" in color
   ) {
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+    // Pattern match: rgba.r/g/b ∈ number | undefined → number (default 255)
     const rgba = color as { r: number; g: number; b: number; a?: number };
-    const r = Math.round((rgba.r ?? 255) * (rgba.r > 1 ? 1 : 255));
-    const g = Math.round((rgba.g ?? 255) * (rgba.g > 1 ? 1 : 255));
-    const b = Math.round((rgba.b ?? 255) * (rgba.b > 1 ? 1 : 255));
+    const rValue = (typeof rgba.r === "number" && Number.isFinite(rgba.r)) ? rgba.r : 255;
+    const gValue = (typeof rgba.g === "number" && Number.isFinite(rgba.g)) ? rgba.g : 255;
+    const bValue = (typeof rgba.b === "number" && Number.isFinite(rgba.b)) ? rgba.b : 255;
+    const r = Math.round(rValue * (rValue > 1 ? 1 : 255));
+    const g = Math.round(gValue * (gValue > 1 ? 1 : 255));
+    const b = Math.round(bValue * (bValue > 1 ? 1 : 255));
 
     return `#${[r, g, b].map((c) => c.toString(16).padStart(2, "0")).join("")}`;
   }
@@ -334,13 +367,19 @@ function getMediaFilename(url: string): string {
 
 // Media selection
 function selectMedia() {
-  mediaFileInput.value?.click();
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const mediaFileInputValue = mediaFileInput.value;
+  if (mediaFileInputValue != null && typeof mediaFileInputValue === "object" && typeof mediaFileInputValue.click === "function") {
+    mediaFileInputValue.click();
+  }
 }
 
 async function handleMediaSelect(event: Event) {
   const input = event.target as HTMLInputElement;
-  const file = input.files?.[0];
-  if (!file) return;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const inputFiles = (input != null && typeof input === "object" && "files" in input && input.files != null && input.files.length > 0) ? input.files : null;
+  const file = (inputFiles != null && inputFiles.length > 0) ? inputFiles[0] : null;
+  if (file == null) return;
 
   try {
     // Read file as data URL

@@ -64,7 +64,6 @@
 
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref, watch } from "vue";
-import { useCompositorStore } from "@/stores/compositorStore";
 
 // Types from worker
 interface HistogramResult {
@@ -100,8 +99,6 @@ interface ParadeResult {
   green: WaveformResult;
   blue: WaveformResult;
 }
-
-const store = useCompositorStore();
 
 // UI state
 const activeScope = ref<"histogram" | "waveform" | "vectorscope" | "parade">(
@@ -195,9 +192,15 @@ function startAnalysisLoop() {
 function requestAnalysis() {
   if (!worker || isAnalyzing.value) return;
 
-  // Get current frame image data from engine
-  const imageData = getCanvasImageData();
-  if (!imageData) return;
+  // Get current frame image data from engine (throws explicit error if unavailable)
+  let imageData: ImageData;
+  try {
+    imageData = getCanvasImageData();
+  } catch (error) {
+    // Canvas not available - skip analysis (expected state)
+    console.warn("[ScopesPanel] Cannot analyze scopes:", error instanceof Error ? error.message : String(error));
+    return;
+  }
 
   isAnalyzing.value = true;
 
@@ -217,13 +220,28 @@ function requestAnalysis() {
   });
 }
 
-// Get image data from the canvas
-function getCanvasImageData(): ImageData | null {
+/**
+ * Get image data from the canvas
+ * 
+ * System F/Omega proof: Explicit error throwing - never return null
+ * Type proof: → ImageData (non-nullable)
+ * Mathematical proof: Canvas image data retrieval must succeed or throw explicit error
+ * Pattern proof: Missing canvas or context is an explicit error condition
+ */
+function getCanvasImageData(): ImageData {
   // Try to get canvas from engine
   const canvas = document.querySelector(
     ".three-canvas canvas",
   ) as HTMLCanvasElement;
-  if (!canvas) return null;
+  
+  // System F/Omega: Throw explicit error when canvas not found
+  if (!canvas) {
+    throw new Error(
+      `[ScopesPanel] Cannot get canvas image data: Canvas not found. ` +
+      `Canvas element ".three-canvas canvas" must exist in the DOM. ` +
+      `Wrap in try/catch if "canvas not ready" is an expected state.`
+    );
+  }
 
   try {
     const ctx = canvas.getContext("2d", { willReadFrequently: true });
@@ -252,11 +270,25 @@ function getCanvasImageData(): ImageData | null {
 
       return new ImageData(flipped, width, height);
     }
+    
+    // System F/Omega: Throw explicit error when no context is available
+    throw new Error(
+      `[ScopesPanel] Cannot get canvas image data: No canvas context available. ` +
+      `Canvas dimensions: ${canvas.width}x${canvas.height}. ` +
+      `Canvas must have a 2D, WebGL, or WebGL2 context available.`
+    );
   } catch (error) {
-    console.error("Failed to get canvas image data:", error);
+    // System F/Omega: Re-throw error with context instead of returning null
+    if (error instanceof Error && error.message.startsWith("[ScopesPanel]")) {
+      throw error;
+    }
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    throw new Error(
+      `[ScopesPanel] Cannot get canvas image data: Failed to read pixels. ` +
+      `Canvas dimensions: ${canvas.width}x${canvas.height}, error: ${errorMessage}. ` +
+      `Wrap in try/catch if "read failure" is an expected state.`
+    );
   }
-
-  return null;
 }
 </script>
 

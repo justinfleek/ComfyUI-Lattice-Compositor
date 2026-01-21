@@ -7,6 +7,7 @@
  * @see docs/MASTER_REFACTOR_PLAN.md
  */
 
+import { isFiniteNumber } from "@/utils/typeGuards";
 import { defineStore } from "pinia";
 import {
   type CacheStats,
@@ -64,11 +65,14 @@ export const useCacheStore = defineStore("cache", {
       storeLogger.info("Frame cache", enabled ? "enabled" : "disabled");
     },
 
-    getCachedFrame(frame: number): ImageData | null {
-      if (!this.frameCacheEnabled) return null;
+    getCachedFrame(frame: number): ImageData {
+      if (!this.frameCacheEnabled) {
+        throw new Error(`[CacheStore] Cannot get cached frame: Frame cache is disabled`);
+      }
 
       const projectStore = useProjectStore();
       const cache = getFrameCache();
+      // FrameCache.get() now throws errors on cache miss, so we can call it directly
       return cache.get(frame, projectStore.activeCompositionId, this.projectStateHash);
     },
 
@@ -140,8 +144,20 @@ export const useCacheStore = defineStore("cache", {
       if (!comp) return "";
 
       const fingerprint = {
-        layerCount: comp.layers?.length ?? 0,
-        layerIds: comp.layers?.map((l) => l.id).join(",") ?? "",
+        // Type proof: layerCount ∈ ℕ ∪ {undefined} → ℕ
+        layerCount: (() => {
+          const layers = comp.layers;
+          return Array.isArray(layers) && isFiniteNumber(layers.length) && Number.isInteger(layers.length) && layers.length >= 0 ? layers.length : 0;
+        })(),
+        // Type proof: layerIds ∈ string | undefined → string
+        layerIds: (() => {
+          const layers = comp.layers;
+          if (Array.isArray(layers)) {
+            const ids = layers.map((l) => l.id).join(",");
+            return typeof ids === "string" ? ids : "";
+          }
+          return "";
+        })(),
         modified: projectStore.project.meta.modified,
         settings: comp.settings,
       };

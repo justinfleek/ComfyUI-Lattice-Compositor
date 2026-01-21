@@ -192,9 +192,9 @@ import {
   type DecompositionModelStatus,
   getLayerDecompositionService,
 } from "@/services/layerDecomposition";
-import { useCompositorStore } from "@/stores/compositorStore";
-import { useCompositionStore } from "@/stores/compositionStore";
+import { useCompositionStore, type CompositionStoreAccess } from "@/stores/compositionStore";
 import { useProjectStore } from "@/stores/projectStore";
+import { useSelectionStore } from "@/stores/selectionStore";
 import type { ImageLayerData, NestedCompData, SolidLayerData } from "@/types/project";
 import { isLayerOfType } from "@/types/project";
 import { useLayerStore } from "@/stores/layerStore";
@@ -204,10 +204,23 @@ const emit = defineEmits<{
   (e: "decomposed", layers: DecomposedLayer[]): void;
 }>();
 
-const store = useCompositorStore();
 const compositionStore = useCompositionStore();
 const projectStore = useProjectStore();
+const selectionStore = useSelectionStore();
 const layerStore = useLayerStore();
+
+function getCompositionStoreAccess(): CompositionStoreAccess {
+  return {
+    project: projectStore.project,
+    activeCompositionId: projectStore.activeCompositionId,
+    openCompositionIds: projectStore.openCompositionIds,
+    compositionBreadcrumbs: projectStore.compositionBreadcrumbs,
+    selectedLayerIds: selectionStore.selectedLayerIds,
+    getActiveComp: () => projectStore.getActiveComp(),
+    switchComposition: (id: string) => compositionStore.switchComposition(getCompositionStoreAccess(), id),
+    pushHistory: () => projectStore.pushHistory(),
+  };
+}
 
 // Model status
 const modelStatus = ref<DecompositionModelStatus | null>(null);
@@ -238,7 +251,7 @@ const errorMessage = ref("");
 
 // Get image layers from composition
 const imageLayers = computed(() => {
-  const layers = store.getActiveCompLayers();
+  const layers = projectStore.getActiveCompLayers();
   return layers.filter((l) => l.type === "image" || l.type === "solid");
 });
 
@@ -303,20 +316,30 @@ const buttonText = computed(() => {
 
 // File handling
 function triggerUpload() {
-  fileInput.value?.click();
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const fileInputValue = fileInput.value;
+  if (fileInputValue != null && typeof fileInputValue === "object" && typeof fileInputValue.click === "function") {
+    fileInputValue.click();
+  }
 }
 
 function handleFileSelect(event: Event) {
   const input = event.target as HTMLInputElement;
-  const file = input.files?.[0];
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const files = (input != null && typeof input === "object" && "files" in input && input.files != null && input.files.length > 0) ? input.files : null;
+  const file = (files != null && files.length > 0) ? files[0] : undefined;
   if (file) {
     loadImageFile(file);
   }
 }
 
 function handleDrop(event: DragEvent) {
-  const file = event.dataTransfer?.files[0];
-  if (file?.type.startsWith("image/")) {
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const dataTransfer = (event != null && typeof event === "object" && "dataTransfer" in event && event.dataTransfer != null && typeof event.dataTransfer === "object") ? event.dataTransfer : undefined;
+  const files = (dataTransfer != null && typeof dataTransfer === "object" && "files" in dataTransfer && dataTransfer.files != null && dataTransfer.files.length > 0) ? dataTransfer.files : null;
+  const file = (files != null && files.length > 0) ? files[0] : undefined;
+  const fileType = (file != null && typeof file === "object" && "type" in file && typeof file.type === "string") ? file.type : undefined;
+  if (fileType != null && fileType.startsWith("image/")) {
     loadImageFile(file);
   }
 }
@@ -329,24 +352,49 @@ function loadImageFile(file: File) {
   reader.readAsDataURL(file);
 }
 
-// Get source image as data URL
-async function getSourceImage(): Promise<string | null> {
+/**
+ * Get source image as data URL
+ * 
+ * System F/Omega proof: Explicit error throwing - never return null
+ * Type proof: → Promise<string> (non-nullable)
+ * Mathematical proof: Source image retrieval must succeed or throw explicit error
+ * Pattern proof: Missing layer or unsupported type is an explicit error condition
+ */
+async function getSourceImage(): Promise<string> {
   if (sourceType.value === "upload") {
+    // System F/Omega: Throw explicit error if uploaded image is not available
+    if (!uploadedImage.value) {
+      throw new Error(
+        `[DecomposeDialog] Cannot get source image: No uploaded image available. ` +
+        `Source type is "upload" but no image has been uploaded. ` +
+        `Upload an image first or select a layer as source.`
+      );
+    }
     return uploadedImage.value;
   }
 
   // Get from layer
   const layer = imageLayers.value.find((l) => l.id === selectedLayerId.value);
-  if (!layer) return null;
+  
+  // System F/Omega: Throw explicit error when layer not found
+  if (!layer) {
+    throw new Error(
+      `[DecomposeDialog] Cannot get source image: Layer not found. ` +
+      `Selected layer ID: ${selectedLayerId.value || "none"}. ` +
+      `Layer must exist in image layers.`
+    );
+  }
 
   // For image layers, get the source URL via asset lookup
   if (layer.type === "image" && layer.data) {
     const imageData = layer.data as import("@/types/project").ImageLayerData;
-    if (imageData.assetId) {
+    if (imageData.assetId !== "") {
       // Look up asset to get actual URL/data
-      const asset = store.project?.assets?.[imageData.assetId];
-      const source = asset?.data || imageData.assetId;
-      if (source) {
+      const asset = projectStore.project.assets[imageData.assetId];
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const assetData = (asset != null && typeof asset === "object" && "data" in asset && asset.data != null) ? asset.data : undefined;
+      const source = assetData != null ? assetData : imageData.assetId;
+      if (source !== "") {
         // If it's already a data URL, return it directly
         if (source.startsWith("data:")) {
           return source;
@@ -361,15 +409,20 @@ async function getSourceImage(): Promise<string | null> {
   if (isLayerOfType(layer, "solid") && layer.data) {
     const solidData = layer.data as SolidLayerData;
     const canvas = document.createElement("canvas");
-    canvas.width = solidData.width || projectStore.getWidth(store);
-    canvas.height = solidData.height || projectStore.getHeight(store);
+    canvas.width = solidData.width || projectStore.getWidth();
+    canvas.height = solidData.height || projectStore.getHeight();
     const ctx = canvas.getContext("2d")!;
     ctx.fillStyle = solidData.color || "#808080";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     return canvas.toDataURL("image/png");
   }
 
-  return null;
+  // System F/Omega: Throw explicit error for unsupported layer types
+  throw new Error(
+    `[DecomposeDialog] Cannot get source image: Unsupported layer type. ` +
+    `Layer type: "${layer.type}", layer ID: ${layer.id}, name: ${layer.name}. ` +
+    `Layer type must be "image" or "solid" to get source image. Wrap in try/catch if "unsupported type" is an expected state.`
+  );
 }
 
 // Helper to load an image URL and convert to data URL
@@ -394,13 +447,13 @@ async function loadImageAsDataUrl(url: string): Promise<string> {
 async function createLayersFromDecomposition(
   decomposedLayers: DecomposedLayer[],
 ) {
-  const comp = store.getActiveComp();
+  const comp = projectStore.getActiveComp();
   if (!comp) return;
 
   if (groupIntoComp.value) {
     // Create a nested composition to contain all decomposed layers
     const nestedCompName = `Decomposed (${decomposedLayers.length} layers)`;
-    const nestedComp = compositionStore.createComposition(store, nestedCompName, {
+    const nestedComp = compositionStore.createComposition(nestedCompName, {
       width: comp.settings.width,
       height: comp.settings.height,
       frameCount: comp.settings.frameCount,
@@ -410,12 +463,12 @@ async function createLayersFromDecomposition(
 
     // Switch to nested comp to add layers
     const originalCompId = comp.id;
-    store.switchComposition(nestedComp.id);
+    compositionStore.switchComposition(getCompositionStoreAccess(), nestedComp.id);
 
     // Create image layers for each decomposed layer (reverse order so Background is at bottom)
     for (let i = decomposedLayers.length - 1; i >= 0; i--) {
       const decomposed = decomposedLayers[i];
-      const layer = layerStore.createLayer(store, "image", decomposed.label);
+      const layer = layerStore.createLayer("image", decomposed.label);
       if (isLayerOfType(layer, "image") && layer.data) {
         const imageData = layer.data as ImageLayerData;
         imageData.source = decomposed.image;
@@ -423,10 +476,10 @@ async function createLayersFromDecomposition(
     }
 
     // Switch back to original comp
-    store.switchComposition(originalCompId);
+    compositionStore.switchComposition(getCompositionStoreAccess(), originalCompId);
 
     // Add the nested comp as a layer in the original
-    const nestedLayer = layerStore.createLayer(store, "nestedComp", nestedCompName);
+    const nestedLayer = layerStore.createLayer("nestedComp", nestedCompName);
     if (isLayerOfType(nestedLayer, "nestedComp") && nestedLayer.data) {
       const nestedData = nestedLayer.data as NestedCompData;
       nestedData.compositionId = nestedComp.id;
@@ -435,7 +488,7 @@ async function createLayersFromDecomposition(
     // Create layers directly in current composition (original behavior)
     for (let i = decomposedLayers.length - 1; i >= 0; i--) {
       const decomposed = decomposedLayers[i];
-      const layer = layerStore.createLayer(store, "image", decomposed.label);
+      const layer = layerStore.createLayer("image", decomposed.label);
       if (isLayerOfType(layer, "image") && layer.data) {
         const imageData = layer.data as ImageLayerData;
         imageData.source = decomposed.image;
@@ -443,7 +496,7 @@ async function createLayersFromDecomposition(
     }
   }
 
-  store.pushHistory();
+  projectStore.pushHistory();
 }
 
 // Main decomposition function
@@ -457,12 +510,9 @@ async function startDecomposition() {
   try {
     const service = getLayerDecompositionService();
 
-    // Get source image
+    // Get source image (throws explicit error if unavailable)
     progressMessage.value = "Preparing source image...";
     const sourceImage = await getSourceImage();
-    if (!sourceImage) {
-      throw new Error("Failed to get source image");
-    }
 
     // Run decomposition with auto-setup
     const layers = await service.decomposeWithAutoSetup(
@@ -532,7 +582,11 @@ watch(
   hasImageLayers,
   (has) => {
     if (has && !selectedLayerId.value) {
-      selectedLayerId.value = imageLayers.value[0]?.id || "";
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const imageLayersValue = imageLayers.value;
+      const firstLayer = (imageLayersValue != null && Array.isArray(imageLayersValue) && imageLayersValue.length > 0) ? imageLayersValue[0] : undefined;
+      const firstLayerId = (firstLayer != null && typeof firstLayer === "object" && "id" in firstLayer && typeof firstLayer.id === "string") ? firstLayer.id : undefined;
+      selectedLayerId.value = firstLayerId != null ? firstLayerId : "";
     }
   },
   { immediate: true },

@@ -68,11 +68,10 @@ export const useMarkerStore = defineStore("marker", {
     addMarker(
       store: MarkerStoreAccess,
       marker: Omit<Marker, "id"> & { id?: string },
-    ): Marker | null {
+    ): Marker {
       const comp = store.getActiveComp();
       if (!comp) {
-        storeLogger.warn("addMarker: No active composition");
-        return null;
+        throw new Error("[MarkerStore] Cannot add marker: No active composition found");
       }
 
       // Initialize markers array if needed
@@ -171,7 +170,8 @@ export const useMarkerStore = defineStore("marker", {
      */
     removeMarker(store: MarkerStoreAccess, markerId: string): boolean {
       const comp = store.getActiveComp();
-      if (!comp?.markers) return false;
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      if (!comp || !(comp != null && typeof comp === "object" && "markers" in comp && comp.markers != null && Array.isArray(comp.markers))) return false;
 
       const index = comp.markers.findIndex((m) => m.id === markerId);
       if (index < 0) return false;
@@ -193,7 +193,8 @@ export const useMarkerStore = defineStore("marker", {
      */
     removeMarkerAtFrame(store: MarkerStoreAccess, frame: number): boolean {
       const comp = store.getActiveComp();
-      if (!comp?.markers) return false;
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      if (!comp || !(comp != null && typeof comp === "object" && "markers" in comp && comp.markers != null && Array.isArray(comp.markers))) return false;
 
       const index = comp.markers.findIndex((m) => framesEqual(m.frame, frame));
       if (index < 0) return false;
@@ -216,7 +217,8 @@ export const useMarkerStore = defineStore("marker", {
      */
     removeMarkersByColor(store: MarkerStoreAccess, color: string): number {
       const comp = store.getActiveComp();
-      if (!comp?.markers) return 0;
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      if (!comp || !(comp != null && typeof comp === "object" && "markers" in comp && comp.markers != null && Array.isArray(comp.markers))) return 0;
 
       const originalLength = comp.markers.length;
       comp.markers = comp.markers.filter((m) => m.color !== color);
@@ -250,7 +252,8 @@ export const useMarkerStore = defineStore("marker", {
       updates: Partial<Omit<Marker, "id">>,
     ): boolean {
       const comp = store.getActiveComp();
-      if (!comp?.markers) return false;
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      if (!comp || !(comp != null && typeof comp === "object" && "markers" in comp && comp.markers != null && Array.isArray(comp.markers))) return false;
 
       const marker = comp.markers.find((m) => m.id === markerId);
       if (!marker) return false;
@@ -304,7 +307,9 @@ export const useMarkerStore = defineStore("marker", {
      */
     getMarkers(store: MarkerStoreAccess): Marker[] {
       const comp = store.getActiveComp();
-      return comp?.markers || [];
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy || []
+      const markers = (comp !== null && comp !== undefined && typeof comp === "object" && "markers" in comp) ? comp.markers : undefined;
+      return (markers !== null && markers !== undefined && Array.isArray(markers)) ? markers : [];
     },
 
     /**
@@ -316,7 +321,10 @@ export const useMarkerStore = defineStore("marker", {
      */
     getMarker(store: MarkerStoreAccess, markerId: string): Marker | null {
       const comp = store.getActiveComp();
-      return comp?.markers?.find((m) => m.id === markerId) || null;
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const markers = (comp != null && typeof comp === "object" && "markers" in comp && comp.markers != null && Array.isArray(comp.markers)) ? comp.markers : undefined;
+      const marker = (markers != null && typeof markers.find === "function") ? markers.find((m) => m.id === markerId) : undefined;
+      return marker || null;
     },
 
     /**
@@ -328,7 +336,10 @@ export const useMarkerStore = defineStore("marker", {
      */
     getMarkerAtFrame(store: MarkerStoreAccess, frame: number): Marker | null {
       const comp = store.getActiveComp();
-      return comp?.markers?.find((m) => m.frame === frame) || null;
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const markers = (comp != null && typeof comp === "object" && "markers" in comp && comp.markers != null && Array.isArray(comp.markers)) ? comp.markers : undefined;
+      const marker = (markers != null && typeof markers.find === "function") ? markers.find((m) => m.frame === frame) : undefined;
+      return marker || null;
     },
 
     /**
@@ -345,7 +356,8 @@ export const useMarkerStore = defineStore("marker", {
       endFrame: number,
     ): Marker[] {
       const comp = store.getActiveComp();
-      if (!comp?.markers) return [];
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      if (!comp || !(comp != null && typeof comp === "object" && "markers" in comp && comp.markers != null && Array.isArray(comp.markers))) return [];
 
       return comp.markers.filter(
         (m) => m.frame >= startFrame && m.frame <= endFrame,
@@ -359,11 +371,18 @@ export const useMarkerStore = defineStore("marker", {
      * @param frame - Current frame
      * @returns The next marker or null if none
      */
-    getNextMarker(store: MarkerStoreAccess, frame: number): Marker | null {
+    getNextMarker(store: MarkerStoreAccess, frame: number): Marker {
       const comp = store.getActiveComp();
-      if (!comp?.markers) return null;
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      if (!comp || !(comp != null && typeof comp === "object" && "markers" in comp && comp.markers != null && Array.isArray(comp.markers))) {
+        throw new Error("[MarkerStore] Cannot get next marker: No active composition or markers array");
+      }
 
-      return comp.markers.find((m) => m.frame > frame) || null;
+      const marker = comp.markers.find((m) => m.frame > frame);
+      if (!marker) {
+        throw new Error(`[MarkerStore] No marker found after frame ${frame}`);
+      }
+      return marker;
     },
 
     /**
@@ -373,14 +392,18 @@ export const useMarkerStore = defineStore("marker", {
      * @param frame - Current frame
      * @returns The previous marker or null if none
      */
-    getPreviousMarker(store: MarkerStoreAccess, frame: number): Marker | null {
+    getPreviousMarker(store: MarkerStoreAccess, frame: number): Marker {
       const comp = store.getActiveComp();
-      if (!comp?.markers) return null;
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      if (!comp || !(comp != null && typeof comp === "object" && "markers" in comp && comp.markers != null && Array.isArray(comp.markers))) {
+        throw new Error("[MarkerStore] Cannot get previous marker: No active composition or markers array");
+      }
 
       const previousMarkers = comp.markers.filter((m) => m.frame < frame);
-      return previousMarkers.length > 0
-        ? previousMarkers[previousMarkers.length - 1]
-        : null;
+      if (previousMarkers.length > 0) {
+        return previousMarkers[previousMarkers.length - 1];
+      }
+      throw new Error(`[MarkerStore] No marker found before frame ${frame}`);
     },
 
     // ========================================================================

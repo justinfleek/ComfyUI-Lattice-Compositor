@@ -8,6 +8,13 @@
  */
 
 import type { ToolCall } from "@/services/ai/toolDefinitions";
+import type { JSONValue } from "@/types/dataAsset";
+
+/**
+ * All possible JavaScript values that can be validated at runtime
+ * Used as input type for security validators (replaces unknown)
+ */
+type RuntimeValue = string | number | boolean | object | null | undefined | bigint | symbol;
 
 // ============================================================================
 // URL VALIDATION
@@ -222,7 +229,7 @@ export class ValidationError extends Error {
   constructor(
     message: string,
     public path: string[] = [],
-    public value?: unknown,
+    public value?: JSONValue,
   ) {
     super(message);
     this.name = "ValidationError";
@@ -233,20 +240,20 @@ export class ValidationError extends Error {
  * Generic object type for security utilities
  */
 export interface SecurityObject {
-  [key: string]: unknown;
+  [key: string]: JSONValue;
 }
 
 /**
  * Validate that a value is a non-null object
  */
-export function isObject(value: unknown): value is SecurityObject {
+export function isObject(value: RuntimeValue): value is SecurityObject {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 /**
  * Validate that a value is an array
  */
-export function isArray(value: unknown): value is unknown[] {
+export function isArray(value: RuntimeValue): value is JSONValue[] {
   return Array.isArray(value);
 }
 
@@ -255,14 +262,14 @@ export function isArray(value: unknown): value is unknown[] {
  * Ensures the response has expected shape before processing
  */
 export function validateAIResponse(
-  response: unknown,
+  response: RuntimeValue,
   context: string = "AI response",
 ): {
   content?: string;
   toolCalls?: Array<{
     id: string;
     name: string;
-    arguments: Record<string, unknown>;
+    arguments: Record<string, JSONValue>;
   }>;
 } {
   if (!isObject(response)) {
@@ -348,7 +355,7 @@ export function validateAIResponse(
  * Checks that the project has required fields before loading
  */
 export function validateProjectStructure(
-  data: unknown,
+  data: RuntimeValue,
   context: string = "Project",
 ): void {
   if (!isObject(data)) {
@@ -441,15 +448,31 @@ export function validateProjectStructure(
 /**
  * Safely parse JSON with validation
  */
-export function safeJSONParse<T>(
+export function safeJSONParse<T extends JSONValue>(
   json: string,
-  validator?: (data: unknown) => void,
+  validator?: (data: JSONValue) => void,
   context: string = "JSON",
 ): T {
-  let data: unknown;
+  let data: JSONValue;
   try {
-    data = JSON.parse(json);
+    const parsed = JSON.parse(json);
+    // Type guard: JSON.parse returns JSONValue
+    if (
+      typeof parsed === "string" ||
+      typeof parsed === "number" ||
+      typeof parsed === "boolean" ||
+      parsed === null ||
+      Array.isArray(parsed) ||
+      (typeof parsed === "object" && parsed !== null)
+    ) {
+      data = parsed as JSONValue;
+    } else {
+      throw new ValidationError(`${context}: Parsed JSON is not a valid JSON value`);
+    }
   } catch (e) {
+    if (e instanceof ValidationError) {
+      throw e;
+    }
     throw new ValidationError(
       `${context}: Invalid JSON - ${e instanceof Error ? e.message : "parse error"}`,
     );

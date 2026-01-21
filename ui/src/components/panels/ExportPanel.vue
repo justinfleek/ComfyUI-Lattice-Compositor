@@ -183,11 +183,11 @@ import {
   type VideoEncoderConfig,
   WebCodecsVideoEncoder,
 } from "@/services/export/videoEncoder";
-import { useCompositorStore } from "@/stores/compositorStore";
 import { useAnimationStore } from "@/stores/animationStore";
+import { useProjectStore } from "@/stores/projectStore";
 
-const store = useCompositorStore();
 const animationStore = useAnimationStore();
+const projectStore = useProjectStore();
 
 // State
 const exportMode = ref<"video" | "sequence">("video");
@@ -216,11 +216,32 @@ const sequenceResult = ref<FrameSequenceResult | null>(null);
 const sequenceFormatInfo = computed(() => getFormatInfo(sequenceFormat.value));
 
 // Computed
-const activeComp = computed(() => store.getActiveComp());
-const outputWidth = computed(() => activeComp.value?.settings.width || 1024);
-const outputHeight = computed(() => activeComp.value?.settings.height || 1024);
-const frameRate = computed(() => activeComp.value?.settings.fps || 16);
-const totalFrames = computed(() => activeComp.value?.settings.frameCount || 81);
+const activeComp = computed(() => projectStore.getActiveComp());
+// Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+const outputWidth = computed(() => {
+  const comp = activeComp.value;
+  const settings = (comp != null && typeof comp === "object" && "settings" in comp && comp.settings != null && typeof comp.settings === "object") ? comp.settings : undefined;
+  const width = (settings != null && typeof settings === "object" && "width" in settings && typeof settings.width === "number") ? settings.width : undefined;
+  return width != null ? width : 1024;
+});
+const outputHeight = computed(() => {
+  const comp = activeComp.value;
+  const settings = (comp != null && typeof comp === "object" && "settings" in comp && comp.settings != null && typeof comp.settings === "object") ? comp.settings : undefined;
+  const height = (settings != null && typeof settings === "object" && "height" in settings && typeof settings.height === "number") ? settings.height : undefined;
+  return height != null ? height : 1024;
+});
+const frameRate = computed(() => {
+  const comp = activeComp.value;
+  const settings = (comp != null && typeof comp === "object" && "settings" in comp && comp.settings != null && typeof comp.settings === "object") ? comp.settings : undefined;
+  const fps = (settings != null && typeof settings === "object" && "fps" in settings && typeof settings.fps === "number") ? settings.fps : undefined;
+  return fps != null ? fps : 16;
+});
+const totalFrames = computed(() => {
+  const comp = activeComp.value;
+  const settings = (comp != null && typeof comp === "object" && "settings" in comp && comp.settings != null && typeof comp.settings === "object") ? comp.settings : undefined;
+  const frameCount = (settings != null && typeof settings === "object" && "frameCount" in settings && typeof settings.frameCount === "number") ? settings.frameCount : undefined;
+  return frameCount != null ? frameCount : 81;
+});
 const duration = computed(() => {
   const seconds = totalFrames.value / frameRate.value;
   const m = Math.floor(seconds / 60);
@@ -228,7 +249,7 @@ const duration = computed(() => {
   return m > 0 ? `${m}m ${s}s` : `${s}s`;
 });
 const canExport = computed(() => {
-  if (isExporting.value || store.layers.length === 0) return false;
+  if (isExporting.value || projectStore.getActiveCompLayers().length === 0) return false;
   if (exportMode.value === "video") return webCodecsSupported.value;
   return true; // Frame sequence always available (browser formats)
 });
@@ -286,7 +307,7 @@ async function startFrameSequenceExport() {
     const result = await exportFrameSequence(
       async (frame: number) => {
         // Set frame in store (triggers render)
-        animationStore.setFrame(store, frame);
+        animationStore.setFrame(frame);
 
         // Small delay to allow render
         await new Promise((resolve) => setTimeout(resolve, 10));
@@ -326,7 +347,7 @@ async function startFrameSequenceExport() {
       {
         format: sequenceFormat.value,
         quality: sequenceQuality.value,
-        filenamePattern: `${activeComp.value?.name || "frame"}_{frame:04d}`,
+        filenamePattern: `${getCompName()}_{frame:04d}`,
         outputDir: "",
         startFrame: 0,
         endFrame: totalFrames.value - 1,
@@ -382,7 +403,7 @@ async function startVideoExport() {
       if (!isExporting.value) break; // User cancelled
 
       // Set frame in store (triggers render)
-      animationStore.setFrame(store, frame);
+      animationStore.setFrame(frame);
 
       // Small delay to allow render
       await new Promise((resolve) => setTimeout(resolve, 10));
@@ -435,7 +456,7 @@ async function captureCurrentFrame(
     ctx.font = "24px sans-serif";
     ctx.textAlign = "center";
     ctx.fillText(
-      `Frame ${store.currentFrame}`,
+      `Frame ${animationStore.currentFrame}`,
       canvas.width / 2,
       canvas.height / 2,
     );
@@ -454,9 +475,17 @@ function cancelExport() {
 
 function downloadExport() {
   if (encodedVideo.value) {
-    const compName = activeComp.value?.name || "composition";
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const compName = getCompName("composition");
     downloadVideo(encodedVideo.value, `${compName}-export`);
   }
+}
+
+// Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+function getCompName(defaultName: string = "frame"): string {
+  const comp = activeComp.value;
+  const name = (comp != null && typeof comp === "object" && "name" in comp && typeof comp.name === "string") ? comp.name : undefined;
+  return name != null ? name : defaultName;
 }
 
 function downloadSequence() {

@@ -112,8 +112,9 @@
 <script setup lang="ts">
 import { storeToRefs } from "pinia";
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
-import { useCompositorStore } from "@/stores/compositorStore";
+import { useProjectStore } from "@/stores/projectStore";
 import { useAnimationStore } from "@/stores/animationStore";
+import { useSelectionStore } from "@/stores/selectionStore";
 
 import type { LatticeEngine } from "@/engine/LatticeEngine";
 
@@ -124,9 +125,24 @@ const props = defineProps<{
 
 const emit = defineEmits<(e: "close") => void>();
 
-const store = useCompositorStore();
+const projectStore = useProjectStore();
 const animationStore = useAnimationStore();
-const { currentFrame, frameCount, fps, isPlaying } = storeToRefs(store);
+const selectionStore = useSelectionStore();
+const { currentFrame, frameCount, fps, isPlaying } = storeToRefs(animationStore);
+
+// Helper function to create AnimationStoreAccess
+function getAnimationStoreAccess() {
+  return {
+    project: projectStore.project,
+    activeCompositionId: projectStore.activeCompositionId,
+    currentFrame: animationStore.currentFrame,
+    fps: projectStore.getFps(),
+    frameCount: projectStore.getFrameCount(),
+    selectedLayerIds: selectionStore.selectedLayerIds,
+    getActiveComp: () => projectStore.getActiveComp(),
+    pushHistory: () => projectStore.pushHistory(),
+  };
+}
 
 // Refs
 const overlayRef = ref<HTMLElement | null>(null);
@@ -142,10 +158,19 @@ const containerWidth = ref(1280);
 const containerHeight = ref(720);
 
 // Computed
-const compWidth = computed(() => store.getActiveComp()?.settings.width || 1024);
-const compHeight = computed(
-  () => store.getActiveComp()?.settings.height || 576,
-);
+// Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+const compWidth = computed(() => {
+  const activeComp = projectStore.getActiveComp();
+  const settings = (activeComp != null && typeof activeComp === "object" && "settings" in activeComp && activeComp.settings != null && typeof activeComp.settings === "object") ? activeComp.settings : undefined;
+  const width = (settings != null && typeof settings === "object" && "width" in settings && typeof settings.width === "number") ? settings.width : undefined;
+  return width != null ? width : 1024;
+});
+const compHeight = computed(() => {
+  const activeComp = projectStore.getActiveComp();
+  const settings = (activeComp != null && typeof activeComp === "object" && "settings" in activeComp && activeComp.settings != null && typeof activeComp.settings === "object") ? activeComp.settings : undefined;
+  const height = (settings != null && typeof settings === "object" && "height" in settings && typeof settings.height === "number") ? settings.height : undefined;
+  return height != null ? height : 576;
+});
 
 const canvasWidth = computed(() => {
   if (previewScale.value === "fit") {
@@ -199,33 +224,37 @@ const canvasStyle = computed(() => ({
 
 // Methods
 function togglePlayback() {
-  store.togglePlayback();
+  animationStore.togglePlayback(getAnimationStoreAccess());
 }
 
 function goToStart() {
-  animationStore.setFrame(store, 0);
+  animationStore.setFrame(getAnimationStoreAccess(), 0);
 }
 
 function goToEnd() {
-  animationStore.setFrame(store, frameCount.value - 1);
+  animationStore.setFrame(getAnimationStoreAccess(), frameCount.value - 1);
 }
 
 function stepForward() {
-  animationStore.setFrame(store, Math.min(currentFrame.value + 1, frameCount.value - 1));
+  animationStore.setFrame(getAnimationStoreAccess(), Math.min(currentFrame.value + 1, frameCount.value - 1));
 }
 
 function stepBackward() {
-  animationStore.setFrame(store, Math.max(currentFrame.value - 1, 0));
+  animationStore.setFrame(getAnimationStoreAccess(), Math.max(currentFrame.value - 1, 0));
 }
 
 function onScrub(e: Event) {
   const target = e.target as HTMLInputElement;
-  animationStore.setFrame(store, parseInt(target.value, 10));
+  animationStore.setFrame(getAnimationStoreAccess(), parseInt(target.value, 10));
 }
 
 function toggleFullscreen() {
   if (!document.fullscreenElement) {
-    overlayRef.value?.requestFullscreen();
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const overlayRefValue = overlayRef.value;
+    if (overlayRefValue != null && typeof overlayRefValue === "object" && typeof overlayRefValue.requestFullscreen === "function") {
+      overlayRefValue.requestFullscreen();
+    }
     isFullscreen.value = true;
   } else {
     document.exitFullscreen();
@@ -244,8 +273,13 @@ async function renderFrame() {
     if (!ctx) return;
 
     // Get the engine's rendered frame
-    const sourceCanvas =
-      props.engine.getCanvas?.() || props.engine.renderer?.domElement;
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const engine = props.engine;
+    const getCanvas = (engine != null && typeof engine === "object" && typeof engine.getCanvas === "function") ? engine.getCanvas : undefined;
+    const canvasFromGetCanvas = getCanvas != null ? getCanvas() : undefined;
+    const renderer = (engine != null && typeof engine === "object" && "renderer" in engine && engine.renderer != null && typeof engine.renderer === "object") ? engine.renderer : undefined;
+    const domElement = (renderer != null && typeof renderer === "object" && "domElement" in renderer && renderer.domElement != null) ? renderer.domElement : undefined;
+    const sourceCanvas = canvasFromGetCanvas != null ? canvasFromGetCanvas : domElement;
     if (sourceCanvas) {
       ctx.clearRect(0, 0, canvasWidth.value, canvasHeight.value);
       ctx.drawImage(
@@ -281,7 +315,11 @@ watch(
   async (visible) => {
     if (visible) {
       await nextTick();
-      overlayRef.value?.focus();
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const overlayRefValue = overlayRef.value;
+      if (overlayRefValue != null && typeof overlayRefValue === "object" && typeof overlayRefValue.focus === "function") {
+        overlayRefValue.focus();
+      }
       updateContainerSize();
       renderFrame();
     }

@@ -13,6 +13,7 @@
  */
 
 import type { ExpressionContext } from "./types";
+import { isFiniteNumber } from "@/utils/typeGuards";
 
 const EVAL_TIMEOUT_MS = 100;
 const MAX_PENDING = 100; // Prevent memory leak from abandoned requests
@@ -73,7 +74,9 @@ function createWorker(): Worker {
       pending.delete(data.id);
 
       if (data.success) {
-        req.resolve({ value: data.result ?? 0, timedOut: false });
+        // Type proof: number | undefined → number
+        const result = isFiniteNumber(data.result) ? data.result : 0;
+        req.resolve({ value: result, timedOut: false });
       } else {
         req.resolve({ value: 0, timedOut: false, error: data.error });
       }
@@ -103,11 +106,11 @@ export async function evaluateWithTimeout(
 ): Promise<EvalResult> {
   // Input validation
   if (typeof code !== "string" || code.length === 0) {
-    return { value: 0, timedOut: false, error: "Empty code" };
+    throw new Error(`[WorkerEvaluator] Empty code. Expression code must be a non-empty string.`);
   }
 
   if (code.length > 10240) {
-    return { value: 0, timedOut: false, error: "Expression too long" };
+    throw new Error(`[WorkerEvaluator] Expression too long: ${code.length} characters (max 10240). Expression exceeds maximum length.`);
   }
 
   // Ensure worker exists
@@ -149,7 +152,10 @@ export async function evaluateWithTimeout(
     pending.set(id, { resolve, timer });
 
     // Send to worker
-    worker?.postMessage({ id, code, context });
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    if (worker != null && typeof worker === "object" && typeof worker.postMessage === "function") {
+      worker.postMessage({ id, code, context });
+    }
   });
 }
 

@@ -7,11 +7,12 @@ import { describe, expect, test } from "vitest";
 
 // Inline the wind calculation for testing
 // This matches the implementation in actionExecutor.ts
+// Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
 function calculateWindStrength(wind: { x?: number; y?: number } | undefined): number {
   if (wind) {
     // BUG-006 FIX: Prevent NaN when wind.x or wind.y are undefined
-    const windX = wind.x ?? 0;
-    const windY = wind.y ?? 0;
+    const windX = (wind.x !== null && wind.x !== undefined && typeof wind.x === "number" && Number.isFinite(wind.x)) ? wind.x : 0;
+    const windY = (wind.y !== null && wind.y !== undefined && typeof wind.y === "number" && Number.isFinite(wind.y)) ? wind.y : 0;
     return Math.sqrt(windX ** 2 + windY ** 2);
   }
   return 0;
@@ -20,8 +21,8 @@ function calculateWindStrength(wind: { x?: number; y?: number } | undefined): nu
 function calculateWindDirection(wind: { x?: number; y?: number } | undefined): number {
   if (wind) {
     // BUG-006 FIX: Prevent NaN when wind.x or wind.y are undefined
-    const windX = wind.x ?? 0;
-    const windY = wind.y ?? 0;
+    const windX = (wind.x !== null && wind.x !== undefined && typeof wind.x === "number" && Number.isFinite(wind.x)) ? wind.x : 0;
+    const windY = (wind.y !== null && wind.y !== undefined && typeof wind.y === "number" && Number.isFinite(wind.y)) ? wind.y : 0;
     return Math.atan2(windY, windX) * (180 / Math.PI);
   }
   return 0;
@@ -52,7 +53,7 @@ describe("ActionExecutor physics calculations", () => {
      * 
      * When physics.wind is truthy but .x or .y are undefined,
      * the calculation produced NaN.
-     * The fix uses ?? 0 to default to 0.
+     * The fix uses explicit pattern matching to default to 0.
      */
     test("BUG #6 FIXED: missing x returns finite number instead of NaN", () => {
       // Was: NaN (undefined ** 2 = NaN)

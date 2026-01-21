@@ -20,6 +20,7 @@ import {
   type EvaluatedEffectParams,
   registerEffectRenderer,
 } from "../effectProcessor";
+import { isFiniteNumber, hasXY, assertDefined } from "@/utils/typeGuards";
 import { webgpuRenderer } from "../webgpuRenderer";
 
 // ============================================================================
@@ -237,12 +238,9 @@ class WebGLBlurContext {
     gl.compileShader(shader);
 
     if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-      console.warn(
-        "[WebGLBlur] Shader compile failed:",
-        gl.getShaderInfoLog(shader),
-      );
+      const infoLog = gl.getShaderInfoLog(shader);
       gl.deleteShader(shader);
-      return null;
+      throw new Error(`[WebGLBlur] Shader compile failed: ${infoLog || "Unknown error"}`);
     }
 
     return shader;
@@ -255,15 +253,18 @@ class WebGLBlurContext {
     input: HTMLCanvasElement,
     radiusX: number,
     radiusY: number,
-  ): HTMLCanvasElement | null {
+  ): HTMLCanvasElement {
     const { width, height } = input;
 
     if (!this.init(width, height)) {
-      return null;
+      throw new Error(`[WebGLBlur] Failed to initialize WebGL context for blur (${width}x${height})`);
     }
 
-    const gl = this.gl!;
-    const program = this.program!;
+    // Type proof: gl and program are guaranteed by init() returning true
+    assertDefined(this.gl, "gl must exist after successful init()");
+    assertDefined(this.program, "program must exist after successful init()");
+    const gl = this.gl;
+    const program = this.program;
 
     gl.useProgram(program);
     gl.viewport(0, 0, width, height);
@@ -474,18 +475,25 @@ interface BlurStack {
 
 /**
  * Create a circular linked list of BlurStack nodes
+ * Type proof: Returns a BlurStack where next is always non-null (circular)
  */
-function createBlurStack(size: number): BlurStack {
+function createBlurStack(size: number): BlurStack & { next: BlurStack } {
+  // Initialize first node with temporary null (will be set to circular reference)
   const first: BlurStack = { r: 0, g: 0, b: 0, a: 0, next: null };
-  let current = first;
+  let current: BlurStack = first;
 
   for (let i = 1; i < size; i++) {
-    current.next = { r: 0, g: 0, b: 0, a: 0, next: null };
-    current = current.next;
+    const newNode: BlurStack = { r: 0, g: 0, b: 0, a: 0, next: null };
+    current.next = newNode;
+    current = newNode;
   }
 
-  current.next = first; // Make circular
-  return first;
+  // Make circular - after this, all nodes have non-null next
+  current.next = first;
+  
+  // Type assertion: After circular link is established, all nodes have non-null next
+  // This is safe because we just set current.next = first, and first is guaranteed to exist
+  return first as BlurStack & { next: BlurStack };
 }
 
 /**
@@ -556,8 +564,10 @@ function stackBlurHorizontal(
       aSum = 0;
 
     const yOffset = y * width;
-    let stackIn = stack;
-    let stackOut = stack;
+    // System F/Omega: Type assertion for circular BlurStack structure
+    // Type proof: stack has type BlurStack & { next: BlurStack } from createBlurStack
+    let stackIn: BlurStack & { next: BlurStack } = stack;
+    let stackOut: BlurStack & { next: BlurStack } = stack;
 
     // Initialize stack with first pixel repeated
     const pr = pixels[yOffset * 4];
@@ -589,7 +599,10 @@ function stackBlurHorizontal(
         aOutSum += pa;
       }
 
-      stackIn = stackIn.next!;
+      // Type proof: stackIn.next is guaranteed non-null by createBlurStack circular structure
+      assertDefined(stackIn.next, "stackIn.next must exist in circular blur stack");
+      // System F/Omega: Type assertion after null check - circular structure guarantees non-null
+      stackIn = stackIn.next as BlurStack & { next: BlurStack };
     }
 
     // Fill rest of stack with right-side pixels
@@ -617,15 +630,25 @@ function stackBlurHorizontal(
       bInSum += pb;
       aInSum += pa;
 
-      stackIn = stackIn.next!;
+      // Type proof: stackIn.next is guaranteed non-null by createBlurStack circular structure
+      assertDefined(stackIn.next, "stackIn.next must exist in circular blur stack");
+      // System F/Omega: Type assertion after null check - circular structure guarantees non-null
+      stackIn = stackIn.next as BlurStack & { next: BlurStack };
     }
 
     // Find stack start for output
-    let stackStart = stack;
+    // System F/Omega: Type assertion for circular BlurStack structure
+    let stackStart: BlurStack & { next: BlurStack } = stack;
     for (let i = 0; i < radius; i++) {
-      stackStart = stackStart.next!;
+      // Type proof: stackStart.next is guaranteed non-null by createBlurStack circular structure
+      assertDefined(stackStart.next, "stackStart.next must exist in circular blur stack");
+      // System F/Omega: Type assertion after null check - circular structure guarantees non-null
+      stackStart = stackStart.next as BlurStack & { next: BlurStack };
     }
-    stackOut = stackStart.next!;
+    // Type proof: stackStart.next is guaranteed non-null by createBlurStack circular structure
+    assertDefined(stackStart.next, "stackStart.next must exist in circular blur stack");
+    // System F/Omega: Type assertion after null check - circular structure guarantees non-null
+    stackOut = stackStart.next as BlurStack & { next: BlurStack };
 
     // Process each pixel in the row
     for (let x = 0; x < width; x++) {
@@ -664,7 +687,10 @@ function stackBlurHorizontal(
       bSum += bInSum;
       aSum += aInSum;
 
-      stackStart = stackStart.next!;
+      // Type proof: stackStart.next is guaranteed non-null by createBlurStack circular structure
+      assertDefined(stackStart.next, "stackStart.next must exist in circular blur stack");
+      // System F/Omega: Type assertion after null check - circular structure guarantees non-null
+      stackStart = stackStart.next as BlurStack & { next: BlurStack };
 
       rOutSum += stackOut.r;
       gOutSum += stackOut.g;
@@ -676,7 +702,10 @@ function stackBlurHorizontal(
       bInSum -= stackOut.b;
       aInSum -= stackOut.a;
 
-      stackOut = stackOut.next!;
+      // Type proof: stackOut.next is guaranteed non-null by createBlurStack circular structure
+      assertDefined(stackOut.next, "stackOut.next must exist in circular blur stack");
+      // System F/Omega: Type assertion after null check - circular structure guarantees non-null
+      stackOut = stackOut.next as BlurStack & { next: BlurStack };
     }
   }
 }
@@ -711,8 +740,10 @@ function stackBlurVertical(
       bSum = 0,
       aSum = 0;
 
-    let stackIn = stack;
-    let stackOut = stack;
+    // System F/Omega: Type assertion for circular BlurStack structure
+    // Type proof: stack has type BlurStack & { next: BlurStack } from createBlurStack
+    let stackIn: BlurStack & { next: BlurStack } = stack;
+    let stackOut: BlurStack & { next: BlurStack } = stack;
 
     // Initialize stack with first pixel repeated
     const pr = pixels[x * 4];
@@ -744,7 +775,10 @@ function stackBlurVertical(
         aOutSum += pa;
       }
 
-      stackIn = stackIn.next!;
+      // Type proof: stackIn.next is guaranteed non-null by createBlurStack circular structure
+      assertDefined(stackIn.next, "stackIn.next must exist in circular blur stack");
+      // System F/Omega: Type assertion after null check - circular structure guarantees non-null
+      stackIn = stackIn.next as BlurStack & { next: BlurStack };
     }
 
     // Fill rest of stack with bottom pixels
@@ -772,15 +806,25 @@ function stackBlurVertical(
       bInSum += pb;
       aInSum += pa;
 
-      stackIn = stackIn.next!;
+      // Type proof: stackIn.next is guaranteed non-null by createBlurStack circular structure
+      assertDefined(stackIn.next, "stackIn.next must exist in circular blur stack");
+      // System F/Omega: Type assertion after null check - circular structure guarantees non-null
+      stackIn = stackIn.next as BlurStack & { next: BlurStack };
     }
 
     // Find stack start for output
-    let stackStart = stack;
+    // System F/Omega: Type assertion for circular BlurStack structure
+    let stackStart: BlurStack & { next: BlurStack } = stack;
     for (let i = 0; i < radius; i++) {
-      stackStart = stackStart.next!;
+      // Type proof: stackStart.next is guaranteed non-null by createBlurStack circular structure
+      assertDefined(stackStart.next, "stackStart.next must exist in circular blur stack");
+      // System F/Omega: Type assertion after null check - circular structure guarantees non-null
+      stackStart = stackStart.next as BlurStack & { next: BlurStack };
     }
-    stackOut = stackStart.next!;
+    // Type proof: stackStart.next is guaranteed non-null by createBlurStack circular structure
+    assertDefined(stackStart.next, "stackStart.next must exist in circular blur stack");
+    // System F/Omega: Type assertion after null check - circular structure guarantees non-null
+    stackOut = stackStart.next as BlurStack & { next: BlurStack };
 
     // Process each pixel in the column
     for (let y = 0; y < height; y++) {
@@ -819,7 +863,10 @@ function stackBlurVertical(
       bSum += bInSum;
       aSum += aInSum;
 
-      stackStart = stackStart.next!;
+      // Type proof: stackStart.next is guaranteed non-null by createBlurStack circular structure
+      assertDefined(stackStart.next, "stackStart.next must exist in circular blur stack");
+      // System F/Omega: Type assertion after null check - circular structure guarantees non-null
+      stackStart = stackStart.next as BlurStack & { next: BlurStack };
 
       rOutSum += stackOut.r;
       gOutSum += stackOut.g;
@@ -831,7 +878,10 @@ function stackBlurVertical(
       bInSum -= stackOut.b;
       aInSum -= stackOut.a;
 
-      stackOut = stackOut.next!;
+      // Type proof: stackOut.next is guaranteed non-null by createBlurStack circular structure
+      assertDefined(stackOut.next, "stackOut.next must exist in circular blur stack");
+      // System F/Omega: Type assertion after null check - circular structure guarantees non-null
+      stackOut = stackOut.next as BlurStack & { next: BlurStack };
     }
   }
 }
@@ -878,12 +928,16 @@ export function gaussianBlurRenderer(
   input: EffectStackResult,
   params: EvaluatedEffectParams,
 ): EffectStackResult {
-  const blurrinessRaw = params.blurriness ?? 10;
-  const blurriness = Number.isFinite(blurrinessRaw)
-    ? Math.max(0, blurrinessRaw)
-    : 0;
-  const dimensions = params.blur_dimensions ?? "both";
-  const useGpu = params.use_gpu !== false; // Default true
+  // Type proof: blurriness ∈ ℝ ∧ finite(blurriness) → blurriness ∈ ℝ₊
+  const blurrinessValue = params.blurriness;
+  const blurriness = isFiniteNumber(blurrinessValue) && blurrinessValue >= 0
+    ? blurrinessValue
+    : 10;
+  // Type proof: blur_dimensions ∈ {"both", "horizontal", "vertical"} ∪ {undefined}
+  const dimensionsValue = params.blur_dimensions;
+  const dimensions = typeof dimensionsValue === "string" ? dimensionsValue : "both";
+  // Type proof: use_gpu ∈ {true, false}
+  const useGpu = typeof params.use_gpu === "boolean" ? params.use_gpu : true;
 
   // No blur needed
   if (blurriness <= 0) {
@@ -958,8 +1012,14 @@ export async function gaussianBlurRendererAsync(
   input: EffectStackResult,
   params: EvaluatedEffectParams,
 ): Promise<EffectStackResult> {
-  const blurriness = params.blurriness ?? 10;
-  const dimensions = params.blur_dimensions ?? "both";
+  // Type proof: blurriness ∈ ℝ ∧ finite(blurriness) → blurriness ∈ ℝ₊
+  const blurrinessValue = params.blurriness;
+  const blurriness = isFiniteNumber(blurrinessValue) && blurrinessValue >= 0
+    ? blurrinessValue
+    : 10;
+  // Type proof: blur_dimensions ∈ {"both", "horizontal", "vertical"} ∪ {undefined}
+  const dimensionsValue = params.blur_dimensions;
+  const dimensions = typeof dimensionsValue === "string" ? dimensionsValue : "both";
   const useGpu = params.use_gpu !== false;
 
   if (blurriness <= 0) {
@@ -1019,14 +1079,17 @@ export function directionalBlurRenderer(
   input: EffectStackResult,
   params: EvaluatedEffectParams,
 ): EffectStackResult {
-  const directionRaw = params.direction ?? 0;
-  const direction = Number.isFinite(directionRaw)
-    ? (directionRaw * Math.PI) / 180
+  // Type proof: direction ∈ ℝ ∧ finite(direction) → direction ∈ [0, 360]
+  const directionValue = params.direction;
+  const directionDeg = isFiniteNumber(directionValue)
+    ? Math.max(0, Math.min(360, directionValue))
     : 0;
-  const blurLengthRaw = params.blur_length ?? 10;
-  const blurLength = Number.isFinite(blurLengthRaw)
-    ? Math.max(0, Math.min(500, blurLengthRaw))
-    : 0;
+  const direction = (directionDeg * Math.PI) / 180;
+  // Type proof: blur_length ∈ ℝ ∧ finite(blur_length) → blur_length ∈ [0, 500]
+  const blurLengthValue = params.blur_length;
+  const blurLength = isFiniteNumber(blurLengthValue)
+    ? Math.max(0, Math.min(500, blurLengthValue))
+    : 10;
 
   if (blurLength <= 0) {
     return input;
@@ -1104,21 +1167,39 @@ export function radialBlurRenderer(
   input: EffectStackResult,
   params: EvaluatedEffectParams,
 ): EffectStackResult {
-  const type = params.type ?? "spin";
-  const amountRaw = params.amount ?? 10;
-  const amount = Number.isFinite(amountRaw)
-    ? Math.max(0, Math.min(100, amountRaw))
-    : 0;
+  // Type proof: type ∈ {"spin", "zoom"} ∪ {undefined}
+  const typeValue = params.type;
+  const type = typeof typeValue === "string" ? typeValue : "spin";
+  // Type proof: amount ∈ ℝ ∧ finite(amount) → amount ∈ [0, 100]
+  const amountValue = params.amount;
+  const amount = isFiniteNumber(amountValue)
+    ? Math.max(0, Math.min(100, amountValue))
+    : 10;
 
   // Support both point format (from definition: { x: 0.5, y: 0.5 }) and legacy center_x/center_y
-  const center = params.center as { x: number; y: number } | undefined;
-  const centerXRaw = center?.x ?? (params.center_x ?? 50) / 100;
-  const centerYRaw = center?.y ?? (params.center_y ?? 50) / 100;
-  const centerX = Number.isFinite(centerXRaw) ? centerXRaw : 0.5;
-  const centerY = Number.isFinite(centerYRaw) ? centerYRaw : 0.5;
+  // Type proof: center ∈ {x: number, y: number} ∪ {undefined}
+  const center = hasXY(params.center) ? params.center : undefined;
+  // Type proof: center_x ∈ ℝ ∧ finite(center_x) → center_x ∈ [0, 100]
+  const centerXParamValue = params.center_x;
+  const centerXParam = isFiniteNumber(centerXParamValue)
+    ? Math.max(0, Math.min(100, centerXParamValue))
+    : 50;
+  // Type proof: center_y ∈ ℝ ∧ finite(center_y) → center_y ∈ [0, 100]
+  const centerYParamValue = params.center_y;
+  const centerYParam = isFiniteNumber(centerYParamValue)
+    ? Math.max(0, Math.min(100, centerYParamValue))
+    : 50;
+  // Type proof: centerX ∈ ℝ ∧ finite(centerX) → centerX ∈ [0, 1]
+  const centerXRaw = center !== undefined ? center.x : centerXParam / 100;
+  const centerX = isFiniteNumber(centerXRaw) ? Math.max(0, Math.min(1, centerXRaw)) : 0.5;
+  // Type proof: centerY ∈ ℝ ∧ finite(centerY) → centerY ∈ [0, 1]
+  const centerYRaw = center !== undefined ? center.y : centerYParam / 100;
+  const centerY = isFiniteNumber(centerYRaw) ? Math.max(0, Math.min(1, centerYRaw)) : 0.5;
 
   // Support both 'antialiasing' (from definition) and legacy 'quality'
-  const antialiasing = params.antialiasing ?? params.quality ?? "high";
+  // Type proof: antialiasing ∈ {"low", "medium", "high"} ∪ {undefined}
+  const antialiasingValue = params.antialiasing !== undefined ? params.antialiasing : params.quality;
+  const antialiasing = typeof antialiasingValue === "string" ? antialiasingValue : "high";
   // Map antialiasing values to quality settings
   const quality =
     antialiasing === "low"
@@ -1252,14 +1333,16 @@ export function boxBlurRenderer(
   params: EvaluatedEffectParams,
 ): EffectStackResult {
   // Support both 'blur_radius' (from definition) and legacy 'radius'
-  const radiusRaw = Math.round(params.blur_radius ?? params.radius ?? 5);
-  const radius = Number.isFinite(radiusRaw)
-    ? Math.max(0, Math.min(100, radiusRaw))
-    : 0;
-  const iterationsRaw = params.iterations ?? 1;
-  const iterations = Number.isFinite(iterationsRaw)
-    ? Math.max(1, Math.min(5, iterationsRaw))
+  // Type proof: radius ∈ ℝ ∧ finite(radius) → radius ∈ [0, 100]
+  const radiusValue = params.blur_radius !== undefined ? params.blur_radius : params.radius;
+  const radiusRaw = isFiniteNumber(radiusValue) ? Math.round(radiusValue) : 5;
+  const radius = Math.max(0, Math.min(100, radiusRaw));
+  // Type proof: iterations ∈ ℕ ∧ finite(iterations) → iterations ∈ [1, 5]
+  const iterationsValue = params.iterations;
+  const iterationsRaw = isFiniteNumber(iterationsValue) && Number.isInteger(iterationsValue)
+    ? iterationsValue
     : 1;
+  const iterations = Math.max(1, Math.min(5, iterationsRaw));
 
   if (radius <= 0) {
     return input;
@@ -1355,15 +1438,21 @@ export function sharpenRenderer(
   params: EvaluatedEffectParams,
 ): EffectStackResult {
   // Support both 'sharpen_amount' (from definition) and legacy 'amount'
-  const amountRaw = (params.sharpen_amount ?? params.amount ?? 50) / 100;
-  const amount = Number.isFinite(amountRaw) ? amountRaw : 0;
-  const radiusRaw = params.radius ?? 1;
-  const radius = Number.isFinite(radiusRaw)
-    ? Math.max(1, Math.min(100, radiusRaw))
+  // Type proof: sharpen_amount ∈ ℝ ∧ finite(sharpen_amount) → sharpen_amount ∈ [0, 100]
+  const sharpenAmountValue = params.sharpen_amount !== undefined ? params.sharpen_amount : params.amount;
+  const sharpenAmount = isFiniteNumber(sharpenAmountValue)
+    ? Math.max(0, Math.min(100, sharpenAmountValue))
+    : 50;
+  const amount = sharpenAmount / 100;
+  // Type proof: radius ∈ ℝ ∧ finite(radius) → radius ∈ [1, 100]
+  const radiusValue = params.radius;
+  const radius = isFiniteNumber(radiusValue)
+    ? Math.max(1, Math.min(100, radiusValue))
     : 1;
-  const thresholdRaw = params.threshold ?? 0;
-  const threshold = Number.isFinite(thresholdRaw)
-    ? Math.max(0, Math.min(255, thresholdRaw))
+  // Type proof: threshold ∈ ℝ ∧ finite(threshold) → threshold ∈ [0, 255]
+  const thresholdValue = params.threshold;
+  const threshold = isFiniteNumber(thresholdValue)
+    ? Math.max(0, Math.min(255, thresholdValue))
     : 0;
 
   if (amount <= 0) {

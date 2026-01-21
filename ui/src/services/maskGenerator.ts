@@ -728,7 +728,10 @@ export function generateMaskSequence(
   options?: Partial<MaskGeneratorOptions>,
 ): Uint8Array[] {
   const masks: Uint8Array[] = [];
-  const baseSeed = options?.seed ?? Date.now();
+  // Type proof: seed ∈ number | undefined → number
+  const baseSeed = options !== undefined && typeof options === "object" && options !== null && "seed" in options && typeof options.seed === "number" && Number.isFinite(options.seed) && Number.isInteger(options.seed) && options.seed >= 0
+    ? options.seed
+    : Date.now();
 
   for (let i = 0; i < frameCount; i++) {
     masks.push(

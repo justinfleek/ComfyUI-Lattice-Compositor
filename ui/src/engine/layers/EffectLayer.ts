@@ -167,8 +167,10 @@ export class EffectLayer extends BaseLayer {
 
     // Check if this effect layer is enabled and has effects
     // Support both new 'effectLayer' property and legacy 'adjustmentLayer'
-    const isEffectLayerMode =
-      this.layerData.effectLayer ?? this.layerData.adjustmentLayer;
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+    const effectLayer = this.layerData.effectLayer;
+    const adjustmentLayer = this.layerData.adjustmentLayer;
+    const isEffectLayerMode = (effectLayer !== null && effectLayer !== undefined) ? effectLayer : adjustmentLayer;
     if (!this.hasEnabledEffects() || !isEffectLayerMode) {
       // Hide the mesh when not acting as effect layer
       this.material.visible = false;
@@ -261,11 +263,13 @@ export class EffectLayer extends BaseLayer {
 
   /**
    * Check if this layer is currently acting as an effect layer
+   * Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
    */
   isEffectLayerMode(): boolean {
-    return (
-      (this.layerData.effectLayer ?? this.layerData.adjustmentLayer) === true
-    );
+    const effectLayer = this.layerData.effectLayer;
+    const adjustmentLayer = this.layerData.adjustmentLayer;
+    const value = (effectLayer !== null && effectLayer !== undefined) ? effectLayer : adjustmentLayer;
+    return value === true;
   }
 
   /**
@@ -335,9 +339,13 @@ export const AdjustmentLayer = EffectLayer;
 
 /**
  * Check if a layer is an effect layer
+ * Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
  */
 export function isEffectLayer(layer: Layer): boolean {
-  return (layer.effectLayer ?? layer.adjustmentLayer) === true;
+  const effectLayer = layer.effectLayer;
+  const adjustmentLayer = layer.adjustmentLayer;
+  const value = (effectLayer !== null && effectLayer !== undefined) ? effectLayer : adjustmentLayer;
+  return value === true;
 }
 
 // Legacy function alias

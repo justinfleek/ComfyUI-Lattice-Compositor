@@ -25,17 +25,17 @@
         "noVoidTypeReturn": "off"
       },
       "style": {
-        "noNonNullAssertion": "off"
+        "noNonNullAssertion": "error"
       },
       "suspicious": {
-        "noExplicitAny": "off",
+        "noExplicitAny": "warn",
         "noControlCharactersInRegex": "off",
         "noExportsInTest": "off",
         "useAdjacentOverloadSignatures": "off",
         "noDuplicateClassMembers": "off",
         "useIterableCallbackReturn": "off",
         "noAssignInExpressions": "off",
-        "noImplicitAnyLet": "off",
+        "noImplicitAnyLet": "warn",
         "noDuplicateElseIf": "off"
       },
       "complexity": {

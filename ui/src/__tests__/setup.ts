@@ -42,7 +42,10 @@ if (typeof globalThis.ImageData === 'undefined') {
   }
 
   // Type-safe polyfill assignment - ImageData exists at runtime but may not be in TypeScript types
-  (globalThis as typeof globalThis & { ImageData: typeof ImageDataPolyfill }).ImageData = ImageDataPolyfill;
+  // Properly extend globalThis type instead of using double assertion
+  // Use type assertion to assign polyfill - ImageDataPolyfill implements ImageData interface
+  const globalWithImageData = globalThis as typeof globalThis & { ImageData: typeof ImageDataPolyfill };
+  globalWithImageData.ImageData = ImageDataPolyfill as typeof ImageDataPolyfill & typeof ImageData;
 }
 
 // Mock the workerEvaluator module to bypass worker-based validation
@@ -56,7 +59,7 @@ vi.mock('@/services/expressions/workerEvaluator', async () => {
     isWorkerAvailable: () => false,
     // Return actual evaluation result using simple eval for tests
     // This allows expression validation to work properly
-    evaluateWithTimeout: async (code: string, context: Record<string, unknown>) => {
+    evaluateWithTimeout: async (code: string, context: Record<string, JSONValue>) => {
       try {
         const keys = Object.keys(context);
         const values = Object.values(context);
@@ -83,16 +86,37 @@ const mockHarden = <T>(obj: T): T => obj;
  * - Evaluates expressions with those globals in scope
  * - Does NOT provide security isolation (not needed in tests)
  */
-class MockCompartment {
-  private globals: Record<string, unknown>;
+import type { SESCompartment } from "@/types/ses-ambient";
+import type { JSONValue } from "@/types/dataAsset";
 
-  constructor(globals: Record<string, unknown>) {
-    this.globals = globals;
+/**
+ * All possible JavaScript values that can be validated at runtime
+ * Used as input type for validators (replaces unknown)
+ */
+type RuntimeValue = string | number | boolean | object | null | undefined | bigint | symbol;
+
+class MockCompartment implements SESCompartment {
+  public readonly globalThis: Record<PropertyKey, JSONValue>;
+  public readonly name: string = "MockCompartment";
+  private globals: Record<string, JSONValue>;
+
+  constructor(
+    globals?: Record<PropertyKey, JSONValue>,
+    _modules?: Record<string, JSONValue>,
+    _options?: Record<string, JSONValue>,
+  ) {
+    // Match SESCompartmentConstructor signature exactly: globals, modules, options are all optional
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+    const globalsObj = (globals !== null && globals !== undefined && typeof globals === "object" && globals !== null) ? (globals as Record<string, JSONValue>) : {};
+    this.globals = globalsObj;
+    // SESCompartment requires globalThis property
+    const globalThisObj = (globals !== null && globals !== undefined && typeof globals === "object" && globals !== null) ? globals : {};
+    this.globalThis = globalThisObj;
   }
 
-  evaluate(code: string): unknown {
+  evaluate(code: string): RuntimeValue {
     // Filter out undefined values from globals
-    const safeGlobals: Record<string, unknown> = {};
+    const safeGlobals: Record<string, JSONValue> = {};
     for (const [key, value] of Object.entries(this.globals)) {
       if (value !== undefined) {
         safeGlobals[key] = value;
@@ -126,8 +150,19 @@ class MockCompartment {
 // Add to globalThis so sesEvaluator can find them
 // IMPORTANT: This must happen BEFORE any imports that use sesEvaluator
 // Type-safe polyfill assignment - these exist at runtime but may not be in TypeScript types
-(globalThis as typeof globalThis & { Compartment: typeof MockCompartment }).Compartment = MockCompartment;
-(globalThis as typeof globalThis & { harden: typeof mockHarden }).harden = mockHarden;
+// Properly extend globalThis type instead of using double assertion
+import type { SESCompartmentConstructor } from "@/types/ses-ambient";
+
+interface GlobalThisWithSES {
+  Compartment: SESCompartmentConstructor;
+  harden: typeof mockHarden;
+}
+const globalWithSES = globalThis as typeof globalThis & GlobalThisWithSES;
+// Type assertion: MockCompartment constructor signature matches SESCompartmentConstructor
+// Both are constructors that take (globals?, modules?, options?) and return SESCompartment
+// MockCompartment implements SESCompartment and has matching constructor signature
+globalWithSES.Compartment = MockCompartment as SESCompartmentConstructor;
+globalWithSES.harden = mockHarden;
 
 // Initialize SES after adding the globals
 // Use top-level await to ensure SES is initialized before tests run

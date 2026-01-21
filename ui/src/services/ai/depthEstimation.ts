@@ -5,6 +5,7 @@
  * and estimate their relative depths for automatic z-space placement.
  */
 
+import { isFiniteNumber } from "@/utils/typeGuards";
 import { createLogger } from "@/utils/logger";
 
 const logger = createLogger("DepthEstimation");
@@ -146,13 +147,7 @@ export class LLMDepthEstimator {
     } = options;
 
     if (layers.length === 0) {
-      return {
-        layers: [],
-        sceneDescription: "No layers provided",
-        depthRange: { near: 0, far: 0 },
-        success: false,
-        error: "No layers to analyze",
-      };
+      throw new Error(`[DepthEstimation] No layers provided. At least one layer is required for depth estimation.`);
     }
 
     try {
@@ -184,14 +179,7 @@ export class LLMDepthEstimator {
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : "Unknown error";
       logger.error("Depth estimation failed:", error);
-
-      return {
-        layers: this.generateFallbackEstimates(layers, zSpaceScale),
-        sceneDescription: "Fallback: depth estimated by layer order",
-        depthRange: { near: 0, far: zSpaceScale },
-        success: false,
-        error: errorMsg,
-      };
+      throw new Error(`[DepthEstimation] Depth estimation failed: ${errorMsg}. Check AI provider availability and layer data.`);
     }
   }
 
@@ -283,10 +271,19 @@ Respond with JSON only.`;
     }
 
     // Extract the text content from the response
-    const content =
-      result.choices?.[0]?.message?.content ||
-      result.content?.[0]?.text ||
-      result.response;
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const choices = (result != null && typeof result === "object" && "choices" in result && result.choices != null && Array.isArray(result.choices) && result.choices.length > 0) ? result.choices : undefined;
+    const firstChoice = choices != null ? choices[0] : undefined;
+    const message = (firstChoice != null && typeof firstChoice === "object" && "message" in firstChoice && firstChoice.message != null && typeof firstChoice.message === "object") ? firstChoice.message : undefined;
+    const messageContent = (message != null && typeof message === "object" && "content" in message && typeof message.content === "string") ? message.content : undefined;
+    
+    const contentArray = (result != null && typeof result === "object" && "content" in result && result.content != null && Array.isArray(result.content) && result.content.length > 0) ? result.content : undefined;
+    const firstContent = contentArray != null ? contentArray[0] : undefined;
+    const contentText = (firstContent != null && typeof firstContent === "object" && "text" in firstContent && typeof firstContent.text === "string") ? firstContent.text : undefined;
+    
+    const responseValue = (result != null && typeof result === "object" && "response" in result && typeof result.response === "string") ? result.response : undefined;
+    
+    const content = messageContent != null ? messageContent : (contentText != null ? contentText : responseValue);
 
     if (!content) {
       throw new Error("Empty response from LLM");
@@ -326,13 +323,28 @@ Respond with JSON only.`;
     try {
       const parsed = JSON.parse(jsonStr) as ParsedDepthResponse;
 
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy || []
+      const layersRaw = parsed.layers;
+      const layersArray = (layersRaw !== null && layersRaw !== undefined && Array.isArray(layersRaw)) ? layersRaw : [];
       return {
         sceneDescription: parsed.sceneDescription || "Scene analyzed",
-        layers: (parsed.layers || []).map((layer: ParsedDepthLayer) => ({
-          index: layer.index ?? 0,
-          depth: Math.max(0, Math.min(100, layer.depth ?? 50)),
+        layers: layersArray.map((layer: ParsedDepthLayer) => ({
+          // Type proof: index ∈ ℕ ∪ {undefined} → ℕ
+          index: (() => {
+            const indexValue = layer.index;
+            return isFiniteNumber(indexValue) && Number.isInteger(indexValue) && indexValue >= 0 ? indexValue : 0;
+          })(),
+          // Type proof: depth ∈ ℝ ∪ {undefined} → ℝ (clamped to [0, 100])
+          depth: Math.max(0, Math.min(100, (() => {
+            const depthValue = layer.depth;
+            return isFiniteNumber(depthValue) ? depthValue : 50;
+          })())),
           content: layer.content || "Unknown",
-          confidence: Math.max(0, Math.min(1, layer.confidence ?? 0.5)),
+          // Type proof: confidence ∈ ℝ ∪ {undefined} → ℝ (clamped to [0, 1])
+          confidence: Math.max(0, Math.min(1, (() => {
+            const confidenceValue = layer.confidence;
+            return isFiniteNumber(confidenceValue) ? confidenceValue : 0.5;
+          })())),
           reasoning: layer.reasoning || "",
         })),
       };

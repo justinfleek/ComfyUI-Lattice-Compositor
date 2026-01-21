@@ -52,13 +52,13 @@
 
 <script setup lang="ts">
 import { computed } from "vue";
-import { useCompositorStore } from "@/stores/compositorStore";
+import { useAnimationStore } from "@/stores/animationStore";
 import { createKeyframe } from "@/types/animation";
 import type { FillShape } from "@/types/shapes";
 
 const props = defineProps<{ shape: FillShape; layerId: string }>();
 const emit = defineEmits(["update"]);
-const store = useCompositorStore();
+const animationStore = useAnimationStore();
 
 const colorHex = computed(() => {
   const c = props.shape.color.value;
@@ -105,7 +105,7 @@ function updateBlendMode(e: Event) {
 function toggleKeyframe(prop: "color" | "opacity") {
   const updated = { ...props.shape };
   const animProp = updated[prop];
-  const frame = store.currentFrame;
+  const frame = animationStore.currentFrame;
 
   const hasKf = animProp.keyframes.some((k) => k.frame === frame);
   if (hasKf) {

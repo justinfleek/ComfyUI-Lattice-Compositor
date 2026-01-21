@@ -213,11 +213,9 @@ import {
   type DecompositionResult,
   useDecompositionStore,
 } from "@/stores/decompositionStore";
-import { useCompositorStore } from "@/stores/compositorStore";
 import { useLayerStore } from "@/stores/layerStore";
 import type { Layer } from "@/types/project";
 
-const store = useCompositorStore();
 const layerStore = useLayerStore();
 const service = getLayerDecompositionService();
 
@@ -300,12 +298,18 @@ async function startDownload() {
 
 function triggerFileSelect() {
   if (!modelStatus.value.downloaded) return;
-  fileInput.value?.click();
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const fileInputVal = fileInput.value;
+  if (fileInputVal != null && typeof fileInputVal === "object" && typeof fileInputVal.click === "function") {
+    fileInputVal.click();
+  }
 }
 
 function handleFileSelect(event: Event) {
   const input = event.target as HTMLInputElement;
-  const file = input.files?.[0];
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const files = (input != null && typeof input === "object" && "files" in input && input.files != null && input.files.length > 0) ? input.files : null;
+  const file = (files != null && files.length > 0) ? files[0] : undefined;
   if (file) {
     selectedFile.value = file;
     previewUrl.value = URL.createObjectURL(file);
@@ -316,8 +320,12 @@ function handleFileSelect(event: Event) {
 
 function handleDrop(event: DragEvent) {
   if (!modelStatus.value.downloaded) return;
-  const file = event.dataTransfer?.files?.[0];
-  if (file?.type.startsWith("image/")) {
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const dataTransfer = (event != null && typeof event === "object" && "dataTransfer" in event && event.dataTransfer != null && typeof event.dataTransfer === "object") ? event.dataTransfer : undefined;
+  const files = (dataTransfer != null && typeof dataTransfer === "object" && "files" in dataTransfer && dataTransfer.files != null && dataTransfer.files.length > 0) ? dataTransfer.files : null;
+  const file = (files != null && files.length > 0) ? files[0] : undefined;
+  const fileType = (file != null && typeof file === "object" && "type" in file && typeof file.type === "string") ? file.type : undefined;
+  if (fileType != null && fileType.startsWith("image/")) {
     selectedFile.value = file;
     previewUrl.value = URL.createObjectURL(file);
     result.value = null;
@@ -392,15 +400,20 @@ function fileToDataUrl(file: File): Promise<string> {
 }
 
 function selectLayer(layerId: string) {
-  layerStore.selectLayer(store, layerId, false);
+  layerStore.selectLayer(layerId, false);
 }
 
 function getLayerZ(layer: Layer): number {
-  return (
-    layer.transform?.position?.value?.z ??
-    layer.transform?.position?.defaultValue?.z ??
-    0
-  );
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const transform = (layer != null && typeof layer === "object" && "transform" in layer && layer.transform != null && typeof layer.transform === "object") ? layer.transform : undefined;
+  const position = (transform != null && typeof transform === "object" && "position" in transform && transform.position != null && typeof transform.position === "object") ? transform.position : undefined;
+  const positionValue = (position != null && typeof position === "object" && "value" in position && position.value != null && typeof position.value === "object") ? position.value : undefined;
+  const zValue = (positionValue != null && typeof positionValue === "object" && "z" in positionValue && typeof positionValue.z === "number") ? positionValue.z : undefined;
+  if (zValue != null) return zValue;
+  const positionDefaultValue = (position != null && typeof position === "object" && "defaultValue" in position && position.defaultValue != null && typeof position.defaultValue === "object") ? position.defaultValue : undefined;
+  const zDefaultValue = (positionDefaultValue != null && typeof positionDefaultValue === "object" && "z" in positionDefaultValue && typeof positionDefaultValue.z === "number") ? positionDefaultValue.z : undefined;
+  if (zDefaultValue != null) return zDefaultValue;
+  return 0;
 }
 
 // Lifecycle

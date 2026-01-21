@@ -11,6 +11,7 @@
 
 import { createLogger } from "@/utils/logger";
 import { getComfyUIClient } from "./comfyui/comfyuiClient";
+import { isFiniteNumber } from "@/utils/typeGuards";
 import {
   canAllocate,
   registerAllocation,
@@ -125,7 +126,10 @@ export class LayerDecompositionService {
     onProgress?: (stage: string, progress: number) => void,
   ): Promise<void> {
     try {
-      onProgress?.("starting", 0);
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      if (onProgress != null && typeof onProgress === "function") {
+        onProgress("starting", 0);
+      }
 
       const response = await fetch(
         `${this.baseUrl}/lattice/decomposition/download`,
@@ -151,7 +155,10 @@ export class LayerDecompositionService {
         );
       }
 
-      onProgress?.("complete", 100);
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      if (onProgress != null && typeof onProgress === "function") {
+        onProgress("complete", 100);
+      }
       logger.info("Model download complete");
     } catch (error) {
       logger.error("Model download failed:", error);
@@ -253,7 +260,9 @@ export class LayerDecompositionService {
     // Check if we have enough memory before loading
     const memCheck = canAllocate(VRAM_ESTIMATES["model:qwen-image-layered"]);
     if (!memCheck.canProceed) {
-      throw new Error(memCheck.warning?.message || "Insufficient GPU memory");
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const warningMessage = (memCheck.warning != null && typeof memCheck.warning === "object" && "message" in memCheck.warning && typeof memCheck.warning.message === "string") ? memCheck.warning.message : undefined;
+      throw new Error(warningMessage != null ? warningMessage : "Insufficient GPU memory");
     }
 
     try {
@@ -329,6 +338,24 @@ export class LayerDecompositionService {
     options: DecompositionOptions = {},
   ): Promise<DecomposedLayer[]> {
     try {
+      // Type proof: numLayers ∈ number | undefined → number
+      const numLayers = isFiniteNumber(options.numLayers) &&
+        options.numLayers >= 3 && options.numLayers <= 16
+        ? options.numLayers
+        : 4;
+      // Type proof: guidanceScale ∈ number | undefined → number
+      const guidanceScale = isFiniteNumber(options.guidanceScale) &&
+        options.guidanceScale > 0
+        ? options.guidanceScale
+        : 3.0;
+      // Type proof: numInferenceSteps ∈ number | undefined → number
+      const numInferenceSteps = isFiniteNumber(options.numInferenceSteps) &&
+        options.numInferenceSteps > 0
+        ? options.numInferenceSteps
+        : 50;
+      // Type proof: seed ∈ number | null | undefined → number | null
+      const seed = isFiniteNumber(options.seed) ? options.seed : null;
+
       const response = await fetch(
         `${this.baseUrl}/lattice/decomposition/decompose`,
         {
@@ -336,10 +363,10 @@ export class LayerDecompositionService {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             image: imageDataUrl,
-            num_layers: options.numLayers ?? 4,
-            guidance_scale: options.guidanceScale ?? 3.0,
-            num_inference_steps: options.numInferenceSteps ?? 50,
-            seed: options.seed ?? null,
+            num_layers: numLayers,
+            guidance_scale: guidanceScale,
+            num_inference_steps: numInferenceSteps,
+            seed,
           }),
         },
       );
@@ -375,37 +402,52 @@ export class LayerDecompositionService {
 
     try {
       // Check status
-      onProgress?.("checking", "Checking model status...");
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      if (onProgress != null && typeof onProgress === "function") {
+        onProgress("checking", "Checking model status...");
+      }
       const status = await this.getStatus();
 
       // Download if needed
       if (!status.downloaded) {
-        onProgress?.("downloading", "Downloading model (28.8GB)...");
+        if (onProgress != null && typeof onProgress === "function") {
+          onProgress("downloading", "Downloading model (28.8GB)...");
+        }
         await this.downloadModel();
       }
 
       // Load if needed
       if (!status.loaded) {
-        onProgress?.("loading", "Loading model into GPU memory...");
+        if (onProgress != null && typeof onProgress === "function") {
+          onProgress("loading", "Loading model into GPU memory...");
+        }
         await this.loadModel();
       }
 
       // Decompose
-      onProgress?.("decomposing", "Decomposing image into layers...");
+      if (onProgress != null && typeof onProgress === "function") {
+        onProgress("decomposing", "Decomposing image into layers...");
+      }
       const layers = await this.decompose(imageDataUrl, options);
 
       // Generate semantic labels if requested
       if (generateLabels && layers.length > 0) {
-        onProgress?.("labeling", "Generating semantic labels...");
+        if (onProgress != null && typeof onProgress === "function") {
+          onProgress("labeling", "Generating semantic labels...");
+        }
         await this.generateSemanticLabels(layers);
       }
 
-      onProgress?.("complete", `Generated ${layers.length} layers`);
+      if (onProgress != null && typeof onProgress === "function") {
+        onProgress("complete", `Generated ${layers.length} layers`);
+      }
       return layers;
     } finally {
       // Auto-unload to free GPU memory (critical for large workflows)
       if (autoUnload) {
-        onProgress?.("cleanup", "Freeing GPU memory...");
+        if (onProgress != null && typeof onProgress === "function") {
+          onProgress("cleanup", "Freeing GPU memory...");
+        }
         try {
           await this.unloadModel();
           logger.info("Model auto-unloaded to free GPU memory");

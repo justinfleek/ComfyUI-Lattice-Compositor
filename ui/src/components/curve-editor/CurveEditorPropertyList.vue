@@ -50,7 +50,7 @@
           v-for="dim in ['x', 'y', 'z']"
           :key="dim"
           :class="{
-            active: visibleDimensions[prop.id]?.includes(dim),
+            active: isDimensionVisible(prop.id, dim),
             hasValue: hasDimension(prop, dim)
           }"
           @click="$emit('toggleDimension', prop.id, dim)"
@@ -69,7 +69,7 @@
 <script setup lang="ts">
 import type { AnimatableProperty } from "@/types/project";
 
-defineProps<{
+const props = defineProps<{
   animatableProperties: AnimatableProperty<any>[];
   selectedPropertyIds: string[];
   visiblePropertyIds: string[];
@@ -85,6 +85,12 @@ defineEmits<{
   togglePropertyVisibility: [propId: string];
   toggleDimension: [propId: string, dim: string];
 }>();
+
+// Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+function isDimensionVisible(propId: string, dim: string): boolean {
+  const dimensions = (props.visibleDimensions != null && typeof props.visibleDimensions === "object" && propId in props.visibleDimensions && props.visibleDimensions[propId] != null && Array.isArray(props.visibleDimensions[propId])) ? props.visibleDimensions[propId] : undefined;
+  return (dimensions != null && Array.isArray(dimensions) && dimensions.includes(dim)) ? true : false;
+}
 </script>
 
 <style scoped>

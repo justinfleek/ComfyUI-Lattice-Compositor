@@ -191,13 +191,17 @@ export class JointSystem {
     }
 
     // Motor (if enabled)
-    if (joint.motor?.enabled) {
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const jointMotor = (joint != null && typeof joint === "object" && "motor" in joint && joint.motor != null && typeof joint.motor === "object") ? joint.motor : undefined;
+    const motorEnabled = (jointMotor != null && typeof jointMotor === "object" && "enabled" in jointMotor && typeof jointMotor.enabled === "boolean" && jointMotor.enabled) ? true : false;
+    if (motorEnabled) {
       const relativeAngle = bodyB.angle - bodyA.angle;
-      let targetAngularVelocity = joint.motor.speed;
+      let targetAngularVelocity = jointMotor.speed;
 
-      if (joint.motor.targetAngle !== undefined) {
+      const motorTargetAngle = (jointMotor != null && typeof jointMotor === "object" && "targetAngle" in jointMotor && typeof jointMotor.targetAngle === "number") ? jointMotor.targetAngle : undefined;
+      if (motorTargetAngle !== undefined) {
         // Servo mode
-        const angleError = joint.motor.targetAngle - relativeAngle;
+        const angleError = motorTargetAngle - relativeAngle;
         targetAngularVelocity = angleError * 5; // Simple P controller
       }
 
@@ -205,7 +209,7 @@ export class JointSystem {
         bodyB.angularVelocity - bodyA.angularVelocity;
       const angularError = targetAngularVelocity - relativeAngularVelocity;
 
-      const maxTorque = joint.motor.maxTorque;
+      const maxTorque = (jointMotor != null && typeof jointMotor === "object" && "maxTorque" in jointMotor && typeof jointMotor.maxTorque === "number") ? jointMotor.maxTorque : 0;
       const torqueImpulse = Math.max(
         -maxTorque,
         Math.min(maxTorque, angularError * 0.1),
@@ -419,12 +423,17 @@ export class JointSystem {
     }
 
     // Motor
-    if (joint.motor?.enabled) {
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const jointMotor = (joint != null && typeof joint === "object" && "motor" in joint && joint.motor != null && typeof joint.motor === "object") ? joint.motor : undefined;
+    const motorEnabled = (jointMotor != null && typeof jointMotor === "object" && "enabled" in jointMotor && typeof jointMotor.enabled === "boolean" && jointMotor.enabled) ? true : false;
+    if (motorEnabled) {
       const relVel = vec2.dot(vec2.sub(bodyB.velocity, bodyA.velocity), axis);
-      const motorError = joint.motor.speed - relVel;
+      const motorSpeed = (jointMotor != null && typeof jointMotor === "object" && "speed" in jointMotor && typeof jointMotor.speed === "number") ? jointMotor.speed : 0;
+      const motorMaxForce = (jointMotor != null && typeof jointMotor === "object" && "maxForce" in jointMotor && typeof jointMotor.maxForce === "number") ? jointMotor.maxForce : 0;
+      const motorError = motorSpeed - relVel;
       const motorImpulse = Math.max(
-        -joint.motor.maxForce * dt,
-        Math.min(joint.motor.maxForce * dt, motorError * 0.5),
+        -motorMaxForce * dt,
+        Math.min(motorMaxForce * dt, motorError * 0.5),
       );
 
       const impulse = vec2.scale(axis, motorImpulse);
@@ -495,11 +504,15 @@ export class JointSystem {
     }
 
     // Motor (rotation)
-    if (joint.motor?.enabled) {
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const jointMotor = (joint != null && typeof joint === "object" && "motor" in joint && joint.motor != null && typeof joint.motor === "object") ? joint.motor : undefined;
+    const motorEnabled = (jointMotor != null && typeof jointMotor === "object" && "enabled" in jointMotor && typeof jointMotor.enabled === "boolean" && jointMotor.enabled) ? true : false;
+    if (motorEnabled) {
       const relativeAngularVelocity =
         bodyB.angularVelocity - bodyA.angularVelocity;
-      const motorError = joint.motor.speed - relativeAngularVelocity;
-      const maxTorque = joint.motor.maxTorque;
+      const motorSpeed = (jointMotor != null && typeof jointMotor === "object" && "speed" in jointMotor && typeof jointMotor.speed === "number") ? jointMotor.speed : 0;
+      const motorError = motorSpeed - relativeAngularVelocity;
+      const maxTorque = (jointMotor != null && typeof jointMotor === "object" && "maxTorque" in jointMotor && typeof jointMotor.maxTorque === "number") ? jointMotor.maxTorque : 0;
       const torqueImpulse = Math.max(
         -maxTorque * dt,
         Math.min(maxTorque * dt, motorError * 0.5),
@@ -558,7 +571,10 @@ export class JointSystem {
       if (joint.frequency && joint.frequency > 0) {
         // Soft weld - spring-like behavior
         const omega = 2 * Math.PI * joint.frequency;
-        const dampingRatio = joint.dampingRatio || 0.7;
+        // Type proof: dampingRatio ∈ number | undefined → number (0-1 range, non-negative)
+        const dampingRatio = joint.dampingRatio !== undefined && Number.isFinite(joint.dampingRatio) && joint.dampingRatio >= 0 && joint.dampingRatio <= 1
+          ? joint.dampingRatio
+          : 0.7;
         const c = 2 * dampingRatio * omega;
 
         const relAngVel = bodyB.angularVelocity - bodyA.angularVelocity;

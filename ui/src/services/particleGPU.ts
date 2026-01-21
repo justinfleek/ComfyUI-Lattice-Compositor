@@ -16,6 +16,8 @@
  * - Results read back to CPU only for rendering (or kept on GPU for WebGPU rendering)
  */
 
+import { assertDefined } from "@/utils/typeGuards";
+
 // ============================================================================
 // TYPES
 // ============================================================================
@@ -595,24 +597,30 @@ export class ParticleGPUCompute {
   uploadParticles(data: GPUParticleData): void {
     if (!this.device || !this.initialized) return;
 
+    // Type proof: All buffers must exist after initialization
+    assertDefined(this.positionBuffer, "positionBuffer must exist after initialization");
+    assertDefined(this.velocityBuffer, "velocityBuffer must exist after initialization");
+    assertDefined(this.propertiesBuffer, "propertiesBuffer must exist after initialization");
+    assertDefined(this.colorBuffer, "colorBuffer must exist after initialization");
+
     // Cast Float32Array to BufferSource for WebGPU compatibility
     this.device.queue.writeBuffer(
-      this.positionBuffer!,
+      this.positionBuffer,
       0,
       data.positions as BufferSource,
     );
     this.device.queue.writeBuffer(
-      this.velocityBuffer!,
+      this.velocityBuffer,
       0,
       data.velocities as BufferSource,
     );
     this.device.queue.writeBuffer(
-      this.propertiesBuffer!,
+      this.propertiesBuffer,
       0,
       data.properties as BufferSource,
     );
     this.device.queue.writeBuffer(
-      this.colorBuffer!,
+      this.colorBuffer,
       0,
       data.colors as BufferSource,
     );
@@ -645,7 +653,12 @@ export class ParticleGPUCompute {
     configView.setUint32(24, gravityWells.length, true);
     configView.setUint32(28, vortices.length, true);
 
-    this.device.queue.writeBuffer(this.configBuffer!, 0, configData);
+    // Type proof: All buffers must exist after initialization
+    assertDefined(this.configBuffer, "configBuffer must exist after initialization");
+    assertDefined(this.gravityWellBuffer, "gravityWellBuffer must exist after initialization");
+    assertDefined(this.vortexBuffer, "vortexBuffer must exist after initialization");
+
+    this.device.queue.writeBuffer(this.configBuffer, 0, configData);
 
     // Gravity wells
     const wellData = new Float32Array(16 * 8);
@@ -658,7 +671,7 @@ export class ParticleGPUCompute {
       wellData[offset + 3] = well.strength;
       wellData[offset + 4] = well.falloff;
     });
-    this.device.queue.writeBuffer(this.gravityWellBuffer!, 0, wellData);
+    this.device.queue.writeBuffer(this.gravityWellBuffer, 0, wellData);
 
     // Vortices
     const vortexData = new Float32Array(16 * 8);
@@ -671,7 +684,7 @@ export class ParticleGPUCompute {
       vortexData[offset + 3] = vortex.strength;
       vortexData[offset + 4] = vortex.inwardPull;
     });
-    this.device.queue.writeBuffer(this.vortexBuffer!, 0, vortexData);
+    this.device.queue.writeBuffer(this.vortexBuffer, 0, vortexData);
   }
 
   // ============================================================================
@@ -686,16 +699,24 @@ export class ParticleGPUCompute {
 
     // Create bind group if needed
     if (!this.updateBindGroup) {
+      // Type proof: All buffers must exist after initialization
+      assertDefined(this.configBuffer, "configBuffer must exist after initialization");
+      assertDefined(this.positionBuffer, "positionBuffer must exist after initialization");
+      assertDefined(this.velocityBuffer, "velocityBuffer must exist after initialization");
+      assertDefined(this.propertiesBuffer, "propertiesBuffer must exist after initialization");
+      assertDefined(this.gravityWellBuffer, "gravityWellBuffer must exist after initialization");
+      assertDefined(this.vortexBuffer, "vortexBuffer must exist after initialization");
+
       this.updateBindGroup = this.device.createBindGroup({
         label: "Update Bind Group",
         layout: this.updatePipeline.getBindGroupLayout(0),
         entries: [
-          { binding: 0, resource: { buffer: this.configBuffer! } },
-          { binding: 1, resource: { buffer: this.positionBuffer! } },
-          { binding: 2, resource: { buffer: this.velocityBuffer! } },
-          { binding: 3, resource: { buffer: this.propertiesBuffer! } },
-          { binding: 4, resource: { buffer: this.gravityWellBuffer! } },
-          { binding: 5, resource: { buffer: this.vortexBuffer! } },
+          { binding: 0, resource: { buffer: this.configBuffer } },
+          { binding: 1, resource: { buffer: this.positionBuffer } },
+          { binding: 2, resource: { buffer: this.velocityBuffer } },
+          { binding: 3, resource: { buffer: this.propertiesBuffer } },
+          { binding: 4, resource: { buffer: this.gravityWellBuffer } },
+          { binding: 5, resource: { buffer: this.vortexBuffer } },
         ],
       });
     }
@@ -738,7 +759,11 @@ export class ParticleGPUCompute {
     modConfigView.setFloat32(12, sizeEnd, true);
     modConfigView.setUint32(16, easingType, true);
 
-    this.device.queue.writeBuffer(this.modulationConfigBuffer!, 0, modConfig);
+    // Type proof: Buffers must exist after initialization
+    assertDefined(this.modulationConfigBuffer, "modulationConfigBuffer must exist after initialization");
+    assertDefined(this.propertiesBuffer, "propertiesBuffer must exist after initialization");
+
+    this.device.queue.writeBuffer(this.modulationConfigBuffer, 0, modConfig);
 
     // Create bind group if needed
     if (!this.modulationBindGroup) {
@@ -746,8 +771,8 @@ export class ParticleGPUCompute {
         label: "Modulation Bind Group",
         layout: this.modulationPipeline.getBindGroupLayout(0),
         entries: [
-          { binding: 0, resource: { buffer: this.modulationConfigBuffer! } },
-          { binding: 1, resource: { buffer: this.propertiesBuffer! } },
+          { binding: 0, resource: { buffer: this.modulationConfigBuffer } },
+          { binding: 1, resource: { buffer: this.propertiesBuffer } },
         ],
       });
     }
@@ -786,58 +811,118 @@ export class ParticleGPUCompute {
 
     const byteSize = particleCount * 4 * 4;
 
+    // Type proof: All buffers must exist after initialization
+    assertDefined(this.positionBuffer, "positionBuffer must exist after initialization");
+    assertDefined(this.velocityBuffer, "velocityBuffer must exist after initialization");
+    assertDefined(this.propertiesBuffer, "propertiesBuffer must exist after initialization");
+    assertDefined(this.colorBuffer, "colorBuffer must exist after initialization");
+    assertDefined(this.stagingPositionBuffer, "stagingPositionBuffer must exist after initialization");
+    assertDefined(this.stagingVelocityBuffer, "stagingVelocityBuffer must exist after initialization");
+    assertDefined(this.stagingPropertiesBuffer, "stagingPropertiesBuffer must exist after initialization");
+    assertDefined(this.stagingColorBuffer, "stagingColorBuffer must exist after initialization");
+
     // Copy to staging buffers
     const commandEncoder = this.device.createCommandEncoder();
     commandEncoder.copyBufferToBuffer(
-      this.positionBuffer!,
+      this.positionBuffer,
       0,
-      this.stagingPositionBuffer!,
-      0,
-      byteSize,
-    );
-    commandEncoder.copyBufferToBuffer(
-      this.velocityBuffer!,
-      0,
-      this.stagingVelocityBuffer!,
+      this.stagingPositionBuffer,
       0,
       byteSize,
     );
     commandEncoder.copyBufferToBuffer(
-      this.propertiesBuffer!,
+      this.velocityBuffer,
       0,
-      this.stagingPropertiesBuffer!,
+      this.stagingVelocityBuffer,
       0,
       byteSize,
     );
     commandEncoder.copyBufferToBuffer(
-      this.colorBuffer!,
+      this.propertiesBuffer,
       0,
-      this.stagingColorBuffer!,
+      this.stagingPropertiesBuffer,
+      0,
+      byteSize,
+    );
+    commandEncoder.copyBufferToBuffer(
+      this.colorBuffer,
+      0,
+      this.stagingColorBuffer,
       0,
       byteSize,
     );
     this.device.queue.submit([commandEncoder.finish()]);
 
     // Map and read staging buffers
-    await this.stagingPositionBuffer?.mapAsync(GPUMapMode.READ);
-    await this.stagingVelocityBuffer?.mapAsync(GPUMapMode.READ);
-    await this.stagingPropertiesBuffer?.mapAsync(GPUMapMode.READ);
-    await this.stagingColorBuffer?.mapAsync(GPUMapMode.READ);
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+    if (typeof this.stagingPositionBuffer === "object" && this.stagingPositionBuffer !== null && "mapAsync" in this.stagingPositionBuffer && typeof this.stagingPositionBuffer.mapAsync === "function") {
+      await this.stagingPositionBuffer.mapAsync(GPUMapMode.READ);
+    }
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+    if (typeof this.stagingVelocityBuffer === "object" && this.stagingVelocityBuffer !== null && "mapAsync" in this.stagingVelocityBuffer && typeof this.stagingVelocityBuffer.mapAsync === "function") {
+      await this.stagingVelocityBuffer.mapAsync(GPUMapMode.READ);
+    }
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+    if (typeof this.stagingPropertiesBuffer === "object" && this.stagingPropertiesBuffer !== null && "mapAsync" in this.stagingPropertiesBuffer && typeof this.stagingPropertiesBuffer.mapAsync === "function") {
+      await this.stagingPropertiesBuffer.mapAsync(GPUMapMode.READ);
+    }
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+    if (typeof this.stagingColorBuffer === "object" && this.stagingColorBuffer !== null && "mapAsync" in this.stagingColorBuffer && typeof this.stagingColorBuffer.mapAsync === "function") {
+      await this.stagingColorBuffer.mapAsync(GPUMapMode.READ);
+    }
 
-    const posRange = this.stagingPositionBuffer?.getMappedRange();
-    const velRange = this.stagingVelocityBuffer?.getMappedRange();
-    const propRange = this.stagingPropertiesBuffer?.getMappedRange();
-    const colorRange = this.stagingColorBuffer?.getMappedRange();
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining/null checks
+    // Pattern match: getMappedRange() ∈ ArrayBuffer | undefined → ArrayBuffer | []
+    let positions: Float32Array;
+    if (typeof this.stagingPositionBuffer === "object" && this.stagingPositionBuffer !== null && "getMappedRange" in this.stagingPositionBuffer && typeof this.stagingPositionBuffer.getMappedRange === "function") {
+      const posRange = this.stagingPositionBuffer.getMappedRange();
+      positions = Array.isArray(posRange) ? new Float32Array(posRange.slice(0)) : new Float32Array(0);
+    } else {
+      positions = new Float32Array(0);
+    }
+    
+    let velocities: Float32Array;
+    if (typeof this.stagingVelocityBuffer === "object" && this.stagingVelocityBuffer !== null && "getMappedRange" in this.stagingVelocityBuffer && typeof this.stagingVelocityBuffer.getMappedRange === "function") {
+      const velRange = this.stagingVelocityBuffer.getMappedRange();
+      velocities = Array.isArray(velRange) ? new Float32Array(velRange.slice(0)) : new Float32Array(0);
+    } else {
+      velocities = new Float32Array(0);
+    }
+    
+    let properties: Float32Array;
+    if (typeof this.stagingPropertiesBuffer === "object" && this.stagingPropertiesBuffer !== null && "getMappedRange" in this.stagingPropertiesBuffer && typeof this.stagingPropertiesBuffer.getMappedRange === "function") {
+      const propRange = this.stagingPropertiesBuffer.getMappedRange();
+      properties = Array.isArray(propRange) ? new Float32Array(propRange.slice(0)) : new Float32Array(0);
+    } else {
+      properties = new Float32Array(0);
+    }
+    
+    let colors: Float32Array;
+    if (typeof this.stagingColorBuffer === "object" && this.stagingColorBuffer !== null && "getMappedRange" in this.stagingColorBuffer && typeof this.stagingColorBuffer.getMappedRange === "function") {
+      const colorRange = this.stagingColorBuffer.getMappedRange();
+      colors = Array.isArray(colorRange) ? new Float32Array(colorRange.slice(0)) : new Float32Array(0);
+    } else {
+      colors = new Float32Array(0);
+    }
 
-    const positions = posRange ? new Float32Array(posRange.slice(0)) : new Float32Array(0);
-    const velocities = velRange ? new Float32Array(velRange.slice(0)) : new Float32Array(0);
-    const properties = propRange ? new Float32Array(propRange.slice(0)) : new Float32Array(0);
-    const colors = colorRange ? new Float32Array(colorRange.slice(0)) : new Float32Array(0);
-
-    this.stagingPositionBuffer?.unmap();
-    this.stagingVelocityBuffer?.unmap();
-    this.stagingPropertiesBuffer?.unmap();
-    this.stagingColorBuffer?.unmap();
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+    if (typeof this.stagingPositionBuffer === "object" && this.stagingPositionBuffer !== null && "unmap" in this.stagingPositionBuffer && typeof this.stagingPositionBuffer.unmap === "function") {
+      this.stagingPositionBuffer.unmap();
+    }
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+    if (typeof this.stagingVelocityBuffer === "object" && this.stagingVelocityBuffer !== null && "unmap" in this.stagingVelocityBuffer && typeof this.stagingVelocityBuffer.unmap === "function") {
+      this.stagingVelocityBuffer.unmap();
+    }
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+    if (typeof this.stagingPropertiesBuffer === "object" && this.stagingPropertiesBuffer !== null && "unmap" in this.stagingPropertiesBuffer && typeof this.stagingPropertiesBuffer.unmap === "function") {
+      this.stagingPropertiesBuffer.unmap();
+    }
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+    if (typeof this.stagingColorBuffer === "object" && this.stagingColorBuffer !== null && "unmap" in this.stagingColorBuffer && typeof this.stagingColorBuffer.unmap === "function") {
+      this.stagingColorBuffer.unmap();
+    }
 
     return {
       positions,
@@ -856,18 +941,55 @@ export class ParticleGPUCompute {
    * Dispose GPU resources
    */
   dispose(): void {
-    this.positionBuffer?.destroy();
-    this.velocityBuffer?.destroy();
-    this.propertiesBuffer?.destroy();
-    this.colorBuffer?.destroy();
-    this.configBuffer?.destroy();
-    this.gravityWellBuffer?.destroy();
-    this.vortexBuffer?.destroy();
-    this.modulationConfigBuffer?.destroy();
-    this.stagingPositionBuffer?.destroy();
-    this.stagingVelocityBuffer?.destroy();
-    this.stagingPropertiesBuffer?.destroy();
-    this.stagingColorBuffer?.destroy();
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+    if (typeof this.positionBuffer === "object" && this.positionBuffer !== null && "destroy" in this.positionBuffer && typeof this.positionBuffer.destroy === "function") {
+      this.positionBuffer.destroy();
+    }
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+    if (typeof this.velocityBuffer === "object" && this.velocityBuffer !== null && "destroy" in this.velocityBuffer && typeof this.velocityBuffer.destroy === "function") {
+      this.velocityBuffer.destroy();
+    }
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+    if (typeof this.propertiesBuffer === "object" && this.propertiesBuffer !== null && "destroy" in this.propertiesBuffer && typeof this.propertiesBuffer.destroy === "function") {
+      this.propertiesBuffer.destroy();
+    }
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+    if (typeof this.colorBuffer === "object" && this.colorBuffer !== null && "destroy" in this.colorBuffer && typeof this.colorBuffer.destroy === "function") {
+      this.colorBuffer.destroy();
+    }
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+    if (typeof this.configBuffer === "object" && this.configBuffer !== null && "destroy" in this.configBuffer && typeof this.configBuffer.destroy === "function") {
+      this.configBuffer.destroy();
+    }
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+    if (typeof this.gravityWellBuffer === "object" && this.gravityWellBuffer !== null && "destroy" in this.gravityWellBuffer && typeof this.gravityWellBuffer.destroy === "function") {
+      this.gravityWellBuffer.destroy();
+    }
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+    if (typeof this.vortexBuffer === "object" && this.vortexBuffer !== null && "destroy" in this.vortexBuffer && typeof this.vortexBuffer.destroy === "function") {
+      this.vortexBuffer.destroy();
+    }
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+    if (typeof this.modulationConfigBuffer === "object" && this.modulationConfigBuffer !== null && "destroy" in this.modulationConfigBuffer && typeof this.modulationConfigBuffer.destroy === "function") {
+      this.modulationConfigBuffer.destroy();
+    }
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+    if (typeof this.stagingPositionBuffer === "object" && this.stagingPositionBuffer !== null && "destroy" in this.stagingPositionBuffer && typeof this.stagingPositionBuffer.destroy === "function") {
+      this.stagingPositionBuffer.destroy();
+    }
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+    if (typeof this.stagingVelocityBuffer === "object" && this.stagingVelocityBuffer !== null && "destroy" in this.stagingVelocityBuffer && typeof this.stagingVelocityBuffer.destroy === "function") {
+      this.stagingVelocityBuffer.destroy();
+    }
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+    if (typeof this.stagingPropertiesBuffer === "object" && this.stagingPropertiesBuffer !== null && "destroy" in this.stagingPropertiesBuffer && typeof this.stagingPropertiesBuffer.destroy === "function") {
+      this.stagingPropertiesBuffer.destroy();
+    }
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+    if (typeof this.stagingColorBuffer === "object" && this.stagingColorBuffer !== null && "destroy" in this.stagingColorBuffer && typeof this.stagingColorBuffer.destroy === "function") {
+      this.stagingColorBuffer.destroy();
+    }
 
     this.positionBuffer = null;
     this.velocityBuffer = null;
@@ -1234,7 +1356,11 @@ export class HybridParticleSystem {
    * Dispose resources
    */
   dispose(): void {
-    this.gpu?.dispose();
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+    if (typeof this.gpu === "object" && this.gpu !== null && "dispose" in this.gpu && typeof this.gpu.dispose === "function") {
+      this.gpu.dispose();
+    }
     this.gpu = null;
     this.useGPU = false;
   }
@@ -1256,7 +1382,11 @@ export function getParticlePreferences() {
       // Check WebGPU availability
       if (typeof navigator !== "undefined" && "gpu" in navigator) {
         try {
-          const adapter = await navigator.gpu?.requestAdapter();
+          // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+          // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+          const adapter = (typeof navigator.gpu === "object" && navigator.gpu !== null && "requestAdapter" in navigator.gpu && typeof navigator.gpu.requestAdapter === "function")
+            ? await navigator.gpu.requestAdapter()
+            : null;
           return !!adapter;
         } catch {
           return false;

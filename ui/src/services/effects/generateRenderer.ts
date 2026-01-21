@@ -14,6 +14,7 @@ import {
   type EvaluatedEffectParams,
   registerEffectRenderer,
 } from "../effectProcessor";
+import { hasXY, isRGBAColor, isFiniteNumber } from "@/utils/typeGuards";
 
 // ============================================================================
 // NOISE TILE CACHE
@@ -55,7 +56,12 @@ class NoiseTileCache {
   }
 
   /**
-   * Get cached noise tile or null if not found/expired
+   * Get cached noise tile
+   * 
+   * System F/Omega proof: Explicit validation of cache entry existence and validity
+   * Type proof: width, height, scale, octave, seed ∈ number → Float32Array (non-nullable)
+   * Mathematical proof: Cache entry must exist and be valid (not expired) to retrieve tile
+   * Pattern proof: Missing or expired cache entry is an explicit failure condition, not a lazy null return
    */
   get(
     width: number,
@@ -63,16 +69,35 @@ class NoiseTileCache {
     scale: number,
     octave: number,
     seed: number,
-  ): Float32Array | null {
+  ): Float32Array {
     const key = this.makeKey(width, height, scale, octave, seed);
     const entry = this.cache.get(key);
 
-    if (!entry) return null;
+    // System F/Omega proof: Explicit validation of cache entry existence
+    // Type proof: cache.get(key) returns CacheEntry | undefined
+    // Mathematical proof: Cache entry must exist to retrieve tile
+    if (!entry) {
+      throw new Error(
+        `[GenerateRenderer] Cannot get cached noise tile: Entry not found in cache. ` +
+        `Key: ${key}, cache size: ${this.cache.size}. ` +
+        `Noise tile must be generated and cached before retrieval. ` +
+        `Wrap in try/catch if "cache miss" is an expected state.`
+      );
+    }
 
     const now = Date.now();
+    
+    // System F/Omega proof: Explicit validation of cache entry validity
+    // Type proof: entry.timestamp ∈ number, maxAgeMs ∈ number
+    // Mathematical proof: Cache entry must not be expired to retrieve tile
     if (now - entry.timestamp > this.maxAgeMs) {
       this.cache.delete(key);
-      return null;
+      throw new Error(
+        `[GenerateRenderer] Cannot get cached noise tile: Entry expired. ` +
+        `Key: ${key}, age: ${now - entry.timestamp}ms, maxAge: ${this.maxAgeMs}ms. ` +
+        `Cache entry has expired and been removed. ` +
+        `Wrap in try/catch if "cache expired" is an expected state.`
+      );
     }
 
     // LRU: move to end
@@ -163,11 +188,16 @@ export function fillRenderer(
   input: EffectStackResult,
   params: EvaluatedEffectParams,
 ): EffectStackResult {
-  const color = params.color ?? { r: 255, g: 0, b: 0, a: 1 };
+  const rawColor = params.color;
+  const color = isRGBAColor(rawColor) ? rawColor : { r: 255, g: 0, b: 0, a: 1 };
   // Validate opacity (NaN causes visual corruption)
-  const rawOpacity = params.opacity ?? 100;
-  const opacity = Number.isFinite(rawOpacity) ? rawOpacity / 100 : 1;
-  const invert = params.invert ?? false;
+  // Type proof: opacity ∈ ℝ ∧ finite(opacity) → opacity ∈ [0, 100]
+  const opacityValue = params.opacity;
+  const opacity = isFiniteNumber(opacityValue)
+    ? Math.max(0, Math.min(100, opacityValue)) / 100
+    : 1;
+  // Type proof: invert ∈ {true, false}
+  const invert = typeof params.invert === "boolean" ? params.invert : false;
 
   const { width, height } = input.canvas;
   const output = createMatchingCanvas(input.canvas);
@@ -179,10 +209,10 @@ export function fillRenderer(
   const dst = outputData.data;
 
   // Normalize color
-  const r = color.r ?? 255;
-  const g = color.g ?? 0;
-  const b = color.b ?? 0;
-  const a = (color.a ?? 1) * 255 * opacity;
+  const r = color.r;
+  const g = color.g;
+  const b = color.b;
+  const a = color.a * 255 * opacity;
 
   for (let i = 0; i < src.length; i += 4) {
     const srcAlpha = src[i + 3] / 255;
@@ -232,13 +262,27 @@ export function gradientRampRenderer(
   input: EffectStackResult,
   params: EvaluatedEffectParams,
 ): EffectStackResult {
-  const startPoint = params.start_of_ramp ?? { x: 0, y: 0.5 };
-  const startColor = params.start_color ?? { r: 0, g: 0, b: 0, a: 1 };
-  const endPoint = params.end_of_ramp ?? { x: 1, y: 0.5 };
-  const endColor = params.end_color ?? { r: 255, g: 255, b: 255, a: 1 };
-  const rampShape = params.ramp_shape ?? "linear";
-  const scatter = (params.ramp_scatter ?? 0) / 100;
-  const blend = (params.blend_with_original ?? 0) / 100;
+  const rawStartPoint = params.start_of_ramp;
+  const rawStartColor = params.start_color;
+  const rawEndPoint = params.end_of_ramp;
+  const rawEndColor = params.end_color;
+  const startPoint = hasXY(rawStartPoint) ? rawStartPoint : { x: 0, y: 0.5 };
+  const startColor = isRGBAColor(rawStartColor) ? rawStartColor : { r: 0, g: 0, b: 0, a: 1 };
+  const endPoint = hasXY(rawEndPoint) ? rawEndPoint : { x: 1, y: 0.5 };
+  const endColor = isRGBAColor(rawEndColor) ? rawEndColor : { r: 255, g: 255, b: 255, a: 1 };
+  // Type proof: ramp_shape ∈ {"linear", "radial", "angular"} ∪ {undefined}
+  const rampShapeValue = params.ramp_shape;
+  const rampShape = typeof rampShapeValue === "string" ? rampShapeValue : "linear";
+  // Type proof: ramp_scatter ∈ ℝ ∧ finite(ramp_scatter) → ramp_scatter ∈ [0, 100]
+  const scatterValue = params.ramp_scatter;
+  const scatter = isFiniteNumber(scatterValue)
+    ? Math.max(0, Math.min(100, scatterValue)) / 100
+    : 0;
+  // Type proof: blend_with_original ∈ ℝ ∧ finite(blend_with_original) → blend_with_original ∈ [0, 100]
+  const blendValue = params.blend_with_original;
+  const blend = isFiniteNumber(blendValue)
+    ? Math.max(0, Math.min(100, blendValue)) / 100
+    : 0;
 
   const { width, height } = input.canvas;
   const output = createMatchingCanvas(input.canvas);
@@ -263,8 +307,12 @@ export function gradientRampRenderer(
     );
   }
 
-  const startRgba = `rgba(${startColor.r}, ${startColor.g}, ${startColor.b}, ${startColor.a ?? 1})`;
-  const endRgba = `rgba(${endColor.r}, ${endColor.g}, ${endColor.b}, ${endColor.a ?? 1})`;
+  // Type proof: startColor.a ∈ ℝ ∧ finite(startColor.a) → startColor.a ∈ [0, 1]
+  const startColorA = isFiniteNumber(startColor.a) ? startColor.a : 1;
+  const startRgba = `rgba(${startColor.r}, ${startColor.g}, ${startColor.b}, ${startColorA})`;
+  // Type proof: endColor.a ∈ ℝ ∧ finite(endColor.a) → endColor.a ∈ [0, 1]
+  const endColorA = isFiniteNumber(endColor.a) ? endColor.a : 1;
+  const endRgba = `rgba(${endColor.r}, ${endColor.g}, ${endColor.b}, ${endColorA})`;
 
   gradient.addColorStop(0, startRgba);
   gradient.addColorStop(1, endRgba);
@@ -278,7 +326,9 @@ export function gradientRampRenderer(
     const outputData = output.ctx.getImageData(0, 0, width, height);
     const dst = outputData.data;
     const scatterAmount = scatter * 25;
-    const frame = (params._frame as number) ?? 0;
+    // Type proof: _frame ∈ ℕ ∪ {undefined} → _frame ∈ ℕ
+    const frameValue = params._frame;
+    const frame = isFiniteNumber(frameValue) && Number.isInteger(frameValue) && frameValue >= 0 ? frameValue : 0;
 
     // Mulberry32 seeded random for deterministic scatter
     const seededRandom = (seed: number) => {
@@ -412,13 +462,30 @@ export function fractalNoiseRenderer(
   input: EffectStackResult,
   params: EvaluatedEffectParams,
 ): EffectStackResult {
-  const fractalType = params.fractal_type ?? "basic";
-  const invert = params.invert ?? false;
-  const contrast = (params.contrast ?? 100) / 100;
-  const brightness = (params.brightness ?? 0) / 100;
-  const scale = params.scale ?? 100;
-  const complexity = Math.max(1, Math.min(20, params.complexity ?? 6));
-  const evolution = ((params.evolution ?? 0) * Math.PI) / 180;
+  const rawFractalType = params.fractal_type;
+  const fractalType = typeof rawFractalType === "string" ? rawFractalType : "basic";
+  // Type proof: invert ∈ {true, false}
+  const invert = typeof params.invert === "boolean" ? params.invert : false;
+  // Type proof: contrast ∈ ℝ ∧ finite(contrast) → contrast ∈ [0, 100]
+  const contrastValue = params.contrast;
+  const contrast = isFiniteNumber(contrastValue)
+    ? Math.max(0, Math.min(100, contrastValue)) / 100
+    : 1;
+  // Type proof: brightness ∈ ℝ ∧ finite(brightness) → brightness ∈ ℝ
+  const brightnessValue = params.brightness;
+  const brightness = isFiniteNumber(brightnessValue) ? brightnessValue / 100 : 0;
+  // Type proof: scale ∈ ℝ ∧ finite(scale) → scale ∈ ℝ₊
+  const scaleValue = params.scale;
+  const scale = isFiniteNumber(scaleValue) && scaleValue > 0 ? scaleValue : 100;
+  // Type proof: complexity ∈ ℕ ∧ finite(complexity) → complexity ∈ [1, 20]
+  const complexityValue = params.complexity;
+  const complexityRaw = isFiniteNumber(complexityValue) && Number.isInteger(complexityValue)
+    ? complexityValue
+    : 6;
+  const complexity = Math.max(1, Math.min(20, complexityRaw));
+  // Type proof: evolution ∈ ℝ ∧ finite(evolution) → evolution ∈ ℝ
+  const evolutionValue = params.evolution;
+  const evolution = isFiniteNumber(evolutionValue) ? (evolutionValue * Math.PI) / 180 : 0;
 
   const { width, height } = input.canvas;
   const output = createMatchingCanvas(input.canvas);
@@ -503,11 +570,23 @@ export function addGrainRenderer(
   params: EvaluatedEffectParams,
   frame?: number,
 ): EffectStackResult {
-  const intensity = params.intensity ?? 0.5;
-  const size = params.size ?? 1;
-  const softness = params.softness ?? 0;
-  const animate = params.animate ?? true;
-  const colorGrain = params.color ?? false;
+  // Type proof: intensity ∈ ℝ ∧ finite(intensity) → intensity ∈ [0, 1]
+  const intensityValue = params.intensity;
+  const intensity = isFiniteNumber(intensityValue)
+    ? Math.max(0, Math.min(1, intensityValue))
+    : 0.5;
+  // Type proof: size ∈ ℝ ∧ finite(size) → size ∈ ℝ₊
+  const sizeValue = params.size;
+  const size = isFiniteNumber(sizeValue) && sizeValue > 0 ? sizeValue : 1;
+  // Type proof: softness ∈ ℝ ∧ finite(softness) → softness ∈ [0, 1]
+  const softnessValue = params.softness;
+  const softness = isFiniteNumber(softnessValue)
+    ? Math.max(0, Math.min(1, softnessValue))
+    : 0;
+  // Type proof: animate ∈ {true, false}
+  const animate = typeof params.animate === "boolean" ? params.animate : true;
+  // Type proof: color ∈ {true, false}
+  const colorGrain = typeof params.color === "boolean" ? params.color : false;
 
   // No grain if intensity is 0
   if (intensity === 0) {
@@ -534,7 +613,10 @@ export function addGrainRenderer(
   const grain = grainData.data;
 
   // Seed for deterministic grain when not animating
-  const seed = animate ? (frame ?? 0) * 12345 : 42;
+  // Type proof: frame ∈ ℕ ∪ {undefined} → frame ∈ ℕ
+  const frameValue = frame;
+  const validFrame = isFiniteNumber(frameValue) && Number.isInteger(frameValue) && frameValue >= 0 ? frameValue : 0;
+  const seed = animate ? validFrame * 12345 : 42;
   let rngState = seed;
 
   // Simple seeded random
@@ -615,20 +697,45 @@ export function radioWavesRenderer(
   input: EffectStackResult,
   params: EvaluatedEffectParams,
 ): EffectStackResult {
-  const center = params.center ?? { x: 0.5, y: 0.5 };
-  const frequency = Math.max(1, params.frequency ?? 4);
-  const expansion = (params.expansion ?? 50) / 100;
-  const waveWidth = Math.max(1, params.wave_width ?? 20);
-  const strokeColor = params.stroke_color ?? { r: 255, g: 255, b: 255, a: 1 };
-  const backgroundColor = params.background_color ?? {
+  const rawCenter = params.center;
+  const rawStrokeColor = params.stroke_color;
+  const rawBackgroundColor = params.background_color;
+  const center = hasXY(rawCenter) ? rawCenter : { x: 0.5, y: 0.5 };
+  // Type proof: frequency ∈ ℝ ∧ finite(frequency) → frequency ∈ ℝ₊
+  const frequencyValue = params.frequency;
+  const frequencyRaw = isFiniteNumber(frequencyValue) && frequencyValue > 0 ? frequencyValue : 4;
+  const frequency = Math.max(1, frequencyRaw);
+  // Type proof: expansion ∈ ℝ ∧ finite(expansion) → expansion ∈ [0, 100]
+  const expansionValue = params.expansion;
+  const expansionRaw = isFiniteNumber(expansionValue)
+    ? Math.max(0, Math.min(100, expansionValue))
+    : 50;
+  const expansion = expansionRaw / 100;
+  // Type proof: wave_width ∈ ℝ ∧ finite(wave_width) → wave_width ∈ ℝ₊
+  const waveWidthValue = params.wave_width;
+  const waveWidthRaw = isFiniteNumber(waveWidthValue) && waveWidthValue > 0 ? waveWidthValue : 20;
+  const waveWidth = Math.max(1, waveWidthRaw);
+  const strokeColor = isRGBAColor(rawStrokeColor) ? rawStrokeColor : { r: 255, g: 255, b: 255, a: 1 };
+  const backgroundColor = isRGBAColor(rawBackgroundColor) ? rawBackgroundColor : {
     r: 128,
     g: 128,
     b: 128,
     a: 1,
   };
-  const fadeStart = (params.fade_start ?? 0) / 100;
-  const fadeEnd = (params.fade_end ?? 100) / 100;
-  const invert = params.invert ?? false;
+  // Type proof: fade_start ∈ ℝ ∧ finite(fade_start) → fade_start ∈ [0, 100]
+  const fadeStartValue = params.fade_start;
+  const fadeStartRaw = isFiniteNumber(fadeStartValue)
+    ? Math.max(0, Math.min(100, fadeStartValue))
+    : 0;
+  const fadeStart = fadeStartRaw / 100;
+  // Type proof: fade_end ∈ ℝ ∧ finite(fade_end) → fade_end ∈ [0, 100]
+  const fadeEndValue = params.fade_end;
+  const fadeEndRaw = isFiniteNumber(fadeEndValue)
+    ? Math.max(0, Math.min(100, fadeEndValue))
+    : 100;
+  const fadeEnd = fadeEndRaw / 100;
+  // Type proof: invert ∈ {true, false}
+  const invert = typeof params.invert === "boolean" ? params.invert : false;
 
   const { width, height } = input.canvas;
   const output = createMatchingCanvas(input.canvas);
@@ -691,8 +798,8 @@ export function radioWavesRenderer(
         backgroundColor.b * (1 - waveValue) + strokeColor.b * waveValue,
       );
       dst[i + 3] = Math.round(
-        ((backgroundColor.a ?? 1) * (1 - waveValue) +
-          (strokeColor.a ?? 1) * waveValue) *
+        ((isFiniteNumber(backgroundColor.a) ? backgroundColor.a : 1) * (1 - waveValue) +
+          (isFiniteNumber(strokeColor.a) ? strokeColor.a : 1) * waveValue) *
           255,
       );
     }
@@ -725,14 +832,29 @@ export function ellipseRenderer(
   input: EffectStackResult,
   params: EvaluatedEffectParams,
 ): EffectStackResult {
-  const center = params.center ?? { x: 0.5, y: 0.5 };
-  const ellipseWidth = params.ellipse_width ?? 200;
-  const ellipseHeight = params.ellipse_height ?? 200;
-  const softness = (params.softness ?? 0) / 100;
-  const strokeWidth = params.stroke_width ?? 0;
-  const strokeColor = params.stroke_color ?? { r: 255, g: 255, b: 255, a: 1 };
-  const backgroundColor = params.background_color ?? { r: 0, g: 0, b: 0, a: 1 };
-  const invertShape = params.invert ?? false;
+  const rawCenter = params.center;
+  const rawStrokeColor = params.stroke_color;
+  const rawBackgroundColor = params.background_color;
+  const center = hasXY(rawCenter) ? rawCenter : { x: 0.5, y: 0.5 };
+  // Type proof: ellipse_width ∈ ℝ ∧ finite(ellipse_width) → ellipse_width ∈ ℝ₊
+  const ellipseWidthValue = params.ellipse_width;
+  const ellipseWidth = isFiniteNumber(ellipseWidthValue) && ellipseWidthValue >= 0 ? ellipseWidthValue : 200;
+  // Type proof: ellipse_height ∈ ℝ ∧ finite(ellipse_height) → ellipse_height ∈ ℝ₊
+  const ellipseHeightValue = params.ellipse_height;
+  const ellipseHeight = isFiniteNumber(ellipseHeightValue) && ellipseHeightValue >= 0 ? ellipseHeightValue : 200;
+  // Type proof: softness ∈ ℝ ∧ finite(softness) → softness ∈ [0, 100]
+  const softnessValue = params.softness;
+  const softnessRaw = isFiniteNumber(softnessValue)
+    ? Math.max(0, Math.min(100, softnessValue))
+    : 0;
+  const softness = softnessRaw / 100;
+  // Type proof: stroke_width ∈ ℝ ∧ finite(stroke_width) → stroke_width ∈ ℝ₊
+  const strokeWidthValue = params.stroke_width;
+  const strokeWidth = isFiniteNumber(strokeWidthValue) && strokeWidthValue >= 0 ? strokeWidthValue : 0;
+  const strokeColor = isRGBAColor(rawStrokeColor) ? rawStrokeColor : { r: 255, g: 255, b: 255, a: 1 };
+  const backgroundColor = isRGBAColor(rawBackgroundColor) ? rawBackgroundColor : { r: 0, g: 0, b: 0, a: 1 };
+  // Type proof: invert ∈ {true, false}
+  const invertShape = typeof params.invert === "boolean" ? params.invert : false;
 
   const { width, height } = input.canvas;
   const output = createMatchingCanvas(input.canvas);
@@ -826,8 +948,8 @@ export function ellipseRenderer(
         backgroundColor.b * (1 - shapeValue) + strokeColor.b * shapeValue,
       );
       dst[i + 3] = Math.round(
-        ((backgroundColor.a ?? 1) * (1 - shapeValue) +
-          (strokeColor.a ?? 1) * shapeValue) *
+        ((isFiniteNumber(backgroundColor.a) ? backgroundColor.a : 1) * (1 - shapeValue) +
+          (isFiniteNumber(strokeColor.a) ? strokeColor.a : 1) * shapeValue) *
           255,
       );
     }

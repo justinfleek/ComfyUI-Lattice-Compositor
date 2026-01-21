@@ -23,6 +23,8 @@
  * @see docs/SECURITY_THREAT_MODEL.md
  */
 
+import type { JSONValue } from "@/types/dataAsset";
+import { assertDefined } from "@/utils/typeGuards";
 import { logAuditEntry, logSecurityWarning } from "../../security/auditLog";
 import type { ToolCall } from "../toolDefinitions";
 
@@ -80,7 +82,7 @@ export interface PendingApproval {
   /** Tool being requested */
   toolName: string;
   /** Arguments for tool (without name/id fields) */
-  arguments: Record<string, unknown>;
+  arguments: Record<string, JSONValue>;
   /** When requested */
   requestedAt: number;
   /** Why this needs approval */
@@ -321,11 +323,7 @@ class HardenedScopeManager {
   ): ScopeGrant | null {
     // Cannot elevate if locked down
     if (this.session.lockedDown || this.killSwitchActive) {
-      logSecurityWarning("Elevation denied: session locked down", {
-        sessionId: this.session.id,
-        targetScope,
-      });
-      return null;
+      throw new Error(`[HardenedScopeManager] Elevation denied: session "${this.session.id}" is locked down`);
     }
 
     // Cannot elevate beyond ceiling
@@ -333,11 +331,7 @@ class HardenedScopeManager {
     const ceilingIndex = scopeOrder.indexOf(ceiling);
     const targetIndex = scopeOrder.indexOf(targetScope);
     if (targetIndex > ceilingIndex) {
-      logSecurityWarning("Elevation denied: exceeds ceiling", {
-        targetScope,
-        ceiling,
-      });
-      return null;
+      throw new Error(`[HardenedScopeManager] Elevation denied: target scope "${targetScope}" exceeds ceiling "${ceiling}"`);
     }
 
     const now = Date.now();
@@ -406,7 +400,7 @@ class HardenedScopeManager {
    */
   public checkToolPermission(
     toolName: string,
-    args: Record<string, unknown> = {},
+    args: Record<string, JSONValue> = {},
   ): ToolPermission {
     // 1. Check kill switch
     if (this.killSwitchActive) {
@@ -444,9 +438,11 @@ class HardenedScopeManager {
     // 5. Check rate limits
     const rateCheck = this.checkRateLimit();
     if (!rateCheck.allowed) {
+      // Type proof: reason is guaranteed non-null when allowed is false
+      assertDefined(rateCheck.reason, "reason must exist when rate limit check fails");
       return {
         allowed: false,
-        reason: rateCheck.reason!,
+        reason: rateCheck.reason,
         requiresApproval: false,
         scopeUsed: this.session.currentScope,
       };
@@ -572,7 +568,7 @@ class HardenedScopeManager {
    */
   private createPendingApproval(
     toolName: string,
-    args: Record<string, unknown>,
+    args: Record<string, JSONValue>,
     reason: string,
   ): string {
     const approval: PendingApproval = {
@@ -595,13 +591,13 @@ class HardenedScopeManager {
   /**
    * Approve a pending operation (ONLY call from trusted UI action)
    */
-  public approveOperation(approvalId: string): PendingApproval | null {
+  public approveOperation(approvalId: string): PendingApproval {
     const index = this.session.pendingApprovals.findIndex(
       (a) => a.id === approvalId,
     );
 
     if (index === -1) {
-      return null;
+      throw new Error(`[HardenedScopeManager] Approval "${approvalId}" not found`);
     }
 
     const approval = this.session.pendingApprovals[index];
@@ -609,7 +605,7 @@ class HardenedScopeManager {
     // Check expiry
     if (Date.now() > approval.expiresAt) {
       this.session.pendingApprovals.splice(index, 1);
-      return null;
+      throw new Error(`[HardenedScopeManager] Approval "${approvalId}" has expired`);
     }
 
     // Remove from pending
@@ -824,7 +820,7 @@ class HardenedScopeManager {
   } | null {
     // If locked, reveal nothing
     if (this.session.lockedDown || this.killSwitchActive) {
-      return null;
+      throw new Error(`[HardenedScopeManager] Cannot check tool availability: session is locked down or kill switch is active`);
     }
 
     const isAvailable = this.isToolInScope(toolName, this.session.currentScope);
@@ -833,7 +829,7 @@ class HardenedScopeManager {
     // Only reveal if tool is available at current scope
     // This prevents enumeration attacks
     if (!isAvailable) {
-      return null; // Don't even confirm tool exists
+      throw new Error(`[HardenedScopeManager] Tool "${toolName}" is not available at current scope "${this.session.currentScope}"`);
     }
 
     return {
@@ -888,11 +884,13 @@ export const hardenedScopeManager = new HardenedScopeManager();
 // CONVENIENCE EXPORTS
 // ============================================================================
 
+// Lean4/PureScript/Haskell: Explicit pattern matching - no lazy || {}
 export function checkTool(
   toolName: string,
-  args?: Record<string, unknown>,
+  args?: Record<string, JSONValue>,
 ): ToolPermission {
-  return hardenedScopeManager.checkToolPermission(toolName, args || {});
+  const argsObj = (args !== null && args !== undefined && typeof args === "object" && args !== null) ? args : {};
+  return hardenedScopeManager.checkToolPermission(toolName, argsObj);
 }
 
 export function getCurrentScope(): ScopeLevel {

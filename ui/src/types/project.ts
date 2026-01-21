@@ -23,6 +23,7 @@ import type { PathLayerData, SplineData } from "./spline";
 import type { TemplateConfig } from "./templateBuilder";
 import type { TextData } from "./text";
 import type { LayerTransform, Vec3 } from "./transform";
+import type { JSONValue } from "./dataAsset";
 
 // Animation types (extracted to animation.ts)
 export type {
@@ -182,7 +183,9 @@ export interface DataAssetReference {
   lastModified: number; // Timestamp
 
   // For JSON: the parsed data
-  sourceData?: any;
+  // System F/Omega proof: Use JSONValue for JSON-serializable data
+  // Type proof: sourceData must be JSON-serializable for storage/transmission
+  sourceData?: JSONValue;
 
   // For CSV/TSV: tabular structure
   headers?: string[];
@@ -755,16 +758,16 @@ export function isLayerOfType<T extends keyof LayerDataMap>(
 
 /**
  * Get typed data from a layer
- * Returns null if layer type doesn't match
+ * @throws Error if layer type doesn't match
  */
 export function getLayerData<T extends keyof LayerDataMap>(
   layer: Layer,
   type: T,
-): LayerDataMap[T] | null {
+): LayerDataMap[T] {
   if (layer.type === type) {
     return layer.data as LayerDataMap[T];
   }
-  return null;
+  throw new Error(`[ProjectTypes] Layer type mismatch: expected "${type}", got "${layer.type}"`);
 }
 
 /**
@@ -857,14 +860,19 @@ export const BLEND_MODE_CATEGORIES = {
 // ============================================================
 
 export interface ImageLayerData {
-  assetId: string | null;
+  // Asset reference - empty string if using inline source
+  assetId: string;
+
+  // Inline data URL - empty string if using assetId
+  // Used for temporary/generated images before asset creation
+  source: string;
 
   // Display options
-  fit: "none" | "contain" | "cover" | "fill"; // How to fit image in layer bounds
+  fit: "none" | "contain" | "cover" | "fill";
 
-  // Optional cropping (for segmented regions)
-  cropEnabled?: boolean;
-  cropRect?: {
+  // Cropping (for segmented regions)
+  cropEnabled: boolean;
+  cropRect: {
     x: number;
     y: number;
     width: number;
@@ -872,8 +880,8 @@ export interface ImageLayerData {
   };
 
   // Source info (for regeneration/editing)
-  sourceType?: "file" | "generated" | "segmented";
-  segmentationMaskId?: string; // If created via segmentation
+  sourceType: "file" | "generated" | "segmented" | "inline";
+  segmentationMaskId: string; // Empty string if not from segmentation
 }
 
 // ============================================================
@@ -1008,7 +1016,7 @@ export interface GeneratedLayerData {
   model: string;
 
   /** Generation parameters (model-specific) */
-  parameters: Record<string, unknown>;
+  parameters: Record<string, JSONValue>;
 
   /** Generated asset ID (output) */
   generatedAssetId: string | null;
@@ -1454,7 +1462,7 @@ export interface GeneratedMapData {
   sourceLayerId: string; // Which layer to generate from
   mapType: GeneratedMapType;
   modelId: string; // Which model to use
-  parameters: Record<string, any>;
+  parameters: Record<string, JSONValue>;
   cachedResult?: string; // Base64 cached output
   lastGenerated?: string; // ISO timestamp
 }

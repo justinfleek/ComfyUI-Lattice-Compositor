@@ -18,6 +18,7 @@
 
 import * as THREE from "three";
 import type { AnimatableProperty, Layer, Vec2, PoseLayerData as ProjectPoseLayerData } from "@/types/project";
+import { interpolateProperty } from "@/services/interpolation";
 import { BaseLayer } from "./BaseLayer";
 
 // ============================================================================
@@ -268,6 +269,15 @@ export class PoseLayer extends BaseLayer {
   // Track last rendered frame for optimization
   private lastRenderedFrame: number = -1;
 
+  // Current frame being evaluated (set by onEvaluateFrame, used for export)
+  private currentFrame: number = 0;
+
+  // Cached evaluated keypoints per frame (for neighbor-based animation)
+  private evaluatedKeypointsCache: Map<number, Map<string, Vec2>> = new Map();
+
+  // Spatial hash for z-space neighbor queries (keypoint index -> neighbors in z-space)
+  private keypointSpatialHash: Map<number, Set<number>> = new Map();
+
   constructor(layerData: Layer) {
     super(layerData);
 
@@ -295,26 +305,40 @@ export class PoseLayer extends BaseLayer {
 
   /**
    * Get pose data with defaults
+   * Lean4/PureScript/Haskell: Explicit pattern matching - no lazy || {}
    */
   private getPoseData(): PoseLayerData {
-    const data = (this.layerData.data as Partial<ProjectPoseLayerData>) || {};
+    const dataRaw = this.layerData.data as Partial<ProjectPoseLayerData>;
+    const data = (dataRaw !== null && dataRaw !== undefined && typeof dataRaw === "object" && dataRaw !== null) ? dataRaw : {};
     const projectData: Partial<ProjectPoseLayerData> = {
       ...createDefaultPoseLayerData(),
       ...data,
     };
     // Convert project type to local type (they have different properties)
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+    const poses = (Array.isArray(projectData.poses)) ? projectData.poses : [];
+    const format = (typeof projectData.format === "string" && projectData.format.length > 0) ? projectData.format : "coco18";
+    const normalized = (typeof projectData.normalized === "boolean") ? projectData.normalized : false;
+    const boneWidth = (typeof projectData.boneWidth === "number" && Number.isFinite(projectData.boneWidth) && projectData.boneWidth > 0) ? projectData.boneWidth : 2;
+    const keypointRadius = (typeof projectData.keypointRadius === "number" && Number.isFinite(projectData.keypointRadius) && projectData.keypointRadius > 0) ? projectData.keypointRadius : 5;
+    const showKeypoints = (typeof projectData.showKeypoints === "boolean") ? projectData.showKeypoints : true;
+    const showBones = (typeof projectData.showBones === "boolean") ? projectData.showBones : true;
+    const showLabels = (typeof projectData.showLabels === "boolean") ? projectData.showLabels : false;
+    const useDefaultColors = (typeof projectData.useDefaultColors === "boolean") ? projectData.useDefaultColors : true;
+    const customBoneColor = (typeof projectData.customBoneColor === "string" && projectData.customBoneColor.length > 0) ? projectData.customBoneColor : "#00ff00";
+    const customKeypointColor = (typeof projectData.customKeypointColor === "string" && projectData.customKeypointColor.length > 0) ? projectData.customKeypointColor : "#ff0000";
     return {
-      poses: projectData.poses ?? [],
-      format: projectData.format ?? "coco18",
-      normalized: projectData.normalized ?? false,
-      boneWidth: projectData.boneWidth ?? 2,
-      keypointRadius: projectData.keypointRadius ?? 5,
-      showKeypoints: projectData.showKeypoints ?? true,
-      showBones: projectData.showBones ?? true,
-      showLabels: projectData.showLabels ?? false,
-      useDefaultColors: projectData.useDefaultColors ?? true,
-      customBoneColor: projectData.customBoneColor ?? "#00ff00",
-      customKeypointColor: projectData.customKeypointColor ?? "#ff0000",
+      poses,
+      format,
+      normalized,
+      boneWidth,
+      keypointRadius,
+      showKeypoints,
+      showBones,
+      showLabels,
+      useDefaultColors,
+      customBoneColor,
+      customKeypointColor,
       backgroundColor: "#000000", // Not in project type, use default
       boneOpacity: 100, // Not in project type, use default
       keypointOpacity: 100, // Not in project type, use default
@@ -324,8 +348,20 @@ export class PoseLayer extends BaseLayer {
 
   /**
    * Render poses to canvas
+   * 
+   * @param width - Canvas width
+   * @param height - Canvas height
+   * @param frame - Optional frame number for per-keypoint animation evaluation
    */
-  private renderPoses(width: number, height: number): void {
+  private renderPoses(width: number, height: number, frame?: number): void {
+    // If frame is provided, use evaluated poses (per-keypoint animation)
+    if (typeof frame === "number" && Number.isFinite(frame)) {
+      const evaluatedPoses = this.evaluatePosesAtFrame(frame);
+      this.renderEvaluatedPoses(evaluatedPoses, width, height);
+      return;
+    }
+
+    // Render without frame evaluation (static poses)
     const data = this.getPoseData();
     const { ctx, canvas } = this;
 
@@ -478,18 +514,396 @@ export class PoseLayer extends BaseLayer {
 
   /**
    * Evaluate layer at frame
+   * 
+   * SYSTEM F/OMEGA: Per-keypoint, neighbor-based animation evaluation
+   * - Each keypoint evaluated individually using its AnimatableProperty<Vec2>
+   * - Z-space neighbors calculated for each keypoint
+   * - Neighbor-based animation applied (IK/physics-like behavior)
+   * - Efficient evaluation for every visible bone at every keyframe
    */
   protected onEvaluateFrame(frame: number): void {
+    // Store current frame for export use
+    this.currentFrame = frame;
+
     // Use composition dimensions
     const width = this.compWidth;
     const height = this.compHeight;
 
-    // Re-render poses
-    this.renderPoses(width, height);
+    // Evaluate poses with per-keypoint animation
+    const evaluatedPoses = this.evaluatePosesAtFrame(frame);
+    
+    // Render evaluated poses
+    this.renderEvaluatedPoses(evaluatedPoses, width, height);
     this.lastRenderedFrame = frame;
 
     // Update mesh scale to match canvas
     this.mesh.scale.set(width, height, 1);
+  }
+
+  /**
+   * Evaluate all poses at a specific frame with per-keypoint animation
+   * 
+   * SYSTEM F/OMEGA: Each keypoint evaluated individually, considering z-space neighbors
+   * 
+   * @param frame - Current frame number
+   * @returns Array of evaluated poses with animated keypoints
+   */
+  private evaluatePosesAtFrame(frame: number): Pose[] {
+    const data = this.getPoseData();
+    const fps = this.compositionFps;
+    const layerId = this.id;
+
+    // Check cache first
+    const cached = this.evaluatedKeypointsCache.get(frame);
+    if (cached && cached.size > 0) {
+      // Reconstruct poses from cache
+      return data.poses.map((pose) => this.reconstructPoseFromCache(pose, cached));
+    }
+
+    // Evaluate each pose
+    const evaluatedPoses: Pose[] = [];
+
+    for (const pose of data.poses) {
+      // Build spatial hash for this pose's keypoints (z-space neighbors)
+      this.buildKeypointSpatialHash(pose);
+
+      // Evaluate keypoints in topological order (parents before children)
+      // This ensures neighbors are evaluated before being used for neighbor-based animation
+      const evaluationOrder = this.getTopologicalKeypointOrder(pose);
+      const evaluatedKeypoints: PoseKeypoint[] = new Array(pose.keypoints.length);
+      const evaluatedPositions = new Map<number, Vec2>();
+      
+      for (const i of evaluationOrder) {
+        const keypoint = pose.keypoints[i];
+        const keypointId = `pose_${pose.id}_keypoint_${i}`;
+        
+        // Get animated property for this keypoint (if exists)
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+        const animatedKeypoints = (data != null && typeof data === "object" && "animatedKeypoints" in data && data.animatedKeypoints != null && typeof data.animatedKeypoints === "object") ? data.animatedKeypoints : undefined;
+        const animatedProp = (animatedKeypoints != null && typeof animatedKeypoints === "object" && keypointId in animatedKeypoints && animatedKeypoints[keypointId] != null) ? animatedKeypoints[keypointId] : undefined;
+        
+        let evaluatedPos: Vec2;
+        if (animatedProp && animatedProp.animated) {
+          // Evaluate using keyframe interpolation
+          evaluatedPos = interpolateProperty(animatedProp, frame, fps, layerId);
+        } else {
+          // Use static value
+          evaluatedPos = { x: keypoint.x, y: keypoint.y };
+        }
+
+        // Apply neighbor-based animation (z-space relationships)
+        // Now neighbors are guaranteed to be evaluated (topological order)
+        const neighborAdjustedPos = this.applyNeighborBasedAnimation(
+          evaluatedPos,
+          i,
+          pose,
+          frame,
+          evaluatedPositions,
+        );
+
+        // Store evaluated position for neighbor lookups
+        evaluatedPositions.set(i, neighborAdjustedPos);
+
+        evaluatedKeypoints[i] = {
+          x: neighborAdjustedPos.x,
+          y: neighborAdjustedPos.y,
+          confidence: keypoint.confidence,
+        };
+      }
+
+      evaluatedPoses.push({
+        id: pose.id,
+        format: pose.format,
+        keypoints: evaluatedKeypoints,
+      });
+    }
+
+    // Cache evaluated keypoints for this frame
+    const frameCache = new Map<string, Vec2>();
+    evaluatedPoses.forEach((pose, poseIdx) => {
+      pose.keypoints.forEach((kp, kpIdx) => {
+        const keypointId = `pose_${pose.id}_keypoint_${kpIdx}`;
+        frameCache.set(keypointId, { x: kp.x, y: kp.y });
+      });
+    });
+    this.evaluatedKeypointsCache.set(frame, frameCache);
+
+    return evaluatedPoses;
+  }
+
+  /**
+   * Build spatial hash for keypoint z-space neighbors
+   * 
+   * SYSTEM F/OMEGA: Calculates neighbors based on bone connections and z-space proximity
+   * 
+   * @param pose - Pose to build spatial hash for
+   */
+  private buildKeypointSpatialHash(pose: Pose): void {
+    this.keypointSpatialHash.clear();
+    
+    const bones = pose.format === "coco18" ? COCO_BONES : COCO_BONES;
+    const { keypoints } = pose;
+
+    // Initialize hash with empty sets
+    for (let i = 0; i < keypoints.length; i++) {
+      this.keypointSpatialHash.set(i, new Set());
+    }
+
+    // Add bone-connected neighbors (direct connections)
+    bones.forEach(([startIdx, endIdx]) => {
+      if (startIdx < keypoints.length && endIdx < keypoints.length) {
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+        const startSet = this.keypointSpatialHash.get(startIdx);
+        if (startSet != null && typeof startSet === "object" && typeof startSet.add === "function") {
+          startSet.add(endIdx);
+        }
+        const endSet = this.keypointSpatialHash.get(endIdx);
+        if (endSet != null && typeof endSet === "object" && typeof endSet.add === "function") {
+          endSet.add(startIdx);
+        }
+      }
+    });
+
+    // Add z-space neighbors (proximity-based, considering depth/confidence)
+    // For 2D poses, use confidence as z-proxy and spatial distance
+    for (let i = 0; i < keypoints.length; i++) {
+      const kp1 = keypoints[i];
+      if (kp1.confidence < 0.1) continue; // Skip low-confidence keypoints
+
+      for (let j = i + 1; j < keypoints.length; j++) {
+        const kp2 = keypoints[j];
+        if (kp2.confidence < 0.1) continue;
+
+        // Calculate spatial distance (normalized coordinates)
+        const dx = kp1.x - kp2.x;
+        const dy = kp1.y - kp2.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+
+        // Z-space proximity threshold (adjustable based on skeleton scale)
+        const zProximityThreshold = 0.15; // ~15% of normalized space
+
+        // Consider z-space proximity (confidence-weighted distance)
+        const zDistance = Math.abs(kp1.confidence - kp2.confidence);
+        const combinedDistance = dist + zDistance * 0.5; // Weight z-space component
+
+        if (combinedDistance < zProximityThreshold) {
+          // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+          const iSet = this.keypointSpatialHash.get(i);
+          if (iSet != null && typeof iSet === "object" && typeof iSet.add === "function") {
+            iSet.add(j);
+          }
+          const jSet = this.keypointSpatialHash.get(j);
+          if (jSet != null && typeof jSet === "object" && typeof jSet.add === "function") {
+            jSet.add(i);
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Get topological order for keypoints (parents before children)
+   * 
+   * SYSTEM F/OMEGA: Ensures parent keypoints are evaluated before children
+   * 
+   * @param pose - Pose to get evaluation order for
+   * @returns Array of keypoint indices in topological order
+   */
+  private getTopologicalKeypointOrder(pose: Pose): number[] {
+    const bones = pose.format === "coco18" ? COCO_BONES : COCO_BONES;
+    const { keypoints } = pose;
+    
+    // Build parent-child relationships from bone connections
+    const children = new Map<number, Set<number>>();
+    const parents = new Map<number, number>();
+    
+    // Initialize maps
+    for (let i = 0; i < keypoints.length; i++) {
+      children.set(i, new Set());
+      parents.set(i, -1);
+    }
+    
+    // Build parent-child graph from bones
+    bones.forEach(([startIdx, endIdx]) => {
+      if (startIdx < keypoints.length && endIdx < keypoints.length) {
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+        const startChildren = children.get(startIdx);
+        if (startChildren != null && typeof startChildren === "object" && typeof startChildren.add === "function") {
+          startChildren.add(endIdx);
+        }
+        parents.set(endIdx, startIdx);
+      }
+    });
+    
+    // Topological sort: process roots first, then children
+    const order: number[] = [];
+    const visited = new Set<number>();
+    
+    const visit = (idx: number): void => {
+      if (visited.has(idx)) return;
+      
+      // Visit parent first (if exists and not root)
+      const parent = parents.get(idx);
+      if (parent !== undefined && parent >= 0 && parent !== idx) {
+        visit(parent);
+      }
+      
+      visited.add(idx);
+      order.push(idx);
+    };
+    
+    // Visit all keypoints
+    for (let i = 0; i < keypoints.length; i++) {
+      visit(i);
+    }
+    
+    return order;
+  }
+
+  /**
+   * Apply neighbor-based animation to a keypoint position
+   * 
+   * SYSTEM F/OMEGA: IK/physics-like behavior based on z-space neighbors
+   * 
+   * @param basePos - Base evaluated position from keyframe interpolation
+   * @param keypointIndex - Index of the keypoint
+   * @param pose - Original pose data
+   * @param frame - Current frame number
+   * @param evaluatedPositions - Map of already-evaluated keypoint positions (from topological order)
+   * @returns Neighbor-adjusted position
+   */
+  private applyNeighborBasedAnimation(
+    basePos: Vec2,
+    keypointIndex: number,
+    pose: Pose,
+    frame: number,
+    evaluatedPositions: Map<number, Vec2>,
+  ): Vec2 {
+    const neighbors = this.keypointSpatialHash.get(keypointIndex);
+    if (!neighbors || neighbors.size === 0) {
+      return basePos; // No neighbors, return base position
+    }
+
+    // Get neighbor positions (from evaluated positions map - guaranteed to be evaluated due to topological order)
+    const neighborPositions: Array<{ pos: Vec2; confidence: number }> = [];
+
+    for (const neighborIdx of neighbors) {
+      if (neighborIdx >= pose.keypoints.length) continue;
+
+      const neighborKp = pose.keypoints[neighborIdx];
+      
+      // Get evaluated position (guaranteed to exist due to topological order)
+      const neighborPos = evaluatedPositions.get(neighborIdx);
+      if (!neighborPos) {
+        // Fallback to base position if not evaluated (shouldn't happen with topological order)
+        continue;
+      }
+
+      neighborPositions.push({
+        pos: neighborPos,
+        confidence: neighborKp.confidence,
+      });
+    }
+
+    // Apply neighbor influence (weighted average based on confidence and distance)
+    let adjustedX = basePos.x;
+    let adjustedY = basePos.y;
+    let totalWeight = 1.0; // Start with base position weight
+
+    for (const neighbor of neighborPositions) {
+      if (neighbor.confidence < 0.1) continue; // Skip low-confidence neighbors
+
+      // Calculate distance to neighbor
+      const dx = basePos.x - neighbor.pos.x;
+      const dy = basePos.y - neighbor.pos.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+
+      // Weight based on confidence and inverse distance (closer = stronger influence)
+      const distanceWeight = dist > 0 ? 1.0 / (1.0 + dist * 10) : 1.0; // Normalize distance
+      const confidenceWeight = neighbor.confidence;
+      const weight = distanceWeight * confidenceWeight * 0.1; // 10% influence per neighbor
+
+      // Apply weighted influence
+      adjustedX += (neighbor.pos.x - basePos.x) * weight;
+      adjustedY += (neighbor.pos.y - basePos.y) * weight;
+      totalWeight += weight;
+    }
+
+    // Normalize by total weight
+    adjustedX /= totalWeight;
+    adjustedY /= totalWeight;
+
+    return { x: adjustedX, y: adjustedY };
+  }
+
+  /**
+   * Reconstruct pose from cached evaluated keypoints
+   * 
+   * @param originalPose - Original pose data
+   * @param cache - Cached evaluated keypoints for this frame
+   * @returns Reconstructed pose with cached keypoints
+   */
+  private reconstructPoseFromCache(
+    originalPose: Pose,
+    cache: Map<string, Vec2>,
+  ): Pose {
+    const evaluatedKeypoints: PoseKeypoint[] = originalPose.keypoints.map(
+      (kp, idx) => {
+        const keypointId = `pose_${originalPose.id}_keypoint_${idx}`;
+        const cachedPos = cache.get(keypointId);
+        
+        if (cachedPos) {
+          return {
+            x: cachedPos.x,
+            y: cachedPos.y,
+            confidence: kp.confidence,
+          };
+        }
+        
+        // Fallback to original if not in cache
+        return kp;
+      },
+    );
+
+    return {
+      id: originalPose.id,
+      format: originalPose.format,
+      keypoints: evaluatedKeypoints,
+    };
+  }
+
+  /**
+   * Render evaluated poses (with per-keypoint animation applied)
+   * 
+   * @param evaluatedPoses - Poses with evaluated keypoints
+   * @param width - Canvas width
+   * @param height - Canvas height
+   */
+  private renderEvaluatedPoses(
+    evaluatedPoses: Pose[],
+    width: number,
+    height: number,
+  ): void {
+    const data = this.getPoseData();
+    const { ctx, canvas } = this;
+
+    // Resize canvas if needed
+    if (canvas.width !== width || canvas.height !== height) {
+      canvas.width = width;
+      canvas.height = height;
+    }
+
+    // Clear with background color
+    ctx.fillStyle = data.backgroundColor;
+    ctx.fillRect(0, 0, width, height);
+
+    // Render each evaluated pose
+    for (const pose of evaluatedPoses) {
+      this.renderSinglePose(pose, width, height, data);
+    }
+
+    // Update texture
+    this.texture.needsUpdate = true;
   }
 
   /**
@@ -498,6 +912,9 @@ export class PoseLayer extends BaseLayer {
   protected onUpdate(properties: Partial<Layer>): void {
     // Update pose data if it changed
     if (properties.data) {
+      // Clear cache when data changes (keypoints may have changed)
+      this.evaluatedKeypointsCache.clear();
+      this.keypointSpatialHash.clear();
       // Re-render on next evaluate
       this.lastRenderedFrame = -1;
     }
@@ -652,8 +1069,14 @@ export class PoseLayer extends BaseLayer {
 
   /**
    * Render to specific dimensions for export
+   * 
+   * SYSTEM F/OMEGA: Uses current frame or provided frame for per-keypoint animation
+   * 
+   * @param width - Export canvas width
+   * @param height - Export canvas height
+   * @param frame - Optional frame number for per-keypoint animation evaluation (uses currentFrame if not provided)
    */
-  renderForExport(width: number, height: number): HTMLCanvasElement {
+  renderForExport(width: number, height: number, frame?: number): HTMLCanvasElement {
     const exportCanvas = document.createElement("canvas");
     exportCanvas.width = width;
     exportCanvas.height = height;
@@ -665,8 +1088,13 @@ export class PoseLayer extends BaseLayer {
     this.canvas = exportCanvas;
     this.ctx = exportCtx;
 
-    // Render at export dimensions
-    this.renderPoses(width, height);
+    // Use provided frame or fall back to current frame (from last onEvaluateFrame call)
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+    // Pattern match: frame ∈ number | undefined → number (fallback to currentFrame)
+    const exportFrame = (typeof frame === "number" && Number.isFinite(frame)) ? frame : this.currentFrame;
+
+    // Render at export dimensions with frame evaluation (per-keypoint animation)
+    this.renderPoses(width, height, exportFrame);
 
     // Restore original
     this.canvas = originalCanvas;

@@ -38,7 +38,12 @@ export const PROPERTY_COLORS: Record<string, string> = {
  * Get color for a property
  */
 export function getPropertyColor(propName: string): string {
-  return PROPERTY_COLORS[propName] ?? PROPERTY_COLORS.default;
+  // Lean4/PureScript/Haskell: Explicit pattern matching on object property access
+  // Type proof: PROPERTY_COLORS[propName] ∈ string | undefined → string (color hex)
+  const color = PROPERTY_COLORS[propName];
+  return color !== undefined && typeof color === "string" && color.length > 0
+    ? color
+    : PROPERTY_COLORS.default;
 }
 
 // ============================================================
@@ -182,32 +187,46 @@ export function drawPropertyCurve(
         ctx.lineTo(x2, y2);
       } else if (
         kf1.interpolation === "linear" ||
-        (!kf1.outHandle?.enabled && !kf2.inHandle?.enabled)
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+        (!(kf1.outHandle !== undefined && typeof kf1.outHandle === "object" && "enabled" in kf1.outHandle && kf1.outHandle.enabled === true) &&
+         !(kf2.inHandle !== undefined && typeof kf2.inHandle === "object" && "enabled" in kf2.inHandle && kf2.inHandle.enabled === true))
       ) {
         // Straight line
         ctx.lineTo(x2, y2);
       } else {
         // Bezier curve using absolute handle offsets
         const cp1x = frameToScreenX(
-          kf1.frame + (kf1.outHandle?.frame ?? 0),
+          // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+          kf1.frame + (kf1.outHandle !== undefined && typeof kf1.outHandle === "object" && "frame" in kf1.outHandle && typeof kf1.outHandle.frame === "number"
+            ? kf1.outHandle.frame
+            : 0),
           viewState,
           canvasWidth,
           margin,
         );
         const cp1y = valueToScreenY(
-          getNumericValue(kf1.value) + (kf1.outHandle?.value ?? 0),
+          // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+          getNumericValue(kf1.value) + (kf1.outHandle !== undefined && typeof kf1.outHandle === "object" && "value" in kf1.outHandle && typeof kf1.outHandle.value === "number"
+            ? kf1.outHandle.value
+            : 0),
           viewState,
           canvasHeight,
           margin,
         );
         const cp2x = frameToScreenX(
-          kf2.frame + (kf2.inHandle?.frame ?? 0),
+          // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+          kf2.frame + (kf2.inHandle !== undefined && typeof kf2.inHandle === "object" && "frame" in kf2.inHandle && typeof kf2.inHandle.frame === "number"
+            ? kf2.inHandle.frame
+            : 0),
           viewState,
           canvasWidth,
           margin,
         );
         const cp2y = valueToScreenY(
-          getNumericValue(kf2.value) + (kf2.inHandle?.value ?? 0),
+          // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+          getNumericValue(kf2.value) + (kf2.inHandle !== undefined && typeof kf2.inHandle === "object" && "value" in kf2.inHandle && typeof kf2.inHandle.value === "number"
+            ? kf2.inHandle.value
+            : 0),
           viewState,
           canvasHeight,
           margin,

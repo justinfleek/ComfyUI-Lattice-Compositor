@@ -35,6 +35,7 @@ import type {
   SatinStyle,
   StrokeStyle,
 } from "@/types/layerStyles";
+import { isFiniteNumber } from "@/utils/typeGuards";
 import type { AnimatableProperty } from "@/types/project";
 import { canvasPool } from "@/utils/canvasPool";
 // blendModes module provides blendImages, blendPixel etc. via default export
@@ -70,10 +71,21 @@ function getValue<T>(
   // Use keyframe interpolation if property is animated
   if (prop.animated && prop.keyframes && prop.keyframes.length > 0) {
     const interpolated = interpolateProperty(prop, currentFrame);
-    return (interpolated as T) ?? prop.value ?? defaultValue;
+    // Type proof: interpolated ∈ T | undefined, prop.value ∈ T | undefined → T
+    const interpolatedValue = interpolated as T;
+    if (interpolatedValue !== undefined && interpolatedValue !== null) {
+      return interpolatedValue;
+    }
+    const propValue = prop.value;
+    if (propValue !== undefined && propValue !== null) {
+      return propValue as T;
+    }
+    return defaultValue;
   }
 
-  return prop.value ?? defaultValue;
+  // Type proof: prop.value ∈ T | undefined → T
+  const propValue = prop.value;
+  return propValue !== undefined && propValue !== null ? (propValue as T) : defaultValue;
 }
 
 /**
@@ -457,7 +469,8 @@ export function renderInnerGlowStyle(
 
   const opacity = getValue(style.opacity, 75) / 100;
   const color = getValue(style.color, { r: 255, g: 255, b: 190, a: 1 });
-  const source = style.source ?? "edge";
+  // Type proof: source ∈ string | undefined → string
+  const source = typeof style.source === "string" ? style.source : "edge";
   const choke = getValue(style.choke, 0);
   const size = getValue(style.size, 5);
 
@@ -700,7 +713,8 @@ export function renderSatinStyle(
   const angle = getValue(style.angle, 19);
   const distance = getValue(style.distance, 11);
   const size = getValue(style.size, 14);
-  const invert = style.invert ?? true;
+  // Type proof: invert ∈ boolean | undefined → boolean
+  const invert = typeof style.invert === "boolean" ? style.invert : true;
 
   const { canvas: output, ctx } = createMatchingCanvas(input);
 
@@ -822,7 +836,9 @@ function getCompositeOperation(blendMode: string): GlobalCompositeOperation {
     color: "color",
     luminosity: "luminosity",
   };
-  return modeMap[blendMode] ?? "source-over";
+  // Type proof: modeMap[blendMode] ∈ string | undefined → string
+  const mappedMode = modeMap[blendMode];
+  return typeof mappedMode === "string" ? mappedMode : "source-over";
 }
 
 // ============================================================================
@@ -849,7 +865,8 @@ export function renderGradientOverlayStyle(
   const angle = getValue(style.angle, 90);
   const scale = getValue(style.scale, 100) / 100;
   const offset = getValue(style.offset, { x: 0, y: 0 });
-  const reverse = style.reverse ?? false;
+  // Type proof: reverse ∈ boolean | undefined → boolean
+  const reverse = typeof style.reverse === "boolean" ? style.reverse : false;
 
   const { canvas: output, ctx } = createMatchingCanvas(input);
   const { width, height } = input;
@@ -985,7 +1002,8 @@ export function renderStrokeStyle(
   const opacity = getValue(style.opacity, 100) / 100;
   const color = getValue(style.color, { r: 255, g: 0, b: 0, a: 1 });
   const size = getValue(style.size, 3);
-  const position = style.position ?? "outside";
+  // Type proof: position ∈ string | undefined → string
+  const position = typeof style.position === "string" ? style.position : "outside";
 
   const { canvas: output, ctx } = createMatchingCanvas(input);
   const { width, height } = input;
@@ -1130,48 +1148,58 @@ export function renderLayerStyles(
   }
 
   // 1. Drop Shadow (renders behind)
-  if (styles.dropShadow?.enabled) {
-    result = renderDropShadowStyle(result, styles.dropShadow, globalLight);
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const dropShadow = (styles != null && typeof styles === "object" && "dropShadow" in styles && styles.dropShadow != null && typeof styles.dropShadow === "object") ? styles.dropShadow : undefined;
+  if (dropShadow != null && typeof dropShadow === "object" && "enabled" in dropShadow && typeof dropShadow.enabled === "boolean" && dropShadow.enabled) {
+    result = renderDropShadowStyle(result, dropShadow, globalLight);
   }
 
   // 2. Inner Shadow
-  if (styles.innerShadow?.enabled) {
-    result = renderInnerShadowStyle(result, styles.innerShadow, globalLight);
+  const innerShadow = (styles != null && typeof styles === "object" && "innerShadow" in styles && styles.innerShadow != null && typeof styles.innerShadow === "object") ? styles.innerShadow : undefined;
+  if (innerShadow != null && typeof innerShadow === "object" && "enabled" in innerShadow && typeof innerShadow.enabled === "boolean" && innerShadow.enabled) {
+    result = renderInnerShadowStyle(result, innerShadow, globalLight);
   }
 
   // 3. Outer Glow (renders behind)
-  if (styles.outerGlow?.enabled) {
-    result = renderOuterGlowStyle(result, styles.outerGlow);
+  const outerGlow = (styles != null && typeof styles === "object" && "outerGlow" in styles && styles.outerGlow != null && typeof styles.outerGlow === "object") ? styles.outerGlow : undefined;
+  if (outerGlow != null && typeof outerGlow === "object" && "enabled" in outerGlow && typeof outerGlow.enabled === "boolean" && outerGlow.enabled) {
+    result = renderOuterGlowStyle(result, outerGlow);
   }
 
   // 4. Inner Glow
-  if (styles.innerGlow?.enabled) {
-    result = renderInnerGlowStyle(result, styles.innerGlow);
+  const innerGlow = (styles != null && typeof styles === "object" && "innerGlow" in styles && styles.innerGlow != null && typeof styles.innerGlow === "object") ? styles.innerGlow : undefined;
+  if (innerGlow != null && typeof innerGlow === "object" && "enabled" in innerGlow && typeof innerGlow.enabled === "boolean" && innerGlow.enabled) {
+    result = renderInnerGlowStyle(result, innerGlow);
   }
 
   // 5. Bevel and Emboss
-  if (styles.bevelEmboss?.enabled) {
-    result = renderBevelEmbossStyle(result, styles.bevelEmboss, globalLight);
+  const bevelEmboss = (styles != null && typeof styles === "object" && "bevelEmboss" in styles && styles.bevelEmboss != null && typeof styles.bevelEmboss === "object") ? styles.bevelEmboss : undefined;
+  if (bevelEmboss != null && typeof bevelEmboss === "object" && "enabled" in bevelEmboss && typeof bevelEmboss.enabled === "boolean" && bevelEmboss.enabled) {
+    result = renderBevelEmbossStyle(result, bevelEmboss, globalLight);
   }
 
   // 6. Satin
-  if (styles.satin?.enabled) {
-    result = renderSatinStyle(result, styles.satin);
+  const satin = (styles != null && typeof styles === "object" && "satin" in styles && styles.satin != null && typeof styles.satin === "object") ? styles.satin : undefined;
+  if (satin != null && typeof satin === "object" && "enabled" in satin && typeof satin.enabled === "boolean" && satin.enabled) {
+    result = renderSatinStyle(result, satin);
   }
 
   // 7. Color Overlay
-  if (styles.colorOverlay?.enabled) {
-    result = renderColorOverlayStyle(result, styles.colorOverlay);
+  const colorOverlay = (styles != null && typeof styles === "object" && "colorOverlay" in styles && styles.colorOverlay != null && typeof styles.colorOverlay === "object") ? styles.colorOverlay : undefined;
+  if (colorOverlay != null && typeof colorOverlay === "object" && "enabled" in colorOverlay && typeof colorOverlay.enabled === "boolean" && colorOverlay.enabled) {
+    result = renderColorOverlayStyle(result, colorOverlay);
   }
 
   // 8. Gradient Overlay
-  if (styles.gradientOverlay?.enabled) {
-    result = renderGradientOverlayStyle(result, styles.gradientOverlay);
+  const gradientOverlay = (styles != null && typeof styles === "object" && "gradientOverlay" in styles && styles.gradientOverlay != null && typeof styles.gradientOverlay === "object") ? styles.gradientOverlay : undefined;
+  if (gradientOverlay != null && typeof gradientOverlay === "object" && "enabled" in gradientOverlay && typeof gradientOverlay.enabled === "boolean" && gradientOverlay.enabled) {
+    result = renderGradientOverlayStyle(result, gradientOverlay);
   }
 
   // 9. Stroke (renders on top)
-  if (styles.stroke?.enabled) {
-    result = renderStrokeStyle(result, styles.stroke);
+  const stroke = (styles != null && typeof styles === "object" && "stroke" in styles && styles.stroke != null && typeof styles.stroke === "object") ? styles.stroke : undefined;
+  if (stroke != null && typeof stroke === "object" && "enabled" in stroke && typeof stroke.enabled === "boolean" && stroke.enabled) {
+    result = renderStrokeStyle(result, stroke);
   }
 
   return result;

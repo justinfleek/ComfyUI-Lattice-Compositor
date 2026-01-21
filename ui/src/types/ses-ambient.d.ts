@@ -5,17 +5,25 @@
  * The ses package has type declarations but they don't augment globalThis properly.
  */
 
+import type { JSONValue } from "./dataAsset";
+
+/**
+ * All possible JavaScript values that can be validated at runtime
+ * Used as input type for validators (replaces unknown)
+ */
+export type RuntimeValue = string | number | boolean | object | null | undefined | bigint | symbol;
+
 export interface SESCompartment {
-  globalThis: Record<PropertyKey, unknown>;
+  globalThis: Record<PropertyKey, JSONValue>;
   name: string;
-  evaluate(code: string, options?: Record<string, unknown>): unknown;
+  evaluate(code: string, options?: Record<string, JSONValue>): RuntimeValue;
 }
 
-interface SESCompartmentConstructor {
+export interface SESCompartmentConstructor {
   new (
-    globals?: Record<PropertyKey, unknown>,
-    modules?: Record<string, unknown>,
-    options?: Record<string, unknown>,
+    globals?: Record<PropertyKey, JSONValue>,
+    modules?: Record<string, JSONValue>,
+    options?: Record<string, JSONValue>,
   ): SESCompartment;
 }
 
@@ -25,13 +33,13 @@ declare global {
   interface Window {
     Compartment?: SESCompartmentConstructor;
     harden?: HardenFunction;
-    lockdown?: (options?: Record<string, unknown>) => void;
+    lockdown?: (options?: Record<string, JSONValue>) => void;
   }
 
   // Make these available on globalThis too
   var Compartment: SESCompartmentConstructor | undefined;
   var harden: HardenFunction | undefined;
-  var lockdown: ((options?: Record<string, unknown>) => void) | undefined;
+  var lockdown: ((options?: Record<string, JSONValue>) => void) | undefined;
 }
 
 export {};

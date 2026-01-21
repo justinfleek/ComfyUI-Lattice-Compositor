@@ -5,6 +5,7 @@
  */
 
 import type { AnimatableProperty, Layer } from "@/types/project";
+import type { PropertyValue } from "@/types/animation";
 
 // ============================================================================
 // FRAME VALIDATION
@@ -33,7 +34,7 @@ export function safeFrame(frame: number | undefined | null, fallback = 0): numbe
 export function findPropertyByPath(
   layer: Layer,
   propertyPath: string,
-): AnimatableProperty<any> | undefined {
+): AnimatableProperty<PropertyValue> | undefined {
   // Normalize path - strip 'transform.' prefix if present
   const normalizedPath = propertyPath.replace(/^transform\./, "");
 

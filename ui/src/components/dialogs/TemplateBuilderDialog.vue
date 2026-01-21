@@ -255,7 +255,7 @@
         <div v-if="showPropertyPicker" class="property-picker-modal" @click.self="closePropertyPicker">
           <div class="picker-content">
             <div class="picker-header">
-              <h3>Add Property from "{{ selectedLayerForPicker?.name }}"</h3>
+              <h3>Add Property from "{{ (selectedLayerForPicker != null && typeof selectedLayerForPicker === 'object' && 'name' in selectedLayerForPicker && typeof selectedLayerForPicker.name === 'string') ? selectedLayerForPicker.name : '' }}"</h3>
               <button class="btn-icon" @click="closePropertyPicker">×</button>
             </div>
             <div class="picker-list">
@@ -280,7 +280,7 @@
               type="number"
               v-model.number="posterFrame"
               :min="0"
-              :max="activeComposition?.settings.frameCount || 0"
+              :max="getMaxFrameCount()"
               class="poster-frame-input"
             />
             <button class="btn-small" @click="capturePosterFrame" :disabled="isCapturing">
@@ -316,6 +316,7 @@
 <script setup lang="ts">
 import JSZip from "jszip";
 import { computed, inject, onMounted, onUnmounted, ref, watch } from "vue";
+import { safeNonNegativeDefault } from "@/utils/typeGuards";
 import {
   safeJSONParse,
   safeJSONStringify,
@@ -339,8 +340,9 @@ import {
   updateComment as updateCommentFn,
   validateTemplate,
 } from "@/services/templateBuilder";
-import { useCompositorStore } from "@/stores/compositorStore";
+import { useProjectStore } from "@/stores/projectStore";
 import { useAnimationStore } from "@/stores/animationStore";
+import { useSelectionStore } from "@/stores/selectionStore";
 import type { Layer } from "@/types/project";
 import type {
   ExposedProperty,
@@ -349,6 +351,13 @@ import type {
   SavedTemplate,
   TemplateComment,
 } from "@/types/templateBuilder";
+import type { JSONValue } from "@/types/dataAsset";
+
+/**
+ * All possible JavaScript values that can be validated at runtime
+ * Used as input type for validators (replaces unknown)
+ */
+type RuntimeValue = string | number | boolean | object | null | undefined | bigint | symbol;
 
 // Props and emits for dialog mode
 const props = defineProps<{
@@ -365,8 +374,23 @@ function close() {
 const captureFrame = inject<() => Promise<string | null>>("captureFrame");
 
 // Store
-const store = useCompositorStore();
+const projectStore = useProjectStore();
 const animationStore = useAnimationStore();
+const selectionStore = useSelectionStore();
+
+// Helper function to create AnimationStoreAccess
+function getAnimationStoreAccess() {
+  return {
+    project: projectStore.project,
+    activeCompositionId: projectStore.activeCompositionId,
+    currentFrame: animationStore.currentFrame,
+    fps: projectStore.getFps(),
+    frameCount: projectStore.getFrameCount(),
+    selectedLayerIds: selectionStore.selectedLayerIds,
+    getActiveComp: () => projectStore.getActiveComp(),
+    pushHistory: () => projectStore.pushHistory(),
+  };
+}
 
 // State
 const activeTab = ref<"browse" | "edit">("edit");
@@ -394,22 +418,46 @@ const dragOverIndex = ref<number>(-1);
 const dragOverGroupId = ref<string | null>(null);
 
 // Computed
-const compositions = computed(() => Object.values(store.project.compositions));
+const compositions = computed(() => Object.values(projectStore.project.compositions));
 
-const activeComposition = computed(() => store.activeComposition);
+const activeComposition = computed(() => projectStore.getActiveComp());
 
-const activeCompLayers = computed(() => activeComposition.value?.layers || []);
+// Type proof: frameCount ∈ number | undefined → number (≥ 0, frame count)
+function getMaxFrameCount(): number {
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const activeComp = activeComposition.value;
+  const settings = (activeComp != null && typeof activeComp === "object" && "settings" in activeComp && activeComp.settings != null && typeof activeComp.settings === "object") ? activeComp.settings : undefined;
+  const frameCount = (settings != null && typeof settings === "object" && "frameCount" in settings && typeof settings.frameCount === "number") ? settings.frameCount : undefined;
+  return safeNonNegativeDefault(frameCount, 0, "activeComposition.settings.frameCount");
+}
+
+// Lean4/PureScript/Haskell: Explicit pattern matching - no lazy || []
+const activeCompLayers = computed(() => {
+  const comp = activeComposition.value;
+  const layers = (comp !== null && comp !== undefined && typeof comp === "object" && "layers" in comp) ? comp.layers : undefined;
+  return (layers !== null && layers !== undefined && Array.isArray(layers)) ? layers : [];
+});
 
 const hasTemplate = computed(() => {
-  return activeComposition.value?.templateConfig !== undefined;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const activeComp = activeComposition.value;
+  const templateConfig = (activeComp != null && typeof activeComp === "object" && "templateConfig" in activeComp && activeComp.templateConfig != null) ? activeComp.templateConfig : undefined;
+  return templateConfig !== undefined;
 });
 
 const templateConfig = computed(() => {
-  return activeComposition.value?.templateConfig;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const activeComp = activeComposition.value;
+  return (activeComp != null && typeof activeComp === "object" && "templateConfig" in activeComp && activeComp.templateConfig != null) ? activeComp.templateConfig : undefined;
 });
 
 const templateName = computed({
-  get: () => templateConfig.value?.name || "",
+  get: () => {
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const templateConfigVal = templateConfig.value;
+    const name = (templateConfigVal != null && typeof templateConfigVal === "object" && "name" in templateConfigVal && typeof templateConfigVal.name === "string") ? templateConfigVal.name : undefined;
+    return name || "";
+  },
   set: (value: string) => {
     if (templateConfig.value) {
       templateConfig.value.name = value;
@@ -433,10 +481,14 @@ const filteredTemplates = computed(() => {
   if (!searchQuery.value) return savedTemplates.value;
   const query = searchQuery.value.toLowerCase();
   return savedTemplates.value.filter(
-    (t) =>
-      t.name.toLowerCase().includes(query) ||
-      t.author?.toLowerCase().includes(query) ||
-      t.tags?.some((tag) => tag.toLowerCase().includes(query)),
+    (t) => {
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const author = (t != null && typeof t === "object" && "author" in t && typeof t.author === "string") ? t.author : undefined;
+      const tags = (t != null && typeof t === "object" && "tags" in t && t.tags != null && Array.isArray(t.tags)) ? t.tags : undefined;
+      return t.name.toLowerCase().includes(query) ||
+        (author != null && author.toLowerCase().includes(query)) ||
+        (tags != null && typeof tags.some === "function" && tags.some((tag) => tag.toLowerCase().includes(query)));
+    },
   );
 });
 
@@ -444,24 +496,24 @@ const filteredTemplates = computed(() => {
 function setMasterComposition() {
   if (!selectedMasterCompId.value) return;
 
-  const comp = store.project.compositions[selectedMasterCompId.value];
+  const comp = projectStore.project.compositions[selectedMasterCompId.value];
   if (!comp) return;
 
   comp.templateConfig = initializeTemplate(comp);
-  store.pushHistory();
+  projectStore.pushHistory();
 }
 
 function clearMasterComposition() {
   if (!activeComposition.value) return;
 
   clearTemplate(activeComposition.value);
-  store.pushHistory();
+  projectStore.pushHistory();
 }
 
 function updateTemplateName() {
   if (templateConfig.value) {
     templateConfig.value.modified = new Date().toISOString();
-    store.pushHistory();
+    projectStore.pushHistory();
   }
 }
 
@@ -473,14 +525,14 @@ function addGroup() {
   if (!templateConfig.value) return;
   addPropertyGroup(templateConfig.value, "New Group");
   showAddMenu.value = false;
-  store.pushHistory();
+  projectStore.pushHistory();
 }
 
 function addCommentItem() {
   if (!templateConfig.value) return;
   addComment(templateConfig.value, "Enter instructions here...");
   showAddMenu.value = false;
-  store.pushHistory();
+  projectStore.pushHistory();
 }
 
 function showLayerProperties(layer: Layer) {
@@ -510,7 +562,7 @@ function addPropertyFromPicker(prop: {
   );
 
   closePropertyPicker();
-  store.pushHistory();
+  projectStore.pushHistory();
 }
 
 function selectProperty(item: ExposedProperty | TemplateComment) {
@@ -520,13 +572,13 @@ function selectProperty(item: ExposedProperty | TemplateComment) {
 function removeProperty(propertyId: string) {
   if (!templateConfig.value) return;
   removeExposedProperty(templateConfig.value, propertyId);
-  store.pushHistory();
+  projectStore.pushHistory();
 }
 
 function removeCommentItem(commentId: string) {
   if (!templateConfig.value) return;
   removeCommentFn(templateConfig.value, commentId);
-  store.pushHistory();
+  projectStore.pushHistory();
 }
 
 function toggleGroup(groupId: string) {
@@ -540,13 +592,13 @@ function toggleGroup(groupId: string) {
 function updateGroupName(group: PropertyGroup) {
   if (!templateConfig.value) return;
   templateConfig.value.modified = new Date().toISOString();
-  store.pushHistory();
+  projectStore.pushHistory();
 }
 
 function removeGroup(groupId: string) {
   if (!templateConfig.value) return;
   removePropertyGroup(templateConfig.value, groupId);
-  store.pushHistory();
+  projectStore.pushHistory();
 }
 
 function handlePropertyUpdate(
@@ -560,14 +612,14 @@ function handlePropertyUpdate(
   if (property) {
     Object.assign(property, updates);
     templateConfig.value.modified = new Date().toISOString();
-    store.pushHistory();
+    projectStore.pushHistory();
   }
 }
 
 function handleCommentUpdate(commentId: string, text: string) {
   if (!templateConfig.value) return;
   updateCommentFn(templateConfig.value, commentId, text);
-  store.pushHistory();
+  projectStore.pushHistory();
 }
 
 function getLayerById(layerId: string): Layer | undefined {
@@ -650,7 +702,7 @@ function handleDrop(event: DragEvent) {
       reorderExposedProperties(templateConfig.value, ids);
     }
 
-    store.pushHistory();
+    projectStore.pushHistory();
   }
 
   handleDragEnd();
@@ -664,7 +716,7 @@ function handleDropToGroup(event: DragEvent, groupId: string) {
 
   // Move item to this group
   movePropertyToGroup(templateConfig.value, draggedItem.value.id, groupId);
-  store.pushHistory();
+  projectStore.pushHistory();
 
   handleDragEnd();
 }
@@ -711,9 +763,12 @@ async function applyTemplate(template: SavedTemplate) {
       // Apply exposed property default values
       tplData.templateConfig.exposedProperties.forEach(
         (prop: ExposedProperty) => {
-          const layer = activeComposition.value?.layers.find(
+          // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+          const activeComp = activeComposition.value;
+          const layers = (activeComp != null && typeof activeComp === "object" && "layers" in activeComp && activeComp.layers != null && Array.isArray(activeComp.layers)) ? activeComp.layers : undefined;
+          const layer = (layers != null && typeof layers.find === "function") ? layers.find(
             (l) => l.name === prop.sourceLayerId,
-          );
+          ) : undefined;
           if (layer && prop.defaultValue !== undefined) {
             // Set the property value on the layer
             setNestedProperty(
@@ -725,7 +780,7 @@ async function applyTemplate(template: SavedTemplate) {
         },
       );
 
-      store.pushHistory();
+      projectStore.pushHistory();
       activeTab.value = "edit";
 
       console.log("[TemplateBuilder] Template applied:", template.name);
@@ -741,9 +796,9 @@ async function applyTemplate(template: SavedTemplate) {
  * Accepts any JSON-serializable value
  */
 function setNestedProperty(
-  obj: Record<string, unknown>,
+  obj: Record<string, JSONValue>,
   path: string,
-  value: unknown,
+  value: JSONValue,
 ) {
   const parts = path.split(".");
   let current = obj;
@@ -768,12 +823,18 @@ function setNestedProperty(
 }
 
 function importTemplate() {
-  fileInput.value?.click();
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const fileInputVal = fileInput.value;
+  if (fileInputVal != null && typeof fileInputVal === "object" && typeof fileInputVal.click === "function") {
+    fileInputVal.click();
+  }
 }
 
 async function handleFileImport(event: Event) {
   const input = event.target as HTMLInputElement;
-  const file = input.files?.[0];
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const files = (input != null && typeof input === "object" && "files" in input && input.files != null && input.files.length > 0) ? input.files : null;
+  const file = (files != null && files.length > 0) ? files[0] : undefined;
   if (!file) return;
 
   try {
@@ -788,19 +849,11 @@ async function handleFileImport(event: Event) {
       }
 
       const manifestJson = await manifestFile.async("string");
-      const parsed = safeJSONParse<LatticeTemplate>(manifestJson);
-      if (!parsed.success) {
-        throw new Error(`Invalid manifest JSON: ${parsed.error}`);
-      }
-      templateData = parsed.data;
+      templateData = safeJSONParse<LatticeTemplate>(manifestJson);
     } else {
       // Load as JSON (.lattice.json or .json)
       const text = await file.text();
-      const parsed = safeJSONParse<LatticeTemplate>(text);
-      if (!parsed.success) {
-        throw new Error(`Invalid JSON: ${parsed.error}`);
-      }
-      templateData = parsed.data;
+      templateData = safeJSONParse<LatticeTemplate>(text);
     }
 
     // Validate
@@ -850,8 +903,8 @@ async function capturePosterFrame() {
 
   try {
     // Set the frame to poster frame
-    const originalFrame = store.currentFrame;
-    animationStore.setFrame(store, posterFrame.value);
+    const originalFrame = animationStore.currentFrame;
+    animationStore.setFrame(getAnimationStoreAccess(), posterFrame.value);
 
     // Wait for render
     await new Promise((resolve) => setTimeout(resolve, 100));
@@ -870,7 +923,7 @@ async function capturePosterFrame() {
     }
 
     // Restore frame
-    animationStore.setFrame(store, originalFrame);
+    animationStore.setFrame(getAnimationStoreAccess(), originalFrame);
   } catch (error) {
     console.error("[TemplateBuilder] Failed to capture poster frame:", error);
   } finally {
@@ -912,7 +965,7 @@ async function exportTemplate() {
     // Prepare template data
     const template = prepareTemplateExport(
       activeComposition.value,
-      store.project.assets,
+      projectStore.project.assets,
       posterImage,
     );
 
@@ -922,13 +975,10 @@ async function exportTemplate() {
     }
 
     // Serialize to JSON
-    const jsonResult = safeJSONStringify(template);
-    if (!jsonResult.success) {
-      throw new Error(`Failed to serialize: ${jsonResult.error}`);
-    }
+    const json = safeJSONStringify(template);
 
     // Create blob and download as .lattice.json
-    const blob = new Blob([jsonResult.json], { type: "application/json" });
+    const blob = new Blob([json], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -959,8 +1009,11 @@ function handleClickOutside(event: MouseEvent) {
 
 // Watch for composition changes
 watch(activeComposition, (comp) => {
-  if (comp?.templateConfig) {
-    posterFrame.value = comp.templateConfig.posterFrame || 0;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const templateConfig = (comp != null && typeof comp === "object" && "templateConfig" in comp && comp.templateConfig != null) ? comp.templateConfig : undefined;
+  if (templateConfig) {
+    // Type proof: posterFrame ∈ number | undefined → number (≥ 0, frame index)
+    posterFrame.value = safeNonNegativeDefault(comp.templateConfig.posterFrame, 0, "comp.templateConfig.posterFrame");
   }
 });
 
@@ -972,10 +1025,7 @@ onMounted(() => {
   try {
     const saved = localStorage.getItem("lattice_saved_templates");
     if (saved) {
-      const parsed = safeJSONParse<SavedTemplate[]>(saved, []);
-      if (parsed.success && parsed.data) {
-        savedTemplates.value = parsed.data;
-      }
+      savedTemplates.value = safeJSONParse<SavedTemplate[]>(saved);
     }
   } catch (_e) {
     console.warn("[TemplateBuilder] Failed to load saved templates");
@@ -987,10 +1037,8 @@ onUnmounted(() => {
 
   // Save installed templates
   try {
-    const result = safeJSONStringify(savedTemplates.value);
-    if (result.success) {
-      localStorage.setItem("lattice_saved_templates", result.json);
-    }
+    const json = safeJSONStringify(savedTemplates.value);
+    localStorage.setItem("lattice_saved_templates", json);
   } catch (_e) {
     console.warn("[TemplateBuilder] Failed to save templates");
   }

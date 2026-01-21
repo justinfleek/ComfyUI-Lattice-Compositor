@@ -14,6 +14,7 @@
  */
 
 import { logRateLimit, logSecurityWarning } from "./auditLog";
+import { isFiniteNumber, safeNonNegativeDefault } from "@/utils/typeGuards";
 
 // ============================================================================
 // Types
@@ -224,11 +225,17 @@ export function checkRateLimit(toolName: string): RateLimitStatus {
 
   if (!config) {
     // No limits configured for this tool
+    // Type proof: sessionCounts[toolName] ∈ number | undefined → number (≥ 0, count)
+    const sessionCount = safeNonNegativeDefault(
+      sessionCounts[toolName],
+      0,
+      "sessionCounts[toolName]",
+    );
     return {
       toolName,
       callsToday: 0,
       maxPerDay: Infinity,
-      callsThisSession: sessionCounts[toolName] || 0,
+      callsThisSession: sessionCount,
       canCall: true,
       resetsAt: getTomorrowMidnightUTC(),
       resetsIn: getTimeUntilReset(),
@@ -236,8 +243,17 @@ export function checkRateLimit(toolName: string): RateLimitStatus {
   }
 
   const stored = loadStoredLimits();
-  const callsToday = stored.counts[toolName] || 0;
-  const callsThisSession = sessionCounts[toolName] || 0;
+  // Type proof: stored.counts[toolName] ∈ number | undefined → number (≥ 0, count)
+  const callsToday = safeNonNegativeDefault(
+    stored.counts[toolName],
+    0,
+    "stored.counts[toolName]",
+  );
+  const callsThisSession = safeNonNegativeDefault(
+    sessionCounts[toolName],
+    0,
+    "sessionCounts[toolName]",
+  );
 
   // Check daily limit
   if (callsToday >= config.maxPerDay) {
@@ -287,21 +303,38 @@ export function checkRateLimit(toolName: string): RateLimitStatus {
  */
 export async function recordToolCall(toolName: string): Promise<void> {
   // Increment daily count
+  // Type proof: stored.counts[toolName] ∈ number | undefined → number (≥ 0, count)
   const stored = loadStoredLimits();
-  stored.counts[toolName] = (stored.counts[toolName] || 0) + 1;
+  const currentDailyCount = safeNonNegativeDefault(
+    stored.counts[toolName],
+    0,
+    "stored.counts[toolName]",
+  );
+  stored.counts[toolName] = currentDailyCount + 1;
   saveStoredLimits(stored);
 
   // Increment session count
-  sessionCounts[toolName] = (sessionCounts[toolName] || 0) + 1;
+  // Type proof: sessionCounts[toolName] ∈ number | undefined → number (≥ 0, count)
+  const currentSessionCount = safeNonNegativeDefault(
+    sessionCounts[toolName],
+    0,
+    "sessionCounts[toolName]",
+  );
+  sessionCounts[toolName] = currentSessionCount + 1;
   saveSessionCounts();
 
   const config = customLimits[toolName] || DEFAULT_LIMITS[toolName];
   const newStatus = checkRateLimit(toolName);
 
+  // Type proof: number | undefined → proper conditional formatting
+  // Construct log message based on whether session limit exists
+  const sessionInfo = isFiniteNumber(newStatus.maxPerSession) && newStatus.maxPerSession > 0
+    ? `session: ${newStatus.callsThisSession}/${newStatus.maxPerSession}`
+    : `session: ${newStatus.callsThisSession}`;
   console.log(
     `[SECURITY] Rate limit recorded: ${toolName} ` +
       `(today: ${newStatus.callsToday}/${newStatus.maxPerDay}, ` +
-      `session: ${newStatus.callsThisSession}/${newStatus.maxPerSession ?? "∞"})`,
+      `${sessionInfo})`,
   );
 
   // Log if approaching limits
@@ -315,7 +348,12 @@ export async function recordToolCall(toolName: string): Promise<void> {
  * Requires user action - logs the reset.
  */
 export async function resetSessionLimit(toolName: string): Promise<void> {
-  const oldCount = sessionCounts[toolName] || 0;
+  // Type proof: sessionCounts[toolName] ∈ number | undefined → number (≥ 0, count)
+  const oldCount = safeNonNegativeDefault(
+    sessionCounts[toolName],
+    0,
+    "sessionCounts[toolName]",
+  );
   sessionCounts[toolName] = 0;
   saveSessionCounts();
 

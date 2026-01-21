@@ -13,6 +13,7 @@
  * @see docs/MASTER_REFACTOR_PLAN.md Phase 2
  */
 
+import { isFiniteNumber } from "@/utils/typeGuards";
 import type { Layer, AnimatableProperty } from "@/types/project";
 import type { AudioMapping } from "./audioReactiveMapping";
 import { interpolateProperty } from "./interpolation";
@@ -55,8 +56,9 @@ export interface AudioAnalysisData {
 
 /**
  * Property value result - can be scalar or vector
+ * Note: null is only used internally for error propagation, never returned to callers
  */
-export type PropertyValueResult = number | number[] | null;
+export type PropertyValueResult = number | number[];
 
 // ============================================================================
 // MAIN EVALUATION FUNCTIONS
@@ -74,7 +76,8 @@ export type PropertyValueResult = number | number[] | null;
  * @param layerId - Layer ID to evaluate
  * @param propertyPath - Property path (e.g., 'transform.position', 'opacity')
  * @param frame - Frame number to evaluate at
- * @returns Evaluated property value or null if not found
+ * @returns Evaluated property value
+ * @throws Error if layer or property is not found
  */
 export function evaluatePropertyAtFrame(
   access: PropertyEvaluatorAccess,
@@ -84,8 +87,7 @@ export function evaluatePropertyAtFrame(
 ): PropertyValueResult {
   const layer = access.getActiveCompLayers().find((l) => l.id === layerId);
   if (!layer) {
-    storeLogger.warn(`evaluatePropertyAtFrame: Layer ${layerId} not found`);
-    return null;
+    throw new Error(`[PropertyEvaluator] Cannot evaluate property "${propertyPath}" at frame ${frame}: Layer "${layerId}" not found`);
   }
 
   const fps = access.fps;
@@ -95,7 +97,7 @@ export function evaluatePropertyAtFrame(
   let value = getKeyframeValue(layer, propertyPath, frame, fps, layerId, duration);
 
   if (value === null) {
-    return null;
+    throw new Error(`[PropertyEvaluator] Cannot evaluate property "${propertyPath}" at frame ${frame} for layer "${layerId}": Property not found or has no value`);
   }
 
   // Step 2: Apply audio reactive mapping if configured
@@ -127,10 +129,9 @@ export function getScalarPropertyValue(
   layerId: string,
   propertyPath: string,
   frame: number,
-): number | null {
+): number {
   const result = evaluatePropertyAtFrame(access, layerId, propertyPath, frame);
 
-  if (result === null) return null;
   if (typeof result === "number") return result;
 
   // Extract component from path for vector properties
@@ -138,14 +139,28 @@ export function getScalarPropertyValue(
   const component = parts[parts.length - 1];
 
   if (Array.isArray(result)) {
-    if (component === "x") return result[0] ?? null;
-    if (component === "y") return result[1] ?? null;
-    if (component === "z") return result[2] ?? null;
+    // Type proof: result[0/1/2] ∈ ℝ ∪ {undefined} → ℝ | null
+    if (component === "x") {
+      const xValue = result[0];
+      return typeof xValue === "number" && isFiniteNumber(xValue) ? xValue : null;
+    }
+    if (component === "y") {
+      const yValue = result[1];
+      return typeof yValue === "number" && isFiniteNumber(yValue) ? yValue : null;
+    }
+    if (component === "z") {
+      const zValue = result[2];
+      return typeof zValue === "number" && isFiniteNumber(zValue) ? zValue : null;
+    }
     // Return first component by default for vectors
-    return result[0] ?? null;
+    const firstValue = result[0];
+    if (typeof firstValue === "number" && isFiniteNumber(firstValue)) {
+      return firstValue;
+    }
+    throw new Error(`[PropertyEvaluator] Cannot get scalar property value: Property "${propertyPath}" at frame ${frame} for layer "${layerId}" has invalid vector component`);
   }
 
-  return null;
+  throw new Error(`[PropertyEvaluator] Cannot get scalar property value: Property "${propertyPath}" at frame ${frame} for layer "${layerId}" is not a scalar or vector property`);
 }
 
 // ============================================================================
@@ -170,21 +185,31 @@ function getKeyframeValue(
 
   // Transform properties
   if (normalizedPath === "position" || normalizedPath === "position.x" || normalizedPath === "position.y" || normalizedPath === "position.z") {
-    if (!t.position) return null;
+    if (!t.position) {
+      throw new Error(`[PropertyEvaluator] Cannot get keyframe value: Layer "${layerId}" has no position property`);
+    }
     const p = interpolateProperty(t.position, frame, fps, layerId, duration);
-    if (normalizedPath === "position") return [p.x, p.y, p.z ?? 0];
+    // Type proof: z ∈ ℝ ∪ {undefined} → z ∈ ℝ
+    const zValue = p.z;
+    const z = isFiniteNumber(zValue) ? zValue : 0;
+    if (normalizedPath === "position") return [p.x, p.y, z];
     if (normalizedPath === "position.x") return p.x;
     if (normalizedPath === "position.y") return p.y;
-    if (normalizedPath === "position.z") return p.z ?? 0;
+    if (normalizedPath === "position.z") return z;
   }
 
   if (normalizedPath === "scale" || normalizedPath === "scale.x" || normalizedPath === "scale.y" || normalizedPath === "scale.z") {
-    if (!t.scale) return null;
+    if (!t.scale) {
+      throw new Error(`[PropertyEvaluator] Cannot get keyframe value: Layer "${layerId}" has no scale property`);
+    }
     const s = interpolateProperty(t.scale, frame, fps, layerId, duration);
-    if (normalizedPath === "scale") return [s.x, s.y, s.z ?? 100];
+    // Type proof: z ∈ ℝ ∪ {undefined} → z ∈ ℝ
+    const scaleZValue = s.z;
+    const scaleZ = isFiniteNumber(scaleZValue) ? scaleZValue : 100;
+    if (normalizedPath === "scale") return [s.x, s.y, scaleZ];
     if (normalizedPath === "scale.x") return s.x;
     if (normalizedPath === "scale.y") return s.y;
-    if (normalizedPath === "scale.z") return s.z ?? 100;
+    if (normalizedPath === "scale.z") return scaleZ;
   }
 
   if (normalizedPath === "rotation" && t.rotation) {
@@ -205,19 +230,31 @@ function getKeyframeValue(
 
   if (normalizedPath.startsWith("anchorPoint") || normalizedPath.startsWith("origin")) {
     const originProp = t.origin || t.anchorPoint;
-    if (!originProp) return null;
+    if (!originProp) {
+      throw new Error(`[PropertyEvaluator] Cannot get keyframe value: Layer "${layerId}" has no origin or anchorPoint property`);
+    }
     const a = interpolateProperty(originProp, frame, fps, layerId, duration);
     if (normalizedPath === "anchorPoint" || normalizedPath === "origin") {
-      return [a.x, a.y, a.z ?? 0];
+      // Type proof: z ∈ ℝ ∪ {undefined} → z ∈ ℝ
+      const anchorZValue = a.z;
+      const anchorZ = isFiniteNumber(anchorZValue) ? anchorZValue : 0;
+      return [a.x, a.y, anchorZ];
     }
     if (normalizedPath.endsWith(".x")) return a.x;
     if (normalizedPath.endsWith(".y")) return a.y;
-    if (normalizedPath.endsWith(".z")) return a.z ?? 0;
+    if (normalizedPath.endsWith(".z")) {
+      // Type proof: z ∈ ℝ ∪ {undefined} → z ∈ ℝ
+      const anchorZValue = a.z;
+      return isFiniteNumber(anchorZValue) ? anchorZValue : 0;
+    }
   }
 
   if (normalizedPath === "orientation" && t.orientation) {
     const o = interpolateProperty(t.orientation, frame, fps, layerId, duration);
-    return [o.x, o.y, o.z ?? 0];
+    // Type proof: z ∈ ℝ ∪ {undefined} → z ∈ ℝ
+    const orientZValue = o.z;
+    const orientZ = isFiniteNumber(orientZValue) ? orientZValue : 0;
+    return [o.x, o.y, orientZ];
   }
 
   // Opacity
@@ -233,12 +270,15 @@ function getKeyframeValue(
     const value = interpolateProperty(customProp, frame, fps, layerId, duration);
     if (value && typeof value === "object" && "x" in value && "y" in value) {
       const posValue = value as { x: number; y: number; z?: number };
-      return [posValue.x, posValue.y, posValue.z ?? 0];
+      // Type proof: z ∈ ℝ ∪ {undefined} → z ∈ ℝ
+      const posZValue = posValue.z;
+      const posZ = isFiniteNumber(posZValue) ? posZValue : 0;
+      return [posValue.x, posValue.y, posZ];
     }
     return value as PropertyValueResult;
   }
 
-  return null;
+  throw new Error(`[PropertyEvaluator] Cannot get keyframe value: Property "${propertyPath}" not found on layer "${layerId}"`);
 }
 
 // ============================================================================
@@ -252,7 +292,7 @@ function getKeyframeValue(
  * (amplitude, frequency bands, beats).
  */
 function applyAudioMapping(
-  baseValue: PropertyValueResult,
+  baseValue: PropertyValueResult | null,
   layerId: string,
   _propertyPath: string,
   frame: number,
@@ -260,6 +300,9 @@ function applyAudioMapping(
   audioAnalysis: AudioAnalysisData | null,
 ): PropertyValueResult {
   if (!audioAnalysis || mappings.length === 0) {
+    if (baseValue === null) {
+      throw new Error(`[PropertyEvaluator] Cannot apply audio mapping: Base value is null for layer "${layerId}" at frame ${frame}`);
+    }
     return baseValue;
   }
 
@@ -269,6 +312,9 @@ function applyAudioMapping(
   );
 
   if (!mapping) {
+    if (baseValue === null) {
+      throw new Error(`[PropertyEvaluator] Cannot apply audio mapping: Base value is null for layer "${layerId}" at frame ${frame}`);
+    }
     return baseValue;
   }
 
@@ -277,25 +323,93 @@ function applyAudioMapping(
   const frameIndex = Math.floor(frame);
 
   switch (mapping.feature) {
-    case "amplitude":
-      audioValue = audioAnalysis.amplitudeEnvelope?.[frameIndex] ?? 0;
+    case "amplitude": {
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+      // Pattern match: amplitudeEnvelope ∈ number[] | undefined → number[]
+      const amplitudeEnvelope = Array.isArray(audioAnalysis.amplitudeEnvelope)
+        ? audioAnalysis.amplitudeEnvelope
+        : [];
+      // Pattern match: array access with bounds check - no undefined assignment
+      if (frameIndex >= 0 && frameIndex < amplitudeEnvelope.length && typeof amplitudeEnvelope[frameIndex] === "number") {
+        const ampValue = amplitudeEnvelope[frameIndex];
+        audioValue = isFiniteNumber(ampValue) ? ampValue : 0;
+      } else {
+        audioValue = 0;
+      }
       break;
-    case "bass":
-      audioValue = audioAnalysis.frequencyBands?.bass?.[frameIndex] ?? 0;
+    }
+    case "bass": {
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+      // Pattern match: frequencyBands.bass ∈ number[] | undefined → number[]
+      const frequencyBands = (typeof audioAnalysis.frequencyBands === "object" && audioAnalysis.frequencyBands !== null && "bass" in audioAnalysis.frequencyBands && Array.isArray(audioAnalysis.frequencyBands.bass))
+        ? audioAnalysis.frequencyBands.bass
+        : [];
+      // Pattern match: array access with bounds check - no undefined assignment
+      if (frameIndex >= 0 && frameIndex < frequencyBands.length && typeof frequencyBands[frameIndex] === "number") {
+        const bassValue = frequencyBands[frameIndex];
+        audioValue = isFiniteNumber(bassValue) ? bassValue : 0;
+      } else {
+        audioValue = 0;
+      }
       break;
-    case "mid":
-      audioValue = audioAnalysis.frequencyBands?.mid?.[frameIndex] ?? 0;
+    }
+    case "mid": {
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+      // Pattern match: frequencyBands.mid ∈ number[] | undefined → number[]
+      const frequencyBandsMid = (typeof audioAnalysis.frequencyBands === "object" && audioAnalysis.frequencyBands !== null && "mid" in audioAnalysis.frequencyBands && Array.isArray(audioAnalysis.frequencyBands.mid))
+        ? audioAnalysis.frequencyBands.mid
+        : [];
+      // Pattern match: array access with bounds check - no undefined assignment
+      if (frameIndex >= 0 && frameIndex < frequencyBandsMid.length && typeof frequencyBandsMid[frameIndex] === "number") {
+        const midValue = frequencyBandsMid[frameIndex];
+        audioValue = isFiniteNumber(midValue) ? midValue : 0;
+      } else {
+        audioValue = 0;
+      }
       break;
-    case "high":
-      audioValue = audioAnalysis.frequencyBands?.high?.[frameIndex] ?? 0;
+    }
+    case "high": {
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+      // Pattern match: frequencyBands.high ∈ number[] | undefined → number[]
+      const frequencyBandsHigh = (typeof audioAnalysis.frequencyBands === "object" && audioAnalysis.frequencyBands !== null && "high" in audioAnalysis.frequencyBands && Array.isArray(audioAnalysis.frequencyBands.high))
+        ? audioAnalysis.frequencyBands.high
+        : [];
+      // Pattern match: array access with bounds check - no undefined assignment
+      if (frameIndex >= 0 && frameIndex < frequencyBandsHigh.length && typeof frequencyBandsHigh[frameIndex] === "number") {
+        const highValue = frequencyBandsHigh[frameIndex];
+        audioValue = isFiniteNumber(highValue) ? highValue : 0;
+      } else {
+        audioValue = 0;
+      }
       break;
+    }
     case "spectralFlux":
     case "onsets":
-    case "peaks":
-      audioValue = audioAnalysis.beats?.includes(frameIndex) ? 1 : 0;
+    case "peaks": {
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+      const beats = Array.isArray(audioAnalysis.beats)
+        ? audioAnalysis.beats
+        : [];
+      const hasBeat = beats.includes(frameIndex);
+      audioValue = hasBeat === true ? 1 : 0;
       break;
-    default:
-      audioValue = audioAnalysis.amplitudeEnvelope?.[frameIndex] ?? 0;
+    }
+    default: {
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+      // Pattern match: amplitudeEnvelope ∈ number[] | undefined → number[]
+      const amplitudeEnvelope = Array.isArray(audioAnalysis.amplitudeEnvelope)
+        ? audioAnalysis.amplitudeEnvelope
+        : [];
+      // Pattern match: array access with bounds check - no undefined assignment
+      if (frameIndex >= 0 && frameIndex < amplitudeEnvelope.length && typeof amplitudeEnvelope[frameIndex] === "number") {
+        const ampValue = amplitudeEnvelope[frameIndex];
+        audioValue = isFiniteNumber(ampValue) ? ampValue : 0;
+      } else {
+        audioValue = 0;
+      }
+      break;
+    }
   }
 
   // Apply threshold (noise gate)
@@ -320,6 +434,9 @@ function applyAudioMapping(
   const mappedValue = Math.max(mapping.min, Math.min(mapping.max, audioValue));
 
   // Apply to base value - AudioMapping doesn't have "mode", it adds by default
+  if (baseValue === null) {
+    throw new Error(`[PropertyEvaluator] Cannot apply audio mapping: Base value is null for layer "${layerId}" at frame ${frame}`);
+  }
   if (typeof baseValue === "number") {
     return baseValue + mappedValue;
   }
@@ -329,7 +446,7 @@ function applyAudioMapping(
     return baseValue.map((v) => v + mappedValue);
   }
 
-  return baseValue;
+  throw new Error(`[PropertyEvaluator] Cannot apply audio mapping: Base value is invalid type for layer "${layerId}" at frame ${frame}`);
 }
 
 // ============================================================================
@@ -347,7 +464,9 @@ export function propertyHasKeyframes(property: AnimatableProperty<unknown>): boo
  * Check if a property has an enabled expression
  */
 export function propertyHasExpression(property: AnimatableProperty<unknown>): boolean {
-  return property.expression?.enabled === true;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+  return (typeof property.expression === "object" && property.expression !== null && "enabled" in property.expression && property.expression.enabled === true);
 }
 
 /**

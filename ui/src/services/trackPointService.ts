@@ -9,6 +9,7 @@
  */
 
 import { computed, reactive } from "vue";
+import { isNonEmptyString } from "@/utils/typeGuards";
 import type {
   GroundPlane,
   TrackPoint2D,
@@ -109,15 +110,31 @@ export function createTrack(
     type?: "feature" | "manual" | "imported";
   } = {},
 ): Track {
+  // Type proof: name ∈ string | undefined → string
+  const name = isNonEmptyString(options.name)
+    ? options.name
+    : `Track ${state.tracks.size + 1}`;
+  // Type proof: color ∈ string | undefined → string
+  const color = isNonEmptyString(options.color)
+    ? options.color
+    : generateTrackColor();
+  // Type proof: type ∈ "feature" | "manual" | "imported" | undefined → "feature" | "manual" | "imported"
+  const type = typeof options.type === "string" &&
+    (options.type === "feature" ||
+      options.type === "manual" ||
+      options.type === "imported")
+    ? options.type
+    : "manual";
+
   const track: Track = {
     id: generateTrackId(),
-    name: options.name ?? `Track ${state.tracks.size + 1}`,
-    color: options.color ?? generateTrackColor(),
+    name,
+    color,
     positions: new Map(),
     position3D: null,
     selected: false,
     locked: false,
-    type: options.type ?? "manual",
+    type,
   };
 
   state.tracks.set(track.id, track);
@@ -164,13 +181,21 @@ export function setTrackPosition(
 
 /**
  * Get track position at a specific frame
+ * @throws Error if track not found or position not available at frame
  */
 export function getTrackPosition(
   trackId: string,
   frame: number,
-): { x: number; y: number; confidence: number } | null {
+): { x: number; y: number; confidence: number } {
   const track = state.tracks.get(trackId);
-  return track?.positions.get(frame) ?? null;
+  if (!track) {
+    throw new Error(`[TrackPointService] Cannot get track position: Track "${trackId}" not found`);
+  }
+  const position = track.positions.get(frame);
+  if (!position) {
+    throw new Error(`[TrackPointService] Cannot get track position: Track "${trackId}" has no position at frame ${frame}`);
+  }
+  return position;
 }
 
 /**
@@ -338,14 +363,28 @@ export function defineGroundPlaneFromPoints(
   trackId1: string,
   trackId2: string,
   trackId3: string,
-): GroundPlane | null {
+): GroundPlane {
   const track1 = state.tracks.get(trackId1);
   const track2 = state.tracks.get(trackId2);
   const track3 = state.tracks.get(trackId3);
 
-  if (!track1?.position3D || !track2?.position3D || !track3?.position3D) {
-    console.warn("Cannot define ground plane: tracks must have 3D positions");
-    return null;
+  if (!track1) {
+    throw new Error(`[TrackPointService] Cannot define ground plane: Track "${trackId1}" not found`);
+  }
+  if (!track2) {
+    throw new Error(`[TrackPointService] Cannot define ground plane: Track "${trackId2}" not found`);
+  }
+  if (!track3) {
+    throw new Error(`[TrackPointService] Cannot define ground plane: Track "${trackId3}" not found`);
+  }
+  if (!track1.position3D) {
+    throw new Error(`[TrackPointService] Cannot define ground plane: Track "${trackId1}" has no 3D position`);
+  }
+  if (!track2.position3D) {
+    throw new Error(`[TrackPointService] Cannot define ground plane: Track "${trackId2}" has no 3D position`);
+  }
+  if (!track3.position3D) {
+    throw new Error(`[TrackPointService] Cannot define ground plane: Track "${trackId3}" has no 3D position`);
   }
 
   const p1 = track1.position3D;
@@ -366,8 +405,7 @@ export function defineGroundPlaneFromPoints(
   // Normalize
   const len = Math.sqrt(normal.x ** 2 + normal.y ** 2 + normal.z ** 2);
   if (len < 0.0001) {
-    console.warn("Cannot define ground plane: points are collinear");
-    return null;
+    throw new Error(`[TrackPointService] Cannot define ground plane: Points from tracks "${trackId1}", "${trackId2}", and "${trackId3}" are collinear (normal vector length: ${len})`);
   }
 
   normal.x /= len;
@@ -390,12 +428,14 @@ export function defineGroundPlaneFromPoints(
  */
 export function setOrigin3D(trackId: string): boolean {
   const track = state.tracks.get(trackId);
-  if (!track?.position3D) {
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const trackPosition3D = (track != null && typeof track === "object" && "position3D" in track && track.position3D != null && typeof track.position3D === "object") ? track.position3D : undefined;
+  if (trackPosition3D == null) {
     console.warn("Cannot set origin: track must have 3D position");
     return false;
   }
 
-  state.origin3D = { ...track.position3D };
+  state.origin3D = { ...trackPosition3D };
   return true;
 }
 
@@ -413,15 +453,24 @@ export function importTrackPoints2D(points: TrackPoint2D[]): void {
     if (!trackGroups.has(trackId)) {
       trackGroups.set(trackId, []);
     }
-    trackGroups.get(trackId)?.push(point);
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const trackGroup = trackGroups.get(trackId);
+    if (trackGroup != null && Array.isArray(trackGroup)) {
+      trackGroup.push(point);
+    }
   }
 
   // Create tracks from groups
   for (const [baseId, trackPoints] of trackGroups) {
+    // Type proof: trackPoints[0]?.color ∈ string | undefined → string
+    const firstPointColor = trackPoints.length > 0 &&
+      isNonEmptyString(trackPoints[0].color)
+      ? trackPoints[0].color
+      : generateTrackColor();
     const track = createTrack({
       name: `Imported ${baseId}`,
       type: "imported",
-      color: trackPoints[0]?.color ?? generateTrackColor(),
+      color: firstPointColor,
     });
 
     for (const point of trackPoints) {

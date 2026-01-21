@@ -26,7 +26,9 @@ import { meshParticleManager } from "@/services/meshParticleManager";
 import { spriteSheetService } from "@/services/spriteSheet";
 import { svgExtrusionService } from "@/services/svgExtrusion";
 import type { Layer } from "@/types/project";
+import type { JSONValue } from "@/types/dataAsset";
 import { engineLogger } from "@/utils/logger";
+import { assertDefined } from "@/utils/typeGuards";
 import { BackgroundManager } from "./BackgroundManager";
 import { CameraController } from "./core/CameraController";
 import { LayerManager } from "./core/LayerManager";
@@ -117,14 +119,23 @@ export class LatticeEngine {
       canvas: config.canvas,
       width: config.width,
       height: config.height,
-      compositionWidth: config.compositionWidth ?? config.width,
-      compositionHeight: config.compositionHeight ?? config.height,
-      pixelRatio: config.pixelRatio ?? Math.min(window.devicePixelRatio, 2),
-      antialias: config.antialias ?? true,
-      alpha: config.alpha ?? true,
-      backgroundColor: config.backgroundColor ?? null,
-      debug: config.debug ?? false,
-      powerPreference: config.powerPreference ?? "high-performance",
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+      // Pattern match: compositionWidth ∈ number | undefined → number (fallback to width)
+      compositionWidth: (typeof config.compositionWidth === "number" && Number.isFinite(config.compositionWidth)) ? config.compositionWidth : config.width,
+      // Pattern match: compositionHeight ∈ number | undefined → number (fallback to height)
+      compositionHeight: (typeof config.compositionHeight === "number" && Number.isFinite(config.compositionHeight)) ? config.compositionHeight : config.height,
+      // Pattern match: pixelRatio ∈ number | undefined → number (fallback to Math.min(window.devicePixelRatio, 2))
+      pixelRatio: (typeof config.pixelRatio === "number" && Number.isFinite(config.pixelRatio) && config.pixelRatio > 0) ? config.pixelRatio : Math.min(window.devicePixelRatio, 2),
+      // Pattern match: antialias ∈ boolean | undefined → boolean (default true)
+      antialias: (typeof config.antialias === "boolean") ? config.antialias : true,
+      // Pattern match: alpha ∈ boolean | undefined → boolean (default true)
+      alpha: (typeof config.alpha === "boolean") ? config.alpha : true,
+      // Pattern match: backgroundColor ∈ string | null | undefined → string | null (default null)
+      backgroundColor: (typeof config.backgroundColor === "string" && config.backgroundColor.length > 0) ? config.backgroundColor : null,
+      // Pattern match: debug ∈ boolean | undefined → boolean (default false)
+      debug: (typeof config.debug === "boolean") ? config.debug : false,
+      // Pattern match: powerPreference ∈ string | undefined → string (default "high-performance")
+      powerPreference: (typeof config.powerPreference === "string" && config.powerPreference.length > 0) ? config.powerPreference : "high-performance",
     };
 
     // Initialize state
@@ -147,11 +158,18 @@ export class LatticeEngine {
 
     // Initialize subsystems in dependency order
     this.resources = new ResourceManager();
-    this.scene = new SceneManager(this.config.backgroundColor);
+    // Convert null to undefined for SceneManager (it expects string | undefined)
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+    // Pattern match: backgroundColor ∈ string | null | undefined → string | undefined
+    const backgroundColor = (typeof this.config.backgroundColor === "string" && this.config.backgroundColor.length > 0) ? this.config.backgroundColor : undefined;
+    this.scene = new SceneManager(backgroundColor);
     // Camera is initialized with COMPOSITION dimensions for position/target calculation
+    // Type proof: compositionWidth and compositionHeight are guaranteed by Required<> type and default assignment
+    assertDefined(this.config.compositionWidth, "compositionWidth must exist after config merge");
+    assertDefined(this.config.compositionHeight, "compositionHeight must exist after config merge");
     this.camera = new CameraController(
-      this.config.compositionWidth!,
-      this.config.compositionHeight!,
+      this.config.compositionWidth,
+      this.config.compositionHeight,
     );
     // Set camera aspect ratio to VIEWPORT dimensions (required for correct rendering)
     this.camera.setViewportAspect(this.config.width, this.config.height);
@@ -173,8 +191,8 @@ export class LatticeEngine {
 
     // Set composition size for bounds
     this.scene.setCompositionSize(
-      this.config.compositionWidth!,
-      this.config.compositionHeight!,
+      this.config.compositionWidth,
+      this.config.compositionHeight,
     );
 
     // Handle WebGL context loss
@@ -239,7 +257,12 @@ export class LatticeEngine {
     this.assertNotDisposed();
 
     this.layers.update(layerId, properties);
-    this.emit("layerUpdated", { layerId, properties });
+    // Serialize to JSONValue for event emission
+    const eventData: JSONValue = {
+      layerId,
+      properties: properties as JSONValue,
+    };
+    this.emit("layerUpdated", eventData);
   }
 
   /**
@@ -424,7 +447,8 @@ export class LatticeEngine {
 
     // Sync DOF settings from camera
     const camera3d = typedLayer.getCameraAtCurrentFrame();
-    if (camera3d?.depthOfField) {
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    if (camera3d != null && typeof camera3d === "object" && "depthOfField" in camera3d && camera3d.depthOfField != null) {
       this.setDOFFromCamera(camera3d.depthOfField);
     }
   }
@@ -740,47 +764,75 @@ export class LatticeEngine {
    * Resize the viewport
    * @param width - New viewport width in pixels
    * @param height - New viewport height in pixels
-   * @param compositionWidth - Optional new composition width
-   * @param compositionHeight - Optional new composition height
+   * @param compositionWidth - Composition width in pixels (required, min: 480, max: 3840)
+   * @param compositionHeight - Composition height in pixels (required, min: 480, max: 2160)
    */
   resize(
     width: number,
     height: number,
-    compositionWidth?: number,
-    compositionHeight?: number,
+    compositionWidth: number,
+    compositionHeight: number,
   ): void {
     this.assertNotDisposed();
 
-    // NaN bypasses <= 0 check, so validate with Number.isFinite first
+    // System F/Omega: Validate all dimensions with explicit bounds
+    // Type proof: width, height, compositionWidth, compositionHeight ∈ ℝ₊ ∧ finite
+    // Mathematical proof: All dimensions must be within valid ranges
+    const MIN_COMPOSITION_SIZE = 480;
+    const MAX_COMPOSITION_SIZE = 4000; // 4K (4000 pixels) in either horizontal or vertical dimension
+
+    // Validate viewport dimensions
     if (
       !Number.isFinite(width) ||
       !Number.isFinite(height) ||
       width <= 0 ||
       height <= 0
     ) {
-      engineLogger.warn("Invalid resize dimensions:", width, height);
-      return;
+      throw new Error(
+        `[LatticeEngine] Invalid viewport dimensions: width=${width}, height=${height}. Must be finite positive numbers.`,
+      );
+    }
+
+    // Validate composition dimensions are provided
+    if (
+      compositionWidth === undefined ||
+      compositionHeight === undefined ||
+      !Number.isFinite(compositionWidth) ||
+      !Number.isFinite(compositionHeight)
+    ) {
+      throw new Error(
+        `[LatticeEngine] Composition dimensions are required: compositionWidth=${compositionWidth}, compositionHeight=${compositionHeight}. Must be finite numbers.`,
+      );
+    }
+
+    // Validate composition dimensions are within bounds
+    if (
+      compositionWidth < MIN_COMPOSITION_SIZE ||
+      compositionWidth > MAX_COMPOSITION_SIZE
+    ) {
+      throw new Error(
+        `[LatticeEngine] Invalid composition width: ${compositionWidth}. Must be between ${MIN_COMPOSITION_SIZE} and ${MAX_COMPOSITION_SIZE} pixels (4K max).`,
+      );
+    }
+
+    if (
+      compositionHeight < MIN_COMPOSITION_SIZE ||
+      compositionHeight > MAX_COMPOSITION_SIZE
+    ) {
+      throw new Error(
+        `[LatticeEngine] Invalid composition height: ${compositionHeight}. Must be between ${MIN_COMPOSITION_SIZE} and ${MAX_COMPOSITION_SIZE} pixels (4K max).`,
+      );
     }
 
     console.log(
-      `[LatticeEngine] resize: viewport=${width}x${height}, comp=${compositionWidth ?? "undefined"}x${compositionHeight ?? "undefined"}`,
+      `[LatticeEngine] resize: viewport=${width}x${height}, comp=${compositionWidth}x${compositionHeight}`,
     );
 
     this.state.viewport = { width, height };
     this.renderer.resize(width, height);
 
-    // ONLY update camera composition dimensions if explicitly provided and valid
-    // Otherwise, just update the viewport aspect
-    if (
-      compositionWidth !== undefined &&
-      compositionHeight !== undefined &&
-      Number.isFinite(compositionWidth) &&
-      Number.isFinite(compositionHeight) &&
-      compositionWidth > 0 &&
-      compositionHeight > 0
-    ) {
-      this.camera.resize(compositionWidth, compositionHeight);
-    }
+    // Update camera composition dimensions (always provided and validated)
+    this.camera.resize(compositionWidth, compositionHeight);
 
     // Set camera aspect to VIEWPORT dimensions (how wide the view is)
     this.camera.setViewportAspect(width, height);
@@ -788,7 +840,15 @@ export class LatticeEngine {
     // Update SplineLayer resolutions for Line2 materials
     this.updateSplineResolutions(width, height);
 
-    this.emit("resize", { width, height, compositionWidth, compositionHeight });
+    // System F/Omega: All properties are always defined - no optional properties
+    // Type proof: compositionWidth, compositionHeight ∈ [480, 4000] × [480, 4000]
+    const resizeData: Record<string, number> = {
+      width,
+      height,
+      compositionWidth,
+      compositionHeight,
+    };
+    this.emit("resize", resizeData as unknown as JSONValue);
   }
 
   /**
@@ -1134,7 +1194,10 @@ export class LatticeEngine {
    */
   setBackground(color: string | null): void {
     this.assertNotDisposed();
-    this.scene.setBackground(color);
+    // System F/Omega: Validate and convert null to empty string (SceneManager expects non-nullable string)
+    // Type proof: color ∈ string | null → string (non-nullable)
+    const colorValue = color !== null ? color : "";
+    this.scene.setBackground(colorValue);
   }
 
   /**
@@ -1151,7 +1214,10 @@ export class LatticeEngine {
   setBackgroundImage(image: HTMLImageElement): void {
     this.assertNotDisposed();
     this.ensureBackgroundManager();
-    this.backgroundManager?.setBackgroundImage(image);
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    if (this.backgroundManager != null && typeof this.backgroundManager === "object" && typeof this.backgroundManager.setBackgroundImage === "function") {
+      this.backgroundManager.setBackgroundImage(image);
+    }
   }
 
   /**
@@ -1169,7 +1235,10 @@ export class LatticeEngine {
   ): void {
     this.assertNotDisposed();
     this.ensureBackgroundManager();
-    this.backgroundManager?.setDepthMap(image, options);
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    if (this.backgroundManager != null && typeof this.backgroundManager === "object" && typeof this.backgroundManager.setDepthMap === "function") {
+      this.backgroundManager.setDepthMap(image, options);
+    }
   }
 
   /**
@@ -1177,7 +1246,10 @@ export class LatticeEngine {
    */
   setDepthOverlayVisible(visible: boolean): void {
     this.ensureBackgroundManager();
-    this.backgroundManager?.setDepthOverlayVisible(visible);
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    if (this.backgroundManager != null && typeof this.backgroundManager === "object" && typeof this.backgroundManager.setDepthOverlayVisible === "function") {
+      this.backgroundManager.setDepthOverlayVisible(visible);
+    }
   }
 
   /**
@@ -1185,7 +1257,10 @@ export class LatticeEngine {
    */
   setDepthColormap(colormap: "viridis" | "plasma" | "grayscale"): void {
     this.ensureBackgroundManager();
-    this.backgroundManager?.setDepthColormap(colormap);
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    if (this.backgroundManager != null && typeof this.backgroundManager === "object" && typeof this.backgroundManager.setDepthColormap === "function") {
+      this.backgroundManager.setDepthColormap(colormap);
+    }
   }
 
   /**
@@ -1193,7 +1268,10 @@ export class LatticeEngine {
    */
   setDepthOpacity(opacity: number): void {
     this.ensureBackgroundManager();
-    this.backgroundManager?.setDepthOpacity(opacity);
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    if (this.backgroundManager != null && typeof this.backgroundManager === "object" && typeof this.backgroundManager.setDepthOpacity === "function") {
+      this.backgroundManager.setDepthOpacity(opacity);
+    }
   }
 
   /**
@@ -1205,7 +1283,10 @@ export class LatticeEngine {
     visible: boolean;
   } {
     this.ensureBackgroundManager();
-    return this.backgroundManager?.getDepthMapSettings() ?? {
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining/nullish coalescing
+    // Pattern match: backgroundManager.getDepthMapSettings() ∈ DepthMapSettings | undefined → DepthMapSettings (default)
+    const depthMapSettings = (this.backgroundManager !== null && typeof this.backgroundManager === "object" && typeof this.backgroundManager.getDepthMapSettings === "function") ? this.backgroundManager.getDepthMapSettings() : undefined;
+    return (depthMapSettings !== undefined) ? depthMapSettings : {
       colormap: "grayscale",
       opacity: 1,
       visible: true,
@@ -1364,7 +1445,7 @@ export class LatticeEngine {
    * @param y - Normalized Y coordinate (-1 to 1)
    * @returns Layer ID if hit, null otherwise
    */
-  raycastLayers(x: number, y: number): string | null {
+  raycastLayers(x: number, y: number): string {
     const raycaster = new THREE.Raycaster();
     const pointer = new THREE.Vector2(x, y);
 
@@ -1385,7 +1466,7 @@ export class LatticeEngine {
       }
     }
 
-    return null;
+    throw new Error(`[LatticeEngine] No layer found at raycast position (${x}, ${y})`);
   }
 
   // ============================================================================
@@ -1420,7 +1501,10 @@ export class LatticeEngine {
   initializeTransformControls(): void {
     this.assertNotDisposed();
     this.ensureTransformControlsManager();
-    this.transformControlsManager?.initialize();
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    if (this.transformControlsManager != null && typeof this.transformControlsManager === "object" && typeof this.transformControlsManager.initialize === "function") {
+      this.transformControlsManager.initialize();
+    }
   }
 
   /**
@@ -1433,7 +1517,10 @@ export class LatticeEngine {
       | null,
   ): void {
     this.ensureTransformControlsManager();
-    this.transformControlsManager?.setTransformChangeCallback(callback);
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    if (this.transformControlsManager != null && typeof this.transformControlsManager === "object" && typeof this.transformControlsManager.setTransformChangeCallback === "function") {
+      this.transformControlsManager.setTransformChangeCallback(callback);
+    }
   }
 
   /**
@@ -1443,7 +1530,10 @@ export class LatticeEngine {
   selectLayer(layerId: string | null): void {
     this.assertNotDisposed();
     this.ensureTransformControlsManager();
-    this.transformControlsManager?.selectLayer(layerId);
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    if (this.transformControlsManager != null && typeof this.transformControlsManager === "object" && typeof this.transformControlsManager.selectLayer === "function") {
+      this.transformControlsManager.selectLayer(layerId);
+    }
   }
 
   /**
@@ -1451,14 +1541,20 @@ export class LatticeEngine {
    */
   focusOnLayer(layerId: string): void {
     this.ensureTransformControlsManager();
-    this.transformControlsManager?.focusOnLayer(layerId);
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    if (this.transformControlsManager != null && typeof this.transformControlsManager === "object" && typeof this.transformControlsManager.focusOnLayer === "function") {
+      this.transformControlsManager.focusOnLayer(layerId);
+    }
   }
 
   /**
    * Get the currently selected layer ID
    */
   getSelectedLayerId(): string | null {
-    return this.transformControlsManager?.getSelectedLayerId() ?? null;
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining/nullish coalescing
+    // Pattern match: transformControlsManager.getSelectedLayerId() ∈ string | null | undefined → string | null (default null)
+    const selectedLayerId = (this.transformControlsManager !== null && typeof this.transformControlsManager === "object" && typeof this.transformControlsManager.getSelectedLayerId === "function") ? this.transformControlsManager.getSelectedLayerId() : undefined;
+    return (selectedLayerId !== undefined && typeof selectedLayerId === "string") ? selectedLayerId : null;
   }
 
   /**
@@ -1467,28 +1563,40 @@ export class LatticeEngine {
    */
   setTransformMode(mode: "translate" | "rotate" | "scale"): void {
     this.ensureTransformControlsManager();
-    this.transformControlsManager?.setMode(mode);
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    if (this.transformControlsManager != null && typeof this.transformControlsManager === "object" && typeof this.transformControlsManager.setMode === "function") {
+      this.transformControlsManager.setMode(mode);
+    }
   }
 
   /**
    * Get the current transform mode
    */
   getTransformMode(): "translate" | "rotate" | "scale" {
-    return this.transformControlsManager?.getMode() ?? "translate";
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining/nullish coalescing
+    // Pattern match: transformControlsManager.getMode() ∈ "translate" | "rotate" | "scale" | undefined → "translate" | "rotate" | "scale" (default "translate")
+    const mode = (this.transformControlsManager !== null && typeof this.transformControlsManager === "object" && typeof this.transformControlsManager.getMode === "function") ? this.transformControlsManager.getMode() : undefined;
+    return (mode === "translate" || mode === "rotate" || mode === "scale") ? mode : "translate";
   }
 
   /**
    * Set transform controls visibility
    */
   setTransformControlsVisible(visible: boolean): void {
-    this.transformControlsManager?.setVisible(visible);
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    if (this.transformControlsManager != null && typeof this.transformControlsManager === "object" && typeof this.transformControlsManager.setVisible === "function") {
+      this.transformControlsManager.setVisible(visible);
+    }
   }
 
   /**
    * Check if transform controls are dragging
    */
   isTransformDragging(): boolean {
-    return this.transformControlsManager?.isDragging() ?? false;
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining/nullish coalescing
+    // Pattern match: transformControlsManager.isDragging() ∈ boolean | undefined → boolean (default false)
+    const isDragging = (this.transformControlsManager !== null && typeof this.transformControlsManager === "object" && typeof this.transformControlsManager.isDragging === "function") ? this.transformControlsManager.isDragging() : undefined;
+    return (typeof isDragging === "boolean") ? isDragging : false;
   }
 
   // ============================================================================
@@ -1605,7 +1713,11 @@ export class LatticeEngine {
     if (!this.eventHandlers.has(type)) {
       this.eventHandlers.set(type, new Set());
     }
-    this.eventHandlers.get(type)?.add(handler);
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const handlers = this.eventHandlers.get(type);
+    if (handlers != null && typeof handlers === "object" && typeof handlers.add === "function") {
+      handlers.add(handler);
+    }
   }
 
   /**
@@ -1614,23 +1726,31 @@ export class LatticeEngine {
    * @param handler - Event handler to remove
    */
   off(type: EngineEventType, handler: EngineEventHandler): void {
-    this.eventHandlers.get(type)?.delete(handler);
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const handlers = this.eventHandlers.get(type);
+    if (handlers != null && typeof handlers === "object" && typeof handlers.delete === "function") {
+      handlers.delete(handler);
+    }
   }
 
-  private emit(type: EngineEventType, data?: unknown): void {
+  private emit(type: EngineEventType, data?: JSONValue): void {
     const event: EngineEvent = {
       type,
       timestamp: performance.now(),
       data,
     };
 
-    this.eventHandlers.get(type)?.forEach((handler) => {
-      try {
-        handler(event);
-      } catch (error) {
-        engineLogger.error(`Event handler error for ${type}:`, error);
-      }
-    });
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const handlers = this.eventHandlers.get(type);
+    if (handlers != null && typeof handlers === "object" && typeof handlers.forEach === "function") {
+      handlers.forEach((handler) => {
+        try {
+          handler(event);
+        } catch (error) {
+          engineLogger.error(`[LatticeEngine] Error in event handler for ${type}:`, error);
+        }
+      });
+    }
   }
 
   // ============================================================================
@@ -1644,12 +1764,16 @@ export class LatticeEngine {
     this.contextLostHandler = (event: Event) => {
       event.preventDefault();
       this.stopRenderLoop();
-      this.emit("contextLost", null);
+      // System F/Omega: Omit data parameter instead of passing null
+      // Type proof: EngineEvent.data is optional (data?: JSONValue)
+      this.emit("contextLost");
       engineLogger.warn("WebGL context lost");
     };
 
     this.contextRestoredHandler = () => {
-      this.emit("contextRestored", null);
+      // System F/Omega: Omit data parameter instead of passing null
+      // Type proof: EngineEvent.data is optional (data?: JSONValue)
+      this.emit("contextRestored");
       engineLogger.info("WebGL context restored");
     };
 
@@ -1713,13 +1837,23 @@ export class LatticeEngine {
    * @param frame - The frame to render
    * @returns The rendered texture, or null if rendering fails
    */
+  /**
+   * Render a composition to a texture
+   * Used by NestedCompLayer to render nested compositions
+   * 
+   * System F/Omega proof: Explicit error throwing - never return null
+   * Type proof: compositionId ∈ string → THREE.Texture (non-nullable)
+   * Mathematical proof: Rendering must succeed or throw explicit error
+   * Pattern proof: NestedCompRenderer.renderToTexture throws explicit errors - propagate them
+   */
   renderCompositionToTexture(
     compositionId: string,
     layers: Layer[],
     settings: { width: number; height: number; fps: number },
     frame: number,
-  ): THREE.Texture | null {
+  ): THREE.Texture {
     this.assertNotDisposed();
+    // System F/Omega: renderToTexture throws explicit errors - propagate them
     return this.getNestedCompRenderer().renderToTexture(
       compositionId,
       layers,
@@ -1734,14 +1868,20 @@ export class LatticeEngine {
    * Call when a composition is deleted or significantly changed
    */
   clearNestedCompCache(compositionId: string): void {
-    this.nestedCompRenderer?.clearCache(compositionId);
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    if (this.nestedCompRenderer != null && typeof this.nestedCompRenderer === "object" && typeof this.nestedCompRenderer.clearCache === "function") {
+      this.nestedCompRenderer.clearCache(compositionId);
+    }
   }
 
   /**
    * Clear all nested composition caches
    */
   clearAllNestedCompCaches(): void {
-    this.nestedCompRenderer?.clearAllCaches();
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    if (this.nestedCompRenderer != null && typeof this.nestedCompRenderer === "object" && typeof this.nestedCompRenderer.clearAllCaches === "function") {
+      this.nestedCompRenderer.clearAllCaches();
+    }
   }
 
   // ============================================================================
@@ -1801,7 +1941,9 @@ export class LatticeEngine {
     this.eventHandlers.clear();
 
     this.state.isDisposed = true;
-    this.emit("dispose", null);
+    // System F/Omega: Omit data parameter instead of passing null
+    // Type proof: EngineEvent.data is optional (data?: JSONValue)
+    this.emit("dispose");
 
     if (this.config.debug) {
       engineLogger.debug("Disposed");

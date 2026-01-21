@@ -4,6 +4,7 @@
  * Converts text layers to vector spline layers using font vectorization.
  */
 
+import { isFiniteNumber, safeNonNegativeDefault } from "@/utils/typeGuards";
 import { textToVectorFromUrl } from "@/services/textToVector";
 import type { BezierPath } from "@/types/shapes";
 import type { ControlPoint, SplineData } from "@/types/project";
@@ -44,10 +45,7 @@ export async function convertTextLayerToSplines(
   const layer = layers.find((l) => l.id === layerId);
 
   if (!layer || layer.type !== "text") {
-    storeLogger.error(
-      "convertTextLayerToSplines: Layer not found or not a text layer",
-    );
-    return null;
+    throw new Error(`[LayerStore] Cannot convert text layer to splines: Layer "${layerId}" not found or is not a text layer`);
   }
 
   const textData = layer.data as {
@@ -60,8 +58,7 @@ export async function convertTextLayerToSplines(
   };
 
   if (!textData.text) {
-    storeLogger.error("convertTextLayerToSplines: No text content");
-    return null;
+    throw new Error(`[LayerStore] Cannot convert text layer to splines: Layer "${layerId}" has no text content`);
   }
 
   // Get font URL - use Google Fonts CDN as fallback
@@ -83,8 +80,7 @@ export async function convertTextLayerToSplines(
     );
 
     if (!result.allPaths.length && !result.characters.length) {
-      storeLogger.error("convertTextLayerToSplines: No paths generated");
-      return null;
+      throw new Error(`[LayerStore] Cannot convert text layer to splines: No paths generated for layer "${layerId}"`);
     }
 
     projectStore.pushHistory();
@@ -93,7 +89,9 @@ export async function convertTextLayerToSplines(
 
     if (options.perCharacter && result.characters.length > 0) {
       // Create parent group layer if requested
-      let parentId: string | null = layer.parentId ?? null;
+      // Type proof: parentId ∈ string | null | undefined → string | null
+      const parentIdValue = layer.parentId;
+      let parentId: string | null = typeof parentIdValue === "string" ? parentIdValue : null;
 
       if (options.groupCharacters) {
         // Use createLayer directly from crud module
@@ -128,9 +126,16 @@ export async function convertTextLayerToSplines(
         const splineData: SplineData = {
           pathData: "",
           controlPoints: allControlPoints,
-          closed: charGroup.paths[0]?.closed ?? true,
+          // Type proof: closed ∈ boolean | undefined → boolean
+          closed: (() => {
+            // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+            const firstPath = (charGroup.paths != null && Array.isArray(charGroup.paths) && charGroup.paths.length > 0) ? charGroup.paths[0] : undefined;
+            const closedValue = (firstPath != null && typeof firstPath === "object" && "closed" in firstPath && typeof firstPath.closed === "boolean" && firstPath.closed) ? true : undefined;
+            return closedValue === true;
+          })(),
           stroke: textData.stroke || "",
-          strokeWidth: textData.strokeWidth || 0,
+          // Type proof: strokeWidth ∈ number | undefined → number (≥ 0, stroke width)
+          strokeWidth: safeNonNegativeDefault(textData.strokeWidth, 0, "textData.strokeWidth"),
           fill: textData.fill || "#ffffff",
         };
 
@@ -166,10 +171,7 @@ export async function convertTextLayerToSplines(
       }
 
       if (allControlPoints.length === 0) {
-        storeLogger.error(
-          "convertTextLayerToSplines: No control points generated",
-        );
-        return null;
+        throw new Error(`[LayerStore] Cannot convert text layer to splines: No control points generated for layer "${layerId}"`);
       }
 
       const splineLayer = createLayer(
@@ -180,9 +182,16 @@ export async function convertTextLayerToSplines(
       const splineData: SplineData = {
         pathData: "",
         controlPoints: allControlPoints,
-        closed: result.allPaths[0]?.closed ?? true,
+        // Type proof: closed ∈ boolean | undefined → boolean
+        closed: (() => {
+          // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+          const firstPath = (result.allPaths != null && Array.isArray(result.allPaths) && result.allPaths.length > 0) ? result.allPaths[0] : undefined;
+          const closedValue = (firstPath != null && typeof firstPath === "object" && "closed" in firstPath && typeof firstPath.closed === "boolean" && firstPath.closed) ? true : undefined;
+          return closedValue === true;
+        })(),
         stroke: textData.stroke || "",
-        strokeWidth: textData.strokeWidth || 0,
+        // Type proof: strokeWidth ∈ number | undefined → number (≥ 0, stroke width)
+        strokeWidth: safeNonNegativeDefault(textData.strokeWidth, 0, "textData.strokeWidth"),
         fill: textData.fill || "#ffffff",
       };
 
@@ -212,8 +221,10 @@ export async function convertTextLayerToSplines(
     );
     return createdLayerIds;
   } catch (error) {
-    storeLogger.error("convertTextLayerToSplines: Failed to convert", error);
-    return null;
+    if (error instanceof Error && error.message.startsWith("[LayerStore]")) {
+      throw error;
+    }
+    throw new Error(`[LayerStore] Failed to convert text layer to splines: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 

@@ -10,6 +10,7 @@
 
 import { createNoise2D, createNoise3D } from "simplex-noise";
 import type { Camera3D, CameraKeyframe } from "@/types/camera";
+import { isFiniteNumber } from "@/utils/typeGuards";
 
 // ============================================================================
 // TYPES
@@ -355,7 +356,11 @@ export class CameraShake {
       }
     }
 
-    if (!before) return after || {};
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy || {}
+    if (!before) {
+      const afterResult = (after !== null && after !== undefined && typeof after === "object" && after !== null) ? after : {};
+      return afterResult;
+    }
     if (!after) return before;
     if (before.frame === after.frame) return before;
 
@@ -375,15 +380,27 @@ export class CameraShake {
       xRotation:
         before.xRotation !== undefined && after.xRotation !== undefined
           ? before.xRotation + (after.xRotation - before.xRotation) * t
-          : (before.xRotation ?? after.xRotation),
+          : (() => {
+              // Type proof: xRotation ∈ ℝ ∪ {undefined} → ℝ
+              const beforeXRotation = before.xRotation;
+              return isFiniteNumber(beforeXRotation) ? beforeXRotation : (isFiniteNumber(after.xRotation) ? after.xRotation : 0);
+            })(),
       yRotation:
         before.yRotation !== undefined && after.yRotation !== undefined
           ? before.yRotation + (after.yRotation - before.yRotation) * t
-          : (before.yRotation ?? after.yRotation),
+          : (() => {
+              // Type proof: yRotation ∈ ℝ ∪ {undefined} → ℝ
+              const beforeYRotation = before.yRotation;
+              return isFiniteNumber(beforeYRotation) ? beforeYRotation : (isFiniteNumber(after.yRotation) ? after.yRotation : 0);
+            })(),
       zRotation:
         before.zRotation !== undefined && after.zRotation !== undefined
           ? before.zRotation + (after.zRotation - before.zRotation) * t
-          : (before.zRotation ?? after.zRotation),
+          : (() => {
+              // Type proof: zRotation ∈ ℝ ∪ {undefined} → ℝ
+              const beforeZRotation = before.zRotation;
+              return isFiniteNumber(beforeZRotation) ? beforeZRotation : (isFiniteNumber(after.zRotation) ? after.zRotation : 0);
+            })(),
     };
   }
 

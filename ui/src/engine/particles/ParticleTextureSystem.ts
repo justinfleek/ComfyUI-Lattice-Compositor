@@ -98,28 +98,31 @@ export class ParticleTextureSystem {
             this.material.uniforms.proceduralShape.value = 0;
 
             // Sprite sheet configuration
+            // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
             if (spriteSheet && (spriteSheet.columns || spriteSheet.rows)) {
-              // Validate cols/rows - use ?? first to handle undefined, then validate
-              const rawCols = spriteSheet.columns ?? 1;
+              // Validate cols/rows - explicit pattern matching first, then validate
+              const rawCols = (typeof spriteSheet.columns === "number" && Number.isFinite(spriteSheet.columns) && spriteSheet.columns > 0) ? spriteSheet.columns : 1;
               const cols = (Number.isFinite(rawCols) && rawCols > 0)
                 ? Math.floor(rawCols)
                 : 1;
-              const rawRows = spriteSheet.rows ?? 1;
+              const rawRows = (typeof spriteSheet.rows === "number" && Number.isFinite(spriteSheet.rows) && spriteSheet.rows > 0) ? spriteSheet.rows : 1;
               const rows = (Number.isFinite(rawRows) && rawRows > 0)
                 ? Math.floor(rawRows)
                 : 1;
               // Validate frameRate
-              const rawFrameRate = spriteSheet.frameRate ?? 10;
+              const rawFrameRate = (typeof spriteSheet.frameRate === "number" && Number.isFinite(spriteSheet.frameRate) && spriteSheet.frameRate > 0) ? spriteSheet.frameRate : 10;
               const frameRate = (Number.isFinite(rawFrameRate) && rawFrameRate > 0)
                 ? rawFrameRate
                 : 10;
 
+              const animate = (typeof spriteSheet.animate === "boolean") ? spriteSheet.animate : false;
+              const randomStart = (typeof spriteSheet.randomStart === "boolean") ? spriteSheet.randomStart : false;
               this.spriteSheetConfig = {
                 columns: cols,
                 rows: rows,
-                animate: spriteSheet.animate ?? false,
+                animate,
                 frameRate: frameRate,
-                randomStart: spriteSheet.randomStart ?? false,
+                randomStart,
               };
 
               this.material.uniforms.spriteSheetSize.value.set(cols, rows);
@@ -196,7 +199,9 @@ export class ParticleTextureSystem {
     };
     if (this.material) {
       this.material.uniforms.hasDiffuseMap.value = 0;
-      this.material.uniforms.proceduralShape.value = shapeMap[shape] ?? 1;
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+      const shapeValue = shapeMap[shape];
+      this.material.uniforms.proceduralShape.value = (shapeValue !== null && shapeValue !== undefined && typeof shapeValue === "number" && Number.isFinite(shapeValue)) ? shapeValue : 1;
       this.material.needsUpdate = true;
     }
     this.particleTexture = null;
@@ -211,7 +216,10 @@ export class ParticleTextureSystem {
    * Update time uniform for sprite animation
    */
   updateSpriteAnimation(time: number): void {
-    if (this.material && this.spriteSheetConfig?.animate) {
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const spriteSheetConfig = this.spriteSheetConfig;
+    const spriteSheetAnimate = (spriteSheetConfig != null && typeof spriteSheetConfig === "object" && "animate" in spriteSheetConfig && typeof spriteSheetConfig.animate === "boolean" && spriteSheetConfig.animate) ? true : false;
+    if (this.material != null && spriteSheetAnimate) {
       this.material.uniforms.time.value = time;
     }
   }
@@ -354,11 +362,18 @@ export class ParticleTextureSystem {
    * Dispose all texture resources
    */
   dispose(): void {
-    this.particleTexture?.dispose();
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const particleTexture = this.particleTexture;
+    if (particleTexture != null && typeof particleTexture === "object" && typeof particleTexture.dispose === "function") {
+      particleTexture.dispose();
+    }
     this.particleTexture = null;
     this.spriteSheetConfig = null;
 
-    this.glowMaterial?.dispose();
+    const glowMaterial = this.glowMaterial;
+    if (glowMaterial != null && typeof glowMaterial === "object" && typeof glowMaterial.dispose === "function") {
+      glowMaterial.dispose();
+    }
     this.glowMaterial = null;
     this.glowMesh = null;
     this.glowConfig = null;

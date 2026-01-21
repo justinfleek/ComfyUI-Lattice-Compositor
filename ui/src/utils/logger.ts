@@ -23,8 +23,11 @@ const LOG_LEVELS: Record<LogLevel, number> = {
 };
 
 // Default configuration - can be overridden
+// Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+const importMetaEnv = (import.meta != null && typeof import.meta === "object" && "env" in import.meta && import.meta.env != null && typeof import.meta.env === "object") ? import.meta.env : undefined;
+const envDev = (importMetaEnv != null && typeof importMetaEnv === "object" && "DEV" in importMetaEnv && typeof importMetaEnv.DEV === "boolean" && importMetaEnv.DEV) ? true : false;
 const config: LoggerConfig = {
-  level: import.meta.env?.DEV ? "debug" : "warn",
+  level: envDev ? "debug" : "warn",
   prefix: "[Lattice]",
   enableTimestamp: false,
 };

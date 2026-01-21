@@ -102,8 +102,10 @@ function draw(): void {
   if (!canvas) return;
 
   // Set canvas size to match container
-  const rect = canvas.parentElement?.getBoundingClientRect();
-  if (rect) {
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const canvasParentElement = (canvas != null && typeof canvas === "object" && "parentElement" in canvas && canvas.parentElement != null) ? canvas.parentElement : undefined;
+  const rect = (canvasParentElement != null && typeof canvasParentElement === "object" && typeof canvasParentElement.getBoundingClientRect === "function") ? canvasParentElement.getBoundingClientRect() : undefined;
+  if (rect != null) {
     canvas.width = rect.width;
     canvas.height = props.height;
   }
@@ -191,8 +193,10 @@ function draw(): void {
   ctx.stroke();
 
   // Draw current frame marker
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
   const currentX = (props.currentFrame / props.totalFrames) * width;
-  const currentMapped = mappedPoints[props.currentFrame] ?? 0;
+  const frameValue = mappedPoints[props.currentFrame];
+  const currentMapped = (typeof frameValue === "number" && Number.isFinite(frameValue)) ? frameValue : 0;
   const currentY = height - currentMapped * height * 0.9 - 2;
 
   ctx.fillStyle = "#ff6b6b";
@@ -221,13 +225,19 @@ onMounted(() => {
     draw();
   });
 
-  if (canvasRef.value?.parentElement) {
-    resizeObserver.observe(canvasRef.value.parentElement);
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const canvasRefValue = canvasRef.value;
+  const canvasRefParentElement = (canvasRefValue != null && typeof canvasRefValue === "object" && "parentElement" in canvasRefValue && canvasRefValue.parentElement != null) ? canvasRefValue.parentElement : undefined;
+  if (canvasRefParentElement != null) {
+    resizeObserver.observe(canvasRefParentElement);
   }
 });
 
 onUnmounted(() => {
-  resizeObserver?.disconnect();
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  if (resizeObserver != null && typeof resizeObserver === "object" && typeof resizeObserver.disconnect === "function") {
+    resizeObserver.disconnect();
+  }
 });
 </script>
 

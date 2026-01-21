@@ -12,10 +12,13 @@
  * @see docs/MASTER_REFACTOR_PLAN.md
  */
 
+import { isFiniteNumber } from "@/utils/typeGuards";
 import { defineStore } from "pinia";
 import { markLayerDirty } from "@/services/layerEvaluationCache";
 import { interpolateProperty } from "@/services/interpolation";
 import { createEffectInstance } from "@/types/effects";
+import type { JSONValue } from "@/types/dataAsset";
+import type { PropertyValue } from "@/types/animation";
 import type {
   LayerStyles,
   RGBA,
@@ -220,7 +223,7 @@ export const useEffectStore = defineStore("effect", {
     /**
      * Update effect parameter value.
      */
-    updateEffectParameter(store: EffectStoreAccess, layerId: string, effectId: string, paramKey: string, value: unknown): void {
+    updateEffectParameter(store: EffectStoreAccess, layerId: string, effectId: string, paramKey: string, value: PropertyValue | JSONValue): void {
       const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
       if (!layer || !layer.effects) return;
 
@@ -316,15 +319,26 @@ export const useEffectStore = defineStore("effect", {
     /**
      * Get evaluated effect parameter value at a given frame.
      */
-    getEffectParameterValue(store: EffectStoreAccess, layerId: string, effectId: string, paramKey: string, frame?: number): unknown {
+    getEffectParameterValue(store: EffectStoreAccess, layerId: string, effectId: string, paramKey: string, frame?: number): PropertyValue | JSONValue {
       const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
-      if (!layer || !layer.effects) return null;
+      if (!layer || !layer.effects) {
+        throw new Error(`[EffectStore] Cannot get parameter value: Layer "${layerId}" not found or has no effects`);
+      }
 
       const effect = layer.effects.find((e) => e.id === effectId);
-      if (!effect || !effect.parameters[paramKey]) return null;
+      if (!effect || !effect.parameters[paramKey]) {
+        throw new Error(`[EffectStore] Cannot get parameter value: Effect "${effectId}" or parameter "${paramKey}" not found on layer "${layerId}"`);
+      }
 
       const param = effect.parameters[paramKey];
-      const rawFrame = frame ?? store.getActiveComp()?.currentFrame ?? 0;
+      // Type proof: frame ∈ ℕ ∪ {undefined} → ℕ
+      const frameValue = frame;
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const activeComp = store.getActiveComp();
+      const compCurrentFrameValue = (activeComp != null && typeof activeComp === "object" && "currentFrame" in activeComp && typeof activeComp.currentFrame === "number") ? activeComp.currentFrame : undefined;
+      const rawFrame = isFiniteNumber(frameValue) && Number.isInteger(frameValue) && frameValue >= 0
+        ? frameValue
+        : (isFiniteNumber(compCurrentFrameValue) && Number.isInteger(compCurrentFrameValue) && compCurrentFrameValue >= 0 ? compCurrentFrameValue : 0);
       const targetFrame = Number.isFinite(rawFrame) ? rawFrame : 0;
 
       if (param.animated && param.keyframes.length > 0) {
@@ -407,7 +421,7 @@ export const useEffectStore = defineStore("effect", {
       layerId: string,
       styleType: T,
       property: K,
-      value: unknown,
+      value: PropertyValue | JSONValue,
     ): void {
       const layer = getLayerById(store, layerId);
       if (!layer) {
@@ -424,11 +438,13 @@ export const useEffectStore = defineStore("effect", {
         return;
       }
 
-      const prop = style[property as string];
+      // Type-safe property access: use type assertion for dynamic property access
+      const styleRecord = style as Record<string, PropertyValue | JSONValue | { value: PropertyValue | JSONValue }>;
+      const prop = styleRecord[property as string];
       if (prop && typeof prop === "object" && prop !== null && "value" in prop) {
-        (prop as { value: unknown }).value = value;
+        (prop as { value: PropertyValue | JSONValue }).value = value;
       } else {
-        style[property as string] = value;
+        styleRecord[property as string] = value;
       }
 
       markLayerDirty(layerId);
@@ -480,8 +496,7 @@ export const useEffectStore = defineStore("effect", {
     copyLayerStyles(store: LayerStyleStore, layerId: string): LayerStyles | null {
       const layer = getLayerById(store, layerId);
       if (!layer || !layer.layerStyles) {
-        storeLogger.warn("copyLayerStyles: Layer or styles not found", { layerId });
-        return null;
+        throw new Error(`[EffectStore] Cannot copy layer styles: Layer "${layerId}" not found or has no layerStyles`);
       }
 
       const copied = JSON.parse(JSON.stringify(layer.layerStyles));
@@ -494,7 +509,8 @@ export const useEffectStore = defineStore("effect", {
      * Paste layer styles to a layer.
      */
     pasteLayerStyles(store: LayerStyleStore, layerId: string, styles?: LayerStyles): void {
-      const stylesToPaste = styles ?? this.styleClipboard;
+      // Type proof: stylesToPaste ∈ LayerStyles | undefined → LayerStyles | undefined
+      const stylesToPaste = styles !== undefined ? styles : this.styleClipboard;
       if (!stylesToPaste) {
         storeLogger.warn("pasteLayerStyles: No styles provided");
         return;
@@ -517,7 +533,8 @@ export const useEffectStore = defineStore("effect", {
      * Paste layer styles to multiple layers.
      */
     pasteLayerStylesToMultiple(store: LayerStyleStore, layerIds: string[], styles?: LayerStyles): void {
-      const stylesToPaste = styles ?? this.styleClipboard;
+      // Type proof: stylesToPaste ∈ LayerStyles | undefined → LayerStyles | undefined
+      const stylesToPaste = styles !== undefined ? styles : this.styleClipboard;
       if (!stylesToPaste) {
         storeLogger.warn("pasteLayerStylesToMultiple: No styles provided");
         return;

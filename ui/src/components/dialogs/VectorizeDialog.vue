@@ -236,8 +236,8 @@ import {
   type VectorizeResult,
   type VTraceOptions,
 } from "@/services/vectorize";
-import { useCompositorStore } from "@/stores/compositorStore";
 import { useLayerStore } from "@/stores/layerStore";
+import { useProjectStore } from "@/stores/projectStore";
 import type { ControlPoint, ImageLayerData, Layer } from "@/types/project";
 import { isLayerOfType } from "@/types/project";
 
@@ -250,8 +250,8 @@ const emit = defineEmits<{
   (e: "created", layerIds: string[]): void;
 }>();
 
-const store = useCompositorStore();
 const layerStore = useLayerStore();
+const projectStore = useProjectStore();
 const vectorizeService = getVectorizeService();
 
 // Source selection
@@ -290,7 +290,7 @@ const errorMessage = ref("");
 
 // Available layers (image layers only)
 const availableLayers = computed(() => {
-  return store.layers.filter(
+  return projectStore.getActiveCompLayers().filter(
     (l: Layer) =>
       l.type === "image" || l.type === "video" || l.type === "solid",
   );
@@ -306,8 +306,11 @@ const canVectorize = computed(() => {
 
 // Sanitized SVG for preview using DOMPurify with SVG-specific config
 const sanitizedSvg = computed(() => {
-  if (!result.value?.svg) return "";
-  return DOMPurify.sanitize(result.value.svg, {
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const resultValue = result.value;
+  const svg = (resultValue != null && typeof resultValue === "object" && "svg" in resultValue && typeof resultValue.svg === "string") ? resultValue.svg : undefined;
+  if (svg == null) return "";
+  return DOMPurify.sanitize(svg, {
     USE_PROFILES: { svg: true, svgFilters: true },
     ADD_TAGS: ["use"],
   });
@@ -333,19 +336,21 @@ onMounted(async () => {
 
 // Load preview from selected layer
 async function loadLayerPreview() {
-  const layer = store.layers.find((l: Layer) => l.id === selectedLayerId.value);
+  const layer = projectStore.getActiveCompLayers().find((l: Layer) => l.id === selectedLayerId.value);
   if (!layer) return;
 
   try {
     // Get the layer's image data
     if (!isLayerOfType(layer, "image") || !layer.data) return;
     const layerData = layer.data as ImageLayerData;
-    if (layerData.source) {
+    if (layerData.source !== "") {
       previewUrl.value = layerData.source;
-    } else if (layerData.assetId) {
-      const asset = store.project?.assets[layerData.assetId];
-      if (asset?.data) {
-        previewUrl.value = asset.data;
+    } else if (layerData.assetId !== "") {
+      const asset = projectStore.project.assets[layerData.assetId];
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const assetData = (asset != null && typeof asset === "object" && "data" in asset && asset.data != null) ? asset.data : undefined;
+      if (assetData != null) {
+        previewUrl.value = assetData;
       }
     }
 
@@ -366,12 +371,17 @@ async function loadLayerPreview() {
 // Handle file upload
 function onFileSelect(event: Event) {
   const input = event.target as HTMLInputElement;
-  const file = input.files?.[0];
-  if (!file) return;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const files = (input != null && typeof input === "object" && "files" in input && input.files != null && input.files instanceof FileList && input.files.length > 0) ? input.files : null;
+  const file = files != null ? files[0] : undefined;
+  if (file == null) return;
 
   const reader = new FileReader();
   reader.onload = (e) => {
-    uploadedImage.value = e.target?.result as string;
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const target = (e != null && typeof e === "object" && "target" in e && e.target != null && typeof e.target === "object" && "result" in e.target) ? e.target : undefined;
+    const result = (target != null && typeof target === "object" && "result" in target) ? target.result : undefined;
+    uploadedImage.value = result as string;
     previewUrl.value = uploadedImage.value;
 
     // Get dimensions
@@ -397,7 +407,7 @@ async function startVectorize() {
     let imageDataUrl: string;
 
     if (sourceType.value === "layer") {
-      const layer = store.layers.find(
+      const layer = projectStore.getActiveCompLayers().find(
         (l: Layer) => l.id === selectedLayerId.value,
       );
       if (!layer || !isLayerOfType(layer, "image") || !layer.data) {
@@ -405,12 +415,14 @@ async function startVectorize() {
       }
 
       const layerData = layer.data as ImageLayerData;
-      if (layerData.source) {
+      if (layerData.source !== "") {
         imageDataUrl = layerData.source;
-      } else if (layerData.assetId) {
-        const asset = store.project?.assets[layerData.assetId];
-        if (!asset?.data) throw new Error("Asset data not found");
-        imageDataUrl = asset.data;
+      } else if (layerData.assetId !== "") {
+        const asset = projectStore.project.assets[layerData.assetId];
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+        const assetData = (asset != null && typeof asset === "object" && "data" in asset && asset.data != null) ? asset.data : undefined;
+        if (assetData == null) throw new Error("Asset data not found");
+        imageDataUrl = assetData;
       } else {
         throw new Error("Could not get image data from layer");
       }
@@ -475,11 +487,11 @@ function createLayers() {
       }
 
       // Create the spline layer
-      const layer = layerStore.createSplineLayer(store);
-      layerStore.renameLayer(store, layer.id, `Vector Path ${i + 1}`);
+      const layer = layerStore.createSplineLayer();
+      layerStore.renameLayer(layer.id, `Vector Path ${i + 1}`);
 
       // Update with control points
-      layerStore.updateLayerData(store, layer.id, {
+      layerStore.updateLayerData(layer.id, {
         controlPoints,
         closed: path.closed,
         stroke: path.stroke || "#00ff00",
@@ -513,10 +525,10 @@ function createLayers() {
       controlPoints = autoGroupPoints(allPoints, { method: "quadrant" });
     }
 
-    const layer = layerStore.createSplineLayer(store);
-    layerStore.renameLayer(store, layer.id, "Vectorized Paths");
+    const layer = layerStore.createSplineLayer();
+    layerStore.renameLayer(layer.id, "Vectorized Paths");
 
-    layerStore.updateLayerData(store, layer.id, {
+    layerStore.updateLayerData(layer.id, {
       controlPoints,
       closed: false,
       stroke: "#00ff00",

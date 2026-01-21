@@ -192,7 +192,7 @@ export async function exportViaBackend(
   backendUrl: string = "/lattice/export",
 ): Promise<FrameSequenceResult> {
   const result: FrameSequenceResult = {
-    success: false,
+    success: true,
     frames: [],
     totalSize: 0,
     errors: [],
@@ -223,7 +223,7 @@ export async function exportViaBackend(
     });
 
     if (!response.ok) {
-      throw new Error(`Backend export failed: ${response.statusText}`);
+      throw new Error(`[FrameSequenceExporter] Backend export failed: ${response.statusText}. Check backend availability and network connection.`);
     }
 
     const data = await response.json();
@@ -233,10 +233,12 @@ export async function exportViaBackend(
       result.frames = data.frames;
       result.totalSize = data.totalSize;
     } else {
-      result.errors = data.errors || ["Unknown backend error"];
+      const backendErrors = data.errors || ["Unknown backend error"];
+      throw new Error(`[FrameSequenceExporter] Backend export failed: ${backendErrors.join("; ")}. Check backend logs for details.`);
     }
   } catch (error) {
-    result.errors.push(`Backend export error: ${error}`);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    throw new Error(`[FrameSequenceExporter] Backend export error: ${errorMessage}. Check backend availability and frame data format.`);
   }
 
   return result;
@@ -251,7 +253,7 @@ export async function exportFrameSequence(
   onProgress?: (current: number, total: number) => void,
 ): Promise<FrameSequenceResult> {
   const result: FrameSequenceResult = {
-    success: false,
+    success: true,
     frames: [],
     totalSize: 0,
     errors: [],
@@ -279,13 +281,22 @@ export async function exportFrameSequence(
           });
 
           result.totalSize += blob.size;
-          onProgress?.(frame - startFrame + 1, totalFrames);
+          // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+          if (onProgress != null && typeof onProgress === "function") {
+            onProgress(frame - startFrame + 1, totalFrames);
+          }
         } catch (error) {
-          result.errors.push(`Frame ${frame}: ${error}`);
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          result.errors.push(`Frame ${frame}: ${errorMessage}`);
         }
       }
 
-      result.success = result.frames.length > 0;
+      if (result.frames.length === 0) {
+        throw new Error(`[FrameSequenceExporter] No frames exported. All ${totalFrames} frames failed. Errors: ${result.errors.join("; ")}`);
+      }
+      if (result.errors.length > 0) {
+        throw new Error(`[FrameSequenceExporter] Partial export failure: ${result.errors.length} of ${totalFrames} frames failed. Errors: ${result.errors.join("; ")}`);
+      }
     } else {
       // Collect frames for backend processing
       const frames: Array<{ canvas: HTMLCanvasElement; frameNumber: number }> =
@@ -295,24 +306,30 @@ export async function exportFrameSequence(
         try {
           const canvas = await renderFrame(frame);
           frames.push({ canvas, frameNumber: frame });
-          onProgress?.(frame - startFrame + 1, totalFrames);
+          // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+          if (onProgress != null && typeof onProgress === "function") {
+            onProgress(frame - startFrame + 1, totalFrames);
+          }
         } catch (error) {
           result.errors.push(`Frame ${frame}: ${error}`);
         }
       }
 
-      if (frames.length > 0) {
-        result.warnings.push(
-          `${format.toUpperCase()} export requires backend processing`,
-        );
-
-        // Try backend export
-        const backendResult = await exportViaBackend(frames, options);
-        Object.assign(result, backendResult);
+      if (frames.length === 0) {
+        throw new Error(`[FrameSequenceExporter] No frames collected for backend export. All ${totalFrames} frames failed during rendering. Errors: ${result.errors.join("; ")}`);
       }
+
+      result.warnings.push(
+        `${format.toUpperCase()} export requires backend processing`,
+      );
+
+      // Try backend export
+      const backendResult = await exportViaBackend(frames, options);
+      Object.assign(result, backendResult);
     }
   } catch (error) {
-    result.errors.push(`Export failed: ${error}`);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    throw new Error(`[FrameSequenceExporter] Frame sequence export failed: ${errorMessage}. Check render function and export options.`);
   }
 
   return result;

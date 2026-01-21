@@ -272,11 +272,13 @@
 
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
+import { safeNonNegativeDefault } from "@/utils/typeGuards";
 import {
   isValidWanFrameCount,
   WAN_DURATION_PRESETS,
 } from "@/config/exportPresets";
-import { useCompositorStore } from "@/stores/compositorStore";
+import { useProjectStore } from "@/stores/projectStore";
+import { useVideoStore } from "@/stores/videoStore";
 
 interface CompositionDialogSettings {
   name: string;
@@ -303,7 +305,8 @@ const emit = defineEmits<{
   (e: "confirm", settings: CompositionDialogSettings): void;
 }>();
 
-const store = useCompositorStore();
+const projectStore = useProjectStore();
+const videoStore = useVideoStore();
 
 // State
 const activeTab = ref<"basic" | "advanced">("basic");
@@ -456,9 +459,11 @@ function onDimensionChange(changed: "width" | "height") {
 
 function parseDuration() {
   // Parse timecode format HH:MM:SS:FF
-  const parts = durationTimecode.value
-    .split(":")
-    .map((p) => parseInt(p, 10) || 0);
+  // Type proof: parsed parts ∈ number | NaN → number (≥ 0, time component)
+  const parts = durationTimecode.value.split(":").map((p) => {
+    const parsed = parseInt(p, 10);
+    return Number.isInteger(parsed) && parsed >= 0 ? parsed : 0;
+  });
   if (parts.length === 4) {
     const [hours, minutes, seconds, frames] = parts;
     const totalSeconds = hours * 3600 + minutes * 60 + seconds;
@@ -487,17 +492,22 @@ function pad(n: number): string {
 
 function loadCurrentSettings() {
   // Get active composition's name, not project meta name
-  const activeComp = store.activeComposition;
+  const activeComp = projectStore.getActiveComp();
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const activeCompName = (activeComp != null && typeof activeComp === "object" && "name" in activeComp && typeof activeComp.name === "string") ? activeComp.name : undefined;
+  const activeCompSettings = (activeComp != null && typeof activeComp === "object" && "settings" in activeComp && activeComp.settings != null && typeof activeComp.settings === "object") ? activeComp.settings : undefined;
+  const settingsBackgroundColor = (activeCompSettings != null && typeof activeCompSettings === "object" && "backgroundColor" in activeCompSettings && typeof activeCompSettings.backgroundColor === "string") ? activeCompSettings.backgroundColor : undefined;
   settings.value = {
-    name: activeComp?.name || "Main Comp",
-    width: store.width,
-    height: store.height,
+    name: activeCompName != null ? activeCompName : "Main Comp",
+    width: projectStore.getWidth(),
+    height: projectStore.getHeight(),
     pixelAspectRatio: 1,
-    fps: store.fps,
-    frameCount: store.frameCount,
+    fps: projectStore.getFps(),
+    frameCount: projectStore.getFrameCount(),
     resolution: "full",
-    backgroundColor: activeComp?.settings.backgroundColor || "#000000",
-    autoResizeToContent: activeComp?.settings.autoResizeToContent ?? true,
+    backgroundColor: settingsBackgroundColor != null ? settingsBackgroundColor : "#000000",
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+    autoResizeToContent: (activeComp !== null && activeComp !== undefined && typeof activeComp === "object" && "settings" in activeComp && activeComp.settings !== null && typeof activeComp.settings === "object" && "autoResizeToContent" in activeComp.settings && typeof activeComp.settings.autoResizeToContent === "boolean") ? activeComp.settings.autoResizeToContent : true,
     startTimecode: "00:00:00:00",
     motionBlurEnabled: false,
     shutterAngle: 180,
@@ -537,20 +547,20 @@ watch(
 );
 
 // Preview changes
-watch(
-  settings,
-  () => {
-    if (previewChanges.value && props.visible) {
-      // Apply changes temporarily for preview
-      store.resizeComposition(
-        settings.value.width,
-        settings.value.height,
-        settings.value.frameCount,
-      );
-    }
-  },
-  { deep: true },
-);
+  watch(
+    settings,
+    () => {
+      if (previewChanges.value && props.visible) {
+        // Apply changes temporarily for preview
+        videoStore.resizeComposition(
+          settings.value.width,
+          settings.value.height,
+          settings.value.frameCount,
+        );
+      }
+    },
+    { deep: true },
+  );
 
 onMounted(() => {
   window.addEventListener("keydown", handleKeydown);

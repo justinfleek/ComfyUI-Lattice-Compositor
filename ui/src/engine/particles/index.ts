@@ -9,13 +9,15 @@
  * - Professional emitter shapes and force fields
  */
 
-// Core system
+// Core system - VerifiedGPUParticleSystem is the new system
+export { VerifiedGPUParticleSystem } from "./VerifiedGPUParticleSystem";
+
+// Utility functions (extracted from GPUParticleSystem.ts)
 export {
   createDefaultConfig,
   createDefaultEmitter,
   createDefaultForceField,
-  GPUParticleSystem,
-} from "./GPUParticleSystem";
+} from "./particleUtils";
 
 // Group system
 export { ParticleGroupSystem } from "./ParticleGroupSystem";
@@ -68,4 +70,6 @@ export type {
   // Group types
   ParticleGroupConfig,
   MAX_PARTICLE_GROUPS,
+  // Exported particle data
+  ExportedParticle,
 } from "./types";

@@ -487,7 +487,10 @@ describe("PROPERTY: exportLayers (simple)", () => {
     const result = exportLayers([splineLayer, imageLayer]);
     
     // Should only have 1 path (the spline)
-    const pathCount = (result.match(/<path/g) || []).length;
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy || []
+    const matchResult = result.match(/<path/g);
+    const matches = (matchResult !== null && matchResult !== undefined && Array.isArray(matchResult)) ? matchResult : [];
+    const pathCount = matches.length;
     expect(pathCount).toBe(1);
   });
 });

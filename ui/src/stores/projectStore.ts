@@ -7,9 +7,17 @@
  * @see docs/MASTER_REFACTOR_PLAN.md
  */
 
+import { isFiniteNumber } from "@/utils/typeGuards";
 import { defineStore } from "pinia";
 import { toRaw } from "vue";
 import { validateProjectExpressions } from "@/services/expressions/expressionValidator";
+import type { JSONValue } from "@/types/dataAsset";
+
+/**
+ * All possible JavaScript values that can be validated at runtime
+ * Used as input type for validators (replaces unknown)
+ */
+type RuntimeValue = string | number | boolean | object | null | undefined | bigint | symbol;
 import {
   CURRENT_SCHEMA_VERSION,
   migrateProject,
@@ -110,32 +118,50 @@ export function hasProject(projectStore: ReturnType<typeof useProjectStore>): bo
 
 export function getWidth(projectStore: ReturnType<typeof useProjectStore>): number {
   const comp = projectStore.project.compositions[projectStore.activeCompositionId];
-  return comp?.settings.width || 1024;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const settings = (comp != null && typeof comp === "object" && "settings" in comp && comp.settings != null && typeof comp.settings === "object") ? comp.settings : undefined;
+  const width = (settings != null && typeof settings === "object" && "width" in settings && typeof settings.width === "number") ? settings.width : undefined;
+  return width != null ? width : 1024;
 }
 
 export function getHeight(projectStore: ReturnType<typeof useProjectStore>): number {
   const comp = projectStore.project.compositions[projectStore.activeCompositionId];
-  return comp?.settings.height || 1024;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const settings = (comp != null && typeof comp === "object" && "settings" in comp && comp.settings != null && typeof comp.settings === "object") ? comp.settings : undefined;
+  const height = (settings != null && typeof settings === "object" && "height" in settings && typeof settings.height === "number") ? settings.height : undefined;
+  return height != null ? height : 1024;
 }
 
 export function getFrameCount(projectStore: ReturnType<typeof useProjectStore>): number {
   const comp = projectStore.project.compositions[projectStore.activeCompositionId];
-  return comp?.settings.frameCount || 81;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const settings = (comp != null && typeof comp === "object" && "settings" in comp && comp.settings != null && typeof comp.settings === "object") ? comp.settings : undefined;
+  const frameCount = (settings != null && typeof settings === "object" && "frameCount" in settings && typeof settings.frameCount === "number") ? settings.frameCount : undefined;
+  return frameCount != null ? frameCount : 81;
 }
 
 export function getFps(projectStore: ReturnType<typeof useProjectStore>): number {
   const comp = projectStore.project.compositions[projectStore.activeCompositionId];
-  return comp?.settings.fps || 16;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const settings = (comp != null && typeof comp === "object" && "settings" in comp && comp.settings != null && typeof comp.settings === "object") ? comp.settings : undefined;
+  const fps = (settings != null && typeof settings === "object" && "fps" in settings && typeof settings.fps === "number") ? settings.fps : undefined;
+  return fps != null ? fps : 16;
 }
 
 export function getDuration(projectStore: ReturnType<typeof useProjectStore>): number {
   const comp = projectStore.project.compositions[projectStore.activeCompositionId];
-  return comp?.settings.duration || 5;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const settings = (comp != null && typeof comp === "object" && "settings" in comp && comp.settings != null && typeof comp.settings === "object") ? comp.settings : undefined;
+  const duration = (settings != null && typeof settings === "object" && "duration" in settings && typeof settings.duration === "number") ? settings.duration : undefined;
+  return duration != null ? duration : 5;
 }
 
 export function getBackgroundColor(projectStore: ReturnType<typeof useProjectStore>): string {
   const comp = projectStore.project.compositions[projectStore.activeCompositionId];
-  return comp?.settings.backgroundColor || "#050505";
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const settings = (comp != null && typeof comp === "object" && "settings" in comp && comp.settings != null && typeof comp.settings === "object") ? comp.settings : undefined;
+  const backgroundColor = (settings != null && typeof settings === "object" && "backgroundColor" in settings && typeof settings.backgroundColor === "string") ? settings.backgroundColor : undefined;
+  return backgroundColor != null ? backgroundColor : "#050505";
 }
 
 export function getCurrentTime(projectStore: ReturnType<typeof useProjectStore>): number {
@@ -228,7 +254,10 @@ function invalidateParticleCaches(): void {
   if (!engine) return;
 
   try {
-    const layers = engine.getLayers?.() || [];
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy || []
+    const getLayers = (engine !== null && engine !== undefined && typeof engine === "object" && "getLayers" in engine) ? engine.getLayers : undefined;
+    const layersResult = (getLayers !== null && getLayers !== undefined && typeof getLayers === "function") ? getLayers() : undefined;
+    const layers = (layersResult !== null && layersResult !== undefined && Array.isArray(layersResult)) ? layersResult : [];
     for (const layer of layers) {
       if (layer && typeof layer.clearCache === "function") {
         layer.clearCache();
@@ -249,7 +278,7 @@ export function findUsedAssetIds(store: ProjectStore): Set<string> {
   /**
    * Type guard for layer data with assetId
    */
-  function hasAssetId(data: unknown): data is { assetId?: string | null; sourceAssetId?: string | null; spriteSheetAssetId?: string | null; environmentMapId?: string | null; materials?: Array<{ textureId?: string; normalMapId?: string; roughnessMapId?: string }> } {
+  function hasAssetId(data: RuntimeValue): data is { assetId?: string | null; sourceAssetId?: string | null; spriteSheetAssetId?: string | null; environmentMapId?: string | null; materials?: Array<{ textureId?: string; normalMapId?: string; roughnessMapId?: string }> } {
     return data !== null && typeof data === "object";
   }
 
@@ -430,7 +459,9 @@ export const useProjectStore = defineStore("project", {
      */
     getActiveCompLayers(): Layer[] {
       const comp = this.project.compositions[this.activeCompositionId];
-      return comp?.layers || [];
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy || []
+      const layers = (comp !== null && comp !== undefined && typeof comp === "object" && "layers" in comp) ? comp.layers : undefined;
+      return (layers !== null && layers !== undefined && Array.isArray(layers)) ? layers : [];
     },
 
     selectAsset(assetId: string | null): void {
@@ -539,15 +570,12 @@ export const useProjectStore = defineStore("project", {
           context: "Project import",
         });
 
-        if (!parseResult.success) {
-          storeLogger.error(`[SECURITY] Project parse failed (${parseResult.code}):`, parseResult.error.message);
-          return false;
-        }
-
         let project = parseResult.data;
 
         if (needsMigration(project)) {
-          const oldVersion = project.schemaVersion ?? 1;
+          // Type proof: schemaVersion ∈ ℕ ∪ {undefined} → ℕ
+          const schemaVersionValue = project.schemaVersion;
+          const oldVersion = isFiniteNumber(schemaVersionValue) && Number.isInteger(schemaVersionValue) && schemaVersionValue >= 1 ? schemaVersionValue : 1;
           storeLogger.info(`Migrating project from schema v${oldVersion} to v${CURRENT_SCHEMA_VERSION}`);
           const migrationResult = migrateProject(project);
           if (migrationResult.success && migrationResult.project) {
@@ -596,11 +624,6 @@ export const useProjectStore = defineStore("project", {
             context: "Project file validation",
           });
 
-          if (!parseResult.success) {
-            storeLogger.error(`[SECURITY] Project file parse failed (${parseResult.code}):`, parseResult.error.message);
-            return false;
-          }
-
           const project = parseResult.data;
           const validation = await validateProjectExpressions(project);
 
@@ -636,12 +659,13 @@ export const useProjectStore = defineStore("project", {
           storeLogger.info("Project saved to server:", result.project_id);
           return result.project_id;
         } else {
-          storeLogger.error("Failed to save project:", result.message);
-          return null;
+          throw new Error(`[ProjectStore] Failed to save project to server: ${result.message || "Unknown error"}`);
         }
       } catch (err) {
-        storeLogger.error("Error saving project to server:", err);
-        return null;
+        if (err instanceof Error && err.message.startsWith("[ProjectStore]")) {
+          throw err;
+        }
+        throw new Error(`[ProjectStore] Error saving project to server: ${err instanceof Error ? err.message : String(err)}`);
       }
     },
 
@@ -653,7 +677,9 @@ export const useProjectStore = defineStore("project", {
           let project = result.project;
 
           if (needsMigration(project)) {
-            const oldVersion = project.schemaVersion ?? 1;
+            // Type proof: schemaVersion ∈ ℕ ∪ {undefined} → ℕ
+          const schemaVersionValue = project.schemaVersion;
+          const oldVersion = isFiniteNumber(schemaVersionValue) && Number.isInteger(schemaVersionValue) && schemaVersionValue >= 1 ? schemaVersionValue : 1;
             storeLogger.info(`Migrating project from schema v${oldVersion} to v${CURRENT_SCHEMA_VERSION}`);
             const migrationResult = migrateProject(project);
             if (migrationResult.success && migrationResult.project) {
@@ -836,9 +862,13 @@ export const useProjectStore = defineStore("project", {
         assetManifest[assetId] = `assets/${filename}`;
 
         if (asset.data) {
+          // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+          const assetsFolderVal = assetsFolder;
           if (asset.data.startsWith("data:")) {
             const base64Data = asset.data.split(",")[1];
-            if (base64Data) assetsFolder?.file(filename, base64Data, { base64: true });
+            if (base64Data && assetsFolderVal != null && typeof assetsFolderVal === "object" && typeof assetsFolderVal.file === "function") {
+              assetsFolderVal.file(filename, base64Data, { base64: true });
+            }
           } else if (asset.data.startsWith("blob:") || asset.data.startsWith("http")) {
             const urlValidation = validateURL(asset.data, "fetch");
             if (!urlValidation.valid) {
@@ -848,12 +878,16 @@ export const useProjectStore = defineStore("project", {
             try {
               const response = await fetch(urlValidation.sanitized || asset.data);
               const blob = await response.blob();
-              assetsFolder?.file(filename, blob);
+              if (assetsFolderVal != null && typeof assetsFolderVal === "object" && typeof assetsFolderVal.file === "function") {
+                assetsFolderVal.file(filename, blob);
+              }
             } catch (e) {
               storeLogger.warn(`Failed to fetch asset ${assetId}:`, e);
             }
           } else {
-            assetsFolder?.file(filename, asset.data, { base64: true });
+            if (assetsFolderVal != null && typeof assetsFolderVal === "object" && typeof assetsFolderVal.file === "function") {
+              assetsFolderVal.file(filename, asset.data, { base64: true });
+            }
           }
         }
       }

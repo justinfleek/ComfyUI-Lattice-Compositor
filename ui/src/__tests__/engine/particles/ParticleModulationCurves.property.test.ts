@@ -292,8 +292,10 @@ describe("ParticleModulationCurves any curve", () => {
         fc.float({ min: Math.fround(0), max: Math.fround(1), noNaN: true }),
         fc.option(fc.float({ min: Math.fround(0), max: Math.fround(1), noNaN: true })),
         (curve, t, randomOffset) => {
+          // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
           const curves = new ParticleModulationCurves(createSeededRNG(42));
-          const result = curves.evaluateCurve(curve, t, randomOffset ?? undefined);
+          const randomOffsetValue = (randomOffset !== null && randomOffset !== undefined && typeof randomOffset === "number" && Number.isFinite(randomOffset)) ? randomOffset : undefined;
+          const result = curves.evaluateCurve(curve, t, randomOffsetValue);
           expect(Number.isFinite(result)).toBe(true);
         },
       ),
@@ -385,11 +387,15 @@ describe("ParticleModulationCurves texture generation", () => {
         fc.option(arbModulationCurve),
         fc.option(fc.array(arbColorStop, { minLength: 0, maxLength: 5 })),
         (sizeOverLifetime, opacityOverLifetime, colorOverLifetime) => {
+          // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
           const curves = new ParticleModulationCurves(createSeededRNG(42), 64);
+          const sizeOverLifetimeValue = (sizeOverLifetime !== null && sizeOverLifetime !== undefined) ? sizeOverLifetime : undefined;
+          const opacityOverLifetimeValue = (opacityOverLifetime !== null && opacityOverLifetime !== undefined) ? opacityOverLifetime : undefined;
+          const colorOverLifetimeValue = (colorOverLifetime !== null && colorOverLifetime !== undefined) ? colorOverLifetime : undefined;
           const textures = curves.createTextures({
-            sizeOverLifetime: sizeOverLifetime ?? undefined,
-            opacityOverLifetime: opacityOverLifetime ?? undefined,
-            colorOverLifetime: colorOverLifetime ?? undefined,
+            sizeOverLifetime: sizeOverLifetimeValue,
+            opacityOverLifetime: opacityOverLifetimeValue,
+            colorOverLifetime: colorOverLifetimeValue,
           });
 
           expect(textures.sizeOverLifetime).toBeDefined();

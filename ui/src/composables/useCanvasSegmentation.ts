@@ -6,7 +6,8 @@
 
 import { ref } from "vue";
 import { segmentByBox, segmentByPoint } from "@/services/segmentation";
-import { useCompositorStore } from "@/stores/compositorStore";
+import { useProjectStore } from "@/stores/projectStore";
+import { useSegmentationStore } from "@/stores/segmentationStore";
 
 export interface SegmentBoxState {
   isDrawing: boolean;
@@ -14,7 +15,8 @@ export interface SegmentBoxState {
 }
 
 export function useCanvasSegmentation() {
-  const store = useCompositorStore();
+  const projectStore = useProjectStore();
+  const segmentationStore = useSegmentationStore();
 
   // State
   const isDrawingSegmentBox = ref(false);
@@ -24,7 +26,7 @@ export function useCanvasSegmentation() {
    * Start segment box drawing
    */
   function startSegmentBox(scenePos: { x: number; y: number }): void {
-    store.setSegmentBoxStart({ x: scenePos.x, y: scenePos.y });
+    segmentationStore.setSegmentBoxStart({ x: scenePos.x, y: scenePos.y });
     segmentBoxEnd.value = { x: scenePos.x, y: scenePos.y };
     isDrawingSegmentBox.value = true;
   }
@@ -33,7 +35,7 @@ export function useCanvasSegmentation() {
    * Update segment box end position
    */
   function updateSegmentBox(scenePos: { x: number; y: number }): void {
-    if (isDrawingSegmentBox.value && store.segmentBoxStart) {
+    if (isDrawingSegmentBox.value && segmentationStore.segmentBoxStart) {
       segmentBoxEnd.value = { x: scenePos.x, y: scenePos.y };
     }
   }
@@ -43,7 +45,7 @@ export function useCanvasSegmentation() {
    */
   function cancelSegmentBox(): void {
     isDrawingSegmentBox.value = false;
-    store.setSegmentBoxStart(null);
+    segmentationStore.setSegmentBoxStart(null);
     segmentBoxEnd.value = null;
   }
 
@@ -53,19 +55,19 @@ export function useCanvasSegmentation() {
   async function finishSegmentBox(): Promise<boolean> {
     if (
       !isDrawingSegmentBox.value ||
-      !store.segmentBoxStart ||
+      !segmentationStore.segmentBoxStart ||
       !segmentBoxEnd.value
     ) {
       cancelSegmentBox();
       return false;
     }
 
-    const start = store.segmentBoxStart;
+    const start = segmentationStore.segmentBoxStart;
     const end = segmentBoxEnd.value;
 
     // Reset state first
     isDrawingSegmentBox.value = false;
-    store.setSegmentBoxStart(null);
+    segmentationStore.setSegmentBoxStart(null);
     segmentBoxEnd.value = null;
 
     // Trigger segmentation
@@ -77,15 +79,15 @@ export function useCanvasSegmentation() {
    * Handle point-based segmentation
    */
   async function handleSegmentPoint(x: number, y: number): Promise<void> {
-    if (!store.sourceImage) {
+    if (!projectStore.sourceImage) {
       console.warn("[useCanvasSegmentation] No source image for segmentation");
       return;
     }
 
-    store.setSegmentLoading(true);
+    segmentationStore.setSegmentIsLoading(true);
 
     try {
-      const result = await segmentByPoint(store.sourceImage, { x, y });
+      const result = await segmentByPoint(projectStore.sourceImage, { x, y });
 
       if (
         result.status === "success" &&
@@ -93,7 +95,7 @@ export function useCanvasSegmentation() {
         result.masks.length > 0
       ) {
         const mask = result.masks[0];
-        store.setSegmentPendingMask({
+        segmentationStore.setSegmentPendingMask({
           mask: mask.mask,
           bounds: mask.bounds,
           area: mask.area,
@@ -112,7 +114,7 @@ export function useCanvasSegmentation() {
     } catch (err) {
       console.error("[useCanvasSegmentation] Segmentation failed:", err);
     } finally {
-      store.setSegmentLoading(false);
+      segmentationStore.setSegmentIsLoading(false);
     }
   }
 
@@ -125,7 +127,7 @@ export function useCanvasSegmentation() {
     x2: number,
     y2: number,
   ): Promise<void> {
-    if (!store.sourceImage) {
+    if (!projectStore.sourceImage) {
       console.warn("[useCanvasSegmentation] No source image for segmentation");
       return;
     }
@@ -138,10 +140,10 @@ export function useCanvasSegmentation() {
       Math.max(y1, y2),
     ];
 
-    store.setSegmentLoading(true);
+    segmentationStore.setSegmentIsLoading(true);
 
     try {
-      const result = await segmentByBox(store.sourceImage, box);
+      const result = await segmentByBox(projectStore.sourceImage, box);
 
       if (
         result.status === "success" &&
@@ -149,7 +151,7 @@ export function useCanvasSegmentation() {
         result.masks.length > 0
       ) {
         const mask = result.masks[0];
-        store.setSegmentPendingMask({
+        segmentationStore.setSegmentPendingMask({
           mask: mask.mask,
           bounds: mask.bounds,
           area: mask.area,
@@ -168,7 +170,7 @@ export function useCanvasSegmentation() {
     } catch (err) {
       console.error("[useCanvasSegmentation] Box segmentation failed:", err);
     } finally {
-      store.setSegmentLoading(false);
+      segmentationStore.setSegmentIsLoading(false);
     }
   }
 
@@ -176,7 +178,7 @@ export function useCanvasSegmentation() {
    * Compute segment box preview style for overlay
    */
   function getSegmentBoxStyle(viewportTransform: number[]): Record<string, string> {
-    const start = store.segmentBoxStart;
+    const start = segmentationStore.segmentBoxStart;
     const end = segmentBoxEnd.value;
     if (!start || !end) return {};
 
@@ -200,7 +202,7 @@ export function useCanvasSegmentation() {
    * Compute mask overlay style
    */
   function getMaskOverlayStyle(viewportTransform: number[]): Record<string, string> {
-    const mask = store.segmentPendingMask;
+    const mask = segmentationStore.segmentPendingMask;
     if (!mask) return {};
 
     const vpt = viewportTransform;

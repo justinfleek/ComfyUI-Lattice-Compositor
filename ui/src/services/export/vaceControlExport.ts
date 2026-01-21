@@ -15,6 +15,7 @@
  * Output: Canvas frames or WebM video with white shapes on #000000
  */
 
+import { isFiniteNumber, safeCoordinateDefault } from "@/utils/typeGuards";
 import type { ControlPoint } from "@/types/spline";
 import { createBezierCurve } from "../arcLength";
 
@@ -176,20 +177,45 @@ export class PathFollower {
       const p0 = controlPoints[i];
       const p1 = controlPoints[i + 1];
 
+      // Type proof: All z coordinates are unbounded (can be 0, negative, any ℝ)
+      const p0z = safeCoordinateDefault(p0.z, 0, "p0.z");
+      const p1z = safeCoordinateDefault(p1.z, 0, "p1.z");
+      
+      // Type proof: Handle offsets are unbounded (can be negative for backwards)
+      const p0HandleOutX = p0.handleOut 
+        ? safeCoordinateDefault(p0.handleOut.x, 0, "p0.handleOut.x")
+        : 0;
+      const p0HandleOutY = p0.handleOut
+        ? safeCoordinateDefault(p0.handleOut.y, 0, "p0.handleOut.y")
+        : 0;
+      const p0HandleOutZ = p0.handleOut
+        ? safeCoordinateDefault(p0.handleOut.z, 0, "p0.handleOut.z")
+        : 0;
+      
+      const p1HandleInX = p1.handleIn
+        ? safeCoordinateDefault(p1.handleIn.x, 0, "p1.handleIn.x")
+        : 0;
+      const p1HandleInY = p1.handleIn
+        ? safeCoordinateDefault(p1.handleIn.y, 0, "p1.handleIn.y")
+        : 0;
+      const p1HandleInZ = p1.handleIn
+        ? safeCoordinateDefault(p1.handleIn.z, 0, "p1.handleIn.z")
+        : 0;
+
       // Create cubic bezier curve from control points
       const curve = createBezierCurve(
-        { x: p0.x, y: p0.y, z: p0.z || 0 },
+        { x: p0.x, y: p0.y, z: p0z },
         {
-          x: p0.x + (p0.handleOut?.x || 0),
-          y: p0.y + (p0.handleOut?.y || 0),
-          z: (p0.z || 0) + (p0.handleOut?.z || 0),
+          x: p0.x + p0HandleOutX,
+          y: p0.y + p0HandleOutY,
+          z: p0z + p0HandleOutZ,
         },
         {
-          x: p1.x + (p1.handleIn?.x || 0),
-          y: p1.y + (p1.handleIn?.y || 0),
-          z: (p1.z || 0) + (p1.handleIn?.z || 0),
+          x: p1.x + p1HandleInX,
+          y: p1.y + p1HandleInY,
+          z: p1z + p1HandleInZ,
         },
-        { x: p1.x, y: p1.y, z: p1.z || 0 },
+        { x: p1.x, y: p1.y, z: p1z },
       );
 
       curvePath.add(curve);
@@ -200,19 +226,44 @@ export class PathFollower {
       const last = controlPoints[controlPoints.length - 1];
       const first = controlPoints[0];
 
+      // Type proof: All z coordinates are unbounded (can be 0, negative, any ℝ)
+      const lastZ = safeCoordinateDefault(last.z, 0, "last.z");
+      const firstZ = safeCoordinateDefault(first.z, 0, "first.z");
+
+      // Type proof: Handle offsets are unbounded (can be negative for backwards)
+      const lastHandleOutX = last.handleOut
+        ? safeCoordinateDefault(last.handleOut.x, 0, "last.handleOut.x")
+        : 0;
+      const lastHandleOutY = last.handleOut
+        ? safeCoordinateDefault(last.handleOut.y, 0, "last.handleOut.y")
+        : 0;
+      const lastHandleOutZ = last.handleOut
+        ? safeCoordinateDefault(last.handleOut.z, 0, "last.handleOut.z")
+        : 0;
+
+      const firstHandleInX = first.handleIn
+        ? safeCoordinateDefault(first.handleIn.x, 0, "first.handleIn.x")
+        : 0;
+      const firstHandleInY = first.handleIn
+        ? safeCoordinateDefault(first.handleIn.y, 0, "first.handleIn.y")
+        : 0;
+      const firstHandleInZ = first.handleIn
+        ? safeCoordinateDefault(first.handleIn.z, 0, "first.handleIn.z")
+        : 0;
+
       const closingCurve = createBezierCurve(
-        { x: last.x, y: last.y, z: last.z || 0 },
+        { x: last.x, y: last.y, z: lastZ },
         {
-          x: last.x + (last.handleOut?.x || 0),
-          y: last.y + (last.handleOut?.y || 0),
-          z: (last.z || 0) + (last.handleOut?.z || 0),
+          x: last.x + lastHandleOutX,
+          y: last.y + lastHandleOutY,
+          z: lastZ + lastHandleOutZ,
         },
         {
-          x: first.x + (first.handleIn?.x || 0),
-          y: first.y + (first.handleIn?.y || 0),
-          z: (first.z || 0) + (first.handleIn?.z || 0),
+          x: first.x + firstHandleInX,
+          y: first.y + firstHandleInY,
+          z: firstZ + firstHandleInZ,
         },
-        { x: first.x, y: first.y, z: first.z || 0 },
+        { x: first.x, y: first.y, z: firstZ },
       );
 
       curvePath.add(closingCurve);
@@ -544,26 +595,130 @@ export function createPathFollower(
   controlPoints: SplineControlPoint[],
   options: Partial<PathFollowerConfig> = {},
 ): PathFollowerConfig {
+  // Type proof: closed ∈ boolean | undefined → boolean
+  const closed =
+    typeof options.closed === "boolean" ? options.closed : false;
+
+  // Type proof: shape ∈ PathFollowerShape | undefined → PathFollowerShape
+  const validShapes: PathFollowerShape[] = [
+    "circle",
+    "square",
+    "triangle",
+    "diamond",
+    "arrow",
+    "custom",
+  ];
+  const shape =
+    typeof options.shape === "string" &&
+    validShapes.includes(options.shape as PathFollowerShape)
+      ? (options.shape as PathFollowerShape)
+      : "circle";
+
+  // Type proof: size ∈ [number, number] | undefined → [number, number]
+  const size =
+    Array.isArray(options.size) &&
+    options.size.length === 2 &&
+    isFiniteNumber(options.size[0]) &&
+    isFiniteNumber(options.size[1]) &&
+    options.size[0] > 0 &&
+    options.size[1] > 0
+      ? [
+          Math.max(1, Math.min(10000, options.size[0])),
+          Math.max(1, Math.min(10000, options.size[1])),
+        ]
+      : [20, 20];
+
+  // Type proof: fillColor ∈ string | undefined → string
+  const fillColor =
+    typeof options.fillColor === "string" && options.fillColor.length > 0
+      ? options.fillColor
+      : "#FFFFFF";
+
+  // Type proof: startFrame ∈ number | undefined → number
+  const startFrame = isFiniteNumber(options.startFrame)
+    ? Math.max(0, Math.floor(options.startFrame))
+    : 0;
+
+  // Type proof: duration ∈ number | undefined → number
+  const duration = isFiniteNumber(options.duration)
+    ? Math.max(1, Math.floor(options.duration))
+    : 60;
+
+  // Type proof: easing ∈ PathFollowerEasing | undefined → PathFollowerEasing
+  const validEasings: PathFollowerEasing[] = [
+    "linear",
+    "ease-in",
+    "ease-out",
+    "ease-in-out",
+    "ease-in-cubic",
+    "ease-out-cubic",
+  ];
+  const easing =
+    typeof options.easing === "string" &&
+    validEasings.includes(options.easing as PathFollowerEasing)
+      ? (options.easing as PathFollowerEasing)
+      : "ease-in-out";
+
+  // Type proof: alignToPath ∈ boolean | undefined → boolean
+  const alignToPath =
+    typeof options.alignToPath === "boolean" ? options.alignToPath : true;
+
+  // Type proof: rotationOffset ∈ number | undefined → number
+  const rotationOffset = isFiniteNumber(options.rotationOffset)
+    ? options.rotationOffset
+    : 0;
+
+  // Type proof: loop ∈ boolean | undefined → boolean
+  const loop = typeof options.loop === "boolean" ? options.loop : false;
+
+  // Type proof: loopMode ∈ "restart" | "pingpong" | undefined → "restart" | "pingpong"
+  const validLoopModes: ("restart" | "pingpong")[] = ["restart", "pingpong"];
+  const loopMode =
+    typeof options.loopMode === "string" &&
+    validLoopModes.includes(options.loopMode)
+      ? options.loopMode
+      : "restart";
+
+  // Type proof: scaleStart ∈ number | undefined → number
+  const scaleStart = isFiniteNumber(options.scaleStart)
+    ? Math.max(0, Math.min(10, options.scaleStart))
+    : 1;
+
+  // Type proof: scaleEnd ∈ number | undefined → number
+  const scaleEnd = isFiniteNumber(options.scaleEnd)
+    ? Math.max(0, Math.min(10, options.scaleEnd))
+    : 1;
+
+  // Type proof: opacityStart ∈ number | undefined → number
+  const opacityStart = isFiniteNumber(options.opacityStart)
+    ? Math.max(0, Math.min(1, options.opacityStart))
+    : 1;
+
+  // Type proof: opacityEnd ∈ number | undefined → number
+  const opacityEnd = isFiniteNumber(options.opacityEnd)
+    ? Math.max(0, Math.min(1, options.opacityEnd))
+    : 1;
+
   return {
     id,
     controlPoints,
-    closed: options.closed ?? false,
-    shape: options.shape ?? "circle",
-    size: options.size ?? [20, 20],
-    fillColor: options.fillColor ?? "#FFFFFF",
+    closed,
+    shape,
+    size,
+    fillColor,
     strokeColor: options.strokeColor,
     strokeWidth: options.strokeWidth,
-    startFrame: options.startFrame ?? 0,
-    duration: options.duration ?? 60,
-    easing: options.easing ?? "ease-in-out",
-    alignToPath: options.alignToPath ?? true,
-    rotationOffset: options.rotationOffset ?? 0,
-    loop: options.loop ?? false,
-    loopMode: options.loopMode ?? "restart",
-    scaleStart: options.scaleStart ?? 1,
-    scaleEnd: options.scaleEnd ?? 1,
-    opacityStart: options.opacityStart ?? 1,
-    opacityEnd: options.opacityEnd ?? 1,
+    startFrame,
+    duration,
+    easing,
+    alignToPath,
+    rotationOffset,
+    loop,
+    loopMode,
+    scaleStart,
+    scaleEnd,
+    opacityStart,
+    opacityEnd,
   };
 }
 
@@ -574,16 +729,64 @@ export function createVACEExportConfig(
   pathFollowers: PathFollowerConfig[],
   options: Partial<VACEExportConfig> = {},
 ): VACEExportConfig {
+  // Type proof: width ∈ number | undefined → number
+  const width = isFiniteNumber(options.width)
+    ? Math.max(1, Math.min(8192, Math.floor(options.width)))
+    : 512;
+
+  // Type proof: height ∈ number | undefined → number
+  const height = isFiniteNumber(options.height)
+    ? Math.max(1, Math.min(8192, Math.floor(options.height)))
+    : 512;
+
+  // Type proof: startFrame ∈ number | undefined → number
+  const startFrame = isFiniteNumber(options.startFrame)
+    ? Math.max(0, Math.floor(options.startFrame))
+    : 0;
+
+  // Type proof: endFrame ∈ number | undefined → number
+  const endFrame = isFiniteNumber(options.endFrame)
+    ? Math.max(startFrame, Math.floor(options.endFrame))
+    : 80;
+
+  // Type proof: frameRate ∈ number | undefined → number
+  const frameRate = isFiniteNumber(options.frameRate)
+    ? Math.max(1, Math.min(120, options.frameRate))
+    : 16;
+
+  // Type proof: backgroundColor ∈ string | undefined → string
+  const backgroundColor =
+    typeof options.backgroundColor === "string" &&
+    options.backgroundColor.length > 0
+      ? options.backgroundColor
+      : "#000000";
+
+  // Type proof: outputFormat ∈ "canvas" | "webm" | "frames" | undefined → "canvas" | "webm" | "frames"
+  const validFormats: ("canvas" | "webm" | "frames")[] = [
+    "canvas",
+    "webm",
+    "frames",
+  ];
+  const outputFormat =
+    typeof options.outputFormat === "string" &&
+    validFormats.includes(options.outputFormat)
+      ? options.outputFormat
+      : "canvas";
+
+  // Type proof: antiAlias ∈ boolean | undefined → boolean
+  const antiAlias =
+    typeof options.antiAlias === "boolean" ? options.antiAlias : true;
+
   return {
-    width: options.width ?? 512,
-    height: options.height ?? 512,
-    startFrame: options.startFrame ?? 0,
-    endFrame: options.endFrame ?? 80,
-    frameRate: options.frameRate ?? 16,
-    backgroundColor: options.backgroundColor ?? "#000000",
+    width,
+    height,
+    startFrame,
+    endFrame,
+    frameRate,
+    backgroundColor,
     pathFollowers,
-    outputFormat: options.outputFormat ?? "canvas",
-    antiAlias: options.antiAlias ?? true,
+    outputFormat,
+    antiAlias,
   };
 }
 

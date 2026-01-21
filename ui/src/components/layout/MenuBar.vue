@@ -513,8 +513,8 @@
 
 <script setup lang="ts">
 import { computed, ref } from "vue";
-import { useCompositorStore } from "@/stores/compositorStore";
 import { useProjectStore } from "@/stores/projectStore";
+import { useSelectionStore } from "@/stores/selectionStore";
 
 const emit = defineEmits<{
   (e: "action", action: string): void;
@@ -522,8 +522,8 @@ const emit = defineEmits<{
   (e: "showProjectSettings"): void;
 }>();
 
-const compositorStore = useCompositorStore();
 const projectStore = useProjectStore();
+const selectionStore = useSelectionStore();
 
 const activeMenu = ref<string | null>(null);
 let closeTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -532,7 +532,7 @@ let closeTimeout: ReturnType<typeof setTimeout> | null = null;
 const canUndo = computed(() => projectStore.canUndo());
 const canRedo = computed(() => projectStore.canRedo());
 const hasSelection = computed(
-  () => compositorStore.selectedLayerIds.length > 0,
+  () => selectionStore.selectedLayerIds.length > 0,
 );
 const projectName = computed(() => projectStore.project.meta.name || "");
 const hasUnsavedChanges = computed(() => projectStore.hasUnsavedChanges);

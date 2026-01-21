@@ -7,6 +7,7 @@
  * @see docs/MASTER_REFACTOR_PLAN.md
  */
 
+import { isFiniteNumber, assertDefined } from "@/utils/typeGuards";
 import { defineStore } from "pinia";
 import type { VideoMetadata } from "@/engine/layers/VideoLayer";
 import {
@@ -97,8 +98,9 @@ export const useVideoStore = defineStore("video", {
       let videoUrl: string;
       try {
         videoUrl = URL.createObjectURL(file);
-      } catch {
-        return { status: "error", error: "Failed to create URL for video file" };
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : "Unknown error";
+        throw new Error(`[VideoStore] Failed to create URL for video file: ${errorMessage}. Check file format and browser support.`);
       }
 
       let metadata: VideoMetadata;
@@ -106,10 +108,8 @@ export const useVideoStore = defineStore("video", {
         metadata = await extractVideoMetadata(videoUrl);
       } catch (error) {
         URL.revokeObjectURL(videoUrl);
-        return {
-          status: "error",
-          error: `Failed to load video metadata: ${(error as Error).message}`,
-        };
+        const errorMessage = error instanceof Error ? error.message : "Unknown error";
+        throw new Error(`[VideoStore] Failed to load video metadata: ${errorMessage}. Video file may be corrupted or unsupported format.`);
       }
 
       // Create asset reference
@@ -123,7 +123,11 @@ export const useVideoStore = defineStore("video", {
         data: videoUrl,
         duration: metadata.duration,
         frameCount: metadata.frameCount,
-        fps: metadata.fps ?? undefined,
+        // Type proof: fps ∈ ℝ | undefined → ℝ | undefined
+        fps: (() => {
+          const fpsValue = metadata.fps;
+          return isFiniteNumber(fpsValue) && fpsValue > 0 ? fpsValue : undefined;
+        })(),
         hasAudio: metadata.hasAudio,
       };
 
@@ -283,7 +287,9 @@ export const useVideoStore = defineStore("video", {
       const originalFps = projectStore.project.composition.fps;
       const comp = projectStore.getActiveComp();
 
-      if (!comp) return null;
+      if (!comp) {
+        throw new Error("[VideoStore] Cannot create video from layers: No active composition found");
+      }
 
       // Step 1: Precomp existing layers
       const existingLayers = projectStore.getActiveCompLayers();
@@ -331,7 +337,9 @@ export const useVideoStore = defineStore("video", {
     ): Layer {
       const { metadata, assetId } = pendingImport;
       const projectStore = useProjectStore();
-      const videoFps = metadata.fps!;
+      // Type proof: fps is guaranteed non-null when VideoImportFpsMismatch status occurs (fps was detected)
+      assertDefined(metadata.fps, "metadata.fps must exist when completing fps mismatch import");
+      const videoFps = metadata.fps;
 
       const safeCompFps =
         Number.isFinite(compositionFps) && compositionFps > 0 ? compositionFps : 16;
@@ -494,7 +502,9 @@ export const useVideoStore = defineStore("video", {
         asset.height = metadata.height;
         asset.duration = metadata.duration;
         asset.frameCount = metadata.frameCount;
-        asset.fps = metadata.fps ?? undefined;
+        // Type proof: fps ∈ ℝ | undefined → ℝ | undefined
+        const fpsValue = metadata.fps;
+        asset.fps = isFiniteNumber(fpsValue) && fpsValue > 0 ? fpsValue : undefined;
         asset.hasAudio = metadata.hasAudio;
       }
 

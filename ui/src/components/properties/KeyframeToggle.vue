@@ -16,7 +16,6 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { useExpressionEditor } from "@/composables/useExpressionEditor";
-import { useCompositorStore } from "@/stores/compositorStore";
 import { useAnimationStore } from "@/stores/animationStore";
 import type {
   AnimatableProperty,
@@ -38,26 +37,28 @@ const emit = defineEmits<{
   (e: "animationToggled", animated: boolean): void;
 }>();
 
-const store = useCompositorStore();
 const animationStore = useAnimationStore();
 const expressionEditor = useExpressionEditor();
 
 // Check if there's a keyframe at current frame
 const hasKeyframeAtCurrentFrame = computed(() => {
   if (!props.property.animated) return false;
-  return props.property.keyframes.some((k) => k.frame === animationStore.getCurrentFrame(store));
+  return props.property.keyframes.some((k) => k.frame === animationStore.currentFrame);
 });
 
 // Check if property has an expression
+// Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??/?.
 const hasExpression = computed(() => {
-  return props.property.expression?.enabled ?? false;
+  const property = props.property;
+  const expression = (property !== null && property !== undefined && typeof property === "object" && "expression" in property && property.expression !== null && property.expression !== undefined) ? property.expression : undefined;
+  return (expression !== null && expression !== undefined && typeof expression === "object" && "enabled" in expression && typeof expression.enabled === "boolean") ? expression.enabled : false;
 });
 
 // Get the keyframe at current frame (if exists)
 const keyframeAtCurrentFrame = computed(() => {
   if (!props.property.animated) return null;
   return (
-    props.property.keyframes.find((k) => k.frame === animationStore.getCurrentFrame(store)) || null
+    props.property.keyframes.find((k) => k.frame === animationStore.currentFrame) || null
   );
 });
 

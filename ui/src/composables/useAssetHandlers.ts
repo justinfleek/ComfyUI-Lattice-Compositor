@@ -6,30 +6,33 @@
  */
 
 import type { Ref } from "vue";
+import type { LatticeEngine } from "@/engine";
 import { useAssetStore } from "@/stores/assetStore";
 import { useLayerStore } from "@/stores/layerStore";
 import { useProjectStore } from "@/stores/projectStore";
 import { useSelectionStore } from "@/stores/selectionStore";
-import { isLayerOfType } from "@/types/project";
-import type { ParticleLayerData } from "@/types/particles";
-import { isObject } from "@/utils/typeGuards";
+import { isLayerOfType, type AnyLayerData } from "@/types/project";
+import type { ParticleEmitterConfig, ParticleLayerData, SpriteConfig } from "@/types/particles";
+import { isObject, safeCoordinateDefault, isFiniteNumber } from "@/utils/typeGuards";
+import type { EnvironmentMapConfig } from "@/engine/core/SceneManager";
+import type { JSONValue } from "@/types/dataAsset";
+
+/**
+ * All possible JavaScript values that can be validated at runtime
+ * Used as input type for validators (replaces unknown)
+ */
+type RuntimeValue = string | number | boolean | object | null | undefined | bigint | symbol;
 
 // Type for CenterViewport exposed properties (matches defineExpose in CenterViewport.vue)
 // Vue's defineExpose exposes refs/computeds directly - threeCanvasRef is a Ref, engine is a ComputedRef
 export interface CenterViewportExposed {
   threeCanvasRef?: import("vue").Ref<InstanceType<typeof import("@/components/canvas/ThreeCanvas.vue").default> | null>;
-  getEngine?: () => LatticeEngine | undefined;
+  getEngine?: () => LatticeEngine;
   engine?: import("vue").ComputedRef<LatticeEngine | null>;
 }
 
 export interface AssetHandlersOptions {
   canvasRef: Ref<InstanceType<typeof import("@/components/layout/CenterViewport.vue").default> | null>;
-}
-
-interface LatticeEngine {
-  setEnvironmentConfig(settings: unknown): void;
-  loadEnvironmentMap(url: string, options: EnvironmentMapOptions): Promise<void>;
-  setEnvironmentEnabled(enabled: boolean): void;
 }
 
 interface EnvironmentMapOptions {
@@ -47,22 +50,42 @@ export function useAssetHandlers(options: AssetHandlersOptions) {
 
   const { canvasRef } = options;
   
+  // Helper type guard: System F/Omega proof for LatticeEngine contract satisfaction
+  // Type proof: ∀ e: RuntimeValue, isLatticeEngine(e) → e: LatticeEngine
+  function isLatticeEngine(value: RuntimeValue): value is LatticeEngine {
+    if (!isObject(value)) return false;
+    // Check for LatticeEngine contract methods to ensure type safety
+    return (
+      typeof value.setEnvironmentConfig === "function" &&
+      typeof value.loadEnvironmentMap === "function" &&
+      typeof value.setEnvironmentEnabled === "function" &&
+      typeof value.setFrame === "function" &&
+      typeof value.render === "function"
+    );
+  }
+
   // Helper to safely access getEngine from exposed properties
   // Vue exposes functions directly via defineExpose - use runtime property check with type guards
-  function getEngine(): LatticeEngine | undefined {
+  // System F/Omega proof: Runtime type guard ensures LatticeEngine contract satisfaction
+  function getEngine(): LatticeEngine {
     const viewport = canvasRef.value;
-    if (!viewport || !isObject(viewport)) return undefined;
+    if (!viewport || !isObject(viewport)) {
+      throw new Error("[AssetHandlers] Cannot get engine: viewport is not available");
+    }
     // Runtime check: Vue exposes getEngine as a function
     // Use property access with runtime check - TypeScript can't know about exposed properties
-    const getEngineProp = viewport.getEngine;
-    if (typeof getEngineProp === "function") {
-      const engine = getEngineProp();
-      // Type guard: verify it's the expected engine type
-      if (engine && isObject(engine)) {
-        return engine as LatticeEngine;
-      }
+    const getEngineProp = (viewport as { getEngine?: () => RuntimeValue }).getEngine;
+    if (typeof getEngineProp !== "function") {
+      throw new Error("[AssetHandlers] Cannot get engine: viewport.getEngine is not a function");
     }
-    return undefined;
+    
+    const engine = getEngineProp() as RuntimeValue;
+    // Type guard: verify it's the expected engine type
+    // System F/Omega proof: Type guard narrows unknown → LatticeEngine
+    if (isLatticeEngine(engine)) {
+      return engine;
+    }
+    throw new Error("[AssetHandlers] Cannot get engine: viewport.getEngine() did not return a valid LatticeEngine");
   }
 
   /**
@@ -75,25 +98,20 @@ export function useAssetHandlers(options: AssetHandlersOptions) {
     storedSvg.document.paths.forEach((path: { id: string }, index: number) => {
       const config = storedSvg.layerConfigs[index];
 
-      // Create CompositorStoreAccess helper for layerStore.createShapeLayer which still requires it
-      // TODO: Phase 5 - Remove CompositorStoreAccess parameter from createShapeLayer
-      const compositorStoreAccess = {
-        project: {
-          composition: {
-            width: projectStore.project.composition.width,
-            height: projectStore.project.composition.height,
-          },
-          meta: projectStore.project.meta,
-        },
-        getActiveComp: () => projectStore.getActiveComp(),
-        getActiveCompLayers: () => projectStore.getActiveCompLayers(),
-        pushHistory: () => projectStore.pushHistory(),
-      };
-
-      const layer = layerStore.createShapeLayer(compositorStoreAccess);
+      const layer = layerStore.createShapeLayer();
       layerStore.renameLayer(layer.id, `${storedSvg.name}_${path.id}`);
 
-      layerStore.updateLayerData(layer.id, {
+      // Type extension: SVG-related properties are runtime data not in ShapeLayerData type
+      // CODE IS TRUTH: These properties are used at runtime for SVG path tracking
+      // System F/Omega proof: Type-safe update with explicit property construction
+      // Type proof: Partial<AnyLayerData> ∪ { svgDocumentId, svgPathId, svgPathIndex, extrusionConfig, transform }
+      const layerUpdate: Partial<AnyLayerData> & {
+        svgDocumentId?: string;
+        svgPathId?: string;
+        svgPathIndex?: number;
+        extrusionConfig?: typeof config;
+        transform?: typeof layer.transform;
+      } = {
         svgDocumentId: svgId,
         svgPathId: path.id,
         svgPathIndex: index,
@@ -104,11 +122,14 @@ export function useAssetHandlers(options: AssetHandlersOptions) {
             ...layer.transform.position,
             value: {
               ...layer.transform.position.value,
-              z: config?.depth || 0,
+              // Type proof: depth/z coordinate ∈ number | undefined → number (coordinate-like, can be negative)
+              // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+              z: safeCoordinateDefault((config !== null && typeof config === "object" && "depth" in config && typeof config.depth === "number") ? config.depth : undefined, 0, "config.depth"),
             },
           },
         },
-      });
+      };
+      layerStore.updateLayerData(layer.id, layerUpdate);
     });
 
     console.log(
@@ -145,10 +166,34 @@ export function useAssetHandlers(options: AssetHandlersOptions) {
 
     // Now TypeScript knows layer.data is ParticleLayerData
     const particleData: ParticleLayerData = layer.data;
-    const existingEmitters = particleData.emitters || [];
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy || []
+    const emittersRaw = particleData.emitters;
+    const existingEmitters = (emittersRaw !== null && emittersRaw !== undefined && Array.isArray(emittersRaw)) ? emittersRaw : [];
+
+    // System F/Omega proof: Construct valid ParticleEmitterConfig with all required properties
+    // Type proof: ParticleEmitterConfig requires sprite: SpriteConfig (full object, not partial)
+    // Helper to create valid SpriteConfig with required properties
+    function createDefaultSpriteConfig(): SpriteConfig {
+      return {
+        enabled: true,
+        imageUrl: null,
+        imageData: null,
+        isSheet: false,
+        columns: 1,
+        rows: 1,
+        totalFrames: 1,
+        frameRate: 30,
+        playMode: "loop",
+        billboard: false,
+        rotationEnabled: false,
+        rotationSpeed: 0,
+        rotationSpeedVariance: 0,
+        alignToVelocity: false,
+      };
+    }
 
     // Update first emitter with mesh shape, or create new one
-    const updatedEmitters = existingEmitters.length > 0
+    const updatedEmitters: ParticleEmitterConfig[] = existingEmitters.length > 0
       ? existingEmitters.map((emitter, i) =>
           i === 0
             ? {
@@ -156,12 +201,47 @@ export function useAssetHandlers(options: AssetHandlersOptions) {
                 shape: "mesh" as const,
                 meshVertices: emitterConfig.meshVertices,
                 meshNormals: emitterConfig.meshNormals,
+                // Ensure sprite is valid SpriteConfig (not partial)
+                // Lean4/PureScript/Haskell: Explicit pattern matching on optional property
+                // Type proof: emitter.sprite ∈ SpriteConfig | undefined → SpriteConfig
+                sprite: emitter.sprite !== undefined && isObject(emitter.sprite)
+                  ? emitter.sprite
+                  : createDefaultSpriteConfig(),
               }
             : emitter
         )
       : [
           {
+            // Create minimal valid emitter config with mesh shape
+            // System F/Omega proof: All required ParticleEmitterConfig properties satisfied
+            id: `emitter_${Date.now()}`,
+            name: "Mesh Emitter",
+            x: 0,
+            y: 0,
+            direction: 0,
+            spread: 0,
+            speed: 100,
+            speedVariance: 0,
+            size: 10,
+            sizeVariance: 0,
+            color: [255, 255, 255] as [number, number, number],
+            emissionRate: 10,
+            initialBurst: 0,
+            particleLifetime: 60,
+            lifetimeVariance: 0,
+            enabled: true,
+            burstOnBeat: false,
+            burstCount: 0,
             shape: "mesh" as const,
+            shapeRadius: 0,
+            shapeWidth: 0,
+            shapeHeight: 0,
+            shapeDepth: 0,
+            shapeInnerRadius: 0,
+            emitFromEdge: false,
+            emitFromVolume: true,
+            splinePath: null,
+            sprite: createDefaultSpriteConfig(),
             meshVertices: emitterConfig.meshVertices,
             meshNormals: emitterConfig.meshNormals,
           },
@@ -176,11 +256,46 @@ export function useAssetHandlers(options: AssetHandlersOptions) {
 
   /**
    * Update environment settings in the engine
+   * System F/Omega proof: Runtime type validation ensures EnvironmentMapConfig contract
    */
-  function onEnvironmentUpdate(settings: unknown): void {
+  function onEnvironmentUpdate(settings: RuntimeValue): void {
     const engine = getEngine();
     if (!engine) return;
-    engine.setEnvironmentConfig(settings);
+    
+    // Type guard: Validate settings conform to Partial<EnvironmentMapConfig>
+    // Type proof: ∀ s: RuntimeValue, isValidEnvironmentConfig(s) → s: Partial<EnvironmentMapConfig>
+    if (!isObject(settings)) {
+      console.warn("[Lattice] Environment settings must be an object");
+      return;
+    }
+    
+    // Construct valid Partial<EnvironmentMapConfig> with type-safe property extraction
+    const config: Partial<EnvironmentMapConfig> = {};
+    
+    if ("enabled" in settings && typeof settings.enabled === "boolean") {
+      config.enabled = settings.enabled;
+    }
+    if ("url" in settings && (settings.url === null || typeof settings.url === "string")) {
+      // Convert null to undefined for Partial<EnvironmentMapConfig>
+      config.url = settings.url === null ? undefined : settings.url;
+    }
+    if ("intensity" in settings && isFiniteNumber(settings.intensity)) {
+      config.intensity = settings.intensity;
+    }
+    if ("rotation" in settings && isFiniteNumber(settings.rotation)) {
+      config.rotation = settings.rotation;
+    }
+    if ("backgroundBlur" in settings && isFiniteNumber(settings.backgroundBlur)) {
+      config.backgroundBlur = settings.backgroundBlur;
+    }
+    if ("useAsBackground" in settings && typeof settings.useAsBackground === "boolean") {
+      config.useAsBackground = settings.useAsBackground;
+    }
+    if ("toneMapping" in settings && typeof settings.toneMapping === "boolean") {
+      config.toneMapping = settings.toneMapping;
+    }
+    
+    engine.setEnvironmentConfig(config);
   }
 
   /**

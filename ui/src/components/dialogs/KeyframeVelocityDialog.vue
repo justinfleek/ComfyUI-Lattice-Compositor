@@ -188,7 +188,9 @@ const linkVelocities = ref(false);
 
 // Determine unit based on property type
 const velocityUnit = computed(() => {
-  const type = props.propertyType?.toLowerCase() || "";
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const propertyType = (props != null && typeof props === "object" && "propertyType" in props && props.propertyType != null && typeof props.propertyType === "string") ? props.propertyType : undefined;
+  const type = (propertyType != null && typeof propertyType.toLowerCase === "function") ? propertyType.toLowerCase() : "";
   if (type.includes("rotation") || type.includes("angle")) {
     return "deg/sec";
   }
@@ -216,10 +218,12 @@ watch(
   () => props.visible,
   (visible) => {
     if (visible) {
-      incomingVelocity.value = props.initialInVelocity ?? 0;
-      outgoingVelocity.value = props.initialOutVelocity ?? 0;
-      incomingInfluence.value = props.initialInInfluence ?? 33.33;
-      outgoingInfluence.value = props.initialOutInfluence ?? 33.33;
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+      // Pattern match: props.initial* ∈ number | undefined → number (defaults)
+      incomingVelocity.value = (typeof props.initialInVelocity === "number" && Number.isFinite(props.initialInVelocity)) ? props.initialInVelocity : 0;
+      outgoingVelocity.value = (typeof props.initialOutVelocity === "number" && Number.isFinite(props.initialOutVelocity)) ? props.initialOutVelocity : 0;
+      incomingInfluence.value = (typeof props.initialInInfluence === "number" && Number.isFinite(props.initialInInfluence)) ? props.initialInInfluence : 33.33;
+      outgoingInfluence.value = (typeof props.initialOutInfluence === "number" && Number.isFinite(props.initialOutInfluence)) ? props.initialOutInfluence : 33.33;
       linkVelocities.value = false;
     }
   },

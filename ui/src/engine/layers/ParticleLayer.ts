@@ -13,6 +13,7 @@
  * - Soft shadows and ambient occlusion
  */
 
+import { isFiniteNumber, isNonEmptyString } from "@/utils/typeGuards";
 import * as THREE from "three";
 import type {
   Layer,
@@ -23,8 +24,9 @@ import {
   createDefaultConfig,
   createDefaultEmitter,
   createDefaultForceField,
-  GPUParticleSystem,
-} from "../particles/GPUParticleSystem";
+} from "../particles/particleUtils";
+// Use verified system - GPUParticleSystem class has been removed
+import { VerifiedGPUParticleSystem } from "../particles/VerifiedGPUParticleSystem";
 import type {
   AudioFeature,
   EmitterConfig,
@@ -32,13 +34,14 @@ import type {
   ForceFieldConfig,
   GPUParticleSystemConfig,
   SubEmitterConfig as GPUSubEmitterConfig,
+  ExportedParticle,
 } from "../particles/types";
 import { BaseLayer } from "./BaseLayer";
 import { PropertyEvaluator } from "@/services/animation/PropertyEvaluator";
 
 export class ParticleLayer extends BaseLayer {
-  /** The GPU particle system instance */
-  private particleSystem: GPUParticleSystem;
+  /** The GPU particle system instance (verified system only) */
+  private particleSystem: VerifiedGPUParticleSystem;
 
   /** Particle system configuration */
   private systemConfig: GPUParticleSystemConfig;
@@ -140,7 +143,8 @@ export class ParticleLayer extends BaseLayer {
     this.systemConfig.randomSeed = this.layerSeed;
 
     // Create particle system with deterministic seed
-    this.particleSystem = new GPUParticleSystem(this.systemConfig);
+    // Always use verified system - GPUParticleSystem class has been removed
+    this.particleSystem = new VerifiedGPUParticleSystem(this.systemConfig);
 
     // Apply initial blend mode
     this.initializeBlendMode();
@@ -167,39 +171,72 @@ export class ParticleLayer extends BaseLayer {
   private convertEmitterShape(
     emitter: ParticleEmitterConfig,
   ): EmitterShapeConfig {
-    const shape = emitter.shape ?? "point";
+    // Type proof: shape ∈ string | undefined → "point" | "circle" | "sphere" | "box" | "line" | "ring" | "cone" | "spline" | "depthEdge" | "image" | "depth-map" | "mask"
+    const shape = emitter !== undefined && typeof emitter === "object" && emitter !== null && "shape" in emitter && isNonEmptyString(emitter.shape) && (emitter.shape === "point" || emitter.shape === "circle" || emitter.shape === "sphere" || emitter.shape === "box" || emitter.shape === "line" || emitter.shape === "ring" || emitter.shape === "cone" || emitter.shape === "spline" || emitter.shape === "depthEdge" || emitter.shape === "image" || emitter.shape === "depth-map" || emitter.shape === "mask")
+      ? emitter.shape
+      : "point";
 
     switch (shape) {
       case "point":
         return { type: "point" };
 
       case "circle":
+        // Type proof: shapeRadius ∈ number | undefined → number
+        const circleRadius = isFiniteNumber(emitter.shapeRadius) && emitter.shapeRadius >= 0
+          ? emitter.shapeRadius
+          : 50;
+        // Type proof: emitFromEdge ∈ boolean | undefined → boolean
+        const circleEmitFromEdge = emitter !== undefined && typeof emitter === "object" && emitter !== null && "emitFromEdge" in emitter && typeof emitter.emitFromEdge === "boolean"
+          ? emitter.emitFromEdge
+          : false;
         return {
           type: "circle",
-          radius: emitter.shapeRadius ?? 50,
-          emitFromEdge: emitter.emitFromEdge ?? false,
+          radius: circleRadius,
+          emitFromEdge: circleEmitFromEdge,
         };
 
       case "sphere":
+        // Type proof: shapeRadius ∈ number | undefined → number
+        const sphereRadius = isFiniteNumber(emitter.shapeRadius) && emitter.shapeRadius >= 0
+          ? emitter.shapeRadius
+          : 50;
+        // Type proof: emitFromEdge ∈ boolean | undefined → boolean
+        const sphereEmitFromEdge = emitter !== undefined && typeof emitter === "object" && emitter !== null && "emitFromEdge" in emitter && typeof emitter.emitFromEdge === "boolean"
+          ? emitter.emitFromEdge
+          : false;
         return {
           type: "sphere",
-          radius: emitter.shapeRadius ?? 50,
-          emitFromEdge: emitter.emitFromEdge ?? false,
+          radius: sphereRadius,
+          emitFromEdge: sphereEmitFromEdge,
         };
 
       case "box":
+        // Type proof: shapeWidth ∈ number | undefined → number
+        const boxWidth = isFiniteNumber(emitter.shapeWidth) && emitter.shapeWidth >= 0
+          ? emitter.shapeWidth
+          : 100;
+        // Type proof: shapeHeight ∈ number | undefined → number
+        const boxHeight = isFiniteNumber(emitter.shapeHeight) && emitter.shapeHeight >= 0
+          ? emitter.shapeHeight
+          : 100;
+        // Type proof: shapeDepth ∈ ℝ ∪ {undefined} → z ∈ ℝ
+        const boxDepth = isFiniteNumber(emitter.shapeDepth) ? emitter.shapeDepth : 0;
         return {
           type: "box",
           boxSize: {
-            x: emitter.shapeWidth ?? 100,
-            y: emitter.shapeHeight ?? 100,
-            z: emitter.shapeDepth ?? 0,
+            x: boxWidth,
+            y: boxHeight,
+            z: boxDepth,
           },
         };
 
       case "line": {
         // Line extends from emitter position in both directions
-        const halfWidth = (emitter.shapeWidth ?? 100) / 2;
+        // Type proof: shapeWidth ∈ number | undefined → number
+        const lineWidth = isFiniteNumber(emitter.shapeWidth) && emitter.shapeWidth >= 0
+          ? emitter.shapeWidth
+          : 100;
+        const halfWidth = lineWidth / 2;
         return {
           type: "line",
           lineStart: { x: -halfWidth, y: 0, z: 0 },
@@ -208,20 +245,32 @@ export class ParticleLayer extends BaseLayer {
       }
 
       case "ring":
+        // Type proof: shapeRadius ∈ number | undefined → number
+        const ringRadius = isFiniteNumber(emitter.shapeRadius) && emitter.shapeRadius >= 0
+          ? emitter.shapeRadius
+          : 50;
+        // Type proof: shapeInnerRadius ∈ number | undefined → number
+        const ringInnerRadius = isFiniteNumber(emitter.shapeInnerRadius) && emitter.shapeInnerRadius >= 0
+          ? emitter.shapeInnerRadius
+          : 0;
         return {
           type: "circle",
-          radius: emitter.shapeRadius ?? 50,
-          radiusVariance: emitter.shapeInnerRadius ?? 0,
+          radius: ringRadius,
+          radiusVariance: ringInnerRadius,
           emitFromEdge: true, // Ring always emits from edge
         };
 
       case "spline":
         // Spline emission - use splinePath config if available
         if (emitter.splinePath) {
+          // Type proof: parameter ∈ number | undefined → number
+          const splineOffset = emitter.splinePath !== undefined && typeof emitter.splinePath === "object" && emitter.splinePath !== null && "parameter" in emitter.splinePath && isFiniteNumber(emitter.splinePath.parameter)
+            ? emitter.splinePath.parameter
+            : 0;
           return {
             type: "spline",
             splineId: emitter.splinePath.layerId,
-            splineOffset: emitter.splinePath.parameter ?? 0,
+            splineOffset,
           };
         }
         return { type: "point" }; // Fallback if no spline configured
@@ -229,18 +278,26 @@ export class ParticleLayer extends BaseLayer {
       case "depth-map":
         // Depth-based emission - uses both image data and depth data
         // Image data must be set via setEmitterImageData() at runtime
+        // Type proof: depthMin ∈ number | undefined → number
+        const depthMin = emitter.depthMapEmission !== undefined && typeof emitter.depthMapEmission === "object" && emitter.depthMapEmission !== null && "depthMin" in emitter.depthMapEmission && isFiniteNumber(emitter.depthMapEmission.depthMin) && emitter.depthMapEmission.depthMin >= 0
+          ? emitter.depthMapEmission.depthMin
+          : 0.1;
         return {
           type: "depthEdge", // Use depth edge emission (emits from depth discontinuities)
-          emissionThreshold: emitter.depthMapEmission?.depthMin ?? 0.1,
+          emissionThreshold: depthMin,
           // imageData and depthData will be provided at runtime
         };
 
       case "mask":
         // Mask-based emission - emits from non-transparent/bright pixels
         // Image data must be set via setEmitterImageData() at runtime
+        // Type proof: threshold ∈ number | undefined → number (clamped 0-1)
+        const maskThreshold = emitter.maskEmission !== undefined && typeof emitter.maskEmission === "object" && emitter.maskEmission !== null && "threshold" in emitter.maskEmission && isFiniteNumber(emitter.maskEmission.threshold) && emitter.maskEmission.threshold >= 0 && emitter.maskEmission.threshold <= 1
+          ? emitter.maskEmission.threshold
+          : 0.5;
         return {
           type: "image",
-          emissionThreshold: emitter.maskEmission?.threshold ?? 0.5,
+          emissionThreshold: maskThreshold,
           // imageData will be provided at runtime
         };
 
@@ -266,7 +323,10 @@ export class ParticleLayer extends BaseLayer {
     if (data.systemConfig) {
       // Cap maxParticles to prevent GPU memory exhaustion (1M max)
       const MAX_PARTICLES = 1000000;
-      const rawMaxParticles = data.systemConfig.maxParticles ?? 100000;
+      // Type proof: maxParticles ∈ number | undefined → number
+      const rawMaxParticles = data.systemConfig !== undefined && typeof data.systemConfig === "object" && data.systemConfig !== null && "maxParticles" in data.systemConfig && isFiniteNumber(data.systemConfig.maxParticles) && data.systemConfig.maxParticles > 0
+        ? data.systemConfig.maxParticles
+        : 100000;
       config.maxParticles = Number.isFinite(rawMaxParticles)
         ? Math.max(1, Math.min(MAX_PARTICLES, rawMaxParticles))
         : 100000;
@@ -290,8 +350,11 @@ export class ParticleLayer extends BaseLayer {
 
       // Add global wind as a force field
       if (data.systemConfig.windStrength !== 0) {
-        const windAngle =
-          ((data.systemConfig.windDirection ?? 0) * Math.PI) / 180;
+        // Type proof: windDirection ∈ number | undefined → number
+        const windDirection = isFiniteNumber(data.systemConfig.windDirection)
+          ? data.systemConfig.windDirection
+          : 0;
+        const windAngle = (windDirection * Math.PI) / 180;
         config.forceFields.push({
           id: "global_wind",
           name: "Wind",
@@ -359,7 +422,11 @@ export class ParticleLayer extends BaseLayer {
       for (const emitter of data.emitters) {
         if (!emitter.enabled) continue;
 
-        const dirRad = ((emitter.direction ?? 0) * Math.PI) / 180;
+        // Type proof: direction ∈ number | undefined → number
+        const emitterDirection = isFiniteNumber(emitter.direction)
+          ? emitter.direction
+          : 0;
+        const dirRad = (emitterDirection * Math.PI) / 180;
 
         // Convert emitter shape from project format to GPU format
         const shapeConfig = this.convertEmitterShape(emitter);
@@ -532,66 +599,103 @@ export class ParticleLayer extends BaseLayer {
     }
 
     // Convert flocking configuration
-    if (data.flocking?.enabled) {
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const flocking = (data != null && typeof data === "object" && "flocking" in data && data.flocking != null && typeof data.flocking === "object") ? data.flocking : undefined;
+    if (flocking != null && typeof flocking === "object" && "enabled" in flocking && flocking.enabled) {
       // Helper to validate numeric params (NaN would corrupt flocking behavior)
       const safeNum = (val: number | undefined, def: number) =>
         Number.isFinite(val) ? val! : def;
 
       config.flocking = {
         enabled: true,
-        separationWeight: safeNum(data.flocking.separationWeight, 50) / 100,
-        separationRadius: safeNum(data.flocking.separationRadius, 25),
-        alignmentWeight: safeNum(data.flocking.alignmentWeight, 50) / 100,
-        alignmentRadius: safeNum(data.flocking.alignmentRadius, 50),
-        cohesionWeight: safeNum(data.flocking.cohesionWeight, 50) / 100,
-        cohesionRadius: safeNum(data.flocking.cohesionRadius, 50),
-        maxSpeed: safeNum(data.flocking.maxSpeed, 200),
-        maxForce: safeNum(data.flocking.maxForce, 10),
-        perceptionAngle: safeNum(data.flocking.perceptionAngle, 270),
+        separationWeight: safeNum(flocking.separationWeight, 50) / 100,
+        separationRadius: safeNum(flocking.separationRadius, 25),
+        alignmentWeight: safeNum(flocking.alignmentWeight, 50) / 100,
+        alignmentRadius: safeNum(flocking.alignmentRadius, 50),
+        cohesionWeight: safeNum(flocking.cohesionWeight, 50) / 100,
+        cohesionRadius: safeNum(flocking.cohesionRadius, 50),
+        maxSpeed: safeNum(flocking.maxSpeed, 200),
+        maxForce: safeNum(flocking.maxForce, 10),
+        perceptionAngle: safeNum(flocking.perceptionAngle, 270),
       };
     }
 
     // Store collision configuration for initialization after GPU setup
-    if (data.collision?.enabled) {
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const collision = (data != null && typeof data === "object" && "collision" in data && data.collision != null && typeof data.collision === "object") ? data.collision : undefined;
+    if (collision != null && typeof collision === "object" && "enabled" in collision && collision.enabled) {
+      // Type proofs: all collision properties with explicit checks
+      const particleCollision = collision !== undefined && typeof collision === "object" && collision !== null && "particleCollision" in collision && typeof collision.particleCollision === "boolean"
+        ? collision.particleCollision
+        : false;
+      const particleRadius = isFiniteNumber(collision.particleRadius) && collision.particleRadius > 0
+        ? collision.particleRadius
+        : 5;
+      const bounciness = isFiniteNumber(collision.bounciness) && collision.bounciness >= 0 && collision.bounciness <= 1
+        ? collision.bounciness
+        : 0.5;
+      const friction = isFiniteNumber(collision.friction) && collision.friction >= 0 && collision.friction <= 1
+        ? collision.friction
+        : 0.1;
       this.pendingCollisionConfig = {
         enabled: true,
-        particleCollision: data.collision.particleCollision ?? false,
-        particleRadius: data.collision.particleRadius ?? 5,
-        bounciness: data.collision.bounciness ?? 0.5,
-        friction: data.collision.friction ?? 0.1,
-        bounds: data.collision.boundaryEnabled
+        particleCollision,
+        particleRadius,
+        bounciness,
+        friction,
+        bounds: collision.boundaryEnabled
           ? {
               min: {
-                x: data.collision.boundaryPadding,
-                y: data.collision.boundaryPadding,
+                x: collision.boundaryPadding,
+                y: collision.boundaryPadding,
                 z: -1000,
               },
               max: {
-                x: 1920 - data.collision.boundaryPadding,
-                y: 1080 - data.collision.boundaryPadding,
+                x: 1920 - collision.boundaryPadding,
+                y: 1080 - collision.boundaryPadding,
                 z: 1000,
               },
             }
           : undefined,
-        boundsBehavior: data.collision.boundaryBehavior ?? "none",
+        // Type proof: boundaryBehavior ∈ string | undefined → "none" | "bounce" | "wrap" | "kill"
+        boundsBehavior: collision !== undefined && typeof collision === "object" && collision !== null && "boundaryBehavior" in collision && typeof collision.boundaryBehavior === "string" && (collision.boundaryBehavior === "none" || collision.boundaryBehavior === "bounce" || collision.boundaryBehavior === "wrap" || collision.boundaryBehavior === "kill")
+          ? collision.boundaryBehavior
+          : "none",
       };
     }
 
     // Render options
     if (data.renderOptions) {
-      config.render.blendMode = data.renderOptions.blendMode ?? "normal";
-      config.render.motionBlur = data.renderOptions.motionBlur ?? false;
-      config.render.motionBlurStrength =
-        data.renderOptions.motionBlurStrength ?? 0.5;
-      config.render.motionBlurSamples =
-        data.renderOptions.motionBlurSamples ?? 4;
+      // Type proof: blendMode ∈ string | undefined → string
+      const blendMode = data.renderOptions !== undefined && typeof data.renderOptions === "object" && data.renderOptions !== null && "blendMode" in data.renderOptions && typeof data.renderOptions.blendMode === "string"
+        ? data.renderOptions.blendMode
+        : "normal";
+      // Type proof: motionBlur ∈ boolean | undefined → boolean
+      const motionBlur = data.renderOptions !== undefined && typeof data.renderOptions === "object" && data.renderOptions !== null && "motionBlur" in data.renderOptions && typeof data.renderOptions.motionBlur === "boolean"
+        ? data.renderOptions.motionBlur
+        : false;
+      // Type proof: motionBlurStrength ∈ number | undefined → number (clamped 0-1)
+      const motionBlurStrength = data.renderOptions !== undefined && typeof data.renderOptions === "object" && data.renderOptions !== null && "motionBlurStrength" in data.renderOptions && isFiniteNumber(data.renderOptions.motionBlurStrength) && data.renderOptions.motionBlurStrength >= 0 && data.renderOptions.motionBlurStrength <= 1
+        ? data.renderOptions.motionBlurStrength
+        : 0.5;
+      // Type proof: motionBlurSamples ∈ number | undefined → number (2-16)
+      const motionBlurSamples = data.renderOptions !== undefined && typeof data.renderOptions === "object" && data.renderOptions !== null && "motionBlurSamples" in data.renderOptions && isFiniteNumber(data.renderOptions.motionBlurSamples) && Number.isInteger(data.renderOptions.motionBlurSamples) && data.renderOptions.motionBlurSamples >= 2 && data.renderOptions.motionBlurSamples <= 16
+        ? data.renderOptions.motionBlurSamples
+        : 4;
+      config.render.blendMode = blendMode;
+      config.render.motionBlur = motionBlur;
+      config.render.motionBlurStrength = motionBlurStrength;
+      config.render.motionBlurSamples = motionBlurSamples;
 
       // Trails
       if (data.renderOptions.renderTrails) {
         config.render.mode = "trail";
         config.render.trailLength = data.renderOptions.trailLength;
-        config.render.trailWidthEnd =
-          1 - (data.renderOptions.trailOpacityFalloff ?? 0.8);
+        // Type proof: trailOpacityFalloff ∈ number | undefined → number (clamped 0-1)
+        const trailOpacityFalloff = data.renderOptions !== undefined && typeof data.renderOptions === "object" && data.renderOptions !== null && "trailOpacityFalloff" in data.renderOptions && isFiniteNumber(data.renderOptions.trailOpacityFalloff) && data.renderOptions.trailOpacityFalloff >= 0 && data.renderOptions.trailOpacityFalloff <= 1
+          ? data.renderOptions.trailOpacityFalloff
+          : 0.8;
+        config.render.trailWidthEnd = 1 - trailOpacityFalloff;
       }
 
       // Particle shape affects procedural rendering
@@ -603,26 +707,55 @@ export class ParticleLayer extends BaseLayer {
             : "circle";
 
       // Connections - wire UI settings to GPU config
-      if (data.renderOptions.connections?.enabled) {
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const renderOptions = (data != null && typeof data === "object" && "renderOptions" in data && data.renderOptions != null && typeof data.renderOptions === "object") ? data.renderOptions : undefined;
+      const connections = (renderOptions != null && typeof renderOptions === "object" && "connections" in renderOptions && renderOptions.connections != null && typeof renderOptions.connections === "object") ? renderOptions.connections : undefined;
+      if (connections != null && typeof connections === "object" && "enabled" in connections && connections.enabled) {
         // Store connection config for initialization after GPU setup
         // Note: ConnectionRenderConfig.color is already in 0-1 RGB range (per type definition)
+        // Type proofs: all connection properties with explicit checks
+        const maxDistance = connections !== undefined && typeof connections === "object" && connections !== null && "maxDistance" in connections && isFiniteNumber(connections.maxDistance) && connections.maxDistance > 0
+          ? connections.maxDistance
+          : 100;
+        const maxConnections = connections !== undefined && typeof connections === "object" && connections !== null && "maxConnections" in connections && isFiniteNumber(connections.maxConnections) && Number.isInteger(connections.maxConnections) && connections.maxConnections > 0
+          ? connections.maxConnections
+          : 5;
+        const lineWidth = connections !== undefined && typeof connections === "object" && connections !== null && "lineWidth" in connections && isFiniteNumber(connections.lineWidth) && connections.lineWidth > 0
+          ? connections.lineWidth
+          : 1;
+        const lineOpacity = connections !== undefined && typeof connections === "object" && connections !== null && "lineOpacity" in connections && isFiniteNumber(connections.lineOpacity) && connections.lineOpacity >= 0 && connections.lineOpacity <= 1
+          ? connections.lineOpacity
+          : 0.5;
+        const fadeByDistance = connections !== undefined && typeof connections === "object" && connections !== null && "fadeByDistance" in connections && typeof connections.fadeByDistance === "boolean"
+          ? connections.fadeByDistance
+          : true;
         this.pendingConnectionConfig = {
           enabled: true,
-          maxDistance: data.renderOptions.connections.maxDistance ?? 100,
-          maxConnections: data.renderOptions.connections.maxConnections ?? 5,
-          lineWidth: data.renderOptions.connections.lineWidth ?? 1,
-          lineOpacity: data.renderOptions.connections.lineOpacity ?? 0.5,
-          fadeByDistance: data.renderOptions.connections.fadeByDistance ?? true,
-          color: data.renderOptions.connections.color,
+          maxDistance,
+          maxConnections,
+          lineWidth,
+          lineOpacity,
+          fadeByDistance,
+          color: connections !== undefined && typeof connections === "object" && connections !== null && "color" in connections
+            ? connections.color
+            : undefined,
         };
       }
 
       // Glow settings - store for post-processing
       if (data.renderOptions.glowEnabled) {
+        // Type proof: glowRadius ∈ number | undefined → number
+        const glowRadius = data.renderOptions !== undefined && typeof data.renderOptions === "object" && data.renderOptions !== null && "glowRadius" in data.renderOptions && isFiniteNumber(data.renderOptions.glowRadius) && data.renderOptions.glowRadius >= 0
+          ? data.renderOptions.glowRadius
+          : 10;
+        // Type proof: glowIntensity ∈ number | undefined → number (clamped 0-1)
+        const glowIntensity = data.renderOptions !== undefined && typeof data.renderOptions === "object" && data.renderOptions !== null && "glowIntensity" in data.renderOptions && isFiniteNumber(data.renderOptions.glowIntensity) && data.renderOptions.glowIntensity >= 0 && data.renderOptions.glowIntensity <= 1
+          ? data.renderOptions.glowIntensity
+          : 0.5;
         this.pendingGlowConfig = {
           enabled: true,
-          radius: data.renderOptions.glowRadius ?? 10,
-          intensity: data.renderOptions.glowIntensity ?? 0.5,
+          radius: glowRadius,
+          intensity: glowIntensity,
         };
       }
 
@@ -631,13 +764,29 @@ export class ParticleLayer extends BaseLayer {
         data.renderOptions.spriteEnabled &&
         data.renderOptions.spriteImageUrl
       ) {
+        // Type proofs: all sprite properties with explicit checks
+        const spriteColumns = data.renderOptions !== undefined && typeof data.renderOptions === "object" && data.renderOptions !== null && "spriteColumns" in data.renderOptions && isFiniteNumber(data.renderOptions.spriteColumns) && Number.isInteger(data.renderOptions.spriteColumns) && data.renderOptions.spriteColumns >= 1
+          ? data.renderOptions.spriteColumns
+          : 1;
+        const spriteRows = data.renderOptions !== undefined && typeof data.renderOptions === "object" && data.renderOptions !== null && "spriteRows" in data.renderOptions && isFiniteNumber(data.renderOptions.spriteRows) && Number.isInteger(data.renderOptions.spriteRows) && data.renderOptions.spriteRows >= 1
+          ? data.renderOptions.spriteRows
+          : 1;
+        const spriteAnimate = data.renderOptions !== undefined && typeof data.renderOptions === "object" && data.renderOptions !== null && "spriteAnimate" in data.renderOptions && typeof data.renderOptions.spriteAnimate === "boolean"
+          ? data.renderOptions.spriteAnimate
+          : false;
+        const spriteFrameRate = data.renderOptions !== undefined && typeof data.renderOptions === "object" && data.renderOptions !== null && "spriteFrameRate" in data.renderOptions && isFiniteNumber(data.renderOptions.spriteFrameRate) && data.renderOptions.spriteFrameRate > 0
+          ? data.renderOptions.spriteFrameRate
+          : 10;
+        const spriteRandomStart = data.renderOptions !== undefined && typeof data.renderOptions === "object" && data.renderOptions !== null && "spriteRandomStart" in data.renderOptions && typeof data.renderOptions.spriteRandomStart === "boolean"
+          ? data.renderOptions.spriteRandomStart
+          : false;
         this.pendingSpriteConfig = {
           url: data.renderOptions.spriteImageUrl,
-          columns: data.renderOptions.spriteColumns ?? 1,
-          rows: data.renderOptions.spriteRows ?? 1,
-          animate: data.renderOptions.spriteAnimate ?? false,
-          frameRate: data.renderOptions.spriteFrameRate ?? 10,
-          randomStart: data.renderOptions.spriteRandomStart ?? false,
+          columns: spriteColumns,
+          rows: spriteRows,
+          animate: spriteAnimate,
+          frameRate: spriteFrameRate,
+          randomStart: spriteRandomStart,
         };
       }
 
@@ -668,18 +817,32 @@ export class ParticleLayer extends BaseLayer {
 
       // Shadow settings - store for initialization
       if (data.renderOptions.shadowsEnabled !== undefined) {
+        // Type proofs: all shadow properties with explicit checks
+        const castShadows = data.renderOptions !== undefined && typeof data.renderOptions === "object" && data.renderOptions !== null && "castShadows" in data.renderOptions && typeof data.renderOptions.castShadows === "boolean"
+          ? data.renderOptions.castShadows
+          : true;
+        const receiveShadows = data.renderOptions !== undefined && typeof data.renderOptions === "object" && data.renderOptions !== null && "receiveShadows" in data.renderOptions && typeof data.renderOptions.receiveShadows === "boolean"
+          ? data.renderOptions.receiveShadows
+          : true;
+        const shadowSoftness = data.renderOptions !== undefined && typeof data.renderOptions === "object" && data.renderOptions !== null && "shadowSoftness" in data.renderOptions && isFiniteNumber(data.renderOptions.shadowSoftness) && data.renderOptions.shadowSoftness >= 0
+          ? data.renderOptions.shadowSoftness
+          : 1.0;
         this.pendingShadowConfig = {
           enabled: data.renderOptions.shadowsEnabled,
-          castShadows: data.renderOptions.castShadows ?? true,
-          receiveShadows: data.renderOptions.receiveShadows ?? true,
-          shadowSoftness: data.renderOptions.shadowSoftness ?? 1.0,
+          castShadows,
+          receiveShadows,
+          shadowSoftness,
         };
       }
 
       // 3D mesh mode
       if (data.renderOptions.meshMode !== undefined) {
+        // Type proof: meshGeometry ∈ string | undefined → string
+        const meshGeometry = data.renderOptions !== undefined && typeof data.renderOptions === "object" && data.renderOptions !== null && "meshGeometry" in data.renderOptions && typeof data.renderOptions.meshGeometry === "string"
+          ? data.renderOptions.meshGeometry
+          : "sphere";
         config.render.meshGeometry = data.renderOptions.meshMode === "mesh"
-          ? (data.renderOptions.meshGeometry ?? "sphere")
+          ? meshGeometry
           : "billboard";
       }
     }
@@ -782,7 +945,8 @@ export class ParticleLayer extends BaseLayer {
     }
 
     // Initialize glow effect and add glow mesh
-    if (this.pendingGlowConfig?.enabled) {
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    if (this.pendingGlowConfig != null && typeof this.pendingGlowConfig === "object" && "enabled" in this.pendingGlowConfig && this.pendingGlowConfig.enabled) {
       this.particleSystem.initializeGlow(this.pendingGlowConfig);
       const glowMesh = this.particleSystem.getGlowMesh();
       if (glowMesh) {
@@ -793,13 +957,15 @@ export class ParticleLayer extends BaseLayer {
     }
 
     // Initialize collision detection
-    if (this.pendingCollisionConfig?.enabled) {
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    if (this.pendingCollisionConfig != null && typeof this.pendingCollisionConfig === "object" && "enabled" in this.pendingCollisionConfig && this.pendingCollisionConfig.enabled) {
       this.particleSystem.initializeCollisions(this.pendingCollisionConfig);
       this.pendingCollisionConfig = null;
     }
 
     // Initialize shadow settings
-    if (this.pendingShadowConfig?.enabled) {
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    if (this.pendingShadowConfig != null && typeof this.pendingShadowConfig === "object" && "enabled" in this.pendingShadowConfig && this.pendingShadowConfig.enabled) {
       this.particleSystem.updateShadowConfig({
         castShadows: this.pendingShadowConfig.castShadows,
         receiveShadows: this.pendingShadowConfig.receiveShadows,
@@ -908,7 +1074,11 @@ export class ParticleLayer extends BaseLayer {
       if (obj instanceof THREE.DirectionalLight ||
           obj instanceof THREE.SpotLight ||
           obj instanceof THREE.PointLight) {
-        if (obj.castShadow && obj.shadow?.map?.texture) {
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+        const shadow = (obj != null && typeof obj === "object" && "shadow" in obj && obj.shadow != null && typeof obj.shadow === "object") ? obj.shadow : undefined;
+        const shadowMap = (shadow != null && typeof shadow === "object" && "map" in shadow && shadow.map != null && typeof shadow.map === "object") ? shadow.map : undefined;
+        const shadowTexture = (shadowMap != null && typeof shadowMap === "object" && "texture" in shadowMap && shadowMap.texture != null) ? shadowMap.texture : undefined;
+        if (obj.castShadow && shadowTexture) {
           this.particleSystem.updateShadowFromLight(obj);
         }
       }
@@ -1148,7 +1318,7 @@ export class ParticleLayer extends BaseLayer {
     startFrame: number = 0,
     endFrame: number = 80,
     onProgress?: (frame: number, total: number) => void,
-  ): Promise<Map<number, import("../particles/GPUParticleSystem").ExportedParticle[]>> {
+  ): Promise<Map<number, ExportedParticle[]>> {
     return this.particleSystem.exportTrajectories(
       startFrame,
       endFrame,
@@ -1160,7 +1330,7 @@ export class ParticleLayer extends BaseLayer {
   /**
    * Get current active particles (for single-frame export)
    */
-  getActiveParticles(): import("../particles/GPUParticleSystem").ExportedParticle[] {
+  getActiveParticles(): ExportedParticle[] {
     return this.particleSystem.getActiveParticles();
   }
 
@@ -1174,9 +1344,14 @@ export class ParticleLayer extends BaseLayer {
    */
   private calculateRemappedFrame(compositionFrame: number): number {
     // If speed map is enabled, use that
-    if (this.particleData?.speedMapEnabled && this.particleData.speedMap?.animated) {
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const particleData = this.particleData;
+    const speedMapEnabled = (particleData != null && typeof particleData === "object" && "speedMapEnabled" in particleData && particleData.speedMapEnabled === true) ? particleData.speedMapEnabled : false;
+    const speedMap = (particleData != null && typeof particleData === "object" && "speedMap" in particleData && particleData.speedMap != null && typeof particleData.speedMap === "object") ? particleData.speedMap : undefined;
+    const speedMapAnimated = (speedMap != null && typeof speedMap === "object" && "animated" in speedMap && speedMap.animated === true) ? speedMap.animated : false;
+    if (speedMapEnabled && speedMapAnimated) {
       const remappedTime = this.particleEvaluator.evaluate(
-        this.particleData.speedMap,
+        speedMap,
         compositionFrame,
       );
       // Validate remapped time (NaN would break simulation)
@@ -1186,7 +1361,10 @@ export class ParticleLayer extends BaseLayer {
     }
 
     // Get layer's timeStretch if available (100 = normal, 200 = half speed, -100 = reversed)
-    const rawTimeStretch = this.layerData.timeStretch ?? 100;
+    // Type proof: timeStretch ∈ number | undefined → number
+    const rawTimeStretch = isFiniteNumber(this.layerData.timeStretch)
+      ? this.layerData.timeStretch
+      : 100;
     const timeStretch = Number.isFinite(rawTimeStretch) ? rawTimeStretch : 100;
     const isReversed = timeStretch < 0;
 
@@ -1194,17 +1372,22 @@ export class ParticleLayer extends BaseLayer {
     const stretchFactor = timeStretch !== 0 ? 100 / Math.abs(timeStretch) : 0;
 
     // Calculate frame relative to layer start
-    const layerStartFrame = this.layerData.startFrame ?? 0;
+    // Type proof: startFrame ∈ number | undefined → number
+    const layerStartFrame = isFiniteNumber(this.layerData.startFrame) && Number.isInteger(this.layerData.startFrame)
+      ? this.layerData.startFrame
+      : 0;
     const relativeFrame = compositionFrame - layerStartFrame;
 
     // Apply time stretch
     let simulationFrame = Math.floor(relativeFrame * stretchFactor);
 
     // Handle reversed playback
-    if (isReversed && this.particleData?.systemConfig) {
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const systemConfig = (particleData != null && typeof particleData === "object" && "systemConfig" in particleData && particleData.systemConfig != null && typeof particleData.systemConfig === "object") ? particleData.systemConfig : undefined;
+    if (isReversed && systemConfig) {
       // For reversed particles, simulate to max then play backwards
       // This requires a different approach - simulate fully then index backwards
-      const maxFrames = this.particleData.systemConfig.maxParticles > 0 ? 300 : 0; // Reasonable max
+      const maxFrames = systemConfig.maxParticles > 0 ? 300 : 0; // Reasonable max
       simulationFrame = Math.max(0, maxFrames - simulationFrame);
     }
 
@@ -1250,7 +1433,10 @@ export class ParticleLayer extends BaseLayer {
   ): void {
     // ParticleLayer needs to step the simulation for the current frame
     // The evaluated state includes the frame number for deterministic simulation
-    const frame = state.frame ?? 0;
+    // Type proof: frame ∈ number | undefined → number
+    const frame = isFiniteNumber(state.frame) && Number.isInteger(state.frame) && state.frame >= 0
+      ? state.frame
+      : 0;
 
     // Store per-emitter audio modifiers for targeted emission rate control
     this.currentEmitterAudioModifiers = state.emitterAudioModifiers as
@@ -1294,8 +1480,14 @@ export class ParticleLayer extends BaseLayer {
       if (!baseValues) continue;
 
       // Get emitter-specific audio modifiers (may have different emission rate multiplier)
-      const emitterMods = this.currentEmitterAudioModifiers?.get(emitter.id);
-      const emissionRateMod = emitterMods?.emissionRate ?? layerEmissionRate;
+      // Type proof: emitterMods ∈ ParticleAudioReactiveModifiers | undefined
+      const emitterMods = this.currentEmitterAudioModifiers !== undefined && this.currentEmitterAudioModifiers !== null && typeof this.currentEmitterAudioModifiers === "object" && typeof this.currentEmitterAudioModifiers.get === "function"
+        ? this.currentEmitterAudioModifiers.get(emitter.id)
+        : undefined;
+      // Type proof: emissionRate ∈ number | undefined → number
+      const emissionRateMod = emitterMods !== undefined && typeof emitterMods === "object" && emitterMods !== null && "emissionRate" in emitterMods && isFiniteNumber(emitterMods.emissionRate)
+        ? emitterMods.emissionRate
+        : layerEmissionRate;
 
       if (emissionRateMod !== 0) {
         // Modulate emission rate: base * (0.5 + mod) for range 0.5x to 1.5x
@@ -1333,11 +1525,25 @@ export class ParticleLayer extends BaseLayer {
       if (!baseValues) continue;
 
       // Get emitter-specific modifiers (allows different audio response per emitter)
-      const emitterMods = this.currentEmitterAudioModifiers?.get(emitter.id);
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const emitterMods = (this.currentEmitterAudioModifiers != null && typeof this.currentEmitterAudioModifiers === "object" && typeof this.currentEmitterAudioModifiers.get === "function") ? this.currentEmitterAudioModifiers.get(emitter.id) : undefined;
 
       // Use emitter-specific values if available, otherwise fall back to layer-level
-      const speed = emitterMods?.speed ?? layerSpeed;
-      const size = emitterMods?.size ?? layerSize;
+      // Type proof: speed ∈ number | undefined → number
+      const speed = emitterMods !== undefined && typeof emitterMods === "object" && emitterMods !== null && "speed" in emitterMods && isFiniteNumber(emitterMods.speed)
+        ? emitterMods.speed
+        : layerSpeed;
+      // Type proof: size ∈ number | undefined → number
+      const size = emitterMods !== undefined && typeof emitterMods === "object" && emitterMods !== null && "size" in emitterMods && isFiniteNumber(emitterMods.size)
+        ? emitterMods.size
+        : layerSize;
+
+      // CRITICAL: Always reset to base values FIRST to prevent compounding
+      // This ensures values are correct even if GPUParticleSystem.applyAudioModulation() ran during step()
+      this.particleSystem.updateEmitter(emitter.id, {
+        initialSpeed: baseValues.initialSpeed,
+        initialSize: baseValues.initialSize,
+      });
 
       // Speed modulation (0.5 base + audio value for range 0.5x to 1.5x)
       if (speed !== 0) {
@@ -1360,17 +1566,23 @@ export class ParticleLayer extends BaseLayer {
     if (gravity !== 0 || windStrength !== 0) {
       const forceFields = this.particleSystem.getConfig().forceFields;
       for (const field of forceFields) {
-        const baseValues = this.baseForceFieldValues.get(field.id);
-        if (!baseValues) continue;
+        const baseFieldValues = this.baseForceFieldValues.get(field.id);
+        if (!baseFieldValues) continue;
+
+        // CRITICAL: Always reset to base values FIRST to prevent compounding
+        // This ensures values are correct even if GPUParticleSystem.applyAudioModulation() ran during step()
+        this.particleSystem.updateForceField(field.id, {
+          strength: baseFieldValues.strength,
+        });
 
         if (field.type === "gravity" && gravity !== 0) {
           this.particleSystem.updateForceField(field.id, {
-            strength: baseValues.strength * (0.5 + gravity),
+            strength: baseFieldValues.strength * (0.5 + gravity),
           });
         }
         if (field.type === "wind" && windStrength !== 0) {
           this.particleSystem.updateForceField(field.id, {
-            strength: baseValues.strength * (0.5 + windStrength),
+            strength: baseFieldValues.strength * (0.5 + windStrength),
           });
         }
       }
@@ -1407,7 +1619,8 @@ export class ParticleLayer extends BaseLayer {
       this.particleSystem.dispose();
 
       // Create new system with deterministic seed
-      this.particleSystem = new GPUParticleSystem(this.systemConfig);
+      // Always use verified system - GPUParticleSystem class has been removed
+      this.particleSystem = new VerifiedGPUParticleSystem(this.systemConfig);
 
       // Reset evaluation state
       this.lastEvaluatedFrame = -1;
@@ -1488,9 +1701,13 @@ export class ParticleLayer extends BaseLayer {
 
       case "circle": {
         // Circle emitter: ring shape
+        // Type proof: radius ∈ number | undefined → number
+        const circleRadiusGizmo = emitter.shape !== undefined && typeof emitter.shape === "object" && emitter.shape !== null && "radius" in emitter.shape && isFiniteNumber(emitter.shape.radius) && emitter.shape.radius >= 0
+          ? emitter.shape.radius
+          : 50;
         const ringGeom = new THREE.RingGeometry(
-          (emitter.shape.radius ?? 50) * 0.8,
-          emitter.shape.radius ?? 50,
+          circleRadiusGizmo * 0.8,
+          circleRadiusGizmo,
           32,
         );
         const ringMat = new THREE.MeshBasicMaterial({
@@ -1507,8 +1724,12 @@ export class ParticleLayer extends BaseLayer {
 
       case "sphere": {
         // Sphere emitter: wireframe sphere
+        // Type proof: radius ∈ number | undefined → number
+        const sphereRadiusGizmo = emitter.shape !== undefined && typeof emitter.shape === "object" && emitter.shape !== null && "radius" in emitter.shape && isFiniteNumber(emitter.shape.radius) && emitter.shape.radius >= 0
+          ? emitter.shape.radius
+          : 50;
         const sphereGeom = new THREE.SphereGeometry(
-          emitter.shape.radius ?? 50,
+          sphereRadiusGizmo,
           16,
           16,
         );
@@ -1526,10 +1747,22 @@ export class ParticleLayer extends BaseLayer {
 
       case "box": {
         // Box emitter: wireframe box
+        // Type proof: boxSize.x ∈ number | undefined → number
+        const boxSizeX = emitter.shape !== undefined && typeof emitter.shape === "object" && emitter.shape !== null && "boxSize" in emitter.shape && emitter.shape.boxSize !== undefined && typeof emitter.shape.boxSize === "object" && emitter.shape.boxSize !== null && "x" in emitter.shape.boxSize && isFiniteNumber(emitter.shape.boxSize.x) && emitter.shape.boxSize.x >= 0
+          ? emitter.shape.boxSize.x
+          : 100;
+        // Type proof: boxSize.y ∈ number | undefined → number
+        const boxSizeY = emitter.shape !== undefined && typeof emitter.shape === "object" && emitter.shape !== null && "boxSize" in emitter.shape && emitter.shape.boxSize !== undefined && typeof emitter.shape.boxSize === "object" && emitter.shape.boxSize !== null && "y" in emitter.shape.boxSize && isFiniteNumber(emitter.shape.boxSize.y) && emitter.shape.boxSize.y >= 0
+          ? emitter.shape.boxSize.y
+          : 100;
+        // Type proof: boxSize.z ∈ ℝ ∪ {undefined} → z ∈ ℝ
+        const boxSizeZ = emitter.shape !== undefined && typeof emitter.shape === "object" && emitter.shape !== null && "boxSize" in emitter.shape && emitter.shape.boxSize !== undefined && typeof emitter.shape.boxSize === "object" && emitter.shape.boxSize !== null && "z" in emitter.shape.boxSize && isFiniteNumber(emitter.shape.boxSize.z)
+          ? emitter.shape.boxSize.z
+          : 0;
         const boxGeom = new THREE.BoxGeometry(
-          emitter.shape.boxSize?.x ?? 100,
-          emitter.shape.boxSize?.y ?? 100,
-          emitter.shape.boxSize?.z ?? 100,
+          boxSizeX,
+          boxSizeY,
+          boxSizeZ,
         );
         const boxMat = new THREE.MeshBasicMaterial({
           color: 0x00ff88,
@@ -1545,9 +1778,17 @@ export class ParticleLayer extends BaseLayer {
 
       case "cone": {
         // Cone emitter: wireframe cone
+        // Type proof: coneRadius ∈ number | undefined → number
+        const coneRadiusGizmoFinal = emitter.shape !== undefined && typeof emitter.shape === "object" && emitter.shape !== null && "coneRadius" in emitter.shape && isFiniteNumber(emitter.shape.coneRadius) && emitter.shape.coneRadius >= 0
+          ? emitter.shape.coneRadius
+          : 30;
+        // Type proof: coneLength ∈ number | undefined → number
+        const coneLengthGizmoFinal = emitter.shape !== undefined && typeof emitter.shape === "object" && emitter.shape !== null && "coneLength" in emitter.shape && isFiniteNumber(emitter.shape.coneLength) && emitter.shape.coneLength >= 0
+          ? emitter.shape.coneLength
+          : 100;
         const coneGeom = new THREE.ConeGeometry(
-          emitter.shape.coneRadius ?? 30,
-          emitter.shape.coneLength ?? 100,
+          coneRadiusGizmoFinal,
+          coneLengthGizmoFinal,
           16,
           1,
           true,
@@ -1637,10 +1878,14 @@ export class ParticleLayer extends BaseLayer {
       case "gravity":
       case "wind": {
         // Arrow pointing in force direction
+        // Type proof: direction ∈ { x: number; y: number; z: number } | undefined → { x: number; y: number; z: number }
+        const fieldDirection = field !== undefined && typeof field === "object" && field !== null && "direction" in field && field.direction !== undefined && typeof field.direction === "object" && field.direction !== null && "x" in field.direction && "y" in field.direction && "z" in field.direction && isFiniteNumber(field.direction.x) && isFiniteNumber(field.direction.y) && isFiniteNumber(field.direction.z)
+          ? field.direction
+          : { x: 0, y: 1, z: 0 };
         const dir =
-          field.type === "wind" && field.windDirection
+          field.type === "wind" && field.windDirection !== undefined && typeof field.windDirection === "object" && field.windDirection !== null && "x" in field.windDirection && "y" in field.windDirection && "z" in field.windDirection && isFiniteNumber(field.windDirection.x) && isFiniteNumber(field.windDirection.y) && isFiniteNumber(field.windDirection.z)
             ? field.windDirection
-            : (field.direction ?? { x: 0, y: 1, z: 0 });
+            : fieldDirection;
 
         const arrowLength = 60;
         const arrowPoints = [
@@ -2181,7 +2426,7 @@ export class ParticleLayer extends BaseLayer {
   /**
    * Get the underlying particle system for advanced operations
    */
-  getParticleSystem(): GPUParticleSystem {
+  getParticleSystem(): VerifiedGPUParticleSystem {
     return this.particleSystem;
   }
 

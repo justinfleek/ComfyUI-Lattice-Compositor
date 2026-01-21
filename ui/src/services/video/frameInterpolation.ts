@@ -12,6 +12,8 @@
  * @module services/video/frameInterpolation
  */
 
+import { isFiniteNumber } from "@/utils/typeGuards";
+
 // ============================================================================
 // Types
 // ============================================================================
@@ -174,15 +176,32 @@ export async function interpolateFramePair(
     const frame1B64 = await frameToBase64(frame1);
     const frame2B64 = await frameToBase64(frame2);
 
+    // Type proof: count ∈ number | undefined → number
+    const count = isFiniteNumber(options.count) && options.count > 0
+      ? options.count
+      : 1;
+    // Type proof: model ∈ RIFEModel | undefined → RIFEModel
+    const model = typeof options.model === "string" &&
+      (options.model === "rife-v4.6" ||
+        options.model === "rife-v4.0" ||
+        options.model === "rife-v3.9" ||
+        options.model === "film")
+      ? options.model
+      : "rife-v4.6";
+    // Type proof: ensemble ∈ boolean | undefined → boolean
+    const ensemble = typeof options.ensemble === "boolean"
+      ? options.ensemble
+      : false;
+
     const response = await fetch(`${API_BASE}/pair`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         frame1: frame1B64,
         frame2: frame2B64,
-        count: options.count ?? 1,
-        model: options.model ?? "rife-v4.6",
-        ensemble: options.ensemble ?? false,
+        count,
+        model,
+        ensemble,
       }),
     });
 
@@ -234,14 +253,32 @@ export async function interpolateSequence(
   try {
     const framesB64 = await Promise.all(frames.map((f) => frameToBase64(f)));
 
+    // Type proof: factor ∈ InterpolationFactor | undefined → InterpolationFactor
+    const factor = isFiniteNumber(options.factor) &&
+      (options.factor === 2 || options.factor === 4 || options.factor === 8)
+      ? (options.factor as InterpolationFactor)
+      : 2;
+    // Type proof: model ∈ RIFEModel | undefined → RIFEModel
+    const model = typeof options.model === "string" &&
+      (options.model === "rife-v4.6" ||
+        options.model === "rife-v4.0" ||
+        options.model === "rife-v3.9" ||
+        options.model === "film")
+      ? options.model
+      : "rife-v4.6";
+    // Type proof: ensemble ∈ boolean | undefined → boolean
+    const ensemble = typeof options.ensemble === "boolean"
+      ? options.ensemble
+      : false;
+
     const response = await fetch(`${API_BASE}/sequence`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         frames: framesB64,
-        factor: options.factor ?? 2,
-        model: options.model ?? "rife-v4.6",
-        ensemble: options.ensemble ?? false,
+        factor,
+        model,
+        ensemble,
       }),
     });
 

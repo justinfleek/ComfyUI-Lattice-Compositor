@@ -10,6 +10,7 @@ import {
   type EvaluatedEffectParams,
   registerEffectRenderer,
 } from "../effectProcessor";
+import { hasXY, isFiniteNumber } from "@/utils/typeGuards";
 
 // ============================================================================
 // SIMPLEX NOISE IMPLEMENTATION
@@ -158,26 +159,7 @@ class SimplexNoise {
 // HELPER: NaN-safe number extraction
 // ============================================================================
 
-/**
- * Safely extract a numeric value, returning default if NaN/undefined/null
- * Optionally clamps to min/max bounds
- *
- * Note: NaN values bypass Math.max/min clamps - validate inputs.
- */
-function safeNum(
-  val: unknown,
-  def: number,
-  min?: number,
-  max?: number,
-): number {
-  const num = typeof val === "number" && Number.isFinite(val) ? val : def;
-  if (min !== undefined && max !== undefined) {
-    return Math.max(min, Math.min(max, num));
-  }
-  if (min !== undefined) return Math.max(min, num);
-  if (max !== undefined) return Math.min(max, num);
-  return num;
-}
+// safeNum helper removed - use isFiniteNumber from @/utils/typeGuards instead
 
 // ============================================================================
 // TRANSFORM EFFECT
@@ -202,21 +184,46 @@ export function transformRenderer(
   params: EvaluatedEffectParams,
 ): EffectStackResult {
   // Validate numeric params to prevent NaN propagation through transform chain
-  const anchorPoint = params.anchor_point ?? { x: 0.5, y: 0.5 };
-  const position = params.position ?? { x: 0.5, y: 0.5 };
+  const rawAnchorPoint = params.anchor_point;
+  const rawPosition = params.position;
+  const anchorPoint = hasXY(rawAnchorPoint) ? rawAnchorPoint : { x: 0.5, y: 0.5 };
+  const position = hasXY(rawPosition) ? rawPosition : { x: 0.5, y: 0.5 };
 
   // Validate anchor and position coordinates
-  const anchorX_norm = safeNum(anchorPoint.x, 0.5, 0, 1);
-  const anchorY_norm = safeNum(anchorPoint.y, 0.5, 0, 1);
-  const posX_norm = safeNum(position.x, 0.5, 0, 1);
-  const posY_norm = safeNum(position.y, 0.5, 0, 1);
+  // Type proof: anchorPoint.x ∈ ℝ ∧ finite(anchorPoint.x) → anchorPoint.x ∈ [0, 1]
+  const anchorX_norm = isFiniteNumber(anchorPoint.x) ? Math.max(0, Math.min(1, anchorPoint.x)) : 0.5;
+  const anchorY_norm = isFiniteNumber(anchorPoint.y) ? Math.max(0, Math.min(1, anchorPoint.y)) : 0.5;
+  const posX_norm = isFiniteNumber(position.x) ? Math.max(0, Math.min(1, position.x)) : 0.5;
+  const posY_norm = isFiniteNumber(position.y) ? Math.max(0, Math.min(1, position.y)) : 0.5;
 
-  const scaleWidth = safeNum(params.scale_width, 100, 0.01, 10000) / 100;
-  const scaleHeight = safeNum(params.scale_height, 100, 0.01, 10000) / 100;
-  const skew = (safeNum(params.skew, 0, -85, 85) * Math.PI) / 180;
-  const skewAxis = (safeNum(params.skew_axis, 0, -360, 360) * Math.PI) / 180;
-  const rotation = (safeNum(params.rotation, 0) * Math.PI) / 180;
-  const opacity = safeNum(params.opacity, 100, 0, 100) / 100;
+  // Type proof: scale_width ∈ ℝ ∧ finite(scale_width) → scale_width ∈ [0.01, 10000]
+  const scaleWidthValue = params.scale_width;
+  const scaleWidth = isFiniteNumber(scaleWidthValue)
+    ? Math.max(0.01, Math.min(10000, scaleWidthValue)) / 100
+    : 1;
+  // Type proof: scale_height ∈ ℝ ∧ finite(scale_height) → scale_height ∈ [0.01, 10000]
+  const scaleHeightValue = params.scale_height;
+  const scaleHeight = isFiniteNumber(scaleHeightValue)
+    ? Math.max(0.01, Math.min(10000, scaleHeightValue)) / 100
+    : 1;
+  // Type proof: skew ∈ ℝ ∧ finite(skew) → skew ∈ [-85, 85]
+  const skewValue = params.skew;
+  const skew = isFiniteNumber(skewValue)
+    ? (Math.max(-85, Math.min(85, skewValue)) * Math.PI) / 180
+    : 0;
+  // Type proof: skew_axis ∈ ℝ ∧ finite(skew_axis) → skew_axis ∈ [-360, 360]
+  const skewAxisValue = params.skew_axis;
+  const skewAxis = isFiniteNumber(skewAxisValue)
+    ? (Math.max(-360, Math.min(360, skewAxisValue)) * Math.PI) / 180
+    : 0;
+  // Type proof: rotation ∈ ℝ ∧ finite(rotation) → rotation ∈ ℝ
+  const rotationValue = params.rotation;
+  const rotation = isFiniteNumber(rotationValue) ? (rotationValue * Math.PI) / 180 : 0;
+  // Type proof: opacity ∈ ℝ ∧ finite(opacity) → opacity ∈ [0, 100]
+  const opacityValue = params.opacity;
+  const opacity = isFiniteNumber(opacityValue)
+    ? Math.max(0, Math.min(100, opacityValue)) / 100
+    : 1;
 
   const { width, height } = input.canvas;
   const output = createMatchingCanvas(input.canvas);
@@ -267,11 +274,25 @@ export function warpRenderer(
   input: EffectStackResult,
   params: EvaluatedEffectParams,
 ): EffectStackResult {
-  const warpStyle = params.warp_style ?? "arc";
+  // Type proof: warp_style ∈ {"arc", "wave", "bulge"} ∪ {undefined}
+  const warpStyleValue = params.warp_style;
+  const warpStyle = typeof warpStyleValue === "string" ? warpStyleValue : "arc";
   // Validate numeric params to prevent NaN bypassing zero-checks
-  const bend = safeNum(params.bend, 0, -100, 100) / 100;
-  const hDistort = safeNum(params.horizontal_distortion, 0, -100, 100) / 100;
-  const vDistort = safeNum(params.vertical_distortion, 0, -100, 100) / 100;
+  // Type proof: bend ∈ ℝ ∧ finite(bend) → bend ∈ [-100, 100]
+  const bendValue = params.bend;
+  const bend = isFiniteNumber(bendValue)
+    ? Math.max(-100, Math.min(100, bendValue)) / 100
+    : 0;
+  // Type proof: horizontal_distortion ∈ ℝ ∧ finite(horizontal_distortion) → horizontal_distortion ∈ [-100, 100]
+  const hDistortValue = params.horizontal_distortion;
+  const hDistort = isFiniteNumber(hDistortValue)
+    ? Math.max(-100, Math.min(100, hDistortValue)) / 100
+    : 0;
+  // Type proof: vertical_distortion ∈ ℝ ∧ finite(vertical_distortion) → vertical_distortion ∈ [-100, 100]
+  const vDistortValue = params.vertical_distortion;
+  const vDistort = isFiniteNumber(vDistortValue)
+    ? Math.max(-100, Math.min(100, vDistortValue)) / 100
+    : 0;
 
   // No warp needed (NaN params now safely default to 0)
   if (bend === 0 && hDistort === 0 && vDistort === 0) {
@@ -587,16 +608,37 @@ export function displacementMapRenderer(
   input: EffectStackResult,
   params: EvaluatedEffectParams,
 ): EffectStackResult {
-  const mapType = params.map_type ?? "layer";
-  const mapBehavior = (params.displacement_map_behavior ??
-    "stretch") as MapBehavior;
-  const useHorizontal = params.use_for_horizontal ?? "red";
-  const useVertical = params.use_for_vertical ?? "green";
+  // Type proof: map_type ∈ {"layer", "radial", "spiral", "noise"} ∪ {undefined}
+  const mapTypeValue = params.map_type;
+  const mapType = typeof mapTypeValue === "string" ? mapTypeValue : "layer";
+  // Type proof: displacement_map_behavior ∈ {"stretch", "tile", "clamp"} ∪ {undefined}
+  const mapBehaviorValue = params.displacement_map_behavior;
+  const mapBehavior = (typeof mapBehaviorValue === "string" ? mapBehaviorValue : "stretch") as MapBehavior;
+  // Type proof: use_for_horizontal ∈ {"red", "green", "blue", "alpha", "luminance", "off"} ∪ {undefined}
+  const useHorizontalValue = params.use_for_horizontal;
+  const useHorizontal = typeof useHorizontalValue === "string" ? useHorizontalValue : "red";
+  // Type proof: use_for_vertical ∈ {"red", "green", "blue", "alpha", "luminance", "off"} ∪ {undefined}
+  const useVerticalValue = params.use_for_vertical;
+  const useVertical = typeof useVerticalValue === "string" ? useVerticalValue : "green";
   // Validate displacement limits to prevent NaN in pixel offset calculations
-  const maxHorizontal = safeNum(params.max_horizontal, 0, -4000, 4000);
-  const maxVertical = safeNum(params.max_vertical, 0, -4000, 4000);
-  const wrapMode = params.edge_behavior ?? "off";
-  const mapScale = safeNum(params.map_scale, 1, 0.1, 10);
+  // Type proof: max_horizontal ∈ ℝ ∧ finite(max_horizontal) → max_horizontal ∈ [-4000, 4000]
+  const maxHorizontalValue = params.max_horizontal;
+  const maxHorizontal = isFiniteNumber(maxHorizontalValue)
+    ? Math.max(-4000, Math.min(4000, maxHorizontalValue))
+    : 0;
+  // Type proof: max_vertical ∈ ℝ ∧ finite(max_vertical) → max_vertical ∈ [-4000, 4000]
+  const maxVerticalValue = params.max_vertical;
+  const maxVertical = isFiniteNumber(maxVerticalValue)
+    ? Math.max(-4000, Math.min(4000, maxVerticalValue))
+    : 0;
+  // Type proof: edge_behavior ∈ {"off", "wrap", "clamp"} ∪ {undefined}
+  const wrapModeValue = params.edge_behavior;
+  const wrapMode = typeof wrapModeValue === "string" ? wrapModeValue : "off";
+  // Type proof: map_scale ∈ ℝ ∧ finite(map_scale) → map_scale ∈ [0.1, 10]
+  const mapScaleValue = params.map_scale;
+  const mapScale = isFiniteNumber(mapScaleValue)
+    ? Math.max(0.1, Math.min(10, mapScaleValue))
+    : 1;
 
   // Check for pre-rendered layer canvas (injected by render pipeline)
   const mapLayerCanvas = params._mapLayerCanvas as
@@ -822,24 +864,54 @@ export function turbulentDisplaceRenderer(
   input: EffectStackResult,
   params: EvaluatedEffectParams,
 ): EffectStackResult {
-  const displacementType = (params.displacement ??
-    "turbulent") as TurbulentDisplaceType;
+  // Type proof: displacement ∈ {"turbulent", "fractal"} ∪ {undefined}
+  const displacementTypeValue = params.displacement;
+  const displacementType = (typeof displacementTypeValue === "string" ? displacementTypeValue : "turbulent") as TurbulentDisplaceType;
   // Validate turbulence params to prevent NaN in noise calculations
-  const amount = safeNum(params.amount, 50, 0, 1000);
-  const size = safeNum(params.size, 100, 1, 1000);
+  // Type proof: amount ∈ ℝ ∧ finite(amount) → amount ∈ [0, 1000]
+  const amountValue = params.amount;
+  const amount = isFiniteNumber(amountValue)
+    ? Math.max(0, Math.min(1000, amountValue))
+    : 50;
+  // Type proof: size ∈ ℝ ∧ finite(size) → size ∈ [1, 1000]
+  const sizeValue = params.size;
+  const size = isFiniteNumber(sizeValue)
+    ? Math.max(1, Math.min(1000, sizeValue))
+    : 100;
   // Complexity must be integer 1-10, NaN would bypass Math.max/min
-  const complexityRaw = safeNum(params.complexity, 3, 1, 10);
+  // Type proof: complexity ∈ ℕ ∧ finite(complexity) → complexity ∈ [1, 10]
+  const complexityValue = params.complexity;
+  const complexityRaw = isFiniteNumber(complexityValue)
+    ? Math.max(1, Math.min(10, complexityValue))
+    : 3;
   const complexity = Math.floor(complexityRaw);
-  const evolutionDeg = safeNum(params.evolution, 0);
-  const cycleEvolution = params.cycle_evolution ?? false;
-  const cycleRevolutions = safeNum(params.cycle_revolutions, 1, 1, 100);
-  const randomSeed = safeNum(params.random_seed, 0, 0, 99999);
-  const offsetRaw = params.offset ?? { x: 0, y: 0 };
-  const offset = {
-    x: safeNum(offsetRaw.x, 0),
-    y: safeNum(offsetRaw.y, 0),
-  };
-  const pinning = (params.pinning ?? "none") as PinningType;
+  // Type proof: evolution ∈ ℝ ∧ finite(evolution) → evolution ∈ ℝ
+  const evolutionValue = params.evolution;
+  const evolutionDeg = isFiniteNumber(evolutionValue) ? evolutionValue : 0;
+  // Type proof: cycle_evolution ∈ {true, false}
+  const cycleEvolution = typeof params.cycle_evolution === "boolean" ? params.cycle_evolution : false;
+  // Type proof: cycle_revolutions ∈ ℕ ∧ finite(cycle_revolutions) → cycle_revolutions ∈ [1, 100]
+  const cycleRevolutionsValue = params.cycle_revolutions;
+  const cycleRevolutions = isFiniteNumber(cycleRevolutionsValue) && Number.isInteger(cycleRevolutionsValue)
+    ? Math.max(1, Math.min(100, cycleRevolutionsValue))
+    : 1;
+  // Type proof: random_seed ∈ ℕ ∧ finite(random_seed) → random_seed ∈ [0, 99999]
+  const randomSeedValue = params.random_seed;
+  const randomSeed = isFiniteNumber(randomSeedValue) && Number.isInteger(randomSeedValue)
+    ? Math.max(0, Math.min(99999, randomSeedValue))
+    : 0;
+  const rawOffset = params.offset;
+  const offsetRaw = hasXY(rawOffset) ? rawOffset : { x: 0, y: 0 };
+  // Type proof: offset.x ∈ ℝ ∧ finite(offset.x) → offset.x ∈ ℝ
+  const offsetXValue = offsetRaw.x;
+  const offsetX = isFiniteNumber(offsetXValue) ? offsetXValue : 0;
+  // Type proof: offset.y ∈ ℝ ∧ finite(offset.y) → offset.y ∈ ℝ
+  const offsetYValue = offsetRaw.y;
+  const offsetY = isFiniteNumber(offsetYValue) ? offsetYValue : 0;
+  const offset = { x: offsetX, y: offsetY };
+  // Type proof: pinning ∈ {"none", "pin-all", "pin-horizontal", "pin-vertical"} ∪ {undefined}
+  const pinningValue = params.pinning;
+  const pinning = (typeof pinningValue === "string" ? pinningValue : "none") as PinningType;
 
   // No displacement if amount is 0 (NaN params now safely default)
   if (amount === 0) {
@@ -1139,16 +1211,38 @@ export function rippleDistortRenderer(
   params: EvaluatedEffectParams,
 ): EffectStackResult {
   // Validate center and radius params to prevent NaN in polar calculations
-  const centerRaw = params.center ?? { x: 0.5, y: 0.5 };
-  const center = {
-    x: safeNum(centerRaw.x, 0.5, 0, 1),
-    y: safeNum(centerRaw.y, 0.5, 0, 1),
-  };
-  const radius = safeNum(params.radius, 200, 0, 10000);
-  const wavelength = safeNum(params.wavelength, 50, 1, 1000);
-  const amplitude = safeNum(params.amplitude, 20, 0, 1000);
-  const phaseDeg = safeNum(params.phase, 0);
-  const decay = safeNum(params.decay, 50, 0, 100) / 100;
+  const rawCenter = params.center;
+  const centerRaw = hasXY(rawCenter) ? rawCenter : { x: 0.5, y: 0.5 };
+  // Type proof: center.x ∈ ℝ ∧ finite(center.x) → center.x ∈ [0, 1]
+  const centerXValue = centerRaw.x;
+  const centerX = isFiniteNumber(centerXValue) ? Math.max(0, Math.min(1, centerXValue)) : 0.5;
+  // Type proof: center.y ∈ ℝ ∧ finite(center.y) → center.y ∈ [0, 1]
+  const centerYValue = centerRaw.y;
+  const centerY = isFiniteNumber(centerYValue) ? Math.max(0, Math.min(1, centerYValue)) : 0.5;
+  const center = { x: centerX, y: centerY };
+  // Type proof: radius ∈ ℝ ∧ finite(radius) → radius ∈ [0, 10000]
+  const radiusValue = params.radius;
+  const radius = isFiniteNumber(radiusValue)
+    ? Math.max(0, Math.min(10000, radiusValue))
+    : 200;
+  // Type proof: wavelength ∈ ℝ ∧ finite(wavelength) → wavelength ∈ [1, 1000]
+  const wavelengthValue = params.wavelength;
+  const wavelength = isFiniteNumber(wavelengthValue)
+    ? Math.max(1, Math.min(1000, wavelengthValue))
+    : 50;
+  // Type proof: amplitude ∈ ℝ ∧ finite(amplitude) → amplitude ∈ [0, 1000]
+  const amplitudeValue = params.amplitude;
+  const amplitude = isFiniteNumber(amplitudeValue)
+    ? Math.max(0, Math.min(1000, amplitudeValue))
+    : 20;
+  // Type proof: phase ∈ ℝ ∧ finite(phase) → phase ∈ ℝ
+  const phaseValue = params.phase;
+  const phaseDeg = isFiniteNumber(phaseValue) ? phaseValue : 0;
+  // Type proof: decay ∈ ℝ ∧ finite(decay) → decay ∈ [0, 100]
+  const decayValue = params.decay;
+  const decay = isFiniteNumber(decayValue)
+    ? Math.max(0, Math.min(100, decayValue)) / 100
+    : 0.5;
 
   // No effect if amplitude is 0 (NaN params now safely default)
   if (amplitude === 0) {
@@ -1163,14 +1257,14 @@ export function rippleDistortRenderer(
   const outputData = output.ctx.createImageData(width, height);
   const dst = outputData.data;
 
-  const centerX = center.x * width;
-  const centerY = center.y * height;
+  const centerXPixels = center.x * width;
+  const centerYPixels = center.y * height;
   const phase = (phaseDeg * Math.PI) / 180;
 
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
-      const dx = x - centerX;
-      const dy = y - centerY;
+      const dx = x - centerXPixels;
+      const dy = y - centerYPixels;
       const dist = Math.sqrt(dx * dx + dy * dy);
 
       let srcX = x;

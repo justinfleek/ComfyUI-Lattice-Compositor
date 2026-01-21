@@ -211,7 +211,8 @@ export class ShapeLayer extends BaseLayer {
     // THREE.CanvasTexture.image accepts HTMLCanvasElement | OffscreenCanvas,
     // but TypeScript types may not include OffscreenCanvas - cast is safe here
     // as THREE.js runtime supports OffscreenCanvas
-    this.texture.image = this.canvas as HTMLCanvasElement;
+    // System F/Omega: Use `as unknown as` for intentional conversions when runtime supports it
+    this.texture.image = this.canvas as unknown as HTMLCanvasElement;
     this.texture.needsUpdate = true;
 
     // Update mesh geometry
@@ -285,9 +286,10 @@ export class ShapeLayer extends BaseLayer {
   protected override onApplyEvaluatedState(
     state: import("../MotionEngine").EvaluatedLayer,
   ): void {
-    // Shape-specific state could include animated shape properties
-    if (state.shapeData) {
-      this.shapeData = state.shapeData;
+    // Shape-specific state accessed through layerRef.data (static data)
+    // Animated properties are in state.properties
+    if (state.layerRef && state.layerRef.type === "shape" && state.layerRef.data) {
+      this.shapeData = state.layerRef.data as ShapeLayerData;
     }
     this.renderShape();
   }
@@ -925,7 +927,9 @@ export class ShapeLayer extends BaseLayer {
       add: "lighter",
       "linear-dodge": "lighter",
     };
-    return modeMap[blendMode] ?? null;
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+    const mapped = modeMap[blendMode];
+    return (mapped !== null && mapped !== undefined && typeof mapped === "string") ? mapped : null;
   }
 
   /**

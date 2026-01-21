@@ -160,9 +160,11 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
-import { useCompositorStore } from "@/stores/compositorStore";
 import { useEffectStore } from "@/stores/effectStore";
 import { useKeyframeStore } from "@/stores/keyframeStore";
+import { useSelectionStore } from "@/stores/selectionStore";
+import { useProjectStore } from "@/stores/projectStore";
+import { useAnimationStore } from "@/stores/animationStore";
 import {
   ANIMATION_PRESETS,
   type AnimationPreset,
@@ -171,8 +173,25 @@ import {
   type EffectCategory,
 } from "@/types/effects";
 
-const store = useCompositorStore();
+const selectionStore = useSelectionStore();
+const projectStore = useProjectStore();
 const effectStore = useEffectStore();
+const animationStore = useAnimationStore();
+
+// Helper function to create EffectStoreAccess
+function getEffectStoreAccess() {
+  return {
+    project: {
+      meta: { modified: projectStore.project.meta.modified },
+    },
+    get currentFrame() {
+      return animationStore.currentFrame;
+    },
+    getActiveCompLayers: () => projectStore.getActiveCompLayers(),
+    getActiveComp: () => projectStore.getActiveComp(),
+    pushHistory: () => projectStore.pushHistory(),
+  };
+}
 
 // State
 const activeTab = ref<"effects" | "presets" | "favorites">("effects");
@@ -303,26 +322,32 @@ function toggleFavorite(effectKey: string) {
 }
 
 function getCategoryIcon(category: EffectCategory): string {
-  return EFFECT_CATEGORIES[category]?.icon || "?";
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const effectCategory = (EFFECT_CATEGORIES != null && typeof EFFECT_CATEGORIES === "object" && category in EFFECT_CATEGORIES && EFFECT_CATEGORIES[category] != null && typeof EFFECT_CATEGORIES[category] === "object") ? EFFECT_CATEGORIES[category] : undefined;
+  const categoryIcon = (effectCategory != null && typeof effectCategory === "object" && "icon" in effectCategory && typeof effectCategory.icon === "string") ? effectCategory.icon : undefined;
+  return categoryIcon != null ? categoryIcon : "?";
 }
 
 function applyEffect(effectKey: string) {
-  const selectedLayer = store.selectedLayer;
-  if (!selectedLayer) {
+  const selectedLayerId = selectionStore.singleSelectedLayerId;
+  if (!selectedLayerId) {
     console.warn("No layer selected to apply effect");
     return;
   }
 
   // Add effect to layer via store action (use key directly)
-  effectStore.addEffectToLayer(store, selectedLayer.id, effectKey);
+  effectStore.addEffectToLayer(getEffectStoreAccess(), selectedLayerId, effectKey);
 }
 
 function applyPreset(preset: AnimationPreset) {
-  const selectedLayer = store.selectedLayer;
-  if (!selectedLayer) return;
+  const selectedLayerId = selectionStore.singleSelectedLayerId;
+  if (!selectedLayerId) return;
 
-  const comp = store.getActiveComp();
+  const comp = projectStore.getActiveComp();
   if (!comp) return;
+
+  const selectedLayer = projectStore.getActiveCompLayers().find(l => l.id === selectedLayerId);
+  if (!selectedLayer) return;
 
   // Calculate frame range for preset (use layer duration)
   const startFrame = selectedLayer.startFrame;
@@ -334,18 +359,26 @@ function applyPreset(preset: AnimationPreset) {
     for (const kf of propDef.keyframes) {
       // Convert normalized time (0-1) to frame number
       const frame = Math.round(startFrame + kf.time * duration);
-      keyframeStore.addKeyframe(store, selectedLayer.id, propDef.property, kf.value, frame);
+      keyframeStore.addKeyframe(selectedLayer.id, propDef.property, kf.value, frame);
     }
   }
 }
 
 // Drag and drop
 function onDragStart(effectKey: string, event: DragEvent) {
-  event.dataTransfer?.setData("application/effect", effectKey);
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const dataTransfer = (event != null && typeof event === "object" && "dataTransfer" in event && event.dataTransfer != null && typeof event.dataTransfer === "object") ? event.dataTransfer : undefined;
+  if (dataTransfer != null && typeof dataTransfer === "object" && typeof dataTransfer.setData === "function") {
+    dataTransfer.setData("application/effect", effectKey);
+  }
 }
 
 function onDragPreset(preset: AnimationPreset, event: DragEvent) {
-  event.dataTransfer?.setData("application/preset", JSON.stringify(preset));
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const dataTransfer = (event != null && typeof event === "object" && "dataTransfer" in event && event.dataTransfer != null && typeof event.dataTransfer === "object") ? event.dataTransfer : undefined;
+  if (dataTransfer != null && typeof dataTransfer === "object" && typeof dataTransfer.setData === "function") {
+    dataTransfer.setData("application/preset", JSON.stringify(preset));
+  }
 }
 </script>
 

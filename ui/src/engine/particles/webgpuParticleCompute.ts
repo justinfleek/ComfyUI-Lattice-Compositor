@@ -673,10 +673,23 @@ export class WebGPUParticleCompute {
    * Dispose of GPU resources
    */
   dispose(): void {
-    this.particleBufferA?.destroy();
-    this.particleBufferB?.destroy();
-    this.paramsBuffer?.destroy();
-    this.forceFieldBuffer?.destroy();
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const particleBufferA = this.particleBufferA;
+    if (particleBufferA != null && typeof particleBufferA === "object" && typeof particleBufferA.destroy === "function") {
+      particleBufferA.destroy();
+    }
+    const particleBufferB = this.particleBufferB;
+    if (particleBufferB != null && typeof particleBufferB === "object" && typeof particleBufferB.destroy === "function") {
+      particleBufferB.destroy();
+    }
+    const paramsBuffer = this.paramsBuffer;
+    if (paramsBuffer != null && typeof paramsBuffer === "object" && typeof paramsBuffer.destroy === "function") {
+      paramsBuffer.destroy();
+    }
+    const forceFieldBuffer = this.forceFieldBuffer;
+    if (forceFieldBuffer != null && typeof forceFieldBuffer === "object" && typeof forceFieldBuffer.destroy === "function") {
+      forceFieldBuffer.destroy();
+    }
 
     this.particleBufferA = null;
     this.particleBufferB = null;

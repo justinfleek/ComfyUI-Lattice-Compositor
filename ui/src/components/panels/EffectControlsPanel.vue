@@ -109,15 +109,15 @@
                       v-if="hasRange(effect.effectKey, String(key))"
                       :modelValue="param.value"
                       @update:modelValue="(v: number) => updateParam(effect.id, String(key), v)"
-                      :min="getParamDef(effect.effectKey, String(key))?.min ?? 0"
-                      :max="getParamDef(effect.effectKey, String(key))?.max ?? 100"
-                      :step="getParamDef(effect.effectKey, String(key))?.step ?? 1"
+                      :min="getParamDefMin(effect.effectKey, String(key))"
+                      :max="getParamDefMax(effect.effectKey, String(key))"
+                      :step="getParamDefStep(effect.effectKey, String(key), 1)"
                       :showValue="false"
                     />
                     <ScrubableNumber
                       :modelValue="param.value"
                       @update:modelValue="(v: number) => updateParam(effect.id, String(key), v)"
-                      :step="getParamDef(effect.effectKey, String(key))?.step ?? 0.1"
+                      :step="getParamDefStep(effect.effectKey, String(key), 0.1)"
                     />
                   </div>
                 </template>
@@ -197,12 +197,14 @@
 
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from "vue";
-import { useCompositorStore } from "@/stores/compositorStore";
-import { useEffectStore } from "@/stores/effectStore";
+import { useEffectStore, type EffectStoreAccess } from "@/stores/effectStore";
+import { useProjectStore } from "@/stores/projectStore";
+import { useSelectionStore } from "@/stores/selectionStore";
 import { EFFECT_CATEGORIES, EFFECT_DEFINITIONS } from "@/types/effects";
 import { hexToRgba, rgbaToHex } from "@/utils/colorUtils";
 
-const store = useCompositorStore();
+const projectStore = useProjectStore();
+const selectionStore = useSelectionStore();
 const effectStore = useEffectStore();
 const showAddMenu = ref(false);
 const menuRef = ref<HTMLDivElement | null>(null);
@@ -211,8 +213,29 @@ const menuRef = ref<HTMLDivElement | null>(null);
 const dragOverEffectId = ref<string | null>(null);
 const draggedIndex = ref<number | null>(null);
 
-const layer = computed(() => store.selectedLayer);
+// Get selected layer from selectionStore and projectStore
+// Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+const layer = computed(() => {
+  const selectedId = selectionStore.selectedLayerIds[0];
+  if (!selectedId) return null;
+  const layers = projectStore.getActiveCompLayers();
+  const found = layers.find((l) => l.id === selectedId);
+  return found !== undefined ? found : null;
+});
 const categories = EFFECT_CATEGORIES;
+
+// Helper function to create EffectStoreAccess interface
+function getEffectStoreAccess(): EffectStoreAccess {
+  return {
+    project: {
+      meta: projectStore.project.meta,
+    },
+    currentFrame: 0, // Not used by effect methods
+    getActiveCompLayers: () => projectStore.getActiveCompLayers(),
+    getActiveComp: () => projectStore.getActiveComp(),
+    pushHistory: () => projectStore.pushHistory(),
+  };
+}
 
 // --- Helpers ---
 
@@ -224,7 +247,9 @@ function getEffectsByCategory(cat: string) {
 
 function getParamDef(effectKey: string, paramKey: string) {
   const def = EFFECT_DEFINITIONS[effectKey];
-  return def?.parameters.find((p) => formatParamKey(p.name) === paramKey);
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  if (def == null || typeof def !== "object" || !("parameters" in def) || !Array.isArray(def.parameters)) return undefined;
+  return def.parameters.find((p) => formatParamKey(p.name) === paramKey);
 }
 
 // Utility to match the key generation in createEffectInstance
@@ -240,31 +265,54 @@ function hasRange(effectKey: string, paramKey: string) {
   return def && (def.min !== undefined || def.max !== undefined);
 }
 
+// Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??/?.
+// Helper functions for optional paramDef properties
+function getParamDefMin(effectKey: string, paramKey: string): number {
+  const def = getParamDef(effectKey, paramKey);
+  return (def !== null && def !== undefined && typeof def === "object" && "min" in def && typeof def.min === "number" && Number.isFinite(def.min)) ? def.min : 0;
+}
+function getParamDefMax(effectKey: string, paramKey: string): number {
+  const def = getParamDef(effectKey, paramKey);
+  return (def !== null && def !== undefined && typeof def === "object" && "max" in def && typeof def.max === "number" && Number.isFinite(def.max)) ? def.max : 100;
+}
+function getParamDefStep(effectKey: string, paramKey: string, defaultStep: number = 1): number {
+  const def = getParamDef(effectKey, paramKey);
+  return (def !== null && def !== undefined && typeof def === "object" && "step" in def && typeof def.step === "number" && Number.isFinite(def.step) && def.step > 0) ? def.step : defaultStep;
+}
+
 function isCheckbox(effectKey: string, paramKey: string) {
   const def = getParamDef(effectKey, paramKey);
-  return def?.type === "checkbox";
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  return (def != null && typeof def === "object" && "type" in def && typeof def.type === "string" && def.type === "checkbox") ? true : false;
 }
 
 function isAngleParam(effectKey: string, paramKey: string) {
   const def = getParamDef(effectKey, paramKey);
-  return def?.type === "angle";
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  return (def != null && typeof def === "object" && "type" in def && typeof def.type === "string" && def.type === "angle") ? true : false;
 }
 
 function isLayerParam(effectKey: string, paramKey: string) {
   const def = getParamDef(effectKey, paramKey);
-  return def?.type === "layer";
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  return (def != null && typeof def === "object" && "type" in def && typeof def.type === "string" && def.type === "layer") ? true : false;
 }
 
 function getAvailableLayers() {
-  const comp = store.getActiveComp();
+  const comp = projectStore.getActiveComp();
   if (!comp) return [];
   // Return all layers except the currently selected one (can't use self as displacement map)
-  return comp.layers.filter((l) => l.id !== layer.value?.id);
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const layerValue = layer.value;
+  const layerId = (layerValue != null && typeof layerValue === "object" && "id" in layerValue && typeof layerValue.id === "string") ? layerValue.id : undefined;
+  return comp.layers.filter((l) => l.id !== layerId);
 }
 
+// Lean4/PureScript/Haskell: Explicit pattern matching - no lazy || []
 function getParamOptions(effectKey: string, paramKey: string) {
   const def = getParamDef(effectKey, paramKey);
-  return def?.options || [];
+  const options = (def !== null && def !== undefined && typeof def === "object" && "options" in def && Array.isArray(def.options)) ? def.options : [];
+  return options;
 }
 
 function getLayerIcon(type: string) {
@@ -285,17 +333,17 @@ function getLayerIcon(type: string) {
 
 function addEffect(key: string) {
   if (layer.value) {
-    effectStore.addEffectToLayer(store, layer.value.id, key);
+    effectStore.addEffectToLayer(layer.value.id, key);
     showAddMenu.value = false;
   }
 }
 
 function removeEffect(effect: { id: string }) {
-  if (layer.value) effectStore.removeEffectFromLayer(store, layer.value.id, effect.id);
+  if (layer.value) effectStore.removeEffectFromLayer(layer.value.id, effect.id);
 }
 
 function toggleEffect(effect: { id: string }) {
-  if (layer.value) effectStore.toggleEffect(store, layer.value.id, effect.id);
+  if (layer.value) effectStore.toggleEffect(layer.value.id, effect.id);
 }
 
 function toggleExpand(effect: { expanded?: boolean }) {
@@ -308,7 +356,7 @@ function updateParam(
   value: import("@/types/effects").EffectParameterValue,
 ) {
   if (layer.value)
-    effectStore.updateEffectParameter(store, layer.value.id, effectId, paramKey, value);
+    effectStore.updateEffectParameter(layer.value.id, effectId, paramKey, value);
 }
 
 function updatePoint(
@@ -325,7 +373,7 @@ function updatePoint(
 
   const current = effect.parameters[paramKey].value;
   const newValue = { ...current, [axis]: val };
-  effectStore.updateEffectParameter(store, layer.value.id, effectId, paramKey, newValue);
+  effectStore.updateEffectParameter(layer.value.id, effectId, paramKey, newValue);
 }
 
 // Color handling: Store uses RGBA object {r,g,b,a}, Picker uses Hex string
@@ -340,8 +388,10 @@ function formatColor(
     "g" in val &&
     "b" in val
   ) {
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
     const rgba = val as { r: number; g: number; b: number; a?: number };
-    return rgbaToHex(rgba.r, rgba.g, rgba.b, rgba.a ?? 1);
+    const alpha = (typeof rgba.a === "number" && Number.isFinite(rgba.a)) ? rgba.a : 1;
+    return rgbaToHex(rgba.r, rgba.g, rgba.b, alpha);
   }
   return "#ffffff"; // Fallback
 }
@@ -350,7 +400,7 @@ function updateColor(effectId: string, paramKey: string, hex: string) {
   const rgba = hexToRgba(hex);
   if (rgba && layer.value) {
     const val = { r: rgba[0], g: rgba[1], b: rgba[2], a: rgba[3] };
-    effectStore.updateEffectParameter(store, layer.value.id, effectId, paramKey, val);
+    effectStore.updateEffectParameter(layer.value.id, effectId, paramKey, val);
   }
 }
 
@@ -359,7 +409,9 @@ function toggleParamAnim(effectId: string, paramKey: string) {
   const effect = layer.value.effects.find(
     (e): e is import("@/types/effects").EffectInstance => e.id === effectId,
   );
-  const param = effect?.parameters[paramKey];
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const parameters = (effect != null && typeof effect === "object" && "parameters" in effect && effect.parameters != null && typeof effect.parameters === "object") ? effect.parameters : undefined;
+  const param = (parameters != null && typeof parameters === "object" && paramKey in parameters) ? parameters[paramKey] : undefined;
   if (param) {
     effectStore.setEffectParamAnimated(
       store,
@@ -386,7 +438,10 @@ function onDragEnd() {
 }
 
 function onDragOver(event: DragEvent, effectId: string) {
-  const data = event.dataTransfer?.types.includes("application/effect-reorder");
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const dataTransfer = (event != null && typeof event === "object" && "dataTransfer" in event && event.dataTransfer != null && typeof event.dataTransfer === "object") ? event.dataTransfer : undefined;
+  const types = (dataTransfer != null && typeof dataTransfer === "object" && "types" in dataTransfer && dataTransfer.types != null && Array.isArray(dataTransfer.types)) ? dataTransfer.types : undefined;
+  const data = (types != null && types.includes("application/effect-reorder")) ? true : false;
   if (data) {
     dragOverEffectId.value = effectId;
   }
@@ -398,14 +453,14 @@ function onDragLeave() {
 
 function onDrop(event: DragEvent, targetIndex: number) {
   dragOverEffectId.value = null;
-  const fromIndexStr = event.dataTransfer?.getData(
-    "application/effect-reorder",
-  );
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const dataTransfer = (event != null && typeof event === "object" && "dataTransfer" in event && event.dataTransfer != null && typeof event.dataTransfer === "object") ? event.dataTransfer : undefined;
+  const fromIndexStr = (dataTransfer != null && typeof dataTransfer === "object" && typeof dataTransfer.getData === "function") ? dataTransfer.getData("application/effect-reorder") : undefined;
   if (!fromIndexStr || !layer.value) return;
 
   const fromIndex = parseInt(fromIndexStr, 10);
   if (fromIndex !== targetIndex && !Number.isNaN(fromIndex)) {
-    effectStore.reorderEffects(store, layer.value.id, fromIndex, targetIndex);
+    effectStore.reorderEffects(layer.value.id, fromIndex, targetIndex);
   }
 }
 

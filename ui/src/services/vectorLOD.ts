@@ -11,6 +11,7 @@
 import type { ControlPoint, SplineData } from "@/types/project";
 import type { Point2D } from "@/types/shapes";
 import { createLogger } from "@/utils/logger";
+import { isFiniteNumber } from "@/utils/typeGuards";
 
 const logger = createLogger("VectorLOD");
 
@@ -198,10 +199,18 @@ export class VectorLODService {
 
     // Find level closest to target quality
     let bestLevel = levels[0];
-    let bestDiff = Math.abs((levels[0].complexity ?? 0) - targetQuality);
+    // Type proof: number | undefined → number
+    const firstComplexity = isFiniteNumber(levels[0].complexity) && levels[0].complexity >= 0
+      ? levels[0].complexity
+      : 0;
+    let bestDiff = Math.abs(firstComplexity - targetQuality);
 
     for (const level of levels) {
-      const diff = Math.abs((level.complexity ?? 0) - targetQuality);
+      // Type proof: number | undefined → number
+      const levelComplexity = isFiniteNumber(level.complexity) && level.complexity >= 0
+        ? level.complexity
+        : 0;
+      const diff = Math.abs(levelComplexity - targetQuality);
       if (diff < bestDiff) {
         bestDiff = diff;
         bestLevel = level;
@@ -374,7 +383,10 @@ export class VectorLODService {
    * Check if LOD should be used for a spline
    */
   shouldUseLOD(splineData: SplineData, context: LODContext): boolean {
-    if (!splineData.lod?.enabled) return false;
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const splineDataLod = (splineData != null && typeof splineData === "object" && "lod" in splineData && splineData.lod != null && typeof splineData.lod === "object") ? splineData.lod : undefined;
+    const lodEnabled = (splineDataLod != null && typeof splineDataLod === "object" && "enabled" in splineDataLod && typeof splineDataLod.enabled === "boolean" && splineDataLod.enabled) ? true : false;
+    if (!lodEnabled) return false;
 
     const pointCount = splineData.controlPoints.length;
 
@@ -396,9 +408,9 @@ export class VectorLODService {
   autoGenerateLOD(
     splineData: SplineData,
     threshold: number = 200,
-  ): LODConfig | null {
+  ): LODConfig {
     if (splineData.controlPoints.length < threshold) {
-      return null;
+      throw new Error(`[VectorLOD] Cannot auto-generate LOD: Control point count (${splineData.controlPoints.length}) is below threshold (${threshold}). LOD generation requires at least ${threshold} control points.`);
     }
 
     const levels = this.generateLODLevels("", splineData.controlPoints, 4, 2.0);

@@ -5,6 +5,7 @@
  * animation, simplification, and smoothing.
  */
 
+import { isFiniteNumber } from "@/utils/typeGuards";
 import { interpolateProperty } from "@/services/interpolation";
 import { markLayerDirty } from "@/services/layerEvaluationCache";
 import type {
@@ -96,7 +97,9 @@ export function updateSplineControlPoint(
   if (!layer || layer.type !== "spline" || !layer.data) return;
 
   const splineData = layer.data as SplineData;
-  const point = splineData.controlPoints?.find((p) => p.id === pointId);
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const controlPoints = (splineData != null && typeof splineData === "object" && "controlPoints" in splineData && splineData.controlPoints != null && Array.isArray(splineData.controlPoints)) ? splineData.controlPoints : undefined;
+  const point = (controlPoints != null && typeof controlPoints.find === "function") ? controlPoints.find((p) => p.id === pointId) : undefined;
   if (!point) return;
 
   Object.assign(point, updates);
@@ -148,7 +151,9 @@ export function enableSplineAnimation(
   }
 
   // Convert static control points to animatable
-  const staticPoints = splineData.controlPoints || [];
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy || []
+  const controlPointsRaw = splineData.controlPoints;
+  const staticPoints = (controlPointsRaw !== null && controlPointsRaw !== undefined && Array.isArray(controlPointsRaw)) ? controlPointsRaw : [];
   const animatedPoints: AnimatableControlPoint[] = staticPoints.map((cp) =>
     controlPointToAnimatable(cp),
   );
@@ -196,7 +201,9 @@ export function addSplinePointKeyframe(
   }
 
   // Find the animated control point
-  const point = splineData.animatedControlPoints?.find((p) => p.id === pointId);
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const animatedControlPoints = (splineData != null && typeof splineData === "object" && "animatedControlPoints" in splineData && splineData.animatedControlPoints != null && Array.isArray(splineData.animatedControlPoints)) ? splineData.animatedControlPoints : undefined;
+  const point = (animatedControlPoints != null && typeof animatedControlPoints.find === "function") ? animatedControlPoints.find((p) => p.id === pointId) : undefined;
   if (!point) {
     storeLogger.warn("Control point not found:", pointId);
     return;
@@ -216,16 +223,20 @@ export function addSplinePointKeyframe(
       animatableProp = point.depth;
       break;
     case "handleIn.x":
-      animatableProp = point.handleIn?.x;
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      animatableProp = (point != null && typeof point === "object" && "handleIn" in point && point.handleIn != null && typeof point.handleIn === "object" && "x" in point.handleIn) ? point.handleIn.x : undefined;
       break;
     case "handleIn.y":
-      animatableProp = point.handleIn?.y;
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      animatableProp = (point != null && typeof point === "object" && "handleIn" in point && point.handleIn != null && typeof point.handleIn === "object" && "y" in point.handleIn) ? point.handleIn.y : undefined;
       break;
     case "handleOut.x":
-      animatableProp = point.handleOut?.x;
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      animatableProp = (point != null && typeof point === "object" && "handleOut" in point && point.handleOut != null && typeof point.handleOut === "object" && "x" in point.handleOut) ? point.handleOut.x : undefined;
       break;
     case "handleOut.y":
-      animatableProp = point.handleOut?.y;
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      animatableProp = (point != null && typeof point === "object" && "handleOut" in point && point.handleOut != null && typeof point.handleOut === "object" && "y" in point.handleOut) ? point.handleOut.y : undefined;
       break;
   }
 
@@ -316,14 +327,18 @@ export function updateSplinePointWithKeyframe(
     }
 
     // Also update the static version for backwards compatibility
-    const staticPoint = splineData.controlPoints?.find((p) => p.id === pointId);
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const controlPoints = (splineData != null && typeof splineData === "object" && "controlPoints" in splineData && splineData.controlPoints != null && Array.isArray(splineData.controlPoints)) ? splineData.controlPoints : undefined;
+    const staticPoint = (controlPoints != null && typeof controlPoints.find === "function") ? controlPoints.find((p) => p.id === pointId) : undefined;
     if (staticPoint) {
       staticPoint.x = x;
       staticPoint.y = y;
     }
   } else {
     // Update static control point
-    const point = splineData.controlPoints?.find((p) => p.id === pointId);
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const controlPoints = (splineData != null && typeof splineData === "object" && "controlPoints" in splineData && splineData.controlPoints != null && Array.isArray(splineData.controlPoints)) ? splineData.controlPoints : undefined;
+    const point = (controlPoints != null && typeof controlPoints.find === "function") ? controlPoints.find((p) => p.id === pointId) : undefined;
     if (!point) return;
 
     point.x = x;
@@ -349,11 +364,18 @@ export function getEvaluatedSplinePoints(
 
   // If not animated, return static points as evaluated
   if (!splineData.animated || !splineData.animatedControlPoints) {
-    return (splineData.controlPoints || []).map((cp) => ({
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy || []
+    const controlPointsRaw = splineData.controlPoints;
+    const controlPoints = (controlPointsRaw !== null && controlPointsRaw !== undefined && Array.isArray(controlPointsRaw)) ? controlPointsRaw : [];
+    return controlPoints.map((cp) => ({
       id: cp.id,
       x: cp.x,
       y: cp.y,
-      depth: cp.depth ?? 0,
+      // Type proof: depth ∈ ℝ ∪ {undefined} → ℝ
+      depth: (() => {
+        const depthValue = cp.depth;
+        return isFiniteNumber(depthValue) ? depthValue : 0;
+      })(),
       handleIn: cp.handleIn ? { ...cp.handleIn } : null,
       handleOut: cp.handleOut ? { ...cp.handleOut } : null,
       type: cp.type,
@@ -429,11 +451,19 @@ export function hasSplinePointKeyframes(
   // Check if any property has keyframes
   if (point.x.keyframes.length > 0) return true;
   if (point.y.keyframes.length > 0) return true;
-  if (point.depth?.keyframes.length) return true;
-  if (point.handleIn?.x.keyframes.length) return true;
-  if (point.handleIn?.y.keyframes.length) return true;
-  if (point.handleOut?.x.keyframes.length) return true;
-  if (point.handleOut?.y.keyframes.length) return true;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const depth = (point != null && typeof point === "object" && "depth" in point && point.depth != null && typeof point.depth === "object" && "keyframes" in point.depth && Array.isArray(point.depth.keyframes)) ? point.depth : undefined;
+  if (depth != null && depth.keyframes.length > 0) return true;
+  const handleIn = (point != null && typeof point === "object" && "handleIn" in point && point.handleIn != null && typeof point.handleIn === "object") ? point.handleIn : undefined;
+  const handleInX = (handleIn != null && typeof handleIn === "object" && "x" in handleIn && handleIn.x != null && typeof handleIn.x === "object" && "keyframes" in handleIn.x && Array.isArray(handleIn.x.keyframes)) ? handleIn.x : undefined;
+  if (handleInX != null && handleInX.keyframes.length > 0) return true;
+  const handleInY = (handleIn != null && typeof handleIn === "object" && "y" in handleIn && handleIn.y != null && typeof handleIn.y === "object" && "keyframes" in handleIn.y && Array.isArray(handleIn.y.keyframes)) ? handleIn.y : undefined;
+  if (handleInY != null && handleInY.keyframes.length > 0) return true;
+  const handleOut = (point != null && typeof point === "object" && "handleOut" in point && point.handleOut != null && typeof point.handleOut === "object") ? point.handleOut : undefined;
+  const handleOutX = (handleOut != null && typeof handleOut === "object" && "x" in handleOut && handleOut.x != null && typeof handleOut.x === "object" && "keyframes" in handleOut.x && Array.isArray(handleOut.x.keyframes)) ? handleOut.x : undefined;
+  if (handleOutX != null && handleOutX.keyframes.length > 0) return true;
+  const handleOutY = (handleOut != null && typeof handleOut === "object" && "y" in handleOut && handleOut.y != null && typeof handleOut.y === "object" && "keyframes" in handleOut.y && Array.isArray(handleOut.y.keyframes)) ? handleOut.y : undefined;
+  if (handleOutY != null && handleOutY.keyframes.length > 0) return true;
 
   return false;
 }

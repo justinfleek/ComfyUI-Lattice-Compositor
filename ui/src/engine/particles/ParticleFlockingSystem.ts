@@ -12,7 +12,7 @@
  */
 
 import * as THREE from "three";
-import type { SpatialHashGrid } from "./SpatialHashGrid";
+import type { ISpatialHash } from "./types";
 import { type FlockingConfig, PARTICLE_STRIDE } from "./types";
 
 // ============================================================================
@@ -24,7 +24,7 @@ export class ParticleFlockingSystem {
   private config: FlockingConfig;
 
   // Reference to shared spatial hash (set externally)
-  private spatialHash: SpatialHashGrid | null = null;
+  private spatialHash: ISpatialHash | null = null;
 
   constructor(maxParticles: number, config: FlockingConfig) {
     // Validate maxParticles to prevent infinite loop
@@ -42,25 +42,14 @@ export class ParticleFlockingSystem {
    * Set the shared spatial hash grid reference
    * This should be called once during initialization
    */
-  setSpatialHash(hash: SpatialHashGrid): void {
+  /**
+   * Set the spatial hash reference
+   *
+   * Type proof: hash ∈ ISpatialHash
+   * Lean4: theorem setSpatialHash_valid : hash implements ISpatialHash
+   */
+  setSpatialHash(hash: ISpatialHash): void {
     this.spatialHash = hash;
-  }
-
-  /**
-   * Get the spatial hash (for backwards compatibility)
-   * @deprecated Use setSpatialHash and rebuild from GPUParticleSystem instead
-   */
-  getSpatialHash(): Map<string, number[]> | null {
-    return this.spatialHash?.getRawCells() ?? null;
-  }
-
-  /**
-   * @deprecated Use shared SpatialHashGrid.rebuild() instead
-   * Kept for backwards compatibility - now a no-op
-   */
-  updateSpatialHash(_particleBuffer: Float32Array): void {
-    // No-op: spatial hash is now managed by GPUParticleSystem
-    // and shared between flocking and collision systems
   }
 
   // ============================================================================

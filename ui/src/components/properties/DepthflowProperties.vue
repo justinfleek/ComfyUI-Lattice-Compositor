@@ -345,7 +345,7 @@
           <label>
             <input
               type="checkbox"
-              :checked="config.cameraSyncEnabled ?? false"
+              :checked="configCameraSyncEnabled"
               @change="updateConfig('cameraSyncEnabled', ($event.target as HTMLInputElement).checked)"
             />
             Enable Camera Sync
@@ -356,7 +356,7 @@
           <div class="property-row">
             <label>Camera Layer</label>
             <select
-              :value="config.cameraSyncLayerId ?? ''"
+              :value="configCameraSyncLayerId"
               @change="updateConfig('cameraSyncLayerId', ($event.target as HTMLSelectElement).value)"
             >
               <option value="">Select camera...</option>
@@ -496,7 +496,8 @@
 
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from "vue";
-import { useCompositorStore } from "@/stores/compositorStore";
+import { useAnimationStore } from "@/stores/animationStore";
+import { useProjectStore } from "@/stores/projectStore";
 import type {
   CameraToDepthflowConfig,
   DepthflowConfig,
@@ -526,7 +527,8 @@ const props = defineProps<Props>();
 const emit =
   defineEmits<(e: "update", data: Partial<DepthflowLayerData>) => void>();
 
-const store = useCompositorStore();
+const animationStore = useAnimationStore();
+const projectStore = useProjectStore();
 
 // Refs
 const previewCanvas = ref<HTMLCanvasElement | null>(null);
@@ -637,7 +639,7 @@ const config = computed((): DepthflowLayerData => {
 });
 
 const depthflowConfig = computed(() => config.value.config);
-const totalFrames = computed(() => store.frameCount);
+const totalFrames = computed(() => projectStore.getFrameCount());
 
 const imageLayers = computed(() =>
   store.layers.filter((l) => l.type === "image" || l.type === "generated"),
@@ -651,8 +653,20 @@ const cameraLayers = computed(() =>
   store.layers.filter((l) => l.type === "camera"),
 );
 
+// Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
 const cameraSyncConfig = computed((): CameraToDepthflowConfig => {
-  return config.value.cameraSyncConfig ?? DEFAULT_CAMERA_SYNC_CONFIG;
+  const configValue = config.value;
+  return (configValue !== null && configValue !== undefined && typeof configValue === "object" && "cameraSyncConfig" in configValue && configValue.cameraSyncConfig !== null && configValue.cameraSyncConfig !== undefined) ? configValue.cameraSyncConfig : DEFAULT_CAMERA_SYNC_CONFIG;
+});
+
+// Computed properties for optional config properties
+const configCameraSyncEnabled = computed(() => {
+  const configValue = config.value;
+  return (configValue !== null && configValue !== undefined && typeof configValue === "object" && "cameraSyncEnabled" in configValue && typeof configValue.cameraSyncEnabled === "boolean") ? configValue.cameraSyncEnabled : false;
+});
+const configCameraSyncLayerId = computed(() => {
+  const configValue = config.value;
+  return (configValue !== null && configValue !== undefined && typeof configValue === "object" && "cameraSyncLayerId" in configValue && typeof configValue.cameraSyncLayerId === "string") ? configValue.cameraSyncLayerId : "";
 });
 
 const isOrbitPreset = computed(() =>
@@ -748,7 +762,7 @@ function playPreview(): void {
   renderPreview();
 
   previewAnimationId.value = requestAnimationFrame(() => {
-    setTimeout(playPreview, 1000 / store.fps);
+    setTimeout(playPreview, 1000 / projectStore.getFps());
   });
 }
 

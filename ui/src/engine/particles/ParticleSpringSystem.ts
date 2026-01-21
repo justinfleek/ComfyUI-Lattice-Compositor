@@ -100,12 +100,16 @@ export class ParticleSpringSystem {
         ? safeGravity
         : { x: 0, y: -980, z: 0 };
 
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+    const solverIterations = (typeof config.solverIterations === "number" && Number.isFinite(config.solverIterations) && config.solverIterations >= 1) ? config.solverIterations : 4;
+    const useVerlet = (typeof config.useVerlet === "boolean") ? config.useVerlet : true;
+    const enableBreaking = (typeof config.enableBreaking === "boolean") ? config.enableBreaking : false;
     this.config = {
       globalStiffness: safeFloat(config.globalStiffness, 100, 0.001, 10000),
       globalDamping: safeFloat(config.globalDamping, 5, 0, 1000),
-      solverIterations: Math.max(1, Math.min(64, Math.floor(config.solverIterations ?? 4))),
-      useVerlet: config.useVerlet ?? true,
-      enableBreaking: config.enableBreaking ?? false,
+      solverIterations: Math.max(1, Math.min(64, Math.floor(solverIterations))),
+      useVerlet,
+      enableBreaking,
       gravity,
     };
   }
@@ -193,7 +197,8 @@ export class ParticleSpringSystem {
     spacing: number,
     stiffness?: number
   ): void {
-    const k = stiffness ?? this.config.globalStiffness;
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+    const k = (stiffness !== null && stiffness !== undefined && typeof stiffness === "number" && Number.isFinite(stiffness) && stiffness > 0) ? stiffness : this.config.globalStiffness;
     const diagLength = spacing * Math.SQRT2;
 
     for (let y = 0; y < height; y++) {
@@ -235,7 +240,8 @@ export class ParticleSpringSystem {
     spacing: number,
     stiffness?: number
   ): void {
-    const k = stiffness ?? this.config.globalStiffness;
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+    const k = (stiffness !== null && stiffness !== undefined && typeof stiffness === "number" && Number.isFinite(stiffness) && stiffness > 0) ? stiffness : this.config.globalStiffness;
 
     for (let i = 0; i < particleIndices.length - 1; i++) {
       this.addSpring(particleIndices[i], particleIndices[i + 1], spacing, k);
@@ -253,7 +259,8 @@ export class ParticleSpringSystem {
     spacing: number,
     stiffness?: number
   ): void {
-    const k = stiffness ?? this.config.globalStiffness;
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+    const k = (stiffness !== null && stiffness !== undefined && typeof stiffness === "number" && Number.isFinite(stiffness) && stiffness > 0) ? stiffness : this.config.globalStiffness;
 
     const getIdx = (x: number, y: number, z: number) =>
       startIndex + z * width * height + y * width + x;

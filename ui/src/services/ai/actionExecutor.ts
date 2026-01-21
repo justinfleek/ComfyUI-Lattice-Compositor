@@ -23,14 +23,17 @@ import {
   getVectorizeService,
   normalizeControlPoints,
 } from "@/services/vectorize";
-import { useEffectStore } from "@/stores/effectStore";
-import { useCompositorStore } from "@/stores/compositorStore";
+import { useEffectStore, type EffectStoreAccess } from "@/stores/effectStore";
 import { useLayerStore } from "@/stores/layerStore";
 import { useKeyframeStore, findPropertyByPath } from "@/stores/keyframeStore";
 import { usePlaybackStore } from "@/stores/playbackStore";
 import { useSelectionStore } from "@/stores/selectionStore";
-import { useAnimationStore } from "@/stores/animationStore";
+import { useAnimationStore, type AnimationStoreAccess } from "@/stores/animationStore";
+import { useProjectStore } from "@/stores/projectStore";
+import type { Vec2, Vec3 } from "@/types/transform";
+import { isFiniteNumber, assertDefined, safeCoordinateDefault, safeNonNegativeDefault, safePositiveDefault } from "@/utils/typeGuards";
 import type {
+  AnimatableProperty,
   CameraLayerData,
   ControlPoint,
   ImageLayerData,
@@ -38,11 +41,13 @@ import type {
   Layer,
   LayerType,
   ParticleLayerData,
+  PropertyValue,
   SplineData,
   TextData,
 } from "@/types/project";
 import { isLayerOfType } from "@/types/project";
 import type { ToolCall } from "./toolDefinitions";
+import type { JSONValue } from "@/types/dataAsset";
 import type {
   CreateLayerArgs,
   DeleteLayerArgs,
@@ -86,11 +91,11 @@ import type {
 // ============================================================================
 
 export interface ExecutionContext {
-  store: ReturnType<typeof useCompositorStore>;
-  layerStore?: ReturnType<typeof useLayerStore>;
+  projectStore: ReturnType<typeof useProjectStore>;
+  layerStore: ReturnType<typeof useLayerStore>;
   playbackStore: ReturnType<typeof usePlaybackStore>;
   selectionStore: ReturnType<typeof useSelectionStore>;
-  animationStore?: ReturnType<typeof useAnimationStore>;
+  animationStore: ReturnType<typeof useAnimationStore>;
 }
 
 /**
@@ -130,21 +135,22 @@ export async function executeToolCall(toolCall: ToolCall): Promise<
   | { layers: Array<{ id: string; name: string; type: string }>; message: string }
   | { state: Record<string, { id: string; name: string; width: number; height: number; frameCount: number; fps: number; currentFrame: number } | null | number | Array<{ id: string; name: string; type: string; visible: boolean }>>; message: string }
 > {
-  const store = useCompositorStore();
-  const layerStore = useLayerStore();
-  const animationStore = useAnimationStore();
-  const playbackStore = usePlaybackStore();
-  const selectionStore = useSelectionStore();
+  try {
+    const projectStore = useProjectStore();
+    const layerStore = useLayerStore();
+    const animationStore = useAnimationStore();
+    const playbackStore = usePlaybackStore();
+    const selectionStore = useSelectionStore();
 
-  const context: ExecutionContext = { store, playbackStore, selectionStore, layerStore, animationStore };
-  
-  // ToolCall is now a discriminated union - TypeScript narrows the type based on name
-  // Extract arguments type-safely using destructuring to remove 'name' and 'id'
-  const { name, id, ...args } = toolCall;
+    const context: ExecutionContext = { projectStore, playbackStore, selectionStore, layerStore, animationStore };
+    
+    // ToolCall is now a discriminated union - TypeScript narrows the type based on name
+    // Extract arguments type-safely using destructuring to remove 'name' and 'id'
+    const { name, id, ...args } = toolCall;
 
-  // Route to appropriate handler with type-safe narrowing
-  // TypeScript knows the correct argument type for each case after destructuring
-  switch (name) {
+    // Route to appropriate handler with type-safe narrowing
+    // TypeScript knows the correct argument type for each case after destructuring
+    switch (name) {
     // Layer Management
     case "createLayer":
       return executeCreateLayer(context, args as CreateLayerArgs);
@@ -242,7 +248,13 @@ export async function executeToolCall(toolCall: ToolCall): Promise<
       return executeGetProjectState(context, args as GetProjectStateArgs);
 
     default:
-      throw new Error(`Unknown tool: ${name}`);
+      throw new Error(`[ActionExecutor] Unknown tool: "${name}". Tool name is not recognized.`);
+    }
+  } catch (error) {
+    // Convert thrown errors to success: false format for AI agent compatibility
+    // Errors are now explicit and debuggable before being converted
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    return { success: false, message: errorMessage };
   }
 }
 
@@ -251,53 +263,78 @@ export async function executeToolCall(toolCall: ToolCall): Promise<
 // ============================================================================
 
 /**
+ * Validated tool argument value - can be string, number, boolean, object, or array
+ * This represents the validated structure after schema checking
+ * Uses JSONValue for type safety (no circular reference)
+ */
+type ValidatedToolArgValue = JSONValue;
+
+/**
  * Validate required arguments exist and have correct types
+ * Throws explicit errors for invalid arguments
  */
 function validateArgs(
-  args: Record<string, string | number | boolean | Vec2 | Vec3 | null | undefined | Record<string, string | number | boolean> | Array<unknown>>,
+  args: Record<string, ValidatedToolArgValue>,
   schema: Record<string, { type: string; required?: boolean }>,
-): { valid: boolean; error?: string } {
+): void {
   for (const [key, spec] of Object.entries(schema)) {
     const value = args[key];
 
     // Check required fields
-    if (spec.required && (value === undefined || value === null)) {
-      return { valid: false, error: `Missing required argument: ${key}` };
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+    // Pattern match: Check if value is missing (null or not a valid type)
+    // Note: Arrays ARE objects in JavaScript, so we must check Array.isArray separately
+    const valueIsMissing = value === null || (typeof value !== "string" && typeof value !== "number" && typeof value !== "boolean" && (typeof value !== "object" || value === null || Array.isArray(value)));
+    if (spec.required && valueIsMissing) {
+      throw new Error(`[ActionExecutor] Missing required argument: "${key}". Required argument is missing or has invalid type.`);
     }
 
-    // Skip type check if value is undefined and not required
-    if (value === undefined || value === null) continue;
+    // Skip type check if value is missing and not required
+    if (valueIsMissing) continue;
 
     // Type validation
     const actualType = Array.isArray(value) ? "array" : typeof value;
     if (spec.type === "array" && !Array.isArray(value)) {
-      return { valid: false, error: `Argument ${key} must be an array` };
+      throw new Error(`[ActionExecutor] Argument "${key}" must be an array, got ${actualType}. Provide an array value for this argument.`);
     } else if (
       spec.type !== "array" &&
       spec.type !== "any" &&
       actualType !== spec.type
     ) {
-      return {
-        valid: false,
-        error: `Argument ${key} must be ${spec.type}, got ${actualType}`,
-      };
+      throw new Error(`[ActionExecutor] Argument "${key}" must be ${spec.type}, got ${actualType}. Provide a ${spec.type} value for this argument.`);
     }
   }
-  return { valid: true };
 }
 
 function executeCreateLayer(
   context: ExecutionContext,
   args: CreateLayerArgs,
 ): { layerId: string; message: string } {
-  const { store, layerStore } = context;
-  if (!layerStore) {
-    const layerStoreInstance = useLayerStore();
-    return executeCreateLayer({ ...context, layerStore: layerStoreInstance }, args);
-  }
+  const { layerStore } = context;
 
   // Validate arguments
-  const validation = validateArgs(args, {
+  // Type guard: Ensure args is a record-like object
+  if (typeof args !== "object" || args === null || Array.isArray(args)) {
+    throw new Error(`[ActionExecutor] Invalid arguments: expected object, got ${typeof args}. Arguments must be a plain object.`);
+  }
+  // Type assertion: After type guard, args is a plain object suitable for validation
+  // CreateLayerArgs properties are all JSONValue-compatible
+  // Convert to Record<string, ValidatedToolArgValue> for validation
+  const argsRecord: Record<string, ValidatedToolArgValue> = {};
+  for (const [key, value] of Object.entries(args)) {
+    // Runtime type check: Ensure value is JSONValue
+    if (
+      typeof value === "string" ||
+      typeof value === "number" ||
+      typeof value === "boolean" ||
+      value === null ||
+      Array.isArray(value) ||
+      (typeof value === "object" && value !== null)
+    ) {
+      argsRecord[key] = value as ValidatedToolArgValue;
+    }
+  }
+  validateArgs(argsRecord, {
     type: { type: "string", required: true },
     name: { type: "string", required: false },
     properties: { type: "object", required: false },
@@ -305,9 +342,6 @@ function executeCreateLayer(
     inPoint: { type: "number", required: false },
     outPoint: { type: "number", required: false },
   });
-  if (!validation.valid) {
-    throw new Error(validation.error);
-  }
 
   const { type, name, properties, position, inPoint, outPoint } = args;
 
@@ -355,7 +389,6 @@ function executeCreateLayer(
 
   const internalType = typeMap[type] || type;
   const layer = layerStore.createLayer(
-    store,
     internalType as LayerType,
     name,
   );
@@ -364,14 +397,18 @@ function executeCreateLayer(
   if (position) {
     layer.transform.position.value = position;
   }
-  if (inPoint !== undefined) {
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+  if (typeof inPoint === "number") {
     layer.inPoint = inPoint;
   }
-  if (outPoint !== undefined) {
+  if (typeof outPoint === "number") {
     layer.outPoint = outPoint;
   }
   if (properties) {
-    Object.assign(layer.data || {}, properties);
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy || {}
+    const layerData = layer.data;
+    const dataObj = (layerData !== null && layerData !== undefined && typeof layerData === "object" && layerData !== null) ? layerData : {};
+    Object.assign(dataObj, properties);
   }
 
   return {
@@ -384,20 +421,16 @@ function executeDeleteLayer(
   context: ExecutionContext,
   args: DeleteLayerArgs,
 ): { success: boolean; message: string } {
-  const { store, layerStore } = context;
-  if (!layerStore) {
-    const layerStoreInstance = useLayerStore();
-    return executeDeleteLayer({ ...context, layerStore: layerStoreInstance }, args);
-  }
+  const { projectStore, layerStore } = context;
   const { layerId } = args;
 
-  const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
+  const layer = projectStore.getActiveCompLayers().find((l) => l.id === layerId);
   if (!layer) {
-    return { success: false, message: `Layer ${layerId} not found` };
+    throw new Error(`[ActionExecutor] Layer "${layerId}" not found. Cannot delete non-existent layer.`);
   }
 
   const layerName = layer.name;
-  layerStore.deleteLayer(store, layerId);
+  layerStore.deleteLayer(layerId);
 
   return {
     success: true,
@@ -409,14 +442,10 @@ function executeDuplicateLayer(
   context: ExecutionContext,
   args: DuplicateLayerArgs,
 ): { layerId: string | null; message: string } {
-  const { store, layerStore } = context;
-  if (!layerStore) {
-    const layerStoreInstance = useLayerStore();
-    return executeDuplicateLayer({ ...context, layerStore: layerStoreInstance }, args);
-  }
+  const { layerStore } = context;
   const { layerId, newName } = args;
 
-  const duplicate = layerStore.duplicateLayer(store, layerId);
+  const duplicate = layerStore.duplicateLayer(layerId);
   if (!duplicate) {
     return { layerId: null, message: `Failed to duplicate layer ${layerId}` };
   }
@@ -435,20 +464,17 @@ function executeRenameLayer(
   context: ExecutionContext,
   args: RenameLayerArgs,
 ): { success: boolean; message: string } {
-  const { store } = context;
+  const { projectStore, layerStore } = context;
   const { layerId, name } = args;
 
-  const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
-  if (!layer) {
-    return { success: false, message: `Layer ${layerId} not found` };
-  }
-
-  const oldName = layer.name;
-  layer.name = name;
-
-  // Record modification and save to undo history
-  store.project.meta.modified = new Date().toISOString();
-  store.pushHistory();
+  layerStore.renameLayer(layerId, name);
+  
+  const layer = projectStore.getActiveCompLayers().find((l) => l.id === layerId);
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+  const oldName = (typeof layer === "object" && layer !== null && "name" in layer && typeof layer.name === "string")
+    ? layer.name
+    : "Unknown";
 
   return {
     success: true,
@@ -460,14 +486,10 @@ function executeSetLayerParent(
   context: ExecutionContext,
   args: SetLayerParentArgs,
 ): { success: boolean; message: string } {
-  const { store, layerStore } = context;
-  if (!layerStore) {
-    const layerStoreInstance = useLayerStore();
-    return executeSetLayerParent({ ...context, layerStore: layerStoreInstance }, args);
-  }
+  const { layerStore } = context;
   const { layerId, parentId } = args;
 
-  layerStore.setLayerParent(store, layerId, parentId || null);
+  layerStore.setLayerParent(layerId, parentId || null);
 
   return {
     success: true,
@@ -481,14 +503,10 @@ function executeReorderLayers(
   context: ExecutionContext,
   args: ReorderLayersArgs,
 ): { success: boolean; message: string } {
-  const { store, layerStore } = context;
-  if (!layerStore) {
-    const layerStoreInstance = useLayerStore();
-    return executeReorderLayers({ ...context, layerStore: layerStoreInstance }, args);
-  }
+  const { layerStore } = context;
   const { layerId, newIndex } = args;
 
-  layerStore.moveLayer(store, layerId, newIndex);
+  layerStore.moveLayer(layerId, newIndex);
 
   return {
     success: true,
@@ -504,12 +522,12 @@ function executeSetLayerProperty(
   context: ExecutionContext,
   args: SetLayerPropertyArgs,
 ): { success: boolean; message: string } {
-  const { store } = context;
+  const { projectStore, layerStore } = context;
   const { layerId, propertyPath, value } = args;
 
-  const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
+  const layer = projectStore.getActiveCompLayers().find((l) => l.id === layerId);
   if (!layer) {
-    return { success: false, message: `Layer ${layerId} not found` };
+    throw new Error(`[ActionExecutor] Layer "${layerId}" not found. Cannot set property "${propertyPath}" on non-existent layer.`);
   }
 
   // Handle different property paths
@@ -517,7 +535,31 @@ function executeSetLayerProperty(
 
   if (parts[0] === "data" && layer.data) {
     // Layer-specific data (e.g., data.text, data.color)
-    setNestedProperty(layer.data, parts.slice(1), value);
+    // Type guard: Ensure layer.data is a record-like object before setting nested properties
+    if (typeof layer.data !== "object" || layer.data === null || Array.isArray(layer.data)) {
+      throw new Error(`[ActionExecutor] Cannot set nested property "${propertyPath}": layer.data is not a plain object. Layer type: ${layer.type}.`);
+    }
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy type assertions
+    // Build compatible object by copying properties - validates structure without type assertions
+    const layerDataObj: Record<string, PropertyValue | JSONValue | undefined> = {};
+    for (const key in layer.data) {
+      if (Object.prototype.hasOwnProperty.call(layer.data, key)) {
+        const propValue = (layer.data as Record<string, unknown>)[key];
+        if (
+          propValue === null ||
+          typeof propValue === "string" ||
+          typeof propValue === "number" ||
+          typeof propValue === "boolean" ||
+          Array.isArray(propValue) ||
+          (typeof propValue === "object" && propValue !== null)
+        ) {
+          layerDataObj[key] = propValue as PropertyValue | JSONValue | undefined;
+        }
+      }
+    }
+    setNestedProperty(layerDataObj, parts.slice(1), value as JSONValue);
+    // Copy back to layer.data (we've validated it's a plain object)
+    Object.assign(layer.data, layerDataObj);
   } else if (parts[0] === "transform") {
     // Transform properties - use type-safe property access
     const transformKey = parts[1] as keyof typeof layer.transform;
@@ -525,29 +567,87 @@ function executeSetLayerProperty(
     if (prop && typeof prop === "object" && "value" in prop) {
       // Type-safe property value assignment
       if (prop && typeof prop === "object" && "value" in prop) {
-        (prop as { value: string | number | boolean | Vec2 | Vec3 | null }).value = value;
+        // PropertyValue can be any JSONValue
+        (prop as { value: PropertyValue }).value = value as PropertyValue;
       }
     }
   } else if (propertyPath === "opacity") {
-    layer.opacity.value = value;
+    // opacity is AnimatableProperty<number>, so value must be number
+    if (typeof value === "number") {
+      layer.opacity.value = value;
+    } else {
+      throw new Error(`[ActionExecutor] Invalid opacity value: expected number, got ${typeof value}. Provide a numeric opacity value between 0 and 100.`);
+    }
   } else if (propertyPath === "visible") {
-    layer.visible = value;
+    // visible is boolean
+    if (typeof value === "boolean") {
+      layer.visible = value;
+    } else {
+      throw new Error(`[ActionExecutor] Invalid visible value: expected boolean, got ${typeof value}. Provide true or false to set layer visibility.`);
+    }
   } else if (propertyPath === "locked") {
-    layer.locked = value;
+    // locked is boolean
+    if (typeof value === "boolean") {
+      layer.locked = value;
+    } else {
+      throw new Error(`[ActionExecutor] Invalid locked value: expected boolean, got ${typeof value}. Provide true or false to set layer lock state.`);
+    }
   } else if (propertyPath === "inPoint") {
-    layer.inPoint = value;
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+    // Pattern match: inPoint ∈ number | undefined
+    // To "clear" optional property, delete it rather than assign undefined
+    if (value === null) {
+      delete layer.inPoint;
+    } else if (typeof value === "number") {
+      layer.inPoint = value;
+    } else {
+      throw new Error(`[ActionExecutor] Invalid inPoint value: expected number or null, got ${typeof value}. Provide a frame number or null to clear the in point.`);
+    }
   } else if (propertyPath === "outPoint") {
-    layer.outPoint = value;
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+    // Pattern match: outPoint ∈ number | undefined
+    // To "clear" optional property, delete it rather than assign undefined
+    if (value === null || typeof value !== "number") {
+      delete layer.outPoint;
+    } else if (typeof value === "number") {
+      layer.outPoint = value;
+    } else {
+      throw new Error(`[ActionExecutor] Invalid outPoint value: expected number or null, got ${typeof value}. Provide a frame number or null to clear the out point.`);
+    }
   } else {
     // Try to find in layer.data
     if (layer.data) {
-      setNestedProperty(layer.data, parts, value);
+      // Type guard: Ensure layer.data is a record-like object before setting nested properties
+      if (typeof layer.data !== "object" || layer.data === null || Array.isArray(layer.data)) {
+        throw new Error(`[ActionExecutor] Cannot set nested property "${propertyPath}": layer.data is not a plain object. Layer type: ${layer.type}.`);
+      }
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy type assertions
+      // Build compatible object by copying properties - validates structure without type assertions
+      const layerDataObj: { [K in string]: PropertyValue | JSONValue | undefined } = {};
+      for (const key in layer.data) {
+        if (Object.prototype.hasOwnProperty.call(layer.data, key)) {
+          const propValue = (layer.data as Record<string, unknown>)[key];
+          if (
+            propValue === null ||
+            typeof propValue === "string" ||
+            typeof propValue === "number" ||
+            typeof propValue === "boolean" ||
+            Array.isArray(propValue) ||
+            (typeof propValue === "object" && propValue !== null)
+          ) {
+            layerDataObj[key] = propValue as PropertyValue | JSONValue | undefined;
+          }
+        }
+      }
+      setNestedProperty(layerDataObj, parts, value as JSONValue);
+      // Copy back to layer.data (we've validated it's a plain object)
+      Object.assign(layer.data, layerDataObj);
     }
   }
 
   // Record modification and save to undo history
-  store.project.meta.modified = new Date().toISOString();
-  store.pushHistory();
+  projectStore.project.meta.modified = new Date().toISOString();
+  projectStore.pushHistory();
 
   return {
     success: true,
@@ -559,33 +659,34 @@ function executeSetLayerTransform(
   context: ExecutionContext,
   args: SetLayerTransformArgs,
 ): { success: boolean; message: string } {
-  const { store } = context;
+  const { projectStore } = context;
   const { layerId, position, scale, rotation, opacity, anchorPoint } = args;
 
-  const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
+  const layer = projectStore.getActiveCompLayers().find((l) => l.id === layerId);
   if (!layer) {
-    return { success: false, message: `Layer ${layerId} not found` };
+    throw new Error(`[ActionExecutor] Layer "${layerId}" not found. Cannot set transform on non-existent layer.`);
   }
 
   const changes: string[] = [];
 
-  if (position !== undefined) {
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+  if (typeof position === "object" && position !== null) {
     layer.transform.position.value = position;
     changes.push("position");
   }
-  if (scale !== undefined) {
+  if (typeof scale === "object" && scale !== null) {
     layer.transform.scale.value = scale;
     changes.push("scale");
   }
-  if (rotation !== undefined) {
+  if (typeof rotation === "number") {
     layer.transform.rotation.value = rotation;
     changes.push("rotation");
   }
-  if (opacity !== undefined) {
+  if (typeof opacity === "number") {
     layer.opacity.value = opacity;
     changes.push("opacity");
   }
-  if (anchorPoint !== undefined) {
+  if (typeof anchorPoint === "object" && anchorPoint !== null) {
     // Use origin (new name) with fallback to anchorPoint
     const originProp = layer.transform.origin || layer.transform.anchorPoint;
     if (originProp) {
@@ -595,8 +696,8 @@ function executeSetLayerTransform(
   }
 
   // Record modification and save to undo history
-  store.project.meta.modified = new Date().toISOString();
-  store.pushHistory();
+  projectStore.project.meta.modified = new Date().toISOString();
+  projectStore.pushHistory();
 
   return {
     success: true,
@@ -612,11 +713,10 @@ function executeAddKeyframe(
   context: ExecutionContext,
   args: AddKeyframeArgs,
 ): { keyframeId: string | null; message: string } {
-  const { store } = context;
+  const keyframeStore = useKeyframeStore();
   const { layerId, propertyPath, frame, value, interpolation } = args;
 
-  const keyframe = useKeyframeStore().addKeyframe(
-    store,
+  const keyframe = keyframeStore.addKeyframe(
     layerId,
     propertyPath,
     value,
@@ -632,8 +732,7 @@ function executeAddKeyframe(
 
   // Set interpolation if specified
   if (interpolation && keyframe) {
-    useKeyframeStore().setKeyframeInterpolation(
-      store,
+    keyframeStore.setKeyframeInterpolation(
       layerId,
       propertyPath,
       keyframe.id,
@@ -651,26 +750,27 @@ function executeRemoveKeyframe(
   context: ExecutionContext,
   args: RemoveKeyframeArgs,
 ): { success: boolean; message: string } {
-  const { store } = context;
+  const { projectStore } = context;
+  const keyframeStore = useKeyframeStore();
   const { layerId, propertyPath, frame } = args;
 
-  const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
+  const layer = projectStore.getActiveCompLayers().find((l) => l.id === layerId);
   if (!layer) {
-    return { success: false, message: `Layer ${layerId} not found` };
+    throw new Error(`[ActionExecutor] Layer "${layerId}" not found. Cannot remove keyframe from non-existent layer.`);
   }
 
   // Find keyframe at frame
   const property = findPropertyByPath(layer, propertyPath);
   if (!property) {
-    return { success: false, message: `Property ${propertyPath} not found` };
+    throw new Error(`[ActionExecutor] Property "${propertyPath}" not found on layer "${layerId}". Check the property path and try again.`);
   }
 
   const keyframe = property.keyframes.find((k) => k.frame === frame);
   if (!keyframe) {
-    return { success: false, message: `No keyframe at frame ${frame}` };
+    throw new Error(`[ActionExecutor] No keyframe found at frame ${frame} for property "${propertyPath}" on layer "${layerId}". Add a keyframe first or check the frame number.`);
   }
 
-  useKeyframeStore().removeKeyframe(store, layerId, propertyPath, keyframe.id);
+  keyframeStore.removeKeyframe(layerId, propertyPath, keyframe.id);
 
   return {
     success: true,
@@ -682,26 +782,26 @@ function executeSetKeyframeEasing(
   context: ExecutionContext,
   args: SetKeyframeEasingArgs,
 ): { success: boolean; message: string } {
-  const { store } = context;
+  const { projectStore } = context;
+  const keyframeStore = useKeyframeStore();
   const { layerId, propertyPath, frame, interpolation } = args;
 
-  const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
+  const layer = projectStore.getActiveCompLayers().find((l) => l.id === layerId);
   if (!layer) {
-    return { success: false, message: `Layer ${layerId} not found` };
+    throw new Error(`[ActionExecutor] Layer "${layerId}" not found. Cannot set keyframe easing on non-existent layer.`);
   }
 
   const property = findPropertyByPath(layer, propertyPath);
   if (!property) {
-    return { success: false, message: `Property ${propertyPath} not found` };
+    throw new Error(`[ActionExecutor] Property "${propertyPath}" not found on layer "${layerId}". Check the property path and try again.`);
   }
 
   const keyframe = property.keyframes.find((k) => k.frame === frame);
   if (!keyframe) {
-    return { success: false, message: `No keyframe at frame ${frame}` };
+    throw new Error(`[ActionExecutor] No keyframe found at frame ${frame} for property "${propertyPath}" on layer "${layerId}". Add a keyframe first or check the frame number.`);
   }
 
-  useKeyframeStore().setKeyframeInterpolation(
-    store,
+  keyframeStore.setKeyframeInterpolation(
     layerId,
     propertyPath,
     keyframe.id,
@@ -718,12 +818,12 @@ function executeScaleKeyframeTiming(
   context: ExecutionContext,
   args: ScaleKeyframeTimingArgs,
 ): { success: boolean; message: string } {
-  const { store } = context;
+  const { projectStore } = context;
   const { layerId, scaleFactor, propertyPath } = args;
 
-  const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
+  const layer = projectStore.getActiveCompLayers().find((l) => l.id === layerId);
   if (!layer) {
-    return { success: false, message: `Layer ${layerId} not found` };
+    throw new Error(`[ActionExecutor] Layer "${layerId}" not found. Cannot scale keyframe timing on non-existent layer.`);
   }
 
   // Get all properties to scale
@@ -735,7 +835,9 @@ function executeScaleKeyframeTiming(
 
   for (const propPath of propertiesToScale) {
     const property = findPropertyByPath(layer, propPath);
-    if (property?.keyframes && property.keyframes.length > 0) {
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+    if (typeof property === "object" && property !== null && "keyframes" in property && Array.isArray(property.keyframes) && property.keyframes.length > 0) {
       // Scale each keyframe's frame number
       for (const kf of property.keyframes) {
         kf.frame = Math.round(kf.frame * scaleFactor);
@@ -748,8 +850,8 @@ function executeScaleKeyframeTiming(
 
   // Record modification and save to undo history (only if changes were made)
   if (scaledCount > 0) {
-    store.project.meta.modified = new Date().toISOString();
-    store.pushHistory();
+    projectStore.project.meta.modified = new Date().toISOString();
+    projectStore.pushHistory();
   }
 
   return {
@@ -766,17 +868,17 @@ function executeSetExpression(
   context: ExecutionContext,
   args: SetExpressionArgs,
 ): { success: boolean; message: string } {
-  const { store } = context;
+  const { projectStore } = context;
   const { layerId, propertyPath, expressionType, params } = args;
 
-  const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
+  const layer = projectStore.getActiveCompLayers().find((l) => l.id === layerId);
   if (!layer) {
-    return { success: false, message: `Layer ${layerId} not found` };
+    throw new Error(`[ActionExecutor] Layer "${layerId}" not found. Cannot set expression on non-existent layer.`);
   }
 
   const property = findPropertyByPath(layer, propertyPath);
   if (!property) {
-    return { success: false, message: `Property ${propertyPath} not found` };
+    throw new Error(`[ActionExecutor] Property "${propertyPath}" not found on layer "${layerId}". Check the property path and try again.`);
   }
 
   // Set expression on property
@@ -784,12 +886,13 @@ function executeSetExpression(
     enabled: true,
     type: "preset" as const,
     name: expressionType,
-    params: params || {},
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy || {}
+    params: (params !== null && params !== undefined && typeof params === "object" && params !== null) ? params : {},
   };
 
   // Record modification and save to undo history
-  store.project.meta.modified = new Date().toISOString();
-  store.pushHistory();
+  projectStore.project.meta.modified = new Date().toISOString();
+  projectStore.pushHistory();
 
   return {
     success: true,
@@ -801,24 +904,27 @@ function executeRemoveExpression(
   context: ExecutionContext,
   args: RemoveExpressionArgs,
 ): { success: boolean; message: string } {
-  const { store } = context;
+  const { projectStore } = context;
   const { layerId, propertyPath } = args;
 
-  const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
+  const layer = projectStore.getActiveCompLayers().find((l) => l.id === layerId);
   if (!layer) {
-    return { success: false, message: `Layer ${layerId} not found` };
+    throw new Error(`[ActionExecutor] Layer "${layerId}" not found. Cannot remove expression from non-existent layer.`);
   }
 
   const property = findPropertyByPath(layer, propertyPath);
   if (!property) {
-    return { success: false, message: `Property ${propertyPath} not found` };
+    throw new Error(`[ActionExecutor] Property "${propertyPath}" not found on layer "${layerId}". Check the property path and try again.`);
   }
 
-  property.expression = undefined;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+  // Pattern match: expression ∈ PropertyExpression | undefined
+  // To "clear" optional property, delete it rather than assign undefined
+  delete property.expression;
 
   // Record modification and save to undo history
-  store.project.meta.modified = new Date().toISOString();
-  store.pushHistory();
+  projectStore.project.meta.modified = new Date().toISOString();
+  projectStore.pushHistory();
 
   return {
     success: true,
@@ -834,15 +940,30 @@ function executeAddEffect(
   context: ExecutionContext,
   args: AddEffectArgs,
 ): { effectId: string | null; message: string } {
-  const { store } = context;
+  const { projectStore, animationStore } = context;
   const { layerId, effectType, params } = args;
 
   const effectStore = useEffectStore();
-  effectStore.addEffectToLayer(store, layerId, effectType);
+  const effectStoreAccess: EffectStoreAccess = {
+    project: {
+      meta: { modified: projectStore.project.meta.modified },
+    },
+    currentFrame: animationStore.currentFrame,
+    getActiveCompLayers: () => projectStore.getActiveCompLayers(),
+    getActiveComp: () => projectStore.getActiveComp(),
+    pushHistory: () => projectStore.pushHistory(),
+  };
+
+  effectStore.addEffectToLayer(effectStoreAccess, layerId, effectType);
 
   // Get the newly added effect (last in array)
-  const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
-  const effect = layer?.effects?.[layer.effects.length - 1];
+  const layer = projectStore.getActiveCompLayers().find((l) => l.id === layerId);
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+  const effects = (typeof layer === "object" && layer !== null && "effects" in layer && Array.isArray(layer.effects))
+    ? layer.effects
+    : [];
+  const effect = effects.length > 0 ? effects[effects.length - 1] : null;
 
   if (!effect) {
     return { effectId: null, message: `Failed to add effect ${effectType}` };
@@ -852,7 +973,7 @@ function executeAddEffect(
   if (params) {
     for (const [key, value] of Object.entries(params)) {
       effectStore.updateEffectParameter(
-        store,
+        effectStoreAccess,
         layerId,
         effect.id,
         key,
@@ -871,25 +992,34 @@ function executeUpdateEffect(
   context: ExecutionContext,
   args: UpdateEffectArgs,
 ): { success: boolean; message: string } {
-  const { store } = context;
+  const { projectStore, animationStore } = context;
   const { layerId, effectId, params } = args;
 
-  const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
-  if (!layer?.effects) {
-    return {
-      success: false,
-      message: `Layer ${layerId} not found or has no effects`,
-    };
+  const layer = projectStore.getActiveCompLayers().find((l) => l.id === layerId);
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+  if (typeof layer !== "object" || layer === null || !("effects" in layer) || !Array.isArray(layer.effects)) {
+    throw new Error(`[ActionExecutor] Layer "${layerId}" not found or has no effects. Cannot update effect parameters on non-existent layer or layer without effects.`);
   }
 
   const effect = layer.effects.find((e) => e.id === effectId);
   if (!effect) {
-    return { success: false, message: `Effect ${effectId} not found` };
+    throw new Error(`[ActionExecutor] Effect "${effectId}" not found on layer "${layerId}". Check the effect ID and try again.`);
   }
 
   const effectStore = useEffectStore();
+  const effectStoreAccess: EffectStoreAccess = {
+    project: {
+      meta: { modified: projectStore.project.meta.modified },
+    },
+    currentFrame: animationStore.currentFrame,
+    getActiveCompLayers: () => projectStore.getActiveCompLayers(),
+    getActiveComp: () => projectStore.getActiveComp(),
+    pushHistory: () => projectStore.pushHistory(),
+  };
+
   for (const [key, value] of Object.entries(params)) {
-    effectStore.updateEffectParameter(store, layerId, effectId, key, value);
+    effectStore.updateEffectParameter(effectStoreAccess, layerId, effectId, key, value);
   }
 
   return {
@@ -902,11 +1032,21 @@ function executeRemoveEffect(
   context: ExecutionContext,
   args: RemoveEffectArgs,
 ): { success: boolean; message: string } {
-  const { store } = context;
+  const { projectStore, animationStore } = context;
   const { layerId, effectId } = args;
 
   const effectStore = useEffectStore();
-  effectStore.removeEffectFromLayer(store, layerId, effectId);
+  const effectStoreAccess: EffectStoreAccess = {
+    project: {
+      meta: { modified: projectStore.project.meta.modified },
+    },
+    currentFrame: animationStore.currentFrame,
+    getActiveCompLayers: () => projectStore.getActiveCompLayers(),
+    getActiveComp: () => projectStore.getActiveComp(),
+    pushHistory: () => projectStore.pushHistory(),
+  };
+
+  effectStore.removeEffectFromLayer(effectStoreAccess, layerId, effectId);
 
   return {
     success: true,
@@ -922,39 +1062,48 @@ function executeConfigureParticles(
   context: ExecutionContext,
   args: ConfigureParticlesArgs,
 ): { success: boolean; message: string } {
-  const { store } = context;
+  const { projectStore } = context;
   const { layerId, emitter, particles, physics } = args;
 
-  const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
+  const layer = projectStore.getActiveCompLayers().find((l) => l.id === layerId);
   if (!layer || layer.type !== "particles") {
-    return { success: false, message: `Particle layer ${layerId} not found` };
+    throw new Error(`[ActionExecutor] Particle layer "${layerId}" not found. Cannot configure particles on non-existent layer.`);
   }
 
   if (!isLayerOfType(layer, "particles")) {
-    return { success: false, message: `Layer ${layerId} is not a particles layer` };
+    throw new Error(`[ActionExecutor] Layer "${layerId}" is not a particles layer. Only particle layers can be configured with particle settings.`);
   }
 
   const particleData = layer.data as ParticleLayerData;
 
   // Update emitter configuration
-  if (emitter && particleData.emitters?.[0]) {
-    Object.assign(particleData.emitters[0], emitter);
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+  const emitters = Array.isArray(particleData.emitters) && particleData.emitters.length > 0
+    ? particleData.emitters
+    : [];
+  if (emitter && emitters.length > 0) {
+    Object.assign(emitters[0], emitter);
   }
 
   // Update particle settings
-  if (particles && particleData.emitters?.[0]) {
+  if (particles && emitters.length > 0) {
     Object.assign(particleData.emitters[0], particles);
   }
 
   // Update physics
   if (physics && particleData.systemConfig) {
     if (physics.gravity) {
-      particleData.systemConfig.gravity = physics.gravity.y || 0;
+      // Type proof: gravity.y ∈ number | undefined → number (coordinate-like, can be negative)
+      particleData.systemConfig.gravity = safeCoordinateDefault(physics.gravity.y, 0, "physics.gravity.y");
     }
     if (physics.wind) {
       // Default to zero if wind components are undefined
-      const windX = physics.wind.x ?? 0;
-      const windY = physics.wind.y ?? 0;
+      // Type proof: x, y ∈ ℝ ∪ {undefined} → x, y ∈ ℝ
+      const windXValue = physics.wind.x;
+      const windX = isFiniteNumber(windXValue) ? windXValue : 0;
+      const windYValue = physics.wind.y;
+      const windY = isFiniteNumber(windYValue) ? windYValue : 0;
       particleData.systemConfig.windStrength = Math.sqrt(
         windX ** 2 + windY ** 2,
       );
@@ -967,8 +1116,8 @@ function executeConfigureParticles(
   }
 
   // Record modification and save to undo history
-  store.project.meta.modified = new Date().toISOString();
-  store.pushHistory();
+  projectStore.project.meta.modified = new Date().toISOString();
+  projectStore.pushHistory();
 
   return {
     success: true,
@@ -984,7 +1133,7 @@ function executeApplyCameraTrajectory(
   context: ExecutionContext,
   args: ApplyCameraTrajectoryArgs,
 ): { success: boolean; keyframeCount: number; message: string } {
-  const { store } = context;
+  const { projectStore } = context;
   const {
     cameraLayerId,
     trajectoryType,
@@ -996,35 +1145,50 @@ function executeApplyCameraTrajectory(
     center,
   } = args;
 
-  const layer = store.getActiveCompLayers().find((l) => l.id === cameraLayerId);
+  const layer = projectStore.getActiveCompLayers().find((l) => l.id === cameraLayerId);
   if (!layer || layer.type !== "camera") {
-    return {
-      success: false,
-      keyframeCount: 0,
-      message: `Camera layer ${cameraLayerId} not found`,
-    };
+    throw new Error(`[ActionExecutor] Camera layer "${cameraLayerId}" not found. Cannot generate trajectory on non-existent camera layer.`);
   }
 
-  const comp = store.getActiveComp();
-  const compSettings = comp?.settings || {
-    width: 1920,
-    height: 1080,
-    frameCount: 81,
-  };
+  const comp = projectStore.getActiveComp();
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+  if (comp === null || typeof comp !== "object" || !("settings" in comp) || comp.settings === null || typeof comp.settings !== "object") {
+    throw new Error(`[ActionExecutor] No active composition. Cannot generate trajectory without a valid composition.`);
+  }
+  const compSettings = comp.settings;
 
   // Build trajectory configuration
+  // Type proof: duration ∈ ℕ ∪ {undefined} → ℕ
+  const durationValue = duration;
+  const trajectoryDuration = isFiniteNumber(durationValue) && Number.isInteger(durationValue) && durationValue >= 0
+    ? durationValue
+    : compSettings.frameCount;
+  // Type proof: amplitude ∈ ℝ ∪ {undefined} → ℝ | undefined
+  const amplitudeValue = amplitude;
+  const trajectoryAmplitude = isFiniteNumber(amplitudeValue) ? amplitudeValue : undefined;
+  // Type proof: loops ∈ ℕ ∪ {undefined} → ℕ | undefined
+  const loopsValue = loops;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+  const trajectoryLoops = isFiniteNumber(loopsValue) && Number.isInteger(loopsValue) && loopsValue >= 0 ? loopsValue : 0;
   const trajectoryConfig = createTrajectoryFromPreset(
     trajectoryType as TrajectoryType,
     {
-      duration: duration ?? compSettings.frameCount,
-      amplitude: amplitude ?? undefined,
-      loops: loops ?? undefined,
-      easing: easing ?? undefined,
-      center: center ?? {
-        x: compSettings.width / 2,
-        y: compSettings.height / 2,
-        z: 0,
-      },
+      duration: trajectoryDuration,
+      amplitude: trajectoryAmplitude,
+      loops: trajectoryLoops,
+      easing: easing && ["linear", "ease-in", "ease-out", "ease-in-out", "bounce"].includes(easing) 
+        ? easing as "linear" | "ease-in" | "ease-out" | "ease-in-out" | "bounce"
+        : undefined,
+      // Type proof: center ∈ {x, y, z} | undefined → {x, y, z}
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+      center: typeof center === "object" && center !== null
+        ? center
+        : {
+            x: compSettings.width / 2,
+            y: compSettings.height / 2,
+            z: 0,
+          },
     },
   );
 
@@ -1064,23 +1228,28 @@ function executeApplyCameraTrajectory(
   }
 
   // Store trajectory keyframes in camera data (filter and map to required format)
+  // Type proof: After filter, position/pointOfInterest/zoom are guaranteed non-null
+  // Type guard: Check if zoom exists before accessing
+  const zoomKeyframes = "zoom" in keyframes && Array.isArray(keyframes.zoom)
+    ? keyframes.zoom
+    : [];
   cameraData.trajectoryKeyframes = {
     position: keyframes.position
-      .filter((kf) => kf.position !== undefined)
-      .map((kf) => ({ frame: kf.frame, position: kf.position! })),
+      .filter((kf): kf is typeof kf & { position: NonNullable<typeof kf.position> } => typeof kf.position === "object" && kf.position !== null)
+      .map((kf) => ({ frame: kf.frame, position: kf.position })),
     pointOfInterest: keyframes.pointOfInterest
-      .filter((kf) => kf.pointOfInterest !== undefined)
-      .map((kf) => ({ frame: kf.frame, pointOfInterest: kf.pointOfInterest! })),
-    zoom: keyframes.zoom
-      ?.filter((kf) => kf.zoom !== undefined)
-      .map((kf) => ({ frame: kf.frame, zoom: kf.zoom! })),
+      .filter((kf): kf is typeof kf & { pointOfInterest: NonNullable<typeof kf.pointOfInterest> } => typeof kf.pointOfInterest === "object" && kf.pointOfInterest !== null)
+      .map((kf) => ({ frame: kf.frame, pointOfInterest: kf.pointOfInterest })),
+    zoom: zoomKeyframes
+      .filter((kf): kf is typeof kf & { zoom: NonNullable<typeof kf.zoom> } => typeof kf.zoom === "number")
+      .map((kf) => ({ frame: kf.frame, zoom: kf.zoom })),
   };
 
   // Also create standard layer keyframes for position
+  const keyframeStore = useKeyframeStore();
   for (const kf of keyframes.position) {
     if (kf.position) {
-      useKeyframeStore().addKeyframe(
-        store,
+      keyframeStore.addKeyframe(
         cameraLayerId,
         "cameraPosition",
         kf.position,
@@ -1089,10 +1258,15 @@ function executeApplyCameraTrajectory(
     }
   }
 
+  // Type proof: zoomKeyframes.length ∈ number (≥ 0, count)
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+  // Use the zoomKeyframes already defined above
+  const zoomKeyframeCount = safeNonNegativeDefault(zoomKeyframes.length, 0, "zoomKeyframes.length");
   const totalKeyframes =
     keyframes.position.length +
     keyframes.pointOfInterest.length +
-    (keyframes.zoom?.length || 0);
+    zoomKeyframeCount;
 
   return {
     success: true,
@@ -1105,7 +1279,7 @@ function executeAddCameraShake(
   context: ExecutionContext,
   args: AddCameraShakeArgs,
 ): { success: boolean; message: string } {
-  const { store } = context;
+  const { projectStore } = context;
   const {
     cameraLayerId,
     shakeType,
@@ -1118,46 +1292,63 @@ function executeAddCameraShake(
     seed,
   } = args;
 
-  const layer = store.getActiveCompLayers().find((l) => l.id === cameraLayerId);
+  const layer = projectStore.getActiveCompLayers().find((l) => l.id === cameraLayerId);
   if (!layer || layer.type !== "camera") {
-    return {
-      success: false,
-      message: `Camera layer ${cameraLayerId} not found`,
-    };
+    throw new Error(`[ActionExecutor] Camera layer "${cameraLayerId}" not found. Cannot configure camera on non-existent layer.`);
   }
 
-  const comp = store.getActiveComp();
-  const compDuration = comp?.settings.frameCount || 81;
+  const comp = projectStore.getActiveComp();
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+  if (comp === null || typeof comp !== "object" || !("settings" in comp) || comp.settings === null || typeof comp.settings !== "object" || !("frameCount" in comp.settings) || typeof comp.settings.frameCount !== "number") {
+    throw new Error(`[ActionExecutor] No active composition or invalid frame count. Cannot generate camera shake without a valid composition.`);
+  }
+  const compDuration = comp.settings.frameCount;
 
   // Build shake config
+  // Type proof: seed ∈ ℕ ∪ {undefined} → ℕ
+  const seedValue = seed;
+  const shakeSeed = isFiniteNumber(seedValue) && Number.isInteger(seedValue) && seedValue >= 0
+    ? seedValue
+    : Math.floor(Math.random() * 100000);
   const shakeConfig: Partial<CameraShakeConfig> = {
     type: shakeType,
     intensity: intensity,
     frequency: frequency,
     decay: decay,
     rotationEnabled: rotationEnabled,
-    seed: seed ?? Math.floor(Math.random() * 100000),
+    seed: shakeSeed,
   };
 
   // Store shake configuration in layer data
   const cameraData = ensureCameraLayerData(layer);
 
+  // Type proof: intensity, frequency, decay ∈ ℝ ∪ {undefined} → ℝ
+  const shakeIntensity = isFiniteNumber(shakeConfig.intensity) ? shakeConfig.intensity : 0.3;
+  const shakeFrequency = isFiniteNumber(shakeConfig.frequency) && shakeConfig.frequency > 0 ? shakeConfig.frequency : 1.0;
+  const shakeDecay = isFiniteNumber(shakeConfig.decay) && shakeConfig.decay >= 0 ? shakeConfig.decay : 0;
+  // Type proof: rotationEnabled ∈ {true, false} ∪ {undefined} → {true, false}
+  const shakeRotationEnabled = typeof shakeConfig.rotationEnabled === "boolean" ? shakeConfig.rotationEnabled : true;
+  // Type proof: duration ∈ ℕ ∪ {undefined} → ℕ
+  const shakeDuration = isFiniteNumber(duration) && Number.isInteger(duration) && duration >= 0 ? duration : compDuration;
+  // Type proof: seed is guaranteed non-null because shakeSeed was assigned above
+  assertDefined(shakeConfig.seed, "shakeConfig.seed must exist after assignment");
   cameraData.shake = {
     enabled: true,
     type: shakeType,
-    intensity: shakeConfig.intensity ?? 0.3,
-    frequency: shakeConfig.frequency ?? 1.0,
-    rotationEnabled: shakeConfig.rotationEnabled ?? true,
+    intensity: shakeIntensity,
+    frequency: shakeFrequency,
+    rotationEnabled: shakeRotationEnabled,
     rotationScale: 0.5,
-    seed: shakeConfig.seed!,
-    decay: shakeConfig.decay ?? 0,
+    seed: shakeConfig.seed,
+    decay: shakeDecay,
     startFrame,
-    duration: duration ?? compDuration,
+    duration: shakeDuration,
   };
 
   // Record modification and save to undo history
-  store.project.meta.modified = new Date().toISOString();
-  store.pushHistory();
+  projectStore.project.meta.modified = new Date().toISOString();
+  projectStore.pushHistory();
 
   return {
     success: true,
@@ -1169,7 +1360,8 @@ function executeApplyRackFocus(
   context: ExecutionContext,
   args: ApplyRackFocusArgs,
 ): { success: boolean; keyframeCount: number; message: string } {
-  const { store } = context;
+  const { projectStore } = context;
+  const keyframeStore = useKeyframeStore();
   const {
     cameraLayerId,
     startDistance,
@@ -1181,13 +1373,9 @@ function executeApplyRackFocus(
     holdEnd = 0,
   } = args;
 
-  const layer = store.getActiveCompLayers().find((l) => l.id === cameraLayerId);
+  const layer = projectStore.getActiveCompLayers().find((l) => l.id === cameraLayerId);
   if (!layer || layer.type !== "camera") {
-    return {
-      success: false,
-      keyframeCount: 0,
-      message: `Camera layer ${cameraLayerId} not found`,
-    };
+    throw new Error(`[ActionExecutor] Camera layer "${cameraLayerId}" not found. Cannot generate trajectory on non-existent camera layer.`);
   }
 
   // Create rack focus config
@@ -1222,9 +1410,9 @@ function executeApplyRackFocus(
 
   // Apply focus keyframes to layer
   for (const kf of focusKeyframes) {
-    if (kf.focusDistance !== undefined) {
-      useKeyframeStore().addKeyframe(
-        store,
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+    if (typeof kf.focusDistance === "number") {
+      keyframeStore.addKeyframe(
         cameraLayerId,
         "focusDistance",
         kf.focusDistance,
@@ -1244,7 +1432,7 @@ function executeSetCameraPathFollowing(
   context: ExecutionContext,
   args: SetCameraPathFollowingArgs,
 ): { success: boolean; message: string } {
-  const { store } = context;
+  const { projectStore } = context;
   const {
     cameraLayerId,
     splineLayerId,
@@ -1256,24 +1444,18 @@ function executeSetCameraPathFollowing(
     smoothing = 0.5,
   } = args;
 
-  const layer = store.getActiveCompLayers().find((l) => l.id === cameraLayerId);
+  const layer = projectStore.getActiveCompLayers().find((l) => l.id === cameraLayerId);
   if (!layer || layer.type !== "camera") {
-    return {
-      success: false,
-      message: `Camera layer ${cameraLayerId} not found`,
-    };
+    throw new Error(`[ActionExecutor] Camera layer "${cameraLayerId}" not found. Cannot configure camera on non-existent layer.`);
   }
 
   // Verify spline layer exists if specified
   if (splineLayerId) {
-    const splineLayer = store
+    const splineLayer = projectStore
       .getActiveCompLayers()
       .find((l) => l.id === splineLayerId);
     if (!splineLayer || splineLayer.type !== "spline") {
-      return {
-        success: false,
-        message: `Spline layer ${splineLayerId} not found`,
-      };
+      throw new Error(`[ActionExecutor] Spline layer "${splineLayerId}" not found. Cannot attach camera to non-existent spline layer.`);
     }
   }
 
@@ -1292,8 +1474,8 @@ function executeSetCameraPathFollowing(
   };
 
   // Record modification and save to undo history
-  store.project.meta.modified = new Date().toISOString();
-  store.pushHistory();
+  projectStore.project.meta.modified = new Date().toISOString();
+  projectStore.pushHistory();
 
   return {
     success: true,
@@ -1307,7 +1489,7 @@ function executeSetCameraAutoFocus(
   context: ExecutionContext,
   args: SetCameraAutoFocusArgs,
 ): { success: boolean; message: string } {
-  const { store } = context;
+  const { projectStore } = context;
   const {
     cameraLayerId,
     enabled = true,
@@ -1316,12 +1498,9 @@ function executeSetCameraAutoFocus(
     smoothing = 0.8,
   } = args;
 
-  const layer = store.getActiveCompLayers().find((l) => l.id === cameraLayerId);
+  const layer = projectStore.getActiveCompLayers().find((l) => l.id === cameraLayerId);
   if (!layer || layer.type !== "camera") {
-    return {
-      success: false,
-      message: `Camera layer ${cameraLayerId} not found`,
-    };
+    throw new Error(`[ActionExecutor] Camera layer "${cameraLayerId}" not found. Cannot configure camera on non-existent layer.`);
   }
 
   // Store autofocus config in layer data
@@ -1350,8 +1529,8 @@ function executeSetCameraAutoFocus(
   };
 
   // Record modification and save to undo history
-  store.project.meta.modified = new Date().toISOString();
-  store.pushHistory();
+  projectStore.project.meta.modified = new Date().toISOString();
+  projectStore.pushHistory();
 
   return {
     success: true,
@@ -1369,33 +1548,40 @@ function executeSetTextContent(
   context: ExecutionContext,
   args: SetTextContentArgs,
 ): { success: boolean; message: string } {
-  const { store } = context;
+  const { projectStore } = context;
   const { layerId, text, fontSize, fontFamily, fontWeight, color, alignment } =
     args;
 
-  const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
+  const layer = projectStore.getActiveCompLayers().find((l) => l.id === layerId);
   if (!layer || layer.type !== "text") {
-    return { success: false, message: `Text layer ${layerId} not found` };
+    throw new Error(`[ActionExecutor] Text layer "${layerId}" not found. Cannot update text on non-existent layer.`);
   }
 
   if (!isLayerOfType(layer, "text")) {
-    return { success: false, message: `Layer ${layerId} is not a text layer` };
+    throw new Error(`[ActionExecutor] Layer "${layerId}" is not a text layer. Only text layers can have their text content updated.`);
   }
 
   const textData = layer.data as TextData;
 
-  if (text !== undefined) textData.text = text;
-  if (fontSize !== undefined) textData.fontSize = fontSize;
-  if (fontFamily !== undefined) textData.fontFamily = fontFamily;
-  if (fontWeight !== undefined) textData.fontWeight = String(fontWeight);
-  if (color !== undefined) {
-    textData.fill = `rgba(${color.r}, ${color.g}, ${color.b}, ${color.a ?? 1})`;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+  if (typeof text === "string") textData.text = text;
+  if (typeof fontSize === "number") textData.fontSize = fontSize;
+  if (typeof fontFamily === "string") textData.fontFamily = fontFamily;
+  if (typeof fontWeight === "number" || typeof fontWeight === "string") textData.fontWeight = String(fontWeight);
+  if (typeof color === "object" && color !== null) {
+    // Type proof: a ∈ ℝ ∪ {undefined} → a ∈ ℝ
+    const alphaValue = color.a;
+    const alpha = isFiniteNumber(alphaValue) ? Math.max(0, Math.min(1, alphaValue)) : 1;
+    textData.fill = `rgba(${color.r}, ${color.g}, ${color.b}, ${alpha})`;
   }
-  if (alignment !== undefined) textData.textAlign = alignment;
+  if (typeof alignment === "string") {
+    // Map "justify" to "left" since TextData.textAlign doesn't support justify
+    textData.textAlign = alignment === "justify" ? "left" : alignment;
+  }
 
   // Record modification and save to undo history
-  store.project.meta.modified = new Date().toISOString();
-  store.pushHistory();
+  projectStore.project.meta.modified = new Date().toISOString();
+  projectStore.pushHistory();
 
   return {
     success: true,
@@ -1407,27 +1593,28 @@ function executeSetTextPath(
   context: ExecutionContext,
   args: SetTextPathArgs,
 ): { success: boolean; message: string } {
-  const { store } = context;
+  const { projectStore } = context;
   const { textLayerId, splineLayerId, startOffset } = args;
 
-  const layer = store.getActiveCompLayers().find((l) => l.id === textLayerId);
+  const layer = projectStore.getActiveCompLayers().find((l) => l.id === textLayerId);
   if (!layer || layer.type !== "text") {
-    return { success: false, message: `Text layer ${textLayerId} not found` };
+    throw new Error(`[ActionExecutor] Text layer "${textLayerId}" not found. Cannot set text path on non-existent layer.`);
   }
 
   if (!isLayerOfType(layer, "text")) {
-    return { success: false, message: `Layer ${textLayerId} is not a text layer` };
+    throw new Error(`[ActionExecutor] Layer "${textLayerId}" is not a text layer. Only text layers can be attached to paths.`);
   }
 
   const textData = layer.data as TextData;
-  textData.pathLayerId = splineLayerId || null;
-  if (startOffset !== undefined) {
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy null/logical OR
+  textData.pathLayerId = (typeof splineLayerId === "string" && splineLayerId.length > 0) ? splineLayerId : "";
+  if (typeof startOffset === "number") {
     textData.pathOffset = startOffset;
   }
 
   // Record modification and save to undo history
-  store.project.meta.modified = new Date().toISOString();
-  store.pushHistory();
+  projectStore.project.meta.modified = new Date().toISOString();
+  projectStore.pushHistory();
 
   return {
     success: true,
@@ -1445,16 +1632,16 @@ function executeSetSplinePoints(
   context: ExecutionContext,
   args: SetSplinePointsArgs,
 ): { success: boolean; message: string } {
-  const { store } = context;
+  const { projectStore } = context;
   const { layerId, points, closed } = args;
 
-  const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
+  const layer = projectStore.getActiveCompLayers().find((l) => l.id === layerId);
   if (!layer || layer.type !== "spline") {
-    return { success: false, message: `Spline layer ${layerId} not found` };
+    throw new Error(`[ActionExecutor] Spline layer "${layerId}" not found. Cannot set spline points on non-existent layer.`);
   }
 
   if (!isLayerOfType(layer, "spline")) {
-    return { success: false, message: `Layer ${layerId} is not a spline layer` };
+    throw new Error(`[ActionExecutor] Layer "${layerId}" is not a spline layer. Only spline layers can have their control points updated.`);
   }
 
   const splineData = layer.data as SplineData;
@@ -1469,13 +1656,13 @@ function executeSetSplinePoints(
     type: p.handleIn || p.handleOut ? "smooth" : "corner",
   }));
 
-  if (closed !== undefined) {
+  if (typeof closed === "boolean") {
     splineData.closed = closed;
   }
 
   // Record modification and save to undo history
-  store.project.meta.modified = new Date().toISOString();
-  store.pushHistory();
+  projectStore.project.meta.modified = new Date().toISOString();
+  projectStore.pushHistory();
 
   return {
     success: true,
@@ -1491,28 +1678,30 @@ function executeSetSpeedMap(
   context: ExecutionContext,
   args: SetSpeedMapArgs,
 ): { success: boolean; message: string } {
-  const { store } = context;
+  const { projectStore } = context;
   const { layerId, enabled, keyframes } = args;
 
-  const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
+  const layer = projectStore.getActiveCompLayers().find((l) => l.id === layerId);
   if (!layer) {
-    return { success: false, message: `Layer ${layerId} not found` };
+    throw new Error(`[ActionExecutor] Layer "${layerId}" not found. Cannot set speed map on non-existent layer.`);
   }
 
   // Speed map stored in layer data (with backwards compatibility)
   // Speed maps apply to video/nested comp layers - if no data exists, just modify existing
   if (layer.data) {
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy || []
+    const keyframesArray = (keyframes !== null && keyframes !== undefined && Array.isArray(keyframes)) ? keyframes : [];
     const speedMapData = {
       enabled: enabled !== false,
-      keyframes: keyframes || [],
+      keyframes: keyframesArray,
     };
     // Use Object.assign for dynamic property assignment on existing data
     Object.assign(layer.data, { speedMap: speedMapData, timeRemap: speedMapData });
   }
 
   // Record modification and save to undo history
-  store.project.meta.modified = new Date().toISOString();
-  store.pushHistory();
+  projectStore.project.meta.modified = new Date().toISOString();
+  projectStore.pushHistory();
 
   return {
     success: true,
@@ -1536,15 +1725,57 @@ function executeSetCurrentFrame(
   context: ExecutionContext,
   args: SetCurrentFrameArgs,
 ): { frame: number; message: string } {
-  const { store, playbackStore, animationStore } = context;
+  const { projectStore, animationStore, playbackStore, layerStore } = context;
   const { frame } = args;
 
-  const comp = store.getActiveComp();
-  const frameCount = comp?.settings.frameCount || 81;
+  const comp = projectStore.getActiveComp();
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+  if (comp === null || typeof comp !== "object" || !("settings" in comp) || comp.settings === null || typeof comp.settings !== "object" || !("frameCount" in comp.settings) || typeof comp.settings.frameCount !== "number") {
+    return { frame: 0, message: "No active composition or invalid frame count" };
+  }
+  const frameCount = comp.settings.frameCount;
   const clampedFrame = Math.max(0, Math.min(frame, frameCount - 1));
 
-  const animStore = animationStore || useAnimationStore();
-  animStore.setFrame(store, clampedFrame);
+  const animationStoreAccess: AnimationStoreAccess = {
+    get isPlaying() {
+      return playbackStore.isPlaying;
+    },
+    getActiveComp: () => projectStore.getActiveComp(),
+    get currentFrame() {
+      return animationStore.currentFrame;
+    },
+    get frameCount() {
+      const c = projectStore.getActiveComp();
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+      if (c === null || typeof c !== "object" || !("settings" in c) || c.settings === null || typeof c.settings !== "object" || !("frameCount" in c.settings) || typeof c.settings.frameCount !== "number") {
+        return 0;
+      }
+      return safeNonNegativeDefault(c.settings.frameCount, 0, "c.settings.frameCount");
+    },
+    get fps() {
+      const c = projectStore.getActiveComp();
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+      if (c === null || typeof c !== "object" || !("settings" in c) || c.settings === null || typeof c.settings !== "object" || !("fps" in c.settings) || typeof c.settings.fps !== "number") {
+        return 16;
+      }
+      return safePositiveDefault(c.settings.fps, 16, "c.settings.fps");
+    },
+    getActiveCompLayers: () => projectStore.getActiveCompLayers(),
+    getLayerById: (id: string) => layerStore.getLayerById(id),
+    project: {
+      composition: {
+        width: projectStore.getWidth(),
+        height: projectStore.getHeight(),
+      },
+      meta: { modified: projectStore.project.meta.modified },
+    },
+    pushHistory: () => projectStore.pushHistory(),
+  };
+
+  animationStore.setFrame(animationStoreAccess, clampedFrame);
 
   return {
     frame: clampedFrame,
@@ -1556,18 +1787,55 @@ function executePlayPreview(
   context: ExecutionContext,
   args: PlayPreviewArgs,
 ): { playing: boolean; message: string } {
-  const { store, playbackStore, animationStore } = context;
+  const { projectStore, playbackStore, animationStore, layerStore } = context;
   const { play } = args;
 
+  const animationStoreAccess: AnimationStoreAccess = {
+    get isPlaying() {
+      return playbackStore.isPlaying;
+    },
+    getActiveComp: () => projectStore.getActiveComp(),
+    get currentFrame() {
+      return animationStore.currentFrame;
+    },
+    get frameCount() {
+      const c = projectStore.getActiveComp();
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+      if (c === null || typeof c !== "object" || !("settings" in c) || c.settings === null || typeof c.settings !== "object" || !("frameCount" in c.settings) || typeof c.settings.frameCount !== "number") {
+        return 0;
+      }
+      return safeNonNegativeDefault(c.settings.frameCount, 0, "c.settings.frameCount");
+    },
+    get fps() {
+      const c = projectStore.getActiveComp();
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+      if (c === null || typeof c !== "object" || !("settings" in c) || c.settings === null || typeof c.settings !== "object" || !("fps" in c.settings) || typeof c.settings.fps !== "number") {
+        return 16;
+      }
+      return safePositiveDefault(c.settings.fps, 16, "c.settings.fps");
+    },
+    getActiveCompLayers: () => projectStore.getActiveCompLayers(),
+    getLayerById: (id: string) => layerStore.getLayerById(id),
+    project: {
+      composition: {
+        width: projectStore.getWidth(),
+        height: projectStore.getHeight(),
+      },
+      meta: { modified: projectStore.project.meta.modified },
+    },
+    pushHistory: () => projectStore.pushHistory(),
+  };
+
   if (play) {
-    const comp = store.getActiveComp();
+    const comp = projectStore.getActiveComp();
     if (comp) {
-      const animStore = animationStore || useAnimationStore();
       playbackStore.play(
         comp.settings.fps,
         comp.settings.frameCount,
-        comp.currentFrame,
-        (frame) => animStore.setFrame(store, frame),
+        animationStore.currentFrame,
+        (frame) => animationStore.setFrame(animationStoreAccess, frame),
       );
     }
   } else {
@@ -1588,11 +1856,11 @@ async function executeDecomposeImage(
   context: ExecutionContext,
   args: DecomposeImageArgs,
 ): Promise<{ layerIds: string[]; message: string }> {
-  const { store } = context;
+  const { projectStore, layerStore } = context;
   const { sourceLayerId, numLayers = 4 } = args;
 
   // Find the source layer
-  const sourceLayer = store
+  const sourceLayer = projectStore
     .getActiveCompLayers()
     .find((l) => l.id === sourceLayerId);
   if (!sourceLayer) {
@@ -1608,7 +1876,11 @@ async function executeDecomposeImage(
     throw new Error(`Source layer is not an image layer`);
   }
   const imageData = sourceLayer.data as ImageLayerData;
-  const sourceUrl = imageData?.assetId;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+  const sourceUrl = (typeof imageData === "object" && imageData !== null && "assetId" in imageData && typeof imageData.assetId === "string")
+    ? imageData.assetId
+    : "";
   if (!sourceUrl) {
     throw new Error(`Source layer has no image source`);
   }
@@ -1646,11 +1918,10 @@ async function executeDecomposeImage(
   );
 
   // Create layers from result (reverse order so Background is at bottom)
-  const layerStoreInstance = useLayerStore();
   const createdLayerIds: string[] = [];
   for (let i = decomposedLayers.length - 1; i >= 0; i--) {
     const decomposed = decomposedLayers[i];
-    const layer = layerStoreInstance.createLayer(store, "image", decomposed.label);
+    const layer = layerStore.createLayer("image", decomposed.label);
     if (layer.data && isLayerOfType(layer, "image")) {
       // Store decomposed image - ImageLayerData uses assetId, but we can store temp data
       Object.assign(layer.data, { assetId: decomposed.image });
@@ -1658,7 +1929,7 @@ async function executeDecomposeImage(
     createdLayerIds.push(layer.id);
   }
 
-  store.pushHistory();
+  projectStore.pushHistory();
 
   return {
     layerIds: createdLayerIds,
@@ -1670,7 +1941,7 @@ async function executeVectorizeImage(
   context: ExecutionContext,
   args: VectorizeImageArgs,
 ): Promise<{ layerIds: string[]; message: string }> {
-  const { store } = context;
+  const { projectStore, layerStore } = context;
   const {
     sourceLayerId,
     mode = "trace",
@@ -1682,7 +1953,7 @@ async function executeVectorizeImage(
   } = args;
 
   // Find the source layer
-  const sourceLayer = store
+  const sourceLayer = projectStore
     .getActiveCompLayers()
     .find((l) => l.id === sourceLayerId);
   if (!sourceLayer) {
@@ -1704,13 +1975,31 @@ async function executeVectorizeImage(
   const layerData = sourceLayer.data;
   let imageDataUrl: string;
 
-  if (isLayerOfType(sourceLayer, "image") && sourceLayer.data?.assetId) {
-    const asset = store.project?.assets[sourceLayer.data.assetId];
-    if (!asset?.data) throw new Error("Asset data not found");
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+  if (isLayerOfType(sourceLayer, "image") && sourceLayer.data !== null && typeof sourceLayer.data === "object" && "assetId" in sourceLayer.data && typeof sourceLayer.data.assetId === "string") {
+    const sourceLayerData = sourceLayer.data.assetId;
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+    const project = (typeof projectStore.project === "object" && projectStore.project !== null && "assets" in projectStore.project && typeof projectStore.project.assets === "object" && projectStore.project.assets !== null)
+      ? projectStore.project.assets
+      : {};
+    const asset = (sourceLayerData in project && typeof project[sourceLayerData] === "object" && project[sourceLayerData] !== null)
+      ? project[sourceLayerData]
+      : null;
+    if (asset === null || typeof asset !== "object" || !("data" in asset) || typeof asset.data !== "string") throw new Error("Asset data not found");
     imageDataUrl = asset.data;
-  } else if (layerData && "assetId" in layerData && layerData.assetId) {
-    const asset = store.project?.assets[layerData.assetId as string];
-    if (!asset?.data) throw new Error("Asset data not found");
+  } else if (layerData !== null && typeof layerData === "object" && "assetId" in layerData && typeof layerData.assetId === "string") {
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+    const assetId = (layerData !== null && typeof layerData === "object" && "assetId" in layerData && typeof layerData.assetId === "string")
+      ? layerData.assetId
+      : "";
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+    const project = (typeof projectStore.project === "object" && projectStore.project !== null && "assets" in projectStore.project && typeof projectStore.project.assets === "object" && projectStore.project.assets !== null)
+      ? projectStore.project.assets
+      : {};
+    const asset = (assetId in project && typeof project[assetId] === "object" && project[assetId] !== null)
+      ? project[assetId]
+      : null;
+    if (asset === null || typeof asset !== "object" || !("data" in asset) || typeof asset.data !== "string") throw new Error("Asset data not found");
     imageDataUrl = asset.data;
   } else {
     throw new Error("Source layer has no image source");
@@ -1741,11 +2030,26 @@ async function executeVectorizeImage(
     {
       mode: mode as "trace" | "ai",
       traceOptions: {
-        colorMode: traceOptions.colorMode || "color",
-        filterSpeckle: traceOptions.filterSpeckle ?? 4,
-        cornerThreshold: traceOptions.cornerThreshold ?? 60,
-        colorPrecision: traceOptions.colorPrecision ?? 6,
-        layerDifference: traceOptions.layerDifference ?? 16,
+        colorMode: traceOptions.colorMode === "blackAndWhite" || traceOptions.colorMode === "grayscale" 
+          ? "binary" 
+          : (traceOptions.colorMode || "color"),
+        // Type proof: filterSpeckle, cornerThreshold, colorPrecision, layerDifference ∈ ℕ ∪ {undefined} → ℕ
+        filterSpeckle: (() => {
+          const value = traceOptions.filterSpeckle;
+          return isFiniteNumber(value) && Number.isInteger(value) && value >= 0 ? value : 4;
+        })(),
+        cornerThreshold: (() => {
+          const value = traceOptions.cornerThreshold;
+          return isFiniteNumber(value) && Number.isInteger(value) && value >= 0 ? value : 60;
+        })(),
+        colorPrecision: (() => {
+          const value = traceOptions.colorPrecision;
+          return isFiniteNumber(value) && Number.isInteger(value) && value >= 0 ? value : 6;
+        })(),
+        layerDifference: (() => {
+          const value = traceOptions.layerDifference;
+          return isFiniteNumber(value) && Number.isInteger(value) && value >= 0 ? value : 16;
+        })(),
       },
     },
     (stage, message) => {
@@ -1774,9 +2078,8 @@ async function executeVectorizeImage(
       }
 
       // Create the spline layer
-      const layerStoreInstance = useLayerStore();
-      const layer = layerStoreInstance.createSplineLayer(store);
-      layerStoreInstance.renameLayer(store, layer.id, `Vector Path ${i + 1}`);
+      const layer = layerStore.createSplineLayer();
+      layerStore.renameLayer(layer.id, `Vector Path ${i + 1}`);
 
       // Update with control points
       if (layer.data) {
@@ -1814,9 +2117,8 @@ async function executeVectorizeImage(
       controlPoints = autoGroupPoints(allPoints, { method: "quadrant" });
     }
 
-    const layerStore = useLayerStore();
-    const layer = layerStore.createSplineLayer(store);
-    layerStore.renameLayer(store, layer.id, "Vectorized Paths");
+    const layer = layerStore.createSplineLayer();
+    layerStore.renameLayer(layer.id, "Vectorized Paths");
 
     if (layer.data) {
       Object.assign(layer.data, {
@@ -1832,7 +2134,7 @@ async function executeVectorizeImage(
     createdLayerIds.push(layer.id);
   }
 
-  store.pushHistory();
+  projectStore.pushHistory();
 
   return {
     layerIds: createdLayerIds,
@@ -1847,40 +2149,71 @@ async function executeVectorizeImage(
 function executeGetLayerInfo(
   context: ExecutionContext,
   args: GetLayerInfoArgs,
-): { layer: Record<string, string | number | boolean | { x: number; y: number } | Array<{ id: string; effectKey: string; name: string; enabled: boolean }> | null> | null; message: string } {
-  const { store } = context;
+): { success: boolean; layer: {
+    id: string;
+    name: string;
+    type: string;
+    visible: boolean;
+    locked: boolean;
+      inPoint: number;
+      outPoint: number;
+    transform: {
+      position: { x: number; y: number; z?: number };
+      scale: { x: number; y: number; z?: number };
+      rotation: number;
+      origin: { x: number; y: number; z?: number };
+      anchorPoint?: { x: number; y: number; z?: number };
+    };
+    opacity: number;
+    effects?: Array<{ id: string; effectKey: string; name: string; enabled: boolean }>;
+  }; 
+  message: string;
+} {
+  const { projectStore } = context;
   const { layerId } = args;
 
-  const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
+  const layer = projectStore.getActiveCompLayers().find((l) => l.id === layerId);
   if (!layer) {
-    return { layer: null, message: `Layer ${layerId} not found` };
+    // Lean4/PureScript/Haskell: Explicit error - never return null
+    throw new Error(`[ActionExecutor] Layer "${layerId}" not found. Cannot get layer info for non-existent layer.`);
   }
 
   // Return a summary of the layer
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined/null checks
+  // Pattern match: inPoint/outPoint ∈ number | undefined → number (explicit default)
   return {
+    success: true,
     layer: {
       id: layer.id,
       name: layer.name,
       type: layer.type,
       visible: layer.visible,
       locked: layer.locked,
-      inPoint: layer.inPoint,
-      outPoint: layer.outPoint,
+      inPoint: typeof layer.inPoint === "number" ? layer.inPoint : layer.startFrame,
+      outPoint: typeof layer.outPoint === "number" ? layer.outPoint : layer.endFrame,
       transform: {
-        position: layer.transform.position,
-        scale: layer.transform.scale,
-        rotation: layer.transform.rotation,
-        origin: layer.transform.origin,
+        position: layer.transform.position.value,
+        scale: layer.transform.scale.value,
+        rotation: layer.transform.rotation.value,
+        origin: layer.transform.origin.value,
         // @deprecated alias for backwards compatibility
-        anchorPoint: layer.transform.origin || layer.transform.anchorPoint,
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+        anchorPoint: layer.transform.origin.value || ((typeof layer.transform.anchorPoint === "object" && layer.transform.anchorPoint !== null && "value" in layer.transform.anchorPoint && typeof layer.transform.anchorPoint.value === "object" && layer.transform.anchorPoint.value !== null)
+          ? layer.transform.anchorPoint.value
+          : { x: 0, y: 0, z: 0 }),
       },
-      opacity: layer.opacity,
-      effects: layer.effects?.map((e) => ({
-        id: e.id,
-        effectKey: e.effectKey,
-        name: e.name,
-        enabled: e.enabled,
-      })),
+      opacity: layer.opacity.value,
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+      effects: Array.isArray(layer.effects)
+        ? layer.effects.map((e) => ({
+          id: e.id,
+          effectKey: e.effectKey,
+          name: e.name,
+          enabled: e.enabled,
+        }))
+        : [],
     },
     message: `Layer info for "${layer.name}"`,
   };
@@ -1893,10 +2226,10 @@ function executeFindLayers(
   layers: Array<{ id: string; name: string; type: string }>;
   message: string;
 } {
-  const { store } = context;
+  const { projectStore } = context;
   const { name, type } = args;
 
-  let layers = store.getActiveCompLayers();
+  let layers = projectStore.getActiveCompLayers();
 
   if (name) {
     const lowerName = name.toLowerCase();
@@ -1921,8 +2254,8 @@ function executeGetProjectState(
   context: ExecutionContext,
   _args: GetProjectStateArgs,
 ): { state: Record<string, { id: string; name: string; width: number; height: number; frameCount: number; fps: number; currentFrame: number } | null | number | Array<{ id: string; name: string; type: string; visible: boolean }>>; message: string } {
-  const { store } = context;
-  const comp = store.getActiveComp();
+  const { projectStore, animationStore } = context;
+  const comp = projectStore.getActiveComp();
 
   return {
     state: {
@@ -1934,11 +2267,11 @@ function executeGetProjectState(
             height: comp.settings.height,
             frameCount: comp.settings.frameCount,
             fps: comp.settings.fps,
-            currentFrame: comp.currentFrame,
+            currentFrame: animationStore.currentFrame,
           }
         : null,
-      layerCount: store.getActiveCompLayers().length,
-      layers: store.getActiveCompLayers().map((l) => ({
+      layerCount: projectStore.getActiveCompLayers().length,
+      layers: projectStore.getActiveCompLayers().map((l) => ({
         id: l.id,
         name: l.name,
         type: l.type,
@@ -1955,14 +2288,28 @@ function executeGetProjectState(
 
 /**
  * Set a nested property value using dot notation path
+ * Works with layer.data objects which contain JSON-serializable values
  */
-function setNestedProperty(obj: Record<string, string | number | boolean | Vec2 | Vec3 | null | Record<string, string | number | boolean> | Array<unknown>>, path: string[], value: string | number | boolean | Vec2 | Vec3 | null): void {
-  let current = obj;
+function setNestedProperty(obj: { [K in string]: PropertyValue | JSONValue | undefined }, path: string[], value: JSONValue): void {
+  let current: { [K in string]: PropertyValue | JSONValue | undefined } = obj;
   for (let i = 0; i < path.length - 1; i++) {
-    if (!(path[i] in current)) {
-      current[path[i]] = {};
+    const key = path[i];
+    if (!(key in current) || current[key] === undefined) {
+      current[key] = {} as JSONValue;
     }
-    current = current[path[i]];
+    const next = current[key];
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+    if (next === null || typeof next !== "object" || Array.isArray(next)) {
+      current[key] = {} as JSONValue;
+      const nextObj = current[key];
+      if (nextObj === undefined || typeof nextObj !== "object" || nextObj === null || Array.isArray(nextObj)) {
+        throw new Error(`[ActionExecutor] Cannot set nested property: intermediate path "${key}" is not an object`);
+      }
+      current = nextObj as { [K in string]: PropertyValue | JSONValue | undefined };
+    } else {
+      current = next as { [K in string]: PropertyValue | JSONValue | undefined };
+    }
   }
-  current[path[path.length - 1]] = value;
+  const finalKey = path[path.length - 1];
+  current[finalKey] = value;
 }

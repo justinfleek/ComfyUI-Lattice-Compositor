@@ -29,10 +29,10 @@
 
     <div class="timeline-header">
       <div class="header-left">
-        <span class="timecode">{{ formatTimecode(animationStore.getCurrentFrame(store)) }}</span>
+        <span class="timecode">{{ formatTimecode(animationStore.currentFrame) }}</span>
         <div class="frame-display">
-           <input type="number" :value="animationStore.getCurrentFrame(store)" @change="setFrame" class="frame-input" />
-           <span class="fps-label">{{ projectStore.getFps(store) }} fps</span>
+           <input type="number" :value="animationStore.currentFrame" @change="setFrame" class="frame-input" />
+           <span class="fps-label">{{ projectStore.getFps() }} fps</span>
         </div>
       </div>
 
@@ -71,7 +71,7 @@
         </div>
 
         <div class="tool-group">
-           <button class="delete-btn" @click="deleteSelectedLayers" :disabled="store.selectedLayerIds.length === 0" aria-label="Delete selected layers"><PhTrash /></button>
+           <button class="delete-btn" @click="deleteSelectedLayers" :disabled="selectionStore.selectedLayerIds.length === 0" aria-label="Delete selected layers"><PhTrash /></button>
         </div>
 
         <div class="tool-group">
@@ -107,9 +107,9 @@
           <div class="col-header col-switches">
             <span
               class="header-icon clickable"
-              :class="{ active: store.hideMinimizedLayers }"
+              :class="{ active: uiStore.hideMinimizedLayers }"
               title="Hide Minimized Layers - Filter view"
-              @click="store.toggleHideMinimizedLayers()"
+              @click="uiStore.toggleHideMinimizedLayers()"
             ><PhEyeSlash :size="14" /></span>
             <span class="header-icon" title="Continuously Rasterize / Collapse Transformation"><PhSun :size="14" /></span>
             <span class="header-icon" title="Layer Quality - Draft (fast) / Full (anti-aliased)">◐</span>
@@ -133,7 +133,7 @@
             :index="idx + 1"
             layoutMode="sidebar"
             :isExpandedExternal="expandedLayers[layer.id]"
-            :allLayers="store.layers"
+            :allLayers="projectStore.getActiveCompLayers()"
             :gridStyle="sidebarGridStyle"
             @toggleExpand="handleToggleExpand"
             @select="selectLayer"
@@ -185,7 +185,7 @@
                 :key="layer.id"
                 :layer="layer"
                 layoutMode="track"
-                :frameCount="projectStore.getFrameCount(store)"
+                :frameCount="projectStore.getFrameCount()"
                 :pixelsPerFrame="effectivePpf"
                 :isExpandedExternal="expandedLayers[layer.id]"
                 @select="selectLayer"
@@ -198,9 +198,9 @@
                :audioBuffer="audioStore.audioBuffer"
                :analysis="audioStore.audioAnalysis"
                :peakData="audioStore.peakData"
-               :currentFrame="animationStore.getCurrentFrame(store)"
-               :totalFrames="projectStore.getFrameCount(store)"
-               :fps="projectStore.getFps(store)"
+               :currentFrame="animationStore.currentFrame"
+               :totalFrames="projectStore.getFrameCount()"
+               :fps="projectStore.getFps()"
                :height="60"
                @seek="handleAudioSeek"
              />
@@ -225,15 +225,19 @@ import {
   ref,
   watch,
 } from "vue";
+import { assertDefined, safeNonNegativeDefault } from "@/utils/typeGuards";
 import { findNearestSnap } from "@/services/timelineSnap";
 import { useAudioStore } from "@/stores/audioStore";
-import { useCompositorStore } from "@/stores/compositorStore";
+import { useAnimationStore } from "@/stores/animationStore";
 import { useCompositionStore } from "@/stores/compositionStore";
 import { useLayerStore } from "@/stores/layerStore";
 import { useParticleStore } from "@/stores/particleStore";
 import { usePlaybackStore } from "@/stores/playbackStore";
-import { useAnimationStore } from "@/stores/animationStore";
 import { useProjectStore } from "@/stores/projectStore";
+import { useSelectionStore } from "@/stores/selectionStore";
+import { useUIStore } from "@/stores/uiStore";
+import { useCameraStore } from "@/stores/cameraStore";
+import { useSegmentationStore } from "@/stores/segmentationStore";
 import type { Layer } from "@/types/project";
 
 // Inject work area state from WorkspaceLayout
@@ -245,7 +249,6 @@ const emit = defineEmits<{
   (e: "openPathSuggestion"): void;
 }>();
 
-const store = useCompositorStore();
 const compositionStore = useCompositionStore();
 const layerStore = useLayerStore();
 const particleStore = useParticleStore();
@@ -253,6 +256,54 @@ const audioStore = useAudioStore();
 const playbackStore = usePlaybackStore();
 const animationStore = useAnimationStore();
 const projectStore = useProjectStore();
+const selectionStore = useSelectionStore();
+const uiStore = useUIStore();
+const cameraStore = useCameraStore();
+const segmentationStore = useSegmentationStore();
+
+// Helper function to create AnimationStoreAccess
+function getAnimationStoreAccess() {
+  return {
+    project: projectStore.project,
+    activeCompositionId: projectStore.activeCompositionId,
+    currentFrame: animationStore.currentFrame,
+    fps: projectStore.getFps(),
+    frameCount: projectStore.getFrameCount(),
+    selectedLayerIds: selectionStore.selectedLayerIds,
+    getActiveComp: () => projectStore.getActiveComp(),
+    pushHistory: () => projectStore.pushHistory(),
+  };
+}
+
+// Helper function to create CompositionStoreAccess
+function getCompositionStoreAccess() {
+  return {
+    project: projectStore.project,
+    activeCompositionId: projectStore.activeCompositionId,
+    openCompositionIds: projectStore.openCompositionIds,
+    compositionBreadcrumbs: projectStore.compositionBreadcrumbs,
+    selectedLayerIds: selectionStore.selectedLayerIds,
+    getActiveComp: () => projectStore.getActiveComp(),
+    switchComposition: (id: string) => compositionStore.switchComposition(getCompositionStoreAccess(), id),
+    pushHistory: () => projectStore.pushHistory(),
+  };
+}
+
+// Helper function to create ParticleStoreAccess
+function getParticleStoreAccess() {
+  return {
+    project: {
+      composition: {
+        width: projectStore.getWidth(),
+        height: projectStore.getHeight(),
+      },
+      meta: projectStore.project.meta,
+    },
+    getActiveComp: () => projectStore.getActiveComp(),
+    getActiveCompLayers: () => projectStore.getActiveCompLayers(),
+    createLayer: (type: Layer["type"], name?: string) => layerStore.createLayer(type, name),
+  };
+}
 const zoomPercent = ref(0); // 0 = fit to viewport, 100 = max zoom
 const sidebarWidth = ref(450); // Increased width for better visibility of layer names
 const expandedLayers = ref<Record<string, boolean>>({});
@@ -268,10 +319,14 @@ let isScrollingTrack = false;
 const viewportWidth = ref(1000); // Default, updated by observer
 const isDragOver = ref(false);
 
-const filteredLayers = computed(() => layerStore.getDisplayedLayers(store, store.hideMinimizedLayers) || []);
+// Lean4/PureScript/Haskell: Explicit pattern matching - no lazy || []
+const filteredLayers = computed(() => {
+  const layers = layerStore.getDisplayedLayers(uiStore.hideMinimizedLayers);
+  return (layers !== null && layers !== undefined && Array.isArray(layers)) ? layers : [];
+});
 // Playhead position as percentage of timeline
 const playheadPositionPct = computed(
-  () => (animationStore.getCurrentFrame(store) / projectStore.getFrameCount(store)) * 100,
+  () => (animationStore.currentFrame / projectStore.getFrameCount()) * 100,
 );
 
 // Zoom calculation: 0% = fit viewport exactly, 100% = max zoom (~20 frames visible)
@@ -280,7 +335,7 @@ const MAX_PPF = 80;
 
 const effectivePpf = computed(() => {
   // minPpf ensures full composition fits viewport at 0% zoom
-  const minPpf = viewportWidth.value / projectStore.getFrameCount(store);
+  const minPpf = viewportWidth.value / projectStore.getFrameCount();
   // Linear interpolation from minPpf (0%) to MAX_PPF (100%)
   return minPpf + (zoomPercent.value / 100) * (MAX_PPF - minPpf);
 });
@@ -292,7 +347,7 @@ const timelineWidth = computed(() => {
   if (zoomPercent.value === 0) {
     return viewportWidth.value;
   }
-  return projectStore.getFrameCount(store) * effectivePpf.value;
+  return projectStore.getFrameCount() * effectivePpf.value;
 });
 
 const computedWidthStyle = computed(() => `${timelineWidth.value}px`);
@@ -302,20 +357,26 @@ const hasWorkArea = computed(
   () => workAreaStart.value !== null && workAreaEnd.value !== null,
 );
 const workAreaLeftPct = computed(() => {
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+  // Pattern match: workAreaStart.value ∈ number | null → number (already checked for null above)
   if (workAreaStart.value === null) return 0;
-  return (workAreaStart.value / projectStore.getFrameCount(store)) * 100;
+  const startValue = (typeof workAreaStart.value === "number" && Number.isFinite(workAreaStart.value)) ? workAreaStart.value : 0;
+  return startValue / projectStore.getFrameCount() * 100;
 });
 const workAreaWidthPct = computed(() => {
   if (workAreaStart.value === null || workAreaEnd.value === null) return 100;
   const start = Math.min(workAreaStart.value, workAreaEnd.value);
   const end = Math.max(workAreaStart.value, workAreaEnd.value);
-  return ((end - start) / projectStore.getFrameCount(store)) * 100;
+  return ((end - start) / projectStore.getFrameCount()) * 100;
 });
 const workAreaStyle = computed(() => {
   if (!hasWorkArea.value) return { display: "none" };
-  const start = Math.min(workAreaStart.value!, workAreaEnd.value!);
-  const end = Math.max(workAreaStart.value!, workAreaEnd.value!);
-  const frameCount = projectStore.getFrameCount(store);
+  // Type proof: workAreaStart and workAreaEnd are guaranteed non-null when hasWorkArea is true
+  assertDefined(workAreaStart.value, "workAreaStart must exist when hasWorkArea is true");
+  assertDefined(workAreaEnd.value, "workAreaEnd must exist when hasWorkArea is true");
+  const start = Math.min(workAreaStart.value, workAreaEnd.value);
+  const end = Math.max(workAreaStart.value, workAreaEnd.value);
+  const frameCount = projectStore.getFrameCount();
   return {
     left: `${(start / frameCount) * 100}%`,
     width: `${((end - start) / frameCount) * 100}%`,
@@ -352,50 +413,63 @@ const addLayerMenuStyle = computed((): CSSProperties => {
 function addLayer(type: string) {
   let newLayer: Layer | undefined;
 
-  if (type === "text") newLayer = layerStore.createTextLayer(store);
-  else if (type === "video") newLayer = layerStore.createLayer(store, "video");
+  if (type === "text") newLayer = layerStore.createTextLayer();
+  else if (type === "video") newLayer = layerStore.createLayer("video");
   else if (type === "camera") {
-    const result = layerStore.createCameraLayer(store as any);
-    newLayer = result;
-  } else if (type === "particles") newLayer = particleStore.createParticleLayer(store);
-  else newLayer = layerStore.createLayer(store, type as Layer["type"]);
+    const { layer: cameraLayer } = cameraStore.createCameraLayer();
+    newLayer = cameraLayer;
+  } else if (type === "particles") newLayer = particleStore.createParticleLayer(getParticleStoreAccess());
+  else newLayer = layerStore.createLayer(type as Layer["type"]);
 
   showAddLayerMenu.value = false;
 
   // Auto-select the new layer
   if (newLayer) {
-    layerStore.selectLayer(store, newLayer.id);
+    layerStore.selectLayer(newLayer.id);
 
     // Activate appropriate tool based on layer type
     if (type === "spline" || type === "shape" || type === "path") {
-      store.setTool("pen");
+      setTool("pen");
     } else if (type === "text") {
-      store.setTool("text");
+      setTool("text");
     } else {
-      store.setTool("select");
+      setTool("select");
     }
   }
 }
 
+function setTool(tool: "select" | "pen" | "text" | "hand" | "zoom" | "segment") {
+  if (tool === "segment") {
+    segmentationStore.setSegmentToolActive(true);
+  } else {
+    segmentationStore.setSegmentToolActive(false);
+    selectionStore.setTool(tool);
+    segmentationStore.clearSegmentPendingMask();
+  }
+}
+
 function selectLayer(id: string) {
-  layerStore.selectLayer(store, id);
+  layerStore.selectLayer(id);
 }
 function updateLayer(id: string, u: Partial<Layer>) {
-  layerStore.updateLayer(store, id, u);
+  layerStore.updateLayer(id, u);
 }
 
 // Handle audio track seek
 function handleAudioSeek(frame: number) {
-  animationStore.setFrame(store, frame);
+  animationStore.setFrame(getAnimationStoreAccess(), frame);
   // Also trigger audio scrub for feedback
-  audioStore.scrubAudio(frame, projectStore.getFps(store));
+  audioStore.scrubAudio(frame, projectStore.getFps());
 }
 
 // ============================================================
 // DRAG & DROP FROM PROJECT PANEL
 // ============================================================
 function onDragOver(event: DragEvent) {
-  if (event.dataTransfer?.types.includes("application/project-item")) {
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const dataTransfer = (event != null && typeof event === "object" && "dataTransfer" in event && event.dataTransfer != null && typeof event.dataTransfer === "object") ? event.dataTransfer : undefined;
+  const types = (dataTransfer != null && typeof dataTransfer === "object" && "types" in dataTransfer && dataTransfer.types != null && Array.isArray(dataTransfer.types)) ? dataTransfer.types : undefined;
+  if (types != null && types.includes("application/project-item")) {
     isDragOver.value = true;
   }
 }
@@ -409,7 +483,10 @@ function onDrop(event: DragEvent) {
   event.stopPropagation();
   isDragOver.value = false;
 
-  const data = event.dataTransfer?.getData("application/project-item");
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const dataTransfer = (event != null && typeof event === "object" && "dataTransfer" in event && event.dataTransfer != null && typeof event.dataTransfer === "object") ? event.dataTransfer : undefined;
+  const getData = (dataTransfer != null && typeof dataTransfer === "object" && typeof dataTransfer.getData === "function") ? dataTransfer.getData : undefined;
+  const data = getData != null ? getData("application/project-item") : undefined;
   console.log("[TimelinePanel] onDrop called, data:", data);
   if (!data) {
     console.log("[TimelinePanel] No project-item data found");
@@ -430,10 +507,10 @@ function onDrop(event: DragEvent) {
     // Handle different item types
     if (item.type === "composition") {
       // Create a nested composition layer
-      const layer = layerStore.createLayer(store, "nestedComp", item.name);
+      const layer = layerStore.createLayer("nestedComp", item.name);
       if (layer) {
-        layerStore.updateLayerData(store, layer.id, { compositionId: item.id });
-        layerStore.selectLayer(store, layer.id);
+        layerStore.updateLayerData(layer.id, { compositionId: item.id });
+        layerStore.selectLayer(layer.id);
         console.log(
           "[TimelinePanel] Created precomp layer for composition:",
           item.name,
@@ -441,13 +518,13 @@ function onDrop(event: DragEvent) {
       }
     } else if (item.type === "footage") {
       // For footage, check if it's an existing asset
-      const asset = store.project.assets[item.id];
+      const asset = projectStore.project.assets[item.id];
       if (asset) {
         if (asset.type === "video") {
-          const layer = layerStore.createLayer(store, "video", item.name);
+          const layer = layerStore.createLayer("video", item.name);
           if (layer) {
-            layerStore.updateLayerData(store, layer.id, { assetId: item.id });
-            layerStore.selectLayer(store, layer.id);
+            layerStore.updateLayerData(layer.id, { assetId: item.id });
+            layerStore.selectLayer(layer.id);
             console.log(
               "[TimelinePanel] Created video layer from asset:",
               item.name,
@@ -456,7 +533,7 @@ function onDrop(event: DragEvent) {
         } else if (asset.type === "image") {
           // Helper function to resize comp and create layer
           const resizeAndCreateLayer = (width: number, height: number) => {
-            const compId = store.activeCompositionId;
+            const compId = projectStore.activeCompositionId;
             if (compId && width > 0 && height > 0) {
               console.log(
                 "[TimelinePanel] Resizing comp",
@@ -466,19 +543,19 @@ function onDrop(event: DragEvent) {
                 "x",
                 height,
               );
-              compositionStore.updateCompositionSettings(store, compId, { width, height });
+              compositionStore.updateCompositionSettings(getCompositionStoreAccess(), compId, { width, height });
               console.log(
                 "[TimelinePanel] Comp resized. New size:",
-                store.width,
+                projectStore.getWidth(),
                 "x",
-                store.height,
+                projectStore.getHeight(),
               );
             }
 
-            const layer = layerStore.createLayer(store, "image", item.name);
+            const layer = layerStore.createLayer("image", item.name);
             if (layer) {
-              layerStore.updateLayerData(store, layer.id, { assetId: item.id });
-              layerStore.selectLayer(store, layer.id);
+              layerStore.updateLayerData(layer.id, { assetId: item.id });
+              layerStore.selectLayer(layer.id);
               console.log("[TimelinePanel] Created image layer:", layer.id);
             }
           };
@@ -516,10 +593,10 @@ function onDrop(event: DragEvent) {
                 e,
               );
               // Still create the layer even if image fails to load for dimensions
-              const layer = layerStore.createLayer(store, "image", item.name);
+              const layer = layerStore.createLayer("image", item.name);
               if (layer) {
-                layerStore.updateLayerData(store, layer.id, { assetId: item.id });
-                layerStore.selectLayer(store, layer.id);
+                layerStore.updateLayerData(layer.id, { assetId: item.id });
+                layerStore.selectLayer(layer.id);
               }
             };
             img.src = asset.data;
@@ -527,16 +604,16 @@ function onDrop(event: DragEvent) {
         }
       } else {
         // Generic footage - create image layer
-        const layer = layerStore.createLayer(store, "image", item.name);
+        const layer = layerStore.createLayer("image", item.name);
         if (layer) {
-          layerStore.selectLayer(store, layer.id);
+          layerStore.selectLayer(layer.id);
           console.log("[TimelinePanel] Created image layer:", item.name);
         }
       }
     } else if (item.type === "solid") {
-      const layer = layerStore.createLayer(store, "solid", item.name);
+      const layer = layerStore.createLayer("solid", item.name);
       if (layer) {
-        layerStore.selectLayer(store, layer.id);
+        layerStore.selectLayer(layer.id);
         console.log("[TimelinePanel] Created solid layer:", item.name);
       }
     } else if (item.type === "audio") {
@@ -550,13 +627,18 @@ function onDrop(event: DragEvent) {
   }
 }
 function deleteSelectedLayers() {
-  layerStore.deleteSelectedLayers(store);
+  layerStore.deleteSelectedLayers();
 }
 function setFrame(e: Event) {
-  animationStore.setFrame(store, parseInt((e.target as HTMLInputElement).value, 10) || 0);
+  // Type proof: frame number ∈ number | NaN → number (≥ 0, frame index)
+  const parsedFrame = parseInt((e.target as HTMLInputElement).value, 10);
+  const frame = Number.isInteger(parsedFrame) && parsedFrame >= 0
+    ? parsedFrame
+    : 0;
+  animationStore.setFrame(getAnimationStoreAccess(), frame);
 }
 function togglePlayback() {
-  animationStore.togglePlayback(store);
+  animationStore.togglePlayback(getAnimationStoreAccess());
 }
 function handleToggleExpand(id: string, val: boolean) {
   expandedLayers.value[id] = val;
@@ -564,7 +646,7 @@ function handleToggleExpand(id: string, val: boolean) {
 
 // Format frame as timecode (HH;MM;SS;FF) SMPTE format
 function formatTimecode(frame: number): string {
-  const fps = projectStore.getFps(store);
+  const fps = projectStore.getFps();
   const totalSeconds = Math.floor(frame / fps);
   const frames = Math.floor(frame % fps);
   const seconds = totalSeconds % 60;
@@ -596,7 +678,7 @@ function drawRuler() {
   // Ensure labels have enough room and don't overlap
   const labelMinWidth = 40; // minimum pixels between labels
   const maxLabels = Math.max(1, Math.floor(width / labelMinWidth));
-  const idealStep = Math.ceil(projectStore.getFrameCount(store) / maxLabels);
+  const idealStep = Math.ceil(projectStore.getFrameCount() / maxLabels);
 
   // Round up to a nice number for clean ruler
   const niceSteps = [1, 2, 5, 10, 20, 25, 50, 100, 200];
@@ -607,7 +689,7 @@ function drawRuler() {
 
   // Proportional positioning: frame position = (frame / frameCount) * width
   // This ensures the ruler fills the viewport when zoomed out
-  const frameCount = projectStore.getFrameCount(store);
+  const frameCount = projectStore.getFrameCount();
 
   for (let f = 0; f <= frameCount; f++) {
     const x = (f / frameCount) * width;
@@ -634,10 +716,13 @@ function drawRuler() {
   }
 
   // Draw beat markers (onsets)
-  if (audioStore.audioAnalysis?.onsets) {
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const audioAnalysis = (audioStore != null && typeof audioStore === "object" && "audioAnalysis" in audioStore && audioStore.audioAnalysis != null && typeof audioStore.audioAnalysis === "object") ? audioStore.audioAnalysis : undefined;
+  const onsets = (audioAnalysis != null && typeof audioAnalysis === "object" && "onsets" in audioAnalysis && Array.isArray(audioAnalysis.onsets)) ? audioAnalysis.onsets : undefined;
+  if (onsets != null) {
     ctx.strokeStyle = "rgba(255, 193, 7, 0.6)"; // Gold/amber for beats
     ctx.lineWidth = 1;
-    for (const onset of audioStore.audioAnalysis.onsets) {
+    for (const onset of onsets) {
       const x = (onset / frameCount) * width;
       ctx.beginPath();
       ctx.moveTo(x, 20);
@@ -648,9 +733,12 @@ function drawRuler() {
   }
 
   // Draw peak markers (diamonds at top)
-  if (audioStore.peakData?.indices) {
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const peakData = (audioStore != null && typeof audioStore === "object" && "peakData" in audioStore && audioStore.peakData != null && typeof audioStore.peakData === "object") ? audioStore.peakData : undefined;
+  const peakIndices = (peakData != null && typeof peakData === "object" && "indices" in peakData && Array.isArray(peakData.indices)) ? peakData.indices : undefined;
+  if (peakIndices != null) {
     ctx.fillStyle = "rgba(255, 107, 107, 0.9)"; // Red for peaks
-    for (const peakFrame of audioStore.peakData.indices) {
+    for (const peakFrame of peakIndices) {
       const x = (peakFrame / frameCount) * width;
       // Draw small diamond
       ctx.beginPath();
@@ -671,21 +759,43 @@ function drawRuler() {
   ctx.stroke();
 }
 
+// Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??/?.
+// Helper function to get scrollLeft from rulerScrollRef or trackScrollRef
+function getScrollLeft(): number | undefined {
+  const rulerRef = rulerScrollRef.value;
+  const rulerScrollLeft = (rulerRef !== null && rulerRef !== undefined && typeof rulerRef === "object" && "scrollLeft" in rulerRef && typeof rulerRef.scrollLeft === "number" && Number.isFinite(rulerRef.scrollLeft)) ? rulerRef.scrollLeft : undefined;
+  if (rulerScrollLeft !== undefined) return rulerScrollLeft;
+  const trackRef = trackScrollRef.value;
+  const trackScrollLeft = (trackRef !== null && trackRef !== undefined && typeof trackRef === "object" && "scrollLeft" in trackRef && typeof trackRef.scrollLeft === "number" && Number.isFinite(trackRef.scrollLeft)) ? trackRef.scrollLeft : undefined;
+  return trackScrollLeft;
+}
+
 function startRulerScrub(e: MouseEvent) {
-  const rect = rulerCanvas.value?.getBoundingClientRect();
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const rulerCanvasValue = rulerCanvas.value;
+  const getBoundingClientRect = (rulerCanvasValue != null && typeof rulerCanvasValue === "object" && typeof rulerCanvasValue.getBoundingClientRect === "function") ? rulerCanvasValue.getBoundingClientRect : undefined;
+  const rect = getBoundingClientRect != null ? getBoundingClientRect() : undefined;
   if (!rect) return;
-  const _scrollX =
-    rulerScrollRef.value?.scrollLeft || trackScrollRef.value?.scrollLeft || 0;
+  // Type proof: scrollLeft ∈ number | undefined → number (≥ 0, scroll position)
+  const _scrollX = safeNonNegativeDefault(
+    getScrollLeft(),
+    0,
+    "scrollLeft",
+  );
 
   // Track if this is an audio scrub (Ctrl held at start)
   const isAudioScrub = e.ctrlKey || e.metaKey;
 
   const update = (ev: MouseEvent) => {
-    const currentScrollX =
-      rulerScrollRef.value?.scrollLeft || trackScrollRef.value?.scrollLeft || 0;
+    // Type proof: scrollLeft ∈ number | undefined → number (≥ 0, scroll position)
+    const currentScrollX = safeNonNegativeDefault(
+      getScrollLeft(),
+      0,
+      "scrollLeft",
+    );
     const x = ev.clientX - rect.left + currentScrollX;
     // Convert x position to frame using proportional formula
-    const frameCount = projectStore.getFrameCount(store);
+    const frameCount = projectStore.getFrameCount();
     let f = Math.max(
       0,
       Math.min(
@@ -695,28 +805,33 @@ function startRulerScrub(e: MouseEvent) {
     );
 
     // Apply snapping (hold Alt/Option to disable)
-    if (!ev.altKey && store.snapConfig.enabled) {
-      const snap = findNearestSnap(
-        Math.round(f),
-        store.snapConfig,
-        effectivePpf.value,
-        {
-          layers: store.layers,
-          audioAnalysis: audioStore.audioAnalysis,
-          peakData: audioStore.peakData,
-        },
-      );
-      if (snap) {
+    if (!ev.altKey && animationStore.snapConfig.enabled) {
+      // System F/Omega pattern: Wrap in try/catch for expected "no snap" case
+      // When no snap targets are found, it's a valid state (snapping is optional)
+      try {
+        const snap = findNearestSnap(
+          Math.round(f),
+          animationStore.snapConfig,
+          effectivePpf.value,
+          {
+            layers: projectStore.getActiveCompLayers(),
+            audioAnalysis: audioStore.audioAnalysis,
+            peakData: audioStore.peakData,
+          },
+        );
         f = snap.frame;
+      } catch (error) {
+        // No snap target found - this is expected when no targets are within threshold
+        // Skip snapping and use the original frame
       }
     }
 
     const frame = Math.round(f);
-    animationStore.setFrame(store, frame);
+    animationStore.setFrame(getAnimationStoreAccess(), frame);
 
     // Ctrl+drag: Audio scrub - play short audio snippet at current position
     if (isAudioScrub || ev.ctrlKey || ev.metaKey) {
-      audioStore.scrubAudio(frame, projectStore.getFps(store));
+      audioStore.scrubAudio(frame, projectStore.getFps());
     }
   };
 
@@ -757,16 +872,27 @@ function clearWorkArea() {
 }
 
 function startWorkAreaDrag(handle: "start" | "end", e: MouseEvent) {
-  const rect = rulerCanvas.value?.getBoundingClientRect();
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const rulerCanvasValue = rulerCanvas.value;
+  const getBoundingClientRect = (rulerCanvasValue != null && typeof rulerCanvasValue === "object" && typeof rulerCanvasValue.getBoundingClientRect === "function") ? rulerCanvasValue.getBoundingClientRect : undefined;
+  const rect = getBoundingClientRect != null ? getBoundingClientRect() : undefined;
   if (!rect) return;
-  const _scrollX =
-    rulerScrollRef.value?.scrollLeft || trackScrollRef.value?.scrollLeft || 0;
+  // Type proof: scrollLeft ∈ number | undefined → number (≥ 0, scroll position)
+  const _scrollX = safeNonNegativeDefault(
+    getScrollLeft(),
+    0,
+    "scrollLeft",
+  );
 
   const update = (ev: MouseEvent) => {
-    const currentScrollX =
-      rulerScrollRef.value?.scrollLeft || trackScrollRef.value?.scrollLeft || 0;
+    // Type proof: scrollLeft ∈ number | undefined → number (≥ 0, scroll position)
+    const currentScrollX = safeNonNegativeDefault(
+      getScrollLeft(),
+      0,
+      "scrollLeft",
+    );
     const x = ev.clientX - rect.left + currentScrollX;
-    const frameCount = projectStore.getFrameCount(store);
+    const frameCount = projectStore.getFrameCount();
     let frame = Math.round(
       Math.max(
         0,

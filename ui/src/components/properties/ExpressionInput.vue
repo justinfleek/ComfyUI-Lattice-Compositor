@@ -157,7 +157,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
 import { EXPRESSION_PRESETS, validateExpression } from "@/services/expressions";
-import { useCompositorStore } from "@/stores/compositorStore";
+import { useProjectStore } from "@/stores/projectStore";
 import type { PropertyExpression } from "@/types/project";
 
 interface Props {
@@ -166,7 +166,7 @@ interface Props {
 }
 
 const props = defineProps<Props>();
-const store = useCompositorStore();
+const projectStore = useProjectStore();
 
 const emit = defineEmits<{
   (e: "close"): void;
@@ -187,8 +187,10 @@ const rowMappingMode = ref<"frame" | "time" | "manual">("frame");
 const manualRowOffset = ref(0);
 
 // Get available data assets from project
+// Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
 const availableDataAssets = computed(() => {
-  const assets = store.project?.dataAssets ?? {};
+  const project = projectStore.project;
+  const assets = (project !== null && project !== undefined && typeof project === "object" && "dataAssets" in project && project.dataAssets !== null && typeof project.dataAssets === "object") ? project.dataAssets : {};
   return Object.entries(assets).map(([name, asset]) => ({
     name,
     type: asset.type,
@@ -202,8 +204,10 @@ const availableDataAssets = computed(() => {
 const selectedAssetDetails = computed(() => {
   const name = selectedDataAsset.value;
   if (!name) return null;
-  const asset = store.project?.dataAssets?.[name];
-  return asset || null;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const dataAssets = (projectStore.project != null && typeof projectStore.project === "object" && "dataAssets" in projectStore.project && projectStore.project.dataAssets != null && typeof projectStore.project.dataAssets === "object") ? projectStore.project.dataAssets : undefined;
+  const asset = (dataAssets != null && typeof dataAssets === "object" && name in dataAssets && dataAssets[name] != null) ? dataAssets[name] : undefined;
+  return asset != null ? asset : null;
 });
 
 // Is selected asset CSV/TSV?
@@ -219,9 +223,10 @@ const isJSONType = computed(() => {
 });
 
 // CSV headers for column dropdown
+// Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??/?.
 const csvHeaders = computed(() => {
   const asset = selectedAssetDetails.value;
-  return asset?.headers ?? [];
+  return (asset !== null && asset !== undefined && typeof asset === "object" && "headers" in asset && Array.isArray(asset.headers)) ? asset.headers : [];
 });
 
 // Generate expression code from data selection
@@ -256,8 +261,10 @@ const generatedDataExpression = computed(() => {
 });
 
 // Check if property already has an expression
+// Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??/?.
 const hasExpression = computed(() => {
-  return props.currentExpression?.enabled ?? false;
+  const expr = props.currentExpression;
+  return (expr !== null && expr !== undefined && typeof expr === "object" && "enabled" in expr && typeof expr.enabled === "boolean") ? expr.enabled : false;
 });
 
 // Preset descriptions
@@ -326,9 +333,11 @@ watch(
       } else if (props.currentExpression.type === "preset") {
         mode.value = "preset";
         // Find matching preset
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+        const currentExpressionName = (props.currentExpression != null && typeof props.currentExpression === "object" && "name" in props.currentExpression && typeof props.currentExpression.name === "string") ? props.currentExpression.name : undefined;
         const presetKey = Object.keys(EXPRESSION_PRESETS).find((key) => {
           const preset = EXPRESSION_PRESETS[key];
-          return preset.name === props.currentExpression?.name;
+          return preset.name === currentExpressionName;
         });
         selectedPreset.value = presetKey || "";
       } else {

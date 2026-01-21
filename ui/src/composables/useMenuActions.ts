@@ -16,6 +16,7 @@ import { useCameraStore } from "@/stores/cameraStore";
 import type { MarkerStoreAccess } from "@/stores/markerStore";
 import type { AnimationStoreAccess } from "@/stores/animationStore/types";
 import { usePlaybackStore } from "@/stores/playbackStore";
+import { isFiniteNumber } from "@/utils/typeGuards";
 
 export interface MenuActionsOptions {
   // Dialog refs
@@ -68,7 +69,14 @@ export function useMenuActions(options: MenuActionsOptions) {
         meta: projectStore.project.meta,
       },
       activeCompositionId: projectStore.activeCompositionId,
-      currentFrame: activeComp?.currentFrame ?? 0,
+      // Lean4/PureScript/Haskell: Explicit pattern matching on optional property
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+      currentFrame: (() => {
+        if (activeComp !== null && typeof activeComp === "object" && "currentFrame" in activeComp && typeof activeComp.currentFrame === "number") {
+          return activeComp.currentFrame;
+        }
+        return 0;
+      })(),
       getActiveComp: () => projectStore.getActiveComp(),
       setFrame: (frame: number) => {
         const comp = projectStore.getActiveComp();
@@ -88,11 +96,19 @@ export function useMenuActions(options: MenuActionsOptions) {
       getActiveComp: () => projectStore.getActiveComp(),
       get currentFrame() {
         const comp = projectStore.getActiveComp();
-        return comp?.currentFrame ?? 0;
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+        if (comp !== null && typeof comp === "object" && "currentFrame" in comp && typeof comp.currentFrame === "number") {
+          return comp.currentFrame;
+        }
+        return 0;
       },
       get frameCount() {
         const comp = projectStore.getActiveComp();
-        return comp?.settings.frameCount ?? 81;
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+        if (comp !== null && typeof comp === "object" && "settings" in comp && comp.settings !== null && typeof comp.settings === "object" && "frameCount" in comp.settings && typeof comp.settings.frameCount === "number") {
+          return comp.settings.frameCount;
+        }
+        return 81;
       },
       get fps() {
         return projectStore.getFps();

@@ -163,15 +163,17 @@
 
 <script setup lang="ts">
 import { computed, ref } from "vue";
-import { useCompositorStore } from "@/stores/compositorStore";
 import { useLayerStore } from "@/stores/layerStore";
+import { useSelectionStore } from "@/stores/selectionStore";
+import { useProjectStore } from "@/stores/projectStore";
 
-const store = useCompositorStore();
 const layerStore = useLayerStore();
+const selectionStore = useSelectionStore();
+const projectStore = useProjectStore();
 
 const alignTarget = ref<"composition" | "selection">("composition");
 
-const selectedCount = computed(() => store.selectedLayerIds.length);
+const selectedCount = computed(() => selectionStore.selectedLayerIds.length);
 const canAlign = computed(() => selectedCount.value >= 1);
 const canDistribute = computed(() => selectedCount.value >= 3);
 
@@ -185,14 +187,14 @@ type AlignDirection =
 type DistributeDirection = "horizontal" | "vertical";
 
 function alignLayers(direction: AlignDirection) {
-  const layerIds = store.selectedLayerIds;
+  const layerIds = selectionStore.selectedLayerIds;
   if (layerIds.length === 0) return;
 
-  const comp = store.getActiveComp();
+  const comp = projectStore.getActiveComp();
   if (!comp) return;
 
   // Get layer bounds
-  const layers = layerIds.map((id) => layerStore.getLayerById(store, id)).filter(Boolean);
+  const layers = layerIds.map((id) => layerStore.getLayerById(id)).filter(Boolean);
   if (layers.length === 0) return;
 
   let targetBounds: {
@@ -221,7 +223,11 @@ function alignLayers(direction: AlignDirection) {
       maxY = -Infinity;
     for (const layer of layers) {
       if (!layer) continue;
-      const pos = layer.transform?.position?.value || { x: 0, y: 0 };
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const transform = (layer != null && typeof layer === "object" && "transform" in layer && layer.transform != null && typeof layer.transform === "object") ? layer.transform : undefined;
+      const position = (transform != null && typeof transform === "object" && "position" in transform && transform.position != null && typeof transform.position === "object") ? transform.position : undefined;
+      const posValue = (position != null && typeof position === "object" && "value" in position && position.value != null && typeof position.value === "object") ? position.value : undefined;
+      const pos = posValue || { x: 0, y: 0 };
       minX = Math.min(minX, pos.x);
       maxX = Math.max(maxX, pos.x);
       minY = Math.min(minY, pos.y);
@@ -239,7 +245,10 @@ function alignLayers(direction: AlignDirection) {
 
   // Apply alignment
   for (const layer of layers) {
-    if (!layer || !layer.transform?.position) continue;
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const transform = (layer != null && typeof layer === "object" && "transform" in layer && layer.transform != null && typeof layer.transform === "object") ? layer.transform : undefined;
+    const position = (transform != null && typeof transform === "object" && "position" in transform && transform.position != null && typeof transform.position === "object") ? transform.position : undefined;
+    if (!layer || !position) continue;
 
     const pos = { ...layer.transform.position.value };
 
@@ -267,31 +276,48 @@ function alignLayers(direction: AlignDirection) {
     layer.transform.position.value = pos;
   }
 
-  store.project.meta.modified = new Date().toISOString();
+  projectStore.project.meta.modified = new Date().toISOString();
 }
 
 function distributeLayers(direction: DistributeDirection) {
-  const layerIds = store.selectedLayerIds;
+  const layerIds = selectionStore.selectedLayerIds;
   if (layerIds.length < 3) return;
 
   const layers = layerIds
-    .map((id) => layerStore.getLayerById(store, id))
+    .map((id) => layerStore.getLayerById(id))
     .filter(Boolean)
-    .filter((l) => l?.transform?.position);
+    .filter((l) => {
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const transform = (l != null && typeof l === "object" && "transform" in l && l.transform != null && typeof l.transform === "object") ? l.transform : undefined;
+      const position = (transform != null && typeof transform === "object" && "position" in transform && transform.position != null && typeof transform.position === "object") ? transform.position : undefined;
+      return !!position;
+    });
 
   if (layers.length < 3) return;
 
   // Sort layers by position
   const sorted = [...layers].sort((a, b) => {
-    const posA = a?.transform?.position?.value;
-    const posB = b?.transform?.position?.value;
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const transformA = (a != null && typeof a === "object" && "transform" in a && a.transform != null && typeof a.transform === "object") ? a.transform : undefined;
+    const positionA = (transformA != null && typeof transformA === "object" && "position" in transformA && transformA.position != null && typeof transformA.position === "object") ? transformA.position : undefined;
+    const posA = (positionA != null && typeof positionA === "object" && "value" in positionA && positionA.value != null && typeof positionA.value === "object") ? positionA.value : undefined;
+    const transformB = (b != null && typeof b === "object" && "transform" in b && b.transform != null && typeof b.transform === "object") ? b.transform : undefined;
+    const positionB = (transformB != null && typeof transformB === "object" && "position" in transformB && transformB.position != null && typeof transformB.position === "object") ? transformB.position : undefined;
+    const posB = (positionB != null && typeof positionB === "object" && "value" in positionB && positionB.value != null && typeof positionB.value === "object") ? positionB.value : undefined;
     if (!posA || !posB) return 0;
     return direction === "horizontal" ? posA.x - posB.x : posA.y - posB.y;
   });
 
   // Get first and last positions
-  const first = sorted[0]?.transform?.position?.value;
-  const last = sorted[sorted.length - 1]?.transform?.position?.value;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const firstLayer = sorted[0];
+  const transformFirst = (firstLayer != null && typeof firstLayer === "object" && "transform" in firstLayer && firstLayer.transform != null && typeof firstLayer.transform === "object") ? firstLayer.transform : undefined;
+  const positionFirst = (transformFirst != null && typeof transformFirst === "object" && "position" in transformFirst && transformFirst.position != null && typeof transformFirst.position === "object") ? transformFirst.position : undefined;
+  const first = (positionFirst != null && typeof positionFirst === "object" && "value" in positionFirst && positionFirst.value != null && typeof positionFirst.value === "object") ? positionFirst.value : undefined;
+  const lastLayer = sorted[sorted.length - 1];
+  const transformLast = (lastLayer != null && typeof lastLayer === "object" && "transform" in lastLayer && lastLayer.transform != null && typeof lastLayer.transform === "object") ? lastLayer.transform : undefined;
+  const positionLast = (transformLast != null && typeof transformLast === "object" && "position" in transformLast && transformLast.position != null && typeof transformLast.position === "object") ? transformLast.position : undefined;
+  const last = (positionLast != null && typeof positionLast === "object" && "value" in positionLast && positionLast.value != null && typeof positionLast.value === "object") ? positionLast.value : undefined;
   if (!first || !last) return;
 
   // Calculate spacing
@@ -302,7 +328,10 @@ function distributeLayers(direction: DistributeDirection) {
   // Apply distribution
   for (let i = 1; i < sorted.length - 1; i++) {
     const layer = sorted[i];
-    if (!layer?.transform?.position) continue;
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const transform = (layer != null && typeof layer === "object" && "transform" in layer && layer.transform != null && typeof layer.transform === "object") ? layer.transform : undefined;
+    const position = (transform != null && typeof transform === "object" && "position" in transform && transform.position != null && typeof transform.position === "object") ? transform.position : undefined;
+    if (!position) continue;
     const pos = { ...layer.transform.position.value };
 
     if (direction === "horizontal") {
@@ -314,7 +343,7 @@ function distributeLayers(direction: DistributeDirection) {
     layer.transform.position.value = pos;
   }
 
-  store.project.meta.modified = new Date().toISOString();
+  projectStore.project.meta.modified = new Date().toISOString();
 }
 </script>
 

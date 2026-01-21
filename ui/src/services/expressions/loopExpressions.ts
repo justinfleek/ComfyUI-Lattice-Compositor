@@ -13,6 +13,7 @@ import {
   scaleValue,
   subtractValues,
 } from "./expressionHelpers";
+import { isFiniteNumber } from "@/utils/typeGuards";
 
 // ============================================================================
 // TYPES
@@ -92,7 +93,11 @@ export function repeatAfter(
         return value + velocity * elapsed;
       }
       if (Array.isArray(velocity) && Array.isArray(value)) {
-        return value.map((v, i) => v + (velocity[i] ?? 0) * elapsed);
+        // Type proof: number | undefined → number
+        return value.map((v, i) => {
+          const vel = isFiniteNumber(velocity[i]) ? velocity[i] : 0;
+          return v + vel * elapsed;
+        });
       }
       // Type mismatch - return unchanged
       console.warn(
@@ -164,7 +169,11 @@ export function repeatBefore(
         return value - velocity * elapsed;
       }
       if (Array.isArray(velocity) && Array.isArray(value)) {
-        return value.map((v, i) => v - (velocity[i] ?? 0) * elapsed);
+        // Type proof: number | undefined → number
+        return value.map((v, i) => {
+          const vel = isFiniteNumber(velocity[i]) ? velocity[i] : 0;
+          return v - vel * elapsed;
+        });
       }
       // Type mismatch - return unchanged
       console.warn(

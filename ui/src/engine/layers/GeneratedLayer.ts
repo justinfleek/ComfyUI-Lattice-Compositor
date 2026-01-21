@@ -34,17 +34,27 @@ export class GeneratedLayer extends BaseLayer {
    * Extract generated layer data from layer object
    */
   private extractGeneratedData(layerData: Layer): GeneratedLayerData {
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??/?.
     const data = layerData.data as Partial<GeneratedLayerData> | undefined;
+    const generationType = (data !== null && data !== undefined && typeof data === "object" && "generationType" in data && typeof data.generationType === "string" && data.generationType.length > 0) ? data.generationType : "depth";
+    const sourceLayerId = (data !== null && data !== undefined && typeof data === "object" && "sourceLayerId" in data) ? data.sourceLayerId : null;
+    const model = (data !== null && data !== undefined && typeof data === "object" && "model" in data && typeof data.model === "string" && data.model.length > 0) ? data.model : "depth-anything-v2";
+    const parameters = (data !== null && data !== undefined && typeof data === "object" && "parameters" in data && typeof data.parameters === "object" && data.parameters !== null) ? data.parameters : {};
+    const generatedAssetId = (data !== null && data !== undefined && typeof data === "object" && "generatedAssetId" in data) ? data.generatedAssetId : null;
+    const status = (data !== null && data !== undefined && typeof data === "object" && "status" in data && typeof data.status === "string" && data.status.length > 0) ? data.status : "pending";
+    const autoRegenerate = (data !== null && data !== undefined && typeof data === "object" && "autoRegenerate" in data && typeof data.autoRegenerate === "boolean") ? data.autoRegenerate : false;
+    const lastGenerated = (data !== null && data !== undefined && typeof data === "object" && "lastGenerated" in data) ? data.lastGenerated : undefined;
+    const errorMessage = (data !== null && data !== undefined && typeof data === "object" && "errorMessage" in data) ? data.errorMessage : undefined;
     return {
-      generationType: data?.generationType ?? "depth",
-      sourceLayerId: data?.sourceLayerId ?? null,
-      model: data?.model ?? "depth-anything-v2",
-      parameters: data?.parameters ?? {},
-      generatedAssetId: data?.generatedAssetId ?? null,
-      status: data?.status ?? "pending",
-      autoRegenerate: data?.autoRegenerate ?? false,
-      lastGenerated: data?.lastGenerated,
-      errorMessage: data?.errorMessage,
+      generationType,
+      sourceLayerId,
+      model,
+      parameters,
+      generatedAssetId,
+      status,
+      autoRegenerate,
+      lastGenerated,
+      errorMessage,
     };
   }
 

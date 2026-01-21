@@ -160,20 +160,26 @@
 </template>
 
 <script setup lang="ts">
-import { storeToRefs } from "pinia";
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import type { LatticeEngine } from "@/engine/LatticeEngine";
 import type { ParticleLayer } from "@/engine/layers/ParticleLayer";
-import { useCompositorStore } from "@/stores/compositorStore";
 import { useAnimationStore } from "@/stores/animationStore";
+import { useProjectStore } from "@/stores/projectStore";
+import { usePlaybackStore } from "@/stores/playbackStore";
 
 const props = defineProps<{
   engine?: LatticeEngine | null;
 }>();
 
-const store = useCompositorStore();
 const animationStore = useAnimationStore();
-const { currentFrame, fps, frameCount, layers, isPlaying } = storeToRefs(store);
+const projectStore = useProjectStore();
+const playbackStore = usePlaybackStore();
+
+const currentFrame = computed(() => animationStore.currentFrame);
+const fps = computed(() => projectStore.getFps());
+const frameCount = computed(() => projectStore.getFrameCount());
+const layers = computed(() => projectStore.getActiveCompLayers());
+const isPlaying = computed(() => playbackStore.isPlaying);
 
 // Playback state
 const loopPlayback = ref(true);
@@ -213,29 +219,31 @@ const particleLayers = computed(() => {
 
 // Methods
 function togglePlayback() {
-  animationStore.togglePlayback(store);
+  playbackStore.togglePlayback();
 }
 
 function goToStart() {
-  animationStore.setFrame(store, renderRangeStart.value);
+  animationStore.setFrame(renderRangeStart.value);
 }
 
 function goToEnd() {
-  animationStore.setFrame(store, renderRangeEnd.value - 1);
+  animationStore.setFrame(renderRangeEnd.value - 1);
 }
 
 function stepForward() {
   const next = Math.min(currentFrame.value + 1, frameCount.value - 1);
-  animationStore.setFrame(store, next);
+  animationStore.setFrame(next);
 }
 
 function stepBackward() {
   const prev = Math.max(currentFrame.value - 1, 0);
-  animationStore.setFrame(store, prev);
+  animationStore.setFrame(prev);
 }
 
+// Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??/?.
 function getCacheCount(layerId: string): number {
-  return cacheStats.value.get(layerId)?.cachedFrames ?? 0;
+  const stats = cacheStats.value.get(layerId);
+  return (stats !== null && stats !== undefined && typeof stats === "object" && "cachedFrames" in stats && typeof stats.cachedFrames === "number" && Number.isFinite(stats.cachedFrames)) ? stats.cachedFrames : 0;
 }
 
 async function cacheRenderRange() {

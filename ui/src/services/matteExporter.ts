@@ -13,6 +13,7 @@ import type {
 import { ArcLengthParameterizer, pathCommandsToBezier } from "./arcLength";
 import { interpolateProperty } from "./interpolation";
 import { ParticleSystem } from "./particleSystem";
+import { isFiniteNumber, assertDefined } from "@/utils/typeGuards";
 
 export interface ExportProgress {
   frame: number;
@@ -99,7 +100,12 @@ class MatteExporter {
 
     // Initialize offscreen canvas
     this.offscreenCanvas = new OffscreenCanvas(width, height);
-    this.ctx = this.offscreenCanvas.getContext("2d")!;
+    const ctx = this.offscreenCanvas.getContext("2d");
+    // Type proof: getContext("2d") returns non-null for OffscreenCanvas
+    if (!ctx) {
+      throw new TypeError("Failed to get 2d context from OffscreenCanvas");
+    }
+    this.ctx = ctx;
 
     // Initialize particle systems for particle layers
     this.initializeParticleSystems(project);
@@ -147,7 +153,9 @@ class MatteExporter {
     frame: number,
     options: ExportOptions,
   ): Promise<Blob> {
-    const ctx = this.ctx!;
+    // Type proof: ctx is guaranteed non-null by generateMatteSequence initializing it
+    assertDefined(this.ctx, "ctx must exist after generateMatteSequence initialization");
+    const ctx = this.ctx;
     const { width, height } = options;
 
     // Clear with WHITE (include everything by default)
@@ -171,8 +179,26 @@ class MatteExporter {
 
     // Find text layers that are visible at this frame
     const textLayers = project.layers.filter((layer) => {
-      const start = layer.startFrame ?? layer.inPoint ?? 0;
-      const end = layer.endFrame ?? layer.outPoint ?? 80;
+      // Type proof: start ∈ number | undefined → number
+      const start = (() => {
+        if (isFiniteNumber(layer.startFrame)) {
+          return Math.floor(layer.startFrame);
+        }
+        if (isFiniteNumber(layer.inPoint)) {
+          return Math.floor(layer.inPoint);
+        }
+        return 0;
+      })();
+      // Type proof: end ∈ number | undefined → number
+      const end = (() => {
+        if (isFiniteNumber(layer.endFrame)) {
+          return Math.floor(layer.endFrame);
+        }
+        if (isFiniteNumber(layer.outPoint)) {
+          return Math.floor(layer.outPoint);
+        }
+        return 80;
+      })();
       return (
         layer.type === "text" && layer.visible && frame >= start && frame <= end
       );
@@ -191,8 +217,26 @@ class MatteExporter {
 
     // Find particle layers that are visible at this frame
     const particleLayers = project.layers.filter((layer) => {
-      const start = layer.startFrame ?? layer.inPoint ?? 0;
-      const end = layer.endFrame ?? layer.outPoint ?? 80;
+      // Type proof: start ∈ number | undefined → number
+      const start = (() => {
+        if (isFiniteNumber(layer.startFrame)) {
+          return Math.floor(layer.startFrame);
+        }
+        if (isFiniteNumber(layer.inPoint)) {
+          return Math.floor(layer.inPoint);
+        }
+        return 0;
+      })();
+      // Type proof: end ∈ number | undefined → number
+      const end = (() => {
+        if (isFiniteNumber(layer.endFrame)) {
+          return Math.floor(layer.endFrame);
+        }
+        if (isFiniteNumber(layer.outPoint)) {
+          return Math.floor(layer.outPoint);
+        }
+        return 80;
+      })();
       return (
         layer.type === "particles" &&
         layer.visible &&
@@ -303,16 +347,16 @@ class MatteExporter {
     if (!pathLayer || pathLayer.type !== "spline") return;
 
     const splineData = pathLayer.data as SplineData;
-    if (!splineData?.controlPoints || splineData.controlPoints.length < 2)
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const splineControlPoints = (splineData != null && typeof splineData === "object" && "controlPoints" in splineData && splineData.controlPoints != null && Array.isArray(splineData.controlPoints)) ? splineData.controlPoints : undefined;
+    if (splineControlPoints == null || splineControlPoints.length < 2)
       return;
 
     // Build path commands from control points
     const pathCommands = this.buildPathCommands(splineData);
-    if (!pathCommands || pathCommands.length < 2) return;
 
     // Parse path to Bezier curve
     const bezierCurve = pathCommandsToBezier(pathCommands);
-    if (!bezierCurve) return;
 
     // Create arc length parameterizer
     const parameterizer = new ArcLengthParameterizer(bezierCurve);
@@ -374,9 +418,13 @@ class MatteExporter {
   /**
    * Build path commands from spline control points
    */
-  private buildPathCommands(splineData: SplineData): Array<{ command: string; points: number[] }> | null {
+  private buildPathCommands(splineData: SplineData): Array<{ command: string; points: number[] }> {
     const cp = splineData.controlPoints;
-    if (!cp || cp.length < 2) return null;
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const cpLength = (cp != null && Array.isArray(cp)) ? cp.length : undefined;
+    if (!cp || cp.length < 2) {
+      throw new Error(`[MatteExporter] Cannot build path commands: Spline has insufficient control points (${cpLength != null ? cpLength : 0}, minimum 2 required)`);
+    }
 
     const pathCommands: Array<{ command: string; points: number[] }> = [];
 
@@ -514,13 +562,24 @@ class MatteExporter {
       }
 
       // Add modulations (if defined)
-      for (const mod of data.modulations ?? []) {
+      // Type proof: modulations ∈ unknown[] | undefined → unknown[]
+      const modulations = Array.isArray(data.modulations)
+        ? data.modulations
+        : [];
+      for (const mod of modulations) {
         system.addModulation(mod);
       }
 
       // Run warmup period
-      const warmupFrames = data.systemConfig.warmupPeriod || 0;
-      for (let i = 0; i < warmupFrames; i++) {
+      // Type proof: warmupFrames ∈ number | undefined → number (≥ 0, frame count)
+      // Lean4/PureScript/Haskell: Explicit pattern matching on optional property
+      // Type proof: warmupPeriod ∈ number | undefined → number (≥ 0, frame count)
+      const warmupPeriodRaw = data.systemConfig.warmupPeriod;
+      const warmupFrames: number = warmupPeriodRaw !== undefined && isFiniteNumber(warmupPeriodRaw) && warmupPeriodRaw >= 0
+        ? warmupPeriodRaw
+        : 0;
+      const safeWarmupFrames = Number.isFinite(warmupFrames) && warmupFrames >= 0 ? warmupFrames : 0;
+      for (let i = 0; i < safeWarmupFrames; i++) {
         system.step();
       }
 
@@ -547,8 +606,26 @@ class MatteExporter {
       if (!system) continue;
 
       // Only step if layer is visible at this frame
-      const start = layer.startFrame ?? layer.inPoint ?? 0;
-      const end = layer.endFrame ?? layer.outPoint ?? 80;
+      // Type proof: start ∈ number | undefined → number
+      const start = (() => {
+        if (isFiniteNumber(layer.startFrame)) {
+          return Math.floor(layer.startFrame);
+        }
+        if (isFiniteNumber(layer.inPoint)) {
+          return Math.floor(layer.inPoint);
+        }
+        return 0;
+      })();
+      // Type proof: end ∈ number | undefined → number
+      const end = (() => {
+        if (isFiniteNumber(layer.endFrame)) {
+          return Math.floor(layer.endFrame);
+        }
+        if (isFiniteNumber(layer.outPoint)) {
+          return Math.floor(layer.outPoint);
+        }
+        return 80;
+      })();
       if (layer.visible && frame >= start && frame <= end) {
         system.step();
       }

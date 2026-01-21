@@ -7,7 +7,7 @@
 import { markLayerDirty } from "@/services/layerEvaluationCache";
 import type { BezierHandle, InterpolationType } from "@/types/project";
 import { findPropertyByPath } from "./helpers";
-import type { KeyframeStoreAccess } from "./types";
+import { useProjectStore } from "../projectStore";
 
 // ============================================================================
 // KEYFRAME INTERPOLATION
@@ -17,13 +17,13 @@ import type { KeyframeStoreAccess } from "./types";
  * Set keyframe interpolation type.
  */
 export function setKeyframeInterpolation(
-  store: KeyframeStoreAccess,
   layerId: string,
   propertyPath: string,
   keyframeId: string,
   interpolation: InterpolationType,
 ): void {
-  const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
+  const projectStore = useProjectStore();
+  const layer = projectStore.getActiveCompLayers().find((l) => l.id === layerId);
   if (!layer) return;
 
   const property = findPropertyByPath(layer, propertyPath);
@@ -34,22 +34,22 @@ export function setKeyframeInterpolation(
 
   keyframe.interpolation = interpolation;
   markLayerDirty(layerId);
-  store.project.meta.modified = new Date().toISOString();
-  store.pushHistory();
+  projectStore.project.meta.modified = new Date().toISOString();
+  projectStore.pushHistory();
 }
 
 /**
  * Set keyframe bezier handle.
  */
 export function setKeyframeHandle(
-  store: KeyframeStoreAccess,
   layerId: string,
   propertyPath: string,
   keyframeId: string,
   handleType: "in" | "out",
   handle: BezierHandle,
 ): void {
-  const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
+  const projectStore = useProjectStore();
+  const layer = projectStore.getActiveCompLayers().find((l) => l.id === layerId);
   if (!layer) return;
 
   const property = findPropertyByPath(layer, propertyPath);
@@ -70,21 +70,21 @@ export function setKeyframeHandle(
   }
 
   markLayerDirty(layerId);
-  store.project.meta.modified = new Date().toISOString();
-  store.pushHistory();
+  projectStore.project.meta.modified = new Date().toISOString();
+  projectStore.pushHistory();
 }
 
 /**
  * Set keyframe control mode (smooth, corner, etc.)
  */
 export function setKeyframeControlMode(
-  store: KeyframeStoreAccess,
   layerId: string,
   propertyPath: string,
   keyframeId: string,
   controlMode: "smooth" | "corner" | "symmetric",
 ): void {
-  const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
+  const projectStore = useProjectStore();
+  const layer = projectStore.getActiveCompLayers().find((l) => l.id === layerId);
   if (!layer) return;
 
   const property = findPropertyByPath(layer, propertyPath);
@@ -95,8 +95,8 @@ export function setKeyframeControlMode(
 
   keyframe.controlMode = controlMode;
   markLayerDirty(layerId);
-  store.project.meta.modified = new Date().toISOString();
-  store.pushHistory();
+  projectStore.project.meta.modified = new Date().toISOString();
+  projectStore.pushHistory();
 }
 
 // ============================================================================
@@ -114,7 +114,6 @@ export function setKeyframeControlMode(
  * @param breakHandle - If true, sets controlMode to 'corner' (Ctrl+drag behavior)
  */
 export function setKeyframeHandleWithMode(
-  store: KeyframeStoreAccess,
   layerId: string,
   propertyPath: string,
   keyframeId: string,
@@ -122,7 +121,8 @@ export function setKeyframeHandleWithMode(
   handle: BezierHandle,
   breakHandle: boolean = false,
 ): void {
-  const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
+  const projectStore = useProjectStore();
+  const layer = projectStore.getActiveCompLayers().find((l) => l.id === layerId);
   if (!layer) return;
 
   const property = findPropertyByPath(layer, propertyPath);
@@ -212,6 +212,6 @@ export function setKeyframeHandleWithMode(
   }
 
   markLayerDirty(layerId);
-  store.project.meta.modified = new Date().toISOString();
-  store.pushHistory();
+  projectStore.project.meta.modified = new Date().toISOString();
+  projectStore.pushHistory();
 }

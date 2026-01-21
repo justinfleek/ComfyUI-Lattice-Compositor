@@ -110,18 +110,18 @@
             <label title="Vertical position of floor (0=top, 1=bottom of composition).">Floor Y</label>
             <input
               type="range"
-              :value="collision.floorY ?? 1.0"
+              :value="collisionFloorY"
               min="0"
               max="1"
               step="0.01"
               @input="update('floorY', Number(($event.target as HTMLInputElement).value))"
             />
-            <span class="value-display">{{ ((collision.floorY ?? 1.0) * 100).toFixed(0) }}%</span>
+            <span class="value-display">{{ (collisionFloorY * 100).toFixed(0) }}%</span>
           </div>
           <div class="property-row">
             <label title="What happens when particles hit the floor.">Floor Action</label>
             <select
-              :value="collision.floorBehavior ?? 'bounce'"
+              :value="collisionFloorBehavior"
               @change="update('floorBehavior', ($event.target as HTMLSelectElement).value)"
             >
               <option value="none">None (Pass Through)</option>
@@ -134,13 +134,13 @@
             <label title="Surface friction when particles hit the floor (0=slippery, 1=sticky).">Floor Friction</label>
             <input
               type="range"
-              :value="collision.floorFriction ?? 0.3"
+              :value="collisionFloorFriction"
               min="0"
               max="1"
               step="0.05"
               @input="update('floorFriction', Number(($event.target as HTMLInputElement).value))"
             />
-            <span class="value-display">{{ ((collision.floorFriction ?? 0.3)).toFixed(2) }}</span>
+            <span class="value-display">{{ collisionFloorFriction.toFixed(2) }}</span>
           </div>
         </template>
 
@@ -157,13 +157,13 @@
           <label title="Vertical position of ceiling (0=top, 1=bottom of composition).">Ceiling Y</label>
           <input
             type="range"
-            :value="collision.ceilingY ?? 0"
+            :value="collisionCeilingY"
             min="0"
             max="1"
             step="0.01"
             @input="update('ceilingY', Number(($event.target as HTMLInputElement).value))"
           />
-          <span class="value-display">{{ ((collision.ceilingY ?? 0) * 100).toFixed(0) }}%</span>
+          <span class="value-display">{{ (collisionCeilingY * 100).toFixed(0) }}%</span>
         </div>
       </template>
     </div>
@@ -171,6 +171,7 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from "vue";
 import type { CollisionConfig } from "@/types/project";
 
 interface Props {
@@ -178,12 +179,31 @@ interface Props {
   expanded: boolean;
 }
 
-defineProps<Props>();
+const props = defineProps<Props>();
 
 const emit = defineEmits<{
   (e: "toggle"): void;
   (e: "update", key: keyof CollisionConfig, value: CollisionConfig[keyof CollisionConfig]): void;
 }>();
+
+// Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+// Computed properties for optional collision properties
+const collisionFloorY = computed(() => {
+  const collision = props.collision;
+  return (collision !== null && typeof collision === "object" && "floorY" in collision && typeof collision.floorY === "number" && Number.isFinite(collision.floorY)) ? collision.floorY : 1.0;
+});
+const collisionFloorBehavior = computed(() => {
+  const collision = props.collision;
+  return (collision !== null && typeof collision === "object" && "floorBehavior" in collision && typeof collision.floorBehavior === "string") ? collision.floorBehavior : "bounce";
+});
+const collisionFloorFriction = computed(() => {
+  const collision = props.collision;
+  return (collision !== null && typeof collision === "object" && "floorFriction" in collision && typeof collision.floorFriction === "number" && Number.isFinite(collision.floorFriction)) ? collision.floorFriction : 0.3;
+});
+const collisionCeilingY = computed(() => {
+  const collision = props.collision;
+  return (collision !== null && typeof collision === "object" && "ceilingY" in collision && typeof collision.ceilingY === "number" && Number.isFinite(collision.ceilingY)) ? collision.ceilingY : 0;
+});
 
 function update(
   key: keyof CollisionConfig,

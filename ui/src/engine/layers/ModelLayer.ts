@@ -141,22 +141,44 @@ export class ModelLayer extends BaseLayer {
       keyframes: [],
     };
 
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining/nullish coalescing
+    // Pattern match: data ∈ ModelLayerData | null → ModelLayerData (with explicit defaults)
+    const dataValue = (layerData.data !== null && typeof layerData.data === "object") ? layerData.data as ModelLayerData : null;
+    
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+    // Pattern match: Extract each property with explicit type narrowing and defaults
+    const assetIdValue = (dataValue !== null && typeof dataValue === "object" && "assetId" in dataValue && typeof dataValue.assetId === "string") ? dataValue.assetId : "";
+    const formatValue = (dataValue !== null && typeof dataValue === "object" && "format" in dataValue && typeof dataValue.format === "string") ? dataValue.format : "gltf";
+    const scaleValue = (dataValue !== null && typeof dataValue === "object" && "scale" in dataValue && dataValue.scale !== null && typeof dataValue.scale === "object") ? dataValue.scale : defaultScale;
+    const uniformScaleValue = (dataValue !== null && typeof dataValue === "object" && "uniformScale" in dataValue && typeof dataValue.uniformScale === "boolean") ? dataValue.uniformScale : true;
+    const materialOverrideValue = (dataValue !== null && typeof dataValue === "object" && "materialOverride" in dataValue) ? dataValue.materialOverride : undefined;
+    const animationValue = (dataValue !== null && typeof dataValue === "object" && "animation" in dataValue) ? dataValue.animation : undefined;
+    const boundingBoxValue = (dataValue !== null && typeof dataValue === "object" && "boundingBox" in dataValue) ? dataValue.boundingBox : undefined;
+    const castShadowValue = (dataValue !== null && typeof dataValue === "object" && "castShadow" in dataValue && typeof dataValue.castShadow === "boolean") ? dataValue.castShadow : true;
+    const receiveShadowValue = (dataValue !== null && typeof dataValue === "object" && "receiveShadow" in dataValue && typeof dataValue.receiveShadow === "boolean") ? dataValue.receiveShadow : true;
+    const frustumCulledValue = (dataValue !== null && typeof dataValue === "object" && "frustumCulled" in dataValue && typeof dataValue.frustumCulled === "boolean") ? dataValue.frustumCulled : true;
+    const renderOrderValue = (dataValue !== null && typeof dataValue === "object" && "renderOrder" in dataValue && typeof dataValue.renderOrder === "number" && Number.isFinite(dataValue.renderOrder)) ? dataValue.renderOrder : 0;
+    const showBoundingBoxValue = (dataValue !== null && typeof dataValue === "object" && "showBoundingBox" in dataValue && typeof dataValue.showBoundingBox === "boolean") ? dataValue.showBoundingBox : false;
+    const showSkeletonValue = (dataValue !== null && typeof dataValue === "object" && "showSkeleton" in dataValue && typeof dataValue.showSkeleton === "boolean") ? dataValue.showSkeleton : false;
+    const envMapIntensityValue = (dataValue !== null && typeof dataValue === "object" && "envMapIntensity" in dataValue && typeof dataValue.envMapIntensity === "number" && Number.isFinite(dataValue.envMapIntensity)) ? dataValue.envMapIntensity : 1;
+    const lodValue = (dataValue !== null && typeof dataValue === "object" && "lod" in dataValue) ? dataValue.lod : undefined;
+
     return {
-      assetId: data?.assetId ?? "",
-      format: data?.format ?? "gltf",
-      scale: data?.scale ?? defaultScale,
-      uniformScale: data?.uniformScale ?? true,
-      materialOverride: data?.materialOverride,
-      animation: data?.animation,
-      boundingBox: data?.boundingBox,
-      castShadow: data?.castShadow ?? true,
-      receiveShadow: data?.receiveShadow ?? true,
-      frustumCulled: data?.frustumCulled ?? true,
-      renderOrder: data?.renderOrder ?? 0,
-      showBoundingBox: data?.showBoundingBox ?? false,
-      showSkeleton: data?.showSkeleton ?? false,
-      envMapIntensity: data?.envMapIntensity ?? 1,
-      lod: data?.lod,
+      assetId: assetIdValue,
+      format: formatValue,
+      scale: scaleValue,
+      uniformScale: uniformScaleValue,
+      materialOverride: materialOverrideValue,
+      animation: animationValue,
+      boundingBox: boundingBoxValue,
+      castShadow: castShadowValue,
+      receiveShadow: receiveShadowValue,
+      frustumCulled: frustumCulledValue,
+      renderOrder: renderOrderValue,
+      showBoundingBox: showBoundingBoxValue,
+      showSkeleton: showSkeletonValue,
+      envMapIntensity: envMapIntensityValue,
+      lod: lodValue,
     };
   }
 
@@ -226,19 +248,25 @@ export class ModelLayer extends BaseLayer {
    */
   private loadGLTF(url: string): Promise<THREE.Object3D> {
     return new Promise((resolve, reject) => {
-      ModelLayer.gltfLoader?.load(
-        url,
-        (gltf: GLTF) => {
-          // Extract animations
-          if (gltf.animations && gltf.animations.length > 0) {
-            this.animationClips = gltf.animations;
-            this.setupAnimations(gltf.scene);
-          }
-          resolve(gltf.scene);
-        },
-        undefined,
-        reject,
-      );
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const loader = ModelLayer.gltfLoader;
+      if (loader != null && typeof loader === "object" && typeof loader.load === "function") {
+        loader.load(
+          url,
+          (gltf: GLTF) => {
+            // Extract animations
+            if (gltf.animations && gltf.animations.length > 0) {
+              this.animationClips = gltf.animations;
+              this.setupAnimations(gltf.scene);
+            }
+            resolve(gltf.scene);
+          },
+          undefined,
+          reject,
+        );
+      } else {
+        reject(new Error("GLTF loader not initialized"));
+      }
     });
   }
 
@@ -247,7 +275,13 @@ export class ModelLayer extends BaseLayer {
    */
   private loadOBJ(url: string): Promise<THREE.Object3D> {
     return new Promise((resolve, reject) => {
-      ModelLayer.objLoader?.load(url, resolve, undefined, reject);
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const loader = ModelLayer.objLoader;
+      if (loader != null && typeof loader === "object" && typeof loader.load === "function") {
+        loader.load(url, resolve, undefined, reject);
+      } else {
+        reject(new Error("OBJ loader not initialized"));
+      }
     });
   }
 
@@ -256,19 +290,25 @@ export class ModelLayer extends BaseLayer {
    */
   private loadFBX(url: string): Promise<THREE.Object3D> {
     return new Promise((resolve, reject) => {
-      ModelLayer.fbxLoader?.load(
-        url,
-        (object: THREE.Group) => {
-          // FBX files often contain animations
-          if (object.animations && object.animations.length > 0) {
-            this.animationClips = object.animations;
-            this.setupAnimations(object);
-          }
-          resolve(object);
-        },
-        undefined,
-        reject,
-      );
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const loader = ModelLayer.fbxLoader;
+      if (loader != null && typeof loader === "object" && typeof loader.load === "function") {
+        loader.load(
+          url,
+          (object: THREE.Group) => {
+            // FBX files often contain animations
+            if (object.animations && object.animations.length > 0) {
+              this.animationClips = object.animations;
+              this.setupAnimations(object);
+            }
+            resolve(object);
+          },
+          undefined,
+          reject,
+        );
+      } else {
+        reject(new Error("FBX loader not initialized"));
+      }
     });
   }
 
@@ -277,19 +317,25 @@ export class ModelLayer extends BaseLayer {
    */
   private loadCollada(url: string): Promise<THREE.Object3D> {
     return new Promise((resolve, reject) => {
-      ModelLayer.colladaLoader?.load(
-        url,
-        (collada: Collada) => {
-          // Collada may have animations
-          if (collada.scene.animations && collada.scene.animations.length > 0) {
-            this.animationClips = collada.scene.animations;
-            this.setupAnimations(collada.scene);
-          }
-          resolve(collada.scene);
-        },
-        undefined,
-        reject,
-      );
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const loader = ModelLayer.colladaLoader;
+      if (loader != null && typeof loader === "object" && typeof loader.load === "function") {
+        loader.load(
+          url,
+          (collada: Collada) => {
+            // Collada may have animations
+            if (collada.scene.animations && collada.scene.animations.length > 0) {
+              this.animationClips = collada.scene.animations;
+              this.setupAnimations(collada.scene);
+            }
+            resolve(collada.scene);
+          },
+          undefined,
+          reject,
+        );
+      } else {
+        reject(new Error("Collada loader not initialized"));
+      }
     });
   }
 
@@ -402,25 +448,33 @@ export class ModelLayer extends BaseLayer {
   private storeOriginalMaterials(): void {
     this.originalMaterials.clear();
 
-    this.model?.traverse((child) => {
-      if (child instanceof THREE.Mesh) {
-        this.originalMaterials.set(child, child.material);
-      }
-    });
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const model = this.model;
+    if (model != null && typeof model === "object" && typeof model.traverse === "function") {
+      model.traverse((child) => {
+        if (child instanceof THREE.Mesh) {
+          this.originalMaterials.set(child, child.material);
+        }
+      });
+    }
   }
 
   /**
    * Apply shadow settings to model
    */
   private applyShadowSettings(): void {
-    this.model?.traverse((child) => {
-      if (child instanceof THREE.Mesh) {
-        child.castShadow = this.modelData.castShadow;
-        child.receiveShadow = this.modelData.receiveShadow;
-        child.frustumCulled = this.modelData.frustumCulled;
-        child.renderOrder = this.modelData.renderOrder;
-      }
-    });
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const model = this.model;
+    if (model != null && typeof model === "object" && typeof model.traverse === "function") {
+      model.traverse((child) => {
+        if (child instanceof THREE.Mesh) {
+          child.castShadow = this.modelData.castShadow;
+          child.receiveShadow = this.modelData.receiveShadow;
+          child.frustumCulled = this.modelData.frustumCulled;
+          child.renderOrder = this.modelData.renderOrder;
+        }
+      });
+    }
   }
 
   /**
@@ -452,9 +506,10 @@ export class ModelLayer extends BaseLayer {
     this.mixer = new THREE.AnimationMixer(object);
 
     // Update model data with clip info - ensure animation object exists
-    const animation =
-      this.modelData.animation ??
-      (this.modelData.animation = {
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+    // Pattern match: modelData.animation ∈ ModelAnimation | undefined → ModelAnimation (create if missing)
+    const animationValue = (typeof this.modelData.animation === "object" && this.modelData.animation !== null) ? this.modelData.animation : undefined;
+    const animation = (animationValue !== undefined) ? animationValue : (this.modelData.animation = {
         clips: [],
         time: {
           id: `${this.id}_anim_time`,
@@ -497,8 +552,11 @@ export class ModelLayer extends BaseLayer {
 
     // Create and play new action
     this.currentAction = this.mixer.clipAction(clip);
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const animation = (this.modelData != null && typeof this.modelData === "object" && "animation" in this.modelData && this.modelData.animation != null && typeof this.modelData.animation === "object") ? this.modelData.animation : undefined;
+    const loop = (animation != null && typeof animation === "object" && "loop" in animation && typeof animation.loop === "boolean" && animation.loop) ? true : false;
     this.currentAction.setLoop(
-      this.modelData.animation?.loop ? THREE.LoopRepeat : THREE.LoopOnce,
+      loop ? THREE.LoopRepeat : THREE.LoopOnce,
       Infinity,
     );
     this.currentAction.play();
@@ -538,7 +596,10 @@ export class ModelLayer extends BaseLayer {
   private updateAnimation(deltaTime: number): void {
     if (!this.mixer) return;
 
-    const speed = this.modelData.animation?.speed ?? 1;
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining/nullish coalescing
+    // Pattern match: modelData.animation.speed ∈ number | undefined → number (default 1)
+    const animationData = (typeof this.modelData.animation === "object" && this.modelData.animation !== null && "speed" in this.modelData.animation && typeof this.modelData.animation.speed === "number" && Number.isFinite(this.modelData.animation.speed)) ? this.modelData.animation.speed : undefined;
+    const speed = (animationData !== undefined) ? animationData : 1;
     this.mixer.update(deltaTime * speed);
   }
 
@@ -763,7 +824,10 @@ export class ModelLayer extends BaseLayer {
    * Get available animation clips
    */
   getAnimationClips(): ModelAnimationClip[] {
-    return this.modelData.animation?.clips ?? [];
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining/nullish coalescing
+    // Pattern match: modelData.animation.clips ∈ ModelAnimationClip[] | undefined → ModelAnimationClip[] (default [])
+    const animationData = (typeof this.modelData.animation === "object" && this.modelData.animation !== null && "clips" in this.modelData.animation && Array.isArray(this.modelData.animation.clips)) ? this.modelData.animation.clips : undefined;
+    return (animationData !== undefined) ? animationData : [];
   }
 
   /**
@@ -807,9 +871,12 @@ export class ModelLayer extends BaseLayer {
     }
 
     // Evaluate animation time if keyframed
-    if (this.modelData.animation?.time) {
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const animation = (this.modelData != null && typeof this.modelData === "object" && "animation" in this.modelData && this.modelData.animation != null && typeof this.modelData.animation === "object") ? this.modelData.animation : undefined;
+    const animationTime = (animation != null && typeof animation === "object" && "time" in animation && animation.time != null) ? animation.time : undefined;
+    if (animationTime != null) {
       const time = interpolateProperty(
-        this.modelData.animation.time,
+        animationTime,
         frame,
         fps,
         layerId,
@@ -818,7 +885,8 @@ export class ModelLayer extends BaseLayer {
     }
 
     // Update animation mixer (for auto-playing animations)
-    if (this.mixer && this.modelData.animation?.autoPlay) {
+    const animationAutoPlay = (animation != null && typeof animation === "object" && "autoPlay" in animation && typeof animation.autoPlay === "boolean" && animation.autoPlay) ? true : false;
+    if (this.mixer && animationAutoPlay) {
       const deltaTime = 1 / this.compositionFps;
       this.updateAnimation(deltaTime);
     }
@@ -890,7 +958,44 @@ export class ModelLayer extends BaseLayer {
 
       // Handle animation settings
       if (data.animation !== undefined) {
-        Object.assign(this.modelData.animation ?? {}, data.animation);
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+        // Pattern match: modelData.animation ∈ ModelAnimation | undefined → ModelAnimation (create if missing)
+        const existingAnimation = (typeof this.modelData.animation === "object" && this.modelData.animation !== null) ? this.modelData.animation : undefined;
+        if (existingAnimation === undefined) {
+          this.modelData.animation = {
+            clips: [],
+            time: {
+              id: `${this.id}_anim_time`,
+              name: "Animation Time",
+              type: "number" as const,
+              value: 0,
+              animated: false,
+              keyframes: [],
+            },
+            speed: 1,
+            loop: false,
+            autoPlay: false,
+          };
+        }
+        // Merge animation data - explicit property assignment for type safety
+        if (data.animation.clips !== undefined) {
+          this.modelData.animation!.clips = data.animation.clips;
+        }
+        if (data.animation.activeClip !== undefined) {
+          this.modelData.animation!.activeClip = data.animation.activeClip;
+        }
+        if (data.animation.time !== undefined) {
+          this.modelData.animation!.time = data.animation.time;
+        }
+        if (data.animation.speed !== undefined) {
+          this.modelData.animation!.speed = data.animation.speed;
+        }
+        if (data.animation.loop !== undefined) {
+          this.modelData.animation!.loop = data.animation.loop;
+        }
+        if (data.animation.autoPlay !== undefined) {
+          this.modelData.animation!.autoPlay = data.animation.autoPlay;
+        }
         if (data.animation.activeClip) {
           this.playAnimation(data.animation.activeClip);
         }
@@ -923,16 +1028,20 @@ export class ModelLayer extends BaseLayer {
     }
 
     // Dispose model geometries and materials
-    this.model?.traverse((child) => {
-      if (child instanceof THREE.Mesh) {
-        child.geometry.dispose();
-        if (Array.isArray(child.material)) {
-          child.material.forEach((m) => m.dispose());
-        } else {
-          child.material.dispose();
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const model = this.model;
+    if (model != null && typeof model === "object" && typeof model.traverse === "function") {
+      model.traverse((child) => {
+        if (child instanceof THREE.Mesh) {
+          child.geometry.dispose();
+          if (Array.isArray(child.material)) {
+            child.material.forEach((m) => m.dispose());
+          } else {
+            child.material.dispose();
+          }
         }
-      }
-    });
+      });
+    }
 
     this.originalMaterials.clear();
     this.animationClips = [];

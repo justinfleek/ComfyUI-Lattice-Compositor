@@ -113,6 +113,7 @@ export type InterpolationType = BaseInterpolationType | EasingType;
 export type PropertyValue =
   | number // Opacity, rotation, scalar values
   | string // Enum values, hex colors
+  | boolean // Boolean flags (e.g., _requiresSimulation)
   | { x: number; y: number } // Vec2 (2D position/scale)
   | { x: number; y: number; z?: number } // Position/Scale (optional z)
   | { x: number; y: number; z: number } // Vec3 (orientation, 3D vectors)

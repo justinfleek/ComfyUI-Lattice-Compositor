@@ -9,9 +9,11 @@ import type { CameraShakeConfig } from "../services/cameraEnhancements";
 import type { TrajectoryConfig } from "../services/cameraTrajectory";
 import type {
   RoughenEffect,
-  SplinePathEffect,
+  SplinePathEffectInstance,
   WaveEffect,
 } from "./project";
+import type { PropertyValue } from "./animation";
+import type { JSONValue } from "./dataAsset";
 
 // ============================================================================
 // PRESET CATEGORIES
@@ -70,8 +72,6 @@ export interface ParticlePreset extends PresetMetadata {
   config: ParticlePresetConfig;
 }
 
-import type { PropertyValue } from "./project";
-
 export interface EffectPreset extends PresetMetadata {
   category: "effect";
   effects: Array<{
@@ -82,7 +82,7 @@ export interface EffectPreset extends PresetMetadata {
 
 export interface PathEffectPreset extends PresetMetadata {
   category: "path-effect";
-  effects: SplinePathEffect[];
+  effects: SplinePathEffectInstance[];
 }
 
 export interface CameraShakePreset extends PresetMetadata {
@@ -121,7 +121,7 @@ export interface AnimationPreset extends PresetMetadata {
     property: string;
     keyframes: Array<{
       frame: number;
-      value: unknown;
+      value: PropertyValue;
       easing?: string;
     }>;
   }>;

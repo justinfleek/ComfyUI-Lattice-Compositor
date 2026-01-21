@@ -51,8 +51,8 @@
       <div class="view-info">
         <span class="view-name">{{ getViewDisplayName(viewType) }}</span>
         <span v-if="isCustomView(viewType)" class="view-coords">
-          θ: {{ Math.round(customViews[viewType]?.orbitTheta ?? 0) }}°
-          φ: {{ Math.round(customViews[viewType]?.orbitPhi ?? 0) }}°
+          θ: {{ Math.round(getCustomViewOrbitTheta(viewType)) }}°
+          φ: {{ Math.round(getCustomViewOrbitPhi(viewType)) }}°
         </span>
       </div>
     </div>
@@ -74,7 +74,9 @@
 
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
-import { useCompositorStore } from "@/stores/compositorStore";
+import { useCameraStore } from "@/stores/cameraStore";
+import { useProjectStore } from "@/stores/projectStore";
+import { useSelectionStore } from "@/stores/selectionStore";
 import {
   generate3DAxes,
   generateCameraVisualization,
@@ -94,18 +96,20 @@ import type {
 } from "../../types/camera";
 
 // Store connection
-const store = useCompositorStore();
+const cameraStore = useCameraStore();
+const projectStore = useProjectStore();
+const selectionStore = useSelectionStore();
 
 // Get data from store
-const camera = computed<Camera3D | null>(() => store.activeCamera);
-const compWidth = computed(() => store.width);
-const compHeight = computed(() => store.height);
-const viewportState = computed(() => store.viewportState);
-const viewOptions = computed(() => store.viewOptions);
+const camera = computed<Camera3D | null>(() => cameraStore.activeCamera);
+const compWidth = computed(() => projectStore.getWidth());
+const compHeight = computed(() => projectStore.getHeight());
+const viewportState = computed(() => cameraStore.viewportState);
+const viewOptions = computed(() => cameraStore.viewOptions);
 
 // Build layers array from store layers
 const layers = computed(() => {
-  return store.layers
+  return projectStore.getActiveCompLayers()
     .filter((l) => l.type !== "camera") // Exclude camera layers themselves
     .map((l) => ({
       id: l.id,
@@ -115,7 +119,7 @@ const layers = computed(() => {
         y: l.transform.position.value.y,
         z: 0, // 2D layers at z=0
       },
-      selected: store.selectedLayerIds.includes(l.id),
+      selected: selectionStore.selectedLayerIds.includes(l.id),
     }));
 });
 
@@ -169,6 +173,19 @@ const activeViews = computed(() => {
   }
 });
 
+// Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??/?.
+// Helper functions for custom view coordinates
+function getCustomViewOrbitTheta(viewType: string): number {
+  const views = customViews.value;
+  const view = (views !== null && views !== undefined && typeof views === "object" && viewType in views) ? views[viewType] : undefined;
+  return (view !== null && view !== undefined && typeof view === "object" && "orbitTheta" in view && typeof view.orbitTheta === "number" && Number.isFinite(view.orbitTheta)) ? view.orbitTheta : 0;
+}
+function getCustomViewOrbitPhi(viewType: string): number {
+  const views = customViews.value;
+  const view = (views !== null && views !== undefined && typeof views === "object" && viewType in views) ? views[viewType] : undefined;
+  return (view !== null && view !== undefined && typeof view === "object" && "orbitPhi" in view && typeof view.orbitPhi === "number" && Number.isFinite(view.orbitPhi)) ? view.orbitPhi : 0;
+}
+
 function setCanvasRef(el: HTMLCanvasElement | null, index: number) {
   canvasRefs.value[index] = el;
   if (el) {
@@ -199,7 +216,7 @@ function getViewDisplayName(viewType: ViewType): string {
 }
 
 function setActiveView(index: number) {
-  store.updateViewportState({
+  cameraStore.updateViewportState({
     activeViewIndex: index,
   });
 }
@@ -207,7 +224,7 @@ function setActiveView(index: number) {
 function updateViewType(index: number, viewType: ViewType) {
   const newViews = [...viewportState.value.views];
   newViews[index] = viewType;
-  store.updateViewportState({
+  cameraStore.updateViewportState({
     views: newViews,
   });
 }
@@ -228,7 +245,7 @@ function setLayout(newLayout: ViewLayout) {
     newViews.push(defaultFourViews[newViews.length] || "front");
   }
 
-  store.updateViewportState({
+  cameraStore.updateViewportState({
     layout: newLayout,
     views: newViews,
     activeViewIndex: Math.min(
@@ -262,7 +279,7 @@ function resetCustomView(viewType: "custom-1" | "custom-2" | "custom-3") {
     orthoOffset: { x: 0, y: 0 },
   };
 
-  store.updateViewportState({
+  cameraStore.updateViewportState({
     customViews: {
       ...viewportState.value.customViews,
       [viewType]: defaultView,
@@ -298,7 +315,7 @@ function onCanvasMouseMove(e: MouseEvent) {
       const newTheta = customView.orbitTheta + dx * 0.5;
       const newPhi = Math.max(1, Math.min(179, customView.orbitPhi + dy * 0.5));
 
-      store.updateViewportState({
+      cameraStore.updateViewportState({
         customViews: {
           ...viewportState.value.customViews,
           [viewType]: {
@@ -310,7 +327,7 @@ function onCanvasMouseMove(e: MouseEvent) {
       });
     } else if (dragButton.value === 1 || dragButton.value === 2) {
       // Middle/right button: pan
-      store.updateViewportState({
+      cameraStore.updateViewportState({
         customViews: {
           ...viewportState.value.customViews,
           [viewType]: {
@@ -341,7 +358,7 @@ function onCanvasWheel(e: WheelEvent, viewIndex: number) {
     const customView = customViews.value[viewType];
     const zoomFactor = e.deltaY > 0 ? 1.1 : 0.9;
 
-    store.updateViewportState({
+    cameraStore.updateViewportState({
       customViews: {
         ...viewportState.value.customViews,
         [viewType]: {
@@ -411,8 +428,12 @@ function render() {
 
     // Composition bounds
     if (viewOptions.value.showCompositionBounds) {
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+      // Pattern match: camera.value ∈ Camera3D | null | undefined → Camera3D (use dummy if null/undefined)
+      const cameraValue = camera.value;
+      const activeCamera = (cameraValue !== null && cameraValue !== undefined && typeof cameraValue === "object") ? cameraValue : createDummyCamera();
       const viz = generateCameraVisualization(
-        camera.value ?? createDummyCamera(),
+        activeCamera,
         compWidth.value,
         compHeight.value,
         false,
@@ -548,10 +569,13 @@ function animate() {
 // Keyboard shortcut handler
 function onKeyDown(e: KeyboardEvent) {
   // Only handle if viewport is focused (not typing in input)
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const activeElement = (document != null && typeof document === "object" && "activeElement" in document && document.activeElement != null) ? document.activeElement : undefined;
+  const activeElementTagName = (activeElement != null && typeof activeElement === "object" && "tagName" in activeElement && typeof activeElement.tagName === "string") ? activeElement.tagName : undefined;
   if (
-    document.activeElement?.tagName === "INPUT" ||
-    document.activeElement?.tagName === "TEXTAREA" ||
-    document.activeElement?.tagName === "SELECT"
+    activeElementTagName === "INPUT" ||
+    activeElementTagName === "TEXTAREA" ||
+    activeElementTagName === "SELECT"
   ) {
     return;
   }
@@ -638,7 +662,7 @@ function onKeyDown(e: KeyboardEvent) {
             phi = 60;
         }
 
-        store.updateViewportState({
+        cameraStore.updateViewportState({
           customViews: {
             ...viewportState.value.customViews,
             [targetView]: {
@@ -696,7 +720,7 @@ function onKeyDown(e: KeyboardEvent) {
     case "KeyG":
       // Toggle grid
       if (!e.ctrlKey && !e.metaKey) {
-        store.updateViewOptions({
+        cameraStore.updateViewOptions({
           showGrid: !viewOptions.value.showGrid,
         });
         e.preventDefault();
@@ -706,7 +730,7 @@ function onKeyDown(e: KeyboardEvent) {
     case "KeyH":
       // Toggle layer handles
       if (!e.ctrlKey && !e.metaKey) {
-        store.updateViewOptions({
+        cameraStore.updateViewOptions({
           showLayerHandles: !viewOptions.value.showLayerHandles,
         });
         e.preventDefault();
@@ -716,7 +740,7 @@ function onKeyDown(e: KeyboardEvent) {
     case "KeyC":
       // Toggle composition bounds
       if (!e.ctrlKey && !e.metaKey && !e.shiftKey) {
-        store.updateViewOptions({
+        cameraStore.updateViewOptions({
           showCompositionBounds: !viewOptions.value.showCompositionBounds,
         });
         e.preventDefault();
@@ -726,7 +750,7 @@ function onKeyDown(e: KeyboardEvent) {
     case "KeyA":
       // Toggle 3D axes
       if (!e.ctrlKey && !e.metaKey && e.shiftKey) {
-        store.updateViewOptions({
+        cameraStore.updateViewOptions({
           show3DReferenceAxes: !viewOptions.value.show3DReferenceAxes,
         });
         e.preventDefault();
@@ -737,8 +761,8 @@ function onKeyDown(e: KeyboardEvent) {
 
 function focusOnSelectedLayer() {
   // Find first selected layer
-  const selectedLayer = store.layers.find((l) =>
-    store.selectedLayerIds.includes(l.id),
+  const selectedLayer = projectStore.getActiveCompLayers().find((l) =>
+    selectionStore.selectedLayerIds.includes(l.id),
   );
   if (!selectedLayer) return;
 
@@ -750,7 +774,7 @@ function focusOnSelectedLayer() {
   // Update custom view to focus on layer
   const activeView = activeViews.value[activeViewIndex.value];
   if (isCustomView(activeView)) {
-    store.updateViewportState({
+    cameraStore.updateViewportState({
       customViews: {
         ...viewportState.value.customViews,
         [activeView]: {

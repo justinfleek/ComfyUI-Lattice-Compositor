@@ -94,7 +94,8 @@ export function applyFog3D(
   );
 
   const data = output.data;
-  const depthData = depthMap?.data;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const depthData = (depthMap != null && typeof depthMap === "object" && "data" in depthMap && depthMap.data != null) ? depthMap.data : undefined;
 
   const fogR = params.fogColor.r;
   const fogG = params.fogColor.g;
@@ -170,7 +171,8 @@ export function applyDepthMatte(
   );
 
   const data = output.data;
-  const depthData = depthMap?.data;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const depthData = (depthMap != null && typeof depthMap === "object" && "data" in depthMap && depthMap.data != null) ? depthMap.data : undefined;
 
   const range = params.farDepth - params.nearDepth;
   const softnessFactor = params.softness / 100;
@@ -246,7 +248,9 @@ export function apply3DGlasses(
   );
 
   const leftData = leftImage.data;
-  const rightData = rightImage?.data || leftImage.data;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const rightImageData = (rightImage != null && typeof rightImage === "object" && "data" in rightImage && rightImage.data != null) ? rightImage.data : undefined;
+  const rightData = rightImageData != null ? rightImageData : leftImage.data;
   const outData = output.data;
 
   // Apply convergence offset

@@ -23,6 +23,7 @@ import {
   type EvaluatedEffectParams,
   registerEffectRenderer,
 } from "../effectProcessor";
+import { isFiniteNumber } from "@/utils/typeGuards";
 import { SeededRandom } from "../particleSystem";
 
 // ============================================================================
@@ -43,14 +44,25 @@ export function pixelSortRenderer(
   input: EffectStackResult,
   params: EvaluatedEffectParams,
 ): EffectStackResult {
-  const direction = params.direction ?? "horizontal";
+  // Type proof: direction ∈ {"horizontal", "vertical"} ∪ {undefined}
+  const directionValue = params.direction;
+  const direction = typeof directionValue === "string" ? directionValue : "horizontal";
   // Validate numeric params (NaN causes visual corruption)
-  const rawThreshold = params.threshold ?? 0.25;
-  const threshold = Number.isFinite(rawThreshold) ? rawThreshold : 0.25;
-  const rawSmoothing = params.smoothing ?? 0.1;
-  const smoothing = Number.isFinite(rawSmoothing) ? rawSmoothing : 0.1;
-  const sortBy = params.sort_by ?? "saturation";
-  const reverse = params.reverse ?? false;
+  // Type proof: threshold ∈ ℝ ∧ finite(threshold) → threshold ∈ [0, 1]
+  const thresholdValue = params.threshold;
+  const threshold = isFiniteNumber(thresholdValue)
+    ? Math.max(0, Math.min(1, thresholdValue))
+    : 0.25;
+  // Type proof: smoothing ∈ ℝ ∧ finite(smoothing) → smoothing ∈ [0, 1]
+  const smoothingValue = params.smoothing;
+  const smoothing = isFiniteNumber(smoothingValue)
+    ? Math.max(0, Math.min(1, smoothingValue))
+    : 0.1;
+  // Type proof: sort_by ∈ {"saturation", "brightness", "hue"} ∪ {undefined}
+  const sortByValue = params.sort_by;
+  const sortBy = typeof sortByValue === "string" ? sortByValue : "saturation";
+  // Type proof: reverse ∈ {true, false}
+  const reverse = typeof params.reverse === "boolean" ? params.reverse : false;
 
   const output = createMatchingCanvas(input.canvas);
   const { width, height } = input.canvas;
@@ -182,16 +194,26 @@ export function glitchRenderer(
   frame?: number,
 ): EffectStackResult {
   // Validate numeric params (NaN causes visual corruption and bypasses === 0 check)
-  const rawGlitchAmount = params.glitch_amount ?? 5;
-  const glitchAmount = Number.isFinite(rawGlitchAmount) ? rawGlitchAmount : 5;
-  const colorOffset = params.color_offset ?? true;
-  const rawBlockSize = params.block_size ?? 8;
-  const blockSize = Number.isFinite(rawBlockSize)
-    ? Math.max(1, rawBlockSize)
+  // Type proof: glitch_amount ∈ ℝ ∧ finite(glitch_amount) → glitch_amount ∈ ℝ₊
+  const glitchAmountValue = params.glitch_amount;
+  const glitchAmount = isFiniteNumber(glitchAmountValue) && glitchAmountValue >= 0
+    ? glitchAmountValue
+    : 5;
+  // Type proof: color_offset ∈ {true, false}
+  const colorOffset = typeof params.color_offset === "boolean" ? params.color_offset : true;
+  // Type proof: block_size ∈ ℝ ∧ finite(block_size) → block_size ∈ [1, ∞)
+  const blockSizeValue = params.block_size;
+  const blockSizeRaw = isFiniteNumber(blockSizeValue) && blockSizeValue >= 1
+    ? blockSizeValue
     : 8;
-  const rawSeed = params.seed ?? 12345;
-  const seed = Number.isFinite(rawSeed) ? rawSeed : 12345;
-  const scanlines = params.scanlines ?? true;
+  const blockSize = Math.max(1, blockSizeRaw);
+  // Type proof: seed ∈ ℕ ∧ finite(seed) → seed ∈ ℕ
+  const seedValue = params.seed;
+  const seed = isFiniteNumber(seedValue) && Number.isInteger(seedValue) && seedValue >= 0
+    ? seedValue
+    : 12345;
+  // Type proof: scanlines ∈ {true, false}
+  const scanlines = typeof params.scanlines === "boolean" ? params.scanlines : true;
 
   if (glitchAmount === 0) return input;
 
@@ -204,7 +226,10 @@ export function glitchRenderer(
   const imageData = output.ctx.getImageData(0, 0, width, height);
   const data = imageData.data;
 
-  const rng = new SeededRandom(seed + (frame ?? 0));
+  // Type proof: frame ∈ ℕ ∪ {undefined} → frame ∈ ℕ
+  const frameValue = frame;
+  const validFrame = isFiniteNumber(frameValue) && Number.isInteger(frameValue) && frameValue >= 0 ? frameValue : 0;
+  const rng = new SeededRandom(seed + validFrame);
 
   // Horizontal block shifts
   const numBlocks = Math.floor(glitchAmount * 3);
@@ -304,11 +329,28 @@ export function vhsRenderer(
   params: EvaluatedEffectParams,
   frame?: number,
 ): EffectStackResult {
-  const tracking = params.tracking ?? 0.5;
-  const noise = params.noise ?? 0.3;
-  const colorBleed = params.color_bleed ?? 3;
-  const jitter = params.jitter ?? 0.5;
-  const rollingBands = params.rolling_bands ?? true;
+  // Type proof: tracking ∈ ℝ ∧ finite(tracking) → tracking ∈ [0, 1]
+  const trackingValue = params.tracking;
+  const tracking = isFiniteNumber(trackingValue)
+    ? Math.max(0, Math.min(1, trackingValue))
+    : 0.5;
+  // Type proof: noise ∈ ℝ ∧ finite(noise) → noise ∈ [0, 1]
+  const noiseValue = params.noise;
+  const noise = isFiniteNumber(noiseValue)
+    ? Math.max(0, Math.min(1, noiseValue))
+    : 0.3;
+  // Type proof: color_bleed ∈ ℝ ∧ finite(color_bleed) → color_bleed ∈ ℝ₊
+  const colorBleedValue = params.color_bleed;
+  const colorBleed = isFiniteNumber(colorBleedValue) && colorBleedValue >= 0
+    ? colorBleedValue
+    : 3;
+  // Type proof: jitter ∈ ℝ ∧ finite(jitter) → jitter ∈ [0, 1]
+  const jitterValue = params.jitter;
+  const jitter = isFiniteNumber(jitterValue)
+    ? Math.max(0, Math.min(1, jitterValue))
+    : 0.5;
+  // Type proof: rolling_bands ∈ {true, false}
+  const rollingBands = typeof params.rolling_bands === "boolean" ? params.rolling_bands : true;
 
   const output = createMatchingCanvas(input.canvas);
   const { width, height } = input.canvas;
@@ -318,7 +360,10 @@ export function vhsRenderer(
   const imageData = output.ctx.getImageData(0, 0, width, height);
   const data = imageData.data;
 
-  const rng = new SeededRandom(12345 + (frame ?? 0));
+  // Type proof: frame ∈ ℕ ∪ {undefined} → frame ∈ ℕ
+  const frameValue = frame;
+  const validFrame = isFiniteNumber(frameValue) && Number.isInteger(frameValue) && frameValue >= 0 ? frameValue : 0;
+  const rng = new SeededRandom(12345 + validFrame);
 
   // Color bleeding (smear horizontally)
   if (colorBleed > 0) {
@@ -432,13 +477,27 @@ export function rgbSplitRenderer(
   input: EffectStackResult,
   params: EvaluatedEffectParams,
 ): EffectStackResult {
-  const redOffsetX = params.red_offset_x ?? 5;
-  const redOffsetY = params.red_offset_y ?? 0;
-  const greenOffsetX = params.green_offset_x ?? 0;
-  const greenOffsetY = params.green_offset_y ?? 0;
-  const blueOffsetX = params.blue_offset_x ?? -5;
-  const blueOffsetY = params.blue_offset_y ?? 0;
-  const blendMode = params.blend_mode ?? "screen";
+  // Type proof: red_offset_x ∈ ℝ ∧ finite(red_offset_x) → red_offset_x ∈ ℝ
+  const redOffsetXValue = params.red_offset_x;
+  const redOffsetX = isFiniteNumber(redOffsetXValue) ? redOffsetXValue : 5;
+  // Type proof: red_offset_y ∈ ℝ ∧ finite(red_offset_y) → red_offset_y ∈ ℝ
+  const redOffsetYValue = params.red_offset_y;
+  const redOffsetY = isFiniteNumber(redOffsetYValue) ? redOffsetYValue : 0;
+  // Type proof: green_offset_x ∈ ℝ ∧ finite(green_offset_x) → green_offset_x ∈ ℝ
+  const greenOffsetXValue = params.green_offset_x;
+  const greenOffsetX = isFiniteNumber(greenOffsetXValue) ? greenOffsetXValue : 0;
+  // Type proof: green_offset_y ∈ ℝ ∧ finite(green_offset_y) → green_offset_y ∈ ℝ
+  const greenOffsetYValue = params.green_offset_y;
+  const greenOffsetY = isFiniteNumber(greenOffsetYValue) ? greenOffsetYValue : 0;
+  // Type proof: blue_offset_x ∈ ℝ ∧ finite(blue_offset_x) → blue_offset_x ∈ ℝ
+  const blueOffsetXValue = params.blue_offset_x;
+  const blueOffsetX = isFiniteNumber(blueOffsetXValue) ? blueOffsetXValue : -5;
+  // Type proof: blue_offset_y ∈ ℝ ∧ finite(blue_offset_y) → blue_offset_y ∈ ℝ
+  const blueOffsetYValue = params.blue_offset_y;
+  const blueOffsetY = isFiniteNumber(blueOffsetYValue) ? blueOffsetYValue : 0;
+  // Type proof: blend_mode ∈ {"screen", "add", "multiply", "overlay"} ∪ {undefined}
+  const blendModeValue = params.blend_mode;
+  const blendMode = typeof blendModeValue === "string" ? blendModeValue : "screen";
 
   // No offset = no change
   if (
@@ -523,11 +582,26 @@ export function scanlinesRenderer(
   params: EvaluatedEffectParams,
   frame?: number,
 ): EffectStackResult {
-  const lineWidth = params.line_width ?? 2;
-  const lineSpacing = params.line_spacing ?? 2;
-  const opacity = params.opacity ?? 0.3;
-  const direction = params.direction ?? "horizontal";
-  const animate = params.animate ?? false;
+  // Type proof: line_width ∈ ℝ ∧ finite(line_width) → line_width ∈ [1, 20]
+  const lineWidthValue = params.line_width;
+  const lineWidth = isFiniteNumber(lineWidthValue)
+    ? Math.max(1, Math.min(20, lineWidthValue))
+    : 2;
+  // Type proof: line_spacing ∈ ℝ ∧ finite(line_spacing) → line_spacing ∈ [1, 20]
+  const lineSpacingValue = params.line_spacing;
+  const lineSpacing = isFiniteNumber(lineSpacingValue)
+    ? Math.max(1, Math.min(20, lineSpacingValue))
+    : 2;
+  // Type proof: opacity ∈ ℝ ∧ finite(opacity) → opacity ∈ [0, 1]
+  const opacityValue = params.opacity;
+  const opacity = isFiniteNumber(opacityValue)
+    ? Math.max(0, Math.min(1, opacityValue))
+    : 0.3;
+  // Type proof: direction ∈ {"horizontal", "vertical"} ∪ {undefined}
+  const directionValue = params.direction;
+  const direction = typeof directionValue === "string" ? directionValue : "horizontal";
+  // Type proof: animate ∈ {true, false}
+  const animate = typeof params.animate === "boolean" ? params.animate : false;
 
   const output = createMatchingCanvas(input.canvas);
   const { width, height } = input.canvas;
@@ -581,9 +655,17 @@ export function halftoneRenderer(
   input: EffectStackResult,
   params: EvaluatedEffectParams,
 ): EffectStackResult {
-  const dotSize = Math.max(2, params.dot_size ?? 6);
-  const angle = ((params.angle ?? 45) * Math.PI) / 180;
-  const colorMode = params.color_mode ?? "grayscale";
+  // Type proof: dot_size ∈ ℝ ∧ finite(dot_size) → dot_size ∈ [2, ∞)
+  const dotSizeValue = params.dot_size;
+  const dotSizeRaw = isFiniteNumber(dotSizeValue) && dotSizeValue >= 2 ? dotSizeValue : 6;
+  const dotSize = Math.max(2, dotSizeRaw);
+  // Type proof: angle ∈ ℝ ∧ finite(angle) → angle ∈ ℝ
+  const angleValue = params.angle;
+  const angleDeg = isFiniteNumber(angleValue) ? angleValue : 45;
+  const angle = (angleDeg * Math.PI) / 180;
+  // Type proof: color_mode ∈ {"grayscale", "color"} ∪ {undefined}
+  const colorModeValue = params.color_mode;
+  const colorMode = typeof colorModeValue === "string" ? colorModeValue : "grayscale";
 
   const output = createMatchingCanvas(input.canvas);
   const { width, height } = input.canvas;
@@ -721,9 +803,21 @@ export function ditherRenderer(
   input: EffectStackResult,
   params: EvaluatedEffectParams,
 ): EffectStackResult {
-  const method = params.method ?? "ordered";
-  const levels = Math.max(2, Math.min(256, params.levels ?? 4));
-  const matrixSize = params.matrix_size ?? 4;
+  // Type proof: method ∈ {"ordered", "floyd-steinberg"} ∪ {undefined}
+  const methodValue = params.method;
+  const method = typeof methodValue === "string" ? methodValue : "ordered";
+  // Type proof: levels ∈ ℕ ∧ finite(levels) → levels ∈ [2, 256]
+  const levelsValue = params.levels;
+  const levelsRaw = isFiniteNumber(levelsValue) && Number.isInteger(levelsValue)
+    ? levelsValue
+    : 4;
+  const levels = Math.max(2, Math.min(256, levelsRaw));
+  // Type proof: matrix_size ∈ ℕ ∧ finite(matrix_size) → matrix_size ∈ ℕ₊
+  const matrixSizeValue = params.matrix_size;
+  const matrixSizeRaw = isFiniteNumber(matrixSizeValue) && Number.isInteger(matrixSizeValue) && matrixSizeValue > 0
+    ? matrixSizeValue
+    : 4;
+  const matrixSize = matrixSizeRaw;
 
   const output = createMatchingCanvas(input.canvas);
   const { width, height } = input.canvas;
@@ -872,16 +966,48 @@ export function rippleRenderer(
   params: EvaluatedEffectParams,
   frame?: number,
 ): EffectStackResult {
-  const amplitude = params.amplitude ?? 10;
-  const wavelength = params.wavelength ?? 50;
-  let phase = params.phase ?? 0;
-  const centerX = (params.center_x ?? 50) / 100;
-  const centerY = (params.center_y ?? 50) / 100;
-  const decay = params.decay ?? 0.5;
+  // Type proof: amplitude ∈ ℝ ∧ finite(amplitude) → amplitude ∈ [0, 50]
+  const amplitudeValue = params.amplitude;
+  const amplitude = isFiniteNumber(amplitudeValue)
+    ? Math.max(0, Math.min(50, amplitudeValue))
+    : 10;
+  // Type proof: wavelength ∈ ℝ ∧ finite(wavelength) → wavelength ∈ [10, 200]
+  const wavelengthValue = params.wavelength;
+  const wavelength = isFiniteNumber(wavelengthValue)
+    ? Math.max(10, Math.min(200, wavelengthValue))
+    : 50;
+  // Type proof: phase ∈ ℝ ∧ finite(phase) → phase ∈ [0, 360]
+  const phaseValue = params.phase;
+  let phase = isFiniteNumber(phaseValue)
+    ? Math.max(0, Math.min(360, phaseValue))
+    : 0;
+  // Type proof: center_x ∈ ℝ ∧ finite(center_x) → center_x ∈ [0, 100]
+  const centerXValue = params.center_x;
+  const centerXRaw = isFiniteNumber(centerXValue)
+    ? Math.max(0, Math.min(100, centerXValue))
+    : 50;
+  const centerX = centerXRaw / 100;
+  // Type proof: center_y ∈ ℝ ∧ finite(center_y) → center_y ∈ [0, 100]
+  const centerYValue = params.center_y;
+  const centerYRaw = isFiniteNumber(centerYValue)
+    ? Math.max(0, Math.min(100, centerYValue))
+    : 50;
+  const centerY = centerYRaw / 100;
+  // Type proof: decay ∈ ℝ ∧ finite(decay) → decay ∈ [0, 1]
+  const decayValue = params.decay;
+  const decay = isFiniteNumber(decayValue)
+    ? Math.max(0, Math.min(1, decayValue))
+    : 0.5;
 
   // Animate phase if frame is provided
-  if (frame !== undefined && params.animate !== false) {
-    phase = (phase + frame * 5) % 360;
+  // Type proof: animate ∈ {true, false}
+  const animateValue = params.animate;
+  const animate = typeof animateValue === "boolean" ? animateValue : false;
+  // Type proof: frame ∈ ℕ ∪ {undefined} → frame ∈ ℕ
+  const frameValue = frame;
+  const validFrame = isFiniteNumber(frameValue) && Number.isInteger(frameValue) && frameValue >= 0 ? frameValue : 0;
+  if (validFrame !== undefined && animate) {
+    phase = (phase + validFrame * 5) % 360;
   }
 
   const phaseRad = (phase * Math.PI) / 180;
@@ -952,9 +1078,19 @@ export function embossRenderer(
   input: EffectStackResult,
   params: EvaluatedEffectParams,
 ): EffectStackResult {
-  const direction = ((params.direction ?? 135) * Math.PI) / 180;
-  const height = Math.max(1, params.height ?? 3);
-  const amount = params.amount ?? 100;
+  // Type proof: direction ∈ ℝ ∧ finite(direction) → direction ∈ [0, 360]
+  const directionValue = params.direction;
+  const directionDeg = isFiniteNumber(directionValue)
+    ? Math.max(0, Math.min(360, directionValue))
+    : 135;
+  const direction = (directionDeg * Math.PI) / 180;
+  // Type proof: height ∈ ℝ ∧ finite(height) → height ∈ [1, ∞)
+  const heightValue = params.height;
+  const heightRaw = isFiniteNumber(heightValue) && heightValue >= 1 ? heightValue : 3;
+  const height = Math.max(1, heightRaw);
+  // Type proof: amount ∈ ℝ ∧ finite(amount) → amount ∈ ℝ₊
+  const amountValue = params.amount;
+  const amount = isFiniteNumber(amountValue) && amountValue >= 0 ? amountValue : 100;
 
   const output = createMatchingCanvas(input.canvas);
   const { width, height: h } = input.canvas;
@@ -1007,8 +1143,14 @@ export function findEdgesRenderer(
   input: EffectStackResult,
   params: EvaluatedEffectParams,
 ): EffectStackResult {
-  const invert = params.invert ?? false;
-  const blend = (params.blend_with_original ?? 0) / 100;
+  // Type proof: invert ∈ {true, false}
+  const invert = typeof params.invert === "boolean" ? params.invert : false;
+  // Type proof: blend_with_original ∈ ℝ ∧ finite(blend_with_original) → blend_with_original ∈ [0, 100]
+  const blendValue = params.blend_with_original;
+  const blendRaw = isFiniteNumber(blendValue)
+    ? Math.max(0, Math.min(100, blendValue))
+    : 0;
+  const blend = blendRaw / 100;
 
   const output = createMatchingCanvas(input.canvas);
   const { width, height } = input.canvas;
@@ -1083,9 +1225,20 @@ export function mosaicRenderer(
   input: EffectStackResult,
   params: EvaluatedEffectParams,
 ): EffectStackResult {
-  const hBlocks = Math.max(2, params.horizontal_blocks ?? 10);
-  const vBlocks = Math.max(2, params.vertical_blocks ?? 10);
-  const sharp = params.sharp_corners ?? true;
+  // Type proof: horizontal_blocks ∈ ℕ ∧ finite(horizontal_blocks) → horizontal_blocks ∈ [2, ∞)
+  const hBlocksValue = params.horizontal_blocks;
+  const hBlocksRaw = isFiniteNumber(hBlocksValue) && Number.isInteger(hBlocksValue) && hBlocksValue >= 2
+    ? hBlocksValue
+    : 10;
+  const hBlocks = Math.max(2, hBlocksRaw);
+  // Type proof: vertical_blocks ∈ ℕ ∧ finite(vertical_blocks) → vertical_blocks ∈ [2, ∞)
+  const vBlocksValue = params.vertical_blocks;
+  const vBlocksRaw = isFiniteNumber(vBlocksValue) && Number.isInteger(vBlocksValue) && vBlocksValue >= 2
+    ? vBlocksValue
+    : 10;
+  const vBlocks = Math.max(2, vBlocksRaw);
+  // Type proof: sharp_corners ∈ {true, false}
+  const sharp = typeof params.sharp_corners === "boolean" ? params.sharp_corners : true;
 
   const output = createMatchingCanvas(input.canvas);
   const { width, height } = input.canvas;

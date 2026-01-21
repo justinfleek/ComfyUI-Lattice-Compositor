@@ -15,6 +15,7 @@ import {
   type EvaluatedEffectParams,
   registerEffectRenderer,
 } from "../effectProcessor";
+import { isFiniteNumber, isArray, hasXY } from "@/utils/typeGuards";
 
 // ============================================================================
 // LIFT/GAMMA/GAIN
@@ -35,45 +36,54 @@ export function liftGammaGainRenderer(
   params: EvaluatedEffectParams,
 ): EffectStackResult {
   // Lift (shadow adjustment) - validate for NaN
-  const liftRRaw = params.lift_red ?? 0;
-  const liftGRaw = params.lift_green ?? 0;
-  const liftBRaw = params.lift_blue ?? 0;
-  const liftR = Number.isFinite(liftRRaw)
-    ? Math.max(-1, Math.min(1, liftRRaw))
+  // Type proof: lift_red ∈ ℝ ∧ finite(lift_red) → lift_red ∈ [-1, 1]
+  const liftRValue = params.lift_red;
+  const liftR = isFiniteNumber(liftRValue)
+    ? Math.max(-1, Math.min(1, liftRValue))
     : 0;
-  const liftG = Number.isFinite(liftGRaw)
-    ? Math.max(-1, Math.min(1, liftGRaw))
+  // Type proof: lift_green ∈ ℝ ∧ finite(lift_green) → lift_green ∈ [-1, 1]
+  const liftGValue = params.lift_green;
+  const liftG = isFiniteNumber(liftGValue)
+    ? Math.max(-1, Math.min(1, liftGValue))
     : 0;
-  const liftB = Number.isFinite(liftBRaw)
-    ? Math.max(-1, Math.min(1, liftBRaw))
+  // Type proof: lift_blue ∈ ℝ ∧ finite(lift_blue) → lift_blue ∈ [-1, 1]
+  const liftBValue = params.lift_blue;
+  const liftB = isFiniteNumber(liftBValue)
+    ? Math.max(-1, Math.min(1, liftBValue))
     : 0;
 
   // Gamma (midtone adjustment) - validate for NaN
-  const gammaRRaw = params.gamma_red ?? 1;
-  const gammaGRaw = params.gamma_green ?? 1;
-  const gammaBRaw = params.gamma_blue ?? 1;
-  const gammaR = Number.isFinite(gammaRRaw)
-    ? Math.max(0.1, Math.min(4, gammaRRaw))
+  // Type proof: gamma_red ∈ ℝ ∧ finite(gamma_red) ∧ gamma_red > 0 → gamma_red ∈ [0.1, 4]
+  const gammaRValue = params.gamma_red;
+  const gammaR = isFiniteNumber(gammaRValue) && gammaRValue > 0
+    ? Math.max(0.1, Math.min(4, gammaRValue))
     : 1;
-  const gammaG = Number.isFinite(gammaGRaw)
-    ? Math.max(0.1, Math.min(4, gammaGRaw))
+  // Type proof: gamma_green ∈ ℝ ∧ finite(gamma_green) ∧ gamma_green > 0 → gamma_green ∈ [0.1, 4]
+  const gammaGValue = params.gamma_green;
+  const gammaG = isFiniteNumber(gammaGValue) && gammaGValue > 0
+    ? Math.max(0.1, Math.min(4, gammaGValue))
     : 1;
-  const gammaB = Number.isFinite(gammaBRaw)
-    ? Math.max(0.1, Math.min(4, gammaBRaw))
+  // Type proof: gamma_blue ∈ ℝ ∧ finite(gamma_blue) ∧ gamma_blue > 0 → gamma_blue ∈ [0.1, 4]
+  const gammaBValue = params.gamma_blue;
+  const gammaB = isFiniteNumber(gammaBValue) && gammaBValue > 0
+    ? Math.max(0.1, Math.min(4, gammaBValue))
     : 1;
 
   // Gain (highlight adjustment) - validate for NaN
-  const gainRRaw = params.gain_red ?? 1;
-  const gainGRaw = params.gain_green ?? 1;
-  const gainBRaw = params.gain_blue ?? 1;
-  const gainR = Number.isFinite(gainRRaw)
-    ? Math.max(0, Math.min(4, gainRRaw))
+  // Type proof: gain_red ∈ ℝ ∧ finite(gain_red) → gain_red ∈ [0, 4]
+  const gainRValue = params.gain_red;
+  const gainR = isFiniteNumber(gainRValue)
+    ? Math.max(0, Math.min(4, gainRValue))
     : 1;
-  const gainG = Number.isFinite(gainGRaw)
-    ? Math.max(0, Math.min(4, gainGRaw))
+  // Type proof: gain_green ∈ ℝ ∧ finite(gain_green) → gain_green ∈ [0, 4]
+  const gainGValue = params.gain_green;
+  const gainG = isFiniteNumber(gainGValue)
+    ? Math.max(0, Math.min(4, gainGValue))
     : 1;
-  const gainB = Number.isFinite(gainBRaw)
-    ? Math.max(0, Math.min(4, gainBRaw))
+  // Type proof: gain_blue ∈ ℝ ∧ finite(gain_blue) → gain_blue ∈ [0, 4]
+  const gainBValue = params.gain_blue;
+  const gainB = isFiniteNumber(gainBValue)
+    ? Math.max(0, Math.min(4, gainBValue))
     : 1;
 
   // No change if all values are default
@@ -182,37 +192,73 @@ export function hslSecondaryRenderer(
   input: EffectStackResult,
   params: EvaluatedEffectParams,
 ): EffectStackResult {
-  // Helper to safely get numeric params
-  const safeNum = (
-    val: unknown,
-    def: number,
-    min?: number,
-    max?: number,
-  ): number => {
-    const num = typeof val === "number" && Number.isFinite(val) ? val : def;
-    if (min !== undefined && max !== undefined)
-      return Math.max(min, Math.min(max, num));
-    return num;
-  };
-
   // Qualification parameters - validate for NaN
-  const hueCenter = safeNum(params.hue_center, 0, 0, 360);
-  const hueWidth = safeNum(params.hue_width, 30, 0, 180);
-  const hueFalloff = safeNum(params.hue_falloff, 10, 0, 90);
-  const satMin = safeNum(params.sat_min, 0, 0, 100) / 100;
-  const satMax = safeNum(params.sat_max, 100, 0, 100) / 100;
-  const satFalloff = safeNum(params.sat_falloff, 10, 0, 50) / 100;
-  const lumMin = safeNum(params.lum_min, 0, 0, 100) / 100;
-  const lumMax = safeNum(params.lum_max, 100, 0, 100) / 100;
-  const lumFalloff = safeNum(params.lum_falloff, 10, 0, 50) / 100;
+  // Type proof: hue_center ∈ ℝ ∧ finite(hue_center) → hue_center ∈ [0, 360]
+  const hueCenterValue = params.hue_center;
+  const hueCenter = isFiniteNumber(hueCenterValue)
+    ? Math.max(0, Math.min(360, hueCenterValue))
+    : 0;
+  // Type proof: hue_width ∈ ℝ ∧ finite(hue_width) → hue_width ∈ [0, 180]
+  const hueWidthValue = params.hue_width;
+  const hueWidth = isFiniteNumber(hueWidthValue)
+    ? Math.max(0, Math.min(180, hueWidthValue))
+    : 30;
+  // Type proof: hue_falloff ∈ ℝ ∧ finite(hue_falloff) → hue_falloff ∈ [0, 90]
+  const hueFalloffValue = params.hue_falloff;
+  const hueFalloff = isFiniteNumber(hueFalloffValue)
+    ? Math.max(0, Math.min(90, hueFalloffValue))
+    : 10;
+  // Type proof: sat_min ∈ ℝ ∧ finite(sat_min) → sat_min ∈ [0, 100]
+  const satMinValue = params.sat_min;
+  const satMin = isFiniteNumber(satMinValue)
+    ? Math.max(0, Math.min(100, satMinValue)) / 100
+    : 0;
+  // Type proof: sat_max ∈ ℝ ∧ finite(sat_max) → sat_max ∈ [0, 100]
+  const satMaxValue = params.sat_max;
+  const satMax = isFiniteNumber(satMaxValue)
+    ? Math.max(0, Math.min(100, satMaxValue)) / 100
+    : 1;
+  // Type proof: sat_falloff ∈ ℝ ∧ finite(sat_falloff) → sat_falloff ∈ [0, 50]
+  const satFalloffValue = params.sat_falloff;
+  const satFalloff = isFiniteNumber(satFalloffValue)
+    ? Math.max(0, Math.min(50, satFalloffValue)) / 100
+    : 0.1;
+  // Type proof: lum_min ∈ ℝ ∧ finite(lum_min) → lum_min ∈ [0, 100]
+  const lumMinValue = params.lum_min;
+  const lumMin = isFiniteNumber(lumMinValue)
+    ? Math.max(0, Math.min(100, lumMinValue)) / 100
+    : 0;
+  // Type proof: lum_max ∈ ℝ ∧ finite(lum_max) → lum_max ∈ [0, 100]
+  const lumMaxValue = params.lum_max;
+  const lumMax = isFiniteNumber(lumMaxValue)
+    ? Math.max(0, Math.min(100, lumMaxValue)) / 100
+    : 1;
+  // Type proof: lum_falloff ∈ ℝ ∧ finite(lum_falloff) → lum_falloff ∈ [0, 50]
+  const lumFalloffValue = params.lum_falloff;
+  const lumFalloff = isFiniteNumber(lumFalloffValue)
+    ? Math.max(0, Math.min(50, lumFalloffValue)) / 100
+    : 0.1;
 
   // Correction parameters - validate for NaN
-  const hueShift = safeNum(params.hue_shift, 0, -180, 180);
-  const satAdjust = safeNum(params.sat_adjust, 0, -100, 100) / 100;
-  const lumAdjust = safeNum(params.lum_adjust, 0, -100, 100) / 100;
+  // Type proof: hue_shift ∈ ℝ ∧ finite(hue_shift) → hue_shift ∈ [-180, 180]
+  const hueShiftValue = params.hue_shift;
+  const hueShift = isFiniteNumber(hueShiftValue)
+    ? Math.max(-180, Math.min(180, hueShiftValue))
+    : 0;
+  // Type proof: sat_adjust ∈ ℝ ∧ finite(sat_adjust) → sat_adjust ∈ [-100, 100]
+  const satAdjustValue = params.sat_adjust;
+  const satAdjust = isFiniteNumber(satAdjustValue)
+    ? Math.max(-100, Math.min(100, satAdjustValue)) / 100
+    : 0;
+  // Type proof: lum_adjust ∈ ℝ ∧ finite(lum_adjust) → lum_adjust ∈ [-100, 100]
+  const lumAdjustValue = params.lum_adjust;
+  const lumAdjust = isFiniteNumber(lumAdjustValue)
+    ? Math.max(-100, Math.min(100, lumAdjustValue)) / 100
+    : 0;
 
   // Preview
-  const showMask = params.show_mask ?? false;
+  // Type proof: show_mask ∈ {true, false}
+  const showMask = typeof params.show_mask === "boolean" ? params.show_mask : false;
 
   // No change if no correction applied
   if (!showMask && hueShift === 0 && satAdjust === 0 && lumAdjust === 0) {
@@ -383,11 +429,31 @@ export function hueVsCurvesRenderer(
   params: EvaluatedEffectParams,
 ): EffectStackResult {
   // Parse curve data (arrays of control points)
-  const hueVsHue: Array<{ x: number; y: number }> = params.hue_vs_hue ?? [];
-  const hueVsSat: Array<{ x: number; y: number }> = params.hue_vs_sat ?? [];
-  const hueVsLum: Array<{ x: number; y: number }> = params.hue_vs_lum ?? [];
-  const lumVsSat: Array<{ x: number; y: number }> = params.lum_vs_sat ?? [];
-  const satVsSat: Array<{ x: number; y: number }> = params.sat_vs_sat ?? [];
+  // Type proof: hue_vs_hue ∈ Array<{x: number, y: number}> ∪ {undefined}
+  const hueVsHueRaw = params.hue_vs_hue;
+  const hueVsHue: Array<{ x: number; y: number }> = isArray(hueVsHueRaw)
+    ? hueVsHueRaw.filter((point): point is { x: number; y: number } => hasXY(point))
+    : [];
+  // Type proof: hue_vs_sat ∈ Array<{x: number, y: number}> ∪ {undefined}
+  const hueVsSatRaw = params.hue_vs_sat;
+  const hueVsSat: Array<{ x: number; y: number }> = isArray(hueVsSatRaw)
+    ? hueVsSatRaw.filter((point): point is { x: number; y: number } => hasXY(point))
+    : [];
+  // Type proof: hue_vs_lum ∈ Array<{x: number, y: number}> ∪ {undefined}
+  const hueVsLumRaw = params.hue_vs_lum;
+  const hueVsLum: Array<{ x: number; y: number }> = isArray(hueVsLumRaw)
+    ? hueVsLumRaw.filter((point): point is { x: number; y: number } => hasXY(point))
+    : [];
+  // Type proof: lum_vs_sat ∈ Array<{x: number, y: number}> ∪ {undefined}
+  const lumVsSatRaw = params.lum_vs_sat;
+  const lumVsSat: Array<{ x: number; y: number }> = isArray(lumVsSatRaw)
+    ? lumVsSatRaw.filter((point): point is { x: number; y: number } => hasXY(point))
+    : [];
+  // Type proof: sat_vs_sat ∈ Array<{x: number, y: number}> ∪ {undefined}
+  const satVsSatRaw = params.sat_vs_sat;
+  const satVsSat: Array<{ x: number; y: number }> = isArray(satVsSatRaw)
+    ? satVsSatRaw.filter((point): point is { x: number; y: number } => hasXY(point))
+    : [];
 
   // No curves defined = no change
   if (
@@ -609,12 +675,16 @@ export function colorMatchRenderer(
     refPixelsRaw > 0
       ? refPixelsRaw
       : 0;
-  const strengthRaw = (params.strength ?? 100) / 100;
-  const strength = Number.isFinite(strengthRaw)
-    ? Math.max(0, Math.min(1, strengthRaw))
-    : 0;
-  const matchLuminance = params.match_luminance ?? true;
-  const matchColor = params.match_color ?? true;
+  // Type proof: strength ∈ ℝ ∧ finite(strength) → strength ∈ [0, 100]
+  const strengthValue = params.strength;
+  const strengthRaw = isFiniteNumber(strengthValue)
+    ? Math.max(0, Math.min(100, strengthValue)) / 100
+    : 1;
+  const strength = Math.max(0, Math.min(1, strengthRaw));
+  // Type proof: match_luminance ∈ {true, false}
+  const matchLuminance = typeof params.match_luminance === "boolean" ? params.match_luminance : true;
+  // Type proof: match_color ∈ {true, false}
+  const matchColor = typeof params.match_color === "boolean" ? params.match_color : true;
 
   // No reference = no change (also check refPixels > 0 to prevent div/0)
   if (!refHistR || !refHistG || !refHistB || refPixels <= 0 || strength === 0) {

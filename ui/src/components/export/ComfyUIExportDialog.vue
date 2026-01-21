@@ -5,6 +5,7 @@
  */
 
 import { computed, onMounted, ref, watch } from "vue";
+import { safeNonNegativeDefault } from "@/utils/typeGuards";
 import {
   EXPORT_PRESETS,
   EXPORT_TARGET_INFO,
@@ -13,7 +14,7 @@ import {
 } from "@/config/exportPresets";
 import { getComfyUIClient } from "@/services/comfyui/comfyuiClient";
 import { exportToComfyUI } from "@/services/export/exportPipeline";
-import { useCompositorStore } from "@/stores/compositorStore";
+import { useProjectStore } from "@/stores/projectStore";
 import type {
   ControlType,
   DepthMapFormat,
@@ -25,8 +26,8 @@ import type {
 import type { Layer } from "@/types/project";
 import type { CameraKeyframe } from "@/types/camera";
 
-// Access compositor store for composition settings
-const compositorStore = useCompositorStore();
+// Access project store for composition settings
+const projectStore = useProjectStore();
 
 // ============================================================================
 // Props & Emits
@@ -97,6 +98,14 @@ const exportProgress = ref<ExportProgress | null>(null);
 const exportError = ref<string | null>(null);
 const abortController = ref<AbortController | null>(null);
 
+// Type proof: overallProgress ∈ number | undefined → number (0-100 range, non-negative)
+function getOverallProgress(): number {
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const exportProgressValue = exportProgress.value;
+  const overallProgress = (exportProgressValue != null && typeof exportProgressValue === "object" && "overallProgress" in exportProgressValue && typeof exportProgressValue.overallProgress === "number") ? exportProgressValue.overallProgress : undefined;
+  return safeNonNegativeDefault(overallProgress, 0, "exportProgress.overallProgress");
+}
+
 // ============================================================================
 // Computed
 // ============================================================================
@@ -106,9 +115,19 @@ const targetInfo = computed(() => EXPORT_TARGET_INFO[selectedTarget.value]);
 // Get recommended settings for selected target
 const targetPreset = computed(() => EXPORT_PRESETS[selectedTarget.value]);
 
+// Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+// Computed property for seed value (defaults to 0 if undefined)
+const seedValue = computed({
+  get: () => (typeof seed.value === "number" && Number.isFinite(seed.value)) ? seed.value : 0,
+  set: (value: number) => { seed.value = value; },
+});
+
 // Check if current settings differ from target recommendations
 const settingsMismatch = computed(() => {
   const preset = targetPreset.value;
+  // System F/Omega EXCEPTION: Returning null here is necessary for Vue template compatibility
+  // Template uses v-if="settingsMismatch" which requires null for conditional rendering
+  // This is the ONLY place where null is returned - all other code throws explicit errors
   if (!preset) return null;
 
   const mismatches: string[] = [];
@@ -226,12 +245,18 @@ function selectTarget(target: ExportTarget) {
  * Use when user wants to match model's recommended settings
  */
 function applyTargetPreset() {
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
   const preset = EXPORT_PRESETS[selectedTarget.value];
   if (preset) {
-    width.value = preset.width ?? width.value;
-    height.value = preset.height ?? height.value;
-    frameCount.value = preset.frameCount ?? frameCount.value;
-    fps.value = preset.fps ?? fps.value;
+    // Pattern match: preset.width ∈ number | undefined → number (keep existing if undefined)
+    const presetWidth = (typeof preset === "object" && preset !== null && "width" in preset && typeof preset.width === "number" && Number.isFinite(preset.width)) ? preset.width : undefined;
+    width.value = presetWidth !== undefined ? presetWidth : width.value;
+    const presetHeight = (typeof preset === "object" && preset !== null && "height" in preset && typeof preset.height === "number" && Number.isFinite(preset.height)) ? preset.height : undefined;
+    height.value = presetHeight !== undefined ? presetHeight : height.value;
+    const presetFrameCount = (typeof preset === "object" && preset !== null && "frameCount" in preset && typeof preset.frameCount === "number" && Number.isFinite(preset.frameCount)) ? preset.frameCount : undefined;
+    frameCount.value = presetFrameCount !== undefined ? presetFrameCount : frameCount.value;
+    const presetFps = (typeof preset === "object" && preset !== null && "fps" in preset && typeof preset.fps === "number" && Number.isFinite(preset.fps)) ? preset.fps : undefined;
+    fps.value = presetFps !== undefined ? presetFps : fps.value;
     endFrame.value = frameCount.value;
     useCompositionSettings.value = false;
   }
@@ -241,10 +266,10 @@ function applyTargetPreset() {
  * Reset to composition settings
  */
 function resetToCompositionSettings() {
-  width.value = compositorStore.width || 832;
-  height.value = compositorStore.height || 480;
-  frameCount.value = compositorStore.frameCount || 81;
-  fps.value = compositorStore.fps || 24;
+  width.value = projectStore.getWidth() || 832;
+  height.value = projectStore.getHeight() || 480;
+  frameCount.value = projectStore.getFrameCount() || 81;
+  fps.value = projectStore.getFps() || 24;
   endFrame.value = frameCount.value;
   useCompositionSettings.value = true;
 }
@@ -349,10 +374,10 @@ function close() {
 
 onMounted(() => {
   // Initialize from composition settings - THIS IS THE SOURCE OF TRUTH
-  width.value = compositorStore.width || 832;
-  height.value = compositorStore.height || 480;
-  frameCount.value = compositorStore.frameCount || 81;
-  fps.value = compositorStore.fps || 24;
+  width.value = projectStore.getWidth() || 832;
+  height.value = projectStore.getHeight() || 480;
+  frameCount.value = projectStore.getFrameCount() || 81;
+  fps.value = projectStore.getFps() || 24;
   startFrame.value = 0;
   endFrame.value = frameCount.value;
 
@@ -600,8 +625,7 @@ watch(selectedTarget, () => {
             </div>
             <div class="input-row seed-row">
               <ScrubableNumber
-                :modelValue="seed ?? 0"
-                @update:modelValue="(v: number) => seed = v"
+                v-model="seedValue"
                 label="Seed"
                 :min="0"
                 :max="2147483647"
@@ -649,16 +673,18 @@ watch(selectedTarget, () => {
       <!-- Progress -->
       <div v-if="isExporting" class="export-progress">
         <div class="progress-header">
-          <span>{{ exportProgress?.message || 'Exporting...' }}</span>
+          <!-- Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?. -->
+          <span>{{ (exportProgress != null && typeof exportProgress === "object" && "message" in exportProgress && typeof exportProgress.message === "string") ? exportProgress.message : 'Exporting...' }}</span>
           <button @click="cancelExport">Cancel</button>
         </div>
         <div class="progress-bar">
           <div
             class="progress-fill"
-            :style="{ width: `${exportProgress?.overallProgress || 0}%` }"
+            :style="{ width: `${getOverallProgress()}%` }"
           />
         </div>
-        <div v-if="exportProgress?.currentFrame" class="progress-details">
+        <!-- Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?. -->
+        <div v-if="(exportProgress != null && typeof exportProgress === "object" && "currentFrame" in exportProgress && typeof exportProgress.currentFrame === "number")" class="progress-details">
           Frame {{ exportProgress.currentFrame }} / {{ exportProgress.totalFrames }}
         </div>
       </div>

@@ -168,12 +168,14 @@
 
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
-import { useCompositorStore } from "@/stores/compositorStore";
+import { assertDefined } from "@/utils/typeGuards";
 import { useLayerStore } from "@/stores/layerStore";
 import type { SplineData } from "@/types/project";
 import { isLayerOfType } from "@/types/project";
 import type { WarpPin, WarpPinType } from "@/types/meshWarp";
 import { createDefaultWarpPin } from "@/types/meshWarp";
+import type { JSONValue } from "@/types/dataAsset";
+import type { PropertyValue } from "@/types/animation";
 
 // Props
 const props = defineProps<{
@@ -192,7 +194,6 @@ const emit = defineEmits<{
 }>();
 
 // Store
-const store = useCompositorStore();
 const layerStore = useLayerStore();
 
 // Local state
@@ -204,32 +205,59 @@ const dragStartPos = ref<{ x: number; y: number } | null>(null);
 // Computed
 const pins = computed<WarpPin[]>(() => {
   if (!props.layerId) return [];
-  const layer = layerStore.getLayerById(store, props.layerId);
+  const layer = layerStore.getLayerById(props.layerId);
   if (!layer || !isLayerOfType(layer, "spline")) return [];
-  // Support both old 'puppetPins' and new 'warpPins' property names
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+  // Support both old 'puppetPins' and new 'warpPins' property names (prefer warpPins)
   const splineData = layer.data as SplineData;
-  return splineData.warpPins ?? splineData.puppetPins ?? [];
+  if (splineData !== null && typeof splineData === "object" && "warpPins" in splineData && Array.isArray(splineData.warpPins)) {
+    return splineData.warpPins;
+  }
+  if (splineData !== null && typeof splineData === "object" && "puppetPins" in splineData && Array.isArray(splineData.puppetPins)) {
+    return splineData.puppetPins;
+  }
+  return [];
 });
 
 const selectedPin = computed(() => {
-  if (!selectedPinId.value) return null;
-  return pins.value.find((p) => p.id === selectedPinId.value) ?? null;
+  if (!selectedPinId.value) {
+    throw new Error("[MeshWarpPinEditor] Cannot get selected pin: selectedPinId is not set");
+  }
+  const found = pins.value.find((p) => p.id === selectedPinId.value);
+  if (!found) {
+    throw new Error(`[MeshWarpPinEditor] Selected pin "${selectedPinId.value}" not found in pins array`);
+  }
+  return found;
 });
 
 const selectedPinRadius = computed({
-  get: () => selectedPin.value?.radius ?? 50,
+  get: () => {
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??/?.
+    // Type proof: selectedPin.value throws if not found, so it's always defined here or throws above
+    const pin = selectedPin.value;
+    return (pin !== null && typeof pin === "object" && "radius" in pin && typeof pin.radius === "number" && Number.isFinite(pin.radius)) ? pin.radius : 50;
+  },
   set: (value: number) => {
     if (selectedPin.value && props.layerId) {
-      updatePinProperty(selectedPinId.value!, "radius", value);
+      // Type proof: selectedPinId.value is guaranteed non-null when selectedPin.value exists
+      assertDefined(selectedPinId.value, "selectedPinId must exist when selectedPin exists");
+      updatePinProperty(selectedPinId.value, "radius", value);
     }
   },
 });
 
 const selectedPinStiffness = computed({
-  get: () => selectedPin.value?.stiffness ?? 0,
+  get: () => {
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??/?.
+    // Type proof: selectedPin.value throws if not found, so it's always defined here or throws above
+    const pin = selectedPin.value;
+    return (pin !== null && typeof pin === "object" && "stiffness" in pin && typeof pin.stiffness === "number" && Number.isFinite(pin.stiffness)) ? pin.stiffness : 0;
+  },
   set: (value: number) => {
     if (selectedPin.value && props.layerId) {
-      updatePinProperty(selectedPinId.value!, "stiffness", value);
+      // Type proof: selectedPinId.value is guaranteed non-null when selectedPin.value exists
+      assertDefined(selectedPinId.value, "selectedPinId must exist when selectedPin exists");
+      updatePinProperty(selectedPinId.value, "stiffness", value);
     }
   },
 });
@@ -326,7 +354,7 @@ function handleMouseUp() {
   dragStartPos.value = null;
 }
 
-function findPinAt(x: number, y: number): WarpPin | null {
+function findPinAt(x: number, y: number): WarpPin {
   const hitRadius = 12; // Click tolerance
   for (const pin of pins.value) {
     const dx = pin.position.value.x - x;
@@ -335,27 +363,39 @@ function findPinAt(x: number, y: number): WarpPin | null {
       return pin;
     }
   }
-  return null;
+  throw new Error(`[MeshWarpPinEditor] No pin found at position (${x}, ${y})`);
 }
 
 function addPinToLayer(
   x: number,
   y: number,
   type: WarpPinType,
-): WarpPin | null {
-  if (!props.layerId) return null;
+): WarpPin {
+  if (!props.layerId) {
+    throw new Error("[MeshWarpPinEditor] Cannot add pin: layerId is not set");
+  }
 
   const id = `pin_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
   const newPin = createDefaultWarpPin(id, x, y, type);
 
   // Get current pins and add new one
-  const layer = layerStore.getLayerById(store, props.layerId);
-  if (!layer || !isLayerOfType(layer, "spline")) return null;
+  const layer = layerStore.getLayerById(props.layerId);
+  if (!layer || !isLayerOfType(layer, "spline")) {
+    throw new Error(`[MeshWarpPinEditor] Cannot add pin: Layer "${props.layerId}" not found or is not a spline layer`);
+  }
 
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
   // Support both old and new property names, prefer new
   const splineData = layer.data as SplineData;
-  const currentPins = splineData.warpPins ?? splineData.puppetPins ?? [];
-  layerStore.updateLayer(store, props.layerId, {
+  let currentPins: WarpPin[];
+  if (splineData !== null && typeof splineData === "object" && "warpPins" in splineData && Array.isArray(splineData.warpPins)) {
+    currentPins = splineData.warpPins;
+  } else if (splineData !== null && typeof splineData === "object" && "puppetPins" in splineData && Array.isArray(splineData.puppetPins)) {
+    currentPins = splineData.puppetPins;
+  } else {
+    currentPins = [];
+  }
+  layerStore.updateLayer(props.layerId, {
     data: {
       ...splineData,
       warpPins: [...currentPins, newPin],
@@ -368,12 +408,20 @@ function addPinToLayer(
 function removePinFromLayer(pinId: string): void {
   if (!props.layerId) return;
 
-  const layer = layerStore.getLayerById(store, props.layerId);
+  const layer = layerStore.getLayerById(props.layerId);
   if (!layer || !isLayerOfType(layer, "spline")) return;
 
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
   const splineData = layer.data as SplineData;
-  const currentPins: WarpPin[] = splineData.warpPins ?? splineData.puppetPins ?? [];
-  layerStore.updateLayer(store, props.layerId, {
+  let currentPins: WarpPin[];
+  if (splineData !== null && typeof splineData === "object" && "warpPins" in splineData && Array.isArray(splineData.warpPins)) {
+    currentPins = splineData.warpPins;
+  } else if (splineData !== null && typeof splineData === "object" && "puppetPins" in splineData && Array.isArray(splineData.puppetPins)) {
+    currentPins = splineData.puppetPins;
+  } else {
+    currentPins = [];
+  }
+  layerStore.updateLayer(props.layerId, {
     data: {
       ...splineData,
       warpPins: currentPins.filter((p) => p.id !== pinId),
@@ -389,11 +437,19 @@ function removePinFromLayer(pinId: string): void {
 function updatePinPosition(pinId: string, x: number, y: number): void {
   if (!props.layerId) return;
 
-  const layer = layerStore.getLayerById(store, props.layerId);
+  const layer = layerStore.getLayerById(props.layerId);
   if (!layer || !isLayerOfType(layer, "spline")) return;
 
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
   const splineData = layer.data as SplineData;
-  const currentPins: WarpPin[] = splineData.warpPins ?? splineData.puppetPins ?? [];
+  let currentPins: WarpPin[];
+  if (splineData !== null && typeof splineData === "object" && "warpPins" in splineData && Array.isArray(splineData.warpPins)) {
+    currentPins = splineData.warpPins;
+  } else if (splineData !== null && typeof splineData === "object" && "puppetPins" in splineData && Array.isArray(splineData.puppetPins)) {
+    currentPins = splineData.puppetPins;
+  } else {
+    currentPins = [];
+  }
   const updatedPins = currentPins.map((p) => {
     if (p.id === pinId) {
       return {
@@ -407,7 +463,7 @@ function updatePinPosition(pinId: string, x: number, y: number): void {
     return p;
   });
 
-  layerStore.updateLayer(store, props.layerId, {
+  layerStore.updateLayer(props.layerId, {
     data: {
       ...splineData,
       warpPins: updatedPins,
@@ -415,14 +471,22 @@ function updatePinPosition(pinId: string, x: number, y: number): void {
   });
 }
 
-function updatePinProperty(pinId: string, property: string, value: unknown): void {
+function updatePinProperty(pinId: string, property: string, value: PropertyValue | JSONValue): void {
   if (!props.layerId) return;
 
-  const layer = layerStore.getLayerById(store, props.layerId);
+  const layer = layerStore.getLayerById(props.layerId);
   if (!layer || !isLayerOfType(layer, "spline")) return;
 
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
   const splineData = layer.data as SplineData;
-  const currentPins: WarpPin[] = splineData.warpPins ?? splineData.puppetPins ?? [];
+  let currentPins: WarpPin[];
+  if (splineData !== null && typeof splineData === "object" && "warpPins" in splineData && Array.isArray(splineData.warpPins)) {
+    currentPins = splineData.warpPins;
+  } else if (splineData !== null && typeof splineData === "object" && "puppetPins" in splineData && Array.isArray(splineData.puppetPins)) {
+    currentPins = splineData.puppetPins;
+  } else {
+    currentPins = [];
+  }
   const updatedPins = currentPins.map((p) => {
     if (p.id === pinId) {
       return {
@@ -433,7 +497,7 @@ function updatePinProperty(pinId: string, property: string, value: unknown): voi
     return p;
   });
 
-  layerStore.updateLayer(store, props.layerId, {
+  layerStore.updateLayer(props.layerId, {
     data: {
       ...splineData,
       warpPins: updatedPins,

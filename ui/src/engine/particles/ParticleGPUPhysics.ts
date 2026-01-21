@@ -9,6 +9,7 @@
  */
 
 import * as THREE from "three";
+import { assertDefined } from "@/utils/typeGuards";
 import {
   getFalloffTypeIndex,
   getForceFieldTypeIndex,
@@ -102,15 +103,20 @@ export class ParticleGPUPhysics {
       ? Math.min(Math.floor(config.maxParticles), 10_000_000)  // Cap at 10M
       : 10000;  // Sensible default
     
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+    const bounds = (config.bounds !== null && config.bounds !== undefined && typeof config.bounds === "object") ? config.bounds : {
+      min: [-10000, -10000, -10000],
+      max: [10000, 10000, 10000],
+    };
+    const damping = (typeof config.damping === "number" && Number.isFinite(config.damping) && config.damping >= 0 && config.damping <= 1) ? config.damping : 0.99;
+    const noiseScale = (typeof config.noiseScale === "number" && Number.isFinite(config.noiseScale) && config.noiseScale >= 0) ? config.noiseScale : 0.005;
+    const noiseSpeed = (typeof config.noiseSpeed === "number" && Number.isFinite(config.noiseSpeed) && config.noiseSpeed >= 0) ? config.noiseSpeed : 0.5;
     this.config = {
       maxParticles: safeMaxParticles,
-      bounds: config.bounds ?? {
-        min: [-10000, -10000, -10000],
-        max: [10000, 10000, 10000],
-      },
-      damping: config.damping ?? 0.99,
-      noiseScale: config.noiseScale ?? 0.005,
-      noiseSpeed: config.noiseSpeed ?? 0.5,
+      bounds,
+      damping,
+      noiseScale,
+      noiseSpeed,
     };
   }
 
@@ -149,12 +155,17 @@ export class ParticleGPUPhysics {
         return false;
       }
 
+      // Type proof: bounds, damping, noiseScale, noiseSpeed are guaranteed by constructor defaults
+      assertDefined(this.config.bounds, "bounds must exist after constructor initialization");
+      assertDefined(this.config.damping, "damping must exist after constructor initialization");
+      assertDefined(this.config.noiseScale, "noiseScale must exist after constructor initialization");
+      assertDefined(this.config.noiseSpeed, "noiseSpeed must exist after constructor initialization");
       const webgpuConfig: WebGPUParticleConfig = {
         maxParticles: this.config.maxParticles,
-        bounds: this.config.bounds!,
-        damping: this.config.damping!,
-        noiseScale: this.config.noiseScale!,
-        noiseSpeed: this.config.noiseSpeed!,
+        bounds: this.config.bounds,
+        damping: this.config.damping,
+        noiseScale: this.config.noiseScale,
+        noiseSpeed: this.config.noiseSpeed,
       };
 
       this.webgpuCompute = new WebGPUParticleCompute(webgpuConfig);
@@ -196,15 +207,9 @@ export class ParticleGPUPhysics {
 
     try {
       // Create transform feedback program
+      // System F/Omega pattern: Wrap in try/catch for expected "WebGL failure" case
+      // When WebGL operations fail, fallback to CPU physics is a valid state
       this.transformFeedbackProgram = this.createTransformFeedbackProgram(gl);
-
-      if (!this.transformFeedbackProgram) {
-        console.warn(
-          "Failed to create transform feedback program, using CPU physics",
-        );
-        this.useGPUPhysics = false;
-        return;
-      }
 
       // Create double-buffered VAOs and VBOs
       this.particleVboA = gl.createBuffer();
@@ -315,49 +320,87 @@ export class ParticleGPUPhysics {
 
   /**
    * Create the transform feedback shader program
+   * 
+   * System F/Omega proof: Explicit validation of WebGL shader creation and compilation
+   * Type proof: gl ∈ WebGL2RenderingContext → WebGLProgram (non-nullable)
+   * Mathematical proof: All WebGL operations must succeed to create valid program
+   * Pattern proof: WebGL failures are explicit error conditions, not lazy null returns
    */
   private createTransformFeedbackProgram(
     gl: WebGL2RenderingContext,
-  ): WebGLProgram | null {
+  ): WebGLProgram {
     const vsSource = TRANSFORM_FEEDBACK_VERTEX_SHADER;
     const fsSource = TRANSFORM_FEEDBACK_FRAGMENT_SHADER;
 
     const vs = gl.createShader(gl.VERTEX_SHADER);
     const fs = gl.createShader(gl.FRAGMENT_SHADER);
 
-    if (!vs || !fs) return null;
+    // System F/Omega proof: Explicit validation of shader creation
+    // Type proof: gl.createShader() ∈ WebGLShader | null
+    // Mathematical proof: Shader creation must succeed for both vertex and fragment shaders
+    if (!vs || !fs) {
+      const vsStatus = vs ? "created" : "failed";
+      const fsStatus = fs ? "created" : "failed";
+      if (vs) gl.deleteShader(vs);
+      if (fs) gl.deleteShader(fs);
+      throw new Error(
+        `[ParticleGPUPhysics] Cannot create transform feedback program: Shader creation failed. ` +
+        `Vertex shader: ${vsStatus}, fragment shader: ${fsStatus}. ` +
+        `WebGL context may be lost or invalid. Wrap in try/catch to fallback to CPU physics.`
+      );
+    }
 
     gl.shaderSource(vs, vsSource);
     gl.compileShader(vs);
 
+    // System F/Omega proof: Explicit validation of vertex shader compilation
+    // Type proof: gl.getShaderParameter(vs, gl.COMPILE_STATUS) ∈ boolean
+    // Mathematical proof: Vertex shader must compile successfully
     if (!gl.getShaderParameter(vs, gl.COMPILE_STATUS)) {
-      console.error(
-        "Transform feedback vertex shader error:",
-        gl.getShaderInfoLog(vs),
-      );
+      const errorLog = gl.getShaderInfoLog(vs) || "No error log available";
+      console.error("Transform feedback vertex shader error:", errorLog);
       gl.deleteShader(vs);
       gl.deleteShader(fs);
-      return null;
+      throw new Error(
+        `[ParticleGPUPhysics] Cannot create transform feedback program: Vertex shader compilation failed. ` +
+        `Error log: ${errorLog}. ` +
+        `Shader source length: ${vsSource.length} characters. ` +
+        `Wrap in try/catch to fallback to CPU physics.`
+      );
     }
 
     gl.shaderSource(fs, fsSource);
     gl.compileShader(fs);
 
+    // System F/Omega proof: Explicit validation of fragment shader compilation
+    // Type proof: gl.getShaderParameter(fs, gl.COMPILE_STATUS) ∈ boolean
+    // Mathematical proof: Fragment shader must compile successfully
     if (!gl.getShaderParameter(fs, gl.COMPILE_STATUS)) {
-      console.error(
-        "Transform feedback fragment shader error:",
-        gl.getShaderInfoLog(fs),
-      );
+      const errorLog = gl.getShaderInfoLog(fs) || "No error log available";
+      console.error("Transform feedback fragment shader error:", errorLog);
       gl.deleteShader(vs);
       gl.deleteShader(fs);
-      return null;
+      throw new Error(
+        `[ParticleGPUPhysics] Cannot create transform feedback program: Fragment shader compilation failed. ` +
+        `Error log: ${errorLog}. ` +
+        `Shader source length: ${fsSource.length} characters. ` +
+        `Wrap in try/catch to fallback to CPU physics.`
+      );
     }
 
     const program = gl.createProgram();
+    
+    // System F/Omega proof: Explicit validation of program creation
+    // Type proof: gl.createProgram() ∈ WebGLProgram | null
+    // Mathematical proof: Program creation must succeed
     if (!program) {
       gl.deleteShader(vs);
       gl.deleteShader(fs);
-      return null;
+      throw new Error(
+        `[ParticleGPUPhysics] Cannot create transform feedback program: Program creation failed. ` +
+        `WebGL context may be lost or invalid. ` +
+        `Wrap in try/catch to fallback to CPU physics.`
+      );
     }
 
     gl.attachShader(program, vs);
@@ -368,15 +411,21 @@ export class ParticleGPUPhysics {
 
     gl.linkProgram(program);
 
+    // System F/Omega proof: Explicit validation of program linking
+    // Type proof: gl.getProgramParameter(program, gl.LINK_STATUS) ∈ boolean
+    // Mathematical proof: Program must link successfully
     if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-      console.error(
-        "Transform feedback program link error:",
-        gl.getProgramInfoLog(program),
-      );
+      const errorLog = gl.getProgramInfoLog(program) || "No error log available";
+      console.error("Transform feedback program link error:", errorLog);
       gl.deleteProgram(program);
       gl.deleteShader(vs);
       gl.deleteShader(fs);
-      return null;
+      throw new Error(
+        `[ParticleGPUPhysics] Cannot create transform feedback program: Program linking failed. ` +
+        `Error log: ${errorLog}. ` +
+        `Transform feedback varyings: ${TF_VARYINGS.join(", ")}. ` +
+        `Wrap in try/catch to fallback to CPU physics.`
+      );
     }
 
     gl.deleteShader(vs);
@@ -466,6 +515,11 @@ export class ParticleGPUPhysics {
 
     for (const field of forceFields.values()) {
       if (!field.enabled) continue;
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??/?.
+      // Priority: direction > vortexAxis > windDirection
+      const directionX = (field.direction !== null && field.direction !== undefined && typeof field.direction === "object" && "x" in field.direction && typeof field.direction.x === "number") ? field.direction.x : ((field.vortexAxis !== null && field.vortexAxis !== undefined && typeof field.vortexAxis === "object" && "x" in field.vortexAxis && typeof field.vortexAxis.x === "number") ? field.vortexAxis.x : ((field.windDirection !== null && field.windDirection !== undefined && typeof field.windDirection === "object" && "x" in field.windDirection && typeof field.windDirection.x === "number") ? field.windDirection.x : 0));
+      const directionY = (field.direction !== null && field.direction !== undefined && typeof field.direction === "object" && "y" in field.direction && typeof field.direction.y === "number") ? field.direction.y : ((field.vortexAxis !== null && field.vortexAxis !== undefined && typeof field.vortexAxis === "object" && "y" in field.vortexAxis && typeof field.vortexAxis.y === "number") ? field.vortexAxis.y : ((field.windDirection !== null && field.windDirection !== undefined && typeof field.windDirection === "object" && "y" in field.windDirection && typeof field.windDirection.y === "number") ? field.windDirection.y : 0));
+      const directionZ = (field.direction !== null && field.direction !== undefined && typeof field.direction === "object" && "z" in field.direction && typeof field.direction.z === "number") ? field.direction.z : ((field.vortexAxis !== null && field.vortexAxis !== undefined && typeof field.vortexAxis === "object" && "z" in field.vortexAxis && typeof field.vortexAxis.z === "number") ? field.vortexAxis.z : ((field.windDirection !== null && field.windDirection !== undefined && typeof field.windDirection === "object" && "z" in field.windDirection && typeof field.windDirection.z === "number") ? field.windDirection.z : 0));
       forceFieldData.push({
         type: getForceFieldTypeIndex(field.type),
         position: [
@@ -482,18 +536,9 @@ export class ParticleGPUPhysics {
               ? 2
               : 0,
         direction: [
-          safe(
-            field.direction?.x ?? field.vortexAxis?.x ?? field.windDirection?.x,
-            0,
-          ),
-          safe(
-            field.direction?.y ?? field.vortexAxis?.y ?? field.windDirection?.y,
-            0,
-          ),
-          safe(
-            field.direction?.z ?? field.vortexAxis?.z ?? field.windDirection?.z,
-            0,
-          ),
+          safe(directionX, 0),
+          safe(directionY, 0),
+          safe(directionZ, 0),
         ],
       });
     }
@@ -602,7 +647,8 @@ export class ParticleGPUPhysics {
       const textureProps = this.renderer.properties.get(
         this.forceFieldTexture,
       ) as { __webglTexture?: WebGLTexture } | undefined;
-      const tex = textureProps?.__webglTexture;
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const tex = (textureProps != null && typeof textureProps === "object" && "__webglTexture" in textureProps && textureProps.__webglTexture != null) ? textureProps.__webglTexture : undefined;
       if (tex) {
         gl.bindTexture(gl.TEXTURE_2D, tex);
         gl.uniform1i(ffTexLoc, 0);
@@ -707,23 +753,24 @@ export class ParticleGPUPhysics {
         this.forceFieldBuffer[baseOffset + 10] = safeFloat(field.lorenzBeta, 2.666667);
         this.forceFieldBuffer[baseOffset + 11] = 0;
       } else if (field.type === "orbit" || field.type === "path") {
-        this.forceFieldBuffer[baseOffset + 8] = safeFloat(field.vortexAxis?.x, 0);
-        this.forceFieldBuffer[baseOffset + 9] = safeFloat(field.vortexAxis?.y, 1);
-        this.forceFieldBuffer[baseOffset + 10] = safeFloat(field.vortexAxis?.z, 0);
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+        const vortexAxis = (field != null && typeof field === "object" && "vortexAxis" in field && field.vortexAxis != null && typeof field.vortexAxis === "object") ? field.vortexAxis : undefined;
+        const vortexAxisX = (vortexAxis != null && typeof vortexAxis === "object" && "x" in vortexAxis && typeof vortexAxis.x === "number") ? vortexAxis.x : undefined;
+        const vortexAxisY = (vortexAxis != null && typeof vortexAxis === "object" && "y" in vortexAxis && typeof vortexAxis.y === "number") ? vortexAxis.y : undefined;
+        const vortexAxisZ = (vortexAxis != null && typeof vortexAxis === "object" && "z" in vortexAxis && typeof vortexAxis.z === "number") ? vortexAxis.z : undefined;
+        this.forceFieldBuffer[baseOffset + 8] = safeFloat(vortexAxisX, 0);
+        this.forceFieldBuffer[baseOffset + 9] = safeFloat(vortexAxisY, 1);
+        this.forceFieldBuffer[baseOffset + 10] = safeFloat(vortexAxisZ, 0);
         this.forceFieldBuffer[baseOffset + 11] = safeFloat(field.pathRadius, 100);
       } else {
-        this.forceFieldBuffer[baseOffset + 8] = safeFloat(
-          field.direction?.x ?? field.vortexAxis?.x ?? field.windDirection?.x,
-          0,
-        );
-        this.forceFieldBuffer[baseOffset + 9] = safeFloat(
-          field.direction?.y ?? field.vortexAxis?.y ?? field.windDirection?.y,
-          0,
-        );
-        this.forceFieldBuffer[baseOffset + 10] = safeFloat(
-          field.direction?.z ?? field.vortexAxis?.z ?? field.windDirection?.z,
-          0,
-        );
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??/?.
+        // Priority: direction > vortexAxis > windDirection
+        const directionX = (field.direction !== null && field.direction !== undefined && typeof field.direction === "object" && "x" in field.direction && typeof field.direction.x === "number") ? field.direction.x : ((field.vortexAxis !== null && field.vortexAxis !== undefined && typeof field.vortexAxis === "object" && "x" in field.vortexAxis && typeof field.vortexAxis.x === "number") ? field.vortexAxis.x : ((field.windDirection !== null && field.windDirection !== undefined && typeof field.windDirection === "object" && "x" in field.windDirection && typeof field.windDirection.x === "number") ? field.windDirection.x : 0));
+        const directionY = (field.direction !== null && field.direction !== undefined && typeof field.direction === "object" && "y" in field.direction && typeof field.direction.y === "number") ? field.direction.y : ((field.vortexAxis !== null && field.vortexAxis !== undefined && typeof field.vortexAxis === "object" && "y" in field.vortexAxis && typeof field.vortexAxis.y === "number") ? field.vortexAxis.y : ((field.windDirection !== null && field.windDirection !== undefined && typeof field.windDirection === "object" && "y" in field.windDirection && typeof field.windDirection.y === "number") ? field.windDirection.y : 0));
+        const directionZ = (field.direction !== null && field.direction !== undefined && typeof field.direction === "object" && "z" in field.direction && typeof field.direction.z === "number") ? field.direction.z : ((field.vortexAxis !== null && field.vortexAxis !== undefined && typeof field.vortexAxis === "object" && "z" in field.vortexAxis && typeof field.vortexAxis.z === "number") ? field.vortexAxis.z : ((field.windDirection !== null && field.windDirection !== undefined && typeof field.windDirection === "object" && "z" in field.windDirection && typeof field.windDirection.z === "number") ? field.windDirection.z : 0));
+        this.forceFieldBuffer[baseOffset + 8] = safeFloat(directionX, 0);
+        this.forceFieldBuffer[baseOffset + 9] = safeFloat(directionY, 0);
+        this.forceFieldBuffer[baseOffset + 10] = safeFloat(directionZ, 0);
         this.forceFieldBuffer[baseOffset + 11] = safeFloat(field.inwardForce, 0);
       }
 
@@ -734,14 +781,13 @@ export class ParticleGPUPhysics {
         this.forceFieldBuffer[baseOffset + 14] = 0;
         this.forceFieldBuffer[baseOffset + 15] = 0;
       } else {
-        this.forceFieldBuffer[baseOffset + 12] = safeFloat(
-          field.noiseScale ?? field.linearDrag ?? field.gustStrength,
-          0,
-        );
-        this.forceFieldBuffer[baseOffset + 13] = safeFloat(
-          field.noiseSpeed ?? field.quadraticDrag ?? field.gustFrequency,
-          0,
-        );
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+        // Priority: noiseScale > linearDrag > gustStrength
+        const param1 = (typeof field.noiseScale === "number" && Number.isFinite(field.noiseScale)) ? field.noiseScale : ((typeof field.linearDrag === "number" && Number.isFinite(field.linearDrag)) ? field.linearDrag : ((typeof field.gustStrength === "number" && Number.isFinite(field.gustStrength)) ? field.gustStrength : 0));
+        // Priority: noiseSpeed > quadraticDrag > gustFrequency
+        const param2 = (typeof field.noiseSpeed === "number" && Number.isFinite(field.noiseSpeed)) ? field.noiseSpeed : ((typeof field.quadraticDrag === "number" && Number.isFinite(field.quadraticDrag)) ? field.quadraticDrag : ((typeof field.gustFrequency === "number" && Number.isFinite(field.gustFrequency)) ? field.gustFrequency : 0));
+        this.forceFieldBuffer[baseOffset + 12] = safeFloat(param1, 0);
+        this.forceFieldBuffer[baseOffset + 13] = safeFloat(param2, 0);
         this.forceFieldBuffer[baseOffset + 14] = 0;
         this.forceFieldBuffer[baseOffset + 15] = 0;
       }
@@ -868,7 +914,11 @@ export class ParticleGPUPhysics {
       this.transformFeedbackB = null;
     }
 
-    this.forceFieldTexture?.dispose();
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const forceFieldTexture = this.forceFieldTexture;
+    if (forceFieldTexture != null && typeof forceFieldTexture === "object" && typeof forceFieldTexture.dispose === "function") {
+      forceFieldTexture.dispose();
+    }
     this.forceFieldTexture = null;
 
     // Cleanup WebGPU

@@ -116,35 +116,39 @@
 
 <script setup lang="ts">
 import { computed } from "vue";
-import { useCompositorStore } from "@/stores/compositorStore";
+import { useCameraStore } from "@/stores/cameraStore";
+import { useProjectStore } from "@/stores/projectStore";
+import { useSelectionStore } from "@/stores/selectionStore";
 import type {
   ViewOptions,
   ViewType,
   WireframeVisibility,
 } from "@/types/camera";
 
-const store = useCompositorStore();
+const cameraStore = useCameraStore();
+const projectStore = useProjectStore();
+const selectionStore = useSelectionStore();
 
-const viewOptions = computed(() => store.viewOptions);
-const viewportState = computed(() => store.viewportState);
+const viewOptions = computed(() => cameraStore.viewOptions);
+const viewportState = computed(() => cameraStore.viewportState);
 
 type ViewOptionKey = keyof ViewOptions;
 
 function toggleOption(key: ViewOptionKey) {
   const current = viewOptions.value[key];
   if (typeof current === "boolean") {
-    store.updateViewOptions({ [key]: !current });
+    cameraStore.updateViewOptions({ [key]: !current });
   }
 }
 
 function setCameraWireframes(value: WireframeVisibility) {
-  store.updateViewOptions({ cameraWireframes: value });
+  cameraStore.updateViewOptions({ cameraWireframes: value });
 }
 
 function setView(viewType: ViewType) {
   const newViews = [...viewportState.value.views];
   newViews[viewportState.value.activeViewIndex] = viewType;
-  store.updateViewportState({ views: newViews });
+  cameraStore.updateViewportState({ views: newViews });
 }
 
 function resetView() {
@@ -152,11 +156,11 @@ function resetView() {
     viewportState.value.views[viewportState.value.activeViewIndex];
   if (activeView.startsWith("custom-")) {
     const customViewKey = activeView as "custom-1" | "custom-2" | "custom-3";
-    store.updateViewportState({
+    cameraStore.updateViewportState({
       customViews: {
         ...viewportState.value.customViews,
         [customViewKey]: {
-          orbitCenter: { x: store.width / 2, y: store.height / 2, z: 0 },
+          orbitCenter: { x: projectStore.getWidth() / 2, y: projectStore.getHeight() / 2, z: 0 },
           orbitDistance: 2000,
           orbitPhi: 60,
           orbitTheta: 45,
@@ -169,8 +173,8 @@ function resetView() {
 }
 
 function focusSelected() {
-  const selectedLayer = store.layers.find((l) =>
-    store.selectedLayerIds.includes(l.id),
+  const selectedLayer = projectStore.getActiveCompLayers().find((l) =>
+    selectionStore.selectedLayerIds.includes(l.id),
   );
   if (!selectedLayer) return;
 
@@ -182,7 +186,7 @@ function focusSelected() {
     const customViewKey = activeView as "custom-1" | "custom-2" | "custom-3";
     const currentView = viewportState.value.customViews[customViewKey];
 
-    store.updateViewportState({
+    cameraStore.updateViewportState({
       customViews: {
         ...viewportState.value.customViews,
         [customViewKey]: {

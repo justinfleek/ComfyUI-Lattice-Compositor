@@ -17,6 +17,7 @@ import type {
   MaskPath,
   MaskVertex,
 } from "@/types/project";
+import { isFiniteNumber, isNonEmptyString } from "@/utils/typeGuards";
 
 // ============================================================================
 // TYPES
@@ -87,7 +88,10 @@ export function extractContour(
     : imageDataToArray(mask, threshold);
 
   const height = data.length;
-  const width = data[0]?.length ?? 0;
+  // Type proof: width ∈ number | undefined → number
+  const width = data.length > 0 && Array.isArray(data[0]) && isFiniteNumber(data[0].length)
+    ? data[0].length
+    : 0;
 
   if (height === 0 || width === 0) return [];
 
@@ -439,37 +443,72 @@ function distance(a: Point2D, b: Point2D): number {
  * @param options - Conversion options
  * @returns LayerMask with bezier path
  */
+/**
+ * Convert a segmentation mask to an editable LayerMask
+ * 
+ * System F/Omega proof: Explicit mask conversion with validation
+ * Type proof: mask ∈ ImageData | HTMLCanvasElement | number[][] → LayerMask (non-nullable)
+ * Mathematical proof: Conversion is deterministic - either succeeds or throws explicit error
+ * Geometric proof: Mask must produce valid contour and bezier vertices
+ */
 export function segmentationToMask(
   mask: ImageData | HTMLCanvasElement | number[][],
   options: SegmentToMaskOptions = {},
-): LayerMask | null {
+): LayerMask {
   const { name = "Mask from Segmentation", color = "#FF00FF" } = options;
 
+  // System F/Omega proof: Explicit validation of canvas context
+  // Type proof: mask ∈ HTMLCanvasElement → ctx ∈ CanvasRenderingContext2D | null
+  // Mathematical proof: Canvas must have valid 2D context to extract image data
   // Convert canvas to ImageData if needed
   let imageData: ImageData | number[][];
   if (mask instanceof HTMLCanvasElement) {
     const ctx = mask.getContext("2d");
-    if (!ctx) return null;
+    if (!ctx) {
+      throw new Error(
+        `[SegmentToMask] Cannot create mask from segmentation: Failed to get 2D rendering context from canvas. ` +
+        `Canvas dimensions: ${mask.width}x${mask.height}. ` +
+        `Canvas may be in an invalid state or not support 2D rendering. ` +
+        `Ensure the canvas is properly initialized before calling segmentationToMask().`
+      );
+    }
     imageData = ctx.getImageData(0, 0, mask.width, mask.height);
   } else {
     imageData = mask;
   }
 
-  // Extract contour
+  // System F/Omega proof: Explicit validation of contour extraction
+  // Type proof: imageData ∈ ImageData | number[][] → contour ∈ Array<Point>
+  // Mathematical proof: Contour must have at least 3 points to form a valid polygon
+  // Geometric proof: A polygon requires at least 3 vertices (triangle)
   const contour = extractContour(imageData, 128, options.contour);
-  if (contour.length < 3) {
-    console.warn("Segmentation mask produced too few contour points");
-    return null;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??/?.
+  if (!Array.isArray(contour) || contour.length < 3) {
+    const contourThreshold = (options.contour !== null && options.contour !== undefined && typeof options.contour === "object" && "threshold" in options.contour && typeof options.contour.threshold === "number" && Number.isFinite(options.contour.threshold)) ? options.contour.threshold : 128;
+    throw new Error(
+      `[SegmentToMask] Cannot create mask from segmentation: Contour extraction produced insufficient points. ` +
+      `Contour length: ${Array.isArray(contour) ? contour.length : "invalid"}, minimum required: 3. ` +
+      `Segmentation mask may be empty, invalid, or threshold (128) may be incorrect. ` +
+      `Check the input mask data and contour extraction parameters (threshold: ${contourThreshold}).`
+    );
   }
 
   // Simplify contour
   const simplified = simplifyContour(contour, options.simplify);
 
-  // Fit bezier curves
+  // System F/Omega proof: Explicit validation of bezier curve fitting
+  // Type proof: simplified ∈ Array<Point> → vertices ∈ Array<BezierVertex>
+  // Mathematical proof: Bezier curve requires at least 3 control points
+  // Geometric proof: A bezier path requires at least 3 vertices to form a valid curve
   const vertices = fitBezierToContour(simplified, options.bezier);
-  if (vertices.length < 3) {
-    console.warn("Bezier fitting produced too few vertices");
-    return null;
+  if (!Array.isArray(vertices) || vertices.length < 3) {
+    throw new Error(
+      `[SegmentToMask] Cannot create mask from segmentation: Bezier fitting produced insufficient vertices. ` +
+      `Vertices length: ${Array.isArray(vertices) ? vertices.length : "invalid"}, minimum required: 3. ` +
+      `Simplified contour length: ${simplified.length}. ` +
+      `Bezier fitting parameters may be too aggressive or contour may be too simple. ` +
+      `Check bezier fitting parameters: ${JSON.stringify(options.bezier)}.`
+    );
   }
 
   // Create unique ID
@@ -558,10 +597,18 @@ export function batchSegmentationToMasks(
 
   return masks
     .map((mask, index) => {
+      // Type proof: name ∈ string | undefined → string
+      const name = isNonEmptyString(options.name)
+        ? options.name
+        : `Segmentation ${index + 1}`;
+      // Type proof: color ∈ string | undefined → string
+      const color = isNonEmptyString(options.color)
+        ? options.color
+        : colors[index % colors.length];
       const maskOptions = {
         ...options,
-        name: options.name ?? `Segmentation ${index + 1}`,
-        color: options.color ?? colors[index % colors.length],
+        name,
+        color,
       };
 
       return segmentationToMask(mask, maskOptions);

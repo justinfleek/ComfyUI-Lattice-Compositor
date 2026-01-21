@@ -29,25 +29,25 @@
         <label title="Grid cell size in pixels.">Grid Size</label>
         <input
           type="range"
-          :value="visualization.gridSize ?? 100"
+          :value="visualizationGridSize"
           min="25"
           max="200"
           step="25"
           @input="update('gridSize', Number(($event.target as HTMLInputElement).value))"
         />
-        <span class="value-display">{{ visualization.gridSize ?? 100 }}px</span>
+        <span class="value-display">{{ visualizationGridSize }}px</span>
       </div>
       <div v-if="visualization.showGrid" class="property-row">
         <label title="Grid depth into Z axis.">Grid Depth</label>
         <input
           type="range"
-          :value="visualization.gridDepth ?? 500"
+          :value="visualizationGridDepth"
           min="100"
           max="2000"
           step="100"
           @input="update('gridDepth', Number(($event.target as HTMLInputElement).value))"
         />
-        <span class="value-display">{{ visualization.gridDepth ?? 500 }}px</span>
+        <span class="value-display">{{ visualizationGridDepth }}px</span>
       </div>
       <div class="property-row checkbox-row">
         <label title="Show XYZ axis at origin.">
@@ -64,6 +64,8 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from "vue";
+
 interface VisualizationConfig {
   showHorizon: boolean;
   showGrid: boolean;
@@ -77,12 +79,23 @@ interface Props {
   expanded: boolean;
 }
 
-defineProps<Props>();
+const props = defineProps<Props>();
 
 const emit = defineEmits<{
   (e: "toggle"): void;
   (e: "update", key: keyof VisualizationConfig, value: VisualizationConfig[keyof VisualizationConfig]): void;
 }>();
+
+// Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+// Computed properties for optional visualization properties
+const visualizationGridSize = computed(() => {
+  const viz = props.visualization;
+  return (typeof viz === "object" && viz !== null && "gridSize" in viz && typeof viz.gridSize === "number" && Number.isFinite(viz.gridSize)) ? viz.gridSize : 100;
+});
+const visualizationGridDepth = computed(() => {
+  const viz = props.visualization;
+  return (typeof viz === "object" && viz !== null && "gridDepth" in viz && typeof viz.gridDepth === "number" && Number.isFinite(viz.gridDepth)) ? viz.gridDepth : 500;
+});
 
 function update(key: keyof VisualizationConfig, value: VisualizationConfig[keyof VisualizationConfig]): void {
   emit("update", key, value);

@@ -138,7 +138,7 @@
             <label title="Number of discrete steps (2-20)">Step Count</label>
             <input
               type="number"
-              :value="binding.stepCount ?? 5"
+              :value="getBindingStepCount(binding)"
               min="2"
               max="20"
               step="1"
@@ -148,7 +148,7 @@
           <div class="property-row">
             <label title="When to apply this binding">Trigger Mode</label>
             <select
-              :value="binding.triggerMode ?? 'continuous'"
+              :value="getBindingTriggerMode(binding)"
               @change="$emit('update', binding.id, 'triggerMode', ($event.target as HTMLSelectElement).value)"
             >
               <option value="continuous">Continuous</option>
@@ -160,13 +160,13 @@
             <label title="Audio value must exceed this to apply (0-1)">Threshold</label>
             <input
               type="range"
-              :value="binding.threshold ?? 0.5"
+              :value="getBindingThreshold(binding)"
               min="0"
               max="1"
               step="0.05"
               @input="$emit('update', binding.id, 'threshold', Number(($event.target as HTMLInputElement).value))"
             />
-            <span class="value-display">{{ (binding.threshold ?? 0.5).toFixed(2) }}</span>
+            <span class="value-display">{{ getBindingThreshold(binding).toFixed(2) }}</span>
           </div>
         </div>
       </div>
@@ -195,6 +195,18 @@ defineEmits<{
     value: AudioBindingConfig[keyof AudioBindingConfig],
   ): void;
 }>();
+
+// Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+// Helper functions for optional binding properties
+function getBindingStepCount(binding: AudioBindingConfig): number {
+  return (typeof binding === "object" && binding !== null && "stepCount" in binding && typeof binding.stepCount === "number" && Number.isFinite(binding.stepCount)) ? binding.stepCount : 5;
+}
+function getBindingTriggerMode(binding: AudioBindingConfig): string {
+  return (typeof binding === "object" && binding !== null && "triggerMode" in binding && typeof binding.triggerMode === "string") ? binding.triggerMode : "continuous";
+}
+function getBindingThreshold(binding: AudioBindingConfig): number {
+  return (typeof binding === "object" && binding !== null && "threshold" in binding && typeof binding.threshold === "number" && Number.isFinite(binding.threshold)) ? binding.threshold : 0.5;
+}
 </script>
 
 <style scoped>

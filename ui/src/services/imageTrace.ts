@@ -9,6 +9,7 @@
 
 import type { BezierPath, BezierVertex, Point2D } from "@/types/shapes";
 import { distance, normalize, subtractPoints } from "./shapeOperations";
+import { safeNonNegativeDefault } from "@/utils/typeGuards";
 
 // ============================================================================
 // TYPES
@@ -401,10 +402,11 @@ function traceContour(
 
     // Get marching squares pattern
     const idx = y * width + x;
-    const tl = bitmap[idx] || 0;
-    const tr = bitmap[idx + 1] || 0;
-    const bl = bitmap[idx + width] || 0;
-    const br = bitmap[idx + width + 1] || 0;
+    // Type proof: bitmap values ∈ number | undefined → number (≥ 0, pixel value 0-255)
+    const tl = safeNonNegativeDefault(bitmap[idx], 0, "bitmap[idx]");
+    const tr = safeNonNegativeDefault(bitmap[idx + 1], 0, "bitmap[idx + 1]");
+    const bl = safeNonNegativeDefault(bitmap[idx + width], 0, "bitmap[idx + width]");
+    const br = safeNonNegativeDefault(bitmap[idx + width + 1], 0, "bitmap[idx + width + 1]");
 
     const pattern = (tl << 3) | (tr << 2) | (br << 1) | bl;
 

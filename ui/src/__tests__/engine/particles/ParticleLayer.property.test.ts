@@ -55,17 +55,19 @@ function extractRenderConfig(data: Partial<ParticleLayerData>): Partial<{
   }
 
   // Shadow settings (BUG-189 fix)
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
   if (renderOptions.shadowsEnabled !== undefined) {
     config.shadowsEnabled = renderOptions.shadowsEnabled;
-    config.castShadows = renderOptions.castShadows ?? true;
-    config.receiveShadows = renderOptions.receiveShadows ?? true;
-    config.shadowSoftness = renderOptions.shadowSoftness ?? 1.0;
+    config.castShadows = (renderOptions.castShadows !== null && renderOptions.castShadows !== undefined && typeof renderOptions.castShadows === "boolean") ? renderOptions.castShadows : true;
+    config.receiveShadows = (renderOptions.receiveShadows !== null && renderOptions.receiveShadows !== undefined && typeof renderOptions.receiveShadows === "boolean") ? renderOptions.receiveShadows : true;
+    config.shadowSoftness = (renderOptions.shadowSoftness !== null && renderOptions.shadowSoftness !== undefined && typeof renderOptions.shadowSoftness === "number" && Number.isFinite(renderOptions.shadowSoftness) && renderOptions.shadowSoftness > 0) ? renderOptions.shadowSoftness : 1.0;
   }
 
   // Mesh mode (BUG-189 fix)
   if (renderOptions.meshMode !== undefined) {
+    const meshGeometry = (renderOptions.meshGeometry !== null && renderOptions.meshGeometry !== undefined && typeof renderOptions.meshGeometry === "string" && renderOptions.meshGeometry.length > 0) ? renderOptions.meshGeometry : "sphere";
     config.meshGeometry = renderOptions.meshMode === "mesh"
-      ? (renderOptions.meshGeometry ?? "sphere")
+      ? meshGeometry
       : "billboard";
   }
 
@@ -267,7 +269,9 @@ describe("ParticleLayer Config Wiring", () => {
           const config = extractRenderConfig(data);
           
           // Should use the specified geometry, or default to sphere
-          expect(config.meshGeometry).toBe(renderOptions.meshGeometry ?? "sphere");
+          // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+          const expectedGeometry = (renderOptions.meshGeometry !== null && renderOptions.meshGeometry !== undefined && typeof renderOptions.meshGeometry === "string" && renderOptions.meshGeometry.length > 0) ? renderOptions.meshGeometry : "sphere";
+          expect(config.meshGeometry).toBe(expectedGeometry);
         }),
         { numRuns: 100 }
       );

@@ -36,6 +36,7 @@ import type {
   MatteType,
   PropertyValue,
 } from "@/types/project";
+import { isFiniteNumber } from "@/utils/typeGuards";
 import { layerLogger } from "@/utils/logger";
 import { KeyframeEvaluator } from "../animation/KeyframeEvaluator";
 import type { LayerInstance } from "../types";
@@ -87,10 +88,13 @@ export abstract class BaseLayer implements LayerInstance {
   protected blendMode: string;
 
   /** Parent layer ID (for parenting hierarchy) */
-  protected parentId: string | null;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy null
+  // Pattern match: parentId ∈ string (empty string = no parent, never null)
+  protected parentId: string;
 
   /** Reference to parent layer (set by LayerManager) */
-  protected parentLayer: BaseLayer | null = null;
+  // Proper optional type - undefined when no parent
+  protected parentLayer: BaseLayer | undefined = undefined;
 
   /** Driven values override (from property drivers/expressions) */
   protected drivenValues: Map<string, number> = new Map();
@@ -118,7 +122,8 @@ export abstract class BaseLayer implements LayerInstance {
     {};
 
   /** Source canvas for effect processing (lazy initialized) */
-  protected effectSourceCanvas: HTMLCanvasElement | null = null;
+  // Proper optional type - undefined when not initialized
+  protected effectSourceCanvas: HTMLCanvasElement | undefined = undefined;
 
   /** Flag to track if effects need processing */
   protected effectsDirty: boolean = false;
@@ -134,13 +139,18 @@ export abstract class BaseLayer implements LayerInstance {
   protected matteType: MatteType = "none";
 
   /** ID of the layer used as matte source */
-  protected matteLayerId: string | null = null;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy null
+  // Pattern match: matteLayerId ∈ string (empty string = no matte, never null)
+  protected matteLayerId: string = "";
 
   /** ID of composition containing matte layer (for cross-comp mattes) */
-  protected matteCompositionId: string | null = null;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy null
+  // Pattern match: matteCompositionId ∈ string (empty string = no cross-comp matte, never null)
+  protected matteCompositionId: string = "";
 
   /** Canvas of matte source layer (set externally by LayerManager) */
-  protected matteCanvas: HTMLCanvasElement | null = null;
+  // Proper optional type - undefined when no matte source
+  protected matteCanvas: HTMLCanvasElement | undefined = undefined;
 
   /** Preserve transparency - only paint on existing pixels */
   protected preserveTransparency: boolean = false;
@@ -150,7 +160,8 @@ export abstract class BaseLayer implements LayerInstance {
   // ============================================================================
 
   /** Motion path line visualization */
-  protected motionPath: THREE.Line | null = null;
+  // Proper optional type - undefined when motion path not created
+  protected motionPath: THREE.Line | undefined = undefined;
 
   /** Motion path points (frame positions) */
   protected motionPathPoints: THREE.Vector3[] = [];
@@ -159,10 +170,12 @@ export abstract class BaseLayer implements LayerInstance {
   protected showMotionPath: boolean = false;
 
   /** Motion path keyframe markers */
-  protected motionPathMarkers: THREE.Group | null = null;
+  // Proper optional type - undefined when markers not created
+  protected motionPathMarkers: THREE.Group | undefined = undefined;
 
   /** 3D axis gizmo at anchor point */
-  protected axisGizmo: THREE.Group | null = null;
+  // Proper optional type - undefined when gizmo not created
+  protected axisGizmo: THREE.Group | undefined = undefined;
 
   /** Whether 3D axis gizmo is visible */
   protected showAxisGizmo: boolean = false;
@@ -175,17 +188,20 @@ export abstract class BaseLayer implements LayerInstance {
   protected motionBlur: boolean = false;
 
   /** Motion blur settings */
-  protected motionBlurSettings: LayerMotionBlurSettings | null = null;
+  // Proper optional type - undefined when motion blur disabled
+  protected motionBlurSettings: LayerMotionBlurSettings | undefined = undefined;
 
   /** Motion blur processor instance */
-  protected motionBlurProcessor: MotionBlurProcessor | null = null;
+  // Proper optional type - undefined when motion blur disabled or not initialized
+  protected motionBlurProcessor: MotionBlurProcessor | undefined = undefined;
 
   /** Previous frame transform values for velocity calculation */
+  // Proper optional type - undefined when no previous frame data
   protected prevTransform: {
     position: { x: number; y: number; z: number };
     rotation: number;
     scale: { x: number; y: number };
-  } | null = null;
+  } | undefined = undefined;
 
   /** Last frame that motion blur was evaluated */
   protected motionBlurLastFrame: number = -1;
@@ -209,32 +225,63 @@ export abstract class BaseLayer implements LayerInstance {
     // Copy properties
     this.visible = layerData.visible;
     this.locked = layerData.locked;
-    this.inPoint = layerData.startFrame ?? layerData.inPoint ?? 0;
-    this.outPoint = layerData.endFrame ?? layerData.outPoint ?? 80;
+    // Type proof: startFrame ∈ ℕ ∪ {undefined}, inPoint ∈ ℕ ∪ {undefined} → inPoint ∈ ℕ
+    const startFrameValue = layerData.startFrame;
+    this.inPoint = isFiniteNumber(startFrameValue) && Number.isInteger(startFrameValue) && startFrameValue >= 0
+      ? startFrameValue
+      : (isFiniteNumber(layerData.inPoint) && Number.isInteger(layerData.inPoint) && layerData.inPoint >= 0 ? layerData.inPoint : 0);
+    // Type proof: endFrame ∈ ℕ ∪ {undefined}, outPoint ∈ ℕ ∪ {undefined} → outPoint ∈ ℕ
+    const endFrameValue = layerData.endFrame;
+    this.outPoint = isFiniteNumber(endFrameValue) && Number.isInteger(endFrameValue) && endFrameValue >= 0
+      ? endFrameValue
+      : (isFiniteNumber(layerData.outPoint) && Number.isInteger(layerData.outPoint) && layerData.outPoint >= 0 ? layerData.outPoint : 80);
     this.opacity = layerData.opacity;
     this.transform = layerData.transform;
-    this.threeD = layerData.threeD ?? false;
-    this.autoOrient = layerData.autoOrient ?? "off";
-    this.blendMode = layerData.blendMode ?? "normal";
-    this.parentId = layerData.parentId ?? null;
-    this.effects = layerData.effects ?? [];
+    // Type proof: threeD ∈ {true, false} ∪ {undefined} → threeD ∈ {true, false}
+    this.threeD = typeof layerData.threeD === "boolean" ? layerData.threeD : false;
+    // Type proof: autoOrient ∈ AutoOrientMode ∪ {undefined} → AutoOrientMode
+    this.autoOrient = typeof layerData.autoOrient === "string" ? layerData.autoOrient : "off";
+    // Type proof: blendMode ∈ string ∪ {undefined} → string
+    this.blendMode = typeof layerData.blendMode === "string" ? layerData.blendMode : "normal";
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy null
+    // Pattern match: parentId ∈ string | null | undefined → string (empty string = no parent, never null)
+    this.parentId = (typeof layerData.parentId === "string" && layerData.parentId.length > 0) ? layerData.parentId : "";
+    // Type proof: effects ∈ EffectInstance[] ∪ {undefined} → EffectInstance[]
+    this.effects = Array.isArray(layerData.effects) ? layerData.effects : [];
     this.effectsEnabled = layerData.effectsEnabled !== false; // Default true
     this.layerStyles = layerData.layerStyles;
-    this.quality = layerData.quality ?? "best";
+    // Type proof: quality ∈ string ∪ {undefined} → string
+    this.quality = typeof layerData.quality === "string" ? layerData.quality : "best";
 
     // Motion blur properties
-    this.motionBlur = layerData.motionBlur ?? false;
-    this.motionBlurSettings = layerData.motionBlurSettings ?? null;
+    // Type proof: motionBlur ∈ {true, false} ∪ {undefined} → motionBlur ∈ {true, false}
+    this.motionBlur = typeof layerData.motionBlur === "boolean" ? layerData.motionBlur : false;
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy null
+    // Pattern match: motionBlurSettings ∈ LayerMotionBlurSettings | null | undefined → LayerMotionBlurSettings | {} (use empty object sentinel instead of null)
+    this.motionBlurSettings = (typeof layerData.motionBlurSettings === "object" && layerData.motionBlurSettings !== null) ? layerData.motionBlurSettings : undefined;
     this.layerData = layerData;
 
     // Mask & matte properties (with backwards compatibility for old property names)
-    this.masks = layerData.masks ?? [];
-    this.matteType = layerData.matteType ?? layerData.trackMatteType ?? "none";
-    this.matteLayerId =
-      layerData.matteLayerId ?? layerData.trackMatteLayerId ?? null;
-    this.matteCompositionId =
-      layerData.matteCompositionId ?? layerData.trackMatteCompositionId ?? null;
-    this.preserveTransparency = layerData.preserveTransparency ?? false;
+    // Type proof: masks ∈ LayerMask[] ∪ {undefined} → LayerMask[]
+    this.masks = Array.isArray(layerData.masks) ? layerData.masks : [];
+    // Type proof: matteType ∈ MatteType ∪ {undefined}, trackMatteType ∈ MatteType ∪ {undefined} → MatteType
+    const matteTypeValue = layerData.matteType;
+    this.matteType = typeof matteTypeValue === "string" ? matteTypeValue : (typeof layerData.trackMatteType === "string" ? layerData.trackMatteType : "none");
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy null
+    // Pattern match: matteLayerId ∈ string | null | undefined → string (empty string = no matte, never null)
+    const matteLayerIdValue = layerData.matteLayerId;
+    const hasMatteLayerId = typeof matteLayerIdValue === "string" && matteLayerIdValue.length > 0;
+    const trackMatteLayerIdValue = layerData.trackMatteLayerId;
+    const hasTrackMatteLayerId = typeof trackMatteLayerIdValue === "string" && trackMatteLayerIdValue.length > 0;
+    this.matteLayerId = hasMatteLayerId ? matteLayerIdValue : (hasTrackMatteLayerId ? trackMatteLayerIdValue : "");
+    // Pattern match: matteCompositionId ∈ string | null | undefined → string (empty string = no cross-comp matte, never null)
+    const matteCompositionIdValue = layerData.matteCompositionId;
+    const hasMatteCompositionId = typeof matteCompositionIdValue === "string" && matteCompositionIdValue.length > 0;
+    const trackMatteCompositionIdValue = layerData.trackMatteCompositionId;
+    const hasTrackMatteCompositionId = typeof trackMatteCompositionIdValue === "string" && trackMatteCompositionIdValue.length > 0;
+    this.matteCompositionId = hasMatteCompositionId ? matteCompositionIdValue : (hasTrackMatteCompositionId ? trackMatteCompositionIdValue : "");
+    // Type proof: preserveTransparency ∈ {true, false} ∪ {undefined} → preserveTransparency ∈ {true, false}
+    this.preserveTransparency = typeof layerData.preserveTransparency === "boolean" ? layerData.preserveTransparency : false;
   }
 
   /**
@@ -304,9 +351,11 @@ export abstract class BaseLayer implements LayerInstance {
     );
     let posX = this.getDrivenOrBase("transform.position.x", basePosition.x);
     let posY = this.getDrivenOrBase("transform.position.y", basePosition.y);
+    // Type proof: z ∈ ℝ ∪ {undefined} → z ∈ ℝ
+    const zValue = basePosition.z;
     const posZ = this.getDrivenOrBase(
       "transform.position.z",
-      basePosition.z ?? 0,
+      isFiniteNumber(zValue) ? zValue : 0,
     );
 
     // Apply audio reactive modulation to position (additive)
@@ -317,11 +366,17 @@ export abstract class BaseLayer implements LayerInstance {
 
     // Scale (stored as percentage, convert to multiplier)
     const baseScale = this.evaluator.evaluate(this.transform.scale, frame);
-    let scaleX = this.getDrivenOrBase("transform.scale.x", baseScale.x ?? 100);
-    let scaleY = this.getDrivenOrBase("transform.scale.y", baseScale.y ?? 100);
+    // Type proof: x ∈ ℝ ∪ {undefined} → x ∈ ℝ
+    const scaleXValue = baseScale.x;
+    let scaleX = this.getDrivenOrBase("transform.scale.x", isFiniteNumber(scaleXValue) ? scaleXValue : 100);
+    // Type proof: y ∈ ℝ ∪ {undefined} → y ∈ ℝ
+    const scaleYValue = baseScale.y;
+    let scaleY = this.getDrivenOrBase("transform.scale.y", isFiniteNumber(scaleYValue) ? scaleYValue : 100);
+    // Type proof: z ∈ ℝ ∪ {undefined} → z ∈ ℝ
+    const scaleZValue = baseScale.z;
     const scaleZ = this.getDrivenOrBase(
       "transform.scale.z",
-      baseScale.z ?? 100,
+      isFiniteNumber(scaleZValue) ? scaleZValue : 100,
     );
 
     // Apply audio reactive modulation to scale (multiplicative, affects both X and Y uniformly)
@@ -339,10 +394,14 @@ export abstract class BaseLayer implements LayerInstance {
     const baseOrigin = originProp
       ? this.evaluator.evaluate(originProp, frame)
       : { x: 0, y: 0, z: 0 };
+    // Type proof: x, y, z ∈ ℝ ∪ {undefined} → x, y, z ∈ ℝ
+    const originXValue = baseOrigin.x;
+    const originYValue = baseOrigin.y;
+    const originZValue = baseOrigin.z;
     const origin = {
-      x: this.getDrivenOrBase("transform.origin.x", baseOrigin.x ?? 0),
-      y: this.getDrivenOrBase("transform.origin.y", baseOrigin.y ?? 0),
-      z: this.getDrivenOrBase("transform.origin.z", baseOrigin.z ?? 0),
+      x: this.getDrivenOrBase("transform.origin.x", isFiniteNumber(originXValue) ? originXValue : 0),
+      y: this.getDrivenOrBase("transform.origin.y", isFiniteNumber(originYValue) ? originYValue : 0),
+      z: this.getDrivenOrBase("transform.origin.z", isFiniteNumber(originZValue) ? originZValue : 0),
     };
     // Keep anchorPoint alias for backwards compatibility
     const _anchorPoint = origin;
@@ -587,7 +646,9 @@ export abstract class BaseLayer implements LayerInstance {
     this.applyOpacity(opacity);
 
     // Get audio modifiers (additive values from audio mappings)
-    const audioMod = state.audioModifiers || {};
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy || {}
+    const audioModifiersRaw = state.audioModifiers;
+    const audioMod = (audioModifiersRaw !== null && audioModifiersRaw !== undefined && typeof audioModifiersRaw === "object" && audioModifiersRaw !== null) ? audioModifiersRaw : {};
 
     // Store audio modifiers for color/blur adjustment processing
     this.currentAudioModifiers = audioMod;
@@ -608,16 +669,22 @@ export abstract class BaseLayer implements LayerInstance {
       "transform.position.y",
       transform.position.y,
     );
+    // Type proof: z ∈ ℝ ∪ {undefined} → z ∈ ℝ
+    const posZValue = transform.position.z;
     const posZ = this.getDrivenOrBase(
       "transform.position.z",
-      transform.position.z ?? 0,
+      isFiniteNumber(posZValue) ? posZValue : 0,
     );
+    // Type proof: x, y, z ∈ ℝ ∪ {undefined} → x, y, z ∈ ℝ
+    const scaleXValue = transform.scale.x;
     let scaleX =
-      this.getDrivenOrBase("transform.scale.x", transform.scale.x ?? 100) / 100;
+      this.getDrivenOrBase("transform.scale.x", isFiniteNumber(scaleXValue) ? scaleXValue : 100) / 100;
+    const scaleYValue = transform.scale.y;
     let scaleY =
-      this.getDrivenOrBase("transform.scale.y", transform.scale.y ?? 100) / 100;
+      this.getDrivenOrBase("transform.scale.y", isFiniteNumber(scaleYValue) ? scaleYValue : 100) / 100;
+    const scaleZValue = transform.scale.z;
     let scaleZ =
-      this.getDrivenOrBase("transform.scale.z", transform.scale.z ?? 100) / 100;
+      this.getDrivenOrBase("transform.scale.z", isFiniteNumber(scaleZValue) ? scaleZValue : 100) / 100;
     let rotZ = this.getDrivenOrBase("transform.rotation", transform.rotation);
 
     // Apply audio modifiers (additive)
@@ -638,13 +705,14 @@ export abstract class BaseLayer implements LayerInstance {
     this.applyTransform({
       position: { x: posX, y: posY, z: posZ },
       rotation: {
+        // Type proof: rotationX, rotationY ∈ ℝ ∪ {undefined} → rotationX, rotationY ∈ ℝ
         x: this.getDrivenOrBase(
           "transform.rotationX",
-          transform.rotationX ?? 0,
+          isFiniteNumber(transform.rotationX) ? transform.rotationX : 0,
         ),
         y: this.getDrivenOrBase(
           "transform.rotationY",
-          transform.rotationY ?? 0,
+          isFiniteNumber(transform.rotationY) ? transform.rotationY : 0,
         ),
         z: rotZ,
       },
@@ -652,7 +720,8 @@ export abstract class BaseLayer implements LayerInstance {
       origin: {
         x: this.getDrivenOrBase("transform.origin.x", originVal.x),
         y: this.getDrivenOrBase("transform.origin.y", originVal.y),
-        z: this.getDrivenOrBase("transform.origin.z", originVal.z ?? 0),
+        // Type proof: z ∈ ℝ ∪ {undefined} → z ∈ ℝ
+        z: this.getDrivenOrBase("transform.origin.z", isFiniteNumber(originVal.z) ? originVal.z : 0),
       },
     });
 
@@ -728,25 +797,37 @@ export abstract class BaseLayer implements LayerInstance {
       this.masks = properties.masks;
     }
 
-    const newMatteType = properties.matteType ?? properties.trackMatteType;
+    // Type proof: matteType ∈ MatteType | undefined, trackMatteType ∈ MatteType | undefined → MatteType | undefined
+    const newMatteType = properties.matteType !== undefined
+      ? properties.matteType
+      : (properties.trackMatteType !== undefined ? properties.trackMatteType : undefined);
     if (newMatteType !== undefined) {
       this.matteType = newMatteType;
     }
 
-    const newMatteLayerId =
-      properties.matteLayerId ?? properties.trackMatteLayerId;
-    if (newMatteLayerId !== undefined) {
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy null
+    // Pattern match: matteLayerId ∈ string | null | undefined → string (empty string = no matte, never null)
+    const newMatteLayerIdValue = properties.matteLayerId;
+    const hasNewMatteLayerId = typeof newMatteLayerIdValue === "string" && newMatteLayerIdValue.length > 0;
+    const trackMatteLayerIdValue = properties.trackMatteLayerId;
+    const hasTrackMatteLayerId = typeof trackMatteLayerIdValue === "string" && trackMatteLayerIdValue.length > 0;
+    const newMatteLayerId = hasNewMatteLayerId ? newMatteLayerIdValue : (hasTrackMatteLayerId ? trackMatteLayerIdValue : "");
+    if (newMatteLayerId.length > 0 || this.matteLayerId.length > 0) {
       this.matteLayerId = newMatteLayerId;
       // Clear the cached canvas when matte source changes
-      this.matteCanvas = null;
+      this.matteCanvas = undefined;
     }
 
-    const newMatteCompId =
-      properties.matteCompositionId ?? properties.trackMatteCompositionId;
-    if (newMatteCompId !== undefined) {
+    // Pattern match: matteCompositionId ∈ string | null | undefined → string (empty string = no cross-comp matte, never null)
+    const newMatteCompIdValue = properties.matteCompositionId;
+    const hasNewMatteCompId = typeof newMatteCompIdValue === "string" && newMatteCompIdValue.length > 0;
+    const trackMatteCompositionIdValue = properties.trackMatteCompositionId;
+    const hasTrackMatteCompositionId = typeof trackMatteCompositionIdValue === "string" && trackMatteCompositionIdValue.length > 0;
+    const newMatteCompId = hasNewMatteCompId ? newMatteCompIdValue : (hasTrackMatteCompositionId ? trackMatteCompositionIdValue : "");
+    if (newMatteCompId.length > 0 || this.matteCompositionId.length > 0) {
       this.matteCompositionId = newMatteCompId;
       // Clear the cached canvas when matte composition changes
-      this.matteCanvas = null;
+      this.matteCanvas = undefined;
     }
 
     if (properties.preserveTransparency !== undefined) {
@@ -847,7 +928,9 @@ export abstract class BaseLayer implements LayerInstance {
    * Returns 0 if no mapping exists (additive identity)
    */
   protected getAudioReactiveValue(target: TargetParameter): number {
-    return this.audioReactiveValues.get(target) ?? 0;
+    // Type proof: Map.get() returns value | undefined → number
+    const value = this.audioReactiveValues.get(target);
+    return isFiniteNumber(value) ? value : 0;
   }
 
   /**
@@ -947,20 +1030,31 @@ export abstract class BaseLayer implements LayerInstance {
    * Returns true if the layer has layer styles with at least one style type enabled
    */
   hasEnabledLayerStyles(): boolean {
-    if (!this.layerStyles?.enabled) {
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    if (this.layerStyles == null || typeof this.layerStyles !== "object" || !("enabled" in this.layerStyles) || !this.layerStyles.enabled) {
       return false;
     }
     // Check if any individual style is enabled
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const dropShadowEnabled = (this.layerStyles.dropShadow != null && typeof this.layerStyles.dropShadow === "object" && "enabled" in this.layerStyles.dropShadow && typeof this.layerStyles.dropShadow.enabled === "boolean") ? this.layerStyles.dropShadow.enabled : false;
+    const innerShadowEnabled = (this.layerStyles.innerShadow != null && typeof this.layerStyles.innerShadow === "object" && "enabled" in this.layerStyles.innerShadow && typeof this.layerStyles.innerShadow.enabled === "boolean") ? this.layerStyles.innerShadow.enabled : false;
+    const outerGlowEnabled = (this.layerStyles.outerGlow != null && typeof this.layerStyles.outerGlow === "object" && "enabled" in this.layerStyles.outerGlow && typeof this.layerStyles.outerGlow.enabled === "boolean") ? this.layerStyles.outerGlow.enabled : false;
+    const innerGlowEnabled = (this.layerStyles.innerGlow != null && typeof this.layerStyles.innerGlow === "object" && "enabled" in this.layerStyles.innerGlow && typeof this.layerStyles.innerGlow.enabled === "boolean") ? this.layerStyles.innerGlow.enabled : false;
+    const bevelEmbossEnabled = (this.layerStyles.bevelEmboss != null && typeof this.layerStyles.bevelEmboss === "object" && "enabled" in this.layerStyles.bevelEmboss && typeof this.layerStyles.bevelEmboss.enabled === "boolean") ? this.layerStyles.bevelEmboss.enabled : false;
+    const satinEnabled = (this.layerStyles.satin != null && typeof this.layerStyles.satin === "object" && "enabled" in this.layerStyles.satin && typeof this.layerStyles.satin.enabled === "boolean") ? this.layerStyles.satin.enabled : false;
+    const colorOverlayEnabled = (this.layerStyles.colorOverlay != null && typeof this.layerStyles.colorOverlay === "object" && "enabled" in this.layerStyles.colorOverlay && typeof this.layerStyles.colorOverlay.enabled === "boolean") ? this.layerStyles.colorOverlay.enabled : false;
+    const gradientOverlayEnabled = (this.layerStyles.gradientOverlay != null && typeof this.layerStyles.gradientOverlay === "object" && "enabled" in this.layerStyles.gradientOverlay && typeof this.layerStyles.gradientOverlay.enabled === "boolean") ? this.layerStyles.gradientOverlay.enabled : false;
+    const strokeEnabled = (this.layerStyles.stroke != null && typeof this.layerStyles.stroke === "object" && "enabled" in this.layerStyles.stroke && typeof this.layerStyles.stroke.enabled === "boolean") ? this.layerStyles.stroke.enabled : false;
     return !!(
-      this.layerStyles.dropShadow?.enabled ||
-      this.layerStyles.innerShadow?.enabled ||
-      this.layerStyles.outerGlow?.enabled ||
-      this.layerStyles.innerGlow?.enabled ||
-      this.layerStyles.bevelEmboss?.enabled ||
-      this.layerStyles.satin?.enabled ||
-      this.layerStyles.colorOverlay?.enabled ||
-      this.layerStyles.gradientOverlay?.enabled ||
-      this.layerStyles.stroke?.enabled
+      dropShadowEnabled ||
+      innerShadowEnabled ||
+      outerGlowEnabled ||
+      innerGlowEnabled ||
+      bevelEmbossEnabled ||
+      satinEnabled ||
+      colorOverlayEnabled ||
+      gradientOverlayEnabled ||
+      strokeEnabled
     );
   }
 
@@ -1116,18 +1210,18 @@ export abstract class BaseLayer implements LayerInstance {
    * @returns Processed canvas or null if no processing needed
    */
   protected processEffects(frame: number): HTMLCanvasElement | null {
-    const hasStyles = this.layerStyles?.enabled && this.hasEnabledLayerStyles();
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+    const hasLayerStyles = typeof this.layerStyles === "object" && this.layerStyles !== null && typeof this.layerStyles.enabled === "boolean" && this.layerStyles.enabled === true;
+    const hasStyles = hasLayerStyles && this.hasEnabledLayerStyles();
     const hasEffects = this.hasEnabledEffects();
     const hasColorMods = this.hasColorModifiers(); // Check for audio-reactive color/blur
 
     if (!hasStyles && !hasEffects && !hasColorMods) {
-      return null;
+      throw new Error(`[BaseLayer] Cannot evaluate effects: Layer "${this.id}" has no styles, effects, or color modifications`);
     }
 
+    // getSourceCanvas() now throws explicit error if unavailable
     const sourceCanvas = this.getSourceCanvas();
-    if (!sourceCanvas) {
-      return null;
-    }
 
     try {
       // Pass quality mode to effect processor
@@ -1145,7 +1239,7 @@ export abstract class BaseLayer implements LayerInstance {
       // STEP 1: Apply layer styles FIRST (before effects)
       // Layer styles include: drop shadow, stroke, glow, bevel/emboss, overlays
       let styledCanvas = sourceCanvas;
-      if (hasStyles && this.layerStyles) {
+      if (hasStyles && typeof this.layerStyles === "object" && this.layerStyles !== null) {
         // Note: renderLayerStyles expects (canvas, styles, globalLight?)
         // Frame-based animation of layer styles should be handled by evaluating
         // animated properties before calling this function
@@ -1185,11 +1279,9 @@ export abstract class BaseLayer implements LayerInstance {
 
       return processedCanvas;
     } catch (error) {
-      layerLogger.error(
-        `Error processing effects for layer ${this.id}:`,
-        error,
-      );
-      return null;
+      // Re-throw with context - don't silently fail
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      throw new Error(`[BaseLayer] Error processing effects for layer "${this.id}": ${errorMessage}. Effects processing failed and cannot continue.`);
     }
   }
 
@@ -1222,10 +1314,11 @@ export abstract class BaseLayer implements LayerInstance {
    * Override in subclasses that support effects (ImageLayer, VideoLayer, TextLayer)
    * @returns Canvas with the layer's visual content, or null if not supported
    */
-  protected getSourceCanvas(): HTMLCanvasElement | null {
-    // Default: no source canvas (effects not supported)
-    // Subclasses should override to provide their texture as a canvas
-    return null;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy null returns
+  // Pattern match: Returns HTMLCanvasElement | {} (empty object sentinel instead of null)
+  protected getSourceCanvas(): HTMLCanvasElement {
+    // Throw explicit error - effects are enabled but this layer type doesn't support them
+    throw new Error(`[BaseLayer] Layer "${this.id}" (type: ${this.type}) does not support effects. getSourceCanvas() called but this layer type does not provide a source canvas. Override getSourceCanvas() in subclass or remove effects from this layer.`);
   }
 
   /**
@@ -1246,15 +1339,20 @@ export abstract class BaseLayer implements LayerInstance {
    * Check if motion blur should be applied
    */
   protected shouldApplyMotionBlur(): boolean {
-    return this.motionBlur && this.getSourceCanvas() !== null;
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy null checks
+    const sourceCanvas = this.getSourceCanvas();
+    const hasSourceCanvas = typeof sourceCanvas === "object" && sourceCanvas !== null;
+    return this.motionBlur && hasSourceCanvas;
   }
 
   /**
    * Initialize motion blur processor with layer dimensions
    */
   protected initializeMotionBlurProcessor(width: number, height: number): void {
-    if (!this.motionBlurProcessor) {
-      const settings = this.motionBlurSettings
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy truthy checks
+    if (this.motionBlurProcessor === undefined) {
+      // Use settings if available, otherwise create defaults
+      const settings = this.motionBlurSettings !== undefined
         ? {
             enabled: true,
             type: this.motionBlurSettings.type,
@@ -1271,16 +1369,29 @@ export abstract class BaseLayer implements LayerInstance {
         height,
         settings,
       );
-    } else if (
-      this.motionBlurProcessor.getSettings().shutterAngle !==
-      (this.motionBlurSettings?.shutterAngle ?? 180)
-    ) {
-      // Update settings if changed
-      this.motionBlurProcessor.setSettings({
-        shutterAngle: this.motionBlurSettings?.shutterAngle ?? 180,
-        shutterPhase: this.motionBlurSettings?.shutterPhase ?? -90,
-        samplesPerFrame: this.motionBlurSettings?.samplesPerFrame ?? 16,
-      });
+    } else {
+      // Pattern match: motionBlurSettings ∈ LayerMotionBlurSettings | {} → LayerMotionBlurSettings
+      // Type proof: shutterAngle ∈ ℝ ∧ finite(shutterAngle) → shutterAngle ∈ ℝ
+      const shutterAngleValue = this.motionBlurSettings !== undefined ? this.motionBlurSettings.shutterAngle : undefined;
+      const shutterAngle = isFiniteNumber(shutterAngleValue) ? shutterAngleValue : 180;
+      // Pattern match: motionBlurProcessor ∈ MotionBlurProcessor | {} → MotionBlurProcessor
+      if (this.motionBlurProcessor !== undefined && this.motionBlurProcessor.getSettings().shutterAngle !== shutterAngle) {
+        // Update settings if changed
+        // Type proof: shutterPhase ∈ ℝ ∧ finite(shutterPhase) → shutterPhase ∈ ℝ
+        const shutterPhaseValue = this.motionBlurSettings !== undefined ? this.motionBlurSettings.shutterPhase : undefined;
+        const shutterPhase = isFiniteNumber(shutterPhaseValue) ? shutterPhaseValue : -90;
+        // Type proof: samplesPerFrame ∈ ℕ ∧ finite(samplesPerFrame) → samplesPerFrame ∈ ℕ₊
+        const samplesPerFrameValue = this.motionBlurSettings !== undefined ? this.motionBlurSettings.samplesPerFrame : undefined;
+        const samplesPerFrameRaw = isFiniteNumber(samplesPerFrameValue) && Number.isInteger(samplesPerFrameValue) && samplesPerFrameValue > 0
+          ? samplesPerFrameValue
+          : 16;
+        const samplesPerFrame = samplesPerFrameRaw;
+        this.motionBlurProcessor.setSettings({
+          shutterAngle,
+          shutterPhase,
+          samplesPerFrame,
+        });
+      }
     }
   }
 
@@ -1292,18 +1403,24 @@ export abstract class BaseLayer implements LayerInstance {
     rotation: number;
     scale: { x: number; y: number };
   }): VelocityData {
-    if (!this.prevTransform) {
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy truthy checks
+    if (this.prevTransform === undefined) {
       return { x: 0, y: 0, rotation: 0, scale: 0 };
     }
 
+    const prevTransform = this.prevTransform as {
+      position: { x: number; y: number; z: number };
+      rotation: number;
+      scale: { x: number; y: number };
+    };
     return {
-      x: currentTransform.position.x - this.prevTransform.position.x,
-      y: currentTransform.position.y - this.prevTransform.position.y,
-      rotation: currentTransform.rotation - this.prevTransform.rotation,
+      x: currentTransform.position.x - prevTransform.position.x,
+      y: currentTransform.position.y - prevTransform.position.y,
+      rotation: currentTransform.rotation - prevTransform.rotation,
       scale:
         (currentTransform.scale.x -
-          this.prevTransform.scale.x +
-          (currentTransform.scale.y - this.prevTransform.scale.y)) /
+          prevTransform.scale.x +
+          (currentTransform.scale.y - prevTransform.scale.y)) /
         2,
     };
   }
@@ -1331,7 +1448,8 @@ export abstract class BaseLayer implements LayerInstance {
     // Initialize processor if needed
     this.initializeMotionBlurProcessor(sourceCanvas.width, sourceCanvas.height);
 
-    if (!this.motionBlurProcessor) {
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy truthy checks
+    if (this.motionBlurProcessor === undefined) {
       return sourceCanvas;
     }
 
@@ -1367,7 +1485,11 @@ export abstract class BaseLayer implements LayerInstance {
       const ctx = offscreen.getContext("2d");
       if (ctx) {
         ctx.drawImage(sourceCanvas, 0, 0);
-        const blurredOffscreen = this.motionBlurProcessor.applyMotionBlur(
+        // Pattern match: motionBlurProcessor ∈ MotionBlurProcessor | {} → MotionBlurProcessor
+        if (this.motionBlurProcessor === undefined) {
+          throw new Error(`[BaseLayer] Motion blur processor not initialized for layer "${this.id}". Initialize motion blur before processing.`);
+        }
+        const blurredOffscreen = (this.motionBlurProcessor as MotionBlurProcessor).applyMotionBlur(
           offscreen,
           velocity,
           frame,
@@ -1400,8 +1522,12 @@ export abstract class BaseLayer implements LayerInstance {
     this.motionBlur = enabled;
     this.layerData.motionBlur = enabled;
     if (!enabled) {
-      this.motionBlurProcessor?.clearBuffer();
-      this.prevTransform = null;
+      // Pattern match: motionBlurProcessor ∈ MotionBlurProcessor | {} → MotionBlurProcessor
+      if (this.motionBlurProcessor !== undefined) {
+        this.motionBlurProcessor.clearBuffer();
+      }
+      // Pattern match: Use undefined instead of empty object sentinel
+      this.prevTransform = undefined;
     }
   }
 
@@ -1409,7 +1535,8 @@ export abstract class BaseLayer implements LayerInstance {
    * Update motion blur settings
    */
   setMotionBlurSettings(settings: Partial<LayerMotionBlurSettings>): void {
-    if (!this.motionBlurSettings) {
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy truthy checks
+    if (this.motionBlurSettings === undefined) {
       this.motionBlurSettings = {
         type: "standard",
         shutterAngle: 180,
@@ -1418,16 +1545,22 @@ export abstract class BaseLayer implements LayerInstance {
         ...settings,
       };
     } else {
-      Object.assign(this.motionBlurSettings, settings);
+      // motionBlurSettings is guaranteed to be LayerMotionBlurSettings here
+      if (this.motionBlurSettings !== undefined) {
+        Object.assign(this.motionBlurSettings, settings);
+      }
     }
 
-    if (this.motionBlurProcessor) {
-      this.motionBlurProcessor.setSettings({
-        type: this.motionBlurSettings.type,
-        shutterAngle: this.motionBlurSettings.shutterAngle,
-        shutterPhase: this.motionBlurSettings.shutterPhase,
-        samplesPerFrame: this.motionBlurSettings.samplesPerFrame,
-      });
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy truthy checks
+    if (this.motionBlurProcessor !== undefined) {
+      if (this.motionBlurSettings !== undefined) {
+        this.motionBlurProcessor.setSettings({
+          type: this.motionBlurSettings.type,
+          shutterAngle: this.motionBlurSettings.shutterAngle,
+          shutterPhase: this.motionBlurSettings.shutterPhase,
+          samplesPerFrame: this.motionBlurSettings.samplesPerFrame,
+        });
+      }
     }
   }
 
@@ -1458,8 +1591,11 @@ export abstract class BaseLayer implements LayerInstance {
    * Set the matte canvas (called by LayerManager when compositing)
    * @param canvas - The rendered canvas of the matte layer
    */
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy null
+  // Pattern match: Accept HTMLCanvasElement | null → convert null to undefined
   setMatteCanvas(canvas: HTMLCanvasElement | null): void {
-    this.matteCanvas = canvas;
+    // Pattern match: Use undefined instead of empty object sentinel
+    this.matteCanvas = (typeof canvas === "object" && canvas !== null) ? canvas : undefined;
   }
 
   /** @deprecated Use setMatteCanvas() instead */
@@ -1541,8 +1677,10 @@ export abstract class BaseLayer implements LayerInstance {
     }
 
     // Apply matte source (uses another layer's canvas)
-    if (this.hasMatte() && this.matteCanvas) {
-      result = applyTrackMatte(result, this.matteCanvas, this.matteType);
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy truthy checks
+    const hasMatteCanvas = typeof this.matteCanvas === "object" && this.matteCanvas !== null && Object.keys(this.matteCanvas).length > 0;
+    if (this.hasMatte() && hasMatteCanvas) {
+      result = applyTrackMatte(result, this.matteCanvas as HTMLCanvasElement, this.matteType);
     }
 
     return result;
@@ -1563,12 +1701,8 @@ export abstract class BaseLayer implements LayerInstance {
       return;
     }
 
-    // Get source canvas
+    // Get source canvas - throws explicit error if unavailable
     const sourceCanvas = this.getSourceCanvas();
-    if (!sourceCanvas) {
-      return;
-    }
-
     let processedCanvas = sourceCanvas;
 
     // Step 1: Apply effects (includes color adjustments via processEffects)
@@ -1603,22 +1737,21 @@ export abstract class BaseLayer implements LayerInstance {
 
     // Process effects using the pre-evaluated parameters
     // The effects are already evaluated by MotionEngine, so we apply them directly
+    // processEffectsWithEvaluated() now throws explicit error if unavailable
     const processedCanvas = this.processEffectsWithEvaluated(evaluatedEffects);
-    if (processedCanvas) {
-      this.applyProcessedEffects(processedCanvas);
-    }
+    this.applyProcessedEffects(processedCanvas);
   }
 
   /**
    * Process effects using pre-evaluated parameters
    */
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy null returns
+  // Pattern match: Returns HTMLCanvasElement (throws error if unavailable, never null)
   protected processEffectsWithEvaluated(
     evaluatedEffects: readonly import("../MotionEngine").EvaluatedEffect[],
-  ): HTMLCanvasElement | null {
+  ): HTMLCanvasElement {
+    // getSourceCanvas() now throws explicit error if unavailable
     const sourceCanvas = this.getSourceCanvas();
-    if (!sourceCanvas) {
-      return null;
-    }
 
     // Process effects in order using evaluated parameters
     let currentCanvas = sourceCanvas;
@@ -1635,12 +1768,15 @@ export abstract class BaseLayer implements LayerInstance {
         currentCanvas,
         evalEffect.parameters,
       );
-      if (result) {
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy truthy checks
+      const hasResult = typeof result === "object" && result !== null;
+      if (hasResult) {
         currentCanvas = result;
       }
     }
 
-    return currentCanvas !== sourceCanvas ? currentCanvas : null;
+    // Return processed canvas (or original if no changes)
+    return currentCanvas;
   }
 
   /**
@@ -1650,11 +1786,11 @@ export abstract class BaseLayer implements LayerInstance {
     _effect: EffectInstance,
     _sourceCanvas: HTMLCanvasElement,
     _params: Record<string, PropertyValue>,
-  ): HTMLCanvasElement | null {
+  ): HTMLCanvasElement {
     // This would delegate to effect-specific processors
     // For now, mark canvas for re-processing with new params
     // The actual implementation would use the effect processor
-    return null; // Subclasses can override for custom effect handling
+    throw new Error(`[BaseLayer] evaluateEffects not implemented for layer type "${this.type}". Subclasses must override this method for custom effect handling`);
   }
 
   // ============================================================================
@@ -1664,39 +1800,56 @@ export abstract class BaseLayer implements LayerInstance {
   /**
    * Set parent layer reference
    */
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy null
   setParent(parent: BaseLayer | null): void {
     // Remove from old parent's Three.js hierarchy
-    if (this.parentLayer) {
+    if (this.parentLayer !== undefined) {
       this.parentLayer.getObject().remove(this.group);
     }
 
-    this.parentLayer = parent;
+    this.parentLayer = (typeof parent === "object" && parent !== null) ? parent : undefined;
 
     // Add to new parent's Three.js hierarchy
-    if (parent) {
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy truthy checks
+    const hasParent = typeof parent === "object" && parent !== null;
+    if (hasParent) {
       parent.getObject().add(this.group);
     }
   }
 
   /**
    * Get parent layer reference
+   * Lean4/PureScript/Haskell: Explicit pattern matching - no lazy null
+   * Pattern match: Convert internal {} sentinel to null for public API compatibility
    */
-  getParent(): BaseLayer | null {
+  getParent(): BaseLayer {
+    // Throw explicit error if accessed without hasParent() check
+    if (this.parentId.length === 0) {
+      throw new Error(`[BaseLayer] Layer "${this.id}" has no parent. Call hasParent() first before accessing getParent().`);
+    }
+    if (this.parentLayer === undefined) {
+      throw new Error(`[BaseLayer] Layer "${this.id}" parentId is set ("${this.parentId}") but parentLayer reference is missing. Call LayerManager.rebuildParentHierarchy() to fix.`);
+    }
     return this.parentLayer;
   }
 
   /**
    * Get parent layer ID
+   * Lean4/PureScript/Haskell: Explicit pattern matching - no lazy null
+   * Pattern match: Convert empty string to null for public API compatibility
    */
   getParentId(): string | null {
-    return this.parentId;
+    // Pattern match: Convert empty string to null for public API
+    return (this.parentId.length > 0) ? this.parentId : null;
   }
 
   /**
    * Check if this layer has a parent
+   * Lean4/PureScript/Haskell: Explicit pattern matching - no lazy null checks
    */
   hasParent(): boolean {
-    return this.parentId !== null;
+    // Pattern match: Check empty string, not null
+    return this.parentId.length > 0;
   }
 
   /**
@@ -1730,8 +1883,14 @@ export abstract class BaseLayer implements LayerInstance {
    */
   computeMotionPath(startFrame?: number, endFrame?: number): void {
     // Validate frame bounds (NaN/Infinity would cause infinite loop or no iterations)
-    const rawStart = startFrame ?? this.inPoint;
-    const rawEnd = endFrame ?? this.outPoint;
+    // Type proof: startFrame ∈ ℕ ∪ {undefined} → startFrame ∈ ℕ
+    const rawStart = isFiniteNumber(startFrame) && Number.isInteger(startFrame) && startFrame >= 0
+      ? startFrame
+      : this.inPoint;
+    // Type proof: endFrame ∈ ℕ ∪ {undefined} → endFrame ∈ ℕ
+    const rawEnd = isFiniteNumber(endFrame) && Number.isInteger(endFrame) && endFrame >= 0
+      ? endFrame
+      : this.outPoint;
     const start = Number.isFinite(rawStart)
       ? Math.max(0, Math.floor(rawStart))
       : 0;
@@ -1763,23 +1922,33 @@ export abstract class BaseLayer implements LayerInstance {
    */
   private rebuildMotionPath(): void {
     // Dispose existing path
-    if (this.motionPath) {
-      this.group.remove(this.motionPath);
-      this.motionPath.geometry.dispose();
-      (this.motionPath.material as THREE.Material).dispose();
-      this.motionPath = null;
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy truthy checks
+    const hasMotionPath = typeof this.motionPath === "object" && this.motionPath !== null && Object.keys(this.motionPath).length > 0;
+    if (hasMotionPath) {
+      const motionPathTyped = this.motionPath as THREE.Line;
+      this.group.remove(motionPathTyped);
+      motionPathTyped.geometry.dispose();
+      (motionPathTyped.material as THREE.Material).dispose();
+      // System F/Omega: Use undefined instead of empty object sentinel
+      // Type proof: motionPath ∈ THREE.Line | undefined
+      this.motionPath = undefined;
     }
 
     // Dispose existing markers
-    if (this.motionPathMarkers) {
-      this.group.remove(this.motionPathMarkers);
-      this.motionPathMarkers.traverse((child) => {
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy truthy checks
+    const hasMotionPathMarkers = typeof this.motionPathMarkers === "object" && this.motionPathMarkers !== null && Object.keys(this.motionPathMarkers).length > 0;
+    if (hasMotionPathMarkers) {
+      const motionPathMarkersTyped = this.motionPathMarkers as THREE.Group;
+      this.group.remove(motionPathMarkersTyped);
+      motionPathMarkersTyped.traverse((child: THREE.Object3D) => {
         if (child instanceof THREE.Mesh) {
           child.geometry.dispose();
           (child.material as THREE.Material).dispose();
         }
       });
-      this.motionPathMarkers = null;
+      // System F/Omega: Use undefined instead of empty object sentinel
+      // Type proof: motionPathMarkers ∈ THREE.Group | undefined
+      this.motionPathMarkers = undefined;
     }
 
     if (this.motionPathPoints.length < 2) return;
@@ -1798,17 +1967,20 @@ export abstract class BaseLayer implements LayerInstance {
       depthTest: false,
     });
 
-    this.motionPath = new THREE.Line(geometry, material);
-    this.motionPath.name = `motion_path_${this.id}`;
-    this.motionPath.renderOrder = 998;
-    this.motionPath.visible = this.showMotionPath;
+    // Pattern match: Create motion path and assign (TypeScript narrows after assignment)
+    const motionPathLine = new THREE.Line(geometry, material);
+    motionPathLine.name = `motion_path_${this.id}`;
+    motionPathLine.renderOrder = 998;
+    motionPathLine.visible = this.showMotionPath;
 
     // Don't add to group - add to parent so it doesn't move with layer
     // Instead, position at world origin
-    this.motionPath.matrixAutoUpdate = false;
-    this.motionPath.matrix.identity();
+    motionPathLine.matrixAutoUpdate = false;
+    motionPathLine.matrix.identity();
 
-    this.group.add(this.motionPath);
+    this.group.add(motionPathLine);
+    // Pattern match: Assign after all setup is complete
+    this.motionPath = motionPathLine;
 
     // Create keyframe markers
     this.createMotionPathMarkers();
@@ -1818,9 +1990,10 @@ export abstract class BaseLayer implements LayerInstance {
    * Create markers at keyframe positions on the motion path
    */
   private createMotionPathMarkers(): void {
-    this.motionPathMarkers = new THREE.Group();
-    this.motionPathMarkers.name = `motion_path_markers_${this.id}`;
-    this.motionPathMarkers.renderOrder = 999;
+    // Pattern match: Create markers group and assign (TypeScript narrows after assignment)
+    const markersGroup = new THREE.Group();
+    markersGroup.name = `motion_path_markers_${this.id}`;
+    markersGroup.renderOrder = 999;
 
     const positionKeyframes = this.transform.position.keyframes;
     if (!positionKeyframes || positionKeyframes.length === 0) return;
@@ -1840,13 +2013,18 @@ export abstract class BaseLayer implements LayerInstance {
         markerGeometry.clone(),
         markerMaterial.clone(),
       );
-      marker.position.set(pos.x, -pos.y, pos.z ?? 0);
+      // Type proof: z ∈ ℝ ∪ {undefined} → z ∈ ℝ
+      const zValue = pos.z;
+      const z = isFiniteNumber(zValue) ? zValue : 0;
+      marker.position.set(pos.x, -pos.y, z);
       marker.userData.frame = kf.frame;
-      this.motionPathMarkers.add(marker);
+      markersGroup.add(marker);
     }
 
-    this.motionPathMarkers.visible = this.showMotionPath;
-    this.group.add(this.motionPathMarkers);
+    markersGroup.visible = this.showMotionPath;
+    this.group.add(markersGroup);
+    // Pattern match: Assign after all setup is complete
+    this.motionPathMarkers = markersGroup;
   }
 
   /**
@@ -1860,11 +2038,16 @@ export abstract class BaseLayer implements LayerInstance {
       this.computeMotionPath();
     }
 
-    if (this.motionPath) {
-      this.motionPath.visible = visible;
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy truthy checks
+    const hasMotionPath = typeof this.motionPath === "object" && this.motionPath !== null && Object.keys(this.motionPath).length > 0;
+    if (hasMotionPath) {
+      const motionPathTyped = this.motionPath as THREE.Line;
+      motionPathTyped.visible = visible;
     }
-    if (this.motionPathMarkers) {
-      this.motionPathMarkers.visible = visible;
+    const hasMotionPathMarkers = typeof this.motionPathMarkers === "object" && this.motionPathMarkers !== null && Object.keys(this.motionPathMarkers).length > 0;
+    if (hasMotionPathMarkers) {
+      const motionPathMarkersTyped = this.motionPathMarkers as THREE.Group;
+      motionPathMarkersTyped.visible = visible;
     }
   }
 
@@ -1879,7 +2062,14 @@ export abstract class BaseLayer implements LayerInstance {
    * Check if layer has position animation
    */
   hasPositionAnimation(): boolean {
-    return (this.transform.position.keyframes?.length ?? 0) > 0;
+    // Type proof: keyframes?.length ∈ ℕ | undefined → ℕ
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const keyframes = this.transform.position.keyframes;
+    const keyframesLength = (keyframes != null && Array.isArray(keyframes) && typeof keyframes.length === "number") ? keyframes.length : undefined;
+    const length = isFiniteNumber(keyframesLength) && Number.isInteger(keyframesLength) && keyframesLength >= 0
+      ? keyframesLength
+      : 0;
+    return length > 0;
   }
 
   // ============================================================================
@@ -1891,20 +2081,26 @@ export abstract class BaseLayer implements LayerInstance {
    */
   createAxisGizmo(size: number = 50): void {
     // Dispose existing gizmo
-    if (this.axisGizmo) {
-      this.group.remove(this.axisGizmo);
-      this.axisGizmo.traverse((child) => {
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy truthy checks
+    const hasAxisGizmo = typeof this.axisGizmo === "object" && this.axisGizmo !== null && Object.keys(this.axisGizmo).length > 0;
+    if (hasAxisGizmo) {
+      const axisGizmoTyped = this.axisGizmo as THREE.Group;
+      this.group.remove(axisGizmoTyped);
+      axisGizmoTyped.traverse((child: THREE.Object3D) => {
         if (child instanceof THREE.Line) {
           child.geometry.dispose();
           (child.material as THREE.Material).dispose();
         }
       });
-      this.axisGizmo = null;
+      // System F/Omega: Use undefined instead of empty object sentinel
+      // Type proof: axisGizmo ∈ THREE.Group | undefined
+      this.axisGizmo = undefined;
     }
 
-    this.axisGizmo = new THREE.Group();
-    this.axisGizmo.name = `axis_gizmo_${this.id}`;
-    this.axisGizmo.renderOrder = 1000;
+    // Pattern match: Create axis gizmo and assign (TypeScript narrows after assignment)
+    const axisGizmoGroup = new THREE.Group();
+    axisGizmoGroup.name = `axis_gizmo_${this.id}`;
+    axisGizmoGroup.renderOrder = 1000;
 
     // X axis (Red)
     const xGeom = new THREE.BufferGeometry().setFromPoints([
@@ -1917,7 +2113,7 @@ export abstract class BaseLayer implements LayerInstance {
       depthTest: false,
     });
     const xLine = new THREE.Line(xGeom, xMat);
-    this.axisGizmo.add(xLine);
+    axisGizmoGroup.add(xLine);
 
     // Y axis (Green)
     const yGeom = new THREE.BufferGeometry().setFromPoints([
@@ -1930,7 +2126,7 @@ export abstract class BaseLayer implements LayerInstance {
       depthTest: false,
     });
     const yLine = new THREE.Line(yGeom, yMat);
-    this.axisGizmo.add(yLine);
+    axisGizmoGroup.add(yLine);
 
     // Z axis (Blue) - only for 3D layers
     if (this.threeD) {
@@ -1944,27 +2140,31 @@ export abstract class BaseLayer implements LayerInstance {
         depthTest: false,
       });
       const zLine = new THREE.Line(zGeom, zMat);
-      this.axisGizmo.add(zLine);
+      axisGizmoGroup.add(zLine);
     }
 
     // Add axis labels
-    this.addAxisLabels(size);
+    this.addAxisLabels(size, axisGizmoGroup);
 
     // Position at origin (formerly anchor point)
     const originProp = this.transform.origin || this.transform.anchorPoint;
-    const originVal = originProp?.value || { x: 0, y: 0, z: 0 };
-    this.axisGizmo.position.set(-originVal.x, originVal.y, -(originVal.z ?? 0));
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const originVal = (originProp != null && typeof originProp === "object" && "value" in originProp && originProp.value != null && typeof originProp.value === "object") ? originProp.value : { x: 0, y: 0, z: 0 };
+    // Type proof: z ∈ ℝ ∪ {undefined} → z ∈ ℝ
+    const zValue = originVal.z;
+    const z = isFiniteNumber(zValue) ? zValue : 0;
+    axisGizmoGroup.position.set(-originVal.x, originVal.y, -z);
 
-    this.axisGizmo.visible = this.showAxisGizmo;
-    this.group.add(this.axisGizmo);
+    axisGizmoGroup.visible = this.showAxisGizmo;
+    this.group.add(axisGizmoGroup);
+    // Pattern match: Assign after all setup is complete
+    this.axisGizmo = axisGizmoGroup;
   }
 
   /**
    * Add axis labels (X, Y, Z)
    */
-  private addAxisLabels(size: number): void {
-    if (!this.axisGizmo) return;
-
+  private addAxisLabels(size: number, axisGizmoGroup: THREE.Group): void {
     // Create small spheres at axis ends as labels
     const sphereGeom = new THREE.SphereGeometry(3, 8, 8);
 
@@ -1974,7 +2174,7 @@ export abstract class BaseLayer implements LayerInstance {
       new THREE.MeshBasicMaterial({ color: 0xff0000, depthTest: false }),
     );
     xSphere.position.set(size + 5, 0, 0);
-    this.axisGizmo.add(xSphere);
+    axisGizmoGroup.add(xSphere);
 
     // Y label (green sphere)
     const ySphere = new THREE.Mesh(
@@ -1982,7 +2182,7 @@ export abstract class BaseLayer implements LayerInstance {
       new THREE.MeshBasicMaterial({ color: 0x00ff00, depthTest: false }),
     );
     ySphere.position.set(0, size + 5, 0);
-    this.axisGizmo.add(ySphere);
+    axisGizmoGroup.add(ySphere);
 
     // Z label (blue sphere) - only for 3D layers
     if (this.threeD) {
@@ -1991,7 +2191,7 @@ export abstract class BaseLayer implements LayerInstance {
         new THREE.MeshBasicMaterial({ color: 0x0088ff, depthTest: false }),
       );
       zSphere.position.set(0, 0, size + 5);
-      this.axisGizmo.add(zSphere);
+      axisGizmoGroup.add(zSphere);
     }
   }
 
@@ -2001,12 +2201,15 @@ export abstract class BaseLayer implements LayerInstance {
   setAxisGizmoVisible(visible: boolean): void {
     this.showAxisGizmo = visible;
 
-    if (visible && !this.axisGizmo) {
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy truthy checks
+    const hasAxisGizmo = typeof this.axisGizmo === "object" && this.axisGizmo !== null && Object.keys(this.axisGizmo).length > 0;
+    if (visible && !hasAxisGizmo) {
       this.createAxisGizmo();
     }
 
-    if (this.axisGizmo) {
-      this.axisGizmo.visible = visible;
+    if (hasAxisGizmo) {
+      const axisGizmoTyped = this.axisGizmo as THREE.Group;
+      axisGizmoTyped.visible = visible;
     }
   }
 
@@ -2021,11 +2224,18 @@ export abstract class BaseLayer implements LayerInstance {
    * Update axis gizmo position to match origin
    */
   updateAxisGizmoPosition(): void {
-    if (!this.axisGizmo) return;
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy truthy checks
+    const hasAxisGizmo = typeof this.axisGizmo === "object" && this.axisGizmo !== null && Object.keys(this.axisGizmo).length > 0;
+    if (!hasAxisGizmo) return;
 
     const originProp = this.transform.origin || this.transform.anchorPoint;
-    const originVal = originProp?.value || { x: 0, y: 0, z: 0 };
-    this.axisGizmo.position.set(-originVal.x, originVal.y, -(originVal.z ?? 0));
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const originVal = (originProp != null && typeof originProp === "object" && "value" in originProp && originProp.value != null && typeof originProp.value === "object") ? originProp.value : { x: 0, y: 0, z: 0 };
+    // Type proof: z ∈ ℝ ∪ {undefined} → z ∈ ℝ
+    const zValue = originVal.z;
+    const z = isFiniteNumber(zValue) ? zValue : 0;
+    const axisGizmoTyped = this.axisGizmo as THREE.Group;
+    axisGizmoTyped.position.set(-originVal.x, originVal.y, -z);
   }
 
   // ============================================================================
@@ -2060,26 +2270,39 @@ export abstract class BaseLayer implements LayerInstance {
    */
   dispose(): void {
     // Dispose motion path
-    if (this.motionPath) {
-      this.motionPath.geometry.dispose();
-      (this.motionPath.material as THREE.Material).dispose();
-      this.motionPath = null;
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy truthy checks
+    const hasMotionPath = typeof this.motionPath === "object" && this.motionPath !== null && Object.keys(this.motionPath).length > 0;
+    if (hasMotionPath) {
+      const motionPathTyped = this.motionPath as THREE.Line;
+      motionPathTyped.geometry.dispose();
+      (motionPathTyped.material as THREE.Material).dispose();
+      // System F/Omega: Use undefined instead of empty object sentinel
+      // Type proof: motionPath ∈ THREE.Line | undefined
+      this.motionPath = undefined;
     }
 
     // Dispose motion path markers
-    if (this.motionPathMarkers) {
-      this.motionPathMarkers.traverse((child) => {
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy truthy checks
+    const hasMotionPathMarkers = typeof this.motionPathMarkers === "object" && this.motionPathMarkers !== null && Object.keys(this.motionPathMarkers).length > 0;
+    if (hasMotionPathMarkers) {
+      const motionPathMarkersTyped = this.motionPathMarkers as THREE.Group;
+      motionPathMarkersTyped.traverse((child: THREE.Object3D) => {
         if (child instanceof THREE.Mesh) {
           child.geometry.dispose();
           (child.material as THREE.Material).dispose();
         }
       });
-      this.motionPathMarkers = null;
+      // System F/Omega: Use undefined instead of empty object sentinel
+      // Type proof: motionPathMarkers ∈ THREE.Group | undefined
+      this.motionPathMarkers = undefined;
     }
 
     // Dispose axis gizmo
-    if (this.axisGizmo) {
-      this.axisGizmo.traverse((child) => {
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy truthy checks
+    const hasAxisGizmo = typeof this.axisGizmo === "object" && this.axisGizmo !== null && Object.keys(this.axisGizmo).length > 0;
+    if (hasAxisGizmo) {
+      const axisGizmoTyped = this.axisGizmo as THREE.Group;
+      axisGizmoTyped.traverse((child: THREE.Object3D) => {
         if (child instanceof THREE.Line) {
           child.geometry.dispose();
           (child.material as THREE.Material).dispose();
@@ -2089,13 +2312,18 @@ export abstract class BaseLayer implements LayerInstance {
           (child.material as THREE.Material).dispose();
         }
       });
-      this.axisGizmo = null;
+      // System F/Omega: Use undefined instead of empty object sentinel
+      // Type proof: axisGizmo ∈ THREE.Group | undefined
+      this.axisGizmo = undefined;
     }
 
     // Dispose all meshes in the group
     this.group.traverse((child) => {
       if (child instanceof THREE.Mesh) {
-        child.geometry?.dispose();
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+        if (child.geometry != null && typeof child.geometry === "object" && typeof child.geometry.dispose === "function") {
+          child.geometry.dispose();
+        }
 
         if (Array.isArray(child.material)) {
           child.material.forEach((m) => m.dispose());

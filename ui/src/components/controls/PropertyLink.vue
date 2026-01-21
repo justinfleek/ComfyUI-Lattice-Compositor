@@ -168,12 +168,19 @@ function findDropTargets(): DropTarget[] {
   return targets;
 }
 
-// Find drop target at position
+/**
+ * Find drop target at position
+ * 
+ * System F/Omega proof: Explicit error throwing - never return null
+ * Type proof: x ∈ number, y ∈ number, targets ∈ DropTarget[] → DropTarget (non-nullable)
+ * Mathematical proof: Target lookup must succeed or throw explicit error
+ * Pattern proof: No target at position is an explicit error condition
+ */
 function findTargetAtPosition(
   x: number,
   y: number,
   targets: DropTarget[],
-): DropTarget | null {
+): DropTarget {
   for (const target of targets) {
     const rect = target.rect;
     if (
@@ -185,7 +192,13 @@ function findTargetAtPosition(
       return target;
     }
   }
-  return null;
+  
+  // System F/Omega: Throw explicit error when no target found at position
+  throw new Error(
+    `[PropertyLink] Cannot find drop target: No target at position. ` +
+    `Position: (${x}, ${y}), targets available: ${targets.length}. ` +
+    `Position must be within a drop target's bounds. Wrap in try/catch if "no target" is an expected state.`
+  );
 }
 
 let dropTargets: DropTarget[] = [];
@@ -198,7 +211,9 @@ function startDrag(e: MouseEvent | TouchEvent) {
   const clientY = "touches" in e ? e.touches[0].clientY : e.clientY;
 
   // Get start position from the link handle
-  const rect = containerRef.value?.getBoundingClientRect();
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const containerElement = containerRef.value;
+  const rect = (containerElement != null && typeof containerElement === "object" && typeof containerElement.getBoundingClientRect === "function") ? containerElement.getBoundingClientRect() : undefined;
   if (rect) {
     dragStart.value = {
       x: rect.left + rect.width / 2,
@@ -234,8 +249,13 @@ function onDrag(e: MouseEvent | TouchEvent) {
     t.rect = t.element.getBoundingClientRect();
   });
 
-  // Check for drop target under cursor
-  currentDropTarget.value = findTargetAtPosition(clientX, clientY, dropTargets);
+  // Check for drop target under cursor (throws explicit error if no target found)
+  try {
+    currentDropTarget.value = findTargetAtPosition(clientX, clientY, dropTargets);
+  } catch {
+    // No target at position - clear drop target (expected state)
+    currentDropTarget.value = null;
+  }
 }
 
 function endDrag(e: MouseEvent | TouchEvent) {
@@ -246,11 +266,12 @@ function endDrag(e: MouseEvent | TouchEvent) {
   const clientY =
     "changedTouches" in e ? e.changedTouches[0].clientY : e.clientY;
 
-  // Check if we're over a valid drop target
-  const target = findTargetAtPosition(clientX, clientY, dropTargets);
-
-  if (target) {
+  // Check if we're over a valid drop target (throws explicit error if no target found)
+  try {
+    const target = findTargetAtPosition(clientX, clientY, dropTargets);
     emit("link", { layerId: target.layerId, property: target.property });
+  } catch {
+    // No target at position - cancel link (expected state)
   }
 
   // Cleanup

@@ -80,13 +80,20 @@ export class GPUSpringSystem {
       ? Math.min(Math.floor(maxPins), 10000)
       : 1000;
 
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+    const globalStiffness = (typeof config.globalStiffness === "number" && Number.isFinite(config.globalStiffness) && config.globalStiffness > 0) ? config.globalStiffness : 100;
+    const globalDamping = (typeof config.globalDamping === "number" && Number.isFinite(config.globalDamping) && config.globalDamping >= 0) ? config.globalDamping : 5;
+    const solverIterations = (typeof config.solverIterations === "number" && Number.isFinite(config.solverIterations) && config.solverIterations >= 1) ? config.solverIterations : 4;
+    const useVerlet = (typeof config.useVerlet === "boolean") ? config.useVerlet : true;
+    const enableBreaking = (typeof config.enableBreaking === "boolean") ? config.enableBreaking : false;
+    const gravity = (config.gravity !== null && config.gravity !== undefined && typeof config.gravity === "object") ? config.gravity : { x: 0, y: -980, z: 0 };
     this.config = {
-      globalStiffness: config.globalStiffness ?? 100,
-      globalDamping: config.globalDamping ?? 5,
-      solverIterations: config.solverIterations ?? 4,
-      useVerlet: config.useVerlet ?? true,
-      enableBreaking: config.enableBreaking ?? false,
-      gravity: config.gravity ?? { x: 0, y: -980, z: 0 },
+      globalStiffness,
+      globalDamping,
+      solverIterations,
+      useVerlet,
+      enableBreaking,
+      gravity,
     };
 
     // Create CPU fallback
@@ -263,13 +270,17 @@ export class GPUSpringSystem {
       return;
     }
 
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+    const springStiffness = (stiffness !== null && stiffness !== undefined && typeof stiffness === "number" && Number.isFinite(stiffness) && stiffness > 0) ? stiffness : this.config.globalStiffness;
+    const springDamping = (damping !== null && damping !== undefined && typeof damping === "number" && Number.isFinite(damping) && damping >= 0) ? damping : this.config.globalDamping;
+    const springBreakThreshold = (breakThreshold !== null && breakThreshold !== undefined && typeof breakThreshold === "number" && Number.isFinite(breakThreshold) && breakThreshold >= 0) ? breakThreshold : 0;
     this.springs.push({
       particleA,
       particleB,
       restLength: Math.max(0.001, restLength),
-      stiffness: stiffness ?? this.config.globalStiffness,
-      damping: damping ?? this.config.globalDamping,
-      breakThreshold: breakThreshold ?? 0,
+      stiffness: springStiffness,
+      damping: springDamping,
+      breakThreshold: springBreakThreshold,
       active: true,
     });
 
@@ -284,7 +295,8 @@ export class GPUSpringSystem {
     spacing: number,
     stiffness?: number
   ): void {
-    const k = stiffness ?? this.config.globalStiffness;
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+    const k = (stiffness !== null && stiffness !== undefined && typeof stiffness === "number" && Number.isFinite(stiffness) && stiffness > 0) ? stiffness : this.config.globalStiffness;
     const diagLength = spacing * Math.SQRT2;
 
     for (let y = 0; y < height; y++) {
@@ -309,7 +321,8 @@ export class GPUSpringSystem {
   }
 
   createChain(particleIndices: number[], spacing: number, stiffness?: number): void {
-    const k = stiffness ?? this.config.globalStiffness;
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+    const k = (stiffness !== null && stiffness !== undefined && typeof stiffness === "number" && Number.isFinite(stiffness) && stiffness > 0) ? stiffness : this.config.globalStiffness;
     for (let i = 0; i < particleIndices.length - 1; i++) {
       this.addSpring(particleIndices[i], particleIndices[i + 1], spacing, k);
     }
@@ -323,7 +336,8 @@ export class GPUSpringSystem {
     spacing: number,
     stiffness?: number
   ): void {
-    const k = stiffness ?? this.config.globalStiffness;
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+    const k = (stiffness !== null && stiffness !== undefined && typeof stiffness === "number" && Number.isFinite(stiffness) && stiffness > 0) ? stiffness : this.config.globalStiffness;
 
     const getIdx = (x: number, y: number, z: number) =>
       startIndex + z * width * height + y * width + x;

@@ -16,6 +16,7 @@
  * @see https://github.com/kijai/ComfyUI-WanVideoWrapper/blob/main/ATI/motion.py
  */
 
+import { isFiniteNumber } from "@/utils/typeGuards";
 import type { WanMoveTrajectory } from "./wanMoveExport";
 
 // ============================================================================
@@ -172,12 +173,20 @@ export function exportAsNormalizedATI(trajectory: WanMoveTrajectory): {
 
       if (f < numFrames && f < track.length) {
         [x, y] = track[f];
-        vis = visibility[trackIdx]?.[f] ?? true;
+        // Type proof: visibility[trackIdx]?.[f] ∈ boolean | undefined → boolean
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+        const visibilityTrack = (visibility != null && Array.isArray(visibility) && trackIdx >= 0 && trackIdx < visibility.length) ? visibility[trackIdx] : undefined;
+        const visValue = (visibilityTrack != null && Array.isArray(visibilityTrack) && f >= 0 && f < visibilityTrack.length) ? visibilityTrack[f] : undefined;
+        vis = typeof visValue === "boolean" ? visValue : true;
       } else if (track.length > 0) {
         // Pad with last known position
         const lastIdx = Math.min(numFrames - 1, track.length - 1);
         [x, y] = track[lastIdx];
-        vis = visibility[trackIdx]?.[lastIdx] ?? true;
+        // Type proof: visibility[trackIdx]?.[lastIdx] ∈ boolean | undefined → boolean
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+        const visibilityTrack = (visibility != null && Array.isArray(visibility) && trackIdx >= 0 && trackIdx < visibility.length) ? visibility[trackIdx] : undefined;
+        const visLastValue = (visibilityTrack != null && Array.isArray(visibilityTrack) && lastIdx >= 0 && lastIdx < visibilityTrack.length) ? visibilityTrack[lastIdx] : undefined;
+        vis = typeof visLastValue === "boolean" ? visLastValue : true;
       } else {
         x = width / 2;
         y = height / 2;
@@ -294,7 +303,11 @@ export function createATITrajectory(
   fps: number = 16,
 ): WanMoveTrajectory {
   const numPoints = points.length;
-  const numFrames = points[0]?.length ?? 0;
+  // Type proof: points[0]?.length ∈ number | undefined → number
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const firstPoint = (points != null && Array.isArray(points) && points.length > 0) ? points[0] : undefined;
+  const firstPointLength = (firstPoint != null && Array.isArray(firstPoint)) ? firstPoint.length : undefined;
+  const numFrames = isFiniteNumber(firstPointLength) && Number.isInteger(firstPointLength) && firstPointLength >= 0 ? firstPointLength : 0;
 
   // Convert to WanMove format
   const tracks: number[][][] = points.map((track) =>

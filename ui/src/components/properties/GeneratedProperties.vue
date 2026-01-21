@@ -109,7 +109,8 @@ import {
   PREPROCESSOR_REGISTRY,
   type PreprocessorInfo,
 } from "@/services/preprocessorService";
-import { useCompositorStore } from "@/stores/compositorStore";
+import { useAnimationStore } from "@/stores/animationStore";
+import { useProjectStore } from "@/stores/projectStore";
 import type { GeneratedLayerData, Layer } from "@/types/project";
 
 const props = defineProps<{
@@ -119,7 +120,8 @@ const props = defineProps<{
 const emit =
   defineEmits<(e: "update", data: Partial<GeneratedLayerData>) => void>();
 
-const store = useCompositorStore();
+const animationStore = useAnimationStore();
+const projectStore = useProjectStore();
 
 // Progress message shown during generation
 const progressMessage = ref("");
@@ -128,7 +130,7 @@ const generatedData = computed(() => props.layer.data as GeneratedLayerData);
 
 // Get layers that can be sources (images, video, other layers - not this one)
 const sourceLayers = computed(() => {
-  return store.layers.filter(
+  return projectStore.getActiveCompLayers().filter(
     (l) =>
       l.id !== props.layer.id &&
       ["image", "video", "solid", "text", "spline", "shape"].includes(l.type),
@@ -137,7 +139,7 @@ const sourceLayers = computed(() => {
 
 // Get composition resolution for generation (use smaller dimension to maintain aspect)
 const generationResolution = computed(() => {
-  const comp = store.activeComposition;
+  const comp = projectStore.getActiveComp();
   if (!comp) return 512;
   // Use the smaller dimension, clamped to common AI model resolutions
   const minDim = Math.min(comp.settings.width, comp.settings.height);
@@ -244,7 +246,7 @@ async function regenerate() {
       {
         resolution: generationResolution.value,
       },
-      store.currentFrame,
+      animationStore.currentFrame,
       (status) => {
         progressMessage.value = status;
       },

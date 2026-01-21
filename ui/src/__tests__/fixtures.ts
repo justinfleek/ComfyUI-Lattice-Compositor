@@ -95,18 +95,25 @@ export function resetTestIdCounter(): void {
 export function createTestCompositionSettings(
   overrides: Partial<CompositionSettings> = {}
 ): CompositionSettings {
-  const fps = overrides.fps ?? 16; // DEFAULT_FPS from production
-  const frameCount = overrides.frameCount ?? 81; // Production default
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+  const fps = (overrides.fps !== null && overrides.fps !== undefined && typeof overrides.fps === "number" && Number.isFinite(overrides.fps) && overrides.fps > 0) ? overrides.fps : 16; // DEFAULT_FPS from production
+  const frameCount = (overrides.frameCount !== null && overrides.frameCount !== undefined && typeof overrides.frameCount === "number" && Number.isFinite(overrides.frameCount) && overrides.frameCount > 0) ? overrides.frameCount : 81; // Production default
+  
+  const width = (overrides.width !== null && overrides.width !== undefined && typeof overrides.width === "number" && Number.isFinite(overrides.width) && overrides.width > 0) ? overrides.width : 1024; // Production default
+  const height = (overrides.height !== null && overrides.height !== undefined && typeof overrides.height === "number" && Number.isFinite(overrides.height) && overrides.height > 0) ? overrides.height : 1024; // Production default
+  const backgroundColor = (overrides.backgroundColor !== null && overrides.backgroundColor !== undefined && typeof overrides.backgroundColor === "string" && overrides.backgroundColor.length > 0) ? overrides.backgroundColor : "#050505"; // Production default
+  const autoResizeToContent = (overrides.autoResizeToContent !== null && overrides.autoResizeToContent !== undefined && typeof overrides.autoResizeToContent === "boolean") ? overrides.autoResizeToContent : true; // Production default
+  const frameBlendingEnabled = (overrides.frameBlendingEnabled !== null && overrides.frameBlendingEnabled !== undefined && typeof overrides.frameBlendingEnabled === "boolean") ? overrides.frameBlendingEnabled : false; // Production default
   
   return {
-    width: overrides.width ?? 1024, // Production default
-    height: overrides.height ?? 1024, // Production default
+    width,
+    height,
     frameCount,
     fps,
     duration: frameCount / fps, // Computed from frameCount/fps (production pattern)
-    backgroundColor: overrides.backgroundColor ?? "#050505", // Production default
-    autoResizeToContent: overrides.autoResizeToContent ?? true, // Production default
-    frameBlendingEnabled: overrides.frameBlendingEnabled ?? false, // Production default
+    backgroundColor,
+    autoResizeToContent,
+    frameBlendingEnabled,
     ...overrides,
   };
 }
@@ -235,9 +242,11 @@ export function createTestEffectInstance(
   effectKey: string,
   overrides: Partial<EffectInstance> = {}
 ): EffectInstance {
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+  const name = (overrides.name !== null && overrides.name !== undefined && typeof overrides.name === "string" && overrides.name.length > 0) ? overrides.name : effectKey.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
   return {
     id: generateTestId('effect'),
-    name: overrides.name ?? effectKey.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
+    name,
     effectKey,
     enabled: true,
     category: 'stylize',
@@ -278,8 +287,10 @@ export function createTestLayer(
     compositionContext?: { width: number; height: number; frameCount?: number };
   } = {}
 ): Layer {
-  const compContext = overrides.compositionContext ?? { width: 1920, height: 1080 };
-  const frameCount = overrides.compositionContext?.frameCount ?? 81;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??/?.
+  const compContext = (overrides.compositionContext !== null && overrides.compositionContext !== undefined && typeof overrides.compositionContext === "object") ? overrides.compositionContext : { width: 1920, height: 1080 };
+  const compContextFrameCount = (overrides.compositionContext !== null && overrides.compositionContext !== undefined && typeof overrides.compositionContext === "object" && "frameCount" in overrides.compositionContext && typeof overrides.compositionContext.frameCount === "number" && Number.isFinite(overrides.compositionContext.frameCount) && overrides.compositionContext.frameCount > 0) ? overrides.compositionContext.frameCount : undefined;
+  const frameCount = compContextFrameCount !== undefined ? compContextFrameCount : 81;
   
   // Get type-specific data from production helper
   const layerData = getDefaultLayerData(type, compContext);
@@ -292,10 +303,11 @@ export function createTestLayer(
     y: compContext.height / 2 
   };
   
+  const name = (overrides.name !== null && overrides.name !== undefined && typeof overrides.name === "string" && overrides.name.length > 0) ? overrides.name : `${type.charAt(0).toUpperCase() + type.slice(1)} 1`;
   return {
     id: generateTestId('layer'),
     type,
-    name: overrides.name ?? `${type.charAt(0).toUpperCase() + type.slice(1)} 1`,
+    name,
     visible: true,
     locked: false,
     isolate: false,
@@ -342,15 +354,20 @@ export function createTestComposition(
     isNestedComp?: boolean;
   } = {}
 ): Composition {
-  const id = overrides.id ?? generateTestId('comp');
-  const settingsOverrides = overrides.settings ?? {};
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+  const id = (overrides.id !== null && overrides.id !== undefined && typeof overrides.id === "string" && overrides.id.length > 0) ? overrides.id : generateTestId('comp');
+  const settingsOverrides = (overrides.settings !== null && overrides.settings !== undefined && typeof overrides.settings === "object" && overrides.settings !== null) ? overrides.settings : {};
+  const name = (overrides.name !== null && overrides.name !== undefined && typeof overrides.name === "string" && overrides.name.length > 0) ? overrides.name : 'Test Composition';
+  const layers = (Array.isArray(overrides.layers)) ? overrides.layers : [];
+  const currentFrame = (overrides.currentFrame !== null && overrides.currentFrame !== undefined && typeof overrides.currentFrame === "number" && Number.isFinite(overrides.currentFrame) && overrides.currentFrame >= 0) ? overrides.currentFrame : 0;
+  const isNestedComp = (overrides.isNestedComp !== null && overrides.isNestedComp !== undefined && typeof overrides.isNestedComp === "boolean") ? overrides.isNestedComp : false;
   return {
     id,
-    name: overrides.name ?? 'Test Composition',
+    name,
     settings: createTestCompositionSettings(settingsOverrides),
-    layers: overrides.layers ?? [],
-    currentFrame: overrides.currentFrame ?? 0,
-    isNestedComp: overrides.isNestedComp ?? false,
+    layers,
+    currentFrame,
+    isNestedComp,
   };
 }
 
@@ -402,7 +419,8 @@ export function createTestProject(
       ...overrides.compositions,
     },
     assets: {},
-    layers: overrides.layers ?? [],
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+    layers: (Array.isArray(overrides.layers)) ? overrides.layers : [],
     currentFrame: 0,
   };
 }

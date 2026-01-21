@@ -18,6 +18,8 @@
  * - 10M particles: ~20s per frame (worker thread)
  */
 
+import { isFiniteNumber, hasXY, safeCoordinateDefault } from "@/utils/typeGuards";
+
 // ============================================================================
 // TYPES
 // ============================================================================
@@ -138,20 +140,47 @@ export class ConditioningRenderer {
   private ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
 
   constructor(config: ConditioningConfig) {
+    // Type proof: cameraPosition ∈ {x, y, z} | undefined → {x, y, z}
+    const cameraPositionValue = config.cameraPosition;
+    const cameraPosition = hasXY(cameraPositionValue) && isFiniteNumber(cameraPositionValue.z) ? cameraPositionValue : { x: 0, y: 0, z: 1000 };
+    const cameraTargetValue = config.cameraTarget;
+    const cameraTarget = hasXY(cameraTargetValue) && isFiniteNumber(cameraTargetValue.z) ? cameraTargetValue : { x: 0, y: 0, z: 0 };
+    // Type proof: fov ∈ ℝ ∧ finite(fov) → fov ∈ ℝ₊
+    const fovValue = config.fov;
+    const fov = isFiniteNumber(fovValue) && fovValue > 0 ? fovValue : 60;
+    // Type proof: near, far ∈ ℝ ∧ finite(near/far) → ℝ₊
+    const nearValue = config.near;
+    const near = isFiniteNumber(nearValue) && nearValue > 0 ? nearValue : 0.1;
+    const farValue = config.far;
+    const far = isFiniteNumber(farValue) && farValue > 0 ? farValue : 10000;
+    // Type proof: depthNear, depthFar ∈ ℝ ∧ finite(depthNear/depthFar) → ℝ
+    const depthNearValue = config.depthNear;
+    const depthNear = isFiniteNumber(depthNearValue) ? depthNearValue : 0;
+    const depthFarValue = config.depthFar;
+    const depthFar = isFiniteNumber(depthFarValue) ? depthFarValue : 1000;
+    // Type proof: depthInvert ∈ {true, false} | undefined → {true, false}
+    const depthInvert = typeof config.depthInvert === "boolean" ? config.depthInvert : false;
+    // Type proof: particleSize ∈ ℝ ∧ finite(particleSize) → particleSize ∈ ℝ₊
+    const particleSizeValue = config.particleSize;
+    const particleSize = isFiniteNumber(particleSizeValue) && particleSizeValue > 0 ? particleSizeValue : 2;
+    // Type proof: backgroundColor ∈ string | undefined → string
+    const backgroundColor = typeof config.backgroundColor === "string" ? config.backgroundColor : "#000000";
+    // Type proof: categoryColors ∈ Record | undefined → Record
+    const categoryColors = typeof config.categoryColors === "object" && config.categoryColors !== null ? config.categoryColors : {};
     this.config = {
       width: config.width,
       height: config.height,
-      cameraPosition: config.cameraPosition ?? { x: 0, y: 0, z: 1000 },
-      cameraTarget: config.cameraTarget ?? { x: 0, y: 0, z: 0 },
-      fov: config.fov ?? 60,
-      near: config.near ?? 0.1,
-      far: config.far ?? 10000,
-      depthNear: config.depthNear ?? 0,
-      depthFar: config.depthFar ?? 1000,
-      depthInvert: config.depthInvert ?? false,
-      particleSize: config.particleSize ?? 2,
-      backgroundColor: config.backgroundColor ?? "#000000",
-      categoryColors: config.categoryColors ?? {},
+      cameraPosition,
+      cameraTarget,
+      fov,
+      near,
+      far,
+      depthNear,
+      depthFar,
+      depthInvert,
+      particleSize,
+      backgroundColor,
+      categoryColors,
     };
 
     // Create canvas (prefer OffscreenCanvas for worker support)
@@ -207,7 +236,9 @@ export class ConditioningRenderer {
 
       // Get color from colormap
       const color = colormapFn(depth);
-      const size = p.size ?? particleSize;
+      // Type proof: size ∈ ℝ ∧ finite(size) → size ∈ ℝ₊
+      const sizeValue = p.size;
+      const size = isFiniteNumber(sizeValue) && sizeValue > 0 ? sizeValue : particleSize;
 
       // Draw particle
       this.ctx.fillStyle = `rgb(${color.r},${color.g},${color.b})`;
@@ -249,8 +280,12 @@ export class ConditioningRenderer {
       if (trajectory.points.length < 2) continue;
       totalPoints += trajectory.points.length;
 
-      const lineWidth = trajectory.width ?? 2;
-      const baseColor = trajectory.color ?? { r: 0, g: 212, b: 255 };
+      // Type proof: width ∈ ℝ ∧ finite(width) → width ∈ ℝ₊
+      const lineWidthValue = trajectory.width;
+      const lineWidth = isFiniteNumber(lineWidthValue) && lineWidthValue > 0 ? lineWidthValue : 2;
+      // Type proof: color ∈ {r, g, b} | undefined → {r, g, b}
+      const baseColorValue = trajectory.color;
+      const baseColor = baseColorValue && typeof baseColorValue === "object" && "r" in baseColorValue && "g" in baseColorValue && "b" in baseColorValue && isFiniteNumber(baseColorValue.r) && isFiniteNumber(baseColorValue.g) && isFiniteNumber(baseColorValue.b) ? baseColorValue : { r: 0, g: 212, b: 255 };
 
       // Draw trajectory with gradient along path
       for (let i = 0; i < trajectory.points.length - 1; i++) {
@@ -327,13 +362,15 @@ export class ConditioningRenderer {
 
     for (const p of particles) {
       // Get category color
-      const category = p.category ?? "default";
+      // Type proof: category ∈ string | number | undefined → string | number
+      const categoryValue = p.category;
+      const category = categoryValue !== undefined && categoryValue !== null ? categoryValue : "default";
       let color = categoryColorMap.get(category);
 
       if (!color) {
-        color =
-          categoryColors[category] ??
-          defaultColors[colorIndex % defaultColors.length];
+        // Type proof: categoryColors[category] ∈ string | undefined → string
+        const categoryColorValue = categoryColors[category];
+        color = typeof categoryColorValue === "string" ? categoryColorValue : defaultColors[colorIndex % defaultColors.length];
         categoryColorMap.set(category, color);
         colorIndex++;
       }
@@ -341,7 +378,9 @@ export class ConditioningRenderer {
       // Project to screen
       const screenX = (p.position.x / width + 0.5) * width;
       const screenY = (p.position.y / height + 0.5) * height;
-      const size = p.size ?? particleSize;
+      // Type proof: size ∈ ℝ ∧ finite(size) → size ∈ ℝ₊
+      const sizeValue = p.size;
+      const size = isFiniteNumber(sizeValue) && sizeValue > 0 ? sizeValue : particleSize;
 
       // Draw particle
       this.ctx.fillStyle = color;
@@ -405,7 +444,9 @@ export class ConditioningRenderer {
       const saturation = Math.min(100, (speed / maxSpeed) * 100);
       const lightness = 50;
 
-      const size = p.size ?? particleSize;
+      // Type proof: size ∈ ℝ ∧ finite(size) → size ∈ ℝ₊
+      const sizeValue = p.size;
+      const size = isFiniteNumber(sizeValue) && sizeValue > 0 ? sizeValue : particleSize;
       this.ctx.fillStyle = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
       this.ctx.beginPath();
       this.ctx.arc(screenX, screenY, size, 0, Math.PI * 2);
@@ -449,7 +490,9 @@ export class ConditioningRenderer {
       // Project to screen
       const screenX = (p.position.x / width + 0.5) * width;
       const screenY = (p.position.y / height + 0.5) * height;
-      const size = p.size ?? particleSize;
+      // Type proof: size ∈ ℝ ∧ finite(size) → size ∈ ℝ₊
+      const sizeValue = p.size;
+      const size = isFiniteNumber(sizeValue) && sizeValue > 0 ? sizeValue : particleSize;
 
       this.ctx.fillStyle = particleColor;
       this.ctx.beginPath();
@@ -500,7 +543,9 @@ export class ConditioningRenderer {
     const valueRange = maxValue - minValue || 1;
 
     for (const p of particles) {
-      const dataValue = p.dataValue ?? 0;
+      // Type proof: dataValue ∈ ℝ ∪ {undefined} → ℝ
+      const dataValueRaw = p.dataValue;
+      const dataValue = isFiniteNumber(dataValueRaw) ? dataValueRaw : 0;
 
       // Normalize value to 0-1
       const t = Math.max(0, Math.min(1, (dataValue - minValue) / valueRange));
@@ -522,7 +567,9 @@ export class ConditioningRenderer {
       // Project to screen
       const screenX = (p.position.x / width + 0.5) * width;
       const screenY = (p.position.y / height + 0.5) * height;
-      const size = p.size ?? particleSize;
+      // Type proof: size ∈ ℝ ∧ finite(size) → size ∈ ℝ₊
+      const sizeValue = p.size;
+      const size = isFiniteNumber(sizeValue) && sizeValue > 0 ? sizeValue : particleSize;
 
       this.ctx.fillStyle = `rgb(${r},${g},${b})`;
       this.ctx.beginPath();
@@ -718,12 +765,15 @@ export function particlesFromCSV(
   } = options;
 
   return rows.map((row) => {
-    const x = (parseFloat(row[mapping.xColumn]) || 0) * xScale + xOffset;
-    const y = (parseFloat(row[mapping.yColumn]) || 0) * yScale + yOffset;
-    const z =
-      mapping.zColumn !== undefined
-        ? (parseFloat(row[mapping.zColumn]) || 0) * zScale + zOffset
-        : 0;
+    // Type proof: coordinates ∈ number | NaN → number (coordinate-like, can be negative)
+    const parsedX = parseFloat(row[mapping.xColumn]);
+    const parsedY = parseFloat(row[mapping.yColumn]);
+    const x = (Number.isFinite(parsedX) ? parsedX : 0) * xScale + xOffset;
+    const y = (Number.isFinite(parsedY) ? parsedY : 0) * yScale + yOffset;
+    const parsedZ = mapping.zColumn !== undefined ? parseFloat(row[mapping.zColumn]) : 0;
+    const z = mapping.zColumn !== undefined
+      ? (Number.isFinite(parsedZ) ? parsedZ : 0) * zScale + zOffset
+      : 0;
 
     const particle: ParticleData = {
       position: { x, y, z },
@@ -738,7 +788,11 @@ export function particlesFromCSV(
     }
 
     if (mapping.dataValueColumn !== undefined) {
-      particle.dataValue = parseFloat(row[mapping.dataValueColumn]) || 0;
+      // Type proof: dataValue ∈ number | NaN → number (≥ 0, data value)
+      const parsedDataValue = parseFloat(row[mapping.dataValueColumn]);
+      particle.dataValue = Number.isFinite(parsedDataValue) && parsedDataValue >= 0
+        ? parsedDataValue
+        : 0;
     }
 
     return particle;

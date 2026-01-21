@@ -6,11 +6,13 @@
  */
 
 import { markLayerDirty } from "@/services/layerEvaluationCache";
+import { isFiniteNumber } from "@/utils/typeGuards";
 import type { Keyframe, PropertyExpression, PropertyValue } from "@/types/project";
 import { storeLogger } from "@/utils/logger";
 import { useLayerStore } from "@/stores/layerStore";
+import { useProjectStore } from "../projectStore";
 import { findPropertyByPath } from "./helpers";
-import type { BakeExpressionStoreAccess, KeyframeStoreAccess } from "./types";
+import { evaluatePropertyAtFrame } from "./evaluation";
 
 // ============================================================================
 // EXPRESSION METHODS
@@ -20,12 +22,12 @@ import type { BakeExpressionStoreAccess, KeyframeStoreAccess } from "./types";
  * Set an expression on a property.
  */
 export function setPropertyExpression(
-  store: KeyframeStoreAccess,
   layerId: string,
   propertyPath: string,
   expression: PropertyExpression,
 ): boolean {
-  const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
+  const projectStore = useProjectStore();
+  const layer = projectStore.getActiveCompLayers().find((l) => l.id === layerId);
   if (!layer) {
     storeLogger.warn("setPropertyExpression: layer not found:", layerId);
     return false;
@@ -41,9 +43,9 @@ export function setPropertyExpression(
   }
 
   property.expression = expression;
-  store.project.meta.modified = new Date().toISOString();
+  projectStore.project.meta.modified = new Date().toISOString();
   markLayerDirty(layerId);
-  store.pushHistory();
+  projectStore.pushHistory();
 
   storeLogger.debug("Set expression on", propertyPath, ":", expression.name);
   return true;
@@ -53,13 +55,13 @@ export function setPropertyExpression(
  * Enable expression on a property (creates default if not exists).
  */
 export function enablePropertyExpression(
-  store: KeyframeStoreAccess,
   layerId: string,
   propertyPath: string,
   expressionName: string = "custom",
   params: Record<string, number | string | boolean> = {},
 ): boolean {
-  const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
+  const projectStore = useProjectStore();
+  const layer = projectStore.getActiveCompLayers().find((l) => l.id === layerId);
   if (!layer) return false;
 
   const property = findPropertyByPath(layer, propertyPath);
@@ -73,9 +75,9 @@ export function enablePropertyExpression(
   };
 
   property.expression = expression;
-  store.project.meta.modified = new Date().toISOString();
+  projectStore.project.meta.modified = new Date().toISOString();
   markLayerDirty(layerId);
-  store.pushHistory();
+  projectStore.pushHistory();
 
   return true;
 }
@@ -84,20 +86,20 @@ export function enablePropertyExpression(
  * Disable expression on a property (keeps expression data for re-enabling).
  */
 export function disablePropertyExpression(
-  store: KeyframeStoreAccess,
   layerId: string,
   propertyPath: string,
 ): boolean {
-  const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
+  const projectStore = useProjectStore();
+  const layer = projectStore.getActiveCompLayers().find((l) => l.id === layerId);
   if (!layer) return false;
 
   const property = findPropertyByPath(layer, propertyPath);
   if (!property || !property.expression) return false;
 
   property.expression.enabled = false;
-  store.project.meta.modified = new Date().toISOString();
+  projectStore.project.meta.modified = new Date().toISOString();
   markLayerDirty(layerId);
-  store.pushHistory();
+  projectStore.pushHistory();
 
   return true;
 }
@@ -106,20 +108,20 @@ export function disablePropertyExpression(
  * Toggle expression enabled state.
  */
 export function togglePropertyExpression(
-  store: KeyframeStoreAccess,
   layerId: string,
   propertyPath: string,
 ): boolean {
-  const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
+  const projectStore = useProjectStore();
+  const layer = projectStore.getActiveCompLayers().find((l) => l.id === layerId);
   if (!layer) return false;
 
   const property = findPropertyByPath(layer, propertyPath);
   if (!property || !property.expression) return false;
 
   property.expression.enabled = !property.expression.enabled;
-  store.project.meta.modified = new Date().toISOString();
+  projectStore.project.meta.modified = new Date().toISOString();
   markLayerDirty(layerId);
-  store.pushHistory();
+  projectStore.pushHistory();
 
   return property.expression.enabled;
 }
@@ -128,20 +130,20 @@ export function togglePropertyExpression(
  * Remove expression from a property.
  */
 export function removePropertyExpression(
-  store: KeyframeStoreAccess,
   layerId: string,
   propertyPath: string,
 ): boolean {
-  const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
+  const projectStore = useProjectStore();
+  const layer = projectStore.getActiveCompLayers().find((l) => l.id === layerId);
   if (!layer) return false;
 
   const property = findPropertyByPath(layer, propertyPath);
   if (!property) return false;
 
   delete property.expression;
-  store.project.meta.modified = new Date().toISOString();
+  projectStore.project.meta.modified = new Date().toISOString();
   markLayerDirty(layerId);
-  store.pushHistory();
+  projectStore.pushHistory();
 
   return true;
 }
@@ -150,51 +152,61 @@ export function removePropertyExpression(
  * Get expression on a property.
  */
 export function getPropertyExpression(
-  store: KeyframeStoreAccess,
   layerId: string,
   propertyPath: string,
-): PropertyExpression | undefined {
-  const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
-  if (!layer) return undefined;
+): PropertyExpression {
+  const projectStore = useProjectStore();
+  const layer = projectStore.getActiveCompLayers().find((l) => l.id === layerId);
+  if (!layer) {
+    throw new Error(`[KeyframeStore] Cannot get property expression: Layer "${layerId}" not found`);
+  }
 
   const property = findPropertyByPath(layer, propertyPath);
-  return property?.expression;
+  if (!property) {
+    throw new Error(`[KeyframeStore] Cannot get property expression: Property "${propertyPath}" not found on layer "${layerId}"`);
+  }
+  if (!property.expression) {
+    throw new Error(`[KeyframeStore] Property "${propertyPath}" on layer "${layerId}" has no expression`);
+  }
+  return property.expression;
 }
 
 /**
  * Check if property has an expression.
  */
 export function hasPropertyExpression(
-  store: KeyframeStoreAccess,
   layerId: string,
   propertyPath: string,
 ): boolean {
-  const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
+  const projectStore = useProjectStore();
+  const layer = projectStore.getActiveCompLayers().find((l) => l.id === layerId);
   if (!layer) return false;
 
   const property = findPropertyByPath(layer, propertyPath);
-  return property?.expression !== undefined;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const propertyExpression = (property != null && typeof property === "object" && "expression" in property && property.expression != null) ? property.expression : undefined;
+  return propertyExpression !== undefined;
 }
 
 /**
  * Update expression parameters.
  */
 export function updateExpressionParams(
-  store: KeyframeStoreAccess,
   layerId: string,
   propertyPath: string,
   params: Record<string, number | string | boolean>,
 ): boolean {
-  const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
+  const projectStore = useProjectStore();
+  const layer = projectStore.getActiveCompLayers().find((l) => l.id === layerId);
   if (!layer) return false;
 
   const property = findPropertyByPath(layer, propertyPath);
   if (!property || !property.expression) return false;
 
   property.expression.params = { ...property.expression.params, ...params };
-  store.project.meta.modified = new Date().toISOString();
+  projectStore.project.meta.modified = new Date().toISOString();
   markLayerDirty(layerId);
-  store.pushHistory();
+  projectStore.pushHistory();
 
   return true;
 }
@@ -216,15 +228,15 @@ export function updateExpressionParams(
  * @returns Number of keyframes created
  */
 export function convertExpressionToKeyframes(
-  store: BakeExpressionStoreAccess,
   layerId: string,
   propertyPath: string,
   startFrame?: number,
   endFrame?: number,
   sampleRate: number = 1,
 ): number {
+  const projectStore = useProjectStore();
   const layerStore = useLayerStore();
-  const layer = layerStore.getLayerById(store, layerId);
+  const layer = layerStore.getLayerById(layerId);
   if (!layer) {
     storeLogger.warn("convertExpressionToKeyframes: layer not found:", layerId);
     return 0;
@@ -239,15 +251,22 @@ export function convertExpressionToKeyframes(
     return 0;
   }
 
-  if (!property.expression?.enabled) {
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const propertyExpression = (property != null && typeof property === "object" && "expression" in property && property.expression != null && typeof property.expression === "object") ? property.expression : undefined;
+  const expressionEnabled = (propertyExpression != null && typeof propertyExpression === "object" && "enabled" in propertyExpression && typeof propertyExpression.enabled === "boolean" && propertyExpression.enabled) ? true : false;
+  if (!expressionEnabled) {
     storeLogger.warn(
       "convertExpressionToKeyframes: no active expression on property",
     );
     return 0;
   }
 
-  const start = startFrame ?? 0;
-  const end = endFrame ?? store.frameCount;
+  // Type proof: startFrame ∈ ℕ ∪ {undefined} → ℕ
+  const startFrameValue = startFrame;
+  const start = isFiniteNumber(startFrameValue) && Number.isInteger(startFrameValue) && startFrameValue >= 0 ? startFrameValue : 0;
+  // Type proof: endFrame ∈ ℕ ∪ {undefined} → ℕ
+  const endFrameValue = endFrame;
+  const end = isFiniteNumber(endFrameValue) && Number.isInteger(endFrameValue) && endFrameValue >= 0 ? endFrameValue : projectStore.getFrameCount();
   // Validate sampleRate (Math.round(NaN) = NaN, Math.max(1, NaN) = NaN)
   const rate = Number.isFinite(sampleRate)
     ? Math.max(1, Math.round(sampleRate))
@@ -261,7 +280,7 @@ export function convertExpressionToKeyframes(
 
   // Sample expression at each frame
   for (let frame = start; frame <= end; frame += rate) {
-    const value = store.evaluatePropertyAtFrame(layerId, propertyPath, frame);
+    const value = evaluatePropertyAtFrame(layerId, propertyPath, frame);
 
     if (value !== undefined && value !== null) {
       // Convert array values [x, y] or [x, y, z] to object format for PropertyValue
@@ -272,7 +291,9 @@ export function convertExpressionToKeyframes(
         } else if (value.length >= 3) {
           keyframeValue = { x: value[0], y: value[1], z: value[2] };
         } else {
-          keyframeValue = value[0] ?? 0;
+          // Type proof: value[0] ∈ ℝ ∪ {undefined} → ℝ
+          const firstValue = value[0];
+          keyframeValue = isFiniteNumber(firstValue) ? firstValue : 0;
         }
       } else {
         keyframeValue = value;
@@ -299,8 +320,8 @@ export function convertExpressionToKeyframes(
   }
 
   markLayerDirty(layerId);
-  store.project.meta.modified = new Date().toISOString();
-  store.pushHistory();
+  projectStore.project.meta.modified = new Date().toISOString();
+  projectStore.pushHistory();
 
   storeLogger.info(
     "convertExpressionToKeyframes: created",
@@ -314,16 +335,18 @@ export function convertExpressionToKeyframes(
  * Check if a property has a bakeable expression.
  */
 export function canBakeExpression(
-  store: KeyframeStoreAccess,
   layerId: string,
   propertyPath: string,
 ): boolean {
   const layerStore = useLayerStore();
-  const layer = layerStore.getLayerById(store, layerId);
+  const layer = layerStore.getLayerById(layerId);
   if (!layer) return false;
 
   const property = findPropertyByPath(layer, propertyPath);
   if (!property) return false;
 
-  return property.expression?.enabled === true;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const propertyExpression = (property != null && typeof property === "object" && "expression" in property && property.expression != null && typeof property.expression === "object") ? property.expression : undefined;
+  const expressionEnabled = (propertyExpression != null && typeof propertyExpression === "object" && "enabled" in propertyExpression && typeof propertyExpression.enabled === "boolean" && propertyExpression.enabled) ? true : false;
+  return expressionEnabled === true;
 }

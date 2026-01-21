@@ -223,6 +223,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
+import { safeNonNegativeDefault, safeCoordinateDefault } from "@/utils/typeGuards";
 import {
   type HSL,
   type HSV,
@@ -285,12 +286,21 @@ const panelStyle = computed(() => {
 
 // Initialize from modelValue
 function updateFromHex(hex: string): void {
-  const parsed = hexToRgb(hex);
-  if (parsed) {
-    rgb.value = parsed;
-    hsv.value = rgbToHsv(parsed[0], parsed[1], parsed[2]);
-    hsl.value = rgbToHsl(parsed[0], parsed[1], parsed[2]);
+  // System F/Omega proof: Validate hex format before calling utility
+  // Type proof: hex ∈ string → void
+  // Mathematical proof: Hex string must be valid format (#RGB, #RRGGBB, or #RRGGBBAA)
+  const normalizedHex = hex.replace(/^#/, "");
+  const isValidHex = /^([0-9a-f]{3}|[0-9a-f]{6}|[0-9a-f]{8})$/i.test(normalizedHex);
+  
+  if (!isValidHex) {
+    // Invalid hex format - skip update
+    return;
   }
+  
+  const parsed = hexToRgb(hex);
+  rgb.value = parsed;
+  hsv.value = rgbToHsv(parsed[0], parsed[1], parsed[2]);
+  hsl.value = rgbToHsl(parsed[0], parsed[1], parsed[2]);
 }
 
 function emitColor(): void {
@@ -515,10 +525,13 @@ function onHexBlur(e: FocusEvent): void {
 
 function onRgbInput(index: number, e: Event): void {
   const input = e.target as HTMLInputElement;
-  const value = Math.max(0, Math.min(255, parseInt(input.value, 10) || 0));
+  // Type proof: RGB value ∈ number | NaN → number (0-255 range, non-negative)
+  const parsed = parseInt(input.value, 10);
+  const value = Number.isInteger(parsed) && parsed >= 0 && parsed <= 255 ? parsed : 0;
+  const clampedValue = Math.max(0, Math.min(255, value));
 
   const newRgb: RGB = [...rgb.value];
-  newRgb[index] = value;
+  newRgb[index] = clampedValue;
   rgb.value = newRgb;
   hsv.value = rgbToHsv(rgb.value[0], rgb.value[1], rgb.value[2]);
   hsl.value = rgbToHsl(rgb.value[0], rgb.value[1], rgb.value[2]);
@@ -527,7 +540,9 @@ function onRgbInput(index: number, e: Event): void {
 
 function onHslInput(index: number, e: Event): void {
   const input = e.target as HTMLInputElement;
-  let value = parseFloat(input.value) || 0;
+  // Type proof: HSL value ∈ number | NaN → number (coordinate-like for hue, 0-100 for saturation/lightness)
+  const parsed = parseFloat(input.value);
+  let value = Number.isFinite(parsed) ? parsed : 0;
 
   if (index === 0) {
     value = Math.max(0, Math.min(360, value));
@@ -545,8 +560,10 @@ function onHslInput(index: number, e: Event): void {
 
 function onAlphaInput(e: Event): void {
   const input = e.target as HTMLInputElement;
-  alphaValue.value =
-    Math.max(0, Math.min(100, parseInt(input.value, 10) || 0)) / 100;
+  // Type proof: alpha value ∈ number | NaN → number (0-100 range, non-negative)
+  const parsed = parseInt(input.value, 10);
+  const value = Number.isInteger(parsed) && parsed >= 0 && parsed <= 100 ? parsed : 0;
+  alphaValue.value = Math.max(0, Math.min(100, value)) / 100;
 }
 
 // Click outside handler

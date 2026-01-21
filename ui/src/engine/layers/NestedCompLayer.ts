@@ -30,11 +30,14 @@ import { BaseLayer } from "./BaseLayer";
 // ============================================================================
 
 export interface NestedCompRenderContext {
-  /** Function to render a composition to a texture */
+  /** Function to render a composition to a texture 
+   * System F/Omega: Throws explicit errors instead of returning null
+   * Caller should wrap in try/catch if "rendering failure" is an expected state
+   */
   renderComposition: (
     compositionId: string,
     frame: number,
-  ) => THREE.Texture | null;
+  ) => THREE.Texture;
   /** Function to get composition by ID */
   getComposition: (compositionId: string) => Composition | null;
   /** Function to get nested layer instances when collapsed */
@@ -104,20 +107,32 @@ export class NestedCompLayer extends BaseLayer {
    * Extract nested comp data with defaults
    */
   private extractNestedCompData(layerData: Layer): NestedCompData {
-    const data = layerData.data as NestedCompData | null;
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining/nullish coalescing
+    // Pattern match: data ∈ NestedCompData | null → NestedCompData (with explicit defaults)
+    const data = (layerData.data !== null && typeof layerData.data === "object") ? layerData.data as NestedCompData : null;
+
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+    // Pattern match: Extract each property with explicit type narrowing and defaults
+    const compositionIdValue = (data !== null && typeof data === "object" && "compositionId" in data && typeof data.compositionId === "string") ? data.compositionId : "";
+    const speedMapEnabledValue = (data !== null && typeof data === "object" && "speedMapEnabled" in data && typeof data.speedMapEnabled === "boolean") ? data.speedMapEnabled : ((data !== null && typeof data === "object" && "timeRemapEnabled" in data && typeof data.timeRemapEnabled === "boolean") ? data.timeRemapEnabled : false);
+    const speedMapValue = (data !== null && typeof data === "object" && "speedMap" in data) ? data.speedMap : ((data !== null && typeof data === "object" && "timeRemap" in data) ? data.timeRemap : undefined);
+    const timeRemapEnabledValue = (data !== null && typeof data === "object" && "timeRemapEnabled" in data && typeof data.timeRemapEnabled === "boolean") ? data.timeRemapEnabled : ((data !== null && typeof data === "object" && "speedMapEnabled" in data && typeof data.speedMapEnabled === "boolean") ? data.speedMapEnabled : false);
+    const timeRemapValue = (data !== null && typeof data === "object" && "timeRemap" in data) ? data.timeRemap : ((data !== null && typeof data === "object" && "speedMap" in data) ? data.speedMap : undefined);
+    const flattenTransformValue = (data !== null && typeof data === "object" && "flattenTransform" in data && typeof data.flattenTransform === "boolean") ? data.flattenTransform : false;
+    const overrideFrameRateValue = (data !== null && typeof data === "object" && "overrideFrameRate" in data && typeof data.overrideFrameRate === "boolean") ? data.overrideFrameRate : false;
+    const frameRateValue = (data !== null && typeof data === "object" && "frameRate" in data) ? data.frameRate : undefined;
 
     return {
-      compositionId: data?.compositionId ?? "",
+      compositionId: compositionIdValue,
       // Speed map (new naming)
-      speedMapEnabled: data?.speedMapEnabled ?? data?.timeRemapEnabled ?? false,
-      speedMap: data?.speedMap ?? data?.timeRemap,
+      speedMapEnabled: speedMapEnabledValue,
+      speedMap: speedMapValue,
       // Backwards compatibility aliases
-      timeRemapEnabled:
-        data?.timeRemapEnabled ?? data?.speedMapEnabled ?? false,
-      timeRemap: data?.timeRemap ?? data?.speedMap,
-      flattenTransform: data?.flattenTransform ?? false,
-      overrideFrameRate: data?.overrideFrameRate ?? false,
-      frameRate: data?.frameRate,
+      timeRemapEnabled: timeRemapEnabledValue,
+      timeRemap: timeRemapValue,
+      flattenTransform: flattenTransformValue,
+      overrideFrameRate: overrideFrameRateValue,
+      frameRate: frameRateValue,
     };
   }
 
@@ -215,15 +230,15 @@ export class NestedCompLayer extends BaseLayer {
       Number.isFinite(rawNestedFps) && rawNestedFps > 0 ? rawNestedFps : 16;
 
     // If speed map is enabled, use that (overrides timeStretch)
-    const speedMapEnabled =
-      this.nestedCompData.speedMapEnabled ??
-      this.nestedCompData.timeRemapEnabled;
-    const speedMapProp =
-      this.nestedCompData.speedMap ?? this.nestedCompData.timeRemap;
-    if (speedMapEnabled && speedMapProp) {
-      const remappedTime = speedMapProp.animated
-        ? this.nestedCompEvaluator.evaluate(speedMapProp, parentFrame)
-        : speedMapProp.value;
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+    // Pattern match: speedMapEnabled ∈ boolean | undefined → boolean (fallback to timeRemapEnabled)
+    const speedMapEnabledValue = (typeof this.nestedCompData.speedMapEnabled === "boolean") ? this.nestedCompData.speedMapEnabled : ((typeof this.nestedCompData.timeRemapEnabled === "boolean") ? this.nestedCompData.timeRemapEnabled : false);
+    // Pattern match: speedMap ∈ AnimatableProperty | undefined → AnimatableProperty | undefined (fallback to timeRemap)
+    const speedMapPropValue = (this.nestedCompData.speedMap !== undefined) ? this.nestedCompData.speedMap : this.nestedCompData.timeRemap;
+    if (speedMapEnabledValue && speedMapPropValue) {
+      const remappedTime = speedMapPropValue.animated
+        ? this.nestedCompEvaluator.evaluate(speedMapPropValue, parentFrame)
+        : speedMapPropValue.value;
 
       // Validate remapped time (NaN would break rendering)
       const validTime = Number.isFinite(remappedTime) ? remappedTime : 0;
@@ -231,7 +246,9 @@ export class NestedCompLayer extends BaseLayer {
     }
 
     // Get layer's timeStretch (100 = normal, 200 = half speed, -100 = reversed)
-    const rawTimeStretch = this.layerData.timeStretch ?? 100;
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+    // Pattern match: timeStretch ∈ number | undefined → number (default 100)
+    const rawTimeStretch = (typeof this.layerData.timeStretch === "number" && Number.isFinite(this.layerData.timeStretch)) ? this.layerData.timeStretch : 100;
     const timeStretch = Number.isFinite(rawTimeStretch) ? rawTimeStretch : 100;
     const isReversed = timeStretch < 0;
 
@@ -239,7 +256,9 @@ export class NestedCompLayer extends BaseLayer {
     const stretchFactor = timeStretch !== 0 ? 100 / Math.abs(timeStretch) : 0;
 
     // Calculate frame relative to layer start
-    const layerStartFrame = this.layerData.startFrame ?? 0;
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+    // Pattern match: startFrame ∈ number | undefined → number (default 0)
+    const layerStartFrame = (typeof this.layerData.startFrame === "number" && Number.isFinite(this.layerData.startFrame)) ? this.layerData.startFrame : 0;
     const layerFrame = parentFrame - layerStartFrame;
 
     // Apply time stretch and frame rate conversion
@@ -296,21 +315,27 @@ export class NestedCompLayer extends BaseLayer {
     );
 
     // Request render of nested composition
-    this.renderTexture = this.renderContext.renderComposition(
-      this.nestedCompData.compositionId,
-      clampedFrame,
-    );
-
-    // Update material with rendered texture
-    if (this.material) {
-      if (this.renderTexture) {
+    // System F/Omega: renderComposition throws explicit errors - wrap in try/catch for expected failures
+    try {
+      this.renderTexture = this.renderContext.renderComposition(
+        this.nestedCompData.compositionId,
+        clampedFrame,
+      );
+      
+      // Update material with rendered texture
+      if (this.material) {
         this.material.map = this.renderTexture;
         this.material.color.setHex(0xffffff);
-      } else {
+        this.material.needsUpdate = true;
+      }
+    } catch (error) {
+      // Rendering failed - show placeholder (expected state for missing/empty comps)
+      this.renderTexture = null;
+      if (this.material) {
         this.material.map = null;
         this.material.color.setHex(0x444444);
+        this.material.needsUpdate = true;
       }
-      this.material.needsUpdate = true;
     }
   }
 
@@ -329,12 +354,13 @@ export class NestedCompLayer extends BaseLayer {
 
     // Apply speed map if evaluated
     // Check both new 'speedMap' and legacy 'timeRemap' for backwards compatibility
-    const speedMapValue = props.speedMap ?? props.timeRemap;
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+    // Pattern match: props.speedMap ∈ PropertyValue | undefined → PropertyValue | undefined (fallback to timeRemap)
+    const speedMapValue = (props.speedMap !== undefined) ? props.speedMap : props.timeRemap;
     const speedMapEnabled =
-      this.nestedCompData.speedMapEnabled ??
-      this.nestedCompData.timeRemapEnabled;
+      (typeof this.nestedCompData.speedMapEnabled === "boolean") ? this.nestedCompData.speedMapEnabled : ((typeof this.nestedCompData.timeRemapEnabled === "boolean") ? this.nestedCompData.timeRemapEnabled : false);
     const speedMapProp =
-      this.nestedCompData.speedMap ?? this.nestedCompData.timeRemap;
+      (this.nestedCompData.speedMap !== undefined) ? this.nestedCompData.speedMap : this.nestedCompData.timeRemap;
     if (speedMapValue !== undefined && speedMapEnabled && speedMapProp) {
       // Update the speed map value for the next evaluation cycle
       speedMapProp.value = speedMapValue as number;
@@ -401,7 +427,9 @@ export class NestedCompLayer extends BaseLayer {
    * Check if flatten transform is enabled
    */
   isFlattenEnabled(): boolean {
-    return this.nestedCompData.flattenTransform ?? false;
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+    // Pattern match: flattenTransform ∈ boolean | undefined → boolean (default false)
+    return (typeof this.nestedCompData.flattenTransform === "boolean") ? this.nestedCompData.flattenTransform : false;
   }
 
   /** @deprecated Use isFlattenEnabled instead */
@@ -537,12 +565,18 @@ export class NestedCompLayer extends BaseLayer {
         data.speedMapEnabled !== undefined ||
         data.timeRemapEnabled !== undefined
       ) {
-        this.setSpeedMapEnabled(
-          data.speedMapEnabled ?? data.timeRemapEnabled ?? false,
-        );
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+        // Pattern match: speedMapEnabled ∈ boolean | undefined → boolean (fallback chain: timeRemapEnabled → false)
+        const speedMapEnabledUpdate = (typeof data.speedMapEnabled === "boolean") ? data.speedMapEnabled : ((typeof data.timeRemapEnabled === "boolean") ? data.timeRemapEnabled : false);
+        this.setSpeedMapEnabled(speedMapEnabledUpdate);
       }
       if (data.speedMap !== undefined || data.timeRemap !== undefined) {
-        this.setSpeedMap((data.speedMap ?? data.timeRemap)!);
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+        // Pattern match: speedMap ∈ AnimatableProperty | undefined → AnimatableProperty (fallback to timeRemap, non-null assertion removed)
+        const speedMapUpdate = (data.speedMap !== undefined) ? data.speedMap : data.timeRemap;
+        if (speedMapUpdate !== undefined) {
+          this.setSpeedMap(speedMapUpdate);
+        }
       }
       if (data.flattenTransform !== undefined) {
         this.setFlattenTransform(data.flattenTransform);
@@ -551,12 +585,12 @@ export class NestedCompLayer extends BaseLayer {
         data.overrideFrameRate !== undefined ||
         data.frameRate !== undefined
       ) {
-        this.setFrameRateOverride(
-          data.overrideFrameRate ??
-            this.nestedCompData.overrideFrameRate ??
-            false,
-          data.frameRate ?? this.nestedCompData.frameRate,
-        );
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+        // Pattern match: overrideFrameRate ∈ boolean | undefined → boolean (fallback chain: nestedCompData.overrideFrameRate → false)
+        const overrideFrameRateUpdate = (typeof data.overrideFrameRate === "boolean") ? data.overrideFrameRate : ((typeof this.nestedCompData.overrideFrameRate === "boolean") ? this.nestedCompData.overrideFrameRate : false);
+        // Pattern match: frameRate ∈ number | undefined → number | undefined (fallback to nestedCompData.frameRate)
+        const frameRateUpdate = (typeof data.frameRate === "number" && Number.isFinite(data.frameRate)) ? data.frameRate : this.nestedCompData.frameRate;
+        this.setFrameRateOverride(overrideFrameRateUpdate, frameRateUpdate);
       }
     }
   }

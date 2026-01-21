@@ -9,6 +9,7 @@
  * - Automatic cleanup and error handling
  */
 
+import type { JSONValue } from "@/types/dataAsset";
 import type {
   ParticleStepPayload,
   ParticleStepResult,
@@ -16,6 +17,7 @@ import type {
   WorkerMessageType,
   WorkerResponse,
 } from "@/workers/computeWorker";
+import { isFiniteNumber } from "@/utils/typeGuards";
 
 // ============================================================================
 // TYPES
@@ -23,7 +25,7 @@ import type {
 
 interface PendingTask {
   id: string;
-  resolve: (result: unknown) => void;
+  resolve: (result: JSONValue) => void;
   reject: (error: Error) => void;
   timestamp: number;
 }
@@ -52,7 +54,7 @@ export class WorkerPool {
   private pendingTasks: Map<string, PendingTask> = new Map();
   private taskQueue: Array<{
     message: WorkerMessage;
-    resolve: (r: unknown) => void;
+    resolve: (r: JSONValue) => void;
     reject: (e: Error) => void;
   }> = [];
   private nextTaskId = 0;
@@ -60,11 +62,20 @@ export class WorkerPool {
   private isDisposed = false;
 
   constructor(config: WorkerPoolConfig = {}) {
+    // Type proof: number | undefined → number
+    const workerCount = isFiniteNumber(config.workerCount) && config.workerCount > 0
+      ? config.workerCount
+      : Math.max(2, navigator.hardwareConcurrency - 1);
+    const taskTimeout = isFiniteNumber(config.taskTimeout) && config.taskTimeout > 0
+      ? config.taskTimeout
+      : 30000;
+    const recycleAfterTasks = isFiniteNumber(config.recycleAfterTasks) && config.recycleAfterTasks > 0
+      ? config.recycleAfterTasks
+      : 1000;
     this.config = {
-      workerCount:
-        config.workerCount ?? Math.max(2, navigator.hardwareConcurrency - 1),
-      taskTimeout: config.taskTimeout ?? 30000,
-      recycleAfterTasks: config.recycleAfterTasks ?? 1000,
+      workerCount,
+      taskTimeout,
+      recycleAfterTasks,
     };
 
     this.spawnWorkers();
@@ -203,7 +214,7 @@ export class WorkerPool {
   private dispatchToWorker(
     state: WorkerState,
     message: WorkerMessage,
-    resolve: (r: unknown) => void,
+    resolve: (r: JSONValue) => void,
     reject: (e: Error) => void,
   ): void {
     state.busy = true;
@@ -238,7 +249,7 @@ export class WorkerPool {
   /**
    * Execute a task on a worker
    */
-  private execute<T>(type: WorkerMessageType, payload: unknown): Promise<T> {
+  private execute<T extends JSONValue>(type: WorkerMessageType, payload: JSONValue): Promise<T> {
     return new Promise((resolve, reject) => {
       if (this.isDisposed) {
         reject(new Error("WorkerPool has been disposed"));
@@ -256,14 +267,14 @@ export class WorkerPool {
         this.dispatchToWorker(
           worker,
           message,
-          resolve as (r: unknown) => void,
+          resolve as (r: JSONValue) => void,
           reject,
         );
       } else {
         // Queue the task
         this.taskQueue.push({
           message,
-          resolve: resolve as (r: unknown) => void,
+          resolve: resolve as (r: JSONValue) => void,
           reject,
         });
       }

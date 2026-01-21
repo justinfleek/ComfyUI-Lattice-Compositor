@@ -245,7 +245,9 @@ export function getLayerById(
 ): Layer | null {
   const projectStore = useProjectStore();
   const layers = projectStore.getActiveCompLayers();
-  return layers.find((l: Layer) => l.id === layerId) ?? null;
+  // Type proof: find(...) ∈ Layer | undefined → Layer | null
+  const foundLayer = layers.find((l: Layer) => l.id === layerId);
+  return foundLayer !== undefined ? foundLayer : null;
 }
 
 /**
@@ -344,10 +346,12 @@ export function getSelectedLayers(): Layer[] {
  * Get the single selected layer (returns null if 0 or 2+ layers selected)
  * @returns The selected layer or null
  */
-export function getSelectedLayer(): Layer | null {
+export function getSelectedLayer(): Layer {
   const projectStore = useProjectStore();
   const selectionStore = useSelectionStore();
-  if (selectionStore.selectedLayerIds.length !== 1) return null;
+  if (selectionStore.selectedLayerIds.length !== 1) {
+    throw new Error(`[LayerStore] Cannot get selected layer: Expected exactly 1 selected layer, found ${selectionStore.selectedLayerIds.length}`);
+  }
   const layers = projectStore.getActiveCompLayers();
   return (
     layers.find((l: Layer) => l.id === selectionStore.selectedLayerIds[0]) ||

@@ -116,9 +116,9 @@
 
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
-import { useCompositorStore } from "@/stores/compositorStore";
 import { useProjectStore } from "@/stores/projectStore";
 import { useLayerStore } from "@/stores/layerStore";
+import { useAnimationStore } from "@/stores/animationStore";
 import type { Layer, NestedCompData, VideoData } from "@/types/project";
 
 const props = defineProps<{
@@ -131,9 +131,9 @@ const emit = defineEmits<{
   (e: "applied"): void;
 }>();
 
-const store = useCompositorStore();
 const projectStore = useProjectStore();
 const layerStore = useLayerStore();
+const animationStore = useAnimationStore();
 
 // State
 const stretchFactor = ref(100);
@@ -153,7 +153,7 @@ const speedPresets = [
 
 // Computed
 const layer = computed<Layer | undefined>(() => {
-  return store.layers.find((l) => l.id === props.layerId);
+  return projectStore.getActiveCompLayers().find((l) => l.id === props.layerId);
 });
 
 const newDuration = computed(() => {
@@ -181,9 +181,12 @@ function initializeFromLayer() {
   const data = layer.value.data as VideoData | NestedCompData;
 
   // Calculate original duration from layer
-  const startFrame = layer.value.startFrame ?? 0;
-  const endFrame = layer.value.endFrame ?? projectStore.getFrameCount(store);
-  const fps = projectStore.getFps(store) || 30;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+  // Pattern match: layer.value.startFrame/endFrame ∈ number | undefined → number (defaults)
+  const layerValue = layer.value;
+  const startFrame = (typeof layerValue === "object" && layerValue !== null && "startFrame" in layerValue && typeof layerValue.startFrame === "number" && Number.isFinite(layerValue.startFrame)) ? layerValue.startFrame : 0;
+  const endFrame = (typeof layerValue === "object" && layerValue !== null && "endFrame" in layerValue && typeof layerValue.endFrame === "number" && Number.isFinite(layerValue.endFrame)) ? layerValue.endFrame : projectStore.getFrameCount();
+  const fps = projectStore.getFps() || 30;
   originalDuration.value = (endFrame - startFrame) / fps;
 
   // Get current speed/stretch factor
@@ -216,11 +219,14 @@ function apply() {
   if (!layer.value) return;
 
   const speed = (reversePlayback.value ? -1 : 1) * (100 / stretchFactor.value);
-  const fps = projectStore.getFps(store) || 30;
+  const fps = projectStore.getFps() || 30;
 
   // Calculate new layer bounds based on hold in place
-  let newStartFrame = layer.value.startFrame ?? 0;
-  let newEndFrame = layer.value.endFrame ?? projectStore.getFrameCount(store);
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+  // Pattern match: layer.value.startFrame/endFrame ∈ number | undefined → number (defaults)
+  const layerValue = layer.value;
+  let newStartFrame = (typeof layerValue === "object" && layerValue !== null && "startFrame" in layerValue && typeof layerValue.startFrame === "number" && Number.isFinite(layerValue.startFrame)) ? layerValue.startFrame : 0;
+  let newEndFrame = (typeof layerValue === "object" && layerValue !== null && "endFrame" in layerValue && typeof layerValue.endFrame === "number" && Number.isFinite(layerValue.endFrame)) ? layerValue.endFrame : projectStore.getFrameCount();
   const currentDurationFrames = newEndFrame - newStartFrame;
   const newDurationFrames = Math.round(
     currentDurationFrames * (stretchFactor.value / currentStretchFactor.value),
@@ -233,7 +239,7 @@ function apply() {
       break;
     case "current-frame": {
       // Stretch around current frame
-      const currentFrame = store.currentFrame;
+      const currentFrame = animationStore.currentFrame;
       const ratio = (currentFrame - newStartFrame) / currentDurationFrames;
       newStartFrame = Math.round(currentFrame - ratio * newDurationFrames);
       newEndFrame = newStartFrame + newDurationFrames;
@@ -246,7 +252,7 @@ function apply() {
   }
 
   // Apply time stretch
-  layerStore.timeStretchLayer(store, props.layerId, {
+  layerStore.timeStretchLayer(props.layerId, {
     stretchFactor: stretchFactor.value,
     holdInPlace: holdInPlace.value,
     reverse: reversePlayback.value,
@@ -262,7 +268,7 @@ function apply() {
 function formatDuration(seconds: number): string {
   const mins = Math.floor(seconds / 60);
   const secs = Math.floor(seconds % 60);
-  const frames = Math.floor((seconds % 1) * (projectStore.getFps(store) || 30));
+  const frames = Math.floor((seconds % 1) * (projectStore.getFps() || 30));
   return `${mins}:${secs.toString().padStart(2, "0")}:${frames.toString().padStart(2, "0")}`;
 }
 

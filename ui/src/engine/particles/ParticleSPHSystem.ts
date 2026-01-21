@@ -123,15 +123,24 @@ export class ParticleSPHSystem {
       ? Math.min(Math.floor(maxParticles), 500_000) // Lower cap for SPH (more expensive)
       : 10000;
 
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+    const smoothingRadius = (typeof config.smoothingRadius === "number" && Number.isFinite(config.smoothingRadius) && config.smoothingRadius > 0) ? config.smoothingRadius : 50;
+    const restDensity = (typeof config.restDensity === "number" && Number.isFinite(config.restDensity) && config.restDensity > 0) ? config.restDensity : 1000;
+    const gasConstant = (typeof config.gasConstant === "number" && Number.isFinite(config.gasConstant) && config.gasConstant > 0) ? config.gasConstant : 2000;
+    const viscosity = (typeof config.viscosity === "number" && Number.isFinite(config.viscosity) && config.viscosity >= 0) ? config.viscosity : 200;
+    const surfaceTension = (typeof config.surfaceTension === "number" && Number.isFinite(config.surfaceTension) && config.surfaceTension >= 0) ? config.surfaceTension : 0.0728;
+    const enableSurfaceTension = (typeof config.enableSurfaceTension === "boolean") ? config.enableSurfaceTension : false;
+    const gravity = (config.gravity !== null && config.gravity !== undefined && typeof config.gravity === "object") ? config.gravity : { x: 0, y: -980, z: 0 };
+    const maxTimeStep = (typeof config.maxTimeStep === "number" && Number.isFinite(config.maxTimeStep) && config.maxTimeStep > 0) ? config.maxTimeStep : 0.004;
     this.config = {
-      smoothingRadius: config.smoothingRadius ?? 50,
-      restDensity: config.restDensity ?? 1000,
-      gasConstant: config.gasConstant ?? 2000,
-      viscosity: config.viscosity ?? 200,
-      surfaceTension: config.surfaceTension ?? 0.0728,
-      enableSurfaceTension: config.enableSurfaceTension ?? false,
-      gravity: config.gravity ?? { x: 0, y: -980, z: 0 },
-      maxTimeStep: config.maxTimeStep ?? 0.004,
+      smoothingRadius,
+      restDensity,
+      gasConstant,
+      viscosity,
+      surfaceTension,
+      enableSurfaceTension,
+      gravity,
+      maxTimeStep,
     };
 
     // Initialize SPH data array

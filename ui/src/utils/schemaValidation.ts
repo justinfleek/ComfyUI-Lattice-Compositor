@@ -101,18 +101,12 @@ export function safeJsonParse<T>(
   json: string,
   schema?: z.ZodSchema<T>,
   options: SafeParseOptions = {},
-): SafeParseReturn<T> {
+): SafeParseResult<T> {
   const opts = { ...DEFAULT_OPTIONS, ...options };
 
   // 1. Size check BEFORE parsing (prevents memory exhaustion)
   if (json.length > opts.maxSize) {
-    return {
-      success: false,
-      error: new Error(
-        `${opts.context}: JSON size ${json.length} exceeds maximum ${opts.maxSize} bytes`,
-      ),
-      code: "SIZE_EXCEEDED",
-    };
+    throw new Error(`[SchemaValidation] JSON size ${json.length} exceeds maximum ${opts.maxSize} bytes in ${opts.context}. File is too large to parse safely.`);
   }
 
   // Track depth during parsing (approximate via counting nested objects/arrays)
@@ -168,26 +162,14 @@ export function safeJsonParse<T>(
 
     // 3. Additional prototype pollution check on parsed result
     if (hasPrototypePollution(parsed)) {
-      return {
-        success: false,
-        error: new Error(
-          `${opts.context}: Prototype pollution detected in parsed object`,
-        ),
-        code: "PROTOTYPE_POLLUTION",
-      };
+      throw new Error(`[SchemaValidation] Prototype pollution detected in parsed object in ${opts.context}. File may contain malicious content.`);
     }
 
     // 4. Schema validation if provided
     if (schema) {
       const result = schema.safeParse(parsed);
       if (!result.success) {
-        return {
-          success: false,
-          error: new Error(
-            `${opts.context}: Schema validation failed - ${result.error.message}`,
-          ),
-          code: "SCHEMA_VALIDATION",
-        };
+        throw new Error(`[SchemaValidation] Schema validation failed in ${opts.context}: ${result.error.message}. Data does not match expected schema.`);
       }
       return { success: true, data: result.data };
     }
@@ -195,22 +177,19 @@ export function safeJsonParse<T>(
     return { success: true, data: parsed as T };
   } catch (error) {
     if (error instanceof PrototypePollutionError) {
-      return { success: false, error, code: "PROTOTYPE_POLLUTION" };
+      throw new Error(`[SchemaValidation] ${error.message} File may contain malicious content.`);
     }
     if (error instanceof DepthExceededError) {
-      return { success: false, error, code: "DEPTH_EXCEEDED" };
+      throw new Error(`[SchemaValidation] ${error.message} JSON structure is too deeply nested.`);
     }
     if (error instanceof StringLengthExceededError) {
-      return { success: false, error, code: "STRING_LENGTH_EXCEEDED" };
+      throw new Error(`[SchemaValidation] ${error.message} String value exceeds maximum length.`);
     }
     if (error instanceof ArrayLengthExceededError) {
-      return { success: false, error, code: "ARRAY_LENGTH_EXCEEDED" };
+      throw new Error(`[SchemaValidation] ${error.message} Array exceeds maximum length.`);
     }
-    return {
-      success: false,
-      error: error instanceof Error ? error : new Error(String(error)),
-      code: "PARSE_ERROR",
-    };
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    throw new Error(`[SchemaValidation] JSON parse error in ${opts.context}: ${errorMessage}. File may be corrupted or invalid.`);
   }
 }
 
@@ -302,8 +281,7 @@ export function sanitizePath(basePath: string, userPath: string): string | null 
 
   // Check for null bytes (can bypass checks in some systems)
   if (normalizedUser.includes("\0")) {
-    console.warn("[Security] Null byte detected in path:", userPath);
-    return null;
+    throw new Error(`[SchemaValidation] Null byte detected in path: ${userPath}`);
   }
 
   // Remove leading slashes to prevent absolute path injection
@@ -315,8 +293,7 @@ export function sanitizePath(basePath: string, userPath: string): string | null 
     normalizedUser.includes("./") ||
     normalizedUser.startsWith("~")
   ) {
-    console.warn("[Security] Path traversal pattern detected:", userPath);
-    return null;
+    throw new Error(`[SchemaValidation] Path traversal pattern detected: ${userPath}`);
   }
 
   // Build the full path
@@ -330,8 +307,7 @@ export function sanitizePath(basePath: string, userPath: string): string | null 
     if (segment === "..") {
       // Going up - check if we're still within base
       if (resolved.length <= normalizedBase.split("/").filter(Boolean).length) {
-        console.warn("[Security] Path traversal would escape base:", userPath);
-        return null;
+        throw new Error(`[SchemaValidation] Path traversal would escape base: ${userPath}`);
       }
       resolved.pop();
     } else {
@@ -343,8 +319,7 @@ export function sanitizePath(basePath: string, userPath: string): string | null 
 
   // Final check: ensure resolved path starts with base
   if (!resolvedPath.startsWith(normalizedBase.replace(/^\/+/, ""))) {
-    console.warn("[Security] Resolved path escapes base:", resolvedPath);
-    return null;
+    throw new Error(`[SchemaValidation] Resolved path escapes base: ${resolvedPath}`);
   }
 
   return "/" + resolvedPath;
@@ -484,7 +459,9 @@ export function sanitizeFilename(filename: string): string {
 
   // Limit length (most filesystems have 255 char limit)
   if (sanitized.length > 200) {
-    const ext = sanitized.match(/\.[^.]+$/)?.[0] || "";
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const matchResult = sanitized.match(/\.[^.]+$/);
+    const ext = (matchResult != null && Array.isArray(matchResult) && matchResult.length > 0 && typeof matchResult[0] === "string") ? matchResult[0] : "";
     sanitized = sanitized.slice(0, 200 - ext.length) + ext;
   }
 

@@ -7,7 +7,7 @@
 import { markLayerDirty } from "@/services/layerEvaluationCache";
 import type { Keyframe, PropertyValue } from "@/types/project";
 import { findPropertyByPath } from "./helpers";
-import type { KeyframeStoreAccess } from "./types";
+import { useProjectStore } from "../projectStore";
 
 // ============================================================================
 // AUTO BEZIER TANGENT CALCULATION
@@ -24,12 +24,12 @@ import type { KeyframeStoreAccess } from "./types";
  * - Tangent magnitude is proportional to segment length
  */
 export function autoCalculateBezierTangents(
-  store: KeyframeStoreAccess,
   layerId: string,
   propertyPath: string,
   keyframeId: string,
 ): boolean {
-  const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
+  const projectStore = useProjectStore();
+  const layer = projectStore.getActiveCompLayers().find((l) => l.id === layerId);
   if (!layer) return false;
 
   const property = findPropertyByPath(layer, propertyPath);
@@ -99,8 +99,8 @@ export function autoCalculateBezierTangents(
   keyframe.controlMode = "smooth";
 
   markLayerDirty(layerId);
-  store.project.meta.modified = new Date().toISOString();
-  store.pushHistory();
+  projectStore.project.meta.modified = new Date().toISOString();
+  projectStore.pushHistory();
 
   return true;
 }
@@ -110,11 +110,11 @@ export function autoCalculateBezierTangents(
  * Useful when converting from linear to bezier interpolation.
  */
 export function autoCalculateAllBezierTangents(
-  store: KeyframeStoreAccess,
   layerId: string,
   propertyPath: string,
 ): number {
-  const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
+  const projectStore = useProjectStore();
+  const layer = projectStore.getActiveCompLayers().find((l) => l.id === layerId);
   if (!layer) return 0;
 
   const property = findPropertyByPath(layer, propertyPath);
@@ -181,8 +181,8 @@ export function autoCalculateAllBezierTangents(
   }
 
   markLayerDirty(layerId);
-  store.project.meta.modified = new Date().toISOString();
-  store.pushHistory();
+  projectStore.project.meta.modified = new Date().toISOString();
+  projectStore.pushHistory();
 
   return count;
 }

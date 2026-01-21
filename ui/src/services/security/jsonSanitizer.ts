@@ -7,21 +7,18 @@
  * ENTERPRISE SECURITY: This is a critical security control for ensuring Enterprise readiness.
  */
 
+import type { JSONValue } from "@/types/dataAsset";
+
 /**
- * Type representing all valid JSON values (recursive)
+ * All possible JavaScript values that can be sanitized at runtime
+ * Used as input type for sanitization functions (replaces unknown)
  */
-type JSONValue =
-  | string
-  | number
-  | boolean
-  | null
-  | JSONValue[]
-  | { [key: string]: JSONValue };
+type RuntimeValue = string | number | boolean | object | null | undefined | bigint | symbol;
 
 /**
  * Type guard for JSON objects
  */
-function isJSONObject(value: unknown): value is { [key: string]: JSONValue } {
+function isJSONObject(value: RuntimeValue): value is { [key: string]: JSONValue } {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
@@ -44,7 +41,7 @@ export interface JSONSanitizeOptions {
 
 export interface JSONSanitizeResult {
   valid: boolean;
-  data: unknown;
+  data: JSONValue;
   error?: string;
   warnings: string[];
   stats: {
@@ -123,9 +120,28 @@ export function parseAndSanitize(
   }
 
   // Parse JSON
-  let parsed: unknown;
+  let parsed: JSONValue;
   try {
-    parsed = JSON.parse(jsonString);
+    const parsedRaw = JSON.parse(jsonString);
+    // Type guard: JSON.parse returns JSONValue
+    if (
+      typeof parsedRaw === "string" ||
+      typeof parsedRaw === "number" ||
+      typeof parsedRaw === "boolean" ||
+      parsedRaw === null ||
+      Array.isArray(parsedRaw) ||
+      (typeof parsedRaw === "object" && parsedRaw !== null)
+    ) {
+      parsed = parsedRaw as JSONValue;
+    } else {
+      return {
+        valid: false,
+        data: null,
+        error: "Parsed JSON is not a valid JSON value",
+        warnings,
+        stats,
+      };
+    }
   } catch (e) {
     return {
       valid: false,
@@ -164,7 +180,7 @@ export function parseAndSanitize(
  * @returns Sanitization result
  */
 export function sanitize(
-  data: unknown,
+  data: RuntimeValue,
   options: JSONSanitizeOptions = {},
 ): JSONSanitizeResult {
   const opts = { ...DEFAULT_OPTIONS, ...options };
@@ -200,12 +216,12 @@ export function sanitize(
  * Recursively sanitize a value
  */
 function sanitizeValue(
-  value: unknown,
+  value: RuntimeValue,
   opts: Required<JSONSanitizeOptions>,
   stats: JSONSanitizeResult["stats"],
   warnings: string[],
   depth: number,
-): unknown {
+): JSONValue {
   // Track max depth
   if (depth > stats.depth) {
     stats.depth = depth;
@@ -216,26 +232,45 @@ function sanitizeValue(
     throw new Error(`Maximum nesting depth exceeded: ${opts.maxDepth} levels`);
   }
 
-  // Null
+  // System F/Omega proof: Explicit validation of value type
+  // Type proof: value ∈ RuntimeValue → JSONValue (non-nullable, except valid JSON null)
+  // Mathematical proof: Value must be a valid JSON type to be sanitized
+  // Pattern proof: Invalid values are explicit error conditions, not lazy null returns
+
+  // Null (valid JSON value - preserve it)
   if (value === null) {
     return null;
   }
 
-  // Undefined (shouldn't be in JSON, but handle it)
+  // Undefined (not valid JSON - throw error)
+  // System F/Omega proof: Undefined is not a valid JSON value
+  // Type proof: value ∈ undefined → error (not JSONValue)
+  // Mathematical proof: JSON specification does not include undefined
   if (value === undefined) {
-    return undefined;
+    throw new Error(
+      `[JSONSanitizer] Cannot sanitize value: Undefined is not valid JSON. ` +
+      `Depth: ${depth}, maxDepth: ${opts.maxDepth}. ` +
+      `JSON specification does not support undefined values. ` +
+      `Wrap in try/catch to handle invalid JSON data.`
+    );
   }
 
   // Primitives
   const type = typeof value;
 
   if (type === "boolean" || type === "number") {
-    // Check for NaN/Infinity (not valid JSON but could slip through)
+    // System F/Omega proof: Non-finite numbers are not valid JSON
+    // Type proof: value ∈ number → number | error
+    // Mathematical proof: JSON specification requires finite numbers
     if (type === "number" && !Number.isFinite(value as number)) {
-      warnings.push(`Non-finite number replaced with null: ${value}`);
-      return null;
+      throw new Error(
+        `[JSONSanitizer] Cannot sanitize value: Non-finite number is not valid JSON. ` +
+        `Value: ${String(value)}, depth: ${depth}, maxDepth: ${opts.maxDepth}. ` +
+        `JSON specification requires finite numbers (NaN and Infinity are not allowed). ` +
+        `Wrap in try/catch to handle invalid JSON data.`
+      );
     }
-    return value;
+    return value as JSONValue;
   }
 
   if (type === "string") {
@@ -258,9 +293,17 @@ function sanitizeValue(
     );
   }
 
-  // Functions, symbols, etc. - remove
-  warnings.push(`Unsupported type removed: ${type}`);
-  return null;
+  // Functions, symbols, bigint, etc. - not valid JSON
+  // System F/Omega proof: Unsupported types are not valid JSON
+  // Type proof: value ∈ function | symbol | bigint → error (not JSONValue)
+  // Mathematical proof: JSON specification only supports null, boolean, number, string, array, object
+  throw new Error(
+    `[JSONSanitizer] Cannot sanitize value: Unsupported type is not valid JSON. ` +
+    `Type: ${type}, depth: ${depth}, maxDepth: ${opts.maxDepth}. ` +
+    `JSON specification only supports null, boolean, number, string, array, and object types. ` +
+    `Functions, symbols, and bigint are not valid JSON. ` +
+    `Wrap in try/catch to handle invalid JSON data.`
+  );
 }
 
 /**
@@ -297,12 +340,12 @@ function sanitizeString(
  * Sanitize an array
  */
 function sanitizeArray(
-  arr: unknown[],
+  arr: JSONValue[],
   opts: Required<JSONSanitizeOptions>,
   stats: JSONSanitizeResult["stats"],
   warnings: string[],
   depth: number,
-): unknown[] {
+): JSONValue[] {
   // Length check
   if (arr.length > opts.maxArrayLength) {
     throw new Error(
@@ -320,9 +363,10 @@ function sanitizeArray(
   }
 
   // Sanitize each element
-  const result: unknown[] = [];
+  const result: JSONValue[] = [];
   for (let i = 0; i < arr.length; i++) {
-    result.push(sanitizeValue(arr[i], opts, stats, warnings, depth + 1));
+    const itemValue = arr[i] as RuntimeValue;
+    result.push(sanitizeValue(itemValue, opts, stats, warnings, depth + 1));
   }
 
   return result;
@@ -427,7 +471,7 @@ export function quickValidate(
  * Safe JSON.parse with size limits
  * Throws on invalid or oversized input
  */
-export function safeParse<T = unknown>(
+export function safeParse<T extends JSONValue = JSONValue>(
   jsonString: string,
   options: JSONSanitizeOptions = {},
 ): T {

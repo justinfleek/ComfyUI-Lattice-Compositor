@@ -1,7 +1,7 @@
 /**
- * Property Tests for GPUParticleSystem
+ * Property Tests for VerifiedGPUParticleSystem
  * 
- * Tests the main GPU particle system for:
+ * Tests the verified GPU particle system for:
  * 1. Buffer offset correctness in exported particles
  * 2. Input validation (fps, maxParticles, mass, size, lifetime)
  * 3. RNG determinism (same seed = same results)
@@ -11,11 +11,11 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { test, fc } from '@fast-check/vitest';
 import {
-  GPUParticleSystem,
+  VerifiedGPUParticleSystem,
   createDefaultConfig,
   createDefaultEmitter,
   createDefaultForceField,
-} from '@/engine/particles/GPUParticleSystem';
+} from '@/engine/particles';
 import { PARTICLE_STRIDE, type GPUParticleSystemConfig } from '@/engine/particles/types';
 
 // ============================================================================
@@ -24,7 +24,7 @@ import { PARTICLE_STRIDE, type GPUParticleSystemConfig } from '@/engine/particle
 
 // Create a minimal mock for testing without WebGL
 function createTestableSystem(config?: Partial<GPUParticleSystemConfig>) {
-  const system = new GPUParticleSystem({
+  const system = new VerifiedGPUParticleSystem({
     ...createDefaultConfig(),
     maxParticles: 1000, // Small for testing
     ...config,
@@ -36,7 +36,7 @@ function createTestableSystem(config?: Partial<GPUParticleSystemConfig>) {
 // BUFFER LAYOUT TESTS
 // ============================================================================
 
-describe('GPUParticleSystem Buffer Layout', () => {
+describe('VerifiedGPUParticleSystem Buffer Layout', () => {
   it('PARTICLE_STRIDE should be 16 floats (64 bytes)', () => {
     expect(PARTICLE_STRIDE).toBe(16);
   });
@@ -73,7 +73,7 @@ describe('GPUParticleSystem Buffer Layout', () => {
 // CONFIGURATION VALIDATION TESTS
 // ============================================================================
 
-describe('GPUParticleSystem Configuration Validation', () => {
+describe('VerifiedGPUParticleSystem Configuration Validation', () => {
   test.prop([
     fc.integer({ min: -1000000, max: 2000000 })
   ])('maxParticles is capped and validated', (maxParticles) => {
@@ -180,7 +180,7 @@ describe('Default Factory Functions', () => {
 // ============================================================================
 
 describe('Emitter Management', () => {
-  let system: GPUParticleSystem;
+  let system: VerifiedGPUParticleSystem;
   
   beforeEach(() => {
     system = createTestableSystem({ maxParticles: 100 });

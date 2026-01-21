@@ -11,7 +11,6 @@
 
 <script setup lang="ts">
 import { computed, ref } from "vue";
-import { useCompositorStore } from "@/stores/compositorStore";
 import { useAnimationStore } from "@/stores/animationStore";
 import { useProjectStore } from "@/stores/projectStore";
 
@@ -24,14 +23,13 @@ const props = defineProps<Props>();
 
 const emit = defineEmits<(e: "scrub", frame: number) => void>();
 
-const store = useCompositorStore();
 const animationStore = useAnimationStore();
 const projectStore = useProjectStore();
 
 // Calculate position based on current frame
 const position = computed(() => {
-  const frameCount = projectStore.getFrameCount(store);
-  const progress = animationStore.getCurrentFrame(store) / (frameCount - 1);
+  const frameCount = projectStore.getFrameCount();
+  const progress = animationStore.currentFrame / (frameCount - 1);
   return props.trackOffset + progress * props.trackWidth;
 });
 
@@ -54,7 +52,7 @@ function handleDrag(event: MouseEvent) {
   const rect = parent.getBoundingClientRect();
   const x = event.clientX - rect.left - props.trackOffset;
   const progress = Math.max(0, Math.min(1, x / props.trackWidth));
-  const frame = Math.round(progress * (projectStore.getFrameCount(store) - 1));
+  const frame = Math.round(progress * (projectStore.getFrameCount() - 1));
 
   emit("scrub", frame);
 }

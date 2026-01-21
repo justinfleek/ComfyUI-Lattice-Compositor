@@ -78,7 +78,7 @@
                   class="keyframe-marker"
                   :class="{
                     selected: isKeyframeSelected(prop.id, kfIndex),
-                    hovered: hoveredKeyframe?.propId === prop.id && hoveredKeyframe?.index === kfIndex
+                    hovered: (hoveredKeyframe != null && typeof hoveredKeyframe === "object" && "propId" in hoveredKeyframe && hoveredKeyframe.propId === prop.id && "index" in hoveredKeyframe && hoveredKeyframe.index === kfIndex)
                   }"
                   @mousedown.stop="onKeyframeMouseDown(prop.id, kfIndex, $event)"
                 >
@@ -115,7 +115,7 @@
                       :cy="getOutHandleY(prop, kfIndex)"
                       r="5"
                       class="handle-point"
-                      :class="{ dragging: dragTarget?.type === 'outHandle' && dragTarget?.propId === prop.id && dragTarget?.index === kfIndex }"
+                      :class="{ dragging: (dragTarget != null && typeof dragTarget === 'object' && 'type' in dragTarget && dragTarget.type === 'outHandle' && 'propId' in dragTarget && dragTarget.propId === prop.id && 'index' in dragTarget && dragTarget.index === kfIndex) }"
                       @mousedown.stop="startDragHandle('outHandle', prop.id, kfIndex, $event)"
                     />
                   </g>
@@ -137,7 +137,7 @@
                       :cy="getInHandleY(prop, kfIndex)"
                       r="5"
                       class="handle-point"
-                      :class="{ dragging: dragTarget?.type === 'inHandle' && dragTarget?.propId === prop.id && dragTarget?.index === kfIndex }"
+                      :class="{ dragging: (dragTarget != null && typeof dragTarget === 'object' && 'type' in dragTarget && dragTarget.type === 'inHandle' && 'propId' in dragTarget && dragTarget.propId === prop.id && 'index' in dragTarget && dragTarget.index === kfIndex) }"
                       @mousedown.stop="startDragHandle('inHandle', prop.id, kfIndex, $event)"
                     />
                   </g>
@@ -169,7 +169,7 @@
         <span class="info-label">Frame:</span>
         <input
           type="number"
-          :value="selectedKeyframes[0]?.keyframe.frame"
+          :value="(selectedKeyframes.length > 0 && selectedKeyframes[0] != null && typeof selectedKeyframes[0] === 'object' && 'keyframe' in selectedKeyframes[0] && selectedKeyframes[0].keyframe != null && typeof selectedKeyframes[0].keyframe === 'object' && 'frame' in selectedKeyframes[0].keyframe && typeof selectedKeyframes[0].keyframe.frame === 'number') ? selectedKeyframes[0].keyframe.frame : undefined"
           @change="updateSelectedKeyframeFrame"
           class="info-input"
         />
@@ -187,7 +187,7 @@
       <div class="info-row">
         <span class="info-label">Interpolation:</span>
         <select
-          :value="selectedKeyframes[0]?.keyframe.interpolation"
+          :value="(selectedKeyframes.length > 0 && selectedKeyframes[0] != null && typeof selectedKeyframes[0] === 'object' && 'keyframe' in selectedKeyframes[0] && selectedKeyframes[0].keyframe != null && typeof selectedKeyframes[0].keyframe === 'object' && 'interpolation' in selectedKeyframes[0].keyframe && typeof selectedKeyframes[0].keyframe.interpolation === 'string') ? selectedKeyframes[0].keyframe.interpolation : undefined"
           @change="updateSelectedKeyframeInterpolation"
           class="info-select"
         >
@@ -221,19 +221,59 @@
 import { computed, onMounted, onUnmounted, reactive, ref, watch } from "vue";
 import { EASING_PRESETS } from "@/services/interpolation";
 import { findNearestSnap } from "@/services/timelineSnap";
-import { useCompositorStore } from "@/stores/compositorStore";
+import { useLayerStore } from "@/stores/layerStore";
+import { useProjectStore } from "@/stores/projectStore";
 import { useAudioStore } from "@/stores/audioStore";
 import { useKeyframeStore } from "@/stores/keyframeStore";
 import { useAnimationStore } from "@/stores/animationStore";
+import { assertDefined, safeNonNegativeDefault, safePositiveDefault, isFiniteNumber } from "@/utils/typeGuards";
 import type { AnimatableProperty, Keyframe, PropertyValue } from "@/types/project";
 import type { CurveMode, EasingPreset } from "./CurveEditorHeader.vue";
 
 const emit = defineEmits<(e: "close") => void>();
 
-const store = useCompositorStore();
+const layerStore = useLayerStore();
+const projectStore = useProjectStore();
 const audioStore = useAudioStore();
 const keyframeStore = useKeyframeStore();
 const animationStore = useAnimationStore();
+
+// Helper function to create AnimationStoreAccess
+function getAnimationStoreAccess() {
+  return {
+    get isPlaying() {
+      return animationStore.isPlaying;
+    },
+    getActiveComp: () => projectStore.getActiveComp(),
+    get currentFrame() {
+      return animationStore.currentFrame;
+    },
+    get frameCount() {
+      const comp = projectStore.getActiveComp();
+      // Type proof: frameCount ∈ number | undefined → number (≥ 0, frame count)
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const frameCount = (comp != null && typeof comp === "object" && "settings" in comp && comp.settings != null && typeof comp.settings === "object" && "frameCount" in comp.settings && typeof comp.settings.frameCount === "number") ? comp.settings.frameCount : undefined;
+      return safeNonNegativeDefault(frameCount, 0, "comp.settings.frameCount");
+    },
+    get fps() {
+      const comp = projectStore.getActiveComp();
+      // Type proof: fps ∈ number | undefined → number (> 0, frames per second)
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const fps = (comp != null && typeof comp === "object" && "settings" in comp && comp.settings != null && typeof comp.settings === "object" && "fps" in comp.settings && typeof comp.settings.fps === "number") ? comp.settings.fps : undefined;
+      return safePositiveDefault(fps, 16, "comp.settings.fps");
+    },
+    getActiveCompLayers: () => projectStore.getActiveCompLayers(),
+    getLayerById: (id: string) => layerStore.getLayerById(id),
+    project: {
+      composition: {
+        width: projectStore.getWidth(),
+        height: projectStore.getHeight(),
+      },
+      meta: projectStore.project.meta,
+    },
+    pushHistory: () => projectStore.pushHistory(),
+  };
+}
 
 // Refs
 const canvasRef = ref<HTMLCanvasElement | null>(null);
@@ -321,14 +361,15 @@ const presetList: EasingPreset[] = [
 
 // Get all animatable properties from selected layer
 const animatableProperties = computed((): AnimatableProperty<PropertyValue>[] => {
-  const layer = store.selectedLayer;
+  const layer = layerStore.getSelectedLayer();
   if (!layer) return [];
 
   const props: AnimatableProperty<PropertyValue>[] = [];
   const t = layer.transform;
 
   // Position - check if dimensions are separated
-  if (t.separateDimensions?.position && t.positionX && t.positionY) {
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  if (t.separateDimensions != null && typeof t.separateDimensions === "object" && "position" in t.separateDimensions && t.separateDimensions.position === true && t.positionX && t.positionY) {
     // Separated: show individual X, Y, Z properties
     props.push(t.positionX);
     props.push(t.positionY);
@@ -339,7 +380,8 @@ const animatableProperties = computed((): AnimatableProperty<PropertyValue>[] =>
   }
 
   // Scale - check if dimensions are separated
-  if (t.separateDimensions?.scale && t.scaleX && t.scaleY) {
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  if (t.separateDimensions != null && typeof t.separateDimensions === "object" && "scale" in t.separateDimensions && t.separateDimensions.scale === true && t.scaleX && t.scaleY) {
     // Separated: show individual X, Y, Z properties
     props.push(t.scaleX);
     props.push(t.scaleY);
@@ -376,7 +418,7 @@ const allPropertiesVisible = computed(() => {
 
 // Current frame screen position
 const currentFrameScreenX = computed(() => {
-  return frameToScreenX(store.currentFrame);
+  return frameToScreenX(animationStore.currentFrame);
 });
 
 // Coordinate conversion functions
@@ -416,11 +458,13 @@ function getKeyframeScreenY(
   _prop: AnimatableProperty<PropertyValue>,
   kf: Keyframe<PropertyValue>,
 ): number {
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+  // Pattern match: kf.value ∈ number | { x: number; y?: number } → number
   const value =
     typeof kf.value === "number"
       ? kf.value
-      : typeof kf.value === "object"
-        ? (kf.value.x ?? kf.value)
+      : typeof kf.value === "object" && kf.value !== null && "x" in kf.value && typeof kf.value.x === "number" && Number.isFinite(kf.value.x)
+        ? kf.value.x
         : 0;
   return valueToScreenY(value);
 }
@@ -431,11 +475,13 @@ function getKeyframeDisplayValue(
     | undefined,
 ): number {
   if (!selection) return 0;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+  // Pattern match: value ∈ number | { x: number; y?: number } → number
   const value = selection.keyframe.value;
   return typeof value === "number"
     ? value
-    : typeof value === "object"
-      ? (value.x ?? 0)
+    : typeof value === "object" && value !== null && "x" in value && typeof value.x === "number" && Number.isFinite(value.x)
+      ? value.x
       : 0;
 }
 
@@ -498,7 +544,10 @@ function getNumericValue(value: PropertyValue): number {
 function getPropertyColor(propId: string): string {
   const prop = animatableProperties.value.find((p) => p.id === propId);
   if (!prop) return propertyColors.default;
-  return propertyColors[prop.name] ?? propertyColors.default;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+  // Pattern match: propertyColors[prop.name] ∈ string | undefined → string (default)
+  const color = propertyColors[prop.name];
+  return (typeof color === "string" && color.length > 0) ? color : propertyColors.default;
 }
 
 function isKeyframeInView(kf: Keyframe<PropertyValue>): boolean {
@@ -580,8 +629,15 @@ function fitToView(): void {
   }
 
   // Add padding
-  const frameMargin = (maxFrame - minFrame) * 0.1 || 10;
-  const valueMargin = (maxValue - minValue) * 0.1 || 10;
+  // Type proof: margin calculations can be 0 (valid), so use ?? not ||
+  const calculatedFrameMargin = (maxFrame - minFrame) * 0.1;
+  const frameMargin = calculatedFrameMargin !== 0 && isFiniteNumber(calculatedFrameMargin)
+    ? calculatedFrameMargin
+    : 10;
+  const calculatedValueMargin = (maxValue - minValue) * 0.1;
+  const valueMargin = calculatedValueMargin !== 0 && isFiniteNumber(calculatedValueMargin)
+    ? calculatedValueMargin
+    : 10;
 
   viewState.frameStart = minFrame - frameMargin;
   viewState.frameEnd = maxFrame + frameMargin;
@@ -621,7 +677,7 @@ function applyPreset(presetKey: string): void {
   const preset = EASING_PRESETS[presetKey as keyof typeof EASING_PRESETS];
   if (!preset) return;
 
-  const layer = store.selectedLayer;
+  const layer = layerStore.getSelectedLayer();
   if (!layer) return;
 
   for (const sk of selectedKeyframes.value) {
@@ -641,7 +697,6 @@ function applyPreset(presetKey: string): void {
     // Convert normalized preset to absolute frame/value handles
     if (presetKey === "linear") {
       keyframeStore.setKeyframeInterpolation(
-        store,
         layer.id,
         propertyPath,
         sk.keyframe.id,
@@ -673,14 +728,12 @@ function applyPreset(presetKey: string): void {
       };
 
       keyframeStore.setKeyframeInterpolation(
-        store,
         layer.id,
         propertyPath,
         sk.keyframe.id,
         "bezier",
       );
       keyframeStore.setKeyframeHandle(
-        store,
         layer.id,
         propertyPath,
         sk.keyframe.id,
@@ -688,7 +741,6 @@ function applyPreset(presetKey: string): void {
         outHandle,
       );
       keyframeStore.setKeyframeHandle(
-        store,
         layer.id,
         propertyPath,
         sk.keyframe.id,
@@ -708,7 +760,8 @@ function applyPreset(presetKey: string): void {
 
 // Mouse event handlers
 function handleMouseDown(event: MouseEvent): void {
-  const rect = canvasRef.value?.getBoundingClientRect();
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const rect = (canvasRef.value !== null && canvasRef.value !== undefined && typeof canvasRef.value === "object" && typeof canvasRef.value.getBoundingClientRect === "function") ? canvasRef.value.getBoundingClientRect() : null;
   if (!rect) return;
 
   const x = event.clientX - rect.left;
@@ -728,7 +781,8 @@ function handleMouseDown(event: MouseEvent): void {
 }
 
 function handleMouseMove(event: MouseEvent): void {
-  const rect = canvasRef.value?.getBoundingClientRect();
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const rect = (canvasRef.value !== null && canvasRef.value !== undefined && typeof canvasRef.value === "object" && typeof canvasRef.value.getBoundingClientRect === "function") ? canvasRef.value.getBoundingClientRect() : null;
   if (!rect) return;
 
   const x = event.clientX - rect.left;
@@ -740,8 +794,12 @@ function handleMouseMove(event: MouseEvent): void {
   if (!dragTarget.value) return;
 
   if (dragTarget.value.type === "pan") {
-    const dx = x - (dragTarget.value.startX ?? 0);
-    const dy = y - (dragTarget.value.startY ?? 0);
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+    // Pattern match: startX/startY ∈ number | undefined → number (default 0)
+    const startX = (typeof dragTarget.value.startX === "number" && Number.isFinite(dragTarget.value.startX)) ? dragTarget.value.startX : 0;
+    const startY = (typeof dragTarget.value.startY === "number" && Number.isFinite(dragTarget.value.startY)) ? dragTarget.value.startY : 0;
+    const dx = x - startX;
+    const dy = y - startY;
 
     const graphWidth = canvasWidth.value - margin.left - margin.right;
     const graphHeight = canvasHeight.value - margin.top - margin.bottom;
@@ -760,8 +818,10 @@ function handleMouseMove(event: MouseEvent): void {
     dragTarget.value.startY = y;
     drawGraph();
   } else if (dragTarget.value.type === "select" && selectionBox.value) {
-    const startX = dragTarget.value.startX ?? 0;
-    const startY = dragTarget.value.startY ?? 0;
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+    // Pattern match: startX/startY ∈ number | undefined → number (default 0)
+    const startX = (typeof dragTarget.value.startX === "number" && Number.isFinite(dragTarget.value.startX)) ? dragTarget.value.startX : 0;
+    const startY = (typeof dragTarget.value.startY === "number" && Number.isFinite(dragTarget.value.startY)) ? dragTarget.value.startY : 0;
 
     selectionBox.value = {
       x: Math.min(x, startX),
@@ -780,7 +840,8 @@ function handleMouseMove(event: MouseEvent): void {
 }
 
 function handleMouseUp(): void {
-  if (dragTarget.value?.type === "select" && selectionBox.value) {
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  if (dragTarget.value !== null && dragTarget.value !== undefined && typeof dragTarget.value === "object" && "type" in dragTarget.value && dragTarget.value.type === "select" && selectionBox.value) {
     selectKeyframesInBox();
   }
 
@@ -791,7 +852,8 @@ function handleMouseUp(): void {
 function handleWheel(event: WheelEvent): void {
   event.preventDefault();
 
-  const rect = canvasRef.value?.getBoundingClientRect();
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const rect = (canvasRef.value !== null && canvasRef.value !== undefined && typeof canvasRef.value === "object" && typeof canvasRef.value.getBoundingClientRect === "function") ? canvasRef.value.getBoundingClientRect() : null;
   if (!rect) return;
 
   const x = event.clientX - rect.left;
@@ -897,7 +959,7 @@ function moveSelectedKeyframes(screenX: number, screenY: number): void {
   let newFrame = Math.round(screenXToFrame(screenX));
   const newValue = screenYToValue(screenY);
 
-  const layer = store.selectedLayer;
+  const layer = layerStore.getSelectedLayer();
   if (!layer) return;
 
   // For now, just move the first selected keyframe
@@ -907,30 +969,36 @@ function moveSelectedKeyframes(screenX: number, screenY: number): void {
     if (!prop) return;
 
     // Apply smart snapping with audio beat/peak support
-    if (snapEnabled.value && store.snapConfig.enabled) {
+    if (snapEnabled.value && animationStore.snapConfig.enabled) {
       // Calculate approximate pixels per frame for snapping threshold
       const pixelsPerFrame =
         canvasWidth.value / (viewState.frameEnd - viewState.frameStart);
 
-      const snap = findNearestSnap(newFrame, store.snapConfig, pixelsPerFrame, {
-        layers: store.layers,
-        selectedLayerId: layer.id,
-        currentFrame: store.currentFrame,
-        audioAnalysis: audioStore.audioAnalysis,
-        peakData: audioStore.peakData,
-      });
-
-      if (snap) {
+      // System F/Omega pattern: Wrap in try/catch for expected "no snap" case
+      // When no snap targets are found, fallback to basic grid snap
+      try {
+        const snap = findNearestSnap(newFrame, animationStore.snapConfig, pixelsPerFrame, {
+          layers: projectStore.getActiveCompLayers(),
+          selectedLayerId: layer.id,
+          currentFrame: animationStore.currentFrame,
+          audioAnalysis: audioStore.audioAnalysis,
+          peakData: audioStore.peakData,
+        });
         newFrame = snap.frame;
-      } else {
-        // Fallback to basic grid snap
+      } catch (error) {
+        // No snap target found - fallback to basic grid snap
         newFrame =
-          Math.round(newFrame / store.snapConfig.gridInterval) *
-          store.snapConfig.gridInterval;
+          Math.round(newFrame / animationStore.snapConfig.gridInterval) *
+          animationStore.snapConfig.gridInterval;
       }
     }
 
-    const frame = Math.max(0, Math.min(store.frameCount - 1, newFrame));
+    const comp = projectStore.getActiveComp();
+    // Type proof: frameCount ∈ number | undefined → number (≥ 0, frame count)
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const frameCountValue = (comp !== null && comp !== undefined && typeof comp === "object" && "settings" in comp && comp.settings !== null && comp.settings !== undefined && typeof comp.settings === "object" && "frameCount" in comp.settings && typeof comp.settings.frameCount === "number") ? comp.settings.frameCount : undefined;
+    const frameCount = safeNonNegativeDefault(frameCountValue, 81, "comp.settings.frameCount");
+    const frame = Math.max(0, Math.min(frameCount - 1, newFrame));
     const _value =
       typeof sk.keyframe.value === "number" ? newValue : sk.keyframe.value;
 
@@ -938,7 +1006,7 @@ function moveSelectedKeyframes(screenX: number, screenY: number): void {
     const propertyPath = getPropertyPath(prop);
 
     // Call store method to persist the change
-    keyframeStore.updateKeyframe(store, layer.id, propertyPath, sk.keyframe.id, {
+    keyframeStore.updateKeyframe(layer.id, propertyPath, sk.keyframe.id, {
       frame,
       value: typeof sk.keyframe.value === "number" ? newValue : undefined,
     });
@@ -978,7 +1046,8 @@ function startDragHandle(
 }
 
 function onDragHandle(event: MouseEvent): void {
-  const rect = canvasRef.value?.getBoundingClientRect();
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const rect = (canvasRef.value !== null && canvasRef.value !== undefined && typeof canvasRef.value === "object" && typeof canvasRef.value.getBoundingClientRect === "function") ? canvasRef.value.getBoundingClientRect() : null;
   if (!rect || !dragTarget.value) return;
 
   const x = event.clientX - rect.left;
@@ -989,15 +1058,19 @@ function onDragHandle(event: MouseEvent): void {
 function moveHandle(screenX: number, screenY: number): void {
   if (!dragTarget.value || !dragTarget.value.propId) return;
 
-  const layer = store.selectedLayer;
+  const layer = layerStore.getSelectedLayer();
   if (!layer) return;
 
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const propId = (dragTarget.value !== null && dragTarget.value !== undefined && typeof dragTarget.value === "object" && "propId" in dragTarget.value && typeof dragTarget.value.propId === "string") ? dragTarget.value.propId : undefined;
   const prop = animatableProperties.value.find(
-    (p) => p.id === dragTarget.value?.propId,
+    (p) => p.id === propId,
   );
   if (!prop) return;
 
-  const kfIndex = dragTarget.value.index!;
+  // Type proof: index must exist when dragTarget.type is "keyframe" | "inHandle" | "outHandle"
+  assertDefined(dragTarget.value.index, "dragTarget.index must exist for handle/keyframe drag operations");
+  const kfIndex = dragTarget.value.index;
   const kf = prop.keyframes[kfIndex];
   if (!kf) return;
 
@@ -1027,7 +1100,7 @@ function moveHandle(screenX: number, screenY: number): void {
     };
 
     // Call store method to persist
-    keyframeStore.setKeyframeHandle(store, layer.id, propertyPath, kf.id, "out", newHandle);
+    keyframeStore.setKeyframeHandle(layer.id, propertyPath, kf.id, "out", newHandle);
 
     // Update local reference
     kf.outHandle = newHandle;
@@ -1057,7 +1130,7 @@ function moveHandle(screenX: number, screenY: number): void {
     };
 
     // Call store method to persist
-    keyframeStore.setKeyframeHandle(store, layer.id, propertyPath, kf.id, "in", newHandle);
+    keyframeStore.setKeyframeHandle(layer.id, propertyPath, kf.id, "in", newHandle);
 
     // Update local reference
     kf.inHandle = newHandle;
@@ -1080,7 +1153,7 @@ function applyControlModeConstraints(
     return;
   }
 
-  const layer = store.selectedLayer;
+  const layer = layerStore.getSelectedLayer();
   if (!layer) return;
 
   if (kf.controlMode === "symmetric") {
@@ -1090,7 +1163,7 @@ function applyControlModeConstraints(
       kf.outHandle.value = -kf.inHandle.value;
       kf.outHandle.enabled = kf.inHandle.enabled;
       // Persist to store
-      keyframeStore.setKeyframeHandle(store, layer.id, propertyPath, kf.id, "out", {
+      keyframeStore.setKeyframeHandle(layer.id, propertyPath, kf.id, "out", {
         ...kf.outHandle,
       });
     } else {
@@ -1098,7 +1171,7 @@ function applyControlModeConstraints(
       kf.inHandle.value = -kf.outHandle.value;
       kf.inHandle.enabled = kf.outHandle.enabled;
       // Persist to store
-      keyframeStore.setKeyframeHandle(store, layer.id, propertyPath, kf.id, "in", {
+      keyframeStore.setKeyframeHandle(layer.id, propertyPath, kf.id, "in", {
         ...kf.inHandle,
       });
     }
@@ -1119,7 +1192,7 @@ function applyControlModeConstraints(
       other.value = Math.sin(oppositeAngle) * otherLength;
 
       // Persist to store
-      keyframeStore.setKeyframeHandle(store, layer.id, propertyPath, kf.id, otherType, {
+      keyframeStore.setKeyframeHandle(layer.id, propertyPath, kf.id, otherType, {
         ...other,
       });
     }
@@ -1140,7 +1213,7 @@ function showContextMenu(event: MouseEvent): void {
 function addKeyframeAtPosition(): void {
   if (!contextMenu.value) return;
 
-  const layer = store.selectedLayer;
+  const layer = layerStore.getSelectedLayer();
   if (!layer) return;
 
   const frame = Math.round(screenXToFrame(contextMenu.value.x));
@@ -1154,7 +1227,7 @@ function addKeyframeAtPosition(): void {
       typeof prop.value === "number" ? value : { x: value, y: value };
 
     // Call store method to persist - it handles sorting and animation flag
-    keyframeStore.addKeyframe(store, layer.id, propertyPath, keyframeValue, frame);
+    keyframeStore.addKeyframe(layer.id, propertyPath, keyframeValue, frame);
     drawGraph();
   }
 
@@ -1162,7 +1235,7 @@ function addKeyframeAtPosition(): void {
 }
 
 function deleteSelectedKeyframes(): void {
-  const layer = store.selectedLayer;
+  const layer = layerStore.getSelectedLayer();
   if (!layer) return;
 
   for (const sk of selectedKeyframes.value) {
@@ -1170,7 +1243,7 @@ function deleteSelectedKeyframes(): void {
     if (prop) {
       const propertyPath = getPropertyPath(prop);
       // Call store method to persist deletion
-      keyframeStore.removeKeyframe(store, layer.id, propertyPath, sk.keyframe.id);
+      keyframeStore.removeKeyframe(layer.id, propertyPath, sk.keyframe.id);
     }
   }
   selectedKeyframes.value = [];
@@ -1184,18 +1257,17 @@ function copyKeyframes(): void {
 function pasteKeyframes(): void {
   if (!clipboard.value || visibleProperties.value.length === 0) return;
 
-  const layer = store.selectedLayer;
+  const layer = layerStore.getSelectedLayer();
   if (!layer) return;
 
   const prop = visibleProperties.value[0];
   const propertyPath = getPropertyPath(prop);
-  const offset = store.currentFrame - clipboard.value[0].frame;
+  const offset = animationStore.currentFrame - clipboard.value[0].frame;
 
   for (const kf of clipboard.value) {
     const newFrame = kf.frame + offset;
     // Use store method to properly add keyframes
     const newKeyframe = keyframeStore.addKeyframe(
-      store,
       layer.id,
       propertyPath,
       kf.value,
@@ -1206,16 +1278,15 @@ function pasteKeyframes(): void {
     if (newKeyframe) {
       if (kf.interpolation !== "linear") {
         keyframeStore.setKeyframeInterpolation(
-          store,
           layer.id,
           propertyPath,
           newKeyframe.id,
           kf.interpolation,
         );
       }
-      if (kf.inHandle?.enabled) {
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      if (kf.inHandle !== null && kf.inHandle !== undefined && typeof kf.inHandle === "object" && "enabled" in kf.inHandle && typeof kf.inHandle.enabled === "boolean" && kf.inHandle.enabled) {
         keyframeStore.setKeyframeHandle(
-          store,
           layer.id,
           propertyPath,
           newKeyframe.id,
@@ -1223,9 +1294,9 @@ function pasteKeyframes(): void {
           kf.inHandle,
         );
       }
-      if (kf.outHandle?.enabled) {
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      if (kf.outHandle !== null && kf.outHandle !== undefined && typeof kf.outHandle === "object" && "enabled" in kf.outHandle && typeof kf.outHandle.enabled === "boolean" && kf.outHandle.enabled) {
         keyframeStore.setKeyframeHandle(
-          store,
           layer.id,
           propertyPath,
           newKeyframe.id,
@@ -1305,13 +1376,13 @@ function updateSelectedKeyframeInterpolation(event: Event): void {
 
 // Time ruler click
 function onTimeRulerClick(event: MouseEvent): void {
-  const rect = timeRulerCanvas.value?.getBoundingClientRect();
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const rect = (timeRulerCanvas.value !== null && timeRulerCanvas.value !== undefined && typeof timeRulerCanvas.value === "object" && typeof timeRulerCanvas.value.getBoundingClientRect === "function") ? timeRulerCanvas.value.getBoundingClientRect() : null;
   if (!rect) return;
 
   const x = event.clientX - rect.left;
   const frame = Math.round(screenXToFrame(x));
-  const animationStore = useAnimationStore();
-  animationStore.setFrame(store, frame);
+  animationStore.setFrame(getAnimationStoreAccess(), frame);
 }
 
 // Drawing
@@ -1494,7 +1565,8 @@ function drawTimeRuler(): void {
   const canvas = timeRulerCanvas.value;
   if (!canvas) return;
 
-  const rect = timeRulerRef.value?.getBoundingClientRect();
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const rect = (timeRulerRef.value !== null && timeRulerRef.value !== undefined && typeof timeRulerRef.value === "object" && typeof timeRulerRef.value.getBoundingClientRect === "function") ? timeRulerRef.value.getBoundingClientRect() : null;
   if (!rect) return;
 
   canvas.width = rect.width;
@@ -1530,7 +1602,7 @@ function drawTimeRuler(): void {
   }
 
   // Current frame marker
-  const ctfX = frameToScreenX(store.currentFrame);
+  const ctfX = frameToScreenX(animationStore.currentFrame);
   ctx.fillStyle = "#ff4444";
   ctx.beginPath();
   ctx.moveTo(ctfX - 5, 0);
@@ -1544,7 +1616,8 @@ function drawValueAxis(): void {
   const canvas = valueAxisCanvas.value;
   if (!canvas) return;
 
-  const rect = valueAxisRef.value?.getBoundingClientRect();
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const rect = (valueAxisRef.value !== null && valueAxisRef.value !== undefined && typeof valueAxisRef.value === "object" && typeof valueAxisRef.value.getBoundingClientRect === "function") ? valueAxisRef.value.getBoundingClientRect() : null;
   if (!rect) return;
 
   canvas.width = 40;
@@ -1622,7 +1695,7 @@ function applyEasyEase(direction: "both" | "in" | "out" = "both"): void {
 
 // J/K Navigation (spec G4)
 function goToPreviousKeyframe(): void {
-  const currentFrame = store.currentFrame;
+  const currentFrame = animationStore.currentFrame;
   const allKeyframes: number[] = [];
 
   for (const prop of visibleProperties.value) {
@@ -1636,12 +1709,12 @@ function goToPreviousKeyframe(): void {
   allKeyframes.sort((a, b) => a - b);
   const prev = [...allKeyframes].reverse().find((f) => f < currentFrame);
   if (prev !== undefined) {
-    animationStore.setFrame(store, prev);
+    animationStore.setFrame(getAnimationStoreAccess(), prev);
   }
 }
 
 function goToNextKeyframe(): void {
-  const currentFrame = store.currentFrame;
+  const currentFrame = animationStore.currentFrame;
   const allKeyframes: number[] = [];
 
   for (const prop of visibleProperties.value) {
@@ -1655,7 +1728,7 @@ function goToNextKeyframe(): void {
   allKeyframes.sort((a, b) => a - b);
   const next = allKeyframes.find((f) => f > currentFrame);
   if (next !== undefined) {
-    animationStore.setFrame(store, next);
+    animationStore.setFrame(getAnimationStoreAccess(), next);
   }
 }
 
@@ -1738,8 +1811,15 @@ function fitSelectionToView(): void {
     maxValue = Math.max(maxValue, value);
   }
 
-  const frameMargin = (maxFrame - minFrame) * 0.1 || 10;
-  const valueMargin = (maxValue - minValue) * 0.1 || 10;
+  // Type proof: margin calculations can be 0 (valid), so use ?? not ||
+  const calculatedFrameMargin = (maxFrame - minFrame) * 0.1;
+  const frameMargin = calculatedFrameMargin !== 0 && isFiniteNumber(calculatedFrameMargin)
+    ? calculatedFrameMargin
+    : 10;
+  const calculatedValueMargin = (maxValue - minValue) * 0.1;
+  const valueMargin = calculatedValueMargin !== 0 && isFiniteNumber(calculatedValueMargin)
+    ? calculatedValueMargin
+    : 10;
 
   viewState.frameStart = minFrame - frameMargin;
   viewState.frameEnd = maxFrame + frameMargin;
@@ -1793,12 +1873,15 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
-  resizeObserver?.disconnect();
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  if (resizeObserver !== null && resizeObserver !== undefined && typeof resizeObserver === "object" && typeof resizeObserver.disconnect === "function") {
+    resizeObserver.disconnect();
+  }
   window.removeEventListener("keydown", handleKeyDown);
 });
 
 // Redraw on changes
-watch([() => store.currentFrame, visiblePropertyIds, mode], () => {
+watch([() => animationStore.currentFrame, visiblePropertyIds, mode], () => {
   drawGraph();
 });
 

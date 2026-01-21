@@ -163,13 +163,14 @@
 
 <script setup lang="ts">
 import { computed, ref } from "vue";
-import { useCompositorStore } from "@/stores/compositorStore";
+import { useAnimationStore } from "@/stores/animationStore";
 import { createKeyframe } from "@/types/animation";
 import type { StrokeShape } from "@/types/shapes";
+import type { PropertyValue } from "@/types/animation";
 
 const props = defineProps<{ shape: StrokeShape; layerId: string }>();
 const emit = defineEmits(["update"]);
-const store = useCompositorStore();
+const animationStore = useAnimationStore();
 
 const taperExpanded = ref(false);
 
@@ -216,7 +217,7 @@ function updateNumber(
   emit("update", updated);
 }
 
-function updateMeta(key: string, value: unknown) {
+function updateMeta(key: string, value: PropertyValue) {
   const updated = { ...props.shape, [key]: value };
   emit("update", updated);
 }
@@ -266,9 +267,9 @@ function getAnimatableProperty(
     | "taperEndLength"
     | "taperEndWidth"
     | "taperEndEase",
-): import("@/types/animation").AnimatableProperty<unknown> {
+): import("@/types/animation").AnimatableProperty<PropertyValue> {
   // Type-safe property access - all these properties are AnimatableProperty
-  if (prop === "color") return shape.color as import("@/types/animation").AnimatableProperty<unknown>;
+  if (prop === "color") return shape.color as import("@/types/animation").AnimatableProperty<PropertyValue>;
   if (prop === "opacity") return shape.opacity;
   if (prop === "width") return shape.width;
   if (prop === "dashOffset") return shape.dashOffset;
@@ -295,7 +296,7 @@ function toggleKeyframe(
 ) {
   const updated = { ...props.shape };
   const animProp = getAnimatableProperty(updated, prop);
-  const frame = store.currentFrame;
+  const frame = animationStore.currentFrame;
 
   const hasKf = animProp.keyframes.some((k) => k.frame === frame);
   if (hasKf) {

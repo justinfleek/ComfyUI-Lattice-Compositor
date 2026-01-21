@@ -39,8 +39,9 @@ async function initSES(): Promise<boolean> {
     });
 
     // Type-safe assignment - these are available after lockdown()
-    Compartment = globalThis.Compartment ?? null;
-    harden = globalThis.harden ?? null;
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+    Compartment = (globalThis.Compartment !== null && globalThis.Compartment !== undefined && typeof globalThis.Compartment === "function") ? globalThis.Compartment : null;
+    harden = (globalThis.harden !== null && globalThis.harden !== undefined && typeof globalThis.harden === "function") ? globalThis.harden : null;
     
     if (!Compartment || !harden) {
       return false;
@@ -101,14 +102,14 @@ function createSeededRandom(frame: number) {
 }
 
 async function evaluate(req: EvalRequest): Promise<EvalResponse> {
-  if (!sesReady) {
-    const ok = await initSES();
-    if (!ok) {
-      return { id: req.id, success: false, error: "SES not available" };
-    }
-  }
-
   try {
+    if (!sesReady) {
+      const ok = await initSES();
+      if (!ok) {
+        throw new Error(`[ExpressionWorker] SES not available. Secure Evaluator initialization failed.`);
+      }
+    }
+
     const frame = typeof req.context.frame === "number" ? req.context.frame : 0;
     const seededRandom = harden(createSeededRandom(frame));
 
@@ -164,10 +165,12 @@ async function evaluate(req: EvalRequest): Promise<EvalResponse> {
 
     return { id: req.id, success: true, result };
   } catch (e) {
+    // Convert errors to response format for worker communication
+    const errorMessage = e instanceof Error ? e.message : String(e);
     return {
       id: req.id,
       success: false,
-      error: e instanceof Error ? e.message : String(e),
+      error: errorMessage,
     };
   }
 }

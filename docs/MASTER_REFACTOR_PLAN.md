@@ -4,7 +4,7 @@
 > **Scope:** Full codebase refactoring - stores, services, engine, components, types
 > **Duration:** 12 months (42 weeks store migration + 6 weeks lazy code cleanup + file modularization)
 > **Generated:** 2026-01-10
-> **Updated:** 2026-01-18 (Phase 4 complete - physicsStore.ts refactored to remove PhysicsStoreAccess, PhysicsProperties.vue migrated)
+> **Updated:** 2026-01-19 (Phase 5 Consumer Migration: ✅ All production files migrated. ✅ 7 test files migrated. ⚠️ 1 test file remaining. Fixed composable migration errors. TypeScript errors: 256 total. Phase 5.5 Type Proof Refactoring: ✅ 106 files complete, ~859 `??` patterns removed. Remaining: **1,057** `??` patterns across 156 files - Verified via grep)
 
 ---
 
@@ -58,7 +58,7 @@ This system operates in a **HIGH-RISK threat environment**:
 - **293,457 total lines** in oversized files
 - **compositorStore.ts** (3,292 lines, 101 users) is the critical bottleneck
 - Previous refactor attempts failed due to chicken-and-egg dependencies
-- **~4,954 lazy code patterns** in production code (verified 2026-01-13)
+- **~3,691 lazy code patterns** in production code (verified 2026-01-19) - **1,057** `??` patterns remaining across 156 files (49 in services, 1 in stores, rest in engine/components/composables)
 - **0 TypeScript errors** in production (96 in test files)
 
 ### Target State
@@ -276,7 +276,7 @@ The December 2025 refactor stalled because cross-domain actions (like `convertAu
 | `services/particleSystem.ts` | 2,299 | **P0** | particles | Extract: CPUEmitter, CPUPhysics, CPURenderer |
 | `services/depthflow.ts` | 1,787 | P1 | depthflow | Split: DepthAnalysis, FlowGeneration, Rendering |
 | `services/shapeOperations.ts` | 1,713 | P1 | shapes | Split: Boolean, Offset, Simplify operations |
-| `services/index.ts` | 1,692 | P1 | barrel | **Consider removal** - barrel files cause circular deps |
+| `services/index.ts` | 1,591 | P1 | barrel | ⚠️ **DEPRECATED** - 0 imports found, marked for removal |
 | `services/webgpuRenderer.ts` | 1,517 | P1 | rendering | Split: PipelineManager, ShaderCompiler, BufferManager |
 | `services/particleGPU.ts` | 1,324 | P2 | particles | Split: GPUBuffer, GPUShader, GPUState |
 | `services/svgExtrusion.ts` | 1,206 | P2 | 3d | Can likely stay |
@@ -1189,17 +1189,23 @@ These files do not need modularization:
 
 ## Appendix B: Barrel File Warning
 
-The `services/index.ts` (1,692 lines) is a barrel file that re-exports everything. This:
+The `services/index.ts` (1,591 lines) is a barrel file that re-exports everything. 
+
+**Status:** ⚠️ **DEPRECATED** - File marked with deprecation notice, will be removed in Phase 7
+
+**Verification:** 0 imports found - not used by any code in the codebase
+
+**Issues (if used):**
 1. Causes circular dependency issues
 2. Increases bundle size (tree-shaking problems)
 3. Makes imports ambiguous
 
-**Recommendation:** Replace with direct imports. Example:
+**Recommendation:** Use direct imports. Example:
 ```typescript
-// BAD
+// ❌ DEPRECATED - Don't use this:
 import { loadAudio, AudioBuffer } from '@/services';
 
-// GOOD
+// ✅ CORRECT - Use direct imports:
 import { loadAudio } from '@/services/audioFeatures';
 import type { AudioBuffer } from '@/types/audio';
 ```

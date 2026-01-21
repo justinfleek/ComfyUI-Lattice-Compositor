@@ -51,7 +51,7 @@
 
       <div class="row">
          <label>Stroke Width</label>
-         <ScrubableNumber :modelValue="getPropertyValue('Stroke Width') || textData.strokeWidth || 0" @update:modelValue="(v: number) => updateAnimatable('Stroke Width', v)" :min="0" :max="50" unit="px" />
+         <ScrubableNumber :modelValue="getStrokeWidth()" @update:modelValue="(v: number) => updateAnimatable('Stroke Width', v)" :min="0" :max="50" unit="px" />
       </div>
 
       <div class="row">
@@ -94,7 +94,7 @@
       </div>
       <div class="row">
          <label>Opacity</label>
-         <ScrubableNumber :modelValue="layer.opacity?.value ?? 100" @update:modelValue="(v: number) => updateOpacity(v)" :min="0" :max="100" unit="%" />
+         <ScrubableNumber :modelValue="getLayerOpacity()" @update:modelValue="(v: number) => updateOpacity(v)" :min="0" :max="100" unit="%" />
       </div>
     </div>
 
@@ -102,7 +102,8 @@
        <div class="section-title">Path Options</div>
        <div class="row">
           <label>Path</label>
-          <select :value="textData.pathLayerId || ''" @change="e => updateData('pathLayerId', (e.target as HTMLSelectElement).value || null)" class="full-select">
+          <!-- Lean4/PureScript/Haskell: Explicit pattern matching - no lazy null/logical OR -->
+          <select :value="textData.pathLayerId" @change="e => updateData('pathLayerId', (e.target as HTMLSelectElement).value)" class="full-select">
              <option value="">None</option>
              <option v-for="l in splineLayers" :key="l.id" :value="l.id">{{ l.type === 'path' ? '⤳ ' : '〰 ' }}{{ l.name }}</option>
           </select>
@@ -112,7 +113,7 @@
          <div class="row">
             <label>Path Offset %</label>
             <ScrubableNumber
-              :modelValue="getPropertyValue('Path Offset') ?? textData.pathOffset ?? 0"
+              :modelValue="getPathOffsetValue()"
               @update:modelValue="(v: number) => updateAnimatable('Path Offset', v)"
               :min="-100"
               :max="200"
@@ -129,7 +130,7 @@
          <div class="row">
             <label>First Margin</label>
             <ScrubableNumber
-              :modelValue="getPropertyValue('First Margin') ?? textData.pathFirstMargin ?? 0"
+              :modelValue="getPathFirstMargin()"
               @update:modelValue="(v: number) => updateAnimatable('First Margin', v)"
               :min="0"
             />
@@ -138,7 +139,7 @@
          <div class="row">
             <label>Last Margin</label>
             <ScrubableNumber
-              :modelValue="getPropertyValue('Last Margin') ?? textData.pathLastMargin ?? 0"
+              :modelValue="getPathLastMargin()"
               @update:modelValue="(v: number) => updateAnimatable('Last Margin', v)"
               :min="0"
             />
@@ -153,7 +154,7 @@
 
          <div class="row checkbox-row">
             <label>
-              <input type="checkbox" :checked="textData.pathPerpendicularToPath ?? true" @change="updateData('pathPerpendicularToPath', !textData.pathPerpendicularToPath)" />
+              <input type="checkbox" :checked="(typeof textData.pathPerpendicularToPath === 'boolean' ? textData.pathPerpendicularToPath : true)" @change="updateData('pathPerpendicularToPath', !textData.pathPerpendicularToPath)" />
               Perpendicular to Path
             </label>
          </div>
@@ -171,19 +172,19 @@
        <div class="section-title">Advanced</div>
        <div class="row">
           <label>Tracking</label>
-          <ScrubableNumber :modelValue="getPropertyValue('Tracking') || textData.tracking || 0" @update:modelValue="(v: number) => updateAnimatable('Tracking', v)" />
+          <ScrubableNumber :modelValue="getTracking()" @update:modelValue="(v: number) => updateAnimatable('Tracking', v)" />
        </div>
        <div class="row">
           <label>Line Spacing</label>
-          <ScrubableNumber :modelValue="getPropertyValue('Line Spacing') || textData.lineSpacing || 0" @update:modelValue="(v: number) => updateAnimatable('Line Spacing', v)" />
+          <ScrubableNumber :modelValue="getLineSpacing()" @update:modelValue="(v: number) => updateAnimatable('Line Spacing', v)" />
        </div>
        <div class="row">
           <label>Baseline</label>
-          <ScrubableNumber :modelValue="getPropertyValue('Baseline Shift') || textData.baselineShift || 0" @update:modelValue="(v: number) => updateAnimatable('Baseline Shift', v)" />
+          <ScrubableNumber :modelValue="getBaselineShift()" @update:modelValue="(v: number) => updateAnimatable('Baseline Shift', v)" />
        </div>
        <div class="row">
           <label>Char Offset</label>
-          <ScrubableNumber :modelValue="getPropertyValue('Character Offset') || textData.characterOffset || 0" @update:modelValue="(v: number) => updateAnimatable('Character Offset', v)" :precision="0" />
+          <ScrubableNumber :modelValue="getCharacterOffset()" @update:modelValue="(v: number) => updateAnimatable('Character Offset', v)" :precision="0" />
        </div>
        <div class="row text-formatting-row">
           <label>Case</label>
@@ -243,15 +244,15 @@
       <div class="section-title">Paragraph</div>
       <div class="row">
          <label>First Line Indent</label>
-         <ScrubableNumber :modelValue="textData.firstLineIndent || 0" @update:modelValue="(v: number) => updateData('firstLineIndent', v)" :min="-500" :max="500" />
+         <ScrubableNumber :modelValue="getFirstLineIndent()" @update:modelValue="(v: number) => updateData('firstLineIndent', v)" :min="-500" :max="500" />
       </div>
       <div class="row">
          <label>Space Before</label>
-         <ScrubableNumber :modelValue="textData.spaceBefore || 0" @update:modelValue="(v: number) => updateData('spaceBefore', v)" :min="0" :max="500" />
+         <ScrubableNumber :modelValue="getSpaceBefore()" @update:modelValue="(v: number) => updateData('spaceBefore', v)" :min="0" :max="500" />
       </div>
       <div class="row">
          <label>Space After</label>
-         <ScrubableNumber :modelValue="textData.spaceAfter || 0" @update:modelValue="(v: number) => updateData('spaceAfter', v)" :min="0" :max="500" />
+         <ScrubableNumber :modelValue="getSpaceAfter()" @update:modelValue="(v: number) => updateData('spaceAfter', v)" :min="0" :max="500" />
       </div>
     </div>
 
@@ -401,7 +402,7 @@
             <div class="row">
               <label>Amount %</label>
               <ScrubableNumber
-                :modelValue="animator.rangeSelector.amount ?? 100"
+                :modelValue="getRangeSelectorValue(animator.rangeSelector, 'amount', 100)"
                 @update:modelValue="(v: number) => updateRangeSelector(animator.id, 'amount', v)"
                 :min="0"
                 :max="100"
@@ -412,7 +413,7 @@
             <div class="row">
               <label>Smoothness %</label>
               <ScrubableNumber
-                :modelValue="animator.rangeSelector.smoothness ?? 100"
+                :modelValue="getRangeSelectorValue(animator.rangeSelector, 'smoothness', 100)"
                 @update:modelValue="(v: number) => updateRangeSelector(animator.id, 'smoothness', v)"
                 :min="0"
                 :max="100"
@@ -423,7 +424,7 @@
             <div class="row">
               <label>Ease High %</label>
               <ScrubableNumber
-                :modelValue="animator.rangeSelector.ease?.high ?? 100"
+                :modelValue="getRangeSelectorEase(animator.rangeSelector, 'high', 100)"
                 @update:modelValue="(v: number) => updateRangeSelector(animator.id, 'ease', { ...animator.rangeSelector.ease, high: v })"
                 :min="0"
                 :max="100"
@@ -434,7 +435,7 @@
             <div class="row">
               <label>Ease Low %</label>
               <ScrubableNumber
-                :modelValue="animator.rangeSelector.ease?.low ?? 0"
+                :modelValue="getRangeSelectorEase(animator.rangeSelector, 'low', 0)"
                 @update:modelValue="(v: number) => updateRangeSelector(animator.id, 'ease', { ...animator.rangeSelector.ease, low: v })"
                 :min="0"
                 :max="100"
@@ -449,14 +450,14 @@
               <label class="section-toggle">
                 <input
                   type="checkbox"
-                  :checked="animator.wigglySelector?.enabled"
+                  :checked="isWigglySelectorEnabled(animator)"
                   @change="toggleWigglySelector(animator.id)"
                 />
                 Wiggly Selector
               </label>
             </div>
 
-            <template v-if="animator.wigglySelector?.enabled">
+            <template v-if="isWigglySelectorEnabled(animator)">
               <div class="row">
                 <label>Mode</label>
                 <select
@@ -476,7 +477,7 @@
               <div class="row">
                 <label>Max Amount %</label>
                 <ScrubableNumber
-                  :modelValue="animator.wigglySelector.maxAmount ?? 100"
+                  :modelValue="getWigglySelectorValue(animator.wigglySelector, 'maxAmount', 100)"
                   @update:modelValue="(v: number) => updateWigglySelector(animator.id, 'maxAmount', v)"
                   :min="0"
                   :max="200"
@@ -487,7 +488,7 @@
               <div class="row">
                 <label>Min Amount %</label>
                 <ScrubableNumber
-                  :modelValue="animator.wigglySelector.minAmount ?? 0"
+                  :modelValue="getWigglySelectorValue(animator.wigglySelector, 'minAmount', 0)"
                   @update:modelValue="(v: number) => updateWigglySelector(animator.id, 'minAmount', v)"
                   :min="0"
                   :max="200"
@@ -498,7 +499,7 @@
               <div class="row">
                 <label>Wiggles/Sec</label>
                 <ScrubableNumber
-                  :modelValue="animator.wigglySelector.wigglesPerSecond ?? 2"
+                  :modelValue="getWigglySelectorValue(animator.wigglySelector, 'wigglesPerSecond', 2)"
                   @update:modelValue="(v: number) => updateWigglySelector(animator.id, 'wigglesPerSecond', v)"
                   :min="0.1"
                   :max="20"
@@ -509,7 +510,7 @@
               <div class="row">
                 <label>Correlation %</label>
                 <ScrubableNumber
-                  :modelValue="animator.wigglySelector.correlation ?? 50"
+                  :modelValue="getWigglySelectorValue(animator.wigglySelector, 'correlation', 50)"
                   @update:modelValue="(v: number) => updateWigglySelector(animator.id, 'correlation', v)"
                   :min="0"
                   :max="100"
@@ -544,7 +545,7 @@
               <div class="row">
                 <label>Random Seed</label>
                 <ScrubableNumber
-                  :modelValue="animator.wigglySelector.randomSeed ?? 12345"
+                  :modelValue="getWigglySelectorValue(animator.wigglySelector, 'randomSeed', 12345)"
                   @update:modelValue="(v: number) => updateWigglySelector(animator.id, 'randomSeed', Math.floor(v))"
                   :min="0"
                   :max="99999"
@@ -560,14 +561,14 @@
               <label class="section-toggle">
                 <input
                   type="checkbox"
-                  :checked="animator.expressionSelector?.enabled"
+                  :checked="isExpressionSelectorEnabled(animator)"
                   @change="toggleExpressionSelector(animator.id)"
                 />
                 Expression Selector
               </label>
             </div>
 
-            <template v-if="animator.expressionSelector?.enabled">
+            <template v-if="isExpressionSelectorEnabled(animator)">
               <div class="row">
                 <label>Mode</label>
                 <select
@@ -649,11 +650,11 @@
               <template v-if="hasAnimatorProperty(animator, 'position')">
                 <div class="vec2">
                   <ScrubableNumber
-                    :modelValue="getAnimatorPropertyValue(animator, 'position')?.x ?? 0"
+                    :modelValue="getAnimatorPropertyVec2(animator, 'position', 'x', 0)"
                     @update:modelValue="(v: number) => updateAnimatorProperty(animator.id, 'position', { ...getAnimatorPropertyValue(animator, 'position'), x: v })"
                   />
                   <ScrubableNumber
-                    :modelValue="getAnimatorPropertyValue(animator, 'position')?.y ?? 0"
+                    :modelValue="getAnimatorPropertyVec2(animator, 'position', 'y', 0)"
                     @update:modelValue="(v: number) => updateAnimatorProperty(animator.id, 'position', { ...getAnimatorPropertyValue(animator, 'position'), y: v })"
                   />
                 </div>
@@ -673,11 +674,11 @@
               <template v-if="hasAnimatorProperty(animator, 'scale')">
                 <div class="vec2">
                   <ScrubableNumber
-                    :modelValue="getAnimatorPropertyValue(animator, 'scale')?.x ?? 100"
+                    :modelValue="getAnimatorPropertyVec2(animator, 'scale', 'x', 100)"
                     @update:modelValue="(v: number) => updateAnimatorProperty(animator.id, 'scale', { ...getAnimatorPropertyValue(animator, 'scale'), x: v })"
                   />
                   <ScrubableNumber
-                    :modelValue="getAnimatorPropertyValue(animator, 'scale')?.y ?? 100"
+                    :modelValue="getAnimatorPropertyVec2(animator, 'scale', 'y', 100)"
                     @update:modelValue="(v: number) => updateAnimatorProperty(animator.id, 'scale', { ...getAnimatorPropertyValue(animator, 'scale'), y: v })"
                   />
                 </div>
@@ -696,7 +697,7 @@
               </label>
               <template v-if="hasAnimatorProperty(animator, 'rotation')">
                 <ScrubableNumber
-                  :modelValue="getAnimatorPropertyValue(animator, 'rotation') ?? 0"
+                  :modelValue="getAnimatorPropertyNumber(animator, 'rotation', 0)"
                   @update:modelValue="(v: number) => updateAnimatorProperty(animator.id, 'rotation', v)"
                   :min="-360"
                   :max="360"
@@ -716,7 +717,7 @@
               </label>
               <template v-if="hasAnimatorProperty(animator, 'opacity')">
                 <ScrubableNumber
-                  :modelValue="getAnimatorPropertyValue(animator, 'opacity') ?? 100"
+                  :modelValue="getAnimatorPropertyNumber(animator, 'opacity', 100)"
                   @update:modelValue="(v: number) => updateAnimatorProperty(animator.id, 'opacity', v)"
                   :min="0"
                   :max="100"
@@ -737,13 +738,13 @@
               <template v-if="hasAnimatorProperty(animator, 'blur')">
                 <div class="vec2">
                   <ScrubableNumber
-                    :modelValue="getAnimatorPropertyValue(animator, 'blur')?.x ?? 0"
+                    :modelValue="getAnimatorPropertyVec2(animator, 'blur', 'x', 0)"
                     @update:modelValue="(v: number) => updateAnimatorProperty(animator.id, 'blur', { ...getAnimatorPropertyValue(animator, 'blur'), x: v })"
                     :min="0"
                     :max="100"
                   />
                   <ScrubableNumber
-                    :modelValue="getAnimatorPropertyValue(animator, 'blur')?.y ?? 0"
+                    :modelValue="getAnimatorPropertyVec2(animator, 'blur', 'y', 0)"
                     @update:modelValue="(v: number) => updateAnimatorProperty(animator.id, 'blur', { ...getAnimatorPropertyValue(animator, 'blur'), y: v })"
                     :min="0"
                     :max="100"
@@ -764,7 +765,7 @@
               </label>
               <template v-if="hasAnimatorProperty(animator, 'tracking')">
                 <ScrubableNumber
-                  :modelValue="getAnimatorPropertyValue(animator, 'tracking') ?? 0"
+                  :modelValue="getAnimatorPropertyNumber(animator, 'tracking', 0)"
                   @update:modelValue="(v: number) => updateAnimatorProperty(animator.id, 'tracking', v)"
                   :min="-200"
                   :max="200"
@@ -820,6 +821,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
+import { safeCoordinateDefault, safeNonNegativeDefault } from "@/utils/typeGuards";
 import { isExpressionSafe } from "@/services/expressions/expressionValidator";
 import { type FontCategory, fontService } from "@/services/fontService";
 import {
@@ -830,9 +832,10 @@ import {
   EXPRESSION_PRESETS,
   TEXT_ANIMATOR_PRESET_LIST,
 } from "@/services/textAnimator";
-import { useCompositorStore } from "@/stores/compositorStore";
-import { useLayerStore } from "@/stores/layerStore";
+import { useAnimationStore } from "@/stores/animationStore";
 import { useKeyframeStore } from "@/stores/keyframeStore";
+import { useLayerStore } from "@/stores/layerStore";
+import { useProjectStore } from "@/stores/projectStore";
 import type {
   TextAnimator,
   TextAnimatorPresetType,
@@ -843,9 +846,10 @@ import type {
 
 const props = defineProps<{ layer: Layer & { type: "text" } }>();
 const emit = defineEmits(["update"]);
-const store = useCompositorStore();
-const layerStore = useLayerStore();
+const animationStore = useAnimationStore();
 const keyframeStore = useKeyframeStore();
+const layerStore = useLayerStore();
+const projectStore = useProjectStore();
 
 // Font loading state
 const fontCategories = ref<FontCategory[]>([]);
@@ -882,11 +886,24 @@ const transform = computed(() => props.layer.transform);
 // Include both visible spline layers AND invisible path layers as potential text paths
 // Users can put text on a logo shape (spline) or an invisible motion guide (path)
 const splineLayers = computed(() =>
-  store.layers.filter((l) => l.type === "spline" || l.type === "path"),
+  projectStore.getActiveCompLayers().filter((l) => l.type === "spline" || l.type === "path"),
 );
-const animators = computed<TextAnimator[]>(
-  () => textData.value.animators || [],
-);
+// Lean4/PureScript/Haskell: Explicit pattern matching - no lazy || []
+const animators = computed<TextAnimator[]>(() => {
+  const animatorsRaw = textData.value.animators;
+  return (animatorsRaw !== null && animatorsRaw !== undefined && Array.isArray(animatorsRaw)) ? animatorsRaw : [];
+});
+
+// Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+function isWigglySelectorEnabled(animator: TextAnimator): boolean {
+  const wigglySelector = (animator != null && typeof animator === "object" && "wigglySelector" in animator && animator.wigglySelector != null && typeof animator.wigglySelector === "object") ? animator.wigglySelector : undefined;
+  return (wigglySelector != null && typeof wigglySelector === "object" && "enabled" in wigglySelector && typeof wigglySelector.enabled === "boolean" && wigglySelector.enabled) ? true : false;
+}
+
+function isExpressionSelectorEnabled(animator: TextAnimator): boolean {
+  const expressionSelector = (animator != null && typeof animator === "object" && "expressionSelector" in animator && animator.expressionSelector != null && typeof animator.expressionSelector === "object") ? animator.expressionSelector : undefined;
+  return (expressionSelector != null && typeof expressionSelector === "object" && "enabled" in expressionSelector && typeof expressionSelector.enabled === "boolean" && expressionSelector.enabled) ? true : false;
+}
 
 // Text Animator functions
 function toggleAnimatorExpanded(animatorId: string) {
@@ -903,14 +920,14 @@ function addAnimator(presetType?: TextAnimatorPresetType) {
     : createTextAnimator(`Animator ${animators.value.length + 1}`);
 
   const currentAnimators = [...animators.value, newAnimator];
-  layerStore.updateLayerData(store, props.layer.id, { animators: currentAnimators });
+  layerStore.updateLayerData(props.layer.id, { animators: currentAnimators });
   expandedAnimators.value.add(newAnimator.id);
   emit("update");
 }
 
 function removeAnimator(animatorId: string) {
   const currentAnimators = animators.value.filter((a) => a.id !== animatorId);
-  layerStore.updateLayerData(store, props.layer.id, { animators: currentAnimators });
+  layerStore.updateLayerData(props.layer.id, { animators: currentAnimators });
   expandedAnimators.value.delete(animatorId);
   emit("update");
 }
@@ -924,7 +941,7 @@ function duplicateAnimator(animatorId: string) {
   duplicated.name = `${source.name} (Copy)`;
 
   const currentAnimators = [...animators.value, duplicated];
-  layerStore.updateLayerData(store, props.layer.id, { animators: currentAnimators });
+  layerStore.updateLayerData(props.layer.id, { animators: currentAnimators });
   expandedAnimators.value.add(duplicated.id);
   emit("update");
 }
@@ -936,7 +953,7 @@ function toggleAnimatorEnabled(animatorId: string) {
   const currentAnimators = animators.value.map((a) =>
     a.id === animatorId ? { ...a, enabled: !a.enabled } : a,
   );
-  layerStore.updateLayerData(store, props.layer.id, { animators: currentAnimators });
+  layerStore.updateLayerData(props.layer.id, { animators: currentAnimators });
   emit("update");
 }
 
@@ -944,7 +961,7 @@ function updateAnimatorName(animatorId: string, name: string) {
   const currentAnimators = animators.value.map((a) =>
     a.id === animatorId ? { ...a, name } : a,
   );
-  layerStore.updateLayerData(store, props.layer.id, { animators: currentAnimators });
+  layerStore.updateLayerData(props.layer.id, { animators: currentAnimators });
   emit("update");
 }
 
@@ -973,7 +990,7 @@ function updateRangeSelector(
     }
     return updated;
   });
-  layerStore.updateLayerData(store, props.layer.id, { animators: currentAnimators });
+  layerStore.updateLayerData(props.layer.id, { animators: currentAnimators });
   emit("update");
 }
 
@@ -1013,7 +1030,7 @@ function updateAnimatorProperty(
     }
     return updated;
   });
-  layerStore.updateLayerData(store, props.layer.id, { animators: currentAnimators });
+  layerStore.updateLayerData(props.layer.id, { animators: currentAnimators });
   emit("update");
 }
 
@@ -1021,7 +1038,15 @@ function getAnimatorPropertyValue(
   animator: TextAnimator,
   propKey: string,
 ): PropertyValue | undefined {
-  return animator.properties[propKey]?.value;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+  // Pattern match: animator.properties[propKey] ∈ AnimatableProperty | undefined
+  if (typeof animator.properties === "object" && animator.properties !== null && propKey in animator.properties) {
+    const prop = animator.properties[propKey];
+    if (typeof prop === "object" && prop !== null && "value" in prop) {
+      return prop.value;
+    }
+  }
+  return undefined;
 }
 
 function hasAnimatorProperty(
@@ -1036,7 +1061,10 @@ function toggleWigglySelector(animatorId: string) {
   const currentAnimators = animators.value.map((a) => {
     if (a.id !== animatorId) return a;
     const updated = { ...a };
-    if (updated.wigglySelector?.enabled) {
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const wigglySelector = (updated != null && typeof updated === "object" && "wigglySelector" in updated && updated.wigglySelector != null && typeof updated.wigglySelector === "object") ? updated.wigglySelector : undefined;
+    const wigglySelectorEnabled = (wigglySelector != null && typeof wigglySelector === "object" && "enabled" in wigglySelector && typeof wigglySelector.enabled === "boolean" && wigglySelector.enabled) ? true : false;
+    if (wigglySelectorEnabled) {
       // Disable
       updated.wigglySelector = { ...updated.wigglySelector, enabled: false };
     } else {
@@ -1047,7 +1075,7 @@ function toggleWigglySelector(animatorId: string) {
     }
     return updated;
   });
-  layerStore.updateLayerData(store, props.layer.id, { animators: currentAnimators });
+  layerStore.updateLayerData(props.layer.id, { animators: currentAnimators });
   emit("update");
 }
 
@@ -1065,7 +1093,7 @@ function updateWigglySelector(
     };
     return updated;
   });
-  layerStore.updateLayerData(store, props.layer.id, { animators: currentAnimators });
+  layerStore.updateLayerData(props.layer.id, { animators: currentAnimators });
   emit("update");
 }
 
@@ -1074,7 +1102,10 @@ function toggleExpressionSelector(animatorId: string) {
   const currentAnimators = animators.value.map((a) => {
     if (a.id !== animatorId) return a;
     const updated = { ...a };
-    if (updated.expressionSelector?.enabled) {
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const expressionSelector = (updated != null && typeof updated === "object" && "expressionSelector" in updated && updated.expressionSelector != null && typeof updated.expressionSelector === "object") ? updated.expressionSelector : undefined;
+    const expressionSelectorEnabled = (expressionSelector != null && typeof expressionSelector === "object" && "enabled" in expressionSelector && typeof expressionSelector.enabled === "boolean" && expressionSelector.enabled) ? true : false;
+    if (expressionSelectorEnabled) {
       // Disable
       updated.expressionSelector = {
         ...updated.expressionSelector,
@@ -1088,7 +1119,7 @@ function toggleExpressionSelector(animatorId: string) {
     }
     return updated;
   });
-  layerStore.updateLayerData(store, props.layer.id, { animators: currentAnimators });
+  layerStore.updateLayerData(props.layer.id, { animators: currentAnimators });
   emit("update");
 }
 
@@ -1120,7 +1151,7 @@ async function updateExpressionSelector(
     };
     return updated;
   });
-  layerStore.updateLayerData(store, props.layer.id, { animators: currentAnimators });
+  layerStore.updateLayerData(props.layer.id, { animators: currentAnimators });
   emit("update");
 }
 
@@ -1144,7 +1175,9 @@ const expressionPresetList = Object.entries(EXPRESSION_PRESETS).map(
 );
 
 function getProperty(name: string) {
-  return props.layer.properties?.find((p) => p.name === name);
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const properties = (props.layer != null && typeof props.layer === "object" && "properties" in props.layer && props.layer.properties != null && Array.isArray(props.layer.properties)) ? props.layer.properties : undefined;
+  return properties != null ? properties.find((p) => p.name === name) : undefined;
 }
 
 function getPropertyValue(name: string) {
@@ -1152,17 +1185,84 @@ function getPropertyValue(name: string) {
   return p ? p.value : null;
 }
 
+// Helper functions for safe numeric defaults in template
+// System F/Omega: Explicit pattern matching - no lazy nullish coalescing
+// Type proof: strokeWidth ∈ number | undefined → number (≥ 0, non-negative)
+function getStrokeWidth(): number {
+  const animValue = getPropertyValue("Stroke Width");
+  const dataValue = textData.value.strokeWidth;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+  // Pattern match: animValue ∈ PropertyValue | null, dataValue ∈ number | undefined
+  const value = (typeof animValue === "number" && Number.isFinite(animValue)) ? animValue : (typeof dataValue === "number" && Number.isFinite(dataValue) ? dataValue : undefined);
+  return safeNonNegativeDefault(value, 0, "textData.strokeWidth");
+}
+
+// Type proof: tracking ∈ number | undefined → number (coordinate-like, can be negative)
+function getTracking(): number {
+  const animValue = getPropertyValue("Tracking");
+  const dataValue = textData.value.tracking;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+  // Pattern match: animValue ∈ PropertyValue | null, dataValue ∈ number | undefined
+  const value = (typeof animValue === "number" && Number.isFinite(animValue)) ? animValue : (typeof dataValue === "number" && Number.isFinite(dataValue) ? dataValue : undefined);
+  return safeCoordinateDefault(value, 0, "textData.tracking");
+}
+
+// Type proof: lineSpacing ∈ number | undefined → number (≥ 0, non-negative)
+function getLineSpacing(): number {
+  const animValue = getPropertyValue("Line Spacing");
+  const dataValue = textData.value.lineSpacing;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+  // Pattern match: animValue ∈ PropertyValue | null, dataValue ∈ number | undefined
+  const value = (typeof animValue === "number" && Number.isFinite(animValue)) ? animValue : (typeof dataValue === "number" && Number.isFinite(dataValue) ? dataValue : undefined);
+  return safeNonNegativeDefault(value, 0, "textData.lineSpacing");
+}
+
+// Type proof: baselineShift ∈ number | undefined → number (coordinate-like, can be negative)
+function getBaselineShift(): number {
+  const animValue = getPropertyValue("Baseline Shift");
+  const dataValue = textData.value.baselineShift;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+  // Pattern match: animValue ∈ PropertyValue | null, dataValue ∈ number | undefined
+  const value = (typeof animValue === "number" && Number.isFinite(animValue)) ? animValue : (typeof dataValue === "number" && Number.isFinite(dataValue) ? dataValue : undefined);
+  return safeCoordinateDefault(value, 0, "textData.baselineShift");
+}
+
+// Type proof: characterOffset ∈ number | undefined → number (coordinate-like integer, can be negative)
+function getCharacterOffset(): number {
+  const animValue = getPropertyValue("Character Offset");
+  const dataValue = textData.value.characterOffset;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+  // Pattern match: animValue ∈ PropertyValue | null, dataValue ∈ number | undefined
+  const value = (typeof animValue === "number" && Number.isFinite(animValue)) ? animValue : (typeof dataValue === "number" && Number.isFinite(dataValue) ? dataValue : undefined);
+  return safeCoordinateDefault(value, 0, "textData.characterOffset");
+}
+
+// Type proof: firstLineIndent ∈ number | undefined → number (coordinate-like, can be negative)
+function getFirstLineIndent(): number {
+  return safeCoordinateDefault(textData.value.firstLineIndent, 0, "textData.firstLineIndent");
+}
+
+// Type proof: spaceBefore ∈ number | undefined → number (≥ 0, non-negative)
+function getSpaceBefore(): number {
+  return safeNonNegativeDefault(textData.value.spaceBefore, 0, "textData.spaceBefore");
+}
+
+// Type proof: spaceAfter ∈ number | undefined → number (≥ 0, non-negative)
+function getSpaceAfter(): number {
+  return safeNonNegativeDefault(textData.value.spaceAfter, 0, "textData.spaceAfter");
+}
+
 function updateText(val: string) {
   // Use store action to update text property
-  keyframeStore.setPropertyValue(store, props.layer.id, "Source Text", val);
+  keyframeStore.setPropertyValue(props.layer.id, "Source Text", val);
   // Also update the layer data directly for immediate render
-  layerStore.updateLayerData(store, props.layer.id, { text: val });
+  layerStore.updateLayerData(props.layer.id, { text: val });
   emit("update");
 }
 
 function updateData(key: string, val: PropertyValue) {
   // Use store action to update layer data
-  layerStore.updateLayerData(store, props.layer.id, { [key]: val });
+  layerStore.updateLayerData(props.layer.id, { [key]: val });
 
   // Sync to animatable property via store
   const map: Record<string, string> = {
@@ -1172,14 +1272,14 @@ function updateData(key: string, val: PropertyValue) {
     strokeWidth: "Stroke Width",
   };
   if (map[key]) {
-    keyframeStore.setPropertyValue(store, props.layer.id, map[key], val);
+    keyframeStore.setPropertyValue(props.layer.id, map[key], val);
   }
   emit("update");
 }
 
 function updateAnimatable(name: string, val: number) {
   // Use store action to update property value
-  keyframeStore.setPropertyValue(store, props.layer.id, name, val);
+  keyframeStore.setPropertyValue(props.layer.id, name, val);
 
   // Also update static data for immediate render via store
   const keyMap: Record<string, string> = {
@@ -1194,33 +1294,40 @@ function updateAnimatable(name: string, val: number) {
     "Last Margin": "pathLastMargin",
   };
   if (keyMap[name]) {
-    layerStore.updateLayerData(store, props.layer.id, { [keyMap[name]]: val });
+    layerStore.updateLayerData(props.layer.id, { [keyMap[name]]: val });
   }
   emit("update");
 }
 
 function isPropertyAnimated(name: string): boolean {
   const prop = getProperty(name);
-  return prop?.animated ?? false;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining/nullish coalescing
+  // Pattern match: prop ∈ Property | undefined → animated ∈ boolean
+  if (typeof prop === "object" && prop !== null && "animated" in prop) {
+    return typeof prop.animated === "boolean" ? prop.animated : false;
+  }
+  return false;
 }
 
 function toggleKeyframe(name: string) {
   const prop = getProperty(name);
   if (!prop) return;
 
-  const currentFrame = store.currentFrame;
+  const currentFrame = animationStore.currentFrame;
 
   // Check if keyframe exists at current frame
-  const existingKf = prop.keyframes?.find(
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const keyframes = (prop != null && typeof prop === "object" && "keyframes" in prop && prop.keyframes != null && Array.isArray(prop.keyframes)) ? prop.keyframes : undefined;
+  const existingKf = keyframes != null ? keyframes.find(
     (kf: Keyframe) => kf.frame === currentFrame,
-  );
+  ) : undefined;
 
   if (existingKf) {
     // Remove keyframe via store
-    keyframeStore.removeKeyframe(store, props.layer.id, name, existingKf.id);
+    keyframeStore.removeKeyframe(props.layer.id, name, existingKf.id);
   } else {
     // Add keyframe at current frame via store
-    keyframeStore.addKeyframe(store, props.layer.id, name, prop.value, currentFrame);
+    keyframeStore.addKeyframe(props.layer.id, name, prop.value, currentFrame);
   }
 
   emit("update");
@@ -1235,13 +1342,13 @@ function updateTransform(propName: string, axis: string | null, val: number) {
     newValue = val;
   }
   // Use store action to update transform property
-  keyframeStore.setPropertyValue(store, props.layer.id, `transform.${propName}`, newValue);
+  keyframeStore.setPropertyValue(props.layer.id, `transform.${propName}`, newValue);
   emit("update");
 }
 
 function updateOpacity(val: number) {
   // Use store action to update opacity
-  keyframeStore.setPropertyValue(store, props.layer.id, "opacity", val);
+  keyframeStore.setPropertyValue(props.layer.id, "opacity", val);
   emit("update");
 }
 

@@ -74,7 +74,7 @@
           @change="update('spriteRows', Number(($event.target as HTMLInputElement).value))"
         />
       </div>
-      <div v-if="renderOptions.spriteEnabled && ((renderOptions.spriteColumns ?? 1) > 1 || (renderOptions.spriteRows ?? 1) > 1)" class="property-row checkbox-row">
+      <div v-if="renderOptions.spriteEnabled && hasSpriteSheet" class="property-row checkbox-row">
         <label title="Animate through sprite sheet frames over time.">
           <input
             type="checkbox"
@@ -96,7 +96,7 @@
         />
         <span class="value-display">{{ renderOptions.spriteFrameRate }} fps</span>
       </div>
-      <div v-if="renderOptions.spriteEnabled && ((renderOptions.spriteColumns ?? 1) > 1 || (renderOptions.spriteRows ?? 1) > 1)" class="property-row checkbox-row">
+      <div v-if="renderOptions.spriteEnabled && hasSpriteSheet" class="property-row checkbox-row">
         <label title="Each particle starts at a random frame in the sprite sheet.">
           <input
             type="checkbox"
@@ -306,6 +306,7 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from "vue";
 import type {
   ConnectionRenderConfig,
   ParticleRenderOptions,
@@ -317,13 +318,28 @@ interface Props {
   expanded: boolean;
 }
 
-defineProps<Props>();
+const props = defineProps<Props>();
 
 const emit = defineEmits<{
   (e: "toggle"): void;
   (e: "update", key: keyof ParticleRenderOptions, value: ParticleRenderOptions[keyof ParticleRenderOptions]): void;
   (e: "updateConnection", key: keyof ConnectionRenderConfig, value: ConnectionRenderConfig[keyof ConnectionRenderConfig]): void;
 }>();
+
+// Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+// Computed properties for optional renderOptions properties
+const renderOptionsSpriteColumns = computed(() => {
+  const options = props.renderOptions;
+  return (typeof options === "object" && options !== null && "spriteColumns" in options && typeof options.spriteColumns === "number" && Number.isFinite(options.spriteColumns)) ? options.spriteColumns : 1;
+});
+const renderOptionsSpriteRows = computed(() => {
+  const options = props.renderOptions;
+  return (typeof options === "object" && options !== null && "spriteRows" in options && typeof options.spriteRows === "number" && Number.isFinite(options.spriteRows)) ? options.spriteRows : 1;
+});
+// Computed property for sprite sheet condition (has multiple columns or rows)
+const hasSpriteSheet = computed(() => {
+  return renderOptionsSpriteColumns.value > 1 || renderOptionsSpriteRows.value > 1;
+});
 
 function update(key: keyof ParticleRenderOptions, value: ParticleRenderOptions[keyof ParticleRenderOptions]): void {
   emit("update", key, value);

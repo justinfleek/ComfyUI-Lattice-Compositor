@@ -83,12 +83,15 @@ onMounted(() => {
       (e.clientY - rect.top) * (canvas.height / rect.height),
     );
 
-    // Sample pixel
-    const color = samplePixel(canvas, x, y);
-    if (color) {
+    // Sample pixel (throws explicit error if context unavailable)
+    try {
+      const color = samplePixel(canvas, x, y);
       sampledColor.value = color;
       isActive.value = false;
       document.body.style.cursor = "";
+    } catch (error) {
+      // Canvas context not available - skip sampling (expected state)
+      console.warn("[EyedropperTool] Cannot sample pixel:", error instanceof Error ? error.message : String(error));
     }
   };
 
@@ -112,11 +115,19 @@ function toggleEyedropper() {
   }
 }
 
+/**
+ * Sample pixel color from canvas
+ * 
+ * System F/Omega proof: Explicit error throwing - never return null
+ * Type proof: canvas ∈ HTMLCanvasElement, x ∈ number, y ∈ number → SampledColor (non-nullable)
+ * Mathematical proof: Pixel sampling must succeed or throw explicit error
+ * Pattern proof: Missing canvas context is an explicit error condition
+ */
 function samplePixel(
   canvas: HTMLCanvasElement,
   x: number,
   y: number,
-): SampledColor | null {
+): SampledColor {
   // Try 2D context first
   const ctx2d = canvas.getContext("2d", { willReadFrequently: true });
   if (ctx2d) {
@@ -141,7 +152,12 @@ function samplePixel(
     return { r: pixel[0], g: pixel[1], b: pixel[2] };
   }
 
-  return null;
+  // System F/Omega: Throw explicit error when no canvas context is available
+  throw new Error(
+    `[EyedropperTool] Cannot sample pixel: No canvas context available. ` +
+    `Canvas dimensions: ${canvas.width}x${canvas.height}, position: (${x}, ${y}). ` +
+    `Canvas must have a 2D, WebGL, or WebGL2 context available. Wrap in try/catch if "no context" is an expected state.`
+  );
 }
 
 function applyCorrection() {

@@ -5,6 +5,14 @@
  * for project files, templates, and external data imports.
  */
 
+import type { JSONValue } from "@/types/dataAsset";
+
+/**
+ * All possible JavaScript values that can be validated at runtime
+ * Used as input type for validators (replaces unknown)
+ */
+type RuntimeValue = string | number | boolean | object | null | undefined | bigint | symbol;
+
 // ============================================================
 // SAFE JSON PARSING
 // ============================================================
@@ -14,17 +22,14 @@
  */
 export function safeJSONParse<T>(
   jsonString: string,
-  fallback: T | null = null,
-):
-  | { success: true; data: T }
-  | { success: false; error: string; data: typeof fallback } {
+  _fallback: T | null = null,
+): T {
   try {
     const data = JSON.parse(jsonString);
-    return { success: true, data };
+    return data;
   } catch (e) {
     const error = e instanceof Error ? e.message : "Unknown parse error";
-    console.error("[JSONValidation] Parse error:", error);
-    return { success: false, error, data: fallback };
+    throw new Error(`[JSONValidation] Failed to parse JSON: ${error}. File may be corrupted or invalid.`);
   }
 }
 
@@ -36,9 +41,9 @@ export function safeJSONParse<T>(
  * Accepts any serializable value (JSON-compatible types)
  */
 export function safeJSONStringify(
-  data: unknown, // Accept any value for JSON serialization
+  data: JSONValue,
   indent: number = 2,
-): { success: true; json: string } | { success: false; error: string } {
+): string {
   try {
     const seen = new WeakSet();
     const json = JSON.stringify(
@@ -54,11 +59,10 @@ export function safeJSONStringify(
       },
       indent,
     );
-    return { success: true, json };
+    return json;
   } catch (e) {
     const error = e instanceof Error ? e.message : "Unknown stringify error";
-    console.error("[JSONValidation] Stringify error:", error);
-    return { success: false, error };
+    throw new Error(`[JSONValidation] Failed to stringify JSON: ${error}. Data may contain circular references or non-serializable values.`);
   }
 }
 
@@ -70,41 +74,41 @@ export function safeJSONStringify(
  * Generic object type for JSON validation
  */
 export interface JSONObject {
-  [key: string]: unknown;
+  [key: string]: JSONValue;
 }
 
 /**
  * Check if value is a non-null object
  */
-export function isObject(value: unknown): value is JSONObject {
+export function isObject(value: RuntimeValue): value is JSONObject {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 /**
  * Check if value is a valid string
  */
-export function isString(value: unknown): value is string {
+export function isString(value: RuntimeValue): value is string {
   return typeof value === "string";
 }
 
 /**
  * Check if value is a valid number (not NaN)
  */
-export function isNumber(value: unknown): value is number {
+export function isNumber(value: RuntimeValue): value is number {
   return typeof value === "number" && !Number.isNaN(value);
 }
 
 /**
  * Check if value is a valid array
  */
-export function isArray(value: unknown): value is unknown[] {
+export function isArray(value: RuntimeValue): value is JSONValue[] {
   return Array.isArray(value);
 }
 
 /**
  * Check if value is a valid boolean
  */
-export function isBoolean(value: unknown): value is boolean {
+export function isBoolean(value: RuntimeValue): value is boolean {
   return typeof value === "boolean";
 }
 
@@ -128,7 +132,7 @@ export interface ValidationResult {
 /**
  * Validate Lattice Template structure (.lattice.json)
  */
-export function validateLatticeTemplate(data: unknown): ValidationResult {
+export function validateLatticeTemplate(data: RuntimeValue): ValidationResult {
   const errors: ValidationError[] = [];
   const warnings: string[] = [];
 
@@ -179,7 +183,7 @@ export function validateLatticeTemplate(data: unknown): ValidationResult {
 /**
  * Validate template configuration
  */
-export function validateTemplateConfig(data: unknown): ValidationResult {
+export function validateTemplateConfig(data: RuntimeValue): ValidationResult {
   const errors: ValidationError[] = [];
   const warnings: string[] = [];
 
@@ -245,18 +249,10 @@ export function sanitizeFileName(name: string): string {
 /**
  * Deep clone with sanitization
  */
-export function deepCloneSanitized<T>(obj: T): T {
-  const result = safeJSONStringify(obj);
-  if (!result.success) {
-    throw new Error(`Failed to clone: ${result.error}`);
-  }
-
-  const parsed = safeJSONParse<T>(result.json);
-  if (!parsed.success) {
-    throw new Error(`Failed to parse clone: ${parsed.error}`);
-  }
-
-  return parsed.data;
+export function deepCloneSanitized<T extends JSONValue>(obj: T): T {
+  const json = safeJSONStringify(obj);
+  const parsed = safeJSONParse<T>(json);
+  return parsed;
 }
 
 // ============================================================

@@ -22,7 +22,16 @@
     "test:playwright:ui": "bash scripts/setup-test-env.sh && playwright test --ui",
     "test:playwright:install": "bash scripts/install-playwright-browsers.sh",
     "test:playwright:setup-comfyui": "bash scripts/setup-comfyui-test.sh",
-    "test:playwright:setup-local": "cd .. && bash scripts/setup-comfyui-local.sh"
+    "test:playwright:setup-local": "cd .. && bash scripts/setup-comfyui-local.sh",
+    "lint": "npx biome check .",
+    "lint:fix": "npx biome check --write .",
+    "format": "npx biome format --write .",
+    "format:check": "npx biome format .",
+    "typecheck": "npx tsc --noEmit",
+    "check:lazy": "node scripts/check-lazy-patterns.js",
+    "check:lazy:strict": "node scripts/check-lazy-patterns.js --strict",
+    "check:all": "npm run typecheck && npm run lint && npm run format:check && npm run check:lazy",
+    "precommit": "npm run format && npm run lint:fix && npm run typecheck && npm run check:lazy"
   },
   "dependencies": {
     "@phosphor-icons/vue": "^2.2.1",

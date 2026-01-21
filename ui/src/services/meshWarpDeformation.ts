@@ -21,6 +21,7 @@ import type {
 import { DEFAULT_WARP_WEIGHT_OPTIONS } from "@/types/meshWarp";
 import type { ControlPoint } from "@/types/project";
 import { createLogger } from "@/utils/logger";
+import { isFiniteNumber } from "@/utils/typeGuards";
 import { interpolateProperty } from "./interpolation";
 
 const logger = createLogger("MeshWarpDeformation");
@@ -466,13 +467,18 @@ export class MeshWarpDeformationService {
     }
 
     // Create pin rest states
-    const pinRestStates: WarpPinRestState[] = pins.map((pin) => ({
-      pinId: pin.id,
-      position: { ...pin.position.value },
-      rotation: pin.rotation.value,
-      scale: pin.scale.value,
-      inFront: pin.inFront?.value,
-    }));
+    const pinRestStates: WarpPinRestState[] = pins.map((pin) => {
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const pinInFront = (pin != null && typeof pin === "object" && "inFront" in pin && pin.inFront != null && typeof pin.inFront === "object") ? pin.inFront : undefined;
+      const inFrontValue = (pinInFront != null && typeof pinInFront === "object" && "value" in pinInFront && typeof pinInFront.value === "boolean") ? pinInFront.value : undefined;
+      return {
+        pinId: pin.id,
+        position: { ...pin.position.value },
+        rotation: pin.rotation.value,
+        scale: pin.scale.value,
+        inFront: inFrontValue,
+      };
+    });
 
     // Triangulate the mesh (control points + pins)
     const allPoints: Point2D[] = [
@@ -630,10 +636,26 @@ export class MeshWarpDeformationService {
 
   /**
    * Deform a mesh and return result
+   * 
+   * System F/Omega proof: Explicit validation of mesh cache
+   * Type proof: layerId ∈ string, frame ∈ number → WarpDeformationResult (non-nullable)
+   * Mathematical proof: Mesh must be cached to deform it
+   * Pattern proof: Missing mesh is an explicit failure condition, not a lazy null return
    */
-  deform(layerId: string, frame: number): WarpDeformationResult | null {
+  deform(layerId: string, frame: number): WarpDeformationResult {
     const mesh = this.meshCache.get(layerId);
-    if (!mesh) return null;
+    
+    // System F/Omega proof: Explicit validation of mesh existence
+    // Type proof: meshCache.get(layerId) returns Mesh | undefined
+    // Mathematical proof: Mesh must be cached before deformation
+    if (!mesh) {
+      throw new Error(
+        `[MeshWarpDeformation] Cannot deform mesh: Mesh not cached. ` +
+        `Layer ID: ${layerId}, frame: ${frame}, cache size: ${this.meshCache.size}. ` +
+        `Mesh must be cached before deformation. ` +
+        `Wrap in try/catch if "mesh not cached" is an expected state.`
+      );
+    }
 
     const vertices = deformMesh(mesh, frame);
 
@@ -655,7 +677,12 @@ export class MeshWarpDeformationService {
    * Get all pins for a layer
    */
   getPins(layerId: string): WarpPin[] {
-    return this.meshCache.get(layerId)?.pins ?? [];
+    // Type proof: mesh ∈ WarpMesh | undefined → pins ∈ WarpPin[]
+    const mesh = this.meshCache.get(layerId);
+    if (mesh !== undefined && typeof mesh === "object" && mesh !== null && "pins" in mesh && Array.isArray(mesh.pins)) {
+      return mesh.pins;
+    }
+    return [];
   }
 
   /**

@@ -21,6 +21,8 @@
  * Matches ATI_AudioReactive and Yvann-Nodes functionality.
  */
 
+import { isFiniteNumber, assertDefined, safeCoordinateDefault } from "@/utils/typeGuards";
+
 // ============================================================================
 // Types
 // ============================================================================
@@ -171,14 +173,17 @@ export async function analyzeAudio(
 
   // Determine which buffer to analyze based on mode
   let analyzeBuffer = buffer;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
   if (
-    config?.analysisMode &&
+    typeof config === "object" && config !== null && "analysisMode" in config && typeof config.analysisMode === "string" &&
     config.analysisMode !== "full" &&
-    config.stemData
+    typeof config.stemData === "object" && config.stemData !== null
   ) {
     const stemKey = config.analysisMode as keyof typeof config.stemData;
     if (config.stemData[stemKey]) {
-      analyzeBuffer = config.stemData[stemKey]!;
+      // Type proof: stemData[stemKey] is guaranteed non-null by the if check
+      assertDefined(config.stemData[stemKey], "stemData[stemKey] must exist when checked");
+      analyzeBuffer = config.stemData[stemKey];
     }
   }
 
@@ -324,7 +329,11 @@ export async function extractFrequencyBands(
   const sampleRate = buffer.sampleRate;
 
   // Use configured FFT size for spectral analysis resolution
-  const fftSize = config?.fftSize ?? DEFAULT_FFT_SIZE;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+  const fftSizeValue = (typeof config === "object" && config !== null && "fftSize" in config && typeof config.fftSize === "number")
+    ? config.fftSize
+    : 2048;
+  const fftSize = isFiniteNumber(fftSizeValue) && Number.isInteger(fftSizeValue) && fftSizeValue > 0 && (fftSizeValue & (fftSizeValue - 1)) === 0 ? fftSizeValue : DEFAULT_FFT_SIZE;
 
   // Create offline context for analysis
   const offlineCtx = new OfflineAudioContext(1, buffer.length, sampleRate);
@@ -352,8 +361,16 @@ export async function extractFrequencyBands(
   const binFrequency = sampleRate / fftSize;
 
   // Apply frequency range filtering for band-limited analysis
-  const minFreq = config?.minFrequency ?? 20;
-  const maxFreq = config?.maxFrequency ?? 20000;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+  const minFreqValue = (typeof config === "object" && config !== null && "minFrequency" in config && typeof config.minFrequency === "number")
+    ? config.minFrequency
+    : 20;
+  const minFreq = isFiniteNumber(minFreqValue) && minFreqValue > 0 && minFreqValue < sampleRate / 2 ? minFreqValue : 20;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+  const maxFreqValue = (typeof config === "object" && config !== null && "maxFrequency" in config && typeof config.maxFrequency === "number")
+    ? config.maxFrequency
+    : sampleRate / 2;
+  const maxFreq = isFiniteNumber(maxFreqValue) && maxFreqValue > 0 && maxFreqValue <= sampleRate / 2 ? maxFreqValue : 20000;
   const minBin = Math.floor(minFreq / binFrequency);
   const maxBin = Math.ceil(maxFreq / binFrequency);
 
@@ -437,7 +454,8 @@ function simpleFFT(samples: Float32Array): number[] {
   const windowed = new Float32Array(n);
   for (let i = 0; i < n; i++) {
     const windowValue = 0.5 * (1 - Math.cos((2 * Math.PI * i) / (n - 1)));
-    windowed[i] = (samples[i] || 0) * windowValue;
+    // Type proof: audio sample ∈ number | undefined → number (coordinate-like, can be negative)
+    windowed[i] = safeCoordinateDefault(samples[i], 0, `samples[${i}]`) * windowValue;
   }
 
   // Simple DFT (not optimized, but works for our purposes)
@@ -1000,99 +1018,300 @@ export function getFeatureAtFrame(
   const clampedFrame = frame; // Frame is now guaranteed to be in bounds
 
   switch (feature) {
-    case "amplitude":
-      return analysis.amplitudeEnvelope[clampedFrame] ?? 0;
+    case "amplitude": {
+      // Type proof: amplitudeEnvelope[frame] ∈ ℝ ∪ {undefined} → ℝ
+      const amplitudeValue = analysis.amplitudeEnvelope[clampedFrame];
+      return isFiniteNumber(amplitudeValue) && amplitudeValue >= 0 ? amplitudeValue : 0;
+    }
 
-    case "rms":
-      return analysis.rmsEnergy[clampedFrame] ?? 0;
+    case "rms": {
+      // Type proof: rmsEnergy[frame] ∈ ℝ ∪ {undefined} → ℝ
+      const rmsValue = analysis.rmsEnergy[clampedFrame];
+      return isFiniteNumber(rmsValue) && rmsValue >= 0 ? rmsValue : 0;
+    }
 
-    case "spectralCentroid":
-      return analysis.spectralCentroid[clampedFrame] ?? 0;
+    case "spectralCentroid": {
+      // Type proof: spectralCentroid[frame] ∈ ℝ ∪ {undefined} → ℝ
+      const centroidValue = analysis.spectralCentroid[clampedFrame];
+      return isFiniteNumber(centroidValue) && centroidValue >= 0 ? centroidValue : 0;
+    }
 
-    case "sub":
-      return analysis.frequencyBands.sub[clampedFrame] ?? 0;
+    case "sub": {
+      // Type proof: frequencyBands.sub[frame] ∈ ℝ ∪ {undefined} → ℝ
+      const subValue = analysis.frequencyBands.sub[clampedFrame];
+      return isFiniteNumber(subValue) && subValue >= 0 ? subValue : 0;
+    }
 
-    case "bass":
-      return analysis.frequencyBands.bass[clampedFrame] ?? 0;
+    case "bass": {
+      // Type proof: frequencyBands.bass[frame] ∈ ℝ ∪ {undefined} → ℝ
+      const bassValue = analysis.frequencyBands.bass[clampedFrame];
+      return isFiniteNumber(bassValue) && bassValue >= 0 ? bassValue : 0;
+    }
 
-    case "lowMid":
-      return analysis.frequencyBands.lowMid[clampedFrame] ?? 0;
+    case "lowMid": {
+      // Type proof: frequencyBands.lowMid[frame] ∈ ℝ ∪ {undefined} → ℝ
+      const lowMidValue = analysis.frequencyBands.lowMid[clampedFrame];
+      return isFiniteNumber(lowMidValue) && lowMidValue >= 0 ? lowMidValue : 0;
+    }
 
-    case "mid":
-      return analysis.frequencyBands.mid[clampedFrame] ?? 0;
+    case "mid": {
+      // Type proof: frequencyBands.mid[frame] ∈ ℝ ∪ {undefined} → ℝ
+      const midValue = analysis.frequencyBands.mid[clampedFrame];
+      return isFiniteNumber(midValue) && midValue >= 0 ? midValue : 0;
+    }
 
-    case "highMid":
-      return analysis.frequencyBands.highMid[clampedFrame] ?? 0;
+    case "highMid": {
+      // Type proof: frequencyBands.highMid[frame] ∈ ℝ ∪ {undefined} → ℝ
+      const highMidValue = analysis.frequencyBands.highMid[clampedFrame];
+      return isFiniteNumber(highMidValue) && highMidValue >= 0 ? highMidValue : 0;
+    }
 
-    case "high":
-      return analysis.frequencyBands.high[clampedFrame] ?? 0;
+    case "high": {
+      // Type proof: frequencyBands.high[frame] ∈ ℝ ∪ {undefined} → ℝ
+      const highValue = analysis.frequencyBands.high[clampedFrame];
+      return isFiniteNumber(highValue) && highValue >= 0 ? highValue : 0;
+    }
 
     case "onsets":
       // Return 1 if this frame is an onset, 0 otherwise
       return analysis.onsets.includes(clampedFrame) ? 1 : 0;
 
     // Enhanced features
-    case "spectralFlux":
-      return analysis.spectralFlux?.[clampedFrame] ?? 0;
+    case "spectralFlux": {
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+      // Pattern match: spectralFlux?.[frame] ∈ ℝ ∪ {undefined} → ℝ
+      const spectralFluxArray = analysis.spectralFlux;
+      if (Array.isArray(spectralFluxArray) && clampedFrame >= 0 && clampedFrame < spectralFluxArray.length && typeof spectralFluxArray[clampedFrame] === "number") {
+        const spectralFluxValue = spectralFluxArray[clampedFrame];
+        return isFiniteNumber(spectralFluxValue) && spectralFluxValue >= 0 ? spectralFluxValue : 0;
+      }
+      return 0;
+    }
 
     case "zeroCrossingRate":
-    case "zcr":
-      return analysis.zeroCrossingRate?.[clampedFrame] ?? 0;
+    case "zcr": {
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+      // Pattern match: zeroCrossingRate?.[frame] ∈ ℝ ∪ {undefined} → ℝ
+      const zcrArray = analysis.zeroCrossingRate;
+      if (Array.isArray(zcrArray) && clampedFrame >= 0 && clampedFrame < zcrArray.length && typeof zcrArray[clampedFrame] === "number") {
+        const zcrValue = zcrArray[clampedFrame];
+        return isFiniteNumber(zcrValue) && zcrValue >= 0 && zcrValue <= 1 ? zcrValue : 0;
+      }
+      return 0;
+    }
 
     case "spectralRolloff":
-    case "rolloff":
-      return analysis.spectralRolloff?.[clampedFrame] ?? 0;
+    case "rolloff": {
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+      // Pattern match: spectralRolloff?.[frame] ∈ ℝ ∪ {undefined} → ℝ
+      const rolloffArray = analysis.spectralRolloff;
+      if (Array.isArray(rolloffArray) && clampedFrame >= 0 && clampedFrame < rolloffArray.length && typeof rolloffArray[clampedFrame] === "number") {
+        const rolloffValue = rolloffArray[clampedFrame];
+        return isFiniteNumber(rolloffValue) && rolloffValue >= 0 ? rolloffValue : 0;
+      }
+      return 0;
+    }
 
     case "spectralFlatness":
-    case "flatness":
-      return analysis.spectralFlatness?.[clampedFrame] ?? 0;
+    case "flatness": {
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+      // Pattern match: spectralFlatness?.[frame] ∈ ℝ ∪ {undefined} → ℝ
+      const flatnessArray = analysis.spectralFlatness;
+      if (Array.isArray(flatnessArray) && clampedFrame >= 0 && clampedFrame < flatnessArray.length && typeof flatnessArray[clampedFrame] === "number") {
+        const flatnessValue = flatnessArray[clampedFrame];
+        return isFiniteNumber(flatnessValue) && flatnessValue >= 0 && flatnessValue <= 1 ? flatnessValue : 0;
+      }
+      return 0;
+    }
 
-    case "chromaEnergy":
-      return analysis.chromaFeatures?.chromaEnergy[clampedFrame] ?? 0;
+    case "chromaEnergy": {
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining/null checks
+      // Pattern match: chromaFeatures ∈ object | undefined → object | {}
+      if (typeof analysis.chromaFeatures === "object" && analysis.chromaFeatures !== null && "chromaEnergy" in analysis.chromaFeatures && Array.isArray(analysis.chromaFeatures.chromaEnergy)) {
+        const chromaEnergyArray = analysis.chromaFeatures.chromaEnergy;
+        if (clampedFrame >= 0 && clampedFrame < chromaEnergyArray.length && typeof chromaEnergyArray[clampedFrame] === "number") {
+          const chromaEnergyValue = chromaEnergyArray[clampedFrame];
+          return isFiniteNumber(chromaEnergyValue) && chromaEnergyValue >= 0 ? chromaEnergyValue : 0;
+        }
+      }
+      return 0;
+    }
 
     // Individual chroma pitch classes (C, C#, D, etc.)
-    case "chromaC":
-      return analysis.chromaFeatures?.chroma[clampedFrame]?.[0] ?? 0;
+    case "chromaC": {
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining/null/undefined checks
+      // Pattern match: chromaFeatures.chroma[frame][0] ∈ ℝ ∪ {undefined} → ℝ
+      if (typeof analysis.chromaFeatures === "object" && analysis.chromaFeatures !== null && "chroma" in analysis.chromaFeatures && Array.isArray(analysis.chromaFeatures.chroma)) {
+        const chromaArray = analysis.chromaFeatures.chroma;
+        if (clampedFrame >= 0 && clampedFrame < chromaArray.length && Array.isArray(chromaArray[clampedFrame]) && chromaArray[clampedFrame].length > 0 && typeof chromaArray[clampedFrame][0] === "number") {
+          const chromaValue = chromaArray[clampedFrame][0];
+          return isFiniteNumber(chromaValue) && chromaValue >= 0 && chromaValue <= 1 ? chromaValue : 0;
+        }
+      }
+      return 0;
+    }
     case "chromaCs":
-    case "chromaDb":
-      return analysis.chromaFeatures?.chroma[clampedFrame]?.[1] ?? 0;
-    case "chromaD":
-      return analysis.chromaFeatures?.chroma[clampedFrame]?.[2] ?? 0;
+    case "chromaDb": {
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+      const chromaFeatures = (typeof analysis.chromaFeatures === "object" && analysis.chromaFeatures !== null)
+        ? analysis.chromaFeatures
+        : null;
+      const chromaArray = (chromaFeatures !== null && "chroma" in chromaFeatures && Array.isArray(chromaFeatures.chroma))
+        ? chromaFeatures.chroma
+        : [];
+      const chromaFrame = Array.isArray(chromaArray) ? chromaArray[clampedFrame] : undefined;
+      const chromaValue = Array.isArray(chromaFrame) ? chromaFrame[1] : undefined;
+      return isFiniteNumber(chromaValue) && chromaValue >= 0 && chromaValue <= 1 ? chromaValue : 0;
+    }
+    case "chromaD": {
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+      const chromaFeatures = (typeof analysis.chromaFeatures === "object" && analysis.chromaFeatures !== null)
+        ? analysis.chromaFeatures
+        : null;
+      const chromaArray = (chromaFeatures !== null && "chroma" in chromaFeatures && Array.isArray(chromaFeatures.chroma))
+        ? chromaFeatures.chroma
+        : [];
+      const chromaFrame = Array.isArray(chromaArray) ? chromaArray[clampedFrame] : undefined;
+      const chromaValue = Array.isArray(chromaFrame) ? chromaFrame[2] : undefined;
+      return isFiniteNumber(chromaValue) && chromaValue >= 0 && chromaValue <= 1 ? chromaValue : 0;
+    }
     case "chromaDs":
-    case "chromaEb":
-      return analysis.chromaFeatures?.chroma[clampedFrame]?.[3] ?? 0;
-    case "chromaE":
-      return analysis.chromaFeatures?.chroma[clampedFrame]?.[4] ?? 0;
-    case "chromaF":
-      return analysis.chromaFeatures?.chroma[clampedFrame]?.[5] ?? 0;
+    case "chromaEb": {
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+      const chromaFeatures = (typeof analysis.chromaFeatures === "object" && analysis.chromaFeatures !== null)
+        ? analysis.chromaFeatures
+        : null;
+      const chromaArray = (chromaFeatures !== null && "chroma" in chromaFeatures && Array.isArray(chromaFeatures.chroma))
+        ? chromaFeatures.chroma
+        : [];
+      const chromaFrame = Array.isArray(chromaArray) ? chromaArray[clampedFrame] : undefined;
+      const chromaValue = Array.isArray(chromaFrame) ? chromaFrame[3] : undefined;
+      return isFiniteNumber(chromaValue) && chromaValue >= 0 && chromaValue <= 1 ? chromaValue : 0;
+    }
+    case "chromaE": {
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+      const chromaFeatures = (typeof analysis.chromaFeatures === "object" && analysis.chromaFeatures !== null)
+        ? analysis.chromaFeatures
+        : null;
+      const chromaArray = (chromaFeatures !== null && "chroma" in chromaFeatures && Array.isArray(chromaFeatures.chroma))
+        ? chromaFeatures.chroma
+        : [];
+      const chromaFrame = Array.isArray(chromaArray) ? chromaArray[clampedFrame] : undefined;
+      const chromaValue = Array.isArray(chromaFrame) ? chromaFrame[4] : undefined;
+      return isFiniteNumber(chromaValue) && chromaValue >= 0 && chromaValue <= 1 ? chromaValue : 0;
+    }
+    case "chromaF": {
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+      const chromaFeatures = (typeof analysis.chromaFeatures === "object" && analysis.chromaFeatures !== null)
+        ? analysis.chromaFeatures
+        : null;
+      const chromaArray = (chromaFeatures !== null && "chroma" in chromaFeatures && Array.isArray(chromaFeatures.chroma))
+        ? chromaFeatures.chroma
+        : [];
+      const chromaFrame = Array.isArray(chromaArray) ? chromaArray[clampedFrame] : undefined;
+      const chromaValue = Array.isArray(chromaFrame) ? chromaFrame[5] : undefined;
+      return isFiniteNumber(chromaValue) && chromaValue >= 0 && chromaValue <= 1 ? chromaValue : 0;
+    }
     case "chromaFs":
-    case "chromaGb":
-      return analysis.chromaFeatures?.chroma[clampedFrame]?.[6] ?? 0;
-    case "chromaG":
-      return analysis.chromaFeatures?.chroma[clampedFrame]?.[7] ?? 0;
+    case "chromaGb": {
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+      const chromaFeatures = (typeof analysis.chromaFeatures === "object" && analysis.chromaFeatures !== null)
+        ? analysis.chromaFeatures
+        : null;
+      const chromaArray = (chromaFeatures !== null && "chroma" in chromaFeatures && Array.isArray(chromaFeatures.chroma))
+        ? chromaFeatures.chroma
+        : [];
+      const chromaFrame = Array.isArray(chromaArray) ? chromaArray[clampedFrame] : undefined;
+      const chromaValue = Array.isArray(chromaFrame) ? chromaFrame[6] : undefined;
+      return isFiniteNumber(chromaValue) && chromaValue >= 0 && chromaValue <= 1 ? chromaValue : 0;
+    }
+    case "chromaG": {
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+      const chromaFeatures = (typeof analysis.chromaFeatures === "object" && analysis.chromaFeatures !== null)
+        ? analysis.chromaFeatures
+        : null;
+      const chromaArray = (chromaFeatures !== null && "chroma" in chromaFeatures && Array.isArray(chromaFeatures.chroma))
+        ? chromaFeatures.chroma
+        : [];
+      const chromaFrame = Array.isArray(chromaArray) ? chromaArray[clampedFrame] : undefined;
+      const chromaValue = Array.isArray(chromaFrame) ? chromaFrame[7] : undefined;
+      return isFiniteNumber(chromaValue) && chromaValue >= 0 && chromaValue <= 1 ? chromaValue : 0;
+    }
     case "chromaGs":
-    case "chromaAb":
-      return analysis.chromaFeatures?.chroma[clampedFrame]?.[8] ?? 0;
-    case "chromaA":
-      return analysis.chromaFeatures?.chroma[clampedFrame]?.[9] ?? 0;
+    case "chromaAb": {
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+      const chromaFeatures = (typeof analysis.chromaFeatures === "object" && analysis.chromaFeatures !== null)
+        ? analysis.chromaFeatures
+        : null;
+      const chromaArray = (chromaFeatures !== null && "chroma" in chromaFeatures && Array.isArray(chromaFeatures.chroma))
+        ? chromaFeatures.chroma
+        : [];
+      const chromaFrame = Array.isArray(chromaArray) ? chromaArray[clampedFrame] : undefined;
+      const chromaValue = Array.isArray(chromaFrame) ? chromaFrame[8] : undefined;
+      return isFiniteNumber(chromaValue) && chromaValue >= 0 && chromaValue <= 1 ? chromaValue : 0;
+    }
+    case "chromaA": {
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+      const chromaFeatures = (typeof analysis.chromaFeatures === "object" && analysis.chromaFeatures !== null)
+        ? analysis.chromaFeatures
+        : null;
+      const chromaArray = (chromaFeatures !== null && "chroma" in chromaFeatures && Array.isArray(chromaFeatures.chroma))
+        ? chromaFeatures.chroma
+        : [];
+      const chromaFrame = Array.isArray(chromaArray) ? chromaArray[clampedFrame] : undefined;
+      const chromaValue = Array.isArray(chromaFrame) ? chromaFrame[9] : undefined;
+      return isFiniteNumber(chromaValue) && chromaValue >= 0 && chromaValue <= 1 ? chromaValue : 0;
+    }
     case "chromaAs":
-    case "chromaBb":
-      return analysis.chromaFeatures?.chroma[clampedFrame]?.[10] ?? 0;
-    case "chromaB":
-      return analysis.chromaFeatures?.chroma[clampedFrame]?.[11] ?? 0;
+    case "chromaBb": {
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+      const chromaFeatures = (typeof analysis.chromaFeatures === "object" && analysis.chromaFeatures !== null)
+        ? analysis.chromaFeatures
+        : null;
+      const chromaArray = (chromaFeatures !== null && "chroma" in chromaFeatures && Array.isArray(chromaFeatures.chroma))
+        ? chromaFeatures.chroma
+        : [];
+      const chromaFrame = Array.isArray(chromaArray) ? chromaArray[clampedFrame] : undefined;
+      const chromaValue = Array.isArray(chromaFrame) ? chromaFrame[10] : undefined;
+      return isFiniteNumber(chromaValue) && chromaValue >= 0 && chromaValue <= 1 ? chromaValue : 0;
+    }
+    case "chromaB": {
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+      const chromaFeatures = (typeof analysis.chromaFeatures === "object" && analysis.chromaFeatures !== null)
+        ? analysis.chromaFeatures
+        : null;
+      const chromaArray = (chromaFeatures !== null && "chroma" in chromaFeatures && Array.isArray(chromaFeatures.chroma))
+        ? chromaFeatures.chroma
+        : [];
+      const chromaFrame = Array.isArray(chromaArray) ? chromaArray[clampedFrame] : undefined;
+      const chromaValue = Array.isArray(chromaFrame) ? chromaFrame[11] : undefined;
+      return isFiniteNumber(chromaValue) && chromaValue >= 0 && chromaValue <= 1 ? chromaValue : 0;
+    }
 
     // Harmonic-Percussive Source Separation (HPSS) features
     case "harmonicEnergy":
-    case "harmonic":
-      return analysis.harmonicEnergy?.[clampedFrame] ?? 0;
+    case "harmonic": {
+      // Type proof: harmonicEnergy?.[frame] ∈ ℝ ∪ {undefined} → ℝ
+      const harmonicEnergyArray = analysis.harmonicEnergy;
+      const harmonicEnergyValue = Array.isArray(harmonicEnergyArray) ? harmonicEnergyArray[clampedFrame] : undefined;
+      return isFiniteNumber(harmonicEnergyValue) && harmonicEnergyValue >= 0 ? harmonicEnergyValue : 0;
+    }
 
     case "percussiveEnergy":
-    case "percussive":
-      return analysis.percussiveEnergy?.[clampedFrame] ?? 0;
+    case "percussive": {
+      // Type proof: percussiveEnergy?.[frame] ∈ ℝ ∪ {undefined} → ℝ
+      const percussiveEnergyArray = analysis.percussiveEnergy;
+      const percussiveEnergyValue = Array.isArray(percussiveEnergyArray) ? percussiveEnergyArray[clampedFrame] : undefined;
+      return isFiniteNumber(percussiveEnergyValue) && percussiveEnergyValue >= 0 ? percussiveEnergyValue : 0;
+    }
 
     case "hpRatio":
-    case "harmonicPercussiveRatio":
-      return analysis.hpRatio?.[clampedFrame] ?? 0;
+    case "harmonicPercussiveRatio": {
+      // Type proof: hpRatio?.[frame] ∈ ℝ ∪ {undefined} → ℝ
+      const hpRatioArray = analysis.hpRatio;
+      const hpRatioValue = Array.isArray(hpRatioArray) ? hpRatioArray[clampedFrame] : undefined;
+      return isFiniteNumber(hpRatioValue) && hpRatioValue >= 0 ? hpRatioValue : 0;
+    }
 
     // MFCC coefficients with per-coefficient normalization
     // MFCC0 (log energy) has different range than MFCC1-12 (spectral shape)
@@ -1137,8 +1356,17 @@ function normalizeMFCCCoeff(
   frame: number,
   coeff: number,
 ): number {
-  const value = analysis.mfcc?.[frame]?.[coeff];
-  if (value === undefined) return 0;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+  const mfcc = Array.isArray(analysis.mfcc)
+    ? analysis.mfcc
+    : [];
+  const mfccFrame = (frame >= 0 && frame < mfcc.length && Array.isArray(mfcc[frame]))
+    ? mfcc[frame]
+    : [];
+  const value = (coeff >= 0 && coeff < mfccFrame.length && typeof mfccFrame[coeff] === "number")
+    ? mfccFrame[coeff]
+    : 0;
+  return value;
 
   const stats = analysis.mfccStats;
   if (!stats) return 0; // No stats available, return 0
@@ -1383,8 +1611,14 @@ export function generatePeakGraph(
  * Returns false if analysis is null/undefined (e.g., audio not loaded yet)
  */
 export function isBeatAtFrame(analysis: AudioAnalysis | null | undefined, frame: number): boolean {
-  // Return false for missing analysis or onset data
-  if (!analysis?.onsets) {
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+  if (typeof analysis !== "object" || analysis === null) {
+    return false;
+  }
+  const onsets = Array.isArray(analysis.onsets)
+    ? analysis.onsets
+    : [];
+  if (onsets.length === 0) {
     return false;
   }
   return analysis.onsets.includes(frame);

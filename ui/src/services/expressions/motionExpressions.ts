@@ -8,6 +8,7 @@
  */
 
 import type { Keyframe } from "@/types/project";
+import { isFiniteNumber } from "@/utils/typeGuards";
 
 /**
  * Minimal expression context for motion expressions
@@ -57,19 +58,25 @@ function fromArray(
   originalValue: number | number[] | { x: number; y: number; z?: number }
 ): number | number[] | { x: number; y: number; z?: number } {
   if (typeof originalValue === 'number') {
-    return arr[0] ?? 0;
+    // Type proof: arr[0] ∈ number | undefined → number
+    return isFiniteNumber(arr[0]) ? arr[0] : 0;
   }
   if (Array.isArray(originalValue)) {
     return arr;
   }
   // Object format
   if (typeof originalValue === 'object' && originalValue !== null && 'x' in originalValue) {
+    // Type proof: arr[0] ∈ number | undefined → number
+    const x = isFiniteNumber(arr[0]) ? arr[0] : 0;
+    // Type proof: arr[1] ∈ number | undefined → number
+    const y = isFiniteNumber(arr[1]) ? arr[1] : 0;
     const result: { x: number; y: number; z?: number } = {
-      x: arr[0] ?? 0,
-      y: arr[1] ?? 0,
+      x,
+      y,
     };
     if ('z' in originalValue && originalValue.z !== undefined) {
-      result.z = arr[2] ?? 0;
+      // Type proof: arr[2] ∈ number | undefined → number
+      result.z = isFiniteNumber(arr[2]) ? arr[2] : 0;
     }
     return result;
   }
@@ -100,7 +107,10 @@ export function inertia(
   if (keyframes.length === 0) return value;
 
   // Find nearest keyframe before current time
-  const fps = ctx.fps ?? 16;
+  // Type proof: fps ∈ number | undefined → number
+  const fps = isFiniteNumber(ctx.fps) && ctx.fps > 0
+    ? ctx.fps
+    : 16;
   const currentFrame = time * fps;
 
   let nearestKey: Keyframe<number | number[]> | null = null;
@@ -124,7 +134,8 @@ export function inertia(
 
   // Apply oscillation to each component
   const resultArr = valueArr.map((v, i) => {
-    const componentVel = velocityArr[i] ?? 0;
+    // Type proof: componentVel ∈ number | undefined → number
+    const componentVel = isFiniteNumber(velocityArr[i]) ? velocityArr[i] : 0;
     const oscillation =
       (componentVel * safeAmplitude * Math.sin(safeFrequency * t * 2 * Math.PI)) /
       Math.exp(safeDecay * t);
@@ -154,7 +165,10 @@ export function bounce(
 
   if (keyframes.length === 0) return value;
 
-  const fps = ctx.fps ?? 16;
+  // Type proof: fps ∈ number | undefined → number
+  const fps = isFiniteNumber(ctx.fps) && ctx.fps > 0
+    ? ctx.fps
+    : 16;
   const currentFrame = time * fps;
 
   // Find last keyframe
@@ -219,7 +233,10 @@ export function elastic(
 
   if (keyframes.length === 0) return value;
 
-  const fps = ctx.fps ?? 16;
+  // Type proof: fps ∈ number | undefined → number
+  const fps = isFiniteNumber(ctx.fps) && ctx.fps > 0
+    ? ctx.fps
+    : 16;
   const currentFrame = time * fps;
 
   let lastKey: Keyframe<number | number[]> | null = null;

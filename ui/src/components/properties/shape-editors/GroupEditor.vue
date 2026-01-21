@@ -19,19 +19,29 @@
     <div class="subsection-header">Transform</div>
     <TransformEditor :transform="group.transform" :layerId="layerId" @update="updateTransform" />
 
-    <div class="subsection-header">Contents ({{ group.contents?.length || 0 }})</div>
+    <div class="subsection-header">Contents ({{ getContentsCount() }})</div>
     <div class="contents-info">
-      <span v-if="!group.contents?.length">No contents in this group</span>
-      <span v-else>{{ group.contents.length }} item(s)</span>
+      <!-- Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?. -->
+      <span v-if="getContentsCount() === 0">No contents in this group</span>
+      <span v-else>{{ getContentsCount() }} item(s)</span>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { safeNonNegativeDefault } from "@/utils/typeGuards";
 import type { ShapeGroup, ShapeTransform } from "@/types/shapes";
 
 const props = defineProps<{ group: ShapeGroup; layerId: string }>();
 const emit = defineEmits(["update"]);
+
+// Type proof: contents.length ∈ number | undefined → number (≥ 0, count)
+function getContentsCount(): number {
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const groupContents = (props.group != null && typeof props.group === "object" && "contents" in props.group && props.group.contents != null && Array.isArray(props.group.contents)) ? props.group.contents : undefined;
+  const contentsLength = (groupContents != null && Array.isArray(groupContents)) ? groupContents.length : undefined;
+  return safeNonNegativeDefault(contentsLength, 0, "group.contents.length");
+}
 
 function updateName(e: Event) {
   const updated = { ...props.group };

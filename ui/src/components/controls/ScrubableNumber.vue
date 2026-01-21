@@ -80,7 +80,8 @@ const scrubStartValue = ref(0);
 const isDragging = ref(false);
 const dragThreshold = 3; // pixels before considering it a drag vs click
 
-const defaultValue = computed(() => props.default ?? props.modelValue);
+// Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+const defaultValue = computed(() => (props.default !== undefined && props.default !== null) ? props.default : props.modelValue);
 const showReset = computed(() => props.default !== undefined);
 const displayUnit = computed(() => props.unit || props.suffix);
 
@@ -142,7 +143,11 @@ function onInputMouseDown(e: MouseEvent): void {
       document.body.style.userSelect = "none";
 
       // Blur the input to prevent text selection issues
-      inputRef.value?.blur();
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const inputElement = inputRef.value;
+      if (inputElement != null && typeof inputElement === "object" && typeof inputElement.blur === "function") {
+        inputElement.blur();
+      }
     }
 
     if (isDragging.value) {

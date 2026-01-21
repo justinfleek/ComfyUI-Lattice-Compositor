@@ -222,7 +222,11 @@ const assetTypeIcon = computed(() => {
 // Methods
 function openFilePicker() {
   if (hasAsset.value) return;
-  fileInput.value?.click();
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const fileInputValue = fileInput.value;
+  if (fileInputValue != null && typeof fileInputValue === "object" && typeof fileInputValue.click === "function") {
+    fileInputValue.click();
+  }
 }
 
 function onDragOver() {
@@ -235,8 +239,10 @@ function onDragLeave() {
 
 function onDrop(e: DragEvent) {
   isDragging.value = false;
-  const files = e.dataTransfer?.files;
-  if (files && files.length > 0) {
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const dataTransfer = (e != null && typeof e === "object" && "dataTransfer" in e && e.dataTransfer != null && typeof e.dataTransfer === "object") ? e.dataTransfer : undefined;
+  const files = (dataTransfer != null && typeof dataTransfer === "object" && "files" in dataTransfer && dataTransfer.files != null && dataTransfer.files instanceof FileList) ? dataTransfer.files : undefined;
+  if (files != null && files.length > 0) {
     if (props.multiple) {
       handleMultipleFiles(Array.from(files));
     } else {
@@ -268,7 +274,10 @@ async function handleFile(file: File) {
   }
 
   // Validate file extension
-  const ext = `.${file.name.split(".").pop()?.toLowerCase()}`;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const nameParts = file.name.split(".");
+  const lastPart = nameParts.length > 0 ? nameParts[nameParts.length - 1] : undefined;
+  const ext = `.${lastPart != null ? lastPart.toLowerCase() : ""}`;
   // If using custom accept, check against that; otherwise use config formats
   const validFormats = props.accept
     ? props.accept.split(",").map((f) => f.trim().toLowerCase())
@@ -360,7 +369,10 @@ async function handleFile(file: File) {
 function handleMultipleFiles(files: File[]) {
   // Validate all files
   const validFiles = files.filter((file) => {
-    const ext = `.${file.name.split(".").pop()?.toLowerCase()}`;
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const nameParts = file.name.split(".");
+    const lastPart = nameParts.length > 0 ? nameParts[nameParts.length - 1] : undefined;
+    const ext = `.${lastPart != null ? lastPart.toLowerCase() : ""}`;
     const sizeMB = file.size / (1024 * 1024);
     return config.value.formats.includes(ext) && sizeMB <= props.maxSizeMB;
   });

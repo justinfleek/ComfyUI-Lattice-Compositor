@@ -151,15 +151,26 @@ export class ParticleConnectionSystem {
       const cellZ = Math.floor(p.z / cellSize);
       const key = `${cellX},${cellY},${cellZ}`;
       if (!grid.has(key)) grid.set(key, []);
-      grid.get(key)?.push(p);
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const cellArray = grid.get(key);
+      if (cellArray != null && Array.isArray(cellArray)) {
+        cellArray.push(p);
+      }
     }
 
     // For each particle, find nearby particles using spatial hash
     const connectionCount = new Map<number, number>();
     const processedPairs = new Set<string>();
 
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+    // Helper function to get connection count with default 0
+    const getConnectionCount = (index: number): number => {
+      const count = connectionCount.get(index);
+      return (count !== null && count !== undefined && typeof count === "number" && Number.isFinite(count) && count >= 0) ? count : 0;
+    };
+
     for (const p1 of activeParticles) {
-      const p1Connections = connectionCount.get(p1.index) ?? 0;
+      const p1Connections = getConnectionCount(p1.index);
       if (p1Connections >= this.config.maxConnections) continue;
 
       // Query 3x3x3 neighborhood of cells
@@ -181,7 +192,7 @@ export class ParticleConnectionSystem {
               if (processedPairs.has(pairKey)) continue;
               processedPairs.add(pairKey);
 
-              const p2Connections = connectionCount.get(p2.index) ?? 0;
+              const p2Connections = getConnectionCount(p2.index);
               if (p2Connections >= this.config.maxConnections) continue;
 
               // Calculate distance
@@ -202,7 +213,9 @@ export class ParticleConnectionSystem {
                 }
 
                 // Blend colors from both particles
-                const color = this.config.color ?? [
+                // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+                const configColor = this.config.color;
+                const color = (configColor !== null && configColor !== undefined && Array.isArray(configColor) && configColor.length >= 3) ? configColor : [
                   (p1.color[0] + p2.color[0]) / 2,
                   (p1.color[1] + p2.color[1]) / 2,
                   (p1.color[2] + p2.color[2]) / 2,
@@ -232,29 +245,29 @@ export class ParticleConnectionSystem {
                 // Update connection counts
                 connectionCount.set(
                   p1.index,
-                  (connectionCount.get(p1.index) ?? 0) + 1,
+                  getConnectionCount(p1.index) + 1,
                 );
                 connectionCount.set(p2.index, p2Connections + 1);
 
                 // Check if we've maxed out this particle's connections
                 if (
-                  (connectionCount.get(p1.index) ?? 0) >=
+                  getConnectionCount(p1.index) >=
                   this.config.maxConnections
                 )
                   break;
               }
             }
             if (
-              (connectionCount.get(p1.index) ?? 0) >= this.config.maxConnections
+              getConnectionCount(p1.index) >= this.config.maxConnections
             )
               break;
           }
           if (
-            (connectionCount.get(p1.index) ?? 0) >= this.config.maxConnections
+            getConnectionCount(p1.index) >= this.config.maxConnections
           )
             break;
         }
-        if ((connectionCount.get(p1.index) ?? 0) >= this.config.maxConnections)
+        if (getConnectionCount(p1.index) >= this.config.maxConnections)
           break;
       }
     }

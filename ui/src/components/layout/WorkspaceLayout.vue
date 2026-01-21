@@ -111,10 +111,10 @@
     <!-- ComfyUI Export Dialog -->
     <ComfyUIExportDialog
       v-if="showComfyUIExportDialog"
-      :layers="store.layers"
+      :layers="projectStore.getActiveCompLayers()"
       :camera-keyframes="activeCameraKeyframes"
-      :current-frame="store.currentFrame"
-      :total-frames="store.frameCount"
+      :current-frame="animationStore.currentFrame"
+      :total-frames="projectStore.getFrameCount()"
       @close="showComfyUIExportDialog = false"
       @exported="onComfyUIExportComplete"
     />
@@ -129,7 +129,7 @@
     <!-- Pre-compose Dialog -->
     <PrecomposeDialog
       :visible="showPrecomposeDialog"
-      :layer-count="store.selectedLayerIds.length"
+      :layer-count="selectionStore.selectedLayerIds.length"
       @close="showPrecomposeDialog = false"
       @confirm="onPrecomposeConfirm"
     />
@@ -137,7 +137,7 @@
     <!-- Keyframe Interpolation Dialog -->
     <KeyframeInterpolationDialog
       :visible="showKeyframeInterpolationDialog"
-      :keyframe-count="store.selectedKeyframeIds.length"
+      :keyframe-count="selectionStore.selectedKeyframeIds.length"
       @close="showKeyframeInterpolationDialog = false"
       @confirm="onKeyframeInterpolationConfirm"
     />
@@ -145,7 +145,7 @@
     <!-- Keyframe Velocity Dialog -->
     <KeyframeVelocityDialog
       :visible="showKeyframeVelocityDialog"
-      :keyframe-count="store.selectedKeyframeIds.length"
+      :keyframe-count="selectionStore.selectedKeyframeIds.length"
       @close="showKeyframeVelocityDialog = false"
       @confirm="onKeyframeVelocityConfirm"
     />
@@ -160,7 +160,7 @@
     <!-- Time Stretch Dialog -->
     <TimeStretchDialog
       :visible="showTimeStretchDialog"
-      :layer-id="store.selectedLayerIds[0] ?? ''"
+      :layer-id="selectedLayerIdForTimeStretch"
       @close="showTimeStretchDialog = false"
       @applied="showTimeStretchDialog = false"
     />
@@ -209,7 +209,7 @@
     <!-- Global Expression Editor -->
     <ExpressionInput
       :visible="expressionEditor.isVisible.value"
-      :current-expression="expressionEditor.currentProperty.value?.expression"
+      :current-expression="getCurrentExpression()"
       @close="expressionEditor.closeExpressionEditor()"
       @apply="expressionEditor.applyExpression($event)"
       @remove="expressionEditor.removeExpression()"
@@ -231,7 +231,7 @@
       <TrackPointOverlay
         :width="compWidth"
         :height="compHeight"
-        :currentFrame="store.currentFrame"
+        :currentFrame="animationStore.currentFrame"
         :showTrails="viewOptions.showGuides"
         :showLabels="true"
         :editable="true"
@@ -256,7 +256,7 @@ import { useMenuActions } from "@/composables/useMenuActions";
 import { detectGPUTier, type GPUTier } from "@/services/gpuDetection";
 // Track point service
 import { useTrackPoints } from "@/services/trackPointService";
-import { useCompositorStore } from "@/stores/compositorStore";
+import { useAnimationStore } from "@/stores/animationStore";
 import { useCameraStore } from "@/stores/cameraStore";
 import { useCompositionStore } from "@/stores/compositionStore";
 import { useLayerStore } from "@/stores/layerStore";
@@ -272,10 +272,11 @@ import {
 import type { BaseInterpolationType, ControlMode, ControlPoint, AnimatableProperty } from "@/types/project";
 import type { PropertyValue, Keyframe } from "@/types/animation";
 import { hasXY, isObject } from "@/utils/typeGuards";
+import type { JSONValue } from "@/types/dataAsset";
 
 // Stores
-const store = useCompositorStore();
 const projectStore = useProjectStore();
+const animationStore = useAnimationStore();
 const segmentationStore = useSegmentationStore();
 const selectionStore = useSelectionStore();
 const cameraStore = useCameraStore();
@@ -283,49 +284,47 @@ const compositionStore = useCompositionStore();
 const layerStore = useLayerStore();
 const keyframeStore = useKeyframeStore();
 
-// Helper to create KeyframeStoreAccess from projectStore
-function getKeyframeStoreAccess(): import("@/stores/keyframeStore/types").KeyframeStoreAccess {
+// Helper function to create CompositionStoreAccess
+function getCompositionStoreAccess() {
   return {
-    project: {
-      composition: projectStore.project.composition,
-      meta: projectStore.project.meta,
-    },
-    getActiveComp: () => {
-      const comp = projectStore.getActiveComp();
-      return comp ? {
-        currentFrame: comp.currentFrame,
-        layers: comp.layers,
-        settings: comp.settings,
-      } : null;
-    },
-    getActiveCompLayers: () => projectStore.getActiveCompLayers(),
-    getLayerById: (id: string) => {
-      const layers = projectStore.getActiveCompLayers();
-      return layers.find(l => l.id === id) || null;
-    },
+    project: projectStore.project,
+    activeCompositionId: projectStore.activeCompositionId,
+    openCompositionIds: projectStore.openCompositionIds,
+    compositionBreadcrumbs: projectStore.compositionBreadcrumbs,
+    selectedLayerIds: selectionStore.selectedLayerIds,
+    getActiveComp: () => projectStore.getActiveComp(),
+    switchComposition: (id: string) => compositionStore.switchComposition(getCompositionStoreAccess(), id),
     pushHistory: () => projectStore.pushHistory(),
-    get fps() {
-      return projectStore.getFps();
-    },
   };
 }
 
-// Helper to create CompositorStoreAccess from projectStore
-function getCompositorStoreAccess(): import("@/stores/layerStore/types").CompositorStoreAccess {
-  const activeComp = projectStore.getActiveComp();
-  return {
-    project: {
-      composition: projectStore.project.composition,
-      meta: projectStore.project.meta,
-    },
-    getActiveComp: () => activeComp ? {
-      settings: activeComp.settings,
-      currentFrame: activeComp.currentFrame,
-      layers: activeComp.layers,
-    } : null,
-    getActiveCompLayers: () => projectStore.getActiveCompLayers(),
-    pushHistory: () => projectStore.pushHistory(),
-  };
+// Helper function to set tool (handles segmentation)
+function setTool(tool: "select" | "pen" | "text" | "hand" | "zoom" | "segment") {
+  if (tool === "segment") {
+    segmentationStore.setSegmentToolActive(true);
+  } else {
+    segmentationStore.setSegmentToolActive(false);
+    selectionStore.setTool(tool);
+    segmentationStore.clearSegmentPendingMask();
+  }
+}
+
+// Helper function to confirm segment mask
+async function confirmSegmentMask(layerName?: string) {
+  if (!segmentationStore.segmentPendingMask || !projectStore.sourceImage) {
+    throw new Error("[WorkspaceLayout] Cannot confirm segment mask: segmentPendingMask or sourceImage is not available");
+  }
+
+  const layer = await segmentationStore.createLayerFromMask(
+    projectStore.sourceImage,
+    segmentationStore.segmentPendingMask,
+    layerName,
+    false,
+  );
+
+  segmentationStore.clearSegmentPendingMask();
+
+  return layer;
 }
 
 import { useAssetStore } from "@/stores/assetStore";
@@ -341,14 +340,28 @@ const _playbackStore = usePlaybackStore();
 // Expression editor composable
 const expressionEditor = useExpressionEditor();
 
+// Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+function getCurrentExpression() {
+  const currentProperty = expressionEditor.currentProperty.value;
+  const expression = (currentProperty != null && typeof currentProperty === "object" && "expression" in currentProperty && currentProperty.expression != null) ? currentProperty.expression : undefined;
+  return expression;
+}
+
 // Track points state for camera tracking overlay
 const trackPointsState = useTrackPoints();
 
 // Tool state - synced with store
 const currentTool = computed({
-  get: () => store.currentTool,
+  get: () => selectionStore.currentTool,
   set: (tool: "select" | "pen" | "text" | "hand" | "zoom" | "segment") =>
-    store.setTool(tool),
+    setTool(tool),
+});
+
+// Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+// Computed property for selected layer ID (defaults to empty string if none selected)
+const selectedLayerIdForTimeStretch = computed(() => {
+  const selectedIds = selectionStore.selectedLayerIds;
+  return (Array.isArray(selectedIds) && selectedIds.length > 0 && typeof selectedIds[0] === "string") ? selectedIds[0] : "";
 });
 
 // Segmentation state - synced with segmentationStore
@@ -361,11 +374,11 @@ function _setSegmentMode(mode: "point" | "box") {
 }
 
 async function _confirmSegmentMask() {
-  await store.confirmSegmentMask();
+  await confirmSegmentMask();
 }
 
 function _clearSegmentMask() {
-  store.clearSegmentPendingMask();
+  segmentationStore.clearSegmentPendingMask();
 }
 
 const leftTab = ref<"project" | "effects" | "assets">("project");
@@ -436,9 +449,11 @@ const centerViewportRef = ref<InstanceType<typeof CenterViewport> | null>(null);
 
 // Helper to safely access threeCanvasRef from exposed properties
 // Vue exposes refs/computeds directly via defineExpose - use runtime property check with type guards
-function getThreeCanvasRef(): InstanceType<typeof import("@/components/canvas/ThreeCanvas.vue").default> | null {
+function getThreeCanvasRef(): InstanceType<typeof import("@/components/canvas/ThreeCanvas.vue").default> {
   const viewport = centerViewportRef.value;
-  if (!viewport || !isObject(viewport)) return null;
+  if (!viewport || !isObject(viewport)) {
+    throw new Error("[WorkspaceLayout] Cannot get ThreeCanvas ref: viewport is not available");
+  }
   // Runtime check: Vue exposes threeCanvasRef as a Ref object
   // Use property access with runtime check - TypeScript can't know about exposed properties
   const threeCanvasRefProp = viewport.threeCanvasRef;
@@ -449,7 +464,7 @@ function getThreeCanvasRef(): InstanceType<typeof import("@/components/canvas/Th
       return refValue as InstanceType<typeof import("@/components/canvas/ThreeCanvas.vue").default>;
     }
   }
-  return null;
+  throw new Error("[WorkspaceLayout] Cannot get ThreeCanvas ref: threeCanvasRef is not available or invalid");
 }
 
 // Computed ref to access threeCanvasRef through CenterViewport
@@ -457,9 +472,11 @@ const threeCanvasRef = computed(() => getThreeCanvasRef());
 
 // Helper to safely access engine from exposed properties
 // Vue exposes computed refs directly via defineExpose - use runtime property check with type guards
-function getCanvasEngine(): import("@/engine/LatticeEngine").LatticeEngine | null {
+function getCanvasEngine(): import("@/engine/LatticeEngine").LatticeEngine {
   const viewport = centerViewportRef.value;
-  if (!viewport || !isObject(viewport)) return null;
+  if (!viewport || !isObject(viewport)) {
+    throw new Error("[WorkspaceLayout] Cannot get canvas engine: viewport is not available");
+  }
   // Runtime check: Vue exposes engine as a ComputedRef object
   // Use property access with runtime check - TypeScript can't know about exposed properties
   const engineProp = viewport.engine;
@@ -470,7 +487,7 @@ function getCanvasEngine(): import("@/engine/LatticeEngine").LatticeEngine | nul
       return engineValue as import("@/engine/LatticeEngine").LatticeEngine;
     }
   }
-  return null;
+  throw new Error("[WorkspaceLayout] Cannot get canvas engine: engine is not available or invalid");
 }
 
 // Engine accessor for panels
@@ -489,7 +506,7 @@ const {
 
 // Camera state - use computed to get from store, fallback to default
 const activeCamera = computed<Camera3D>(() => {
-  const cam = store.getActiveCameraAtFrame();
+  const cam = cameraStore.getActiveCameraAtFrame();
   if (cam) return cam;
   // Fallback to a default camera
   return createDefaultCamera("default", compWidth.value, compHeight.value);
@@ -617,7 +634,7 @@ const _renderProgress = ref(0);
 
 // Computed
 const _formattedTimecode = computed(() => {
-  const frame = store.currentFrame;
+  const frame = animationStore.currentFrame;
   const fpsVal = projectStore.getFps();
   const totalSeconds = frame / fpsVal;
   const minutes = Math.floor(totalSeconds / 60);
@@ -637,8 +654,8 @@ const _compositionInfo = computed(() => {
   return `${width}×${height} @ ${fps}fps`;
 });
 
-const _canUndo = computed(() => store.canUndo);
-const _canRedo = computed(() => store.canRedo);
+const _canUndo = computed(() => projectStore.canUndo);
+const _canRedo = computed(() => projectStore.canRedo);
 
 // ========================================================================
 // GUIDES SYSTEM (using composable)
@@ -672,7 +689,7 @@ provide("captureFrame", async (): Promise<string | null> => {
   if (canvas && isObject(canvas) && "captureFrame" in canvas && typeof canvas.captureFrame === "function") {
     return await canvas.captureFrame();
   }
-  return null;
+  throw new Error("[WorkspaceLayout] Cannot capture frame: ThreeCanvas is not available or captureFrame method is not accessible");
 });
 
 // ========================================================================
@@ -859,7 +876,7 @@ function onCompositionSettingsConfirm(settings: {
       compositionBreadcrumbs: projectStore.compositionBreadcrumbs,
       selectedLayerIds: selectionStore.selectedLayerIds,
       getActiveComp: () => projectStore.getActiveComp(),
-      switchComposition: (id: string) => store.switchComposition(id),
+      switchComposition: (id: string) => compositionStore.switchComposition(getCompositionStoreAccess(), id),
       pushHistory: () => projectStore.pushHistory(),
     },
     compId,
@@ -887,7 +904,7 @@ function onCompositionSettingsConfirm(settings: {
       compositionBreadcrumbs: projectStore.compositionBreadcrumbs,
       selectedLayerIds: selectionStore.selectedLayerIds,
       getActiveComp: () => projectStore.getActiveComp(),
-      switchComposition: (id: string) => store.switchComposition(id),
+      switchComposition: (id: string) => compositionStore.switchComposition(getCompositionStoreAccess(), id),
       pushHistory: () => projectStore.pushHistory(),
     },
     renameCompId,
@@ -898,8 +915,8 @@ function onCompositionSettingsConfirm(settings: {
 }
 
 function onPrecomposeConfirm(name: string) {
-  if (store.selectedLayerIds.length > 0) {
-    store.nestSelectedLayers(name);
+  if (selectionStore.selectedLayerIds.length > 0) {
+    compositionStore.nestSelectedLayers(name);
     showPrecomposeDialog.value = false;
   }
 }
@@ -931,13 +948,13 @@ function onKeyframeInterpolationConfirm(settings: {
   easingPreset: string;
   controlMode: ControlMode;
 }) {
-  const selectedKeyframeIds = store.selectedKeyframeIds;
+  const selectedKeyframeIds = selectionStore.selectedKeyframeIds;
   if (selectedKeyframeIds.length === 0) return;
 
   let appliedCount = 0;
 
   // Get the layers that contain these keyframes
-  const layers = store.layers;
+  const layers = projectStore.getActiveCompLayers();
   for (const layer of layers) {
     const transform = layer.transform;
     if (!transform) continue;
@@ -952,12 +969,14 @@ function onKeyframeInterpolationConfirm(settings: {
     ];
     
     for (const { name: propName, prop } of transformProps) {
-      if (!prop?.keyframes) continue;
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const propKeyframes = (prop != null && typeof prop === "object" && "keyframes" in prop && Array.isArray(prop.keyframes)) ? prop.keyframes : undefined;
+      if (!propKeyframes) continue;
 
       const propertyPath = `transform.${propName === "anchor" ? "origin" : propName}`;
 
       // Sort keyframes by frame for proper next-keyframe lookup
-      const sortedKeyframes = [...prop.keyframes].sort(
+      const sortedKeyframes = [...propKeyframes].sort(
         (a: import("@/types/animation").Keyframe<import("@/types/animation").PropertyValue>, b: import("@/types/animation").Keyframe<import("@/types/animation").PropertyValue>) => a.frame - b.frame,
       );
 
@@ -965,13 +984,13 @@ function onKeyframeInterpolationConfirm(settings: {
         const kf = sortedKeyframes[i];
         if (selectedKeyframeIds.includes(kf.id)) {
           // Use store actions for proper undo/redo support
-          keyframeStore.setKeyframeInterpolation(getKeyframeStoreAccess(), 
+          keyframeStore.setKeyframeInterpolation(
             layer.id,
             propertyPath,
             kf.id,
             settings.interpolation,
           );
-          keyframeStore.setKeyframeControlMode(getKeyframeStoreAccess(), 
+          keyframeStore.setKeyframeControlMode(
             layer.id,
             propertyPath,
             kf.id,
@@ -1003,13 +1022,13 @@ function onKeyframeInterpolationConfirm(settings: {
                 const valueDelta = nextValue - kfValue;
 
                 // Use store action to set outHandle on current keyframe
-                keyframeStore.setKeyframeHandle(getKeyframeStoreAccess(), layer.id, propertyPath, kf.id, "out", {
+                keyframeStore.setKeyframeHandle(layer.id, propertyPath, kf.id, "out", {
                   frame: presetHandles.outX * frameDuration,
                   value: presetHandles.outY * valueDelta,
                   enabled: true,
                 });
                 // Use store action to set inHandle on next keyframe
-                keyframeStore.setKeyframeHandle(getKeyframeStoreAccess(), 
+                keyframeStore.setKeyframeHandle(
                   layer.id,
                   propertyPath,
                   nextKf.id,
@@ -1028,21 +1047,28 @@ function onKeyframeInterpolationConfirm(settings: {
     }
     
     // Check opacity separately (it's on layer, not transform)
-    if (layer.opacity?.keyframes) {
-      const sortedKeyframes = [...layer.opacity.keyframes].sort(
-        (a: Keyframe<number>, b: Keyframe<number>) => (a.frame ?? 0) - (b.frame ?? 0),
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??/?.
+    const opacity = (layer != null && typeof layer === "object" && "opacity" in layer && layer.opacity != null && typeof layer.opacity === "object") ? layer.opacity : undefined;
+    const opacityKeyframes = (opacity != null && typeof opacity === "object" && "keyframes" in opacity && Array.isArray(opacity.keyframes)) ? opacity.keyframes : undefined;
+    if (opacityKeyframes != null) {
+      const sortedKeyframes = [...opacityKeyframes].sort(
+        (a: Keyframe<number>, b: Keyframe<number>) => {
+          const aFrame = (typeof a.frame === "number" && Number.isFinite(a.frame)) ? a.frame : 0;
+          const bFrame = (typeof b.frame === "number" && Number.isFinite(b.frame)) ? b.frame : 0;
+          return aFrame - bFrame;
+        },
       );
       
       for (let i = 0; i < sortedKeyframes.length; i++) {
         const kf = sortedKeyframes[i];
         if (selectedKeyframeIds.includes(kf.id)) {
-          keyframeStore.setKeyframeInterpolation(getKeyframeStoreAccess(), 
+          keyframeStore.setKeyframeInterpolation(
             layer.id,
             "opacity",
             kf.id,
             settings.interpolation,
           );
-          keyframeStore.setKeyframeControlMode(getKeyframeStoreAccess(), 
+          keyframeStore.setKeyframeControlMode(
             layer.id,
             "opacity",
             kf.id,
@@ -1061,12 +1087,12 @@ function onKeyframeInterpolationConfirm(settings: {
                 const nextValue = typeof nextKf.value === "number" ? nextKf.value : 0;
                 const valueDelta = nextValue - kfValue;
                 
-                keyframeStore.setKeyframeHandle(getKeyframeStoreAccess(), layer.id, "opacity", kf.id, "out", {
+                keyframeStore.setKeyframeHandle(layer.id, "opacity", kf.id, "out", {
                   frame: presetHandles.outX * frameDuration,
                   value: presetHandles.outY * valueDelta,
                   enabled: true,
                 });
-                keyframeStore.setKeyframeHandle(getKeyframeStoreAccess(), layer.id, "opacity", nextKf.id, "in", {
+                keyframeStore.setKeyframeHandle(layer.id, "opacity", nextKf.id, "in", {
                   frame: -(1 - presetHandles.inX) * frameDuration,
                   value: (1 - presetHandles.inY) * valueDelta,
                   enabled: true,
@@ -1095,11 +1121,11 @@ function onKeyframeVelocityConfirm(settings: {
   incomingInfluence: number;
   outgoingInfluence: number;
 }) {
-  const selectedKeyframeIds = store.selectedKeyframeIds;
+  const selectedKeyframeIds = selectionStore.selectedKeyframeIds;
   if (selectedKeyframeIds.length === 0) return;
 
   // Get the layers that contain these keyframes
-  const layers = store.layers;
+  const layers = projectStore.getActiveCompLayers();
   let appliedCount = 0;
 
   for (const layer of layers) {
@@ -1116,13 +1142,15 @@ function onKeyframeVelocityConfirm(settings: {
     ];
     
     for (const { name: propName, prop } of transformProps) {
-      if (!prop?.keyframes) continue;
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const propKeyframes = (prop != null && typeof prop === "object" && "keyframes" in prop && Array.isArray(prop.keyframes)) ? prop.keyframes : undefined;
+      if (!propKeyframes) continue;
 
       const propertyPath = `transform.${propName === "anchor" ? "origin" : propName}`;
-      for (const kf of prop.keyframes) {
+      for (const kf of propKeyframes) {
         if (selectedKeyframeIds.includes(kf.id)) {
           // Use store action for proper undo/redo support
-          const success = store.applyKeyframeVelocity(
+          const success = keyframeStore.applyKeyframeVelocity(
             layer.id,
             propertyPath,
             kf.id,
@@ -1134,10 +1162,13 @@ function onKeyframeVelocityConfirm(settings: {
     }
     
     // Check opacity separately (it's on layer, not transform)
-    if (layer.opacity?.keyframes) {
-      for (const kf of layer.opacity.keyframes) {
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const opacity = (layer != null && typeof layer === "object" && "opacity" in layer && layer.opacity != null && typeof layer.opacity === "object") ? layer.opacity : undefined;
+    const opacityKeyframes = (opacity != null && typeof opacity === "object" && "keyframes" in opacity && Array.isArray(opacity.keyframes)) ? opacity.keyframes : undefined;
+    if (opacityKeyframes != null) {
+      for (const kf of opacityKeyframes) {
         if (selectedKeyframeIds.includes(kf.id)) {
-          const success = store.applyKeyframeVelocity(
+          const success = keyframeStore.applyKeyframeVelocity(
             layer.id,
             "opacity",
             kf.id,
@@ -1287,7 +1318,6 @@ function onPathSuggestionAccept(result: PathSuggestionResult) {
       // addKeyframe signature: (layerId, propertyPath, value, atFrame?)
       for (const keyframe of batch.keyframes) {
         keyframeStore.addKeyframe(
-          getKeyframeStoreAccess(),
           batch.layerId,
           batch.propertyPath,
           keyframe.value,
@@ -1301,7 +1331,7 @@ function onPathSuggestionAccept(result: PathSuggestionResult) {
   if (result.splines && result.splines.length > 0) {
     for (const spline of result.splines) {
       // Create a new spline layer
-      const layer = layerStore.createSplineLayer(getCompositorStoreAccess());
+      const layer = layerStore.createSplineLayer();
 
       // Rename if name provided
       if (spline.name) {
@@ -1309,15 +1339,20 @@ function onPathSuggestionAccept(result: PathSuggestionResult) {
       }
 
       // Convert points to control points format (preserve depth and handles from translator)
-      const controlPoints: ControlPoint[] = (spline.points || []).map((p, i: number) => ({
-        id: p.id || `cp_${Date.now()}_${i}`,
-        x: p.x,
-        y: p.y,
-        depth: p.depth ?? 0, // Preserve z-space depth
-        handleIn: p.handleIn || null, // Preserve bezier handles from translator
-        handleOut: p.handleOut || null,
-        type: (p.type || "smooth") as "corner" | "smooth" | "symmetric",
-      }));
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy || []
+      const points = (Array.isArray(spline.points)) ? spline.points : [];
+      const controlPoints: ControlPoint[] = points.map((p, i: number) => {
+        const depth = (typeof p.depth === "number" && Number.isFinite(p.depth)) ? p.depth : 0;
+        return {
+          id: p.id || `cp_${Date.now()}_${i}`,
+          x: p.x,
+          y: p.y,
+          depth, // Preserve z-space depth
+          handleIn: p.handleIn || null, // Preserve bezier handles from translator
+          handleOut: p.handleOut || null,
+          type: (p.type || "smooth") as "corner" | "smooth" | "symmetric",
+        };
+      });
 
       // Generate SVG path data from control points for audio reactivity
       const pathData = generatePathDataFromPoints(
@@ -1342,9 +1377,9 @@ function onPathSuggestionAccept(result: PathSuggestionResult) {
 
 // Get camera keyframes for the active camera
 const activeCameraKeyframes = computed(() => {
-  const activeCam = store.getActiveCameraAtFrame();
+  const activeCam = cameraStore.getActiveCameraAtFrame();
   if (!activeCam) return [];
-  return store.getCameraKeyframes(activeCam.id);
+  return cameraStore.getCameraKeyframes(activeCam.id);
 });
 
 // Handle zoom dropdown change
@@ -1394,9 +1429,12 @@ function triggerProjectOpen() {
   input.type = "file";
   input.accept = ".lattice,.json";
   input.onchange = async (e) => {
-    const file = (e.target as HTMLInputElement).files?.[0];
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const target = e.target as HTMLInputElement;
+    const files = (target != null && typeof target === "object" && "files" in target && target.files != null && target.files.length > 0) ? target.files : null;
+    const file = (files != null && files.length > 0) ? files[0] : undefined;
     if (file) {
-      await store.loadProjectFromFile(file);
+      await projectStore.loadProjectFromFile(file, () => projectStore.pushHistory());
     }
   };
   input.click();
@@ -1407,7 +1445,7 @@ function triggerProjectOpen() {
  */
 interface Preferences {
   theme?: string;
-  [key: string]: unknown;
+  [key: string]: JSONValue;
 }
 
 function handlePreferencesSave(preferences: Preferences) {
@@ -1420,11 +1458,11 @@ function handlePreferencesSave(preferences: Preferences) {
 
 // Freeze frame at playhead (available via Layer menu)
 function _freezeFrameSelectedLayers() {
-  const selectedIds = store.selectedLayerIds;
+  const selectedIds = selectionStore.selectedLayerIds;
   if (selectedIds.length === 0) return;
 
   for (const id of selectedIds) {
-    layerStore.freezeFrameAtPlayhead(getCompositorStoreAccess(), id);
+    layerStore.freezeFrameAtPlayhead(id);
   }
 }
 
@@ -1469,7 +1507,7 @@ onUnmounted(() => {
   clearInterval(perfInterval);
 
   // Stop autosave timer
-  store.stopAutosaveTimer();
+  projectStore.stopAutosave();
 });
 </script>
 

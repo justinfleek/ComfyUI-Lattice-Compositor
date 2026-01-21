@@ -312,13 +312,29 @@ function calculateBeatStrength(analysis: AudioAnalysis, frame: number): number {
     Math.min(frame, analysis.amplitudeEnvelope.length - 1),
   );
 
-  // Combine multiple features for strength estimation
-  const amplitude = analysis.amplitudeEnvelope[clampedFrame] || 0;
-  const bass = analysis.frequencyBands.bass[clampedFrame] || 0;
-  const flux = analysis.spectralFlux?.[clampedFrame] || 0;
+  // Lean4/PureScript/Haskell: Explicit pattern matching on array access
+  // Type proof: array[index] ∈ number | undefined → number (≥ 0, amplitude)
+  // PureScript: case array[index] of Just x -> x; Nothing -> 0
+  const amplitudeRaw = analysis.amplitudeEnvelope[clampedFrame];
+  const safeAmplitude: number = amplitudeRaw !== undefined && Number.isFinite(amplitudeRaw) && amplitudeRaw >= 0
+    ? amplitudeRaw
+    : 0;
+  
+  const bassRaw = analysis.frequencyBands.bass[clampedFrame];
+  const safeBass: number = bassRaw !== undefined && Number.isFinite(bassRaw) && bassRaw >= 0
+    ? bassRaw
+    : 0;
+  
+  // Type proof: spectralFlux ∈ number[] | undefined → number (≥ 0, flux)
+  const fluxRaw = analysis.spectralFlux !== undefined
+    ? analysis.spectralFlux[clampedFrame]
+    : undefined;
+  const safeFlux: number = fluxRaw !== undefined && Number.isFinite(fluxRaw) && fluxRaw >= 0
+    ? fluxRaw
+    : 0;
 
   // Weight: bass and spectral flux are most important for beats
-  return amplitude * 0.3 + bass * 0.4 + flux * 0.3;
+  return safeAmplitude * 0.3 + safeBass * 0.4 + safeFlux * 0.3;
 }
 
 /**
@@ -410,8 +426,10 @@ export function generateSubBeats(
 export function getNearestBeat(
   grid: BeatGrid,
   frame: number,
-): EnhancedBeat | null {
-  if (grid.beats.length === 0) return null;
+): EnhancedBeat {
+  if (grid.beats.length === 0) {
+    throw new Error(`[EnhancedBeatDetection] Cannot find nearest beat: Beat grid is empty (frame ${frame})`);
+  }
 
   let nearest = grid.beats[0];
   let minDistance = Math.abs(frame - nearest.frame);

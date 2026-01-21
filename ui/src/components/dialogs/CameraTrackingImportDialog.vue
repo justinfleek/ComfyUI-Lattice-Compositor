@@ -238,16 +238,22 @@ function clearFile() {
 
 function handleFileSelect(event: Event) {
   const input = event.target as HTMLInputElement;
-  if (input.files?.[0]) {
-    processFile(input.files[0]);
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const inputFiles = (input != null && typeof input === "object" && "files" in input && input.files != null && input.files.length > 0) ? input.files : null;
+  const firstFile = (inputFiles != null && inputFiles.length > 0) ? inputFiles[0] : null;
+  if (firstFile != null) {
+    processFile(firstFile);
   }
 }
 
 function handleDrop(event: DragEvent) {
   isDragging.value = false;
-  const files = event.dataTransfer?.files;
-  if (files?.[0]) {
-    processFile(files[0]);
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const dataTransfer = (event != null && typeof event === "object" && "dataTransfer" in event && event.dataTransfer != null && typeof event.dataTransfer === "object") ? event.dataTransfer : undefined;
+  const files = (dataTransfer != null && typeof dataTransfer === "object" && "files" in dataTransfer && dataTransfer.files != null) ? dataTransfer.files : null;
+  const firstFile = (files != null && files.length > 0) ? files[0] : null;
+  if (firstFile != null) {
+    processFile(firstFile);
   }
 }
 

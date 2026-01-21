@@ -3,6 +3,7 @@
  * Generates workflow JSON for various AI video generation models
  */
 
+import { isFiniteNumber } from "@/utils/typeGuards";
 import type {
   ComfyUINode,
   ComfyUIWorkflow,
@@ -16,6 +17,7 @@ import type {
   Uni3CTrajType,
   Wan22CameraMotion,
 } from "@/types/export";
+import type { JSONValue } from "@/types/dataAsset";
 import {
   safeValidateWanMoveMotionData,
   safeValidateATIMotionData,
@@ -110,12 +112,35 @@ export function validateWorkflowParams(params: WorkflowParams): void {
   // Validate motionData structure for targets that require it
   if (params.motionData) {
     // Validate both formats - workflow generation will use the correct one
-    const wanMoveValidation = safeValidateWanMoveMotionData(params.motionData);
-    const atiValidation = safeValidateATIMotionData(params.motionData);
+    let isValidWanMove = false;
+    let isValidATI = false;
+    let wanMoveError: Error | undefined;
+    let atiError: Error | undefined;
+    try {
+      safeValidateWanMoveMotionData(params.motionData);
+      isValidWanMove = true;
+    } catch (error) {
+      // Not WanMove format - capture error for error message
+      wanMoveError = error instanceof Error ? error : new Error(String(error));
+    }
+    try {
+      safeValidateATIMotionData(params.motionData);
+      isValidATI = true;
+    } catch (error) {
+      // Not ATI format - capture error for error message
+      atiError = error instanceof Error ? error : new Error(String(error));
+    }
 
-    if (!wanMoveValidation.success && !atiValidation.success) {
+    if (!isValidWanMove && !isValidATI) {
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const wanMoveErrorMessage = (wanMoveError != null && typeof wanMoveError === "object" && "message" in wanMoveError && typeof wanMoveError.message === "string") ? wanMoveError.message : undefined;
+      const atiErrorMessage = (atiError != null && typeof atiError === "object" && "message" in atiError && typeof atiError.message === "string") ? atiError.message : undefined;
+      const errorMessages = [
+        wanMoveErrorMessage,
+        atiErrorMessage,
+      ].filter((msg): msg is string => typeof msg === "string");
       errors.push(
-        `Invalid motionData structure. Expected either WanMove format (tracks: Array<Array<{x, y}>>) or ATI format (trajectories: Array<Array<{x, y}>>). Errors: ${wanMoveValidation.error.message || atiValidation.error.message}`,
+        `Invalid motionData structure. Expected either WanMove format (tracks: Array<Array<{x, y}>>) or ATI format (trajectories: Array<Array<{x, y}>>). Errors: ${errorMessages.join("; ")}`,
       );
     }
   }
@@ -181,7 +206,7 @@ function nextNodeId(): string {
 
 function createNode(
   classType: string,
-  inputs: Record<string, string | number | boolean | string[] | number[] | null | undefined>,
+  inputs: Record<string, string | number | boolean | string[] | number[] | NodeConnection | NodeConnection[] | null | undefined>,
   title?: string,
 ): ComfyUINode {
   const node: ComfyUINode = {
@@ -336,12 +361,31 @@ function addKSampler(
       positive: positiveConnection,
       negative: negativeConnection,
       latent_image: latentConnection,
-      seed: params.seed ?? Math.floor(Math.random() * 2147483647),
-      steps: params.steps ?? 20,
-      cfg: params.cfg ?? 7,
+      // Type proof: seed ∈ ℕ ∪ {undefined} → ℕ
+      seed: (() => {
+        const seedValue = params.seed;
+        return isFiniteNumber(seedValue) && Number.isInteger(seedValue) && seedValue >= 0
+          ? seedValue
+          : Math.floor(Math.random() * 2147483647);
+      })(),
+      // Type proof: steps ∈ ℕ ∧ finite(steps) → steps ∈ ℕ₊
+      steps: (() => {
+        const stepsValue = params.steps;
+        return isFiniteNumber(stepsValue) && Number.isInteger(stepsValue) && stepsValue > 0 ? stepsValue : 20;
+      })(),
+      // Type proof: cfg ∈ ℝ ∧ finite(cfg) → cfg ∈ ℝ₊
+      cfg: (() => {
+        const cfgValue = params.cfg;
+        return isFiniteNumber(cfgValue) && cfgValue > 0 ? cfgValue : 7;
+      })(),
       sampler_name: "euler",
       scheduler: "normal",
-      denoise: params.denoise ?? 1,
+      // Type proof: denoise ∈ ℝ ∧ finite(denoise) → denoise ∈ [0, 1]
+      denoise: (() => {
+        const denoiseValue = params.denoise;
+        const denoiseRaw = isFiniteNumber(denoiseValue) ? denoiseValue : 1;
+        return Math.max(0, Math.min(1, denoiseRaw));
+      })(),
     },
     "KSampler",
   );
@@ -461,7 +505,13 @@ export function generateWan22I2VWorkflow(
       length: params.frameCount,
       steps: params.steps || 30,
       cfg: params.cfgScale || 5,
-      seed: params.seed ?? Math.floor(Math.random() * 2147483647),
+      // Type proof: seed ∈ ℕ ∪ {undefined} → ℕ
+      seed: (() => {
+        const seedValue = params.seed;
+        return isFiniteNumber(seedValue) && Number.isInteger(seedValue) && seedValue >= 0
+          ? seedValue
+          : Math.floor(Math.random() * 2147483647);
+      })(),
       scheduler: "DPM++ 2M SDE",
       denoise_strength: params.denoise || 1,
     },
@@ -588,7 +638,13 @@ export function generateWan22FunCameraWorkflow(
       length: params.frameCount,
       steps: params.steps || 30,
       cfg: params.cfgScale || 5,
-      seed: params.seed ?? Math.floor(Math.random() * 2147483647),
+      // Type proof: seed ∈ ℕ ∪ {undefined} → ℕ
+      seed: (() => {
+        const seedValue = params.seed;
+        return isFiniteNumber(seedValue) && Number.isInteger(seedValue) && seedValue >= 0
+          ? seedValue
+          : Math.floor(Math.random() * 2147483647);
+      })(),
       scheduler: "DPM++ 2M SDE",
     },
     "Fun Camera I2V",
@@ -712,7 +768,13 @@ export function generateWan22FirstLastWorkflow(
       length: params.frameCount,
       steps: params.steps || 30,
       cfg: params.cfgScale || 5,
-      seed: params.seed ?? Math.floor(Math.random() * 2147483647),
+      // Type proof: seed ∈ ℕ ∪ {undefined} → ℕ
+      seed: (() => {
+        const seedValue = params.seed;
+        return isFiniteNumber(seedValue) && Number.isInteger(seedValue) && seedValue >= 0
+          ? seedValue
+          : Math.floor(Math.random() * 2147483647);
+      })(),
       scheduler: "DPM++ 2M SDE",
     },
     "First+Last I2V",
@@ -1082,7 +1144,10 @@ export function generateControlNetDepthWorkflow(
       seed: params.seed,
       steps: params.steps || 20,
       cfg: params.cfgScale || 7,
-      denoise: params.denoise || 0.75,
+      // Type proof: denoise ∈ number | undefined → number (0-1 range, non-negative)
+      denoise: params.denoise !== undefined && Number.isFinite(params.denoise) && params.denoise >= 0 && params.denoise <= 1
+        ? params.denoise
+        : 0.75,
     },
   );
 
@@ -1316,7 +1381,13 @@ export function generateCogVideoXWorkflow(
       num_frames: params.frameCount,
       steps: params.steps || 50,
       cfg: params.cfgScale || 6,
-      seed: params.seed ?? Math.floor(Math.random() * 2147483647),
+      // Type proof: seed ∈ ℕ ∪ {undefined} → ℕ
+      seed: (() => {
+        const seedValue = params.seed;
+        return isFiniteNumber(seedValue) && Number.isInteger(seedValue) && seedValue >= 0
+          ? seedValue
+          : Math.floor(Math.random() * 2147483647);
+      })(),
       scheduler: "CogVideoX DDIM",
     },
     "CogVideoX I2V",
@@ -1358,7 +1429,9 @@ export function generateTTMWorkflow(params: WorkflowParams): ComfyUIWorkflow {
   const workflow: ComfyUIWorkflow = {};
 
   const ttmModel = params.ttmModel || "wan";
-  const layers = params.ttmLayers || [];
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy || []
+  const layersRaw = params.ttmLayers;
+  const layers = (layersRaw !== null && layersRaw !== undefined && Array.isArray(layersRaw)) ? layersRaw : [];
 
   // TTM (Time-to-Move) currently only has official support for Wan models.
   // Other model backends may produce unexpected results.
@@ -1498,8 +1571,16 @@ export function generateTTMWorkflow(params: WorkflowParams): ComfyUIWorkflow {
         image: conn(resizeId),
         motion_mask: conn(combinedMaskId),
         layer_data: combinedLayerDataId ? conn(combinedLayerDataId) : null,
-        tweak_index: params.ttmTweakIndex ?? 0,
-        tstrong_index: params.ttmTstrongIndex ?? 0,
+        // Type proof: ttmTweakIndex ∈ ℕ ∪ {undefined} → ℕ
+        tweak_index: (() => {
+          const value = params.ttmTweakIndex;
+          return isFiniteNumber(value) && Number.isInteger(value) && value >= 0 ? value : 0;
+        })(),
+        // Type proof: ttmTstrongIndex ∈ ℕ ∪ {undefined} → ℕ
+        tstrong_index: (() => {
+          const value = params.ttmTstrongIndex;
+          return isFiniteNumber(value) && Number.isInteger(value) && value >= 0 ? value : 0;
+        })(),
       },
       "Apply TTM Motion",
     );
@@ -1518,7 +1599,13 @@ export function generateTTMWorkflow(params: WorkflowParams): ComfyUIWorkflow {
         length: params.frameCount,
         steps: params.steps || 30,
         cfg: params.cfgScale || 5,
-        seed: params.seed ?? Math.floor(Math.random() * 2147483647),
+        // Type proof: seed ∈ ℕ ∪ {undefined} → ℕ
+      seed: (() => {
+        const seedValue = params.seed;
+        return isFiniteNumber(seedValue) && Number.isInteger(seedValue) && seedValue >= 0
+          ? seedValue
+          : Math.floor(Math.random() * 2147483647);
+      })(),
         scheduler: "DPM++ 2M SDE",
         denoise_strength: params.denoise || 1,
       },
@@ -1598,8 +1685,16 @@ export function generateTTMWorkflow(params: WorkflowParams): ComfyUIWorkflow {
         image: conn(resizeId),
         motion_mask: conn(combinedMaskId),
         layer_data: combinedLayerDataId ? conn(combinedLayerDataId) : null,
-        tweak_index: params.ttmTweakIndex ?? 0,
-        tstrong_index: params.ttmTstrongIndex ?? 0,
+        // Type proof: ttmTweakIndex ∈ ℕ ∪ {undefined} → ℕ
+        tweak_index: (() => {
+          const value = params.ttmTweakIndex;
+          return isFiniteNumber(value) && Number.isInteger(value) && value >= 0 ? value : 0;
+        })(),
+        // Type proof: ttmTstrongIndex ∈ ℕ ∪ {undefined} → ℕ
+        tstrong_index: (() => {
+          const value = params.ttmTstrongIndex;
+          return isFiniteNumber(value) && Number.isInteger(value) && value >= 0 ? value : 0;
+        })(),
       },
       "Apply TTM Motion",
     );
@@ -1617,7 +1712,13 @@ export function generateTTMWorkflow(params: WorkflowParams): ComfyUIWorkflow {
         num_frames: params.frameCount,
         steps: params.steps || 50,
         cfg: params.cfgScale || 6,
-        seed: params.seed ?? Math.floor(Math.random() * 2147483647),
+        // Type proof: seed ∈ ℕ ∪ {undefined} → ℕ
+      seed: (() => {
+        const seedValue = params.seed;
+        return isFiniteNumber(seedValue) && Number.isInteger(seedValue) && seedValue >= 0
+          ? seedValue
+          : Math.floor(Math.random() * 2147483647);
+      })(),
         scheduler: "CogVideoX DDIM",
       },
       "CogVideoX I2V",
@@ -1658,8 +1759,16 @@ export function generateTTMWorkflow(params: WorkflowParams): ComfyUIWorkflow {
         image: conn(resizeId),
         motion_mask: conn(combinedMaskId),
         layer_data: combinedLayerDataId ? conn(combinedLayerDataId) : null,
-        tweak_index: params.ttmTweakIndex ?? 0,
-        tstrong_index: params.ttmTstrongIndex ?? 0,
+        // Type proof: ttmTweakIndex ∈ ℕ ∪ {undefined} → ℕ
+        tweak_index: (() => {
+          const value = params.ttmTweakIndex;
+          return isFiniteNumber(value) && Number.isInteger(value) && value >= 0 ? value : 0;
+        })(),
+        // Type proof: ttmTstrongIndex ∈ ℕ ∪ {undefined} → ℕ
+        tstrong_index: (() => {
+          const value = params.ttmTstrongIndex;
+          return isFiniteNumber(value) && Number.isInteger(value) && value >= 0 ? value : 0;
+        })(),
       },
       "Apply TTM Motion",
     );
@@ -1886,7 +1995,13 @@ export function generateSCAILWorkflow(params: WorkflowParams): ComfyUIWorkflow {
       length: params.frameCount,
       steps: params.steps || 30,
       cfg: params.cfgScale || 5,
-      seed: params.seed ?? Math.floor(Math.random() * 2147483647),
+      // Type proof: seed ∈ ℕ ∪ {undefined} → ℕ
+      seed: (() => {
+        const seedValue = params.seed;
+        return isFiniteNumber(seedValue) && Number.isInteger(seedValue) && seedValue >= 0
+          ? seedValue
+          : Math.floor(Math.random() * 2147483647);
+      })(),
       scheduler: "DPM++ 2M SDE",
       denoise_strength: params.denoise || 1,
     },
@@ -2090,7 +2205,11 @@ export function generateLightXWorkflow(params: WorkflowParams): ComfyUIWorkflow 
     {
       wan_model: conn(wanLoaderId),
       lora: params.loraModel || "light_x_relight.safetensors",
-      strength: params.loraStrength ?? 1.0,
+      // Type proof: loraStrength ∈ ℝ ∧ finite(loraStrength) → loraStrength ∈ ℝ₊
+      strength: (() => {
+        const value = params.loraStrength;
+        return isFiniteNumber(value) && value >= 0 ? value : 1.0;
+      })(),
     },
     "Apply Light-X LoRA",
   );
@@ -2134,7 +2253,13 @@ export function generateLightXWorkflow(params: WorkflowParams): ComfyUIWorkflow 
       length: params.frameCount,
       steps: params.steps || 30,
       cfg: params.cfgScale || 5,
-      seed: params.seed ?? Math.floor(Math.random() * 2147483647),
+      // Type proof: seed ∈ ℕ ∪ {undefined} → ℕ
+      seed: (() => {
+        const seedValue = params.seed;
+        return isFiniteNumber(seedValue) && Number.isInteger(seedValue) && seedValue >= 0
+          ? seedValue
+          : Math.floor(Math.random() * 2147483647);
+      })(),
       scheduler: "DPM++ 2M SDE",
       denoise_strength: params.denoise || 1,
     },
@@ -2237,7 +2362,11 @@ export function generateWanMoveWorkflow(params: WorkflowParams): ComfyUIWorkflow
     "WanVideoAddWanMoveTracks",
     {
       wan_model: conn(wanLoaderId),
-      tracks: JSON.stringify(params.motionData?.tracks || []),
+      tracks: JSON.stringify(
+        params.motionData && "tracks" in params.motionData 
+          ? params.motionData.tracks 
+          : [],
+      ),
       num_frames: params.frameCount,
       width: params.width,
       height: params.height,
@@ -2271,7 +2400,13 @@ export function generateWanMoveWorkflow(params: WorkflowParams): ComfyUIWorkflow
       length: params.frameCount,
       steps: params.steps || 30,
       cfg: params.cfgScale || 5,
-      seed: params.seed ?? Math.floor(Math.random() * 2147483647),
+      // Type proof: seed ∈ ℕ ∪ {undefined} → ℕ
+      seed: (() => {
+        const seedValue = params.seed;
+        return isFiniteNumber(seedValue) && Number.isInteger(seedValue) && seedValue >= 0
+          ? seedValue
+          : Math.floor(Math.random() * 2147483647);
+      })(),
       scheduler: "DPM++ 2M SDE",
       denoise_strength: params.denoise || 1,
     },
@@ -2374,7 +2509,11 @@ export function generateATIWorkflow(params: WorkflowParams): ComfyUIWorkflow {
     "WanVideoATITracks",
     {
       wan_model: conn(wanLoaderId),
-      trajectories: JSON.stringify(params.motionData?.trajectories || []),
+      trajectories: JSON.stringify(
+        params.motionData && "trajectories" in params.motionData 
+          ? params.motionData.trajectories 
+          : [],
+      ),
       num_frames: params.frameCount,
       width: params.width,
       height: params.height,
@@ -2408,7 +2547,13 @@ export function generateATIWorkflow(params: WorkflowParams): ComfyUIWorkflow {
       length: params.frameCount,
       steps: params.steps || 30,
       cfg: params.cfgScale || 5,
-      seed: params.seed ?? Math.floor(Math.random() * 2147483647),
+      // Type proof: seed ∈ ℕ ∪ {undefined} → ℕ
+      seed: (() => {
+        const seedValue = params.seed;
+        return isFiniteNumber(seedValue) && Number.isInteger(seedValue) && seedValue >= 0
+          ? seedValue
+          : Math.floor(Math.random() * 2147483647);
+      })(),
       scheduler: "DPM++ 2M SDE",
       denoise_strength: params.denoise || 1,
     },
@@ -2479,7 +2624,7 @@ export function generateCameraComfyUIWorkflow(
   // Expected format: Array of 4x4 matrices (16 floats each)
   const cameraMatricesId = nextNodeId();
   const matrices = params.cameraData && "matrices" in params.cameraData 
-    ? (params.cameraData as { matrices: unknown }).matrices 
+    ? (params.cameraData as { matrices: JSONValue }).matrices 
     : [];
   workflow[cameraMatricesId] = createNode(
     "CameraComfyUI_LoadMatrices",
@@ -2702,11 +2847,13 @@ export function validateWorkflow(workflow: ComfyUIWorkflow): {
 
   // Check for output nodes
   // Note: class_type may be undefined/null for invalid nodes (already reported as error above)
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
   const hasOutput = Object.values(workflow).some(
-    (node) =>
-      node.class_type?.includes("Save") ||
-      node.class_type?.includes("Output") ||
-      node.class_type?.includes("Preview"),
+    (node) => {
+      const classType = (node != null && typeof node === "object" && "class_type" in node && typeof node.class_type === "string") ? node.class_type : undefined;
+      if (classType == null) return false;
+      return classType.includes("Save") || classType.includes("Output") || classType.includes("Preview");
+    },
   );
 
   if (!hasOutput) {

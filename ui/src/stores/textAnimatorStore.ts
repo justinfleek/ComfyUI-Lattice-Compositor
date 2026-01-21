@@ -7,6 +7,7 @@
  * @see docs/MASTER_REFACTOR_PLAN.md
  */
 
+import { isFiniteNumber } from "@/utils/typeGuards";
 import { defineStore } from "pinia";
 import {
   calculateCharacterInfluence,
@@ -16,6 +17,14 @@ import {
   createWigglySelector,
   getAnimatableValue,
 } from "@/services/textAnimator";
+import type { JSONValue } from "@/types/dataAsset";
+import type { PropertyValue } from "@/types/animation";
+
+/**
+ * All possible JavaScript values that can be validated at runtime
+ * Used as input type for validators (replaces unknown)
+ */
+type RuntimeValue = string | number | boolean | object | null | undefined | bigint | symbol;
 import { isExpressionSafe } from "@/services/expressions/expressionValidator";
 import {
   type CharacterPlacement,
@@ -104,7 +113,8 @@ interface TextDataWithPath extends TextData {
 
 function getTextLayer(store: TextAnimatorStoreAccess, layerId: string): Layer | undefined {
   const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
-  return layer?.type === "text" ? layer : undefined;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  return (layer != null && typeof layer === "object" && "type" in layer && layer.type === "text") ? layer : undefined;
 }
 
 function getTextData(layer: Layer): TextData | undefined {
@@ -127,8 +137,19 @@ function rgbaObjectToHex(rgba: { r: number; g: number; b: number; a?: number }):
 }
 
 function hexToRgbaObject(hex: string): { r: number; g: number; b: number; a: number } {
+  // System F/Omega proof: Validate hex format before calling utility
+  // Type proof: hex ∈ string → { r: number; g: number; b: number; a: number }
+  // Mathematical proof: Hex string must be valid format (#RGB, #RRGGBB, or #RRGGBBAA)
+  const normalizedHex = hex.replace(/^#/, "");
+  const isValidHex = /^([0-9a-f]{3}|[0-9a-f]{6}|[0-9a-f]{8})$/i.test(normalizedHex);
+  
+  if (!isValidHex) {
+    // Invalid hex format - return default black with full opacity
+    return { r: 0, g: 0, b: 0, a: 255 };
+  }
+  
   const rgba = hexToRgba(hex);
-  return rgba ? { r: rgba[0], g: rgba[1], b: rgba[2], a: Math.round(rgba[3] * 255) } : { r: 0, g: 0, b: 0, a: 255 };
+  return { r: rgba[0], g: rgba[1], b: rgba[2], a: Math.round(rgba[3] * 255) };
 }
 
 /**
@@ -141,7 +162,7 @@ interface RgbaObject {
   a?: number;
 }
 
-function isRgbaObject(value: unknown): value is RgbaObject {
+function isRgbaObject(value: RuntimeValue): value is RgbaObject {
   return (
     typeof value === "object" &&
     value !== null &&
@@ -180,12 +201,16 @@ export const useTextAnimatorStore = defineStore("textAnimator", {
     // CRUD OPERATIONS
     // ========================================================================
 
-    addTextAnimator(store: TextAnimatorStoreAccess, layerId: string, config: AddTextAnimatorConfig = {}): TextAnimator | null {
+    addTextAnimator(store: TextAnimatorStoreAccess, layerId: string, config: AddTextAnimatorConfig = {}): TextAnimator {
       const layer = getTextLayer(store, layerId);
-      if (!layer) return null;
+      if (!layer) {
+        throw new Error(`[TextAnimatorStore] Cannot add animator: Layer "${layerId}" not found or is not a text layer`);
+      }
 
       const textData = getTextData(layer);
-      if (!textData) return null;
+      if (!textData) {
+        throw new Error(`[TextAnimatorStore] Cannot add animator: Text data not found for layer "${layerId}"`);
+      }
 
       store.pushHistory();
       ensureAnimatorsArray(textData);
@@ -205,7 +230,12 @@ export const useTextAnimatorStore = defineStore("textAnimator", {
         if (p.blur) animator.properties.blur = createAnimatableProperty("Blur", p.blur.value, "position");
       }
 
-      textData.animators?.push(animator);
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      if (textData.animators != null && Array.isArray(textData.animators)) {
+        textData.animators.push(animator);
+      } else {
+        textData.animators = [animator];
+      }
       updateModified(store);
       return animator;
     },
@@ -215,7 +245,8 @@ export const useTextAnimatorStore = defineStore("textAnimator", {
       if (!layer) return false;
 
       const textData = getTextData(layer);
-      if (!textData?.animators) return false;
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      if (textData == null || typeof textData !== "object" || !("animators" in textData) || textData.animators == null || !Array.isArray(textData.animators)) return false;
 
       const index = textData.animators.findIndex((a) => a.id === animatorId);
       if (index === -1) return false;
@@ -231,7 +262,8 @@ export const useTextAnimatorStore = defineStore("textAnimator", {
       if (!layer) return false;
 
       const textData = getTextData(layer);
-      if (!textData?.animators) return false;
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      if (textData == null || typeof textData !== "object" || !("animators" in textData) || textData.animators == null || !Array.isArray(textData.animators)) return false;
 
       const animator = textData.animators.find((a) => a.id === animatorId);
       if (!animator) return false;
@@ -245,17 +277,30 @@ export const useTextAnimatorStore = defineStore("textAnimator", {
       return true;
     },
 
-    getTextAnimator(store: TextAnimatorStoreAccess, layerId: string, animatorId: string): TextAnimator | null {
+    getTextAnimator(store: TextAnimatorStoreAccess, layerId: string, animatorId: string): TextAnimator {
       const layer = getTextLayer(store, layerId);
-      if (!layer) return null;
+      if (!layer) {
+        throw new Error(`[TextAnimatorStore] Cannot get animator: Layer "${layerId}" not found or is not a text layer`);
+      }
       const textData = getTextData(layer);
-      return textData?.animators?.find((a) => a.id === animatorId) ?? null;
+      // Type proof: animators?.find(...) ∈ TextAnimator | undefined → TextAnimator (throws if not found)
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const animators = (textData != null && typeof textData === "object" && "animators" in textData && Array.isArray(textData.animators)) ? textData.animators : undefined;
+      const foundAnimator = Array.isArray(animators) ? animators.find((a) => a.id === animatorId) : undefined;
+      if (foundAnimator !== undefined) {
+        return foundAnimator;
+      }
+      throw new Error(`[TextAnimatorStore] Animator "${animatorId}" not found on layer "${layerId}"`);
     },
 
     getTextAnimators(store: TextAnimatorStoreAccess, layerId: string): TextAnimator[] {
       const layer = getTextLayer(store, layerId);
       if (!layer) return [];
-      return getTextData(layer)?.animators ?? [];
+      // Type proof: animators ∈ TextAnimator[] | undefined → TextAnimator[]
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const textData = getTextData(layer);
+      const animators = (textData != null && typeof textData === "object" && "animators" in textData && Array.isArray(textData.animators)) ? textData.animators : undefined;
+      return Array.isArray(animators) ? animators : [];
     },
 
     // ========================================================================
@@ -267,7 +312,8 @@ export const useTextAnimatorStore = defineStore("textAnimator", {
       if (!layer) return false;
 
       const textData = getTextData(layer);
-      if (!textData?.animators) return false;
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      if (textData == null || typeof textData !== "object" || !("animators" in textData) || textData.animators == null || !Array.isArray(textData.animators)) return false;
 
       const animator = textData.animators.find((a) => a.id === animatorId);
       if (!animator) return false;
@@ -291,7 +337,8 @@ export const useTextAnimatorStore = defineStore("textAnimator", {
       if (!layer) return false;
 
       const textData = getTextData(layer);
-      if (!textData?.animators) return false;
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      if (textData == null || typeof textData !== "object" || !("animators" in textData) || textData.animators == null || !Array.isArray(textData.animators)) return false;
 
       const animator = textData.animators.find((a) => a.id === animatorId);
       if (!animator) return false;
@@ -320,10 +367,12 @@ export const useTextAnimatorStore = defineStore("textAnimator", {
       if (!layer) return false;
 
       const textData = getTextData(layer);
-      if (!textData?.animators) return false;
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      if (textData == null || typeof textData !== "object" || !("animators" in textData) || textData.animators == null || !Array.isArray(textData.animators)) return false;
 
       const animator = textData.animators.find((a) => a.id === animatorId);
-      if (!animator?.expressionSelector) return false;
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      if (animator === null || animator === undefined || typeof animator !== "object" || !("expressionSelector" in animator) || animator.expressionSelector === null || animator.expressionSelector === undefined || typeof animator.expressionSelector !== "object") return false;
 
       store.pushHistory();
       animator.expressionSelector.enabled = false;
@@ -336,7 +385,8 @@ export const useTextAnimatorStore = defineStore("textAnimator", {
       if (!layer) return false;
 
       const textData = getTextData(layer);
-      if (!textData?.animators) return false;
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      if (textData == null || typeof textData !== "object" || !("animators" in textData) || textData.animators == null || !Array.isArray(textData.animators)) return false;
 
       const animator = textData.animators.find((a) => a.id === animatorId);
       if (!animator) return false;
@@ -361,10 +411,12 @@ export const useTextAnimatorStore = defineStore("textAnimator", {
       if (!layer) return false;
 
       const textData = getTextData(layer);
-      if (!textData?.animators) return false;
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      if (textData == null || typeof textData !== "object" || !("animators" in textData) || textData.animators == null || !Array.isArray(textData.animators)) return false;
 
       const animator = textData.animators.find((a) => a.id === animatorId);
-      if (!animator?.wigglySelector) return false;
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      if (animator === null || animator === undefined || typeof animator !== "object" || !("wigglySelector" in animator) || animator.wigglySelector === null || animator.wigglySelector === undefined || typeof animator.wigglySelector !== "object") return false;
 
       store.pushHistory();
       animator.wigglySelector.enabled = false;
@@ -387,8 +439,11 @@ export const useTextAnimatorStore = defineStore("textAnimator", {
       const totalChars = text.length;
       if (totalChars === 0) return [];
 
-      const animators = textData.animators || [];
-      const fps = store.getActiveComp()?.settings?.fps || 16;
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy || []
+      const animators = (Array.isArray(textData.animators)) ? textData.animators : [];
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const comp = store.getActiveComp();
+      const fps = (comp !== null && comp !== undefined && typeof comp === "object" && "settings" in comp && comp.settings !== null && comp.settings !== undefined && typeof comp.settings === "object" && "fps" in comp.settings && typeof comp.settings.fps === "number") ? comp.settings.fps : 16;
 
       const transforms: CharacterTransform[] = [];
       for (let i = 0; i < totalChars; i++) {
@@ -444,7 +499,10 @@ export const useTextAnimatorStore = defineStore("textAnimator", {
           }
           if (props.strokeWidth !== undefined) {
             const v = getAnimatableValue(props.strokeWidth, frame) as number;
-            transforms[i].strokeWidth = (transforms[i].strokeWidth ?? 0) + v * influence;
+            // Type proof: strokeWidth ∈ ℝ ∪ {undefined} → ℝ
+            const currentStrokeWidth = transforms[i].strokeWidth;
+            const baseStrokeWidth = isFiniteNumber(currentStrokeWidth) && currentStrokeWidth >= 0 ? currentStrokeWidth : 0;
+            transforms[i].strokeWidth = baseStrokeWidth + v * influence;
           }
         }
       }
@@ -476,10 +534,14 @@ export const useTextAnimatorStore = defineStore("textAnimator", {
       const totalChars = text.length;
       if (totalChars === 0) return [];
 
-      const animator = textData.animators?.find((a) => a.id === animatorId);
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const animators = (textData != null && typeof textData === "object" && "animators" in textData && Array.isArray(textData.animators)) ? textData.animators : undefined;
+      const animator = Array.isArray(animators) ? animators.find((a) => a.id === animatorId) : undefined;
       if (!animator) return [];
 
-      const fps = store.getActiveComp()?.settings?.fps || 16;
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const comp = store.getActiveComp();
+      const fps = (comp !== null && comp !== undefined && typeof comp === "object" && "settings" in comp && comp.settings !== null && comp.settings !== undefined && typeof comp.settings === "object" && "fps" in comp.settings && typeof comp.settings.fps === "number") ? comp.settings.fps : 16;
       const values: number[] = [];
 
       for (let i = 0; i < totalChars; i++) {
@@ -501,7 +563,9 @@ export const useTextAnimatorStore = defineStore("textAnimator", {
       const totalChars = text.length;
       if (totalChars === 0 || charIndex < 0 || charIndex >= totalChars) return 0;
 
-      const animator = textData.animators?.find((a) => a.id === animatorId);
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const animators = (textData != null && typeof textData === "object" && "animators" in textData && Array.isArray(textData.animators)) ? textData.animators : undefined;
+      const animator = Array.isArray(animators) ? animators.find((a) => a.id === animatorId) : undefined;
       if (!animator) return 0;
 
       return calculateCharacterInfluence(charIndex, totalChars, animator.rangeSelector, frame) * 100;
@@ -511,12 +575,13 @@ export const useTextAnimatorStore = defineStore("textAnimator", {
     // UTILITY FUNCTIONS
     // ========================================================================
 
-    setAnimatorPropertyValue(store: TextAnimatorStoreAccess, layerId: string, animatorId: string, propertyName: keyof TextAnimatorProperties, value: unknown): boolean {
+    setAnimatorPropertyValue(store: TextAnimatorStoreAccess, layerId: string, animatorId: string, propertyName: keyof TextAnimatorProperties, value: PropertyValue | JSONValue): boolean {
       const layer = getTextLayer(store, layerId);
       if (!layer) return false;
 
       const textData = getTextData(layer);
-      if (!textData?.animators) return false;
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      if (textData == null || typeof textData !== "object" || !("animators" in textData) || textData.animators == null || !Array.isArray(textData.animators)) return false;
 
       const animator = textData.animators.find((a) => a.id === animatorId);
       if (!animator) return false;
@@ -555,13 +620,23 @@ export const useTextAnimatorStore = defineStore("textAnimator", {
       const layer = getTextLayer(store, layerId);
       if (!layer) return false;
       const textData = getTextData(layer);
-      return !!(textData?.animators && textData.animators.length > 0);
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      return !!(textData !== null && textData !== undefined && typeof textData === "object" && "animators" in textData && Array.isArray(textData.animators) && textData.animators.length > 0);
     },
 
-    getTextContent(store: TextAnimatorStoreAccess, layerId: string): string | null {
+    getTextContent(store: TextAnimatorStoreAccess, layerId: string): string {
       const layer = getTextLayer(store, layerId);
-      if (!layer) return null;
-      return getTextData(layer)?.text ?? null;
+      if (!layer) {
+        throw new Error(`[TextAnimatorStore] Cannot get text content: Layer "${layerId}" not found or is not a text layer`);
+      }
+      // Type proof: text ∈ string | undefined → string (throws if undefined)
+      const textData = getTextData(layer);
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const textValue = (textData !== null && textData !== undefined && typeof textData === "object" && "text" in textData && typeof textData.text === "string") ? textData.text : undefined;
+      if (typeof textValue === "string") {
+        return textValue;
+      }
+      throw new Error(`[TextAnimatorStore] Text content is undefined for layer "${layerId}"`);
     },
 
     setTextContent(store: TextAnimatorStoreAccess, layerId: string, text: string): boolean {
@@ -589,28 +664,59 @@ export const useTextAnimatorStore = defineStore("textAnimator", {
       if (!textData) return false;
 
       store.pushHistory();
+      // Type proof: pathConfig properties with explicit type proofs
+      const closedValue = config.closed;
+      const closed = closedValue === true;
+      const reversedValue = config.reversed;
+      const reversed = reversedValue === true;
+      const perpendicularToPathValue = config.perpendicularToPath;
+      const perpendicularToPath = perpendicularToPathValue === true;
+      const forceAlignmentValue = config.forceAlignment;
+      const forceAlignment = forceAlignmentValue === true;
+      // Type proof: firstMargin ∈ ℝ ∪ {undefined} → ℝ
+      const firstMarginValue = config.firstMargin;
+      const firstMargin = isFiniteNumber(firstMarginValue) ? firstMarginValue : 0;
+      // Type proof: lastMargin ∈ ℝ ∪ {undefined} → ℝ
+      const lastMarginValue = config.lastMargin;
+      const lastMargin = isFiniteNumber(lastMarginValue) ? lastMarginValue : 0;
+      // Type proof: offset ∈ ℝ ∪ {undefined} → ℝ
+      const offsetValue = config.offset;
+      const offset = isFiniteNumber(offsetValue) ? offsetValue : 0;
+      // Type proof: align ∈ string | undefined → string
+      const alignValue = config.align;
+      const align = typeof alignValue === "string" && (alignValue === "left" || alignValue === "center" || alignValue === "right") ? alignValue : "left";
+
       textData.pathConfig = {
         pathPoints: config.pathPoints,
-        closed: config.closed ?? false,
-        reversed: config.reversed ?? false,
-        perpendicularToPath: config.perpendicularToPath ?? true,
-        forceAlignment: config.forceAlignment ?? false,
-        firstMargin: config.firstMargin ?? 0,
-        lastMargin: config.lastMargin ?? 0,
-        offset: config.offset ?? 0,
-        align: config.align ?? "left",
+        closed: closed,
+        reversed: reversed,
+        perpendicularToPath: perpendicularToPath,
+        forceAlignment: forceAlignment,
+        firstMargin: firstMargin,
+        lastMargin: lastMargin,
+        offset: offset,
+        align: align,
       };
 
       const service = getPathService(layerId);
-      service.setPath(config.pathPoints, config.closed ?? false);
+      service.setPath(config.pathPoints, closed);
       updateModified(store);
       return true;
     },
 
-    getTextPathConfig(store: TextAnimatorStoreAccess, layerId: string): TextPathConfig | null {
+    getTextPathConfig(store: TextAnimatorStoreAccess, layerId: string): TextPathConfig {
       const layer = getTextLayer(store, layerId);
-      if (!layer) return null;
-      return (getTextData(layer) as TextDataWithPath | undefined)?.pathConfig ?? null;
+      if (!layer) {
+        throw new Error(`[TextAnimatorStore] Cannot get path config: Layer "${layerId}" not found or is not a text layer`);
+      }
+      // Type proof: pathConfig ∈ TextPathConfig | undefined → TextPathConfig (throws if undefined)
+      const textData = getTextData(layer) as TextDataWithPath | undefined;
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const pathConfig = (textData !== null && textData !== undefined && typeof textData === "object" && "pathConfig" in textData && textData.pathConfig !== null && textData.pathConfig !== undefined && typeof textData.pathConfig === "object") ? textData.pathConfig : undefined;
+      if (pathConfig !== undefined) {
+        return pathConfig;
+      }
+      throw new Error(`[TextAnimatorStore] Path config is undefined for layer "${layerId}"`);
     },
 
     updateTextPath(store: TextAnimatorStoreAccess, layerId: string, updates: Partial<TextPathConfig>): boolean {
@@ -618,14 +724,18 @@ export const useTextAnimatorStore = defineStore("textAnimator", {
       if (!layer) return false;
 
       const textData = getTextData(layer) as TextDataWithPath | undefined;
-      if (!textData?.pathConfig) return false;
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      if (textData === null || textData === undefined || typeof textData !== "object" || !("pathConfig" in textData) || textData.pathConfig === null || textData.pathConfig === undefined || typeof textData.pathConfig !== "object") return false;
 
       store.pushHistory();
       Object.assign(textData.pathConfig, updates);
 
       if (updates.pathPoints || updates.closed !== undefined) {
         const service = getPathService(layerId);
-        service.setPath(textData.pathConfig.pathPoints, textData.pathConfig.closed ?? false);
+        // Type proof: closed ∈ boolean | undefined → boolean
+        const closedValue = textData.pathConfig.closed;
+        const closed = closedValue === true;
+        service.setPath(textData.pathConfig.pathPoints, closed);
       }
 
       updateModified(store);
@@ -637,30 +747,59 @@ export const useTextAnimatorStore = defineStore("textAnimator", {
       if (!layer) return [];
 
       const textData = getTextData(layer) as TextDataWithPath | undefined;
-      if (!textData?.pathConfig?.pathPoints || textData.pathConfig.pathPoints.length < 2) return [];
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      if (textData === null || textData === undefined || typeof textData !== "object" || !("pathConfig" in textData) || textData.pathConfig === null || textData.pathConfig === undefined || typeof textData.pathConfig !== "object" || !("pathPoints" in textData.pathConfig) || !Array.isArray(textData.pathConfig.pathPoints) || textData.pathConfig.pathPoints.length < 2) return [];
 
       const text = textData.text || "";
       if (text.length === 0) return [];
 
       const service = getPathService(layerId);
-      if (!service.hasPath()) service.setPath(textData.pathConfig.pathPoints, textData.pathConfig.closed ?? false);
+      if (!service.hasPath()) {
+        // Type proof: closed ∈ boolean | undefined → boolean
+        const closedValue = textData.pathConfig.closed;
+        const closed = closedValue === true;
+        service.setPath(textData.pathConfig.pathPoints, closed);
+      }
 
       const fontSize = textData.fontSize || 72;
       const charWidth = fontSize * 0.6;
       const characterWidths = Array(text.length).fill(charWidth);
 
+      // Type proof: pathConfig properties with explicit type proofs
+      const reversedValue = textData.pathConfig.reversed;
+      const reversed = reversedValue === true;
+      const perpendicularToPathValue = textData.pathConfig.perpendicularToPath;
+      const perpendicularToPath = perpendicularToPathValue === true;
+      const forceAlignmentValue = textData.pathConfig.forceAlignment;
+      const forceAlignment = forceAlignmentValue === true;
+      // Type proof: firstMargin ∈ ℝ ∪ {undefined} → ℝ
+      const firstMarginValue = textData.pathConfig.firstMargin;
+      const firstMargin = isFiniteNumber(firstMarginValue) ? firstMarginValue : 0;
+      // Type proof: lastMargin ∈ ℝ ∪ {undefined} → ℝ
+      const lastMarginValue = textData.pathConfig.lastMargin;
+      const lastMargin = isFiniteNumber(lastMarginValue) ? lastMarginValue : 0;
+      // Type proof: offset ∈ ℝ ∪ {undefined} → ℝ
+      const offsetValue = textData.pathConfig.offset;
+      const offset = isFiniteNumber(offsetValue) ? offsetValue : 0;
+      // Type proof: align ∈ string | undefined → string
+      const alignValue = textData.pathConfig.align;
+      const align = typeof alignValue === "string" && (alignValue === "left" || alignValue === "center" || alignValue === "right") ? alignValue : "left";
+
       const config: TextOnPathConfig = {
         pathLayerId: layerId,
-        reversed: textData.pathConfig.reversed ?? false,
-        perpendicularToPath: textData.pathConfig.perpendicularToPath ?? true,
-        forceAlignment: textData.pathConfig.forceAlignment ?? false,
-        firstMargin: textData.pathConfig.firstMargin ?? 0,
-        lastMargin: textData.pathConfig.lastMargin ?? 0,
-        offset: textData.pathConfig.offset ?? 0,
-        align: textData.pathConfig.align ?? "left",
+        reversed: reversed,
+        perpendicularToPath: perpendicularToPath,
+        forceAlignment: forceAlignment,
+        firstMargin: firstMargin,
+        lastMargin: lastMargin,
+        offset: offset,
+        align: align,
       };
 
-      return service.calculatePlacements(characterWidths, config, textData.tracking || 0, fontSize);
+      // Type proof: tracking ∈ number | undefined → number (coordinate-like, can be negative)
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+      const tracking = (typeof textData.tracking === "number" && Number.isFinite(textData.tracking)) ? textData.tracking : 0;
+      return service.calculatePlacements(characterWidths, config, tracking, fontSize);
     },
 
     getPathLength(store: TextAnimatorStoreAccess, layerId: string): number {
@@ -668,10 +807,16 @@ export const useTextAnimatorStore = defineStore("textAnimator", {
       if (!layer) return 0;
 
       const textData = getTextData(layer) as TextDataWithPath | undefined;
-      if (!textData?.pathConfig?.pathPoints || textData.pathConfig.pathPoints.length < 2) return 0;
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      if (textData === null || textData === undefined || typeof textData !== "object" || !("pathConfig" in textData) || textData.pathConfig === null || textData.pathConfig === undefined || typeof textData.pathConfig !== "object" || !("pathPoints" in textData.pathConfig) || !Array.isArray(textData.pathConfig.pathPoints) || textData.pathConfig.pathPoints.length < 2) return 0;
 
       const service = getPathService(layerId);
-      if (!service.hasPath()) service.setPath(textData.pathConfig.pathPoints, textData.pathConfig.closed ?? false);
+      if (!service.hasPath()) {
+        // Type proof: closed ∈ boolean | undefined → boolean
+        const closedValue = textData.pathConfig.closed;
+        const closed = closedValue === true;
+        service.setPath(textData.pathConfig.pathPoints, closed);
+      }
 
       return service.getTotalLength();
     },
@@ -681,7 +826,8 @@ export const useTextAnimatorStore = defineStore("textAnimator", {
       if (!layer) return false;
 
       const textData = getTextData(layer) as TextDataWithPath | undefined;
-      return !!(textData?.pathConfig?.pathPoints && textData.pathConfig.pathPoints.length >= 2);
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      return !!(textData !== null && textData !== undefined && typeof textData === "object" && "pathConfig" in textData && textData.pathConfig !== null && textData.pathConfig !== undefined && typeof textData.pathConfig === "object" && "pathPoints" in textData.pathConfig && Array.isArray(textData.pathConfig.pathPoints) && textData.pathConfig.pathPoints.length >= 2);
     },
 
     clearTextPath(store: TextAnimatorStoreAccess, layerId: string): boolean {

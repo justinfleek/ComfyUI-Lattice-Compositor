@@ -15,7 +15,8 @@ export function normalize(
   values: number[],
   maxValue: number = Math.max(...values),
 ): number[] {
-  const safeMax = maxValue || 0.0001; // Prevent division by zero
+  // Type proof: maxValue ∈ number | NaN → number (> 0, must be positive for division)
+  const safeMax = Number.isFinite(maxValue) && maxValue > 0 ? maxValue : 0.0001;
   return values.map((v) => v / safeMax);
 }
 

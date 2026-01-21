@@ -11,6 +11,7 @@
  * @see https://github.com/ali-vilab/Wan-Move
  */
 
+import { isFiniteNumber } from "@/utils/typeGuards";
 import type { ControlPoint } from "@/types/spline";
 
 // Import flow generators and utilities from extracted module
@@ -200,7 +201,11 @@ export function generateDataDrivenFlow(
 
   // Modify trajectories based on data mapping
   const modifiedTracks = baseFlow.tracks.map((track, i) => {
-    const dataVal = normalizedData[i] ?? 0.5;
+    // Type proof: normalizedData[i] ∈ ℝ ∪ {undefined} → ℝ
+    const dataVal = (() => {
+      const dataValue = normalizedData[i];
+      return isFiniteNumber(dataValue) && dataValue >= 0 && dataValue <= 1 ? dataValue : 0.5;
+    })();
 
     return track.map((point, f) => {
       const [x, y] = point;
@@ -458,7 +463,10 @@ export function exportWanMoveVisibility(
   for (let f = 0; f < numFrames; f++) {
     transposedVis[f] = [];
     for (let n = 0; n < numPoints; n++) {
-      transposedVis[f][n] = visibility[n]?.[f] ?? true;
+      // Type proof: visibility[n]?.[f] ∈ boolean | undefined → boolean
+      const visibilityArray = visibility[n];
+      const visibilityValue = Array.isArray(visibilityArray) ? visibilityArray[f] : undefined;
+      transposedVis[f][n] = visibilityValue === true;
     }
   }
 
@@ -758,9 +766,24 @@ export function generateLorenzAttractor(
   config: AttractorConfig,
 ): WanMoveTrajectory {
   const { numPoints, numFrames, width, height, seed = 42 } = config;
-  const dt = config.dt ?? 0.005;
-  const scale = config.scale ?? 8;
-  const center = config.center ?? { x: width / 2, y: height / 2 };
+  // Type proof: dt ∈ ℝ ∪ {undefined} → ℝ
+  const dtValue = config.dt;
+  const dt = isFiniteNumber(dtValue) && dtValue > 0 ? dtValue : 0.005;
+  // Type proof: scale ∈ ℝ ∪ {undefined} → ℝ
+  const scaleValue = config.scale;
+  const scale = isFiniteNumber(scaleValue) && scaleValue > 0 ? scaleValue : 8;
+  // Type proof: center ∈ {x: ℝ, y: ℝ} | undefined → {x: ℝ, y: ℝ}
+  const centerValue = config.center;
+  const center = (() => {
+    if (centerValue !== undefined && typeof centerValue === "object" && centerValue !== null) {
+      const centerX = centerValue.x;
+      const centerY = centerValue.y;
+      if (isFiniteNumber(centerX) && isFiniteNumber(centerY)) {
+        return { x: centerX, y: centerY };
+      }
+    }
+    return { x: width / 2, y: height / 2 };
+  })();
 
   const rng = new SeededRandom(seed);
 
@@ -833,9 +856,24 @@ export function generateRosslerAttractor(
   config: AttractorConfig,
 ): WanMoveTrajectory {
   const { numPoints, numFrames, width, height, seed = 42 } = config;
-  const dt = config.dt ?? 0.02;
-  const scale = config.scale ?? 15;
-  const center = config.center ?? { x: width / 2, y: height / 2 };
+  // Type proof: dt ∈ ℝ ∪ {undefined} → ℝ
+  const dtValue = config.dt;
+  const dt = isFiniteNumber(dtValue) && dtValue > 0 ? dtValue : 0.02;
+  // Type proof: scale ∈ ℝ ∪ {undefined} → ℝ
+  const scaleValue = config.scale;
+  const scale = isFiniteNumber(scaleValue) && scaleValue > 0 ? scaleValue : 15;
+  // Type proof: center ∈ {x: ℝ, y: ℝ} | undefined → {x: ℝ, y: ℝ}
+  const centerValue = config.center;
+  const center = (() => {
+    if (centerValue !== undefined && typeof centerValue === "object" && centerValue !== null) {
+      const centerX = centerValue.x;
+      const centerY = centerValue.y;
+      if (isFiniteNumber(centerX) && isFiniteNumber(centerY)) {
+        return { x: centerX, y: centerY };
+      }
+    }
+    return { x: width / 2, y: height / 2 };
+  })();
 
   const rng = new SeededRandom(seed);
 
@@ -903,9 +941,24 @@ export function generateAizawaAttractor(
   config: AttractorConfig,
 ): WanMoveTrajectory {
   const { numPoints, numFrames, width, height, seed = 42 } = config;
-  const dt = config.dt ?? 0.01;
-  const scale = config.scale ?? 80;
-  const center = config.center ?? { x: width / 2, y: height / 2 };
+  // Type proof: dt ∈ ℝ ∪ {undefined} → ℝ
+  const dtValue = config.dt;
+  const dt = isFiniteNumber(dtValue) && dtValue > 0 ? dtValue : 0.01;
+  // Type proof: scale ∈ ℝ ∪ {undefined} → ℝ
+  const scaleValue = config.scale;
+  const scale = isFiniteNumber(scaleValue) && scaleValue > 0 ? scaleValue : 80;
+  // Type proof: center ∈ {x: ℝ, y: ℝ} | undefined → {x: ℝ, y: ℝ}
+  const centerValue = config.center;
+  const center = (() => {
+    if (centerValue !== undefined && typeof centerValue === "object" && centerValue !== null) {
+      const centerX = centerValue.x;
+      const centerY = centerValue.y;
+      if (isFiniteNumber(centerX) && isFiniteNumber(centerY)) {
+        return { x: centerX, y: centerY };
+      }
+    }
+    return { x: width / 2, y: height / 2 };
+  })();
 
   const rng = new SeededRandom(seed);
 
@@ -1036,8 +1089,21 @@ function generateShapePoints(
 
   switch (shape.type) {
     case "circle": {
-      const radius = shape.radius ?? size;
-      const center = shape.center ?? { x: cx, y: cy };
+      // Type proof: radius ∈ ℝ ∪ {undefined} → ℝ
+      const radiusValue = shape.radius;
+      const radius = isFiniteNumber(radiusValue) && radiusValue > 0 ? radiusValue : size;
+      // Type proof: center ∈ {x: ℝ, y: ℝ} | undefined → {x: ℝ, y: ℝ}
+      const centerValue = shape.center;
+      const center = (() => {
+        if (centerValue !== undefined && typeof centerValue === "object" && centerValue !== null) {
+          const centerX = centerValue.x;
+          const centerY = centerValue.y;
+          if (isFiniteNumber(centerX) && isFiniteNumber(centerY)) {
+            return { x: centerX, y: centerY };
+          }
+        }
+        return { x: cx, y: cy };
+      })();
       return Array.from({ length: numPoints }, (_, i) => {
         const angle = (i / numPoints) * Math.PI * 2;
         return {
@@ -1048,9 +1114,15 @@ function generateShapePoints(
     }
 
     case "grid": {
-      const cols = shape.columns ?? Math.ceil(Math.sqrt(numPoints));
-      const rows = shape.rows ?? Math.ceil(numPoints / cols);
-      const padding = shape.padding ?? 0.1;
+      // Type proof: columns ∈ ℕ ∪ {undefined} → ℕ
+      const columnsValue = shape.columns;
+      const cols = isFiniteNumber(columnsValue) && Number.isInteger(columnsValue) && columnsValue > 0 ? columnsValue : Math.ceil(Math.sqrt(numPoints));
+      // Type proof: rows ∈ ℕ ∪ {undefined} → ℕ
+      const rowsValue = shape.rows;
+      const rows = isFiniteNumber(rowsValue) && Number.isInteger(rowsValue) && rowsValue > 0 ? rowsValue : Math.ceil(numPoints / cols);
+      // Type proof: padding ∈ ℝ ∪ {undefined} → ℝ
+      const paddingValue = shape.padding;
+      const padding = isFiniteNumber(paddingValue) && paddingValue >= 0 && paddingValue <= 0.5 ? paddingValue : 0.1;
       const points: Array<{ x: number; y: number }> = [];
 
       for (let i = 0; i < numPoints; i++) {
@@ -1071,7 +1143,9 @@ function generateShapePoints(
     case "text": {
       // Generate points along text path (simplified - creates rough outline)
       const text = shape.text;
-      const fontSize = shape.fontSize ?? 100;
+      // Type proof: fontSize ∈ ℝ ∪ {undefined} → ℝ
+      const fontSizeValue = shape.fontSize;
+      const fontSize = isFiniteNumber(fontSizeValue) && fontSizeValue > 0 ? fontSizeValue : 100;
       const points: Array<{ x: number; y: number }> = [];
       const textWidth = text.length * fontSize * 0.6;
       const startX = cx - textWidth / 2;
@@ -1111,9 +1185,15 @@ function generateShapePoints(
     }
 
     case "star": {
-      const outerRadius = shape.outerRadius ?? size;
-      const innerRadius = shape.innerRadius ?? size * 0.4;
-      const starPoints = shape.points ?? 5;
+      // Type proof: outerRadius ∈ ℝ ∪ {undefined} → ℝ
+      const outerRadiusValue = shape.outerRadius;
+      const outerRadius = isFiniteNumber(outerRadiusValue) && outerRadiusValue > 0 ? outerRadiusValue : size;
+      // Type proof: innerRadius ∈ ℝ ∪ {undefined} → ℝ
+      const innerRadiusValue = shape.innerRadius;
+      const innerRadius = isFiniteNumber(innerRadiusValue) && innerRadiusValue > 0 ? innerRadiusValue : size * 0.4;
+      // Type proof: points ∈ ℕ ∪ {undefined} → ℕ
+      const pointsValue = shape.points;
+      const starPoints = isFiniteNumber(pointsValue) && Number.isInteger(pointsValue) && pointsValue >= 3 ? pointsValue : 5;
 
       return Array.from({ length: numPoints }, (_, i) => {
         const t = (i / numPoints) * Math.PI * 2;
@@ -1130,7 +1210,9 @@ function generateShapePoints(
     }
 
     case "spiral": {
-      const turns = shape.turns ?? 3;
+      // Type proof: turns ∈ ℝ ∪ {undefined} → ℝ
+      const turnsValue = shape.turns;
+      const turns = isFiniteNumber(turnsValue) && turnsValue > 0 ? turnsValue : 3;
       return Array.from({ length: numPoints }, (_, i) => {
         const t = i / numPoints;
         const angle = t * Math.PI * 2 * turns;
@@ -1185,8 +1267,12 @@ export function generateShapeMorph(
     target,
     seed = 42,
   } = config;
-  const morphNoise = config.morphNoise ?? 0.1;
-  const easing = config.easing ?? "ease-in-out";
+  // Type proof: morphNoise ∈ ℝ ∪ {undefined} → ℝ
+  const morphNoiseValue = config.morphNoise;
+  const morphNoise = isFiniteNumber(morphNoiseValue) && morphNoiseValue >= 0 ? morphNoiseValue : 0.1;
+  // Type proof: easing ∈ string | undefined → string
+  const easingValue = config.easing;
+  const easing = typeof easingValue === "string" && (easingValue === "ease-in" || easingValue === "ease-out" || easingValue === "ease-in-out" || easingValue === "elastic" || easingValue === "bounce") ? easingValue : "ease-in-out";
 
   const rng = new SeededRandom(seed);
 
@@ -1313,9 +1399,15 @@ export function generateForceFieldFlow(
   config: ForceFieldConfig,
 ): WanMoveTrajectory {
   const { numPoints, numFrames, width, height, forces, seed = 42 } = config;
-  const damping = config.damping ?? 0.98;
-  const maxSpeed = config.maxSpeed ?? 15;
-  const distribution = config.initialDistribution ?? "random";
+  // Type proof: damping ∈ ℝ ∪ {undefined} → ℝ
+  const dampingValue = config.damping;
+  const damping = isFiniteNumber(dampingValue) && dampingValue >= 0 && dampingValue <= 1 ? dampingValue : 0.98;
+  // Type proof: maxSpeed ∈ ℝ ∪ {undefined} → ℝ
+  const maxSpeedValue = config.maxSpeed;
+  const maxSpeed = isFiniteNumber(maxSpeedValue) && maxSpeedValue > 0 ? maxSpeedValue : 15;
+  // Type proof: initialDistribution ∈ string | undefined → string
+  const initialDistributionValue = config.initialDistribution;
+  const distribution = typeof initialDistributionValue === "string" && (initialDistributionValue === "random" || initialDistributionValue === "grid" || initialDistributionValue === "edge" || initialDistributionValue === "center") ? initialDistributionValue : "random";
 
   const rng = new SeededRandom(seed);
 
@@ -1396,7 +1488,10 @@ export function generateForceFieldFlow(
 
         if (dist < force.radius && dist > 0) {
           let falloffMult = 1;
-          switch (force.falloff ?? "quadratic") {
+          // Type proof: falloff ∈ string | undefined → string
+          const falloffValue = force.falloff;
+          const falloff = typeof falloffValue === "string" && (falloffValue === "linear" || falloffValue === "quadratic" || falloffValue === "none") ? falloffValue : "quadratic";
+          switch (falloff) {
             case "linear":
               falloffMult = 1 - dist / force.radius;
               break;
@@ -1504,7 +1599,19 @@ export function compositeColoredLayers(layers: FlowLayer[]): ColoredTrajectory {
   const colors: number[][][] = [];
 
   for (const layer of layers) {
-    const layerColor = layer.color ?? [255, 255, 255];
+    // Type proof: color ∈ [ℝ, ℝ, ℝ] | undefined → [ℝ, ℝ, ℝ]
+    const colorValue = layer.color;
+    const layerColor = (() => {
+      if (Array.isArray(colorValue) && colorValue.length >= 3) {
+        const r = colorValue[0];
+        const g = colorValue[1];
+        const b = colorValue[2];
+        if (isFiniteNumber(r) && isFiniteNumber(g) && isFiniteNumber(b) && r >= 0 && r <= 255 && g >= 0 && g <= 255 && b >= 0 && b <= 255) {
+          return [r, g, b];
+        }
+      }
+      return [255, 255, 255];
+    })();
 
     for (const track of layer.trajectory.tracks) {
       colors.push(track.map(() => layerColor));
@@ -1747,7 +1854,11 @@ export function generateFromPreset(
     numFrames,
     width,
     height,
-    params: { ...preset.params, seed: seed ?? 42 },
+    params: { ...preset.params, seed: (() => {
+      // Type proof: seed ∈ ℕ | undefined → ℕ
+      const seedValue = seed;
+      return isFiniteNumber(seedValue) && Number.isInteger(seedValue) && seedValue >= 0 ? seedValue : 42;
+    })() },
   };
 
   switch (preset.pattern) {

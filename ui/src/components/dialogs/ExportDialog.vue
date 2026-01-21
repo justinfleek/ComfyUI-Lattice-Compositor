@@ -143,12 +143,12 @@
 
       <div class="dialog-footer">
         <div class="export-info">
-          <span>{{ store.frameCount }} frames @ {{ exportWidth }}×{{ exportHeight }}</span>
+          <span>{{ projectStore.getFrameCount() }} frames @ {{ exportWidth }}×{{ exportHeight }}</span>
         </div>
         <button
           class="collect-btn"
           @click="collectProject"
-          :disabled="isExporting || isCollecting || !store.hasProject"
+          :disabled="isExporting || isCollecting || !projectStore.hasProject()"
           title="Download project with all assets as ZIP"
         >
           <i class="pi pi-folder" />
@@ -160,7 +160,7 @@
         <button
           class="export-btn"
           @click="startExport"
-          :disabled="isExporting || !store.hasProject"
+          :disabled="isExporting || !projectStore.hasProject()"
         >
           <i class="pi pi-download" />
           {{ isExporting ? 'Exporting...' : 'Export ZIP' }}
@@ -179,14 +179,14 @@ import {
   canvasToBase64,
   getBackendDepthService,
 } from "@/services/export/backendDepthService";
-import { useCompositorStore } from "@/stores/compositorStore";
+import { useProjectStore } from "@/stores/projectStore";
 
 const emit = defineEmits<{
   (e: "close"): void;
   (e: "exported"): void;
 }>();
 
-const store = useCompositorStore();
+const projectStore = useProjectStore();
 
 // Resolution presets
 const resolutionPresets = matteExporter.getResolutionPresets();
@@ -197,16 +197,19 @@ const collectProgress = ref(0);
 
 // Collect project as ZIP
 async function collectProject() {
-  if (isCollecting.value || !store.project) return;
+  if (isCollecting.value || !projectStore.project) return;
 
   isCollecting.value = true;
   collectProgress.value = 0;
 
   try {
     // Convert Record<string, AssetReference> to Map for collection service
-    const assetsMap = new Map(Object.entries(store.project.assets || {}));
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy || {}
+    const assetsRaw = projectStore.project.assets;
+    const assets = (assetsRaw !== null && assetsRaw !== undefined && typeof assetsRaw === "object" && assetsRaw !== null) ? assetsRaw : {};
+    const assetsMap = new Map(Object.entries(assets));
     const blob = await projectCollectionService.collectProject(
-      store.project,
+      projectStore.project,
       assetsMap,
       {
         includeProject: true,
@@ -220,7 +223,9 @@ async function collectProject() {
     );
 
     // Download the ZIP
-    const projectName = store.project.meta?.name || "lattice-project";
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const meta = (projectStore.project != null && typeof projectStore.project === "object" && "meta" in projectStore.project && projectStore.project.meta != null && typeof projectStore.project.meta === "object") ? projectStore.project.meta : undefined;
+    const projectName = (meta != null && typeof meta === "object" && "name" in meta && typeof meta.name === "string") ? meta.name : "lattice-project";
     projectCollectionService.downloadZip(blob, `${projectName}-collection.zip`);
 
     console.log("[ExportDialog] Project collected successfully");
@@ -284,13 +289,14 @@ function validateCustomDimensions(): void {
     const matchingPreset = resolutionPresets.find(
       (p) => p.width === customWidth.value && p.height === customHeight.value,
     );
-    selectedPreset.value = matchingPreset?.label || "";
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    selectedPreset.value = (matchingPreset != null && typeof matchingPreset === "object" && "label" in matchingPreset && typeof matchingPreset.label === "string") ? matchingPreset.label : "";
   }
 }
 
 // Generate preview
 async function generatePreview(): Promise<void> {
-  if (!store.hasProject) return;
+  if (!projectStore.hasProject()) return;
 
   // Revoke old preview URL
   if (previewUrl.value) {
@@ -305,7 +311,7 @@ async function generatePreview(): Promise<void> {
   };
 
   previewUrl.value = await matteExporter.generatePreviewFrame(
-    store.project,
+    projectStore.project,
     0,
     options,
   );
@@ -313,7 +319,7 @@ async function generatePreview(): Promise<void> {
 
 // Start export
 async function startExport(): Promise<void> {
-  if (isExporting.value || !store.hasProject) return;
+  if (isExporting.value || !projectStore.hasProject()) return;
 
   isExporting.value = true;
   exportProgress.value = 0;
@@ -332,7 +338,7 @@ async function startExport(): Promise<void> {
 
     // Generate matte frames
     const matteFrames = await matteExporter.generateMatteSequence(
-      store.project,
+      projectStore.project,
       options,
       (progress) => {
         const baseProgress = 0;
@@ -353,7 +359,7 @@ async function startExport(): Promise<void> {
     if (exportDepthMaps.value) {
       progressMessage.value = "Generating depth maps...";
       const depthFrames = await generateDepthFrames(
-        store.frameCount,
+        projectStore.getFrameCount(),
         exportWidth.value,
         exportHeight.value,
         (frame, total) => {
@@ -373,7 +379,7 @@ async function startExport(): Promise<void> {
     if (exportNormalMaps.value) {
       progressMessage.value = "Generating normal maps...";
       const normalFrames = await generateNormalFrames(
-        store.frameCount,
+        projectStore.getFrameCount(),
         exportWidth.value,
         exportHeight.value,
         (frame, total) => {
@@ -451,7 +457,7 @@ async function generateDepthFrames(
       } else {
         // Fallback: render using matte exporter's frame generation
         const matteBlob = await matteExporter.generatePreviewFrame(
-          store.project,
+          projectStore.project,
           frame,
           { width, height, matteMode: "include_all" },
         );
@@ -503,10 +509,19 @@ async function generateFallbackDepthFrame(
   ctx.fillStyle = "#000000";
   ctx.fillRect(0, 0, width, height);
 
-  const layers = store.activeComposition?.layers || [];
+  const activeComp = projectStore.getActiveComp();
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?. and || []
+  const layersRaw = (activeComp != null && typeof activeComp === "object" && "layers" in activeComp && activeComp.layers != null && Array.isArray(activeComp.layers)) ? activeComp.layers : undefined;
+  const layers = (layersRaw !== null && layersRaw !== undefined && Array.isArray(layersRaw)) ? layersRaw : [];
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+  // Pattern match: layer.startFrame/inPoint ∈ number | undefined → number (check startFrame, then inPoint, then default 0)
   const visibleLayers = layers.filter((layer) => {
-    const start = layer.startFrame ?? layer.inPoint ?? 0;
-    const end = layer.endFrame ?? layer.outPoint ?? 80;
+    const startFrame = (typeof layer.startFrame === "number" && Number.isFinite(layer.startFrame)) ? layer.startFrame : undefined;
+    const inPoint = (typeof layer.inPoint === "number" && Number.isFinite(layer.inPoint)) ? layer.inPoint : undefined;
+    const start = startFrame !== undefined ? startFrame : (inPoint !== undefined ? inPoint : 0);
+    const endFrame = (typeof layer.endFrame === "number" && Number.isFinite(layer.endFrame)) ? layer.endFrame : undefined;
+    const outPoint = (typeof layer.outPoint === "number" && Number.isFinite(layer.outPoint)) ? layer.outPoint : undefined;
+    const end = endFrame !== undefined ? endFrame : (outPoint !== undefined ? outPoint : 80);
     return layer.visible && frame >= start && frame <= end;
   });
 
@@ -516,8 +531,14 @@ async function generateFallbackDepthFrame(
     ctx.fillStyle = `rgb(${gray}, ${gray}, ${gray})`;
 
     const layer = visibleLayers[i];
-    const pos = layer.transform?.position?.value || { x: width / 2, y: height / 2 };
-    const scale = layer.transform?.scale?.value || { x: 1, y: 1 };
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const transform = (layer != null && typeof layer === "object" && "transform" in layer && layer.transform != null && typeof layer.transform === "object") ? layer.transform : undefined;
+    const position = (transform != null && typeof transform === "object" && "position" in transform && transform.position != null && typeof transform.position === "object") ? transform.position : undefined;
+    const posValue = (position != null && typeof position === "object" && "value" in position && position.value != null && typeof position.value === "object") ? position.value : undefined;
+    const pos = posValue || { x: width / 2, y: height / 2 };
+    const scaleProp = (transform != null && typeof transform === "object" && "scale" in transform && transform.scale != null && typeof transform.scale === "object") ? transform.scale : undefined;
+    const scaleValue = (scaleProp != null && typeof scaleProp === "object" && "value" in scaleProp && scaleProp.value != null && typeof scaleProp.value === "object") ? scaleProp.value : undefined;
+    const scale = scaleValue || { x: 1, y: 1 };
     const w = 200 * scale.x;
     const h = 150 * scale.y;
     ctx.fillRect(pos.x - w / 2, pos.y - h / 2, w, h);
@@ -551,7 +572,7 @@ async function generateNormalFrames(
       } else {
         // Fallback: render using matte exporter
         const matteBlob = await matteExporter.generatePreviewFrame(
-          store.project,
+          projectStore.project,
           frame,
           { width, height, matteMode: "include_all" },
         );
@@ -598,16 +619,31 @@ async function generateFallbackNormalFrame(
   ctx.fillStyle = "rgb(128, 128, 255)";
   ctx.fillRect(0, 0, width, height);
 
-  const layers = store.activeComposition?.layers || [];
+  const activeComp = projectStore.getActiveComp();
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?. and || []
+  const layersRaw = (activeComp != null && typeof activeComp === "object" && "layers" in activeComp && activeComp.layers != null && Array.isArray(activeComp.layers)) ? activeComp.layers : undefined;
+  const layers = (layersRaw !== null && layersRaw !== undefined && Array.isArray(layersRaw)) ? layersRaw : [];
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+  // Pattern match: layer.startFrame/inPoint ∈ number | undefined → number (check startFrame, then inPoint, then default 0)
   const visibleLayers = layers.filter((layer) => {
-    const start = layer.startFrame ?? layer.inPoint ?? 0;
-    const end = layer.endFrame ?? layer.outPoint ?? 80;
+    const startFrame = (typeof layer.startFrame === "number" && Number.isFinite(layer.startFrame)) ? layer.startFrame : undefined;
+    const inPoint = (typeof layer.inPoint === "number" && Number.isFinite(layer.inPoint)) ? layer.inPoint : undefined;
+    const start = startFrame !== undefined ? startFrame : (inPoint !== undefined ? inPoint : 0);
+    const endFrame = (typeof layer.endFrame === "number" && Number.isFinite(layer.endFrame)) ? layer.endFrame : undefined;
+    const outPoint = (typeof layer.outPoint === "number" && Number.isFinite(layer.outPoint)) ? layer.outPoint : undefined;
+    const end = endFrame !== undefined ? endFrame : (outPoint !== undefined ? outPoint : 80);
     return layer.visible && _frame >= start && _frame <= end;
   });
 
   for (const layer of visibleLayers) {
-    const pos = layer.transform?.position?.value || { x: width / 2, y: height / 2 };
-    const scale = layer.transform?.scale?.value || { x: 1, y: 1 };
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const transform = (layer != null && typeof layer === "object" && "transform" in layer && layer.transform != null && typeof layer.transform === "object") ? layer.transform : undefined;
+    const position = (transform != null && typeof transform === "object" && "position" in transform && transform.position != null && typeof transform.position === "object") ? transform.position : undefined;
+    const posValue = (position != null && typeof position === "object" && "value" in position && position.value != null && typeof position.value === "object") ? position.value : undefined;
+    const pos = posValue || { x: width / 2, y: height / 2 };
+    const scaleProp = (transform != null && typeof transform === "object" && "scale" in transform && transform.scale != null && typeof transform.scale === "object") ? transform.scale : undefined;
+    const scaleValue = (scaleProp != null && typeof scaleProp === "object" && "value" in scaleProp && scaleProp.value != null && typeof scaleProp.value === "object") ? scaleProp.value : undefined;
+    const scale = scaleValue || { x: 1, y: 1 };
     const w = 200 * scale.x;
     const h = 150 * scale.y;
 
@@ -633,10 +669,10 @@ watch(
 // Initialize
 onMounted(() => {
   // Set initial dimensions from composition
-  if (store.hasProject) {
+  if (projectStore.hasProject()) {
     const validation = matteExporter.validateDimensions(
-      store.width,
-      store.height,
+      projectStore.getWidth(),
+      projectStore.getHeight(),
     );
     customWidth.value = validation.correctedWidth;
     customHeight.value = validation.correctedHeight;
@@ -645,7 +681,8 @@ onMounted(() => {
     const matchingPreset = resolutionPresets.find(
       (p) => p.width === customWidth.value && p.height === customHeight.value,
     );
-    selectedPreset.value = matchingPreset?.label || "";
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    selectedPreset.value = (matchingPreset != null && typeof matchingPreset === "object" && "label" in matchingPreset && typeof matchingPreset.label === "string") ? matchingPreset.label : "";
 
     if (!validation.valid) {
       dimensionWarning.value = validation.message;

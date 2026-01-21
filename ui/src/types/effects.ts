@@ -5,6 +5,7 @@
 
 import type { WarpMesh, WarpPin } from "./meshWarp";
 import type { AnimatableProperty } from "./project";
+import type { JSONValue } from "./dataAsset";
 
 export type EffectCategory =
   | "blur-sharpen"
@@ -32,7 +33,7 @@ export type EffectParameterValue =
   | { x: number; y: number; z: number } // For "point3D" type
   | { r: number; g: number; b: number; a?: number } // For "color" type
   | Array<{ x: number; y: number }> // For "curve" type (bezier curve points)
-  | Record<string, unknown> // For "data" type (arbitrary JSON data)
+  | Record<string, JSONValue> // For "data" type (arbitrary JSON data)
   | null; // For optional parameters (layer, data)
 
 export interface EffectParameter {
@@ -3118,9 +3119,11 @@ export const EFFECT_CATEGORIES: Record<
  * Create effect instance from definition (legacy - returns Effect)
  * @deprecated Use createEffectInstance instead
  */
-export function createEffect(definitionKey: string): Effect | null {
+export function createEffect(definitionKey: string): Effect {
   const def = EFFECT_DEFINITIONS[definitionKey];
-  if (!def) return null;
+  if (!def) {
+    throw new Error(`[Effects] Effect definition "${definitionKey}" not found`);
+  }
 
   return {
     id: `effect-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`,
@@ -3143,9 +3146,11 @@ export function createEffect(definitionKey: string): Effect | null {
  */
 export function createEffectInstance(
   definitionKey: string,
-): EffectInstance | null {
+): EffectInstance {
   const def = EFFECT_DEFINITIONS[definitionKey];
-  if (!def) return null;
+  if (!def) {
+    throw new Error(`[Effects] Effect definition "${definitionKey}" not found`);
+  }
 
   const parameters: Record<string, AnimatableProperty<any>> = {};
 
@@ -3181,9 +3186,8 @@ export function createEffectInstance(
  * Create a mesh-deform effect instance with empty pins array
  * Use this instead of createEffectInstance for mesh-deform effects
  */
-export function createMeshDeformEffectInstance(): MeshDeformEffectInstance | null {
+export function createMeshDeformEffectInstance(): MeshDeformEffectInstance {
   const baseInstance = createEffectInstance("mesh-deform");
-  if (!baseInstance) return null;
 
   return {
     ...baseInstance,

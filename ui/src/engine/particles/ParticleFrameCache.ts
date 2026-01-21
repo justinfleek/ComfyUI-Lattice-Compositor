@@ -143,9 +143,11 @@ export class ParticleFrameCacheSystem {
     // Save emitter accumulators and burst timers
     const emitterAccumulators = new Map<string, number>();
     const emitterBurstTimers = new Map<string, number>();
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
     for (const [id, emitter] of emitters) {
       emitterAccumulators.set(id, emitter.accumulator);
-      emitterBurstTimers.set(id, emitter.burstTimer ?? 0);
+      const burstTimer = (typeof emitter.burstTimer === "number" && Number.isFinite(emitter.burstTimer)) ? emitter.burstTimer : 0;
+      emitterBurstTimers.set(id, burstTimer);
     }
 
     this.frameCache.set(frame, {
@@ -168,10 +170,13 @@ export class ParticleFrameCacheSystem {
    * Restore particle state from a cached frame
    * @returns The cached frame data if restore succeeded, null if cache miss or version mismatch
    */
-  restoreFromCache(frame: number): ParticleFrameCache | null {
+  restoreFromCache(frame: number): ParticleFrameCache {
     const cached = this.frameCache.get(frame);
-    if (!cached || cached.version !== this.cacheVersion) {
-      return null;
+    if (!cached) {
+      throw new Error(`[ParticleFrameCache] Cache miss: Frame ${frame} not found in particle cache`);
+    }
+    if (cached.version !== this.cacheVersion) {
+      throw new Error(`[ParticleFrameCache] Cache version mismatch: Frame ${frame} has version ${cached.version}, expected ${this.cacheVersion}`);
     }
     return cached;
   }

@@ -29,7 +29,7 @@
         <div class="property-row">
           <label>Opacity</label>
           <ScrubableNumber
-            :modelValue="getPropertyValue('Stroke Opacity') ?? shapeData.strokeOpacity ?? 100"
+            :modelValue="getStrokeOpacityValue()"
             @update:modelValue="(v: number) => updateAnimatable('Stroke Opacity', v, 'strokeOpacity')"
             :min="0"
             :max="100"
@@ -41,7 +41,7 @@
         <div class="property-row">
           <label>Width</label>
           <ScrubableNumber
-            :modelValue="getPropertyValue('Stroke Width') ?? shapeData.strokeWidth ?? 2"
+            :modelValue="getStrokeWidthValue()"
             @update:modelValue="(v: number) => updateAnimatable('Stroke Width', v, 'strokeWidth')"
             :min="0"
             :max="500"
@@ -83,7 +83,7 @@
         <div class="property-row" v-if="hasDashes">
           <label>Dash Offset</label>
           <ScrubableNumber
-            :modelValue="getPropertyValue('Dash Offset') ?? getNumericValue(shapeData.strokeDashOffset, 0)"
+            :modelValue="getDashOffsetValue()"
             @update:modelValue="(v: number) => updateAnimatable('Dash Offset', v, 'strokeDashOffset')"
           />
           <button class="keyframe-btn" :class="{ active: isAnimated('Dash Offset') }" @click="toggleKeyframe('Dash Offset', 'strokeDashOffset')">◆</button>
@@ -120,7 +120,7 @@
         <div class="property-row">
           <label>Opacity</label>
           <ScrubableNumber
-            :modelValue="getPropertyValue('Fill Opacity') ?? shapeData.fillOpacity ?? 100"
+            :modelValue="getFillOpacityValue()"
             @update:modelValue="(v: number) => updateAnimatable('Fill Opacity', v, 'fillOpacity')"
             :min="0"
             :max="100"
@@ -142,7 +142,7 @@
         <div class="property-row">
           <label>Start</label>
           <ScrubableNumber
-            :modelValue="getPropertyValue('Trim Start') ?? getNumericValue(shapeData.trimStart, 0)"
+            :modelValue="getTrimStartValue()"
             @update:modelValue="(v: number) => updateAnimatable('Trim Start', v, 'trimStart')"
             :min="0"
             :max="100"
@@ -154,7 +154,7 @@
         <div class="property-row">
           <label>End</label>
           <ScrubableNumber
-            :modelValue="getPropertyValue('Trim End') ?? getNumericValue(shapeData.trimEnd, 100)"
+            :modelValue="getTrimEndValue()"
             @update:modelValue="(v: number) => updateAnimatable('Trim End', v, 'trimEnd')"
             :min="0"
             :max="100"
@@ -166,7 +166,7 @@
         <div class="property-row">
           <label>Offset</label>
           <ScrubableNumber
-            :modelValue="getPropertyValue('Trim Offset') ?? getNumericValue(shapeData.trimOffset, 0)"
+            :modelValue="getTrimOffsetValue()"
             @update:modelValue="(v: number) => updateAnimatable('Trim Offset', v, 'trimOffset')"
             :min="-360"
             :max="360"
@@ -264,7 +264,7 @@
               <div class="property-row">
                 <label>Seed</label>
                 <ScrubableNumber
-                  :modelValue="effect.seed ?? 12345"
+                  :modelValue="getEffectSeedValue(effect)"
                   @update:modelValue="(v: number) => updateEffectMeta(effect.id, 'seed', v)"
                   :min="0"
                   :max="99999"
@@ -428,7 +428,7 @@
 
         <div class="property-row info-row">
           <span class="info-label">Points:</span>
-          <span class="info-value">{{ shapeData.controlPoints?.length || 0 }}</span>
+          <span class="info-value">{{ getControlPointCount() }}</span>
         </div>
       </div>
     </div>
@@ -465,8 +465,13 @@
 
 <script setup lang="ts">
 import { computed, ref } from "vue";
-import { useCompositorStore } from "@/stores/compositorStore";
+import {
+  safeArrayDefault,
+  safeNonNegativeDefault,
+} from "@/utils/typeGuards";
+import { useAnimationStore } from "@/stores/animationStore";
 import { useLayerStore } from "@/stores/layerStore";
+import { useProjectStore } from "@/stores/projectStore";
 import type {
   AnimatableProperty,
   Layer,
@@ -480,10 +485,13 @@ import type {
   WigglePathEffect,
   ZigZagEffect,
 } from "@/types/project";
+import type { JSONValue } from "@/types/dataAsset";
+import type { PropertyValue } from "@/types/animation";
 
 const props = defineProps<{ layer: Layer }>();
 const emit = defineEmits(["update"]);
-const store = useCompositorStore();
+const animationStore = useAnimationStore();
+const projectStore = useProjectStore();
 
 const expandedSections = ref<string[]>(["stroke", "fill", "trim"]);
 const newEffectType = ref<SplinePathEffectType | "">("");
@@ -511,10 +519,21 @@ const shapeData = computed<SplineData>(() => {
 const hasFill = computed(
   () => !!shapeData.value.fill && shapeData.value.fill !== "transparent",
 );
-const hasStroke = computed(
-  () => !!shapeData.value.stroke && (shapeData.value.strokeWidth ?? 0) > 0,
-);
+const hasStroke = computed(() => {
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+  // Pattern match: strokeWidth ∈ number | undefined → number (default 0)
+  const strokeWidthValue = (typeof shapeData.value.strokeWidth === "number" && Number.isFinite(shapeData.value.strokeWidth)) ? shapeData.value.strokeWidth : 0;
+  return !!shapeData.value.stroke && strokeWidthValue > 0;
+});
 const strokeLineCap = computed(() => shapeData.value.strokeLineCap || "round");
+
+// Type proof: controlPoints.length ∈ number | undefined → number (≥ 0, count)
+function getControlPointCount(): number {
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const controlPoints = (shapeData.value != null && typeof shapeData.value === "object" && "controlPoints" in shapeData.value && shapeData.value.controlPoints != null && Array.isArray(shapeData.value.controlPoints)) ? shapeData.value.controlPoints : undefined;
+  const controlPointsLength = (controlPoints != null && Array.isArray(controlPoints)) ? controlPoints.length : undefined;
+  return safeNonNegativeDefault(controlPointsLength, 0, "shapeData.controlPoints.length");
+}
 const strokeLineJoin = computed(
   () => shapeData.value.strokeLineJoin || "round",
 );
@@ -525,7 +544,9 @@ function getDashArray(): number[] {
   if (!dashArray) return [];
   if (Array.isArray(dashArray)) return dashArray;
   // It's an AnimatableProperty<number[]>
-  return dashArray.value ?? [];
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+  // Pattern match: dashArray.value ∈ number[] | undefined → number[] (default [])
+  return (typeof dashArray.value === "object" && Array.isArray(dashArray.value)) ? dashArray.value : [];
 }
 
 const hasDashes = computed(() => getDashArray().length > 0);
@@ -554,11 +575,12 @@ const attachedLayers = computed(() => {
     usage: string;
   }> = [];
 
-  for (const layer of store.layers) {
+  for (const layer of projectStore.getActiveCompLayers()) {
     // Check text layers for path reference
     if (layer.type === "text") {
-      const textData = layer.data as { pathLayerId?: string } | null;
-      if (textData?.pathLayerId === layerId) {
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining/null checks
+      const textData = (typeof layer.data === "object" && layer.data !== null) ? layer.data as { pathLayerId?: string } : {};
+      if (typeof textData === "object" && textData !== null && "pathLayerId" in textData && typeof textData.pathLayerId === "string" && textData.pathLayerId === layerId) {
         attached.push({
           id: layer.id,
           name: layer.name,
@@ -573,7 +595,10 @@ const attachedLayers = computed(() => {
       const cameraData = layer.data as {
         pathFollowing?: { pathLayerId?: string };
       } | null;
-      if (cameraData?.pathFollowing?.pathLayerId === layerId) {
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const pathFollowing = (cameraData != null && typeof cameraData === "object" && "pathFollowing" in cameraData && cameraData.pathFollowing != null && typeof cameraData.pathFollowing === "object") ? cameraData.pathFollowing : undefined;
+      const pathLayerId = (pathFollowing != null && typeof pathFollowing === "object" && "pathLayerId" in pathFollowing && typeof pathFollowing.pathLayerId === "string") ? pathFollowing.pathLayerId : undefined;
+      if (pathLayerId === layerId) {
         attached.push({
           id: layer.id,
           name: layer.name,
@@ -588,9 +613,15 @@ const attachedLayers = computed(() => {
       const particleData = layer.data as {
         emitters?: Array<{ shape?: string; splinePath?: { layerId?: string } }>;
       } | null;
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const emitters = (particleData != null && typeof particleData === "object" && "emitters" in particleData && Array.isArray(particleData.emitters)) ? particleData.emitters : undefined;
       if (
-        particleData?.emitters?.some(
-          (e) => e.shape === "spline" && e.splinePath?.layerId === layerId,
+        emitters != null && emitters.some(
+          (e) => {
+            const splinePath = (e != null && typeof e === "object" && "splinePath" in e && e.splinePath != null && typeof e.splinePath === "object") ? e.splinePath : undefined;
+            const splinePathLayerId = (splinePath != null && typeof splinePath === "object" && "layerId" in splinePath && typeof splinePath.layerId === "string") ? splinePath.layerId : undefined;
+            return e.shape === "spline" && splinePathLayerId === layerId;
+          },
         )
       ) {
         attached.push({
@@ -618,12 +649,12 @@ function getLayerIcon(type: string): string {
 
 // Select attached layer
 function selectLayer(layerId: string) {
-  layerStore.selectLayer(store, layerId);
+  layerStore.selectLayer(layerId);
 }
 
 // Update layer data
-function update(key: keyof SplineData | string, value: unknown) {
-  layerStore.updateLayer(store, props.layer.id, {
+function update(key: keyof SplineData | string, value: PropertyValue | JSONValue) {
+  layerStore.updateLayer(props.layer.id, {
     data: { ...shapeData.value, [key]: value },
   });
   emit("update");
@@ -640,7 +671,10 @@ function toggleStroke(e: Event) {
   const checked = (e.target as HTMLInputElement).checked;
   if (checked) {
     update("stroke", "#ffffff");
-    if ((shapeData.value.strokeWidth ?? 0) <= 0) {
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+    // Pattern match: strokeWidth ∈ number | undefined → number (default 0)
+    const strokeWidthCheck = (typeof shapeData.value.strokeWidth === "number" && Number.isFinite(shapeData.value.strokeWidth)) ? shapeData.value.strokeWidth : 0;
+    if (strokeWidthCheck <= 0) {
       update("strokeWidth", 2);
     }
   } else {
@@ -664,9 +698,9 @@ function updateDashArray(e: Event) {
 
 // Get animatable property from layer.properties
 function getProperty(name: string): AnimatableProperty<number> | undefined {
-  return props.layer.properties?.find((p) => p.name === name) as
-    | AnimatableProperty<number>
-    | undefined;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const properties = (props.layer != null && typeof props.layer === "object" && "properties" in props.layer && props.layer.properties != null && Array.isArray(props.layer.properties)) ? props.layer.properties : undefined;
+  return properties != null ? properties.find((p) => p.name === name) as AnimatableProperty<number> | undefined : undefined;
 }
 
 // Extract numeric value from number or AnimatableProperty
@@ -677,19 +711,24 @@ function getNumericValue(
   if (value === undefined || value === null) return fallback;
   if (typeof value === "number") return value;
   // It's an AnimatableProperty, extract the value
-  return value.value ?? fallback;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+  // Pattern match: value.value ∈ T | undefined → T (fallback)
+  return (typeof value.value !== "undefined" && value.value !== null) ? value.value : fallback;
 }
 
 // Get property value (from animated property or direct data)
 function getPropertyValue(name: string): number | undefined {
   const prop = getProperty(name);
-  return prop?.value;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  return (prop != null && typeof prop === "object" && "value" in prop && typeof prop.value === "number") ? prop.value : undefined;
 }
 
 // Check if property is animated (has keyframes)
 function isAnimated(name: string): boolean {
   const prop = getProperty(name);
-  return prop?.animated ?? false;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining/nullish coalescing
+  // Pattern match: prop.animated ∈ boolean | undefined → boolean (default false)
+  return (prop !== null && typeof prop === "object" && "animated" in prop && typeof prop.animated === "boolean") ? prop.animated : false;
 }
 
 // Update animatable property
@@ -700,10 +739,13 @@ function updateAnimatable(propName: string, value: number, dataKey: string) {
   // Also update the property in layer.properties if it exists
   const prop = getProperty(propName);
   if (prop) {
-    const updatedProperties = (props.layer.properties || []).map((p) =>
-      p.name === propName ? { ...p, value } : p,
-    );
-    layerStore.updateLayer(store, props.layer.id, { properties: updatedProperties });
+    // System F/Omega: Use safeArrayDefault instead of lazy || [] fallback
+    const updatedProperties = safeArrayDefault(
+      props.layer.properties,
+      [],
+      "layer.properties",
+    ).map((p) => (p.name === propName ? { ...p, value } : p));
+    layerStore.updateLayer(props.layer.id, { properties: updatedProperties });
   }
 }
 
@@ -714,7 +756,7 @@ function toggleKeyframe(propName: string, dataKey: string) {
 
   const prop = getProperty(propName);
   if (prop) {
-    const frame = store.currentFrame;
+    const frame = animationStore.currentFrame;
     const hasKeyframeAtFrame = prop.keyframes.some((k) => k.frame === frame);
 
     let updatedKeyframes: typeof prop.keyframes;
@@ -742,12 +784,17 @@ function toggleKeyframe(propName: string, dataKey: string) {
     }
 
     // Update via store to track in history
-    const updatedProperties = (props.layer.properties || []).map((p) =>
+    // System F/Omega: Use safeArrayDefault instead of lazy || [] fallback
+    const updatedProperties = safeArrayDefault(
+      props.layer.properties,
+      [],
+      "layer.properties",
+    ).map((p) =>
       p.name === propName
         ? { ...p, keyframes: updatedKeyframes, animated: updatedAnimated }
         : p,
     );
-    layerStore.updateLayer(store, props.layer.id, { properties: updatedProperties });
+    layerStore.updateLayer(props.layer.id, { properties: updatedProperties });
     emit("update");
   }
 }
@@ -768,17 +815,21 @@ function getSplineDataProperty(
   else if (key === "trimEnd") propertyKey = "trimEnd";
   else if (key === "trimOffset") propertyKey = "trimOffset";
   else if (key === "strokeDashOffset") propertyKey = "dashOffset"; // Map legacy name
-  else return undefined;
+  else {
+    throw new Error(`[ShapeProperties] Invalid property key: "${key}". Expected one of: "strokeWidth", "strokeDashArray", "strokeDashOffset", "trimStart", "trimEnd", "trimOffset"`);
+  }
 
   const value = data[propertyKey];
-  if (value === undefined) return undefined;
+  if (value === undefined) {
+    throw new Error(`[ShapeProperties] Property "${propertyKey}" is undefined in shape data`);
+  }
 
   // Return as-is if it's already a number or AnimatableProperty
   if (typeof value === "number" || (typeof value === "object" && "value" in value)) {
     return value as number | AnimatableProperty<number>;
   }
 
-  return undefined;
+  throw new Error(`[ShapeProperties] Property "${propertyKey}" has invalid type: ${typeof value}. Expected number or AnimatableProperty<number>`);
 }
 
 // Extract numeric value from number or AnimatableProperty
@@ -787,12 +838,19 @@ function extractNumericValue(
 ): number {
   if (value === undefined) return 0;
   if (typeof value === "number") return value;
-  return value.value ?? 0;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+  // Pattern match: value.value ∈ number | undefined → number (default 0)
+  return (typeof value.value === "number" && Number.isFinite(value.value)) ? value.value : 0;
 }
 
 // Ensure a property exists in layer.properties for timeline display
 function ensureProperty(propName: string, dataKey: string) {
-  const existingProperties = props.layer.properties || [];
+  // System F/Omega: Use safeArrayDefault instead of lazy || [] fallback
+  const existingProperties = safeArrayDefault(
+    props.layer.properties,
+    [],
+    "layer.properties",
+  );
   const existing = existingProperties.find((p) => p.name === propName);
 
   if (!existing) {
@@ -815,7 +873,7 @@ function ensureProperty(propName: string, dataKey: string) {
     } as AnimatableProperty<number>;
 
     // Update via store to track in history
-    layerStore.updateLayer(store, props.layer.id, {
+    layerStore.updateLayer(props.layer.id, {
       properties: [...existingProperties, newProperty],
     });
   }
@@ -826,8 +884,11 @@ function ensureProperty(propName: string, dataKey: string) {
 // ============================================================================
 
 const pathEffects = computed<SplinePathEffectInstance[]>(() => {
-  return (
-    (shapeData.value.pathEffects || []) as SplinePathEffectInstance[]
+  // System F/Omega: Use safeArrayDefault instead of lazy || [] fallback
+  return safeArrayDefault(
+    shapeData.value.pathEffects,
+    [],
+    "shapeData.pathEffects",
   ).sort((a, b) => a.order - b.order);
 });
 
@@ -863,11 +924,18 @@ function createAnimatableProp(
 function addEffect() {
   if (!newEffectType.value) return;
 
-  const effects = [...(shapeData.value.pathEffects || [])];
+  // System F/Omega: Use safeArrayDefault instead of lazy || [] fallback
+  const effects = [
+    ...safeArrayDefault(
+      shapeData.value.pathEffects,
+      [],
+      "shapeData.pathEffects",
+    ),
+  ];
   const newOrder =
     effects.length > 0 ? Math.max(...effects.map((e) => e.order)) + 1 : 0;
 
-  let newEffect: SplinePathEffect;
+  let newEffect: SplinePathEffectInstance;
 
   switch (newEffectType.value) {
     case "offsetPath":
@@ -939,14 +1007,24 @@ function addEffect() {
 }
 
 function removeEffect(effectId: string) {
-  const effects = (shapeData.value.pathEffects || []).filter(
-    (e) => e.id !== effectId,
-  );
+  // System F/Omega: Use safeArrayDefault instead of lazy || [] fallback
+  const effects = safeArrayDefault(
+    shapeData.value.pathEffects,
+    [],
+    "shapeData.pathEffects",
+  ).filter((e) => e.id !== effectId);
   update("pathEffects", effects);
 }
 
 function toggleEffect(effectId: string) {
-  const effects = [...(shapeData.value.pathEffects || [])];
+  // System F/Omega: Use safeArrayDefault instead of lazy || [] fallback
+  const effects = [
+    ...safeArrayDefault(
+      shapeData.value.pathEffects,
+      [],
+      "shapeData.pathEffects",
+    ),
+  ];
   const effect = effects.find((e) => e.id === effectId);
   if (effect) {
     effect.enabled = !effect.enabled;
@@ -955,9 +1033,14 @@ function toggleEffect(effectId: string) {
 }
 
 function moveEffect(index: number, direction: -1 | 1) {
-  const effects = [...(shapeData.value.pathEffects || [])].sort(
-    (a, b) => a.order - b.order,
-  );
+  // System F/Omega: Use safeArrayDefault instead of lazy || [] fallback
+  const effects = [
+    ...safeArrayDefault(
+      shapeData.value.pathEffects,
+      [],
+      "shapeData.pathEffects",
+    ),
+  ].sort((a, b) => a.order - b.order);
   const newIndex = index + direction;
   if (newIndex < 0 || newIndex >= effects.length) return;
 
@@ -1026,12 +1109,21 @@ function isEffectPropAnimated(
     else if (propName === "phase") prop = effect.phase;
   }
   if (!prop) return false;
-  return prop.animated ?? false;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+  // Pattern match: prop.animated ∈ boolean | undefined → boolean (default false)
+  return (typeof prop === "object" && prop !== null && "animated" in prop && typeof prop.animated === "boolean") ? prop.animated : false;
 }
 
 // Type-safe update of effect property value
 function updateEffectProp(effectId: string, propName: string, value: number) {
-  const effects = [...(shapeData.value.pathEffects || [])];
+  // System F/Omega: Use safeArrayDefault instead of lazy || [] fallback
+  const effects = [
+    ...safeArrayDefault(
+      shapeData.value.pathEffects,
+      [],
+      "shapeData.pathEffects",
+    ),
+  ];
   const effect = effects.find((e) => e.id === effectId);
   if (!effect) return;
 
@@ -1066,7 +1158,14 @@ function updateEffectMeta(
   key: string,
   value: string | number | boolean,
 ) {
-  const effects = [...(shapeData.value.pathEffects || [])];
+  // System F/Omega: Use safeArrayDefault instead of lazy || [] fallback
+  const effects = [
+    ...safeArrayDefault(
+      shapeData.value.pathEffects,
+      [],
+      "shapeData.pathEffects",
+    ),
+  ];
   const effect = effects.find((e) => e.id === effectId);
   if (!effect) return;
 
@@ -1092,7 +1191,14 @@ function updateEffectMeta(
 
 // Type-safe toggle keyframe for effect property
 function toggleEffectKeyframe(effectId: string, propName: string) {
-  const effects = [...(shapeData.value.pathEffects || [])];
+  // System F/Omega: Use safeArrayDefault instead of lazy || [] fallback
+  const effects = [
+    ...safeArrayDefault(
+      shapeData.value.pathEffects,
+      [],
+      "shapeData.pathEffects",
+    ),
+  ];
   const effect = effects.find((e) => e.id === effectId);
   if (!effect) return;
 
@@ -1141,6 +1247,64 @@ function toggleEffectKeyframe(effectId: string, propName: string) {
   }
 
   update("pathEffects", effects);
+}
+
+// Lean4/PureScript/Haskell: Helper functions for Vue template bindings - explicit pattern matching
+// Pattern match: getPropertyValue('Stroke Opacity') ∈ number | undefined → number (fallback chain: shapeData.strokeOpacity → 100)
+function getStrokeOpacityValue(): number {
+  const propValue = getPropertyValue('Stroke Opacity');
+  if (typeof propValue === "number" && Number.isFinite(propValue)) return propValue;
+  const strokeOpacityValue = (typeof shapeData.value.strokeOpacity === "number" && Number.isFinite(shapeData.value.strokeOpacity)) ? shapeData.value.strokeOpacity : undefined;
+  return (strokeOpacityValue !== undefined) ? strokeOpacityValue : 100;
+}
+
+// Pattern match: getPropertyValue('Stroke Width') ∈ number | undefined → number (fallback chain: shapeData.strokeWidth → 2)
+function getStrokeWidthValue(): number {
+  const propValue = getPropertyValue('Stroke Width');
+  if (typeof propValue === "number" && Number.isFinite(propValue)) return propValue;
+  const strokeWidthValue = (typeof shapeData.value.strokeWidth === "number" && Number.isFinite(shapeData.value.strokeWidth)) ? shapeData.value.strokeWidth : undefined;
+  return (strokeWidthValue !== undefined) ? strokeWidthValue : 2;
+}
+
+// Pattern match: getPropertyValue('Dash Offset') ∈ number | undefined → number (fallback to getNumericValue)
+function getDashOffsetValue(): number {
+  const propValue = getPropertyValue('Dash Offset');
+  if (typeof propValue === "number" && Number.isFinite(propValue)) return propValue;
+  return getNumericValue(shapeData.value.strokeDashOffset, 0);
+}
+
+// Pattern match: getPropertyValue('Fill Opacity') ∈ number | undefined → number (fallback chain: shapeData.fillOpacity → 100)
+function getFillOpacityValue(): number {
+  const propValue = getPropertyValue('Fill Opacity');
+  if (typeof propValue === "number" && Number.isFinite(propValue)) return propValue;
+  const fillOpacityValue = (typeof shapeData.value.fillOpacity === "number" && Number.isFinite(shapeData.value.fillOpacity)) ? shapeData.value.fillOpacity : undefined;
+  return (fillOpacityValue !== undefined) ? fillOpacityValue : 100;
+}
+
+// Pattern match: getPropertyValue('Trim Start') ∈ number | undefined → number (fallback to getNumericValue)
+function getTrimStartValue(): number {
+  const propValue = getPropertyValue('Trim Start');
+  if (typeof propValue === "number" && Number.isFinite(propValue)) return propValue;
+  return getNumericValue(shapeData.value.trimStart, 0);
+}
+
+// Pattern match: getPropertyValue('Trim End') ∈ number | undefined → number (fallback to getNumericValue)
+function getTrimEndValue(): number {
+  const propValue = getPropertyValue('Trim End');
+  if (typeof propValue === "number" && Number.isFinite(propValue)) return propValue;
+  return getNumericValue(shapeData.value.trimEnd, 100);
+}
+
+// Pattern match: getPropertyValue('Trim Offset') ∈ number | undefined → number (fallback to getNumericValue)
+function getTrimOffsetValue(): number {
+  const propValue = getPropertyValue('Trim Offset');
+  if (typeof propValue === "number" && Number.isFinite(propValue)) return propValue;
+  return getNumericValue(shapeData.value.trimOffset, 0);
+}
+
+// Pattern match: effect.seed ∈ number | undefined → number (default 12345)
+function getEffectSeedValue(effect: any): number {
+  return (typeof effect.seed === "number" && Number.isFinite(effect.seed)) ? effect.seed : 12345;
 }
 </script>
 

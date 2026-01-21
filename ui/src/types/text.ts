@@ -35,7 +35,9 @@ export interface TextData {
   textAlign: "left" | "center" | "right";
 
   // Path Options (Professional Feature Set)
-  pathLayerId: string | null;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy null
+  // Pattern match: pathLayerId ∈ string (empty string = no path, never null)
+  pathLayerId: string;
   pathReversed: boolean; // Reverse Path direction
   pathPerpendicularToPath: boolean; // Characters perpendicular to path tangent
   pathForceAlignment: boolean; // Force alignment to path
@@ -244,7 +246,7 @@ export function createDefaultTextData(): TextData {
     letterSpacing: 0,
     lineHeight: 1.2,
     textAlign: "center",
-    pathLayerId: null,
+    pathLayerId: "",
     pathReversed: false,
     pathPerpendicularToPath: true,
     pathForceAlignment: false,

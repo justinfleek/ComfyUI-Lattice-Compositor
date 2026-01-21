@@ -3,7 +3,9 @@
  * Orchestrates the full export process from compositor to ComfyUI
  */
 
+import { isFiniteNumber } from "@/utils/typeGuards";
 import { getComfyUIClient } from "@/services/comfyui/comfyuiClient";
+import type { JSONValue } from "@/types/dataAsset";
 import {
   generateWorkflowForTarget,
   validateWorkflow,
@@ -115,11 +117,10 @@ export class ExportPipeline {
         message: "Preparing export...",
       });
 
-      // Validate config
+      // Validate config - throw explicit errors for invalid configuration
       const configErrors = this.validateConfig();
       if (configErrors.length > 0) {
-        result.errors = configErrors;
-        return result;
+        throw new Error(`[ExportPipeline] Configuration validation failed:\n${configErrors.join("\n")}\n\nFix these issues before exporting.`);
       }
 
       // Step 1: Render reference frame
@@ -318,8 +319,18 @@ export class ExportPipeline {
     const sortedLayers = [...this.layers]
       .filter((layer) => layer.visible)
       .sort((a, b) => {
-        const az = a.transform?.position?.value?.z ?? 0;
-        const bz = b.transform?.position?.value?.z ?? 0;
+        // Type proof: z ∈ ℝ ∪ {undefined} → z ∈ ℝ
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+        const aTransform = (a != null && typeof a === "object" && "transform" in a && a.transform != null && typeof a.transform === "object") ? a.transform : undefined;
+        const aPosition = (aTransform != null && typeof aTransform === "object" && "position" in aTransform && aTransform.position != null && typeof aTransform.position === "object") ? aTransform.position : undefined;
+        const aValue = (aPosition != null && typeof aPosition === "object" && "value" in aPosition && aPosition.value != null && typeof aPosition.value === "object") ? aPosition.value : undefined;
+        const azValue = (aValue != null && typeof aValue === "object" && "z" in aValue && typeof aValue.z === "number") ? aValue.z : undefined;
+        const az = isFiniteNumber(azValue) ? azValue : 0;
+        const bTransform = (b != null && typeof b === "object" && "transform" in b && b.transform != null && typeof b.transform === "object") ? b.transform : undefined;
+        const bPosition = (bTransform != null && typeof bTransform === "object" && "position" in bTransform && bTransform.position != null && typeof bTransform.position === "object") ? bTransform.position : undefined;
+        const bValue = (bPosition != null && typeof bPosition === "object" && "value" in bPosition && bPosition.value != null && typeof bPosition.value === "object") ? bPosition.value : undefined;
+        const bzValue = (bValue != null && typeof bValue === "object" && "z" in bValue && typeof bValue.z === "number") ? bValue.z : undefined;
+        const bz = isFiniteNumber(bzValue) ? bzValue : 0;
         return az - bz;
       });
 
@@ -369,7 +380,7 @@ export class ExportPipeline {
       // may not have asset resolution available. If src exists as runtime property,
       // handle it, otherwise skip image rendering in this context.
       const imageSource =
-        ("src" in imageData && typeof (imageData as { src?: unknown }).src === "string"
+        ("src" in imageData && typeof (imageData as { src?: JSONValue }).src === "string"
           ? (imageData as { src: string }).src
           : imageData.assetId
             ? imageData.assetId // Use assetId as fallback (may need resolution)
@@ -381,17 +392,28 @@ export class ExportPipeline {
     } else if (layer.type === "solid" && layer.data) {
       const solidData = layer.data as import("@/types/project").SolidLayerData;
       ctx.fillStyle = solidData.color || "#000000";
-      const width = solidData.width ?? 100;
-      const height = solidData.height ?? 100;
+      // Type proof: width/height ∈ ℝ ∪ {undefined} → ℝ
+      const widthValue = solidData.width;
+      const width = isFiniteNumber(widthValue) && widthValue > 0 ? widthValue : 100;
+      const heightValue = solidData.height;
+      const height = isFiniteNumber(heightValue) && heightValue > 0 ? heightValue : 100;
       ctx.fillRect(-width / 2, -height / 2, width, height);
     } else if (layer.type === "text" && layer.data) {
       const textData = layer.data as import("@/types/project").TextData;
       // Render text with evaluated properties
-      const textContent = evaluated.properties.textContent ?? textData.text;
-      const fontSize =
-        evaluated.properties.fontSize ?? textData.fontSize ?? 48;
-      const fontFamily = textData.fontFamily ?? "Arial";
-      const fillColor = textData.fillColor ?? "#ffffff";
+      // Type proof: textContent ∈ string | undefined → string
+      const textContentValue = evaluated.properties.textContent;
+      const textContent = typeof textContentValue === "string" ? textContentValue : textData.text;
+      // Type proof: fontSize ∈ ℝ ∪ {undefined} → ℝ
+      const evaluatedFontSize = evaluated.properties.fontSize;
+      const fontSize = typeof evaluatedFontSize === "number" && isFiniteNumber(evaluatedFontSize) && evaluatedFontSize > 0
+        ? evaluatedFontSize
+        : (typeof textData.fontSize === "number" && isFiniteNumber(textData.fontSize) && textData.fontSize > 0 ? textData.fontSize : 48);
+      // Type proof: fontFamily ∈ string | undefined → string
+      const fontFamilyValue = textData.fontFamily;
+      const fontFamily = typeof fontFamilyValue === "string" ? fontFamilyValue : "Arial";
+      // Type proof: fill ∈ string → string (with fallback for empty)
+      const fillColor = textData.fill !== "" ? textData.fill : "#ffffff";
 
       ctx.fillStyle = fillColor;
       ctx.font = `${fontSize}px ${fontFamily}`;

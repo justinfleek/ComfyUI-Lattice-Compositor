@@ -5,6 +5,8 @@
  * for sourceRectAtTime and responsive template design.
  */
 
+import { isFiniteNumber, safeCoordinateDefault } from "@/utils/typeGuards";
+
 export interface TextMetrics {
   width: number;
   height: number;
@@ -75,16 +77,40 @@ export function measureText(
 
   const metrics = ctx.measureText(text);
 
+  // Type proof: actualBoundingBoxAscent ∈ number | undefined → number
+  const actualBoundingBoxAscent = isFiniteNumber(metrics.actualBoundingBoxAscent)
+    ? metrics.actualBoundingBoxAscent
+    : fontSize * 0.8;
+  // Type proof: actualBoundingBoxDescent ∈ number | undefined → number
+  const actualBoundingBoxDescent = isFiniteNumber(metrics.actualBoundingBoxDescent)
+    ? metrics.actualBoundingBoxDescent
+    : fontSize * 0.2;
+  // Type proof: actualBoundingBoxLeft ∈ number | undefined → number
+  const actualBoundingBoxLeft = isFiniteNumber(metrics.actualBoundingBoxLeft)
+    ? metrics.actualBoundingBoxLeft
+    : 0;
+  // Type proof: actualBoundingBoxRight ∈ number | undefined → number
+  const actualBoundingBoxRight = isFiniteNumber(metrics.actualBoundingBoxRight)
+    ? metrics.actualBoundingBoxRight
+    : metrics.width;
+  // Type proof: fontBoundingBoxAscent ∈ number | undefined → number
+  const fontBoundingBoxAscent = isFiniteNumber(metrics.fontBoundingBoxAscent)
+    ? metrics.fontBoundingBoxAscent
+    : fontSize * 0.8;
+  // Type proof: fontBoundingBoxDescent ∈ number | undefined → number
+  const fontBoundingBoxDescent = isFiniteNumber(metrics.fontBoundingBoxDescent)
+    ? metrics.fontBoundingBoxDescent
+    : fontSize * 0.2;
+
   return {
     width: metrics.width,
     height: fontSize, // Fallback if actual metrics not available
-    actualBoundingBoxAscent: metrics.actualBoundingBoxAscent ?? fontSize * 0.8,
-    actualBoundingBoxDescent:
-      metrics.actualBoundingBoxDescent ?? fontSize * 0.2,
-    actualBoundingBoxLeft: metrics.actualBoundingBoxLeft ?? 0,
-    actualBoundingBoxRight: metrics.actualBoundingBoxRight ?? metrics.width,
-    fontBoundingBoxAscent: metrics.fontBoundingBoxAscent ?? fontSize * 0.8,
-    fontBoundingBoxDescent: metrics.fontBoundingBoxDescent ?? fontSize * 0.2,
+    actualBoundingBoxAscent,
+    actualBoundingBoxDescent,
+    actualBoundingBoxLeft,
+    actualBoundingBoxRight,
+    fontBoundingBoxAscent,
+    fontBoundingBoxDescent,
   };
 }
 
@@ -129,7 +155,10 @@ export function measureMultilineText(
     // Calculate height
     if (index === 0) {
       const metrics = ctx.measureText(line || "M");
-      firstLineAscent = metrics.actualBoundingBoxAscent ?? fontSize * 0.8;
+      // Type proof: actualBoundingBoxAscent ∈ number | undefined → number
+      firstLineAscent = isFiniteNumber(metrics.actualBoundingBoxAscent)
+        ? metrics.actualBoundingBoxAscent
+        : fontSize * 0.8;
     }
   });
 
@@ -165,7 +194,8 @@ export function measureTextLayerRect(
   const fontWeight = data.fontWeight || "normal";
   const fontStyle = data.fontStyle || "normal";
   const lineHeight = data.lineHeight || 1.2;
-  const letterSpacing = data.letterSpacing || 0;
+  // Type proof: letterSpacing ∈ number | undefined → number (coordinate-like, can be negative)
+  const letterSpacing = safeCoordinateDefault(data.letterSpacing, 0, "data.letterSpacing");
   const textAlign = data.textAlign || "left";
 
   const rect = measureMultilineText(

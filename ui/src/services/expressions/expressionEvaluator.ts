@@ -17,6 +17,7 @@ import { repeatAfter, repeatBefore, type LoopType } from "./loopExpressions";
 import { bounce, elastic, inertia } from "./motionExpressions";
 import { evaluateInSES } from "./sesEvaluator";
 import type { Expression, ExpressionContext } from "./types";
+import { isFiniteNumber, isNumberArray } from "@/utils/typeGuards";
 
 /**
  * SECURITY NOTE (upgraded 2025-12-28):
@@ -474,113 +475,247 @@ function _createThisCompObject(ctx: ExpressionContext) {
   return {
     duration: duration,
     frameDuration: 1 / fps,
-    width: ctx.compWidth ?? 1920,
-    height: ctx.compHeight ?? 1080,
-    numLayers: ctx.allLayers?.length ?? 0,
+    width: ctx.compWidth,
+    height: ctx.compHeight,
+    numLayers: ctx.allLayers.length,
     layer: (nameOrIndex: string | number) => {
       const getLayerProperty = ctx.getLayerProperty;
       const getLayerEffectParam = ctx.getLayerEffectParam;
       let layerId: string;
 
+      // Lean4/PureScript/Haskell: Explicit pattern matching on union type
+      // Type proof: nameOrIndex ∈ string | number → layerId: string
       if (typeof nameOrIndex === "number") {
-        const layerInfo = ctx.allLayers?.find((l) => l.index === nameOrIndex);
-        layerId = layerInfo?.id ?? `layer_${nameOrIndex}`;
+        const layerInfo = ctx.allLayers.find((l) => l.index === nameOrIndex);
+        // Type proof: layerInfo ∈ { id: string } | undefined → string
+        layerId = layerInfo !== undefined && typeof layerInfo.id === "string"
+          ? layerInfo.id
+          : `layer_${nameOrIndex}`;
       } else {
-        const layerInfo = ctx.allLayers?.find((l) => l.name === nameOrIndex);
-        layerId = layerInfo?.id ?? nameOrIndex;
+        const layerInfo = ctx.allLayers.find((l) => l.name === nameOrIndex);
+        // Type proof: layerInfo ∈ { id: string } | undefined → string
+        layerId = layerInfo !== undefined && typeof layerInfo.id === "string"
+          ? layerInfo.id
+          : nameOrIndex;
       }
 
-      const getTransform = (): LayerTransform => ({
-        position: (getLayerProperty?.(
-          layerId,
-          "transform.position",
-        ) as number[]) ?? [0, 0, 0],
-        scale: (getLayerProperty?.(layerId, "transform.scale") as number[]) ?? [
-          100, 100, 100,
-        ],
-        rotation: (getLayerProperty?.(
-          layerId,
-          "transform.rotation",
-        ) as number[]) ?? [0, 0, 0],
-        anchor: (getLayerProperty?.(
-          layerId,
-          "transform.anchorPoint",
-        ) as number[]) ?? [0, 0, 0],
-      });
+      // Lean4/PureScript/Haskell: Explicit pattern matching on union type
+      // Type proof: getLayerProperty returns number | number[] | null
+      // PureScript: case getLayerProperty of Just x -> x; Nothing -> default
+      const getTransform = (): LayerTransform => {
+        // Type proof: position ∈ number | number[] | null → number[]
+        const positionRaw = getLayerProperty(layerId, "transform.position");
+        const position: number[] = isNumberArray(positionRaw) && positionRaw.length >= 3
+          ? [positionRaw[0], positionRaw[1], positionRaw[2]]
+          : isNumberArray(positionRaw) && positionRaw.length === 2
+            ? [positionRaw[0], positionRaw[1], 0]
+            : [0, 0, 0];
 
+        // Type proof: scale ∈ number | number[] | null → number[]
+        const scaleRaw = getLayerProperty(layerId, "transform.scale");
+        const scale: number[] = isNumberArray(scaleRaw) && scaleRaw.length >= 3
+          ? [scaleRaw[0], scaleRaw[1], scaleRaw[2]]
+          : isNumberArray(scaleRaw) && scaleRaw.length === 2
+            ? [scaleRaw[0], scaleRaw[1], 100]
+            : [100, 100, 100];
+
+        // Type proof: rotation ∈ number | number[] | null → number[]
+        const rotationRaw = getLayerProperty(layerId, "transform.rotation");
+        const rotation: number[] = isNumberArray(rotationRaw) && rotationRaw.length >= 3
+          ? [rotationRaw[0], rotationRaw[1], rotationRaw[2]]
+          : isNumberArray(rotationRaw) && rotationRaw.length === 2
+            ? [rotationRaw[0], rotationRaw[1], 0]
+            : isFiniteNumber(rotationRaw)
+              ? [0, 0, rotationRaw]
+              : [0, 0, 0];
+
+        // Type proof: anchor ∈ number | number[] | null → number[]
+        const anchorRaw = getLayerProperty(layerId, "transform.anchorPoint");
+        const anchor: number[] = isNumberArray(anchorRaw) && anchorRaw.length >= 3
+          ? [anchorRaw[0], anchorRaw[1], anchorRaw[2]]
+          : isNumberArray(anchorRaw) && anchorRaw.length === 2
+            ? [anchorRaw[0], anchorRaw[1], 0]
+            : [0, 0, 0];
+
+        return { position, scale, rotation, anchor };
+      };
+
+      // Lean4/PureScript/Haskell: Explicit pattern matching on union type
+      // Type proof: getLayerEffectParam returns number | number[] | string | boolean | null
       const createEffectAccessor = (effectName: string) => {
+        // Helper: Pattern match on union type with explicit type narrowing
+        // PureScript: case getLayerEffectParam of Just (Number n) -> n; _ -> 0
+        const getNumericParam = (paramName: string, altParamName: string | null, defaultValue: number): number => {
+          const primary = getLayerEffectParam(layerId, effectName, paramName);
+          if (isFiniteNumber(primary)) return primary;
+          if (altParamName !== null) {
+            const alt = getLayerEffectParam(layerId, effectName, altParamName);
+            if (isFiniteNumber(alt)) return alt;
+          }
+          return defaultValue;
+        };
+
+        const getBooleanParam = (paramName: string, altParamName: string | null, defaultValue: boolean): boolean => {
+          const primary = getLayerEffectParam(layerId, effectName, paramName);
+          if (typeof primary === "boolean") return primary;
+          if (altParamName !== null) {
+            const alt = getLayerEffectParam(layerId, effectName, altParamName);
+            if (typeof alt === "boolean") return alt;
+          }
+          return defaultValue;
+        };
+
+        const getArrayParam = (paramName: string, altParamName: string | null, defaultValue: number[]): number[] => {
+          const primary = getLayerEffectParam(layerId, effectName, paramName);
+          if (isNumberArray(primary)) return primary;
+          if (altParamName !== null) {
+            const alt = getLayerEffectParam(layerId, effectName, altParamName);
+            if (isNumberArray(alt)) return alt;
+          }
+          return defaultValue;
+        };
+
+        const getStringParam = (paramName: string, altParamName: string | null, defaultValue: string | null): string | null => {
+          const primary = getLayerEffectParam(layerId, effectName, paramName);
+          if (typeof primary === "string") return primary;
+          if (altParamName !== null) {
+            const alt = getLayerEffectParam(layerId, effectName, altParamName);
+            if (typeof alt === "string") return alt;
+          }
+          return defaultValue;
+        };
+
         const accessor = (paramName: string) => {
-          return getLayerEffectParam?.(layerId, effectName, paramName) ?? 0;
+          // Type proof: param ∈ number | number[] | string | boolean | null → number
+          const value = getLayerEffectParam(layerId, effectName, paramName);
+          return isFiniteNumber(value) ? value : 0;
         };
         accessor.param = accessor;
-        // Slider Control
-        accessor.value =
-          getLayerEffectParam?.(layerId, effectName, "value") ?? 0;
-        accessor.slider =
-          getLayerEffectParam?.(layerId, effectName, "slider") ??
-          getLayerEffectParam?.(layerId, effectName, "Slider") ??
-          0;
-        // Angle Control
-        accessor.angle =
-          getLayerEffectParam?.(layerId, effectName, "angle") ??
-          getLayerEffectParam?.(layerId, effectName, "Angle") ??
-          0;
-        // Checkbox Control
-        accessor.checkbox =
-          getLayerEffectParam?.(layerId, effectName, "checkbox") ??
-          getLayerEffectParam?.(layerId, effectName, "Checkbox") ??
-          false;
-        // Color Control
-        accessor.color = getLayerEffectParam?.(layerId, effectName, "color") ??
-          getLayerEffectParam?.(layerId, effectName, "Color") ?? [1, 1, 1, 1];
-        // Point Control (2D and 3D)
-        accessor.point = getLayerEffectParam?.(layerId, effectName, "point") ??
-          getLayerEffectParam?.(layerId, effectName, "Point") ?? [0, 0];
-        accessor.point3D = getLayerEffectParam?.(
-          layerId,
-          effectName,
-          "point3D",
-        ) ??
-          getLayerEffectParam?.(layerId, effectName, "3D Point") ?? [0, 0, 0];
-        // Dropdown Menu Control
-        accessor.menu =
-          getLayerEffectParam?.(layerId, effectName, "menu") ??
-          getLayerEffectParam?.(layerId, effectName, "Menu") ??
-          1;
-        // Layer Control
-        accessor.layer =
-          getLayerEffectParam?.(layerId, effectName, "layer") ??
-          getLayerEffectParam?.(layerId, effectName, "Layer") ??
-          null;
+        
+        // Slider Control - Type proof: value ∈ number | number[] | string | boolean | null → number
+        accessor.value = getNumericParam("value", null, 0);
+        
+        // Slider Control (case-insensitive) - Type proof: slider ∈ number | number[] | string | boolean | null → number
+        accessor.slider = getNumericParam("slider", "Slider", 0);
+        
+        // Angle Control (case-insensitive) - Type proof: angle ∈ number | number[] | string | boolean | null → number
+        accessor.angle = getNumericParam("angle", "Angle", 0);
+        
+        // Checkbox Control (case-insensitive) - Type proof: checkbox ∈ number | number[] | string | boolean | null → boolean
+        accessor.checkbox = getBooleanParam("checkbox", "Checkbox", false);
+        
+        // Color Control (case-insensitive) - Type proof: color ∈ number | number[] | string | boolean | null → number[]
+        accessor.color = getArrayParam("color", "Color", [1, 1, 1, 1]);
+        
+        // Point Control 2D (case-insensitive) - Type proof: point ∈ number | number[] | string | boolean | null → number[]
+        accessor.point = getArrayParam("point", "Point", [0, 0]);
+        
+        // Point Control 3D (case-insensitive) - Type proof: point3D ∈ number | number[] | string | boolean | null → number[]
+        accessor.point3D = getArrayParam("point3D", "3D Point", [0, 0, 0]);
+        
+        // Dropdown Menu Control (case-insensitive) - Type proof: menu ∈ number | number[] | string | boolean | null → number
+        accessor.menu = getNumericParam("menu", "Menu", 1);
+        
+        // Layer Control (case-insensitive) - Type proof: layer ∈ number | number[] | string | boolean | null → string | null
+        accessor.layer = getStringParam("layer", "Layer", null);
+        
         return accessor;
       };
 
+      // Lean4/PureScript/Haskell: Explicit pattern matching on union types
+      // Type proof: allLayers.find returns { id, name, index } | undefined
+      const foundLayer = ctx.allLayers.find((l) => l.id === layerId);
+      const layerName: string = foundLayer !== undefined && typeof foundLayer.name === "string"
+        ? foundLayer.name
+        : "";
+      const layerIndex: number = foundLayer !== undefined && typeof foundLayer.index === "number" && Number.isFinite(foundLayer.index)
+        ? foundLayer.index
+        : 0;
+
+      // Type proof: getLayerProperty returns number | number[] | null
+      // PureScript: case getLayerProperty of Just (Array [x, y]) -> [x, y]; _ -> [0, 0]
+      const getPosition2D = (): number[] => {
+        const raw = getLayerProperty(layerId, "transform.position");
+        return isNumberArray(raw) && raw.length >= 2 ? [raw[0], raw[1]] : [0, 0];
+      };
+
+      const getScale2D = (): number[] => {
+        const raw = getLayerProperty(layerId, "transform.scale");
+        return isNumberArray(raw) && raw.length >= 2 ? [raw[0], raw[1]] : [100, 100];
+      };
+
+      const getRotationScalar = (): number => {
+        const raw = getLayerProperty(layerId, "transform.rotation");
+        return isFiniteNumber(raw) ? raw : 0;
+      };
+
+      const getOpacityScalar = (): number => {
+        const raw = getLayerProperty(layerId, "transform.opacity");
+        return isFiniteNumber(raw) ? raw : 100;
+      };
+
+      const getAnchor2D = (): number[] => {
+        const raw = getLayerProperty(layerId, "transform.anchorPoint");
+        return isNumberArray(raw) && raw.length >= 2 ? [raw[0], raw[1]] : [0, 0];
+      };
+
+      const getOrigin2D = (): number[] => {
+        const raw = getLayerProperty(layerId, "transform.origin");
+        return isNumberArray(raw) && raw.length >= 2 ? [raw[0], raw[1]] : [0, 0];
+      };
+
+      const getPosition3D = (): number[] => {
+        const raw = getLayerProperty(layerId, "transform.position");
+        if (isNumberArray(raw) && raw.length >= 3) return [raw[0], raw[1], raw[2]];
+        if (isNumberArray(raw) && raw.length === 2) return [raw[0], raw[1], 0];
+        return [0, 0, 0];
+      };
+
+      const getRotation3D = (): number[] => {
+        const raw = getLayerProperty(layerId, "transform.rotation");
+        if (isNumberArray(raw) && raw.length >= 3) return [raw[0], raw[1], raw[2]];
+        if (isNumberArray(raw) && raw.length === 2) return [raw[0], raw[1], 0];
+        if (isFiniteNumber(raw)) return [0, 0, raw];
+        return [0, 0, 0];
+      };
+
+      const getScale3D = (): number[] => {
+        const raw = getLayerProperty(layerId, "transform.scale");
+        if (isNumberArray(raw) && raw.length >= 3) return [raw[0], raw[1], raw[2]];
+        if (isNumberArray(raw) && raw.length === 2) return [raw[0], raw[1], 100];
+        return [100, 100, 100];
+      };
+
+      const getAnchor3D = (): number[] => {
+        const raw = getLayerProperty(layerId, "transform.anchorPoint");
+        if (isNumberArray(raw) && raw.length >= 3) return [raw[0], raw[1], raw[2]];
+        if (isNumberArray(raw) && raw.length === 2) return [raw[0], raw[1], 0];
+        return [0, 0, 0];
+      };
+
+      const getOrigin3D = (): number[] => {
+        const raw = getLayerProperty(layerId, "transform.origin");
+        if (isNumberArray(raw) && raw.length >= 3) return [raw[0], raw[1], raw[2]];
+        if (isNumberArray(raw) && raw.length === 2) return [raw[0], raw[1], 0];
+        return [0, 0, 0];
+      };
+
       return {
-        name: ctx.allLayers?.find((l) => l.id === layerId)?.name ?? "",
-        index: ctx.allLayers?.find((l) => l.id === layerId)?.index ?? 0,
-        position: getLayerProperty?.(layerId, "transform.position") ?? [0, 0],
-        scale: getLayerProperty?.(layerId, "transform.scale") ?? [100, 100],
-        rotation: getLayerProperty?.(layerId, "transform.rotation") ?? 0,
-        opacity: getLayerProperty?.(layerId, "transform.opacity") ?? 100,
-        anchorPoint: getLayerProperty?.(layerId, "transform.anchorPoint") ?? [
-          0, 0,
-        ],
-        origin: getLayerProperty?.(layerId, "transform.origin") ?? [0, 0],
+        name: layerName,
+        index: layerIndex,
+        position: getPosition2D(),
+        scale: getScale2D(),
+        rotation: getRotationScalar(),
+        opacity: getOpacityScalar(),
+        anchorPoint: getAnchor2D(),
+        origin: getOrigin2D(),
         transform: {
-          position: getLayerProperty?.(layerId, "transform.position") ?? [
-            0, 0, 0,
-          ],
-          rotation: getLayerProperty?.(layerId, "transform.rotation") ?? [
-            0, 0, 0,
-          ],
-          scale: getLayerProperty?.(layerId, "transform.scale") ?? [
-            100, 100, 100,
-          ],
-          opacity: getLayerProperty?.(layerId, "transform.opacity") ?? 100,
-          anchorPoint: getLayerProperty?.(layerId, "transform.anchorPoint") ?? [
-            0, 0, 0,
-          ],
-          origin: getLayerProperty?.(layerId, "transform.origin") ?? [0, 0, 0],
+          position: getPosition3D(),
+          rotation: getRotation3D(),
+          scale: getScale3D(),
+          opacity: getOpacityScalar(),
+          anchorPoint: getAnchor3D(),
+          origin: getOrigin3D(),
         },
         toComp: (point: number[]) => toComp(point, getTransform()),
         fromComp: (point: number[]) => fromComp(point, getTransform()),
@@ -599,48 +734,105 @@ function _createThisLayerObject(ctx: ExpressionContext) {
     index: ctx.layerIndex,
     inPoint: ctx.inPoint,
     outPoint: ctx.outPoint,
-    position: ctx.layerTransform?.position ?? [0, 0, 0],
-    rotation: ctx.layerTransform?.rotation ?? [0, 0, 0],
-    scale: ctx.layerTransform?.scale ?? [100, 100, 100],
-    opacity: ctx.layerTransform?.opacity ?? 100,
-    anchorPoint: ctx.layerTransform?.origin ?? [0, 0, 0],
-    origin: ctx.layerTransform?.origin ?? [0, 0, 0],
+    position: ctx.layerTransform.position,
+    rotation: ctx.layerTransform.rotation,
+    scale: ctx.layerTransform.scale,
+    opacity: ctx.layerTransform.opacity,
+    anchorPoint: ctx.layerTransform.origin,
+    origin: ctx.layerTransform.origin,
     transform: {
-      position: ctx.layerTransform?.position ?? [0, 0, 0],
-      rotation: ctx.layerTransform?.rotation ?? [0, 0, 0],
-      scale: ctx.layerTransform?.scale ?? [100, 100, 100],
-      opacity: ctx.layerTransform?.opacity ?? 100,
-      anchorPoint: ctx.layerTransform?.origin ?? [0, 0, 0],
-      origin: ctx.layerTransform?.origin ?? [0, 0, 0],
+      position: ctx.layerTransform.position,
+      rotation: ctx.layerTransform.rotation,
+      scale: ctx.layerTransform.scale,
+      opacity: ctx.layerTransform.opacity,
+      anchorPoint: ctx.layerTransform.origin,
+      origin: ctx.layerTransform.origin,
     },
     effect: (effectName: string) => {
-      const eff = ctx.layerEffects?.find(
+      // Lean4/PureScript/Haskell: Explicit pattern matching
+      // Type proof: find returns { parameters: Record<...> } | undefined
+      const eff = ctx.layerEffects.find(
         (e) => e.name === effectName || e.effectKey === effectName,
       );
+      
+      // PureScript: case eff of Just e -> e.parameters; Nothing -> {}
+      const params = eff !== undefined ? eff.parameters : {};
+      
       const accessor = (paramName: string) => {
-        if (!eff) return 0;
-        return eff.parameters[paramName] ?? 0;
+        // Type proof: params[paramName] ∈ number | number[] | string | boolean | undefined → number
+        const value = params[paramName];
+        return isFiniteNumber(value) ? value : 0;
       };
       accessor.param = accessor;
-      // Slider Control
-      accessor.value = eff?.parameters.value ?? 0;
-      accessor.slider = eff?.parameters.slider ?? eff?.parameters.Slider ?? 0;
-      // Angle Control
-      accessor.angle = eff?.parameters.angle ?? eff?.parameters.Angle ?? 0;
-      // Checkbox Control
-      accessor.checkbox =
-        eff?.parameters.checkbox ?? eff?.parameters.Checkbox ?? false;
-      // Color Control
-      accessor.color = eff?.parameters.color ??
-        eff?.parameters.Color ?? [1, 1, 1, 1];
-      // Point Control (2D and 3D)
-      accessor.point = eff?.parameters.point ?? eff?.parameters.Point ?? [0, 0];
-      accessor.point3D = eff?.parameters.point3D ??
-        eff?.parameters["3D Point"] ?? [0, 0, 0];
-      // Dropdown Menu Control
-      accessor.menu = eff?.parameters.menu ?? eff?.parameters.Menu ?? 1;
-      // Layer Control
-      accessor.layer = eff?.parameters.layer ?? eff?.parameters.Layer ?? null;
+      
+      // Helper functions for explicit pattern matching
+      const getNumericParam = (key: string, altKey: string | null, defaultValue: number): number => {
+        const primary = params[key];
+        if (isFiniteNumber(primary)) return primary;
+        if (altKey !== null) {
+          const alt = params[altKey];
+          if (isFiniteNumber(alt)) return alt;
+        }
+        return defaultValue;
+      };
+
+      const getBooleanParam = (key: string, altKey: string | null, defaultValue: boolean): boolean => {
+        const primary = params[key];
+        if (typeof primary === "boolean") return primary;
+        if (altKey !== null) {
+          const alt = params[altKey];
+          if (typeof alt === "boolean") return alt;
+        }
+        return defaultValue;
+      };
+
+      const getArrayParam = (key: string, altKey: string | null, defaultValue: number[]): number[] => {
+        const primary = params[key];
+        if (isNumberArray(primary)) return primary;
+        if (altKey !== null) {
+          const alt = params[altKey];
+          if (isNumberArray(alt)) return alt;
+        }
+        return defaultValue;
+      };
+
+      const getStringParam = (key: string, altKey: string | null, defaultValue: string | null): string | null => {
+        const primary = params[key];
+        if (typeof primary === "string") return primary;
+        if (altKey !== null) {
+          const alt = params[altKey];
+          if (typeof alt === "string") return alt;
+        }
+        return defaultValue;
+      };
+      
+      // Slider Control - Type proof: value ∈ number | number[] | string | boolean | undefined → number
+      accessor.value = getNumericParam("value", null, 0);
+      
+      // Slider Control (case-insensitive)
+      accessor.slider = getNumericParam("slider", "Slider", 0);
+      
+      // Angle Control (case-insensitive)
+      accessor.angle = getNumericParam("angle", "Angle", 0);
+      
+      // Checkbox Control (case-insensitive)
+      accessor.checkbox = getBooleanParam("checkbox", "Checkbox", false);
+      
+      // Color Control (case-insensitive)
+      accessor.color = getArrayParam("color", "Color", [1, 1, 1, 1]);
+      
+      // Point Control 2D (case-insensitive)
+      accessor.point = getArrayParam("point", "Point", [0, 0]);
+      
+      // Point Control 3D (case-insensitive)
+      accessor.point3D = getArrayParam("point3D", "3D Point", [0, 0, 0]);
+      
+      // Dropdown Menu Control (case-insensitive)
+      accessor.menu = getNumericParam("menu", "Menu", 1);
+      
+      // Layer Control (case-insensitive)
+      accessor.layer = getStringParam("layer", "Layer", null);
+      
       return accessor;
     },
     sourceRectAtTime: (
@@ -651,37 +843,37 @@ function _createThisLayerObject(ctx: ExpressionContext) {
     },
     toComp: (point: number[]) => {
       const transform: LayerTransform = {
-        position: ctx.layerTransform?.position ?? [0, 0, 0],
-        scale: ctx.layerTransform?.scale ?? [100, 100, 100],
-        rotation: ctx.layerTransform?.rotation ?? [0, 0, 0],
-        anchor: ctx.layerTransform?.origin ?? [0, 0, 0],
+        position: ctx.layerTransform.position,
+        scale: ctx.layerTransform.scale,
+        rotation: ctx.layerTransform.rotation,
+        anchor: ctx.layerTransform.origin,
       };
       return toComp(point, transform);
     },
     fromComp: (point: number[]) => {
       const transform: LayerTransform = {
-        position: ctx.layerTransform?.position ?? [0, 0, 0],
-        scale: ctx.layerTransform?.scale ?? [100, 100, 100],
-        rotation: ctx.layerTransform?.rotation ?? [0, 0, 0],
-        anchor: ctx.layerTransform?.origin ?? [0, 0, 0],
+        position: ctx.layerTransform.position,
+        scale: ctx.layerTransform.scale,
+        rotation: ctx.layerTransform.rotation,
+        anchor: ctx.layerTransform.origin,
       };
       return fromComp(point, transform);
     },
     toWorld: (point: number[]) => {
       const transform: LayerTransform = {
-        position: ctx.layerTransform?.position ?? [0, 0, 0],
-        scale: ctx.layerTransform?.scale ?? [100, 100, 100],
-        rotation: ctx.layerTransform?.rotation ?? [0, 0, 0],
-        anchor: ctx.layerTransform?.origin ?? [0, 0, 0],
+        position: ctx.layerTransform.position,
+        scale: ctx.layerTransform.scale,
+        rotation: ctx.layerTransform.rotation,
+        anchor: ctx.layerTransform.origin,
       };
       return toWorld(point, transform);
     },
     fromWorld: (point: number[]) => {
       const transform: LayerTransform = {
-        position: ctx.layerTransform?.position ?? [0, 0, 0],
-        scale: ctx.layerTransform?.scale ?? [100, 100, 100],
-        rotation: ctx.layerTransform?.rotation ?? [0, 0, 0],
-        anchor: ctx.layerTransform?.origin ?? [0, 0, 0],
+        position: ctx.layerTransform.position,
+        scale: ctx.layerTransform.scale,
+        rotation: ctx.layerTransform.rotation,
+        anchor: ctx.layerTransform.origin,
       };
       return fromWorld(point, transform);
     },

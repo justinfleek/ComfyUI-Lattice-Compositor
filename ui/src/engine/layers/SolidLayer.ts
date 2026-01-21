@@ -59,17 +59,26 @@ export class SolidLayer extends BaseLayer {
     this.width = solidData.width;
     this.height = solidData.height;
     this.animatedColor = solidData.animatedColor;
-    this.shadowCatcher = solidData.shadowCatcher ?? false;
-    this.shadowOpacity = solidData.shadowOpacity ?? 50;
-    this.shadowColor = solidData.shadowColor ?? "#000000";
-    this.receiveShadow = solidData.receiveShadow ?? false;
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+    // Pattern match: shadowCatcher ∈ boolean | undefined → boolean (default false)
+    this.shadowCatcher = (typeof solidData.shadowCatcher === "boolean") ? solidData.shadowCatcher : false;
+    // Pattern match: shadowOpacity ∈ number | undefined → number (default 50)
+    this.shadowOpacity = (typeof solidData.shadowOpacity === "number" && Number.isFinite(solidData.shadowOpacity)) ? solidData.shadowOpacity : 50;
+    // Pattern match: shadowColor ∈ string | undefined → string (default "#000000")
+    this.shadowColor = (typeof solidData.shadowColor === "string" && solidData.shadowColor.length > 0) ? solidData.shadowColor : "#000000";
+    // Pattern match: receiveShadow ∈ boolean | undefined → boolean (default false)
+    this.receiveShadow = (typeof solidData.receiveShadow === "boolean") ? solidData.receiveShadow : false;
 
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const transform = (layerData != null && typeof layerData === "object" && "transform" in layerData && layerData.transform != null && typeof layerData.transform === "object") ? layerData.transform : undefined;
+    const position = (transform != null && typeof transform === "object" && "position" in transform && transform.position != null && typeof transform.position === "object") ? transform.position : undefined;
+    const positionValue = (position != null && typeof position === "object" && "value" in position && position.value != null && typeof position.value === "object") ? position.value : undefined;
     console.log("[SolidLayer] Creating solid:", {
       id: this.id,
       color: this.color,
       width: this.width,
       height: this.height,
-      position: layerData.transform?.position?.value,
+      position: positionValue,
       visible: layerData.visible,
     });
 
@@ -138,17 +147,30 @@ export class SolidLayer extends BaseLayer {
    */
   private extractSolidData(layerData: Layer): SolidData {
     // Solid data might be in layerData.data or direct properties
-    const data = layerData.data as Partial<SolidData> | undefined;
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining/nullish coalescing
+    // Pattern match: data ∈ Partial<SolidData> | undefined → SolidData (with explicit defaults)
+    const data = (layerData.data !== null && typeof layerData.data === "object") ? layerData.data as Partial<SolidData> : undefined;
+    
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+    // Pattern match: Extract each property with explicit type narrowing and defaults
+    const colorValue = (data !== undefined && typeof data === "object" && data !== null && "color" in data && typeof data.color === "string" && data.color.length > 0) ? data.color : "#808080";
+    const widthValue = (data !== undefined && typeof data === "object" && data !== null && "width" in data && typeof data.width === "number" && Number.isFinite(data.width)) ? data.width : 1920;
+    const heightValue = (data !== undefined && typeof data === "object" && data !== null && "height" in data && typeof data.height === "number" && Number.isFinite(data.height)) ? data.height : 1080;
+    const animatedColorValue = (data !== undefined && typeof data === "object" && data !== null && "animatedColor" in data) ? data.animatedColor : undefined;
+    const shadowCatcherValue = (data !== undefined && typeof data === "object" && data !== null && "shadowCatcher" in data && typeof data.shadowCatcher === "boolean") ? data.shadowCatcher : false;
+    const shadowOpacityValue = (data !== undefined && typeof data === "object" && data !== null && "shadowOpacity" in data && typeof data.shadowOpacity === "number" && Number.isFinite(data.shadowOpacity)) ? data.shadowOpacity : 50;
+    const shadowColorValue = (data !== undefined && typeof data === "object" && data !== null && "shadowColor" in data && typeof data.shadowColor === "string" && data.shadowColor.length > 0) ? data.shadowColor : "#000000";
+    const receiveShadowValue = (data !== undefined && typeof data === "object" && data !== null && "receiveShadow" in data && typeof data.receiveShadow === "boolean") ? data.receiveShadow : false;
 
     return {
-      color: data?.color ?? "#808080",
-      width: data?.width ?? 1920,
-      height: data?.height ?? 1080,
-      animatedColor: data?.animatedColor,
-      shadowCatcher: data?.shadowCatcher ?? false,
-      shadowOpacity: data?.shadowOpacity ?? 50,
-      shadowColor: data?.shadowColor ?? "#000000",
-      receiveShadow: data?.receiveShadow ?? false,
+      color: colorValue,
+      width: widthValue,
+      height: heightValue,
+      animatedColor: animatedColorValue,
+      shadowCatcher: shadowCatcherValue,
+      shadowOpacity: shadowOpacityValue,
+      shadowColor: shadowColorValue,
+      receiveShadow: receiveShadowValue,
     };
   }
 
@@ -276,8 +298,11 @@ export class SolidLayer extends BaseLayer {
 
   protected onEvaluateFrame(frame: number): void {
     // Evaluate animated color if present (only for non-shadow catcher)
-    if (this.animatedColor?.animated && !this.shadowCatcher) {
-      const color = this.evaluator.evaluate(this.animatedColor, frame);
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const animatedColor = this.animatedColor;
+    const animatedColorAnimated = (animatedColor != null && typeof animatedColor === "object" && "animated" in animatedColor && typeof animatedColor.animated === "boolean" && animatedColor.animated) ? true : false;
+    if (animatedColorAnimated && !this.shadowCatcher) {
+      const color = this.evaluator.evaluate(animatedColor, frame);
       if ("color" in this.material) {
         (
           this.material as THREE.MeshBasicMaterial | THREE.MeshStandardMaterial
@@ -314,38 +339,52 @@ export class SolidLayer extends BaseLayer {
     const data = properties.data as Partial<SolidData> | undefined;
 
     // Handle shadow catcher mode change (must be first - triggers material rebuild)
-    if (data?.shadowCatcher !== undefined) {
-      this.setShadowCatcher(data.shadowCatcher);
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const shadowCatcher = (data != null && typeof data === "object" && "shadowCatcher" in data && typeof data.shadowCatcher === "boolean") ? data.shadowCatcher : undefined;
+    if (shadowCatcher !== undefined) {
+      this.setShadowCatcher(shadowCatcher);
     }
 
     // Handle receive shadow change
-    if (data?.receiveShadow !== undefined) {
-      this.setReceiveShadow(data.receiveShadow);
+    const receiveShadow = (data != null && typeof data === "object" && "receiveShadow" in data && typeof data.receiveShadow === "boolean") ? data.receiveShadow : undefined;
+    if (receiveShadow !== undefined) {
+      this.setReceiveShadow(receiveShadow);
     }
 
-    if (data?.color !== undefined) {
-      this.setColor(data.color);
+    const color = (data != null && typeof data === "object" && "color" in data && typeof data.color === "string") ? data.color : undefined;
+    if (color !== undefined) {
+      this.setColor(color);
     }
 
-    if (data?.width !== undefined || data?.height !== undefined) {
-      this.setDimensions(
-        data?.width ?? this.width,
-        data?.height ?? this.height,
-      );
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining/nullish coalescing
+    // Pattern match: data.width ∈ number | undefined → boolean (check if defined)
+    const dataValue = (properties.data !== null && typeof properties.data === "object") ? properties.data as Partial<SolidData> : undefined;
+    const dataWidth = (dataValue !== undefined && typeof dataValue === "object" && dataValue !== null && "width" in dataValue && typeof dataValue.width === "number" && Number.isFinite(dataValue.width)) ? dataValue.width : undefined;
+    const dataHeight = (dataValue !== undefined && typeof dataValue === "object" && dataValue !== null && "height" in dataValue && typeof dataValue.height === "number" && Number.isFinite(dataValue.height)) ? dataValue.height : undefined;
+    
+    if (dataWidth !== undefined || dataHeight !== undefined) {
+      // Pattern match: data.width ∈ number | undefined → number (fallback to this.width)
+      const widthUpdate = (dataWidth !== undefined) ? dataWidth : this.width;
+      // Pattern match: data.height ∈ number | undefined → number (fallback to this.height)
+      const heightUpdate = (dataHeight !== undefined) ? dataHeight : this.height;
+      this.setDimensions(widthUpdate, heightUpdate);
     }
 
     // Shadow catcher specific properties
-    if (data?.shadowOpacity !== undefined) {
-      this.setShadowOpacity(data.shadowOpacity);
+    const shadowOpacity = (data != null && typeof data === "object" && "shadowOpacity" in data && typeof data.shadowOpacity === "number") ? data.shadowOpacity : undefined;
+    if (shadowOpacity !== undefined) {
+      this.setShadowOpacity(shadowOpacity);
     }
 
-    if (data?.shadowColor !== undefined) {
-      this.setShadowColor(data.shadowColor);
+    const shadowColor = (data != null && typeof data === "object" && "shadowColor" in data && typeof data.shadowColor === "string") ? data.shadowColor : undefined;
+    if (shadowColor !== undefined) {
+      this.setShadowColor(shadowColor);
     }
 
     // Update animated color property
-    if (data?.animatedColor !== undefined) {
-      this.animatedColor = data.animatedColor;
+    const animatedColor = (data != null && typeof data === "object" && "animatedColor" in data && data.animatedColor != null && typeof data.animatedColor === "object") ? data.animatedColor : undefined;
+    if (animatedColor !== undefined) {
+      this.animatedColor = animatedColor;
     }
     // Note: labelColor is for timeline organization only, not visual fill color
   }

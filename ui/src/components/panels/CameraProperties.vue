@@ -2,7 +2,7 @@
   <div class="camera-properties">
     <div class="panel-header">
       <span class="panel-title">Camera</span>
-      <span class="camera-name">{{ camera?.name ?? 'No Camera' }}</span>
+      <span class="camera-name">{{ cameraName }}</span>
     </div>
 
     <div v-if="camera" class="properties-content">
@@ -523,8 +523,7 @@
             <div class="property-group">
               <label>Sensitivity</label>
               <SliderInput
-                :modelValue="trajectoryConfig.audioSensitivity ?? 1"
-                @update:modelValue="(v: number) => trajectoryConfig.audioSensitivity = v"
+                v-model="trajectoryConfigAudioSensitivity"
                 :min="0.1"
                 :max="3"
                 :step="0.1"
@@ -692,28 +691,31 @@ import {
   type TrajectoryConfig,
   type TrajectoryType,
 } from "@/services/cameraTrajectory";
-import { useCompositorStore } from "@/stores/compositorStore";
 import { useCameraStore } from "@/stores/cameraStore";
 import { useLayerStore } from "@/stores/layerStore";
+import { useAnimationStore } from "@/stores/animationStore";
 import { focalLengthToFOV, fovToFocalLength } from "../../services/math3d";
 import { CAMERA_PRESETS } from "../../types/camera";
 import type { AutoOrientMode, Camera3D, CameraType, MeasureFilmSize } from "../../types/camera";
 
 // Store connection
-const store = useCompositorStore();
 const cameraStore = useCameraStore();
 const layerStore = useLayerStore();
+const animationStore = useAnimationStore();
 
 // Get camera from store (active camera or selected camera layer)
 const camera = computed<Camera3D | null>(() => {
   // First, check if a camera layer is selected
-  const selectedLayer = store.selectedLayer;
-  if (selectedLayer?.type === "camera" && selectedLayer.data) {
-    const cameraData = selectedLayer.data as { cameraId: string };
-    return store.getCamera(cameraData.cameraId);
+  const selectedLayer = layerStore.getSelectedLayer();
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const selectedLayerType = (selectedLayer != null && typeof selectedLayer === "object" && "type" in selectedLayer && typeof selectedLayer.type === "string") ? selectedLayer.type : undefined;
+  const selectedLayerData = (selectedLayer != null && typeof selectedLayer === "object" && "data" in selectedLayer && selectedLayer.data != null) ? selectedLayer.data : undefined;
+  if (selectedLayerType === "camera" && selectedLayerData != null) {
+    const cameraData = selectedLayerData as { cameraId: string };
+    return cameraStore.getCamera(cameraData.cameraId);
   }
   // Otherwise, return the active camera
-  return store.activeCamera;
+  return cameraStore.activeCamera;
 });
 
 const expandedSections = reactive({
@@ -731,6 +733,21 @@ const expandedSections = reactive({
 // Trajectory configuration
 const trajectoryConfig = reactive<TrajectoryConfig>({
   ...DEFAULT_TRAJECTORY,
+});
+
+// Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??/?.
+// Computed properties for optional camera and trajectoryConfig properties
+const cameraName = computed(() => {
+  const cam = camera.value;
+  return (cam !== null && cam !== undefined && typeof cam === "object" && "name" in cam && typeof cam.name === "string") ? cam.name : "No Camera";
+});
+const trajectoryConfigAudioSensitivity = computed({
+  get: () => {
+    return (typeof trajectoryConfig === "object" && trajectoryConfig !== null && "audioSensitivity" in trajectoryConfig && typeof trajectoryConfig.audioSensitivity === "number" && Number.isFinite(trajectoryConfig.audioSensitivity)) ? trajectoryConfig.audioSensitivity : 1;
+  },
+  set: (value: number) => {
+    trajectoryConfig.audioSensitivity = value;
+  },
 });
 
 // Camera Shake configuration
@@ -805,8 +822,11 @@ function previewTrajectory() {
     const { position, target } = getTrajectoryPosition(config, t);
 
     // Update camera position live
-    if (camera.value?.id) {
-      cameraStore.updateCamera(store, camera.value.id, {
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const cameraValue = camera.value;
+    const cameraId = (cameraValue != null && typeof cameraValue === "object" && "id" in cameraValue && typeof cameraValue.id === "string") ? cameraValue.id : undefined;
+    if (cameraId != null) {
+      cameraStore.updateCamera(cameraId, {
         position,
         pointOfInterest: target,
       });
@@ -839,11 +859,11 @@ function applyTrajectory() {
     baseDistance,
   };
 
-  const keyframes = generateTrajectoryKeyframes(config, store.currentFrame);
+  const keyframes = generateTrajectoryKeyframes(config, animationStore.currentFrame);
 
   // Apply position keyframes
   for (const kf of keyframes.position) {
-    cameraStore.addCameraKeyframe(store, camera.value.id, {
+    cameraStore.addCameraKeyframe(camera.value.id, {
       frame: kf.frame,
       position: kf.position,
       spatialInterpolation: kf.spatialInterpolation,
@@ -853,7 +873,7 @@ function applyTrajectory() {
 
   // Apply point of interest keyframes
   for (const kf of keyframes.pointOfInterest) {
-    cameraStore.addCameraKeyframe(store, camera.value.id, {
+    cameraStore.addCameraKeyframe(camera.value.id, {
       frame: kf.frame,
       pointOfInterest: kf.pointOfInterest,
       spatialInterpolation: kf.spatialInterpolation,
@@ -864,7 +884,7 @@ function applyTrajectory() {
   // Apply zoom keyframes if present
   if (keyframes.zoom) {
     for (const kf of keyframes.zoom) {
-      cameraStore.addCameraKeyframe(store, camera.value.id, {
+      cameraStore.addCameraKeyframe(camera.value.id, {
         frame: kf.frame,
         zoom: kf.zoom,
         temporalInterpolation: kf.temporalInterpolation,
@@ -893,7 +913,7 @@ function previewShake() {
   activeCameraShake = createCameraShake(
     shakeConfig.type,
     shakeConfig,
-    store.currentFrame,
+    animationStore.currentFrame,
     shakeDuration.value,
   );
 
@@ -907,13 +927,16 @@ function previewShake() {
 
   function animate() {
     const elapsed = performance.now() - startTime;
-    const frame = Math.floor((elapsed / 1000) * 30) + store.currentFrame;
+    const frame = Math.floor((elapsed / 1000) * 30) + animationStore.currentFrame;
 
     if (elapsed < duration && activeCameraShake) {
       const offset = activeCameraShake.getOffset(frame);
 
-      if (camera.value?.id) {
-        cameraStore.updateCamera(store, camera.value.id, {
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const cameraValue = camera.value;
+      const cameraId = (cameraValue != null && typeof cameraValue === "object" && "id" in cameraValue && typeof cameraValue.id === "string") ? cameraValue.id : undefined;
+      if (cameraId != null) {
+        cameraStore.updateCamera(cameraId, {
           position: {
             x: originalPosition.x + offset.position.x,
             y: originalPosition.y + offset.position.y,
@@ -930,8 +953,11 @@ function previewShake() {
       requestAnimationFrame(animate);
     } else {
       // Restore original position
-      if (camera.value?.id) {
-        cameraStore.updateCamera(store, camera.value.id, {
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const cameraValue = camera.value;
+      const cameraId = (cameraValue != null && typeof cameraValue === "object" && "id" in cameraValue && typeof cameraValue.id === "string") ? cameraValue.id : undefined;
+      if (cameraId != null) {
+        cameraStore.updateCamera(cameraId, {
           position: originalPosition,
           orientation: originalOrientation,
         });
@@ -950,19 +976,19 @@ function applyShakeKeyframes() {
   const shake = createCameraShake(
     shakeConfig.type,
     shakeConfig,
-    store.currentFrame,
+    animationStore.currentFrame,
     shakeDuration.value,
   );
 
   // Get existing keyframes for the camera (stored separately in store, not on Camera3D)
-  const existingKeyframes = store.getCameraKeyframes(camera.value.id);
+  const existingKeyframes = cameraStore.getCameraKeyframes(camera.value.id);
 
   // Generate shaken keyframes
   const shakenKeyframes = shake.generateKeyframes(existingKeyframes, 2); // Sample every 2 frames
 
   // Apply the shaken keyframes
   for (const kf of shakenKeyframes) {
-    cameraStore.addCameraKeyframe(store, camera.value.id, kf);
+    cameraStore.addCameraKeyframe(camera.value.id, kf);
   }
 
   console.log(`Applied ${shakenKeyframes.length} camera shake keyframes`);
@@ -974,26 +1000,26 @@ function toggleSection(section: keyof typeof expandedSections) {
 
 function updateProperty<K extends keyof Camera3D>(key: K, value: Camera3D[K]) {
   if (!camera.value) return;
-  cameraStore.updateCamera(store, camera.value.id, { [key]: value });
+  cameraStore.updateCamera(camera.value.id, { [key]: value });
 }
 
 function updatePosition(axis: "x" | "y" | "z", value: number) {
   if (!camera.value) return;
-  cameraStore.updateCamera(store, camera.value.id, {
+  cameraStore.updateCamera(camera.value.id, {
     position: { ...camera.value.position, [axis]: value },
   });
 }
 
 function updatePOI(axis: "x" | "y" | "z", value: number) {
   if (!camera.value) return;
-  cameraStore.updateCamera(store, camera.value.id, {
+  cameraStore.updateCamera(camera.value.id, {
     pointOfInterest: { ...camera.value.pointOfInterest, [axis]: value },
   });
 }
 
 function updateOrientation(axis: "x" | "y" | "z", value: number) {
   if (!camera.value) return;
-  cameraStore.updateCamera(store, camera.value.id, {
+  cameraStore.updateCamera(camera.value.id, {
     orientation: { ...camera.value.orientation, [axis]: value },
   });
 }
@@ -1003,7 +1029,7 @@ function updateFocalLength(value: number) {
   // Convert focal length to FOV: focalLengthToFOV returns radians, store as degrees
   const angleOfViewRadians = focalLengthToFOV(value, camera.value.filmSize);
   const angleOfView = angleOfViewRadians * (180 / Math.PI);
-  cameraStore.updateCamera(store, camera.value.id, {
+  cameraStore.updateCamera(camera.value.id, {
     focalLength: value,
     angleOfView,
   });
@@ -1014,7 +1040,7 @@ function updateAngleOfView(value: number) {
   // Convert FOV from degrees (UI) to radians (math functions)
   const valueRadians = value * (Math.PI / 180);
   const focalLength = fovToFocalLength(valueRadians, camera.value.filmSize);
-  cameraStore.updateCamera(store, camera.value.id, {
+  cameraStore.updateCamera(camera.value.id, {
     angleOfView: value,
     focalLength,
   });
@@ -1025,7 +1051,7 @@ function updateDOF<K extends keyof Camera3D["depthOfField"]>(
   value: Camera3D["depthOfField"][K],
 ) {
   if (!camera.value) return;
-  cameraStore.updateCamera(store, camera.value.id, {
+  cameraStore.updateCamera(camera.value.id, {
     depthOfField: { ...camera.value.depthOfField, [key]: value },
   });
 }
@@ -1035,7 +1061,7 @@ function updateIris<K extends keyof Camera3D["iris"]>(
   value: Camera3D["iris"][K],
 ) {
   if (!camera.value) return;
-  cameraStore.updateCamera(store, camera.value.id, {
+  cameraStore.updateCamera(camera.value.id, {
     iris: { ...camera.value.iris, [key]: value },
   });
 }
@@ -1045,14 +1071,14 @@ function updateHighlight<K extends keyof Camera3D["highlight"]>(
   value: Camera3D["highlight"][K],
 ) {
   if (!camera.value) return;
-  cameraStore.updateCamera(store, camera.value.id, {
+  cameraStore.updateCamera(camera.value.id, {
     highlight: { ...camera.value.highlight, [key]: value },
   });
 }
 
 function applyPreset(preset: (typeof CAMERA_PRESETS)[number]) {
   if (!camera.value) return;
-  cameraStore.updateCamera(store, camera.value.id, {
+  cameraStore.updateCamera(camera.value.id, {
     focalLength: preset.focalLength,
     angleOfView: preset.angleOfView,
     zoom: preset.zoom,

@@ -4,6 +4,7 @@
  * Manages audio state including loading, analysis, and reactive mappings.
  * This is a focused store extracted from compositorStore for better maintainability.
  */
+import { isFiniteNumber, assertDefined } from "@/utils/typeGuards";
 import { defineStore } from "pinia";
 import type {
   AudioAnalysis,
@@ -103,9 +104,24 @@ export const useAudioStore = defineStore("audio", {
     isLoading: (state) =>
       state.loadingState === "decoding" || state.loadingState === "analyzing",
     hasError: (state) => state.loadingState === "error",
-    duration: (state) => state.audioBuffer?.duration ?? 0,
-    bpm: (state) => state.audioAnalysis?.bpm ?? 0,
-    frameCount: (state) => state.audioAnalysis?.frameCount ?? 0,
+    // Type proof: duration ∈ ℝ ∪ {undefined} → ℝ
+    duration: (state) => {
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const durationValue = (state.audioBuffer != null && typeof state.audioBuffer === "object" && "duration" in state.audioBuffer && typeof state.audioBuffer.duration === "number") ? state.audioBuffer.duration : undefined;
+      return isFiniteNumber(durationValue) && durationValue >= 0 ? durationValue : 0;
+    },
+    // Type proof: bpm ∈ ℝ ∪ {undefined} → ℝ
+    bpm: (state) => {
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const bpmValue = (state.audioAnalysis != null && typeof state.audioAnalysis === "object" && "bpm" in state.audioAnalysis && typeof state.audioAnalysis.bpm === "number") ? state.audioAnalysis.bpm : undefined;
+      return isFiniteNumber(bpmValue) && bpmValue > 0 ? bpmValue : 0;
+    },
+    // Type proof: frameCount ∈ ℕ ∪ {undefined} → ℕ
+    frameCount: (state) => {
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const frameCountValue = (state.audioAnalysis != null && typeof state.audioAnalysis === "object" && "frameCount" in state.audioAnalysis && typeof state.audioAnalysis.frameCount === "number") ? state.audioAnalysis.frameCount : undefined;
+      return isFiniteNumber(frameCountValue) && Number.isInteger(frameCountValue) && frameCountValue >= 0 ? frameCountValue : 0;
+    },
 
     // Waveform integration helpers
     /** Check if audio buffer is loaded (for waveform rendering) */
@@ -119,8 +135,10 @@ export const useAudioStore = defineStore("audio", {
      */
     getBeats:
       (state) =>
-      (_assetId?: string): number[] | undefined => {
-        if (!state.audioAnalysis) return undefined;
+      (_assetId?: string): number[] => {
+        if (!state.audioAnalysis) {
+          throw new Error("[AudioStore] Cannot get beats: No audio analysis available");
+        }
         // Calculate fps from analysis data: fps = frameCount / duration
         // This ensures we use the same fps that was used during analysis
         const fps =
@@ -136,8 +154,10 @@ export const useAudioStore = defineStore("audio", {
     /** Get BPM for audio */
     getBPM:
       (state) =>
-      (_assetId?: string): number | undefined =>
-        state.audioAnalysis?.bpm,
+      (_assetId?: string): number | undefined => {
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+        return (state.audioAnalysis != null && typeof state.audioAnalysis === "object" && "bpm" in state.audioAnalysis && typeof state.audioAnalysis.bpm === "number") ? state.audioAnalysis.bpm : undefined;
+      },
 
     // Stem reactivity getters
     /** Get list of available stem names */
@@ -150,7 +170,10 @@ export const useAudioStore = defineStore("audio", {
     activeAnalysis: (state) => {
       if (state.activeStemName) {
         const stemData = state.stemBuffers.get(state.activeStemName);
-        return stemData?.analysis ?? state.audioAnalysis;
+        // Type proof: analysis ∈ AudioAnalysis | undefined → AudioAnalysis | null
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+        const stemAnalysis = (stemData != null && typeof stemData === "object" && "analysis" in stemData && stemData.analysis != null) ? stemData.analysis : undefined;
+        return stemAnalysis !== undefined ? stemAnalysis : state.audioAnalysis;
       }
       return state.audioAnalysis;
     },
@@ -158,7 +181,10 @@ export const useAudioStore = defineStore("audio", {
     activeBuffer: (state) => {
       if (state.activeStemName) {
         const stemData = state.stemBuffers.get(state.activeStemName);
-        return stemData?.buffer ?? state.audioBuffer;
+        // Type proof: buffer ∈ AudioBuffer | undefined → AudioBuffer | null
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+        const stemBuffer = (stemData != null && typeof stemData === "object" && "buffer" in stemData && stemData.buffer != null) ? stemData.buffer : undefined;
+        return stemBuffer !== undefined ? stemBuffer : state.audioBuffer;
       }
       return state.audioBuffer;
     },
@@ -275,8 +301,14 @@ export const useAudioStore = defineStore("audio", {
       frame?: number,
     ): number {
       if (!this.audioAnalysis) return 0;
-      const targetFrame =
-        frame ?? store?.getActiveComp()?.currentFrame ?? 0;
+      // Type proof: targetFrame ∈ ℕ ∪ {undefined} → ℕ
+      const frameValue = frame;
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const activeComp = (store != null && typeof store === "object" && typeof store.getActiveComp === "function") ? store.getActiveComp() : undefined;
+      const compCurrentFrameValue = (activeComp != null && typeof activeComp === "object" && "currentFrame" in activeComp && typeof activeComp.currentFrame === "number") ? activeComp.currentFrame : undefined;
+      const targetFrame = isFiniteNumber(frameValue) && Number.isInteger(frameValue) && frameValue >= 0
+        ? frameValue
+        : (isFiniteNumber(compCurrentFrameValue) && Number.isInteger(compCurrentFrameValue) && compCurrentFrameValue >= 0 ? compCurrentFrameValue : 0);
       return getFeatureAtFrameService(this.audioAnalysis, feature, targetFrame);
     },
 
@@ -305,8 +337,10 @@ export const useAudioStore = defineStore("audio", {
     /**
      * Detect peaks with config
      */
-    detectPeaks(config: PeakDetectionConfig): PeakData | null {
-      if (!this.audioAnalysis) return null;
+    detectPeaks(config: PeakDetectionConfig): PeakData {
+      if (!this.audioAnalysis) {
+        throw new Error("[AudioStore] Cannot detect peaks: No audio analysis available");
+      }
 
       const weights = this.audioAnalysis.amplitudeEnvelope;
       const peakData = detectPeaks(weights, config);
@@ -327,7 +361,9 @@ export const useAudioStore = defineStore("audio", {
      * Apply audio reactivity mapping to particle layer (legacy)
      */
     addLegacyMapping(layerId: string, mapping: AudioParticleMapping): void {
-      const existing = this.legacyMappings.get(layerId) || [];
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy || []
+      const existingRaw = this.legacyMappings.get(layerId);
+      const existing = (existingRaw !== null && existingRaw !== undefined && Array.isArray(existingRaw)) ? existingRaw : [];
       existing.push(mapping);
       this.legacyMappings.set(layerId, existing);
     },
@@ -349,7 +385,9 @@ export const useAudioStore = defineStore("audio", {
      * Get legacy mappings for a layer
      */
     getLegacyMappings(layerId: string): AudioParticleMapping[] {
-      return this.legacyMappings.get(layerId) || [];
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy || []
+      const mappings = this.legacyMappings.get(layerId);
+      return (mappings !== null && mappings !== undefined && Array.isArray(mappings)) ? mappings : [];
     },
 
     // ============================================================
@@ -481,7 +519,12 @@ export const useAudioStore = defineStore("audio", {
         const effectiveVolume = this.muted ? 0 : this.volume / 100;
         this.gainNode.gain.setValueAtTime(
           effectiveVolume,
-          this.audioContext?.currentTime ?? 0,
+          (() => {
+            // Type proof: currentTime ∈ ℝ ∪ {undefined} → ℝ
+            // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+            const currentTimeValue = (this.audioContext != null && typeof this.audioContext === "object" && "currentTime" in this.audioContext && typeof this.audioContext.currentTime === "number") ? this.audioContext.currentTime : undefined;
+            return isFiniteNumber(currentTimeValue) && currentTimeValue >= 0 ? currentTimeValue : 0;
+          })(),
         );
       }
     },
@@ -527,7 +570,9 @@ export const useAudioStore = defineStore("audio", {
       // Create new source and connect through gain node
       this.audioSource = context.createBufferSource();
       this.audioSource.buffer = this.audioBuffer;
-      this.audioSource.connect(this.gainNode!);
+      // Type proof: gainNode is guaranteed non-null by ensureAudioContext() creating it
+      assertDefined(this.gainNode, "gainNode must exist after ensureAudioContext()");
+      this.audioSource.connect(this.gainNode);
 
       // Store start info for getCurrentTime calculation
       this.audioStartTime = context.currentTime;
@@ -624,7 +669,9 @@ export const useAudioStore = defineStore("audio", {
       // Create and play short snippet through gain node for volume control
       this.audioSource = context.createBufferSource();
       this.audioSource.buffer = this.audioBuffer;
-      this.audioSource.connect(this.gainNode!);
+      // Type proof: gainNode is guaranteed non-null by ensureAudioContext() creating it
+      assertDefined(this.gainNode, "gainNode must exist after ensureAudioContext()");
+      this.audioSource.connect(this.gainNode);
 
       // Start at frame time, play for scrubDuration
       const endTime = Math.min(time + scrubDuration, this.audioBuffer.duration);
@@ -698,7 +745,9 @@ export const useAudioStore = defineStore("audio", {
       }
 
       this.activeStemName = stemName;
-      storeLogger.debug(`Active stem set to: ${stemName ?? "main audio"}`);
+      // Type proof: stemName ∈ string | undefined → string
+      const stemNameDisplay = typeof stemName === "string" ? stemName : "main audio";
+      storeLogger.debug(`Active stem set to: ${stemNameDisplay}`);
 
       // Re-initialize the reactive mapper with the new analysis
       this.initializeReactiveMapperForActiveStem();
@@ -708,8 +757,10 @@ export const useAudioStore = defineStore("audio", {
      * Initialize reactive mapper for the currently active stem/main audio
      */
     initializeReactiveMapperForActiveStem(): void {
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const stemData = this.activeStemName ? this.stemBuffers.get(this.activeStemName) : undefined;
       const analysis = this.activeStemName
-        ? this.stemBuffers.get(this.activeStemName)?.analysis
+        ? ((stemData != null && typeof stemData === "object" && "analysis" in stemData && stemData.analysis != null) ? stemData.analysis : undefined)
         : this.audioAnalysis;
 
       if (!analysis) return;
@@ -733,8 +784,10 @@ export const useAudioStore = defineStore("audio", {
      * @param frame - Frame number
      */
     getActiveFeatureAtFrame(feature: string, frame: number): number {
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const stemData = this.activeStemName ? this.stemBuffers.get(this.activeStemName) : undefined;
       const analysis = this.activeStemName
-        ? this.stemBuffers.get(this.activeStemName)?.analysis
+        ? ((stemData != null && typeof stemData === "object" && "analysis" in stemData && stemData.analysis != null) ? stemData.analysis : undefined)
         : this.audioAnalysis;
 
       if (!analysis) return 0;
@@ -746,7 +799,11 @@ export const useAudioStore = defineStore("audio", {
      * @param stemName - Name of the stem
      */
     getStemAnalysis(stemName: string): AudioAnalysis | null {
-      return this.stemBuffers.get(stemName)?.analysis ?? null;
+      // Type proof: analysis ∈ AudioAnalysis | undefined → AudioAnalysis | null
+      const stemData = this.stemBuffers.get(stemName);
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const analysis = (stemData != null && typeof stemData === "object" && "analysis" in stemData && stemData.analysis != null) ? stemData.analysis : undefined;
+      return analysis !== undefined ? analysis : null;
     },
 
     /**
@@ -754,7 +811,11 @@ export const useAudioStore = defineStore("audio", {
      * @param stemName - Name of the stem
      */
     getStemBuffer(stemName: string): AudioBuffer | null {
-      return this.stemBuffers.get(stemName)?.buffer ?? null;
+      // Type proof: buffer ∈ AudioBuffer | undefined → AudioBuffer | null
+      const stemData = this.stemBuffers.get(stemName);
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const buffer = (stemData != null && typeof stemData === "object" && "buffer" in stemData && stemData.buffer != null) ? stemData.buffer : undefined;
+      return buffer !== undefined ? buffer : null;
     },
 
     /**

@@ -22,6 +22,7 @@ import * as THREE from "three";
 import { Line2 } from "three/examples/jsm/lines/Line2.js";
 import { LineGeometry } from "three/examples/jsm/lines/LineGeometry.js";
 import { LineMaterial } from "three/examples/jsm/lines/LineMaterial.js";
+import { isFiniteNumber, isNonEmptyString } from "@/utils/typeGuards";
 import { interpolateProperty } from "@/services/interpolation";
 import { meshWarpDeformation } from "@/services/meshWarpDeformation";
 import {
@@ -50,7 +51,7 @@ import type {
   EvaluatedControlPoint,
   Layer,
   SplineData,
-  SplinePathEffect,
+  SplinePathEffectInstance,
 } from "@/types/project";
 import type { BezierPath, BezierVertex, Point2D } from "@/types/shapes";
 import { BaseLayer } from "./BaseLayer";
@@ -96,7 +97,7 @@ export class SplineLayer extends BaseLayer {
   private trimOffsetProp?: number | AnimatableProperty<number>;
 
   /** Path effects to apply */
-  private pathEffects?: SplinePathEffect[];
+  private pathEffects?: SplinePathEffectInstance[];
 
   /** LOD levels for this spline */
   private lodLevels: LODLevel[] = [];
@@ -140,10 +141,11 @@ export class SplineLayer extends BaseLayer {
 
     // Extract trim properties
     const data = layerData.data as SplineData | null;
-    this.trimStartProp = data?.trimStart;
-    this.trimEndProp = data?.trimEnd;
-    this.trimOffsetProp = data?.trimOffset;
-    this.pathEffects = data?.pathEffects;
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    this.trimStartProp = (data != null && typeof data === "object" && "trimStart" in data && typeof data.trimStart === "number") ? data.trimStart : undefined;
+    this.trimEndProp = (data != null && typeof data === "object" && "trimEnd" in data && typeof data.trimEnd === "number") ? data.trimEnd : undefined;
+    this.trimOffsetProp = (data != null && typeof data === "object" && "trimOffset" in data && typeof data.trimOffset === "number") ? data.trimOffset : undefined;
+    this.pathEffects = (data != null && typeof data === "object" && "pathEffects" in data && Array.isArray(data.pathEffects)) ? data.pathEffects : undefined;
 
     // Initialize LOD if enabled and path is complex enough
     this.initializeLOD(data);
@@ -164,13 +166,33 @@ export class SplineLayer extends BaseLayer {
   private extractSplineData(layerData: Layer): SplineData {
     const data = layerData.data as SplineData | null;
 
+    // Type proofs: all properties with explicit checks
+    const controlPoints = data !== null && typeof data === "object" && "controlPoints" in data && Array.isArray(data.controlPoints)
+      ? data.controlPoints
+      : [];
+    const closed = data !== null && typeof data === "object" && "closed" in data && typeof data.closed === "boolean"
+      ? data.closed
+      : false;
+    const stroke = data !== null && typeof data === "object" && "stroke" in data && isNonEmptyString(data.stroke)
+      ? data.stroke
+      : "#00ff00";
+    const strokeWidth = data !== null && typeof data === "object" && "strokeWidth" in data && isFiniteNumber(data.strokeWidth) && data.strokeWidth > 0
+      ? data.strokeWidth
+      : 2;
+    const fill = data !== null && typeof data === "object" && "fill" in data && typeof data.fill === "string"
+      ? data.fill
+      : "";
+    const pathData = data !== null && typeof data === "object" && "pathData" in data && typeof data.pathData === "string"
+      ? data.pathData
+      : "";
+
     return {
-      controlPoints: data?.controlPoints ?? [],
-      closed: data?.closed ?? false,
-      stroke: data?.stroke ?? "#00ff00",
-      strokeWidth: data?.strokeWidth ?? 2,
-      fill: data?.fill ?? "",
-      pathData: data?.pathData ?? "",
+      controlPoints,
+      closed,
+      stroke,
+      strokeWidth,
+      fill,
+      pathData,
     };
   }
 
@@ -187,12 +209,15 @@ export class SplineLayer extends BaseLayer {
     // Auto-enable LOD for complex paths (>100 points)
     const shouldAutoEnable = points.length > 100;
 
-    if (lodSettings?.enabled || shouldAutoEnable) {
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const lodEnabled = (lodSettings != null && typeof lodSettings === "object" && "enabled" in lodSettings && typeof lodSettings.enabled === "boolean" && lodSettings.enabled) ? true : false;
+    if (lodEnabled || shouldAutoEnable) {
       this.lodEnabled = true;
 
       // Use pre-generated levels if available, otherwise generate them
-      if (lodSettings?.levels && lodSettings.levels.length > 0) {
-        this.lodLevels = lodSettings.levels.map((level) => ({
+      const lodLevels = (lodSettings != null && typeof lodSettings === "object" && "levels" in lodSettings && Array.isArray(lodSettings.levels) && lodSettings.levels.length > 0) ? lodSettings.levels : undefined;
+      if (lodLevels != null) {
+        this.lodLevels = lodLevels.map((level) => ({
           tolerance: level.tolerance,
           controlPoints: level.controlPoints,
           pointCount: level.controlPoints.length,
@@ -204,7 +229,10 @@ export class SplineLayer extends BaseLayer {
         });
       } else {
         // Generate LOD levels on-the-fly
-        const tolerance = lodSettings?.simplificationTolerance ?? 2.0;
+        // Type proof: simplificationTolerance ∈ number | undefined → number
+        const tolerance = lodSettings !== undefined && typeof lodSettings === "object" && lodSettings !== null && "simplificationTolerance" in lodSettings && isFiniteNumber(lodSettings.simplificationTolerance) && lodSettings.simplificationTolerance >= 0
+          ? lodSettings.simplificationTolerance
+          : 2.0;
         this.lodLevels = vectorLOD.generateLODLevels(
           this.layerData.id,
           points,
@@ -227,7 +255,14 @@ export class SplineLayer extends BaseLayer {
    */
   private initializeWarp(data: SplineData | null): void {
     // Support both new 'warpPins' and deprecated 'puppetPins' property names
-    const pins = data?.warpPins ?? data?.puppetPins;
+    // Type proof: pins ∈ WarpPin[] | undefined
+    const warpPins = data !== null && typeof data === "object" && "warpPins" in data && Array.isArray(data.warpPins)
+      ? data.warpPins
+      : undefined;
+    const puppetPins = data !== null && typeof data === "object" && "puppetPins" in data && Array.isArray(data.puppetPins)
+      ? data.puppetPins
+      : undefined;
+    const pins = warpPins !== undefined ? warpPins : puppetPins;
     if (!data || !pins || pins.length === 0) {
       return;
     }
@@ -441,23 +476,32 @@ export class SplineLayer extends BaseLayer {
       const p1 = points[i + 1];
 
       // Use depth for Z position (depth map sampled value)
-      const z0 = p0.depth ?? 0;
-      const z1 = p1.depth ?? 0;
+      // Type proof: depth ∈ ℝ ∪ {undefined} → z ∈ ℝ
+      const z0Value = p0.depth;
+      const z0 = isFiniteNumber(z0Value) ? z0Value : 0;
+      const z1Value = p1.depth;
+      const z1 = isFiniteNumber(z1Value) ? z1Value : 0;
 
       // Create bezier curve segment
       // Handles are stored as ABSOLUTE positions, not relative offsets
+      // Type proof: handleOut.x ∈ number | undefined → number
+      const handleOutX0Build = p0.handleOut !== null && typeof p0.handleOut === "object" && "x" in p0.handleOut && isFiniteNumber(p0.handleOut.x)
+        ? p0.handleOut.x
+        : p0.x;
+      const handleOutY0Build = p0.handleOut !== null && typeof p0.handleOut === "object" && "y" in p0.handleOut && isFiniteNumber(p0.handleOut.y)
+        ? p0.handleOut.y
+        : p0.y;
+      // Type proof: handleIn.x ∈ number | undefined → number
+      const handleInX1Build = p1.handleIn !== null && typeof p1.handleIn === "object" && "x" in p1.handleIn && isFiniteNumber(p1.handleIn.x)
+        ? p1.handleIn.x
+        : p1.x;
+      const handleInY1Build = p1.handleIn !== null && typeof p1.handleIn === "object" && "y" in p1.handleIn && isFiniteNumber(p1.handleIn.y)
+        ? p1.handleIn.y
+        : p1.y;
       const bezier = new THREE.CubicBezierCurve3(
         new THREE.Vector3(p0.x, -p0.y, z0),
-        new THREE.Vector3(
-          p0.handleOut?.x ?? p0.x,
-          -(p0.handleOut?.y ?? p0.y),
-          z0,
-        ),
-        new THREE.Vector3(
-          p1.handleIn?.x ?? p1.x,
-          -(p1.handleIn?.y ?? p1.y),
-          z1,
-        ),
+        new THREE.Vector3(handleOutX0Build, -handleOutY0Build, z0),
+        new THREE.Vector3(handleInX1Build, -handleInY1Build, z1),
         new THREE.Vector3(p1.x, -p1.y, z1),
       );
 
@@ -469,22 +513,31 @@ export class SplineLayer extends BaseLayer {
       const lastPoint = points[points.length - 1];
       const firstPoint = points[0];
 
-      const zLast = lastPoint.depth ?? 0;
-      const zFirst = firstPoint.depth ?? 0;
+      // Type proof: depth ∈ ℝ ∪ {undefined} → z ∈ ℝ
+      const zLastValue = lastPoint.depth;
+      const zLast = isFiniteNumber(zLastValue) ? zLastValue : 0;
+      const zFirstValue = firstPoint.depth;
+      const zFirst = isFiniteNumber(zFirstValue) ? zFirstValue : 0;
 
       // Closing bezier also uses absolute handle positions
+      // Type proof: handleOut.x ∈ number | undefined → number
+      const lastHandleOutX = lastPoint.handleOut !== null && typeof lastPoint.handleOut === "object" && "x" in lastPoint.handleOut && isFiniteNumber(lastPoint.handleOut.x)
+        ? lastPoint.handleOut.x
+        : lastPoint.x;
+      const lastHandleOutY = lastPoint.handleOut !== null && typeof lastPoint.handleOut === "object" && "y" in lastPoint.handleOut && isFiniteNumber(lastPoint.handleOut.y)
+        ? lastPoint.handleOut.y
+        : lastPoint.y;
+      // Type proof: handleIn.x ∈ number | undefined → number
+      const firstHandleInX = firstPoint.handleIn !== null && typeof firstPoint.handleIn === "object" && "x" in firstPoint.handleIn && isFiniteNumber(firstPoint.handleIn.x)
+        ? firstPoint.handleIn.x
+        : firstPoint.x;
+      const firstHandleInY = firstPoint.handleIn !== null && typeof firstPoint.handleIn === "object" && "y" in firstPoint.handleIn && isFiniteNumber(firstPoint.handleIn.y)
+        ? firstPoint.handleIn.y
+        : firstPoint.y;
       const closingBezier = new THREE.CubicBezierCurve3(
         new THREE.Vector3(lastPoint.x, -lastPoint.y, zLast),
-        new THREE.Vector3(
-          lastPoint.handleOut?.x ?? lastPoint.x,
-          -(lastPoint.handleOut?.y ?? lastPoint.y),
-          zLast,
-        ),
-        new THREE.Vector3(
-          firstPoint.handleIn?.x ?? firstPoint.x,
-          -(firstPoint.handleIn?.y ?? firstPoint.y),
-          zFirst,
-        ),
+        new THREE.Vector3(lastHandleOutX, -lastHandleOutY, zLast),
+        new THREE.Vector3(firstHandleInX, -firstHandleInY, zFirst),
         new THREE.Vector3(firstPoint.x, -firstPoint.y, zFirst),
       );
 
@@ -583,9 +636,24 @@ export class SplineLayer extends BaseLayer {
 
   /**
    * Get a point on the path at parameter t (0-1)
+   * 
+   * System F/Omega proof: Explicit validation of curve initialization
+   * Type proof: t ∈ number → THREE.Vector3 (non-nullable)
+   * Mathematical proof: Curve must be initialized to calculate point at parameter t
+   * Geometric proof: Point calculation requires valid curve geometry
    */
-  getPointAt(t: number): THREE.Vector3 | null {
-    if (!this.curve) return null;
+  getPointAt(t: number): THREE.Vector3 {
+    // System F/Omega proof: Explicit validation of curve existence
+    // Type proof: curve ∈ THREE.Curve<THREE.Vector3> | null
+    // Mathematical proof: Curve must be initialized before calculating points
+    if (!this.curve) {
+      throw new Error(
+        `[SplineLayer] Cannot get point at parameter: Curve not initialized. ` +
+        `Layer ID: ${this.id}, parameter t: ${t}. ` +
+        `Spline layer must have a valid curve before calculating points. ` +
+        `Wrap in try/catch if "curve not ready" is an expected state.`
+      );
+    }
     // Validate t (NaN bypasses Math.max/min clamp)
     const validT = Number.isFinite(t) ? Math.max(0, Math.min(1, t)) : 0;
     return this.curve.getPointAt(validT);
@@ -593,9 +661,24 @@ export class SplineLayer extends BaseLayer {
 
   /**
    * Get the tangent at parameter t (0-1)
+   * 
+   * System F/Omega proof: Explicit validation of curve initialization
+   * Type proof: t ∈ number → THREE.Vector3 (non-nullable)
+   * Mathematical proof: Curve must be initialized to calculate tangent at parameter t
+   * Geometric proof: Tangent calculation requires valid curve geometry
    */
-  getTangentAt(t: number): THREE.Vector3 | null {
-    if (!this.curve) return null;
+  getTangentAt(t: number): THREE.Vector3 {
+    // System F/Omega proof: Explicit validation of curve existence
+    // Type proof: curve ∈ THREE.Curve<THREE.Vector3> | null
+    // Mathematical proof: Curve must be initialized before calculating tangents
+    if (!this.curve) {
+      throw new Error(
+        `[SplineLayer] Cannot get tangent at parameter: Curve not initialized. ` +
+        `Layer ID: ${this.id}, parameter t: ${t}. ` +
+        `Spline layer must have a valid curve before calculating tangents. ` +
+        `Wrap in try/catch if "curve not ready" is an expected state.`
+      );
+    }
     // Validate t (NaN bypasses Math.max/min clamp)
     const validT = Number.isFinite(t) ? Math.max(0, Math.min(1, t)) : 0;
     return this.curve.getTangentAt(validT);
@@ -611,14 +694,18 @@ export class SplineLayer extends BaseLayer {
 
   /**
    * Get point and rotation for placing objects along path
+   * 
+   * System F/Omega proof: Explicit validation of point and tangent calculation
+   * Type proof: t ∈ number → { position: THREE.Vector3; rotation: number } (non-nullable)
+   * Mathematical proof: Point and tangent must be calculated successfully to determine transform
+   * Geometric proof: Transform calculation requires valid point and tangent vectors
    */
   getTransformAt(
     t: number,
-  ): { position: THREE.Vector3; rotation: number } | null {
+  ): { position: THREE.Vector3; rotation: number } {
+    // System F/Omega pattern: getPointAt and getTangentAt now throw explicit errors
     const point = this.getPointAt(t);
     const tangent = this.getTangentAt(t);
-
-    if (!point || !tangent) return null;
 
     // Calculate rotation from tangent
     const rotation = Math.atan2(tangent.y, tangent.x) * (180 / Math.PI);
@@ -863,7 +950,7 @@ export class SplineLayer extends BaseLayer {
    * Set path effects
    * @param effects - Array of path effects to apply
    */
-  setPathEffects(effects: SplinePathEffect[]): void {
+  setPathEffects(effects: SplinePathEffectInstance[]): void {
     this.pathEffects = effects;
     this.lastPointsHash = ""; // Force rebuild
   }
@@ -871,7 +958,7 @@ export class SplineLayer extends BaseLayer {
   /**
    * Get current path effects
    */
-  getPathEffects(): SplinePathEffect[] | undefined {
+  getPathEffects(): SplinePathEffectInstance[] | undefined {
     return this.pathEffects;
   }
 
@@ -965,7 +1052,11 @@ export class SplineLayer extends BaseLayer {
         id: cp.id,
         x: this.getDrivenControlPointValue(index, "x", cp.x),
         y: this.getDrivenControlPointValue(index, "y", cp.y),
-        depth: this.getDrivenControlPointValue(index, "depth", cp.depth ?? 0),
+        // Type proof: depth ∈ ℝ ∪ {undefined} → z ∈ ℝ
+        depth: this.getDrivenControlPointValue(index, "depth", (() => {
+          const depthValue = cp.depth;
+          return isFiniteNumber(depthValue) ? depthValue : 0;
+        })()),
         handleIn: cp.handleIn,
         handleOut: cp.handleOut,
         type: cp.type,
@@ -1059,7 +1150,11 @@ export class SplineLayer extends BaseLayer {
    * Check if any path effects are enabled
    */
   private hasActivePathEffects(): boolean {
-    return this.pathEffects?.some((e) => e.enabled) ?? false;
+    // Type proof: pathEffects ∈ SplinePathEffectInstance[] | undefined → boolean
+    if (this.pathEffects === undefined || !Array.isArray(this.pathEffects)) {
+      return false;
+    }
+    return this.pathEffects.some((e) => e.enabled === true);
   }
 
   /**
@@ -1314,18 +1409,24 @@ export class SplineLayer extends BaseLayer {
 
       // Create bezier curve segment
       // Handles are stored as ABSOLUTE positions, not relative offsets
+      // Type proof: handleOut.x ∈ number | undefined → number
+      const handleOutX0EvalPoints = p0.handleOut !== null && typeof p0.handleOut === "object" && "x" in p0.handleOut && isFiniteNumber(p0.handleOut.x)
+        ? p0.handleOut.x
+        : p0.x;
+      const handleOutY0EvalPoints = p0.handleOut !== null && typeof p0.handleOut === "object" && "y" in p0.handleOut && isFiniteNumber(p0.handleOut.y)
+        ? p0.handleOut.y
+        : p0.y;
+      // Type proof: handleIn.x ∈ number | undefined → number
+      const handleInX1EvalPoints = p1.handleIn !== null && typeof p1.handleIn === "object" && "x" in p1.handleIn && isFiniteNumber(p1.handleIn.x)
+        ? p1.handleIn.x
+        : p1.x;
+      const handleInY1EvalPoints = p1.handleIn !== null && typeof p1.handleIn === "object" && "y" in p1.handleIn && isFiniteNumber(p1.handleIn.y)
+        ? p1.handleIn.y
+        : p1.y;
       const bezier = new THREE.CubicBezierCurve3(
         new THREE.Vector3(p0.x, -p0.y, z0),
-        new THREE.Vector3(
-          p0.handleOut?.x ?? p0.x,
-          -(p0.handleOut?.y ?? p0.y),
-          z0,
-        ),
-        new THREE.Vector3(
-          p1.handleIn?.x ?? p1.x,
-          -(p1.handleIn?.y ?? p1.y),
-          z1,
-        ),
+        new THREE.Vector3(handleOutX0EvalPoints, -handleOutY0EvalPoints, z0),
+        new THREE.Vector3(handleInX1EvalPoints, -handleInY1EvalPoints, z1),
         new THREE.Vector3(p1.x, -p1.y, z1),
       );
 
@@ -1341,18 +1442,24 @@ export class SplineLayer extends BaseLayer {
       const zFirst = firstPoint.depth;
 
       // Closing bezier also uses absolute handle positions
+      // Type proof: handleOut.x ∈ number | undefined → number
+      const lastHandleOutXEvalPoints = lastPoint.handleOut !== null && typeof lastPoint.handleOut === "object" && "x" in lastPoint.handleOut && isFiniteNumber(lastPoint.handleOut.x)
+        ? lastPoint.handleOut.x
+        : lastPoint.x;
+      const lastHandleOutYEvalPoints = lastPoint.handleOut !== null && typeof lastPoint.handleOut === "object" && "y" in lastPoint.handleOut && isFiniteNumber(lastPoint.handleOut.y)
+        ? lastPoint.handleOut.y
+        : lastPoint.y;
+      // Type proof: handleIn.x ∈ number | undefined → number
+      const firstHandleInXEvalPoints = firstPoint.handleIn !== null && typeof firstPoint.handleIn === "object" && "x" in firstPoint.handleIn && isFiniteNumber(firstPoint.handleIn.x)
+        ? firstPoint.handleIn.x
+        : firstPoint.x;
+      const firstHandleInYEvalPoints = firstPoint.handleIn !== null && typeof firstPoint.handleIn === "object" && "y" in firstPoint.handleIn && isFiniteNumber(firstPoint.handleIn.y)
+        ? firstPoint.handleIn.y
+        : firstPoint.y;
       const closingBezier = new THREE.CubicBezierCurve3(
         new THREE.Vector3(lastPoint.x, -lastPoint.y, zLast),
-        new THREE.Vector3(
-          lastPoint.handleOut?.x ?? lastPoint.x,
-          -(lastPoint.handleOut?.y ?? lastPoint.y),
-          zLast,
-        ),
-        new THREE.Vector3(
-          firstPoint.handleIn?.x ?? firstPoint.x,
-          -(firstPoint.handleIn?.y ?? firstPoint.y),
-          zFirst,
-        ),
+        new THREE.Vector3(lastHandleOutXEvalPoints, -lastHandleOutYEvalPoints, zLast),
+        new THREE.Vector3(firstHandleInXEvalPoints, -firstHandleInYEvalPoints, zFirst),
         new THREE.Vector3(firstPoint.x, -firstPoint.y, zFirst),
       );
 
@@ -1472,7 +1579,11 @@ export class SplineLayer extends BaseLayer {
           id: cp.id,
           x: cp.x,
           y: cp.y,
-          depth: cp.depth ?? 0,
+          // Type proof: depth ∈ ℝ ∪ {undefined} → z ∈ ℝ
+          depth: (() => {
+            const depthValue = cp.depth;
+            return isFiniteNumber(depthValue) ? depthValue : 0;
+          })(),
           handleIn: cp.handleIn,
           handleOut: cp.handleOut,
           type: cp.type,
@@ -1511,16 +1622,30 @@ export class SplineLayer extends BaseLayer {
         if (lodLevel && lodLevel.pointCount < finalPoints.length) {
           // Use simplified points from LOD level
           // Map LOD points to evaluated format with all required fields
-          finalPoints = lodLevel.controlPoints.map((cp, _i) => ({
-            id: cp.id,
-            x: cp.x,
-            y: cp.y,
-            handleIn: cp.handleIn ?? { x: cp.x, y: cp.y },
-            handleOut: cp.handleOut ?? { x: cp.x, y: cp.y },
-            depth: cp.depth ?? 0,
+          finalPoints = lodLevel.controlPoints.map((cp, _i) => {
+            // Type proof: handleIn ∈ { x: number; y: number } | null | undefined → { x: number; y: number }
+            const handleIn = cp.handleIn !== null && cp.handleIn !== undefined && typeof cp.handleIn === "object" && "x" in cp.handleIn && "y" in cp.handleIn && isFiniteNumber(cp.handleIn.x) && isFiniteNumber(cp.handleIn.y)
+              ? cp.handleIn
+              : { x: cp.x, y: cp.y };
+            // Type proof: handleOut ∈ { x: number; y: number } | null | undefined → { x: number; y: number }
+            const handleOut = cp.handleOut !== null && cp.handleOut !== undefined && typeof cp.handleOut === "object" && "x" in cp.handleOut && "y" in cp.handleOut && isFiniteNumber(cp.handleOut.x) && isFiniteNumber(cp.handleOut.y)
+              ? cp.handleOut
+              : { x: cp.x, y: cp.y };
+            return {
+              id: cp.id,
+              x: cp.x,
+              y: cp.y,
+              handleIn,
+              handleOut,
+            // Type proof: depth ∈ ℝ ∪ {undefined} → z ∈ ℝ
+          depth: (() => {
+            const depthValue = cp.depth;
+            return isFiniteNumber(depthValue) ? depthValue : 0;
+          })(),
             type: cp.type,
             group: cp.group,
-          }));
+            };
+          });
         }
       }
 
@@ -1548,10 +1673,15 @@ export class SplineLayer extends BaseLayer {
     }
 
     // Use LOD if frame rate is suffering
-    if (
-      (this.lodContext.currentFPS ?? 60) <
-      (this.lodContext.targetFPS ?? 60) * 0.8
-    ) {
+    // Type proof: currentFPS ∈ number | undefined → number
+    const currentFPS = isFiniteNumber(this.lodContext.currentFPS) && this.lodContext.currentFPS > 0
+      ? this.lodContext.currentFPS
+      : 60;
+    // Type proof: targetFPS ∈ number | undefined → number
+    const targetFPS = isFiniteNumber(this.lodContext.targetFPS) && this.lodContext.targetFPS > 0
+      ? this.lodContext.targetFPS
+      : 60;
+    if (currentFPS < targetFPS * 0.8) {
       return true;
     }
 
@@ -1564,16 +1694,38 @@ export class SplineLayer extends BaseLayer {
     const props = state.properties;
 
     // Apply evaluated control points if present
-    if (props.controlPoints !== undefined) {
-      let points = props.controlPoints as EvaluatedControlPoint[];
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy type assertions
+    // Type guard: Check if controlPoints is an array of EvaluatedControlPoint
+    const controlPointsRaw = props.controlPoints;
+    if (controlPointsRaw != null && Array.isArray(controlPointsRaw) && controlPointsRaw.length > 0) {
+      // Type guard: Verify first element has EvaluatedControlPoint shape
+      const firstPoint = controlPointsRaw[0];
+      if (
+        firstPoint != null &&
+        typeof firstPoint === "object" &&
+        "id" in firstPoint &&
+        "x" in firstPoint &&
+        "y" in firstPoint &&
+        "depth" in firstPoint &&
+        "handleIn" in firstPoint &&
+        "handleOut" in firstPoint &&
+        "type" in firstPoint &&
+        typeof firstPoint.id === "string" &&
+        typeof firstPoint.x === "number" &&
+        typeof firstPoint.y === "number" &&
+        typeof firstPoint.depth === "number"
+      ) {
+        // Type proof: controlPointsRaw is EvaluatedControlPoint[]
+        let points = controlPointsRaw as EvaluatedControlPoint[];
 
-      // Apply audio-reactive modifiers to control point positions
-      points = this.applySplineAudioModifiers(points);
+        // Apply audio-reactive modifiers to control point positions
+        points = this.applySplineAudioModifiers(points);
 
-      const pointsHash = this.computePointsHash(points);
-      if (pointsHash !== this.lastPointsHash) {
-        this.buildSplineFromEvaluatedPoints(points);
-        this.lastPointsHash = pointsHash;
+        const pointsHash = this.computePointsHash(points);
+        if (pointsHash !== this.lastPointsHash) {
+          this.buildSplineFromEvaluatedPoints(points);
+          this.lastPointsHash = pointsHash;
+        }
       }
     } else {
       // Check if audio modifiers need to be applied to current control points
@@ -1650,11 +1802,15 @@ export class SplineLayer extends BaseLayer {
       }
 
       // Apply additive modifiers
+      // Type proof: xMod ∈ number | undefined → number
+      const xModValue = isFiniteNumber(xMod) ? xMod : 0;
+      const yModValue = isFiniteNumber(yMod) ? yMod : 0;
+      const depthModValue = isFiniteNumber(depthMod) ? depthMod : 0;
       return {
         ...point,
-        x: point.x + (xMod ?? 0),
-        y: point.y + (yMod ?? 0),
-        depth: point.depth + (depthMod ?? 0),
+        x: point.x + xModValue,
+        y: point.y + yModValue,
+        depth: point.depth + depthModValue,
       };
     });
   }
@@ -1728,7 +1884,12 @@ export class SplineLayer extends BaseLayer {
       }
 
       // Handle warp pin updates (support both warpPins and deprecated puppetPins)
-      const warpPinsData = data.warpPins ?? data.puppetPins;
+      // Type proof: warpPins ∈ WarpPin[] | undefined
+      const warpPinsData = data.warpPins !== undefined && Array.isArray(data.warpPins)
+        ? data.warpPins
+        : data.puppetPins !== undefined && Array.isArray(data.puppetPins)
+          ? data.puppetPins
+          : undefined;
       if (warpPinsData !== undefined) {
         this.setWarpPins(warpPinsData);
       }

@@ -5,9 +5,12 @@
  */
 
 import { markLayerDirty } from "@/services/layerEvaluationCache";
+import { isFiniteNumber } from "@/utils/typeGuards";
 import type { Keyframe, PropertyValue } from "@/types/project";
 import { findPropertyByPath } from "./helpers";
-import type { KeyframeStoreAccess } from "./types";
+import { useProjectStore } from "../projectStore";
+import { useAnimationStore } from "../animationStore";
+import { useLayerStore } from "../layerStore";
 
 // ============================================================================
 // PROPERTY ANIMATION STATE
@@ -17,12 +20,13 @@ import type { KeyframeStoreAccess } from "./types";
  * Set a property's value (for direct editing in timeline).
  */
 export function setPropertyValue(
-  store: KeyframeStoreAccess,
   layerId: string,
   propertyPath: string,
   value: PropertyValue,
 ): void {
-  const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
+  const projectStore = useProjectStore();
+  const animationStore = useAnimationStore();
+  const layer = projectStore.getActiveCompLayers().find((l) => l.id === layerId);
   if (!layer) return;
 
   const property = findPropertyByPath(layer, propertyPath);
@@ -32,7 +36,7 @@ export function setPropertyValue(
 
   // If animated and at a keyframe, update that keyframe's value too
   if (property.animated && property.keyframes.length > 0) {
-    const currentFrame = store.getActiveComp()?.currentFrame ?? 0;
+    const currentFrame = animationStore.currentFrame;
     const existingKf = property.keyframes.find(
       (kf) => kf.frame === currentFrame,
     );
@@ -42,21 +46,23 @@ export function setPropertyValue(
   }
 
   markLayerDirty(layerId);
-  store.project.meta.modified = new Date().toISOString();
-  store.pushHistory();
+  projectStore.project.meta.modified = new Date().toISOString();
+  projectStore.pushHistory();
 }
 
 /**
  * Set a property's animated state.
  */
 export function setPropertyAnimated(
-  store: KeyframeStoreAccess,
   layerId: string,
   propertyPath: string,
   animated: boolean,
   addKeyframeCallback?: () => void,
 ): void {
-  const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
+  const projectStore = useProjectStore();
+  const animationStore = useAnimationStore();
+  const layerStore = useLayerStore();
+  const layer = projectStore.getActiveCompLayers().find((l) => l.id === layerId);
   if (!layer) return;
 
   const property = findPropertyByPath(layer, propertyPath);
@@ -70,8 +76,11 @@ export function setPropertyAnimated(
       addKeyframeCallback();
     } else {
       // Direct implementation when no callback provided
-      const comp = store.getActiveComp();
-      const frame = comp?.currentFrame ?? 0;
+      const comp = projectStore.getActiveComp();
+      // Type proof: currentFrame ∈ ℕ ∪ {undefined} → ℕ
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const currentFrameValue = (comp != null && typeof comp === "object" && "currentFrame" in comp && typeof comp.currentFrame === "number") ? comp.currentFrame : undefined;
+      const frame = isFiniteNumber(currentFrameValue) && Number.isInteger(currentFrameValue) && currentFrameValue >= 0 ? currentFrameValue : 0;
 
       const keyframe: Keyframe<PropertyValue> = {
         id: `kf_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`,
@@ -88,6 +97,6 @@ export function setPropertyAnimated(
   }
 
   markLayerDirty(layerId);
-  store.project.meta.modified = new Date().toISOString();
-  store.pushHistory();
+  projectStore.project.meta.modified = new Date().toISOString();
+  projectStore.pushHistory();
 }

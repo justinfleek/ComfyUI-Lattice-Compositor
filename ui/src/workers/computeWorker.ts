@@ -24,7 +24,9 @@ export type WorkerMessageType =
   | "IMAGE_THRESHOLD"
   | "COMPUTE_HASH";
 
-export interface WorkerMessage<T = unknown> {
+import type { JSONValue } from "@/types/dataAsset";
+
+export interface WorkerMessage<T extends JSONValue = JSONValue> {
   type: WorkerMessageType;
   id: string;
   payload: T;
@@ -354,7 +356,7 @@ self.onmessage = async (event: MessageEvent<WorkerMessage>) => {
   const { type, id, payload } = event.data;
 
   try {
-    let result: unknown;
+    let result: JSONValue;
 
     switch (type) {
       case "PARTICLE_STEP":

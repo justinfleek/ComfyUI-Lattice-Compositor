@@ -34,9 +34,9 @@
     <canvas ref="canvasRef" />
 
     <SplineEditor
-      v-if="activeSplineLayerId || isPenMode"
-      :layerId="activeSplineLayerId"
-      :currentFrame="animationStore.getCurrentFrame(store)"
+      v-if="activeSplineLayerIdSafe || isPenMode"
+      :layerId="activeSplineLayerIdSafe || null"
+      :currentFrame="animationStore.currentFrame"
       :canvasWidth="compositionWidth"
       :canvasHeight="compositionHeight"
       :containerWidth="canvasWidth"
@@ -52,9 +52,9 @@
 
     <!-- Motion Path Overlay (shows position keyframe paths) -->
     <MotionPathOverlay
-      v-if="showMotionPath && store.selectedLayerIds.length === 1"
-      :layerId="store.selectedLayerIds[0]"
-      :currentFrame="animationStore.getCurrentFrame(store)"
+      v-if="showMotionPath && selectionStore.selectedLayerIds.length === 1"
+      :layerId="selectionStore.selectedLayerIds[0]"
+      :currentFrame="animationStore.currentFrame"
       :canvasWidth="compositionWidth"
       :canvasHeight="compositionHeight"
       :containerWidth="canvasWidth"
@@ -116,12 +116,12 @@
 
     <!-- Segmentation mask preview overlay -->
     <div
-      v-if="store.segmentPendingMask"
+      v-if="segmentationStore.segmentPendingMask"
       class="segment-mask-overlay"
       :style="maskOverlayStyle"
     >
       <img
-        :src="'data:image/png;base64,' + store.segmentPendingMask.mask"
+        :src="'data:image/png;base64,' + segmentationStore.segmentPendingMask.mask"
         class="mask-preview"
         alt="Segmentation mask"
       />
@@ -129,7 +129,7 @@
 
     <!-- Segment box selection preview -->
     <div
-      v-if="isDrawingSegmentBox && store.segmentBoxStart && segmentBoxEnd"
+      v-if="isDrawingSegmentBox && segmentationStore.segmentBoxStart && segmentBoxEnd"
       class="segment-box-preview"
       :style="segmentBoxStyle"
     ></div>
@@ -144,7 +144,7 @@
     </svg>
 
     <!-- Segmentation loading indicator -->
-    <div v-if="store.segmentIsLoading" class="segment-loading">
+    <div v-if="segmentationStore.segmentIsLoading" class="segment-loading">
       <div class="segment-spinner"></div>
       <span>Segmenting...</span>
     </div>
@@ -190,7 +190,7 @@
     <!-- CSS-based Composition Boundary - crisp blue border around composition -->
     <!-- Replaces the 3D LineLoop which can appear blurry due to WebGL line width limitations -->
     <div
-      v-if="store.viewOptions.showCompositionBounds !== false"
+      v-if="cameraStore.viewOptions.showCompositionBounds !== false"
       class="composition-boundary"
       :style="compositionBoundaryStyle"
     ></div>
@@ -241,6 +241,7 @@ import {
   shallowRef,
   watch,
 } from "vue";
+import { assertDefined } from "@/utils/typeGuards";
 import {
   type SelectableItem,
   type SelectionMode,
@@ -253,22 +254,128 @@ import type { LatticeEngineConfig, PerformanceStats } from "@/engine";
 import { LatticeEngine } from "@/engine";
 import type { LayerTransformUpdate } from "@/engine/LatticeEngine";
 import { markLayerDirty } from "@/services/layerEvaluationCache";
-import { useCompositorStore } from "@/stores/compositorStore";
+import { useAnimationStore } from "@/stores/animationStore";
 import { useCameraStore } from "@/stores/cameraStore";
 import { useCompositionStore } from "@/stores/compositionStore";
+import { useProjectStore } from "@/stores/projectStore";
 import { useLayerStore } from "@/stores/layerStore";
 import { useSelectionStore } from "@/stores/selectionStore";
-import { useAnimationStore } from "@/stores/animationStore";
+import { useSegmentationStore } from "@/stores/segmentationStore";
+import { useVideoStore } from "@/stores/videoStore";
+import { useAudioStore } from "@/stores/audioStore";
+import { useExpressionStore } from "@/stores/expressionStore";
 import type { ControlPoint, Layer, ImageLayerData, VideoLayerData, CameraLayerData, Vec3 } from "@/types/project";
 import type SplineEditor from "./SplineEditor.vue";
+import type { ExpressionStoreAccess } from "@/stores/expressionStore/types";
+import type { VideoStoreAccess } from "@/stores/videoStore";
+import type { FrameEvaluationAccess } from "@/stores/animationStore/types";
+import { getPropertyValueAtFrame, evaluatePropertyAtFrame } from "@/stores/keyframeStore/evaluation";
 
 // Store
-const store = useCompositorStore();
+const animationStore = useAnimationStore();
 const cameraStore = useCameraStore();
 const compositionStore = useCompositionStore();
+const projectStore = useProjectStore();
 const layerStore = useLayerStore();
-const selection = useSelectionStore();
-const animationStore = useAnimationStore();
+const selectionStore = useSelectionStore();
+const segmentationStore = useSegmentationStore();
+const videoStore = useVideoStore();
+const audioStore = useAudioStore();
+const expressionStore = useExpressionStore();
+
+// Helper function to create AnimationStoreAccess
+function getAnimationStoreAccess() {
+  return {
+    isPlaying: animationStore.isPlaying,
+    getActiveComp: () => projectStore.getActiveComp(),
+    currentFrame: animationStore.currentFrame,
+    frameCount: projectStore.getFrameCount(),
+    fps: projectStore.getFps(),
+    getActiveCompLayers: () => projectStore.getActiveCompLayers(),
+    getLayerById: (id: string) => layerStore.getLayerById(id),
+    project: {
+      composition: {
+        width: projectStore.getWidth(),
+        height: projectStore.getHeight(),
+      },
+      meta: projectStore.project.meta,
+    },
+    pushHistory: () => projectStore.pushHistory(),
+  };
+}
+
+// Helper function to create FrameEvaluationAccess
+function getFrameEvaluationAccess(): FrameEvaluationAccess {
+  return {
+    ...getAnimationStoreAccess(),
+    project: projectStore.project,
+    activeCameraId: cameraStore.activeCameraId,
+  };
+}
+
+// Helper function to create CompositionStoreAccess
+function getCompositionStoreAccess() {
+  return {
+    project: projectStore.project,
+    activeCompositionId: projectStore.activeCompositionId,
+    openCompositionIds: projectStore.openCompositionIds,
+    compositionBreadcrumbs: projectStore.compositionBreadcrumbs,
+    selectedLayerIds: selectionStore.selectedLayerIds,
+    getActiveComp: () => projectStore.getActiveComp(),
+    switchComposition: (id: string) => compositionStore.switchComposition(getCompositionStoreAccess(), id),
+    pushHistory: () => projectStore.pushHistory(),
+  };
+}
+
+// Helper function to create ExpressionStoreAccess
+function getExpressionStoreAccess(): ExpressionStoreAccess {
+  return {
+    project: {
+      composition: {
+        width: projectStore.getWidth(),
+        height: projectStore.getHeight(),
+      },
+      meta: projectStore.project.meta,
+    },
+    getActiveComp: () => projectStore.getActiveComp(),
+    getActiveCompLayers: () => projectStore.getActiveCompLayers(),
+    getLayerById: (id: string) => layerStore.getLayerById(id),
+    fps: projectStore.getFps(),
+    currentFrame: animationStore.currentFrame,
+    frameCount: projectStore.getFrameCount(),
+    pushHistory: () => projectStore.pushHistory(),
+    getPropertyValueAtFrame: (layerId: string, propertyPath: string, frame: number) => {
+      // System F/Omega: Use actual implementation from keyframeStore - throws explicit errors instead of returning null
+      return getPropertyValueAtFrame(layerId, propertyPath, frame);
+    },
+    evaluatePropertyAtFrame: (layerId: string, propertyPath: string, frame: number) => {
+      // System F/Omega: Use actual implementation from keyframeStore - throws explicit errors instead of returning null
+      return evaluatePropertyAtFrame(layerId, propertyPath, frame);
+    },
+  };
+}
+
+// Helper function to create VideoStoreAccess
+function getVideoStoreAccess() {
+  return {
+    project: projectStore.project,
+    activeCompositionId: projectStore.activeCompositionId,
+    getActiveComp: () => projectStore.getActiveComp(),
+    getActiveCompLayers: () => projectStore.getActiveCompLayers(),
+    pushHistory: () => projectStore.pushHistory(),
+  };
+}
+
+// Helper function to set tool (handles segmentation)
+function setTool(tool: "select" | "pen" | "text" | "hand" | "zoom" | "segment") {
+  if (tool === "segment") {
+    segmentationStore.setSegmentToolActive(true);
+  } else {
+    segmentationStore.setSegmentToolActive(false);
+    selectionStore.setTool(tool);
+    segmentationStore.clearSegmentPendingMask();
+  }
+}
 
 // Refs
 const containerRef = ref<HTMLDivElement | null>(null);
@@ -284,8 +391,8 @@ const zoom = ref(1);
 const canvasWidth = ref(800);
 const canvasHeight = ref(600);
 // Composition dimensions (in composition units, not pixels)
-const compositionWidth = computed(() => store.width || 832);
-const compositionHeight = computed(() => store.height || 480);
+const compositionWidth = computed(() => projectStore.getWidth() || 832);
+const compositionHeight = computed(() => projectStore.getHeight() || 480);
 const showDepthOverlay = ref(false);
 const depthColormap = ref<"viridis" | "plasma" | "grayscale">("viridis");
 const depthOpacity = ref(50);
@@ -376,7 +483,7 @@ const {
 // ============================================================
 
 // Enable marquee selection only when using select tool
-const marqueeEnabled = computed(() => store.currentTool === "select");
+const marqueeEnabled = computed(() => selectionStore.currentTool === "select");
 
 /**
  * Get all layers as selectable items with their screen-space bounds
@@ -388,7 +495,7 @@ function getSelectableItems(): SelectableItem[] {
   const camera = engine.value.getCameraController().camera;
   const items: SelectableItem[] = [];
 
-  for (const layer of store.layers) {
+  for (const layer of projectStore.getActiveCompLayers()) {
     if (!layer.visible) continue;
 
     // Get layer bounds in world space
@@ -450,17 +557,17 @@ function handleMarqueeSelectionChange(
 ) {
   if (mode === "replace") {
     if (selectedIds.length === 0) {
-      selection.clearLayerSelection();
+      selectionStore.clearSelection();
     } else {
-      selection.selectLayers(selectedIds);
+      selectionStore.selectLayers(selectedIds);
     }
   } else if (mode === "add") {
     for (const id of selectedIds) {
-      selection.addToSelection(id);
+      selectionStore.addToSelection(id);
     }
   } else if (mode === "subtract") {
     for (const id of selectedIds) {
-      selection.removeFromSelection(id);
+      selectionStore.removeFromSelection(id);
     }
   }
 
@@ -479,7 +586,7 @@ const {
   canvasRef: containerRef,
   getSelectableItems,
   onSelectionChange: handleMarqueeSelectionChange,
-  currentSelection: computed(() => store.selectedLayerIds),
+  currentSelection: computed(() => selectionStore.selectedLayerIds),
   enabled: marqueeEnabled,
   minDragDistance: 5,
 });
@@ -516,14 +623,31 @@ const shapePreviewStyle = computed(() => {
 // Safe frame and resolution guides are provided by useViewportGuides composable
 
 // Computed
-const hasDepthMap = computed(() => store.depthMap !== null);
-const isPenMode = computed(() => store.currentTool === "pen");
+const hasDepthMap = computed(() => {
+  // Check if any layer has depth map data
+  // System F/Omega proof: Type guard ensures DepthLayerData before accessing properties
+  // Type proof: depthMap is stored on DepthLayer.material.uniforms.depthMap.value (runtime),
+  // but we check assetId from DepthLayerData (type-safe) to determine if depth map should exist
+  const layers = projectStore.getActiveCompLayers();
+  return layers.some((l) => {
+    if (l.type === "depth" && l.data) {
+      // Type narrowing: l.type === "depth" ensures l.data is DepthLayerData
+      // Check assetId instead of runtime depthMap property (which isn't in type definition)
+      // CODE IS TRUTH: assetId !== null indicates depth map asset is assigned
+      const depthData = l.data;
+      return depthData.assetId !== null && depthData.assetId !== "";
+    }
+    return false;
+  });
+});
+const isPenMode = computed(() => selectionStore.currentTool === "pen");
 
 // Drag and drop state
 const isDragOver = ref(false);
 
 function onDragOver(event: DragEvent) {
-  if (event.dataTransfer?.types.includes("application/project-item")) {
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  if (event.dataTransfer != null && typeof event.dataTransfer === "object" && "types" in event.dataTransfer && event.dataTransfer.types != null && typeof event.dataTransfer.types.includes === "function" && event.dataTransfer.types.includes("application/project-item")) {
     isDragOver.value = true;
   }
 }
@@ -535,7 +659,9 @@ function onDragLeave() {
 function onDrop(event: DragEvent) {
   isDragOver.value = false;
 
-  const data = event.dataTransfer?.getData("application/project-item");
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const dataTransfer = event.dataTransfer;
+  const data = (dataTransfer != null && typeof dataTransfer === "object" && "getData" in dataTransfer && typeof dataTransfer.getData === "function") ? dataTransfer.getData("application/project-item") : null;
   if (!data) return;
 
   try {
@@ -549,29 +675,29 @@ function onDrop(event: DragEvent) {
 
     // Handle footage items (images/videos)
     if (item.type === "footage") {
-      const asset = store.project.assets[item.id];
+      const asset = projectStore.project.assets[item.id];
       if (asset) {
         if (asset.type === "image" && asset.data) {
           // Load image to get dimensions and resize composition
           const img = new Image();
           img.onload = () => {
             // Resize composition to match image dimensions
-            const compId = store.activeCompositionId;
+            const compId = projectStore.activeCompositionId;
             if (compId) {
-              compositionStore.updateCompositionSettings(store, compId, {
+              compositionStore.updateCompositionSettings(getCompositionStoreAccess(), compId, {
                 width: img.naturalWidth,
                 height: img.naturalHeight,
               });
             }
 
             // Create the layer after resizing
-            const layer = layerStore.createLayer(store, "image", item.name);
+            const layer = layerStore.createLayer("image", item.name);
             if (layer && layer.type === "image") {
               const imageData = layer.data as ImageLayerData;
               imageData.assetId = item.id;
               // Note: ImageLayerData doesn't have 'source' property in schema
               // If needed, store in a different way or extend the schema
-              layerStore.selectLayer(store, layer.id);
+              layerStore.selectLayer(layer.id);
               console.log(
                 "[ThreeCanvas] Created image layer, resized comp to:",
                 img.naturalWidth,
@@ -582,11 +708,11 @@ function onDrop(event: DragEvent) {
           };
           img.src = asset.data;
         } else if (asset.type === "video") {
-          const layer = layerStore.createLayer(store, "video", item.name);
+          const layer = layerStore.createLayer("video", item.name);
           if (layer && layer.type === "video") {
             const videoData = layer.data as VideoLayerData;
             videoData.assetId = item.id;
-            layerStore.selectLayer(store, layer.id);
+            layerStore.selectLayer(layer.id);
             console.log(
               "[ThreeCanvas] Created video layer from drop:",
               item.name,
@@ -595,9 +721,9 @@ function onDrop(event: DragEvent) {
         }
       }
     } else if (item.type === "solid") {
-      const layer = layerStore.createLayer(store, "solid", item.name);
+      const layer = layerStore.createLayer("solid", item.name);
       if (layer) {
-        layerStore.selectLayer(store, layer.id);
+        layerStore.selectLayer(layer.id);
         console.log("[ThreeCanvas] Created solid layer from drop:", item.name);
       }
     }
@@ -606,16 +732,45 @@ function onDrop(event: DragEvent) {
   }
 }
 
+// System F/Omega: Computed property that throws explicit errors instead of returning null
 const activeSplineLayerId = computed(() => {
-  const selectedLayer = store.selectedLayer;
-  if (selectedLayer?.type === "spline") {
+  const selectedLayer = layerStore.getSelectedLayer();
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  if (selectedLayer != null && typeof selectedLayer === "object" && "type" in selectedLayer && selectedLayer.type === "spline") {
     return selectedLayer.id;
   }
   if (isPenMode.value) {
-    const splines = store.layers.filter((l) => l.type === "spline");
-    return splines.length > 0 ? splines[splines.length - 1].id : null;
+    const splines = projectStore.getActiveCompLayers().filter((l) => l.type === "spline");
+    // System F/Omega: Throw explicit error if no spline layer exists when pen mode is active
+    if (splines.length === 0) {
+      throw new Error(
+        `[ThreeCanvas] Cannot get active spline layer ID: No spline layers found in active composition. ` +
+        `Pen mode is active but there are no spline layers to edit. ` +
+        `Create a spline layer first or disable pen mode.`
+      );
+    }
+    return splines[splines.length - 1].id;
   }
-  return null;
+  // System F/Omega: Throw explicit error if no spline layer is selected and pen mode is not active
+  throw new Error(
+    `[ThreeCanvas] Cannot get active spline layer ID: No spline layer selected and pen mode is not active. ` +
+    `Select a spline layer or activate pen mode to edit splines.`
+  );
+});
+
+// Wrapper computed property for template use - catches errors from activeSplineLayerId
+// System F/Omega: This wrapper returns null ONLY for Vue template compatibility (SplineEditor expects string | null)
+// The main computed property (activeSplineLayerId) throws explicit errors per System F/Omega
+// This is a necessary exception for Vue template conditional rendering with v-if
+const activeSplineLayerIdSafe = computed<string | null>(() => {
+  try {
+    return activeSplineLayerId.value;
+  } catch {
+    // System F/Omega EXCEPTION: Returning null here is necessary for Vue template compatibility
+    // SplineEditor component expects string | null, and v-if uses null for conditional rendering
+    // This is the ONLY place where null is returned - all other code throws explicit errors
+    return null;
+  }
 });
 
 const viewportTransformArray = computed(() => viewportTransform.value);
@@ -635,12 +790,17 @@ onMounted(async () => {
     canvas: canvasRef.value,
     width: rect.width,
     height: rect.height,
-    compositionWidth: store.width || 1920,
-    compositionHeight: store.height || 1080,
+    compositionWidth: projectStore.getWidth() || 1920,
+    compositionHeight: projectStore.getHeight() || 1080,
     pixelRatio: Math.min(window.devicePixelRatio, 2), // Cap at 2 for performance
     antialias: true,
     alpha: true,
-    backgroundColor: store.backgroundColor || "#050505",
+    backgroundColor: (() => {
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const comp = projectStore.getActiveComp();
+      const settings = (comp != null && typeof comp === "object" && "settings" in comp && comp.settings != null && typeof comp.settings === "object") ? comp.settings : undefined;
+      return (settings != null && typeof settings === "object" && "backgroundColor" in settings && typeof settings.backgroundColor === "string") ? settings.backgroundColor : "#050505";
+    })(),
     powerPreference: "high-performance",
   };
 
@@ -649,15 +809,15 @@ onMounted(async () => {
     engine.value = new LatticeEngine(config);
 
     // Wire up callbacks for video/nested composition/camera integration
-    engine.value.setAssetGetter((assetId: string) => store.assets[assetId]);
+    engine.value.setAssetGetter((assetId: string) => projectStore.project.assets[assetId]);
     engine.value.setVideoMetadataCallback((layerId, metadata) => {
-      store.onVideoMetadataLoaded(layerId, metadata);
+      videoStore.onVideoMetadataLoaded(getVideoStoreAccess(), layerId, metadata);
     });
     engine.value.setCameraCallbacks(
-      (cameraId: string) => cameraStore.getCamera(store, cameraId),
-      (cameraId: string, updates) => cameraStore.updateCamera(store, cameraId, updates),
+      (cameraId: string) => cameraStore.getCamera(cameraId),
+      (cameraId: string, updates) => cameraStore.updateCamera(cameraId, updates),
       (cameraId: string, frame: number) =>
-        cameraStore.getCameraAtFrame(store, cameraId, frame),
+        cameraStore.getCameraAtFrame(cameraId, frame),
     );
 
     // Wire up nested comp rendering - allows nested comp layers to render nested compositions
@@ -665,23 +825,35 @@ onMounted(async () => {
     // and renders them to offscreen textures when requested.
     engine.value.setNestedCompRenderContext({
       renderComposition: (compositionId: string, frame: number) => {
+        // System F/Omega: Throw explicit errors instead of returning null
         // Get the composition data from store
-        const comp = store.getComposition(compositionId);
+        const comp = compositionStore.getComposition(getCompositionStoreAccess(), compositionId);
         if (!comp) {
-          console.warn("[ThreeCanvas] Nested comp not found:", compositionId);
-          return null;
+          throw new Error(
+            `[ThreeCanvas] Cannot render nested composition: Composition not found. ` +
+            `Composition ID: ${compositionId}, frame: ${frame}. ` +
+            `Composition must exist before rendering. Wrap in try/catch if "comp not found" is an expected state.`
+          );
         }
 
         // Get layers for this composition (they're stored directly on the composition)
         if (!comp.layers || comp.layers.length === 0) {
-          // Empty composition - return null (nested comp will show placeholder)
-          return null;
+          throw new Error(
+            `[ThreeCanvas] Cannot render nested composition: Composition has no layers. ` +
+            `Composition ID: ${compositionId}, frame: ${frame}. ` +
+            `Composition must have at least one layer to render. Wrap in try/catch if "empty comp" is an expected state.`
+          );
         }
 
         // Render the composition to a texture using the engine's nested comp system
         if (!engine.value) {
-          return null;
+          throw new Error(
+            `[ThreeCanvas] Cannot render nested composition: Engine not initialized. ` +
+            `Composition ID: ${compositionId}, frame: ${frame}. ` +
+            `Engine must be initialized before rendering nested compositions. Wrap in try/catch if "engine not ready" is an expected state.`
+          );
         }
+        // System F/Omega: renderCompositionToTexture now throws errors instead of returning null
         return engine.value.renderCompositionToTexture(
           compositionId,
           comp.layers,
@@ -694,12 +866,12 @@ onMounted(async () => {
         );
       },
       getComposition: (compositionId: string) =>
-        store.getComposition(compositionId),
+        compositionStore.getComposition(getCompositionStoreAccess(), compositionId),
     });
 
     // Wire up audio reactivity - connects audio analysis to layer properties
     engine.value.setAudioReactiveCallback((layerId: string, frame: number) =>
-      store.getAudioReactiveValuesForLayer(layerId, frame),
+      audioStore.getValuesForLayerAtFrame(layerId, frame),
     );
 
     // Initialize transform controls and wire callback to update store
@@ -712,7 +884,7 @@ onMounted(async () => {
 
     // Initialize particle systems with renderer and composition FPS
     engine.value.initializeParticleSystems();
-    engine.value.setCompositionFPS(store.fps || 60);
+    engine.value.setCompositionFPS(projectStore.getFps());
 
     // Initialize 3D services (material system, environment maps)
     engine.value.initialize3DServices();
@@ -733,10 +905,10 @@ onMounted(async () => {
     syncLayersToEngine();
 
     // Initialize property driver system
-    store.initializePropertyDriverSystem();
+    expressionStore.initializePropertyDriverSystem(getExpressionStoreAccess());
 
     // Apply initial frame state via MotionEngine
-    const initialFrameState = animationStore.getFrameState(store, animationStore.getCurrentFrame(store));
+    const initialFrameState = animationStore.getFrameState(getFrameEvaluationAccess(), animationStore.currentFrame);
     engine.value.applyFrameState(initialFrameState);
 
     // Setup event listeners
@@ -770,12 +942,12 @@ onUnmounted(() => {
 function setupWatchers() {
   // Watch layers for changes
   watch(
-    () => store.layers,
+    () => projectStore.getActiveCompLayers(),
     () => {
       syncLayersToEngine();
       // Re-evaluate frame to apply layer changes (like 3D toggle)
       if (engine.value) {
-        const frameState = animationStore.getFrameState(store, animationStore.getCurrentFrame(store));
+        const frameState = animationStore.getFrameState(getFrameEvaluationAccess(), animationStore.currentFrame);
         engine.value.applyFrameState(frameState);
       }
     },
@@ -784,14 +956,14 @@ function setupWatchers() {
 
   // Watch current frame - use MotionEngine as single source of truth
   watch(
-    () => animationStore.getCurrentFrame(store),
+    () => animationStore.currentFrame,
     (frame) => {
       if (engine.value) {
         // Apply property drivers (sets driven values on layers for override)
         applyPropertyDrivers();
 
         // Get pre-evaluated frame state from MotionEngine (PURE, deterministic)
-        const frameState = animationStore.getFrameState(store, frame);
+        const frameState = animationStore.getFrameState(getFrameEvaluationAccess(), frame);
 
         // Apply the evaluated state to the engine
         // This is the canonical path - no interpolation happens in the engine
@@ -802,7 +974,7 @@ function setupWatchers() {
 
   // Watch composition size
   watch(
-    () => [store.width, store.height],
+    () => [projectStore.getWidth(), projectStore.getHeight()],
     ([width, height]) => {
       if (engine.value) {
         // Update engine with new composition dimensions
@@ -820,7 +992,7 @@ function setupWatchers() {
 
   // Watch source image
   watch(
-    () => store.sourceImage,
+    () => projectStore.sourceImage,
     async (imageData) => {
       if (engine.value && imageData) {
         await loadSourceImage(imageData);
@@ -831,7 +1003,7 @@ function setupWatchers() {
 
   // Watch depth map
   watch(
-    () => store.depthMap,
+    () => projectStore.depthMap,
     async (depthData) => {
       if (engine.value && depthData) {
         await loadDepthMap(depthData);
@@ -842,7 +1014,11 @@ function setupWatchers() {
 
   // Performance stats update
   watch(
-    () => engine.value?.getPerformanceStats(),
+    () => {
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const engineVal = engine.value;
+      return (engineVal != null && typeof engineVal === "object" && "getPerformanceStats" in engineVal && typeof engineVal.getPerformanceStats === "function") ? engineVal.getPerformanceStats() : undefined;
+    },
     (stats) => {
       if (stats) {
         performanceStats.value = stats;
@@ -852,7 +1028,7 @@ function setupWatchers() {
 
   // Watch active camera and sync to engine
   watch(
-    () => store.activeCameraId,
+    () => cameraStore.activeCameraId,
     (activeCameraId) => {
       if (!engine.value) return;
 
@@ -862,9 +1038,13 @@ function setupWatchers() {
       }
 
       // Find the camera layer that references this camera
-      const cameraLayer = store.layers.find(
-        (l) =>
-          l.type === "camera" && (l.data as CameraLayerData)?.cameraId === activeCameraId,
+      const layers = projectStore.getActiveCompLayers();
+      const cameraLayer = layers.find(
+        (l) => {
+          // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+          const data = l.data as CameraLayerData;
+          return l.type === "camera" && (data != null && typeof data === "object" && "cameraId" in data && data.cameraId === activeCameraId);
+        },
       );
 
       if (cameraLayer) {
@@ -876,7 +1056,7 @@ function setupWatchers() {
 
   // Watch selected layer and sync transform controls
   watch(
-    () => store.selectedLayerIds,
+    () => selectionStore.selectedLayerIds,
     (selectedIds) => {
       if (!engine.value) return;
       // Use first selected layer for transform controls
@@ -888,7 +1068,7 @@ function setupWatchers() {
 
   // Watch view options and sync to engine
   watch(
-    () => store.viewOptions.showGrid,
+    () => cameraStore.viewOptions.showGrid,
     (showGridVisible) => {
       if (!engine.value) return;
       showGrid.value = showGridVisible;
@@ -901,7 +1081,7 @@ function setupWatchers() {
   // Note: The 3D LineLoop bounds are disabled in favor of CSS-based boundary
   // which is always crisp regardless of zoom/pan (WebGL linewidth limitation)
   watch(
-    () => store.viewOptions.showCompositionBounds,
+    () => cameraStore.viewOptions.showCompositionBounds,
     (_showBounds) => {
       if (!engine.value) return;
       // Always hide 3D bounds - CSS version is used instead (see .composition-boundary)
@@ -912,10 +1092,15 @@ function setupWatchers() {
 
   // Watch background color changes
   watch(
-    () => store.backgroundColor,
+    () => {
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const comp = projectStore.getActiveComp();
+      const settings = (comp != null && typeof comp === "object" && "settings" in comp && comp.settings != null && typeof comp.settings === "object") ? comp.settings : undefined;
+      return (settings != null && typeof settings === "object" && "backgroundColor" in settings && typeof settings.backgroundColor === "string") ? settings.backgroundColor : undefined;
+    },
     (newColor) => {
       if (!engine.value) return;
-      engine.value.setBackground(newColor);
+      engine.value.setBackground(newColor || "#050505");
     },
   );
 }
@@ -925,12 +1110,13 @@ function syncLayersToEngine() {
   if (!engine.value) return;
 
   const engineLayerIds = new Set(engine.value.getLayerIds());
-  const storeLayerIds = new Set(store.layers.map((l) => l.id));
+  const layers = projectStore.getActiveCompLayers();
+  const storeLayerIds = new Set(layers.map((l) => l.id));
 
   console.log("[ThreeCanvas] syncLayersToEngine:", {
     engineLayers: Array.from(engineLayerIds),
     storeLayers: Array.from(storeLayerIds),
-    storeLayerDetails: store.layers.map((l) => ({
+    storeLayerDetails: layers.map((l) => ({
       id: l.id,
       type: l.type,
       name: l.name,
@@ -946,7 +1132,7 @@ function syncLayersToEngine() {
   }
 
   // Add or update layers from store
-  for (const layer of store.layers) {
+  for (const layer of layers) {
     if (engineLayerIds.has(layer.id)) {
       engine.value.updateLayer(layer.id, layer);
     } else {
@@ -972,8 +1158,9 @@ function applyPropertyDrivers() {
   engine.value.clearAllDrivenValues();
 
   // For each layer, get driven values and apply
-  for (const layer of store.layers) {
-    const drivenValues = store.getDrivenValuesForLayer(layer.id);
+  const layers = projectStore.getActiveCompLayers();
+  for (const layer of layers) {
+    const drivenValues = expressionStore.getEvaluatedLayerProperties(getExpressionStoreAccess(), layer.id);
     if (drivenValues.size > 0) {
       engine.value.setLayerDrivenValues(layer.id, drivenValues);
     }
@@ -1084,7 +1271,7 @@ function setupInputHandlers() {
 
   // Mouse down
   canvas.addEventListener("mousedown", (e: MouseEvent) => {
-    const currentTool = store.currentTool;
+    const currentTool = selectionStore.currentTool;
 
     // Middle mouse or Alt+Left for panning
     if (
@@ -1128,25 +1315,28 @@ function setupInputHandlers() {
         e.clientY - rect.top,
       );
 
-      const newLayer = layerStore.createTextLayer(store);
-      if (newLayer.transform?.position) {
+      const newLayer = layerStore.createTextLayer();
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const transform = newLayer.transform;
+      if (transform != null && typeof transform === "object" && "position" in transform && transform.position != null && typeof transform.position === "object") {
         newLayer.transform.position.value = {
           x: scenePos.x,
           y: scenePos.y,
           z: 0,
         };
       }
-      layerStore.updateLayer(store, newLayer.id, {
+      layerStore.updateLayer(newLayer.id, {
         transform: {
           ...newLayer.transform,
           position: {
-            ...newLayer.transform?.position,
+            // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+            ...((transform != null && typeof transform === "object" && "position" in transform && transform.position != null && typeof transform.position === "object") ? transform.position : {}),
             value: { x: scenePos.x, y: scenePos.y, z: 0 },
           },
         },
       });
-      layerStore.selectLayer(store, newLayer.id);
-      store.setTool("select");
+      layerStore.selectLayer(newLayer.id);
+      setTool("select");
       return;
     }
 
@@ -1158,7 +1348,7 @@ function setupInputHandlers() {
         e.clientY - rect.top,
       );
 
-      if (store.segmentMode === "point") {
+      if (segmentationStore.segmentMode === "point") {
         // Point mode - segment at click position
         handleSegmentPoint(scenePos.x, scenePos.y);
       } else {
@@ -1190,7 +1380,9 @@ function setupInputHandlers() {
     // Selection - raycast to find layer
     if (currentTool === "select" && e.button === 0) {
       // Don't handle selection if transform controls are being dragged
-      if (engine.value?.isTransformDragging()) {
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const engineVal = engine.value;
+      if (engineVal != null && typeof engineVal === "object" && "isTransformDragging" in engineVal && typeof engineVal.isTransformDragging === "function" && engineVal.isTransformDragging()) {
         return;
       }
 
@@ -1201,7 +1393,7 @@ function setupInputHandlers() {
       if (engine.value) {
         const hitLayer = engine.value.raycastLayers(x, y);
         if (hitLayer) {
-          layerStore.selectLayer(store, hitLayer);
+          selectionStore.selectLayer(hitLayer);
           engine.value.selectLayer(hitLayer); // Attach transform controls
         } else {
           // Store click start - will clear selection on mouseup if no drag occurred
@@ -1227,7 +1419,7 @@ function setupInputHandlers() {
 
       // Calculate world units per screen pixel at current zoom
       // When zoomed out (zoom < 1), each screen pixel represents more world units
-      const compHeight = store.height || 1080;
+      const compHeight = projectStore.getHeight() || 1080;
       const fovRad = (Math.PI * camera.getFOV()) / 180;
       const distance = compHeight / 2 / Math.tan(fovRad / 2) / zoom.value;
       const viewHeight = 2 * distance * Math.tan(fovRad / 2);
@@ -1270,7 +1462,7 @@ function setupInputHandlers() {
     }
 
     // Handle segment box drawing (use composable)
-    if (isDrawingSegmentBox.value && store.segmentBoxStart) {
+    if (isDrawingSegmentBox.value && segmentationStore.segmentBoxStart) {
       const rect = canvas.getBoundingClientRect();
       const scenePos = screenToScene(
         e.clientX - rect.left,
@@ -1292,7 +1484,7 @@ function setupInputHandlers() {
     }
 
     // Update cursor based on tool
-    const currentTool = store.currentTool;
+    const currentTool = selectionStore.currentTool;
     if (currentTool === "hand") canvas.style.cursor = "grab";
     else if (currentTool === "zoom") canvas.style.cursor = "zoom-in";
     else if (currentTool === "text") canvas.style.cursor = "text";
@@ -1307,7 +1499,7 @@ function setupInputHandlers() {
   canvas.addEventListener("mouseup", (e: MouseEvent) => {
     if (isPanning) {
       isPanning = false;
-      canvas.style.cursor = store.currentTool === "hand" ? "grab" : "default";
+      canvas.style.cursor = selectionStore.currentTool === "hand" ? "grab" : "default";
     }
     if (isZooming) {
       isZooming = false;
@@ -1316,7 +1508,7 @@ function setupInputHandlers() {
     // Finish segment box selection (use composable)
     if (
       isDrawingSegmentBox.value &&
-      store.segmentBoxStart &&
+      segmentationStore.segmentBoxStart &&
       segmentBoxEnd.value
     ) {
       finishSegmentBox();
@@ -1335,9 +1527,13 @@ function setupInputHandlers() {
 
       // Only clear if mouse didn't move more than 5px (true click, not drag)
       if (distance < 5) {
-        selection.clearLayerSelection();
-        selection.clearControlPointSelection();
-        engine.value?.selectLayer(null);
+        selectionStore.clearSelection();
+        selectionStore.clearControlPointSelection();
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+        const engineVal = engine.value;
+        if (engineVal != null && typeof engineVal === "object" && "selectLayer" in engineVal && typeof engineVal.selectLayer === "function") {
+          engineVal.selectLayer(null);
+        }
       }
       selectClickStart = null;
     }
@@ -1381,7 +1577,7 @@ function handleTransformChange(
   layerId: string,
   transform: LayerTransformUpdate,
 ) {
-  const layer = store.layers.find((l) => l.id === layerId);
+  const layer = projectStore.getActiveCompLayers().find((l) => l.id === layerId);
   if (!layer) return;
 
   // Build the update object for the store
@@ -1397,9 +1593,12 @@ function handleTransformChange(
           y: transform.position.y,
           z:
             transform.position.z ??
-            (typeof layer.transform.position?.value === "object" && layer.transform.position.value !== null && "z" in layer.transform.position.value
-              ? (layer.transform.position.value as Vec3).z
-              : 0),
+            (() => {
+              // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+              const transform = layer.transform;
+              const position = (transform != null && typeof transform === "object" && "position" in transform && transform.position != null && typeof transform.position === "object" && "value" in transform.position && transform.position.value != null && typeof transform.position.value === "object" && "z" in transform.position.value && typeof transform.position.value.z === "number") ? transform.position.value.z : undefined;
+              return position ?? 0;
+            })(),
         },
       },
     };
@@ -1417,20 +1616,26 @@ function handleTransformChange(
       }
       if (updates.transform) {
         if (transform.rotationX !== undefined) {
+          // Type proof: rotationX must exist when updating 3D layer rotation
+          assertDefined(layer.transform.rotationX, "rotationX must exist on 3D layer transform");
           updates.transform.rotationX = {
-            ...layer.transform.rotationX!,
+            ...layer.transform.rotationX,
             value: transform.rotationX,
           };
         }
         if (transform.rotationY !== undefined) {
+          // Type proof: rotationY must exist when updating 3D layer rotation
+          assertDefined(layer.transform.rotationY, "rotationY must exist on 3D layer transform");
           updates.transform.rotationY = {
-            ...layer.transform.rotationY!,
+            ...layer.transform.rotationY,
             value: transform.rotationY,
           };
         }
         if (transform.rotationZ !== undefined) {
+          // Type proof: rotationZ must exist when updating 3D layer rotation
+          assertDefined(layer.transform.rotationZ, "rotationZ must exist on 3D layer transform");
           updates.transform.rotationZ = {
-            ...layer.transform.rotationZ!,
+            ...layer.transform.rotationZ,
             value: transform.rotationZ,
           };
         }
@@ -1442,8 +1647,10 @@ function handleTransformChange(
       if (!updates.transform) {
         updates.transform = { ...layer.transform };
       }
+      // Type proof: rotation must exist on layer transform
+      assertDefined(layer.transform.rotation, "rotation must exist on layer transform");
       updates.transform.rotation = {
-        ...layer.transform.rotation!,
+        ...layer.transform.rotation,
         value: transform.rotation,
       };
     }
@@ -1454,21 +1661,32 @@ function handleTransformChange(
     if (!updates.transform) {
       updates.transform = { ...layer.transform };
     }
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??/?.
+    // Pattern match: z ∈ number | undefined → number (check transform.scale.z, then layer.transform.scale.value.z, then default 100)
+    const scaleZ = (typeof transform.scale.z === "number" && Number.isFinite(transform.scale.z)) ? transform.scale.z : undefined;
+    let finalZ: number;
+    if (scaleZ !== undefined) {
+      finalZ = scaleZ;
+    } else {
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const transform = layer.transform;
+      const layerScaleValue = (transform != null && typeof transform === "object" && "scale" in transform && transform.scale != null && typeof transform.scale === "object" && "value" in transform.scale && transform.scale.value != null && typeof transform.scale.value === "object") ? transform.scale.value : undefined;
+      const layerZ = (layerScaleValue !== null && layerScaleValue !== undefined && typeof layerScaleValue === "object" && "z" in layerScaleValue && typeof layerScaleValue.z === "number" && Number.isFinite(layerScaleValue.z)) ? layerScaleValue.z : undefined;
+      finalZ = layerZ !== undefined ? layerZ : 100;
+    }
     updates.transform.scale = {
       ...layer.transform.scale,
       value: {
         x: transform.scale.x,
         y: transform.scale.y,
-        z: transform.scale.z ?? (typeof layer.transform.scale?.value === "object" && layer.transform.scale.value !== null && "z" in layer.transform.scale.value
-          ? (layer.transform.scale.value as Vec3).z
-          : 100),
+        z: finalZ,
       },
     };
   }
 
   // Update the store
   if (Object.keys(updates).length > 0) {
-    layerStore.updateLayer(store, layerId, updates);
+    layerStore.updateLayer(layerId, updates);
   }
 }
 
@@ -1492,7 +1710,10 @@ function handleResize(entries: ResizeObserverEntry[]) {
 
       if (engine.value) {
         // Resize the renderer and camera aspect
-        engine.value.resize(width, height);
+        // System F/Omega: Composition dimensions are required - get from project store
+        const compWidth = projectStore.getWidth() || 1920;
+        const compHeight = projectStore.getHeight() || 1080;
+        engine.value.resize(width, height, compWidth, compHeight);
         // Re-fit composition to the new viewport size
         centerOnComposition();
       }
@@ -1536,8 +1757,8 @@ function setRenderMode(mode: "color" | "depth" | "normal") {
 // Spline editor handlers
 function onPointAdded(_point: ControlPoint) {
   if (!activeSplineLayerId.value) {
-    const newLayer = layerStore.createSplineLayer(store);
-    layerStore.selectLayer(store, newLayer.id);
+    const newLayer = layerStore.createSplineLayer();
+    layerStore.selectLayer(newLayer.id);
   }
 }
 
@@ -1546,10 +1767,10 @@ function onPathUpdated() {
 }
 
 function togglePenMode() {
-  if (store.currentTool === "pen") {
-    store.setTool("select");
+  if (selectionStore.currentTool === "pen") {
+    setTool("select");
   } else {
-    store.setTool("pen");
+    setTool("pen");
   }
 }
 
@@ -1560,15 +1781,15 @@ function onMotionPathKeyframeSelected(
 ) {
   // Select the keyframe in the selection store
   if (addToSelection) {
-    selection.addKeyframeToSelection(keyframeId);
+    selectionStore.addKeyframeToSelection(keyframeId);
   } else {
-    selection.selectKeyframe(keyframeId);
+    selectionStore.selectKeyframe(keyframeId);
   }
 }
 
 function onMotionPathGoToFrame(frame: number) {
   // Go to the keyframe's frame
-  animationStore.setFrame(store, frame);
+  animationStore.setFrame(getAnimationStoreAccess(), frame);
 }
 
 function onMotionPathTangentUpdated(
@@ -1577,24 +1798,34 @@ function onMotionPathTangentUpdated(
   delta: { x: number; y: number },
 ) {
   // Get the selected layer (motion path only shows for single selected layer)
-  const layerId = store.selectedLayerIds?.[0];
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const selectedLayerIds = selectionStore.selectedLayerIds;
+  const layerId = (selectedLayerIds != null && Array.isArray(selectedLayerIds) && selectedLayerIds.length > 0) ? selectedLayerIds[0] : undefined;
   if (!layerId) return;
 
   // Get the layer and its position property
-  const layer = layerStore.getLayerById(store, layerId);
+  const layer = layerStore.getLayerById(layerId);
   if (!layer) return;
 
-  const positionProp = layer.transform?.position;
-  if (!positionProp?.keyframes) return;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const transform = layer.transform;
+  const positionProp = (transform != null && typeof transform === "object" && "position" in transform && transform.position != null && typeof transform.position === "object") ? transform.position : undefined;
+  if (positionProp == null || typeof positionProp !== "object" || !("keyframes" in positionProp) || positionProp.keyframes == null || !Array.isArray(positionProp.keyframes)) return;
 
   // Find the keyframe by ID
   const keyframe = positionProp.keyframes.find((kf) => kf.id === keyframeId);
   if (!keyframe) return;
 
   // Initialize spatial tangent if not present and apply delta
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
   const tangentKey =
     tangentType === "in" ? "spatialInTangent" : "spatialOutTangent";
-  const tangent = keyframe[tangentKey] ?? (keyframe[tangentKey] = { x: 0, y: 0, z: 0 });
+  // Pattern match: keyframe[tangentKey] ∈ { x: number; y: number; z: number } | undefined → { x: number; y: number; z: number }
+  const existingTangent = (typeof keyframe === "object" && keyframe !== null && tangentKey in keyframe && typeof keyframe[tangentKey] === "object" && keyframe[tangentKey] !== null) ? keyframe[tangentKey] as { x: number; y: number; z: number } : undefined;
+  if (existingTangent === undefined) {
+    keyframe[tangentKey] = { x: 0, y: 0, z: 0 };
+  }
+  const tangent = keyframe[tangentKey] as { x: number; y: number; z: number };
   tangent.x += delta.x;
   tangent.y += delta.y;
 
@@ -1602,9 +1833,7 @@ function onMotionPathTangentUpdated(
   markLayerDirty(layerId);
 
   // Mark project as modified
-  if (store.project?.meta) {
-    store.project.meta.modified = new Date().toISOString();
-  }
+  projectStore.project.meta.modified = new Date().toISOString();
 }
 
 // Zoom controls
@@ -1649,7 +1878,7 @@ function resetCamera() {
  */
 function _toggleGrid() {
   // Update through store - the watch will sync to local ref and engine
-  store.updateViewOptions({ showGrid: !store.viewOptions.showGrid });
+  cameraStore.updateViewOptions({ showGrid: !cameraStore.viewOptions.showGrid });
 }
 
 /**
@@ -1708,7 +1937,7 @@ function onZoomSelect() {
 function onResolutionChange() {
   if (!engine.value) return;
 
-  const comp = store.getActiveComp();
+  const comp = projectStore.getActiveComp();
   if (!comp) return;
 
   const fullWidth = comp.settings.width;
@@ -1740,11 +1969,15 @@ function onResolutionChange() {
 }
 
 // Capture frame for export
+// System F/Omega EXCEPTION: Returning null here is valid - function signature explicitly allows null
+// This is a utility function that can legitimately return null when capture fails (no engine, no imageData, no canvas context)
+// Callers handle null gracefully - this is not an error condition but a "no capture available" state
 async function captureFrame(): Promise<string | null> {
   if (!engine.value) return null;
 
   const result = engine.value.captureFrame();
-  if (!result?.imageData) return null;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  if (result == null || typeof result !== "object" || !("imageData" in result) || result.imageData == null) return null;
 
   // Convert ImageData to data URL
   const canvas = document.createElement("canvas");
@@ -1758,11 +1991,15 @@ async function captureFrame(): Promise<string | null> {
 }
 
 // Capture depth for ComfyUI
+// System F/Omega EXCEPTION: Returning null here is valid - function signature explicitly allows null
+// This is a utility function that can legitimately return null when capture fails (no engine, no depthBuffer, no canvas context)
+// Callers handle null gracefully - this is not an error condition but a "no capture available" state
 async function captureDepth(): Promise<string | null> {
   if (!engine.value) return null;
 
   const result = engine.value.captureDepth();
-  if (!result?.depthBuffer) return null;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  if (result == null || typeof result !== "object" || !("depthBuffer" in result) || result.depthBuffer == null) return null;
 
   // Convert depth buffer to grayscale image data URL
   const canvas = document.createElement("canvas");

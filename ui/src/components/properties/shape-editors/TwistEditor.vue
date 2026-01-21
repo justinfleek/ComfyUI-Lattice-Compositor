@@ -17,13 +17,13 @@
 </template>
 
 <script setup lang="ts">
-import { useCompositorStore } from "@/stores/compositorStore";
+import { useAnimationStore } from "@/stores/animationStore";
 import { createKeyframe } from "@/types/animation";
 import type { TwistOperator } from "@/types/shapes";
 
 const props = defineProps<{ operator: TwistOperator; layerId: string }>();
 const emit = defineEmits(["update"]);
-const store = useCompositorStore();
+const animationStore = useAnimationStore();
 
 function updateNumber(prop: "angle", value: number) {
   const updated = { ...props.operator };
@@ -43,7 +43,7 @@ function updatePoint(prop: "center", axis: "x" | "y", value: number) {
 function toggleKeyframe(prop: "angle" | "center") {
   const updated = { ...props.operator };
   const animProp = updated[prop];
-  const frame = store.currentFrame;
+  const frame = animationStore.currentFrame;
   const hasKf = animProp.keyframes.some((k) => k.frame === frame);
   if (hasKf) {
     animProp.keyframes = animProp.keyframes.filter(

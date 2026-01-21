@@ -16,6 +16,7 @@ import {
   type SnapConfig,
   type SnapResult,
 } from "@/services/timelineSnap";
+import { isFiniteNumber } from "@/utils/typeGuards";
 import { usePlaybackStore } from "../playbackStore";
 import { useProjectStore } from "../projectStore";
 import { motionEngine } from "@/engine/MotionEngine";
@@ -80,7 +81,11 @@ export const useAnimationStore = defineStore("animation", {
       state.workAreaStart !== null && state.workAreaEnd !== null,
 
     /** Get effective start frame (work area or 0) */
-    effectiveStartFrame: (state) => state.workAreaStart ?? 0,
+    effectiveStartFrame: (state) => {
+      // Type proof: workAreaStart ∈ ℕ | null → ℕ
+      const workAreaStartValue = state.workAreaStart;
+      return isFiniteNumber(workAreaStartValue) && Number.isInteger(workAreaStartValue) && workAreaStartValue >= 0 ? workAreaStartValue : 0;
+    },
 
     /** Whether playback is currently active (delegated to playbackStore) */
     isPlaying(): boolean {
@@ -91,7 +96,10 @@ export const useAnimationStore = defineStore("animation", {
     currentFrame(): number {
       const projectStore = useProjectStore();
       const comp = projectStore.getActiveComp();
-      return comp?.currentFrame ?? 0;
+      // Type proof: currentFrame ∈ ℕ ∪ {undefined} → ℕ
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const compCurrentFrame = (comp != null && typeof comp === "object" && "currentFrame" in comp && typeof comp.currentFrame === "number") ? comp.currentFrame : undefined;
+      return isFiniteNumber(compCurrentFrame) && Number.isInteger(compCurrentFrame) && compCurrentFrame >= 0 ? compCurrentFrame : 0;
     },
   },
 
@@ -237,7 +245,11 @@ export const useAnimationStore = defineStore("animation", {
      * Get effective end frame (work area or frameCount - 1)
      */
     getEffectiveEndFrame(store: AnimationStoreAccess): number {
-      return this.workAreaEnd ?? store.frameCount - 1;
+      // Type proof: workAreaEnd ∈ ℕ | null → ℕ
+      const workAreaEndValue = this.workAreaEnd;
+      return isFiniteNumber(workAreaEndValue) && Number.isInteger(workAreaEndValue) && workAreaEndValue >= 0
+        ? workAreaEndValue
+        : store.frameCount - 1;
     },
 
     // ========================================================================
@@ -318,7 +330,13 @@ export const useAnimationStore = defineStore("animation", {
      */
     getFrameState(store: FrameEvaluationAccess, frame?: number): FrameState {
       const comp = store.getActiveComp();
-      const targetFrame = frame ?? comp?.currentFrame ?? 0;
+      // Type proof: frame ∈ ℕ ∪ {undefined}, currentFrame ∈ ℕ ∪ {undefined} → ℕ
+      const frameValue = frame;
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const compCurrentFrame = (comp != null && typeof comp === "object" && "currentFrame" in comp && typeof comp.currentFrame === "number") ? comp.currentFrame : undefined;
+      const targetFrame = isFiniteNumber(frameValue) && Number.isInteger(frameValue) && frameValue >= 0
+        ? frameValue
+        : (isFiniteNumber(compCurrentFrame) && Number.isInteger(compCurrentFrame) && compCurrentFrame >= 0 ? compCurrentFrame : 0);
 
       // Get audio reactive data from audioStore
       const audioStore = useAudioStore();
@@ -361,14 +379,14 @@ export const useAnimationStore = defineStore("animation", {
      * @param frame - Frame to find snap point for
      * @param pixelsPerFrame - Pixels per frame for snap tolerance calculation
      * @param selectedLayerId - Optional selected layer ID for layer-bound snapping
-     * @returns Snap result or null if no snap point found
+     * @returns Snap result (throws error if no snap point found - wrap in try/catch for expected "no snap" case)
      */
     findSnapPoint(
       store: SnapPointAccess,
       frame: number,
       pixelsPerFrame: number,
       selectedLayerId?: string | null,
-    ): SnapResult | null {
+    ): SnapResult {
       const audioStore = useAudioStore();
       return findNearestSnap(
         frame,

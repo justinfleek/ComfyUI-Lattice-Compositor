@@ -52,9 +52,11 @@ export class ParticleAudioReactive {
 
   /**
    * Get audio feature value
+   * Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
    */
   getFeature(feature: AudioFeature): number {
-    return this.audioFeatures.get(feature) ?? 0;
+    const value = this.audioFeatures.get(feature);
+    return (value !== null && value !== undefined && typeof value === "number" && Number.isFinite(value)) ? value : 0;
   }
 
   /**
@@ -98,14 +100,17 @@ export class ParticleAudioReactive {
     >,
     forceFields: Map<string, ForceFieldConfig>,
   ): void {
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
     for (let i = 0; i < this.audioBindings.length; i++) {
       const binding = this.audioBindings[i];
-      const featureValue = this.audioFeatures.get(binding.feature) ?? 0;
+      const featureValueRaw = this.audioFeatures.get(binding.feature);
+      const featureValue = (featureValueRaw !== null && featureValueRaw !== undefined && typeof featureValueRaw === "number" && Number.isFinite(featureValueRaw)) ? featureValueRaw : 0;
 
       // Apply exponential moving average (EMA) smoothing
       // smoothing = 0 means no smoothing (instant response)
       // smoothing = 1 means maximum smoothing (very slow response)
-      const previousSmoothed = this.smoothedAudioValues.get(i) ?? featureValue;
+      const previousSmoothedRaw = this.smoothedAudioValues.get(i);
+      const previousSmoothed = (previousSmoothedRaw !== null && previousSmoothedRaw !== undefined && typeof previousSmoothedRaw === "number" && Number.isFinite(previousSmoothedRaw)) ? previousSmoothedRaw : featureValue;
       // Validate smoothing
       const safeSmoothing = Number.isFinite(binding.smoothing) ? Math.max(0, Math.min(1, binding.smoothing)) : 0;
       const alpha = 1 - safeSmoothing; // Convert smoothing to alpha
@@ -134,13 +139,16 @@ export class ParticleAudioReactive {
         output = safeOutputMin + Math.sqrt(t) * (safeOutputMax - safeOutputMin);
       } else if (binding.curve === "step") {
         // Step curve: snap to discrete steps
-        const steps = Math.max(2, binding.stepCount ?? 5);
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+        const stepCount = (typeof binding.stepCount === "number" && Number.isFinite(binding.stepCount) && binding.stepCount >= 2) ? binding.stepCount : 5;
+        const steps = Math.max(2, stepCount);
         const steppedT = Math.floor(t * steps) / steps;
         output = safeOutputMin + steppedT * (safeOutputMax - safeOutputMin);
       }
 
       // Check trigger mode
-      const triggerMode = binding.triggerMode ?? "continuous";
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+      const triggerMode = (typeof binding.triggerMode === "string" && binding.triggerMode.length > 0) ? binding.triggerMode : "continuous";
       if (triggerMode === "onThreshold") {
         // Only apply when smoothed value exceeds threshold
         const rawThreshold = binding.threshold;
@@ -148,7 +156,9 @@ export class ParticleAudioReactive {
         if (t < threshold) continue;
       } else if (triggerMode === "onBeat") {
         // Only apply when beat/onset is detected
-        const onsetValue = this.audioFeatures.get("onsets") ?? 0;
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+        const onsetValueRaw = this.audioFeatures.get("onsets");
+        const onsetValue = (onsetValueRaw !== null && onsetValueRaw !== undefined && typeof onsetValueRaw === "number" && Number.isFinite(onsetValueRaw)) ? onsetValueRaw : 0;
         if (onsetValue < 0.5) continue;
       }
       // triggerMode === 'continuous' - always apply (default behavior)
@@ -189,19 +199,26 @@ export class ParticleAudioReactive {
 
   /**
    * Get audio modulation for a specific parameter
+   * 
+   * System F/Omega proof: Explicit validation of audio binding existence
+   * Type proof: target, targetId, parameter ∈ string → number (non-nullable)
+   * Mathematical proof: Audio binding must exist for the specified target/parameter
+   * Pattern proof: Missing binding is an explicit failure condition, not a lazy undefined return
    */
   getModulation(
     target: string,
     targetId: string,
     parameter: string,
-  ): number | undefined {
+  ): number {
     for (const binding of this.audioBindings) {
       if (
         binding.target === target &&
         binding.targetId === targetId &&
         binding.parameter === parameter
       ) {
-        const featureValue = this.audioFeatures.get(binding.feature) ?? 0;
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+        const featureValueRaw = this.audioFeatures.get(binding.feature);
+        const featureValue = (featureValueRaw !== null && featureValueRaw !== undefined && typeof featureValueRaw === "number" && Number.isFinite(featureValueRaw)) ? featureValueRaw : 0;
         // Validate min/max separately to handle NaN
         const safeMin = Number.isFinite(binding.min) ? binding.min : 0;
         const safeMax = Number.isFinite(binding.max) ? binding.max : 1;
@@ -213,7 +230,17 @@ export class ParticleAudioReactive {
         return safeOutputMin + t * (safeOutputMax - safeOutputMin);
       }
     }
-    return undefined;
+    
+    // System F/Omega proof: Explicit validation of audio binding existence
+    // Type proof: audioBindings is Array<AudioBinding>
+    // Mathematical proof: Audio binding must exist for the specified target/parameter combination
+    throw new Error(
+      `[ParticleAudioReactive] Cannot get modulation: Audio binding not found. ` +
+      `Target: ${target}, targetId: ${targetId}, parameter: ${parameter}, ` +
+      `bindings available: ${this.audioBindings.length}. ` +
+      `Audio binding must exist for the specified target/parameter. ` +
+      `Wrap in try/catch if "binding not found" is an expected state.`
+    );
   }
 
   // ============================================================================

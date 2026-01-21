@@ -21,13 +21,14 @@
 </template>
 
 <script setup lang="ts">
-import { useCompositorStore } from "@/stores/compositorStore";
+import { useAnimationStore } from "@/stores/animationStore";
 import { createKeyframe } from "@/types/animation";
 import type { ZigZagOperator } from "@/types/shapes";
+import type { JSONValue } from "@/types/dataAsset";
 
 const props = defineProps<{ operator: ZigZagOperator; layerId: string }>();
 const emit = defineEmits(["update"]);
-const store = useCompositorStore();
+const animationStore = useAnimationStore();
 
 function updateNumber(prop: "size" | "ridgesPerSegment", value: number) {
   const updated = { ...props.operator };
@@ -35,7 +36,7 @@ function updateNumber(prop: "size" | "ridgesPerSegment", value: number) {
   emit("update", updated);
 }
 
-function updateMeta(key: string, value: unknown) {
+function updateMeta(key: string, value: JSONValue) {
   const updated = { ...props.operator, [key]: value };
   emit("update", updated);
 }
@@ -43,7 +44,7 @@ function updateMeta(key: string, value: unknown) {
 function toggleKeyframe(prop: "size" | "ridgesPerSegment") {
   const updated = { ...props.operator };
   const animProp = updated[prop];
-  const frame = store.currentFrame;
+  const frame = animationStore.currentFrame;
   const hasKf = animProp.keyframes.some((k) => k.frame === frame);
   if (hasKf) {
     animProp.keyframes = animProp.keyframes.filter((k) => k.frame !== frame);

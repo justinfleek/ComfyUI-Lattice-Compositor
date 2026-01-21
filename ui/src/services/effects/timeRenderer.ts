@@ -13,6 +13,7 @@ import {
   type EvaluatedEffectParams,
   registerEffectRenderer,
 } from "../effectProcessor";
+import { isFiniteNumber } from "@/utils/typeGuards";
 
 // ============================================================================
 // FRAME BUFFER FOR TIME EFFECTS
@@ -81,11 +82,26 @@ class TimeEffectFrameBuffer {
 
   /**
    * Get the closest frame to the target
+   * 
+   * System F/Omega proof: Explicit validation of buffer state
+   * Type proof: targetFrame ∈ number → { imageData: ImageData; frame: number } (non-nullable)
+   * Mathematical proof: Buffer must contain at least one frame to find closest
+   * Pattern proof: Empty buffer is an explicit failure condition, not a lazy null return
    */
   getClosest(
     targetFrame: number,
-  ): { imageData: ImageData; frame: number } | null {
-    if (this.buffer.length === 0) return null;
+  ): { imageData: ImageData; frame: number } {
+    // System F/Omega proof: Explicit validation of buffer state
+    // Type proof: buffer.length ∈ number
+    // Mathematical proof: Buffer must contain at least one frame to find closest
+    if (this.buffer.length === 0) {
+      throw new Error(
+        `[TimeRenderer] Cannot get closest frame: Buffer is empty. ` +
+        `Target frame: ${targetFrame}. ` +
+        `Time renderer buffer must contain at least one frame before finding closest. ` +
+        `Wrap in try/catch if "buffer empty" is an expected state.`
+      );
+    }
 
     let closest = this.buffer[0];
     let minDist = Math.abs(closest.frame - targetFrame);
@@ -118,9 +134,12 @@ class TimeEffectFrameBuffer {
 
     for (let i = 1; i <= numEchoes; i++) {
       const targetFrame = Math.round(currentFrame + echoTimeFrames * i);
-      const entry = this.getClosest(targetFrame);
-      if (entry) {
+      // System F/Omega pattern: Wrap in try/catch for expected "buffer empty" case
+      try {
+        const entry = this.getClosest(targetFrame);
         results.push({ ...entry, echoIndex: i });
+      } catch (error) {
+        // Buffer empty - skip this echo (expected state)
       }
     }
 
@@ -224,31 +243,45 @@ export function echoRenderer(
   params: EvaluatedEffectParams,
 ): EffectStackResult {
   // Get frame info from extended params (needed for echoTime default calculation)
-  const frame = params._frame ?? 0;
+  // Type proof: _frame ∈ ℕ ∪ {undefined} → _frame ∈ ℕ
+  const frameValue = params._frame;
+  const frame = isFiniteNumber(frameValue) && Number.isInteger(frameValue) && frameValue >= 0 ? frameValue : 0;
   // Validate fps (nullish coalescing doesn't catch NaN)
-  const fps =
-    Number.isFinite(params._fps) && params._fps > 0 ? params._fps : 16;
+  // Type proof: _fps ∈ ℝ₊ ∧ finite(_fps) → _fps ∈ ℝ₊
+  const fpsValue = params._fps;
+  const fps = isFiniteNumber(fpsValue) && fpsValue > 0 ? fpsValue : 16;
 
   // Extract parameters with defaults
   // Validate numeric params (NaN bypasses Math.max/min clamps)
-  const rawEchoTime = params.echo_time ?? -1 / fps;
-  const echoTime = Number.isFinite(rawEchoTime) ? rawEchoTime : -1 / fps;
-  const rawNumEchoes = params.number_of_echoes ?? 8;
-  const numEchoes = Number.isFinite(rawNumEchoes)
-    ? Math.max(1, Math.min(50, rawNumEchoes))
+  // Type proof: echo_time ∈ ℝ ∧ finite(echo_time) → echo_time ∈ ℝ
+  const echoTimeValue = params.echo_time;
+  const echoTimeRaw = isFiniteNumber(echoTimeValue) ? echoTimeValue : -1 / fps;
+  const echoTime = echoTimeRaw;
+  // Type proof: number_of_echoes ∈ ℕ ∧ finite(number_of_echoes) → number_of_echoes ∈ [1, 50]
+  const numEchoesValue = params.number_of_echoes;
+  const numEchoesRaw = isFiniteNumber(numEchoesValue) && Number.isInteger(numEchoesValue)
+    ? numEchoesValue
     : 8;
-  const rawIntensity = params.starting_intensity ?? 1.0;
-  const startingIntensity = Number.isFinite(rawIntensity)
-    ? Math.max(0, Math.min(1, rawIntensity))
+  const numEchoes = Math.max(1, Math.min(50, numEchoesRaw));
+  // Type proof: starting_intensity ∈ ℝ ∧ finite(starting_intensity) → starting_intensity ∈ [0, 1]
+  const startingIntensityValue = params.starting_intensity;
+  const startingIntensityRaw = isFiniteNumber(startingIntensityValue)
+    ? startingIntensityValue
     : 1.0;
-  const rawDecay = params.decay ?? 0.5;
-  const decay = Number.isFinite(rawDecay)
-    ? Math.max(0, Math.min(1, rawDecay))
-    : 0.5;
-  const operator: EchoOperator = params.echo_operator ?? "add";
-  const layerId = params._layerId ?? "default";
+  const startingIntensity = Math.max(0, Math.min(1, startingIntensityRaw));
+  // Type proof: decay ∈ ℝ ∧ finite(decay) → decay ∈ [0, 1]
+  const decayValue = params.decay;
+  const decayRaw = isFiniteNumber(decayValue) ? decayValue : 0.5;
+  const decay = Math.max(0, Math.min(1, decayRaw));
+  // Type proof: echo_operator ∈ {"add", "screen", "multiply", "overlay"} ∪ {undefined}
+  const operatorValue = params.echo_operator;
+  const operator = (typeof operatorValue === "string" ? operatorValue : "add") as EchoOperator;
+  // Type proof: _layerId ∈ string ∪ {undefined}
+  const layerIdValue = params._layerId;
+  const layerId = typeof layerIdValue === "string" ? layerIdValue : "default";
 
   // Calculate echo time in frames
+  // echoTime is already validated as number above
   const echoTimeFrames = echoTime * fps;
 
   // Get frame buffer for this layer
@@ -284,7 +317,9 @@ export function echoRenderer(
 
   // Composite echoes based on operator
   for (const echoData of echoFrames) {
-    const intensity = intensities[echoData.echoIndex - 1] ?? 0;
+    // Type proof: intensities[i] ∈ ℝ ∪ {undefined} → intensities[i] ∈ ℝ
+    const intensityValue = intensities[echoData.echoIndex - 1];
+    const intensity = isFiniteNumber(intensityValue) ? intensityValue : 0;
     if (intensity <= 0.001) continue;
 
     // Create temp canvas for this echo
@@ -369,15 +404,22 @@ export function posterizeTimeRenderer(
   params: EvaluatedEffectParams,
 ): EffectStackResult {
   // Validate numeric params (NaN bypasses Math.max/min clamps)
-  const rawTargetFps = params.frame_rate ?? 12;
-  const targetFps = Number.isFinite(rawTargetFps)
-    ? Math.max(1, Math.min(60, rawTargetFps))
+  // Type proof: frame_rate ∈ ℝ₊ ∧ finite(frame_rate) → frame_rate ∈ [1, 60]
+  const targetFpsValue = params.frame_rate;
+  const targetFpsRaw = isFiniteNumber(targetFpsValue) && targetFpsValue > 0
+    ? targetFpsValue
     : 12;
-  const frame = params._frame ?? 0;
+  const targetFps = Math.max(1, Math.min(60, targetFpsRaw));
+  // Type proof: _frame ∈ ℕ ∪ {undefined} → _frame ∈ ℕ
+  const frameValue = params._frame;
+  const frame = isFiniteNumber(frameValue) && Number.isInteger(frameValue) && frameValue >= 0 ? frameValue : 0;
   // Validate fps to prevent division by NaN
-  const fps =
-    Number.isFinite(params._fps) && params._fps > 0 ? params._fps : 16;
-  const layerId = params._layerId ?? "default";
+  // Type proof: _fps ∈ ℝ₊ ∧ finite(_fps) → _fps ∈ ℝ₊
+  const fpsValue = params._fps;
+  const fps = isFiniteNumber(fpsValue) && fpsValue > 0 ? fpsValue : 16;
+  // Type proof: _layerId ∈ string ∪ {undefined}
+  const layerIdValue = params._layerId;
+  const layerId = typeof layerIdValue === "string" ? layerIdValue : "default";
 
   // Calculate which "posterized" frame this belongs to
   const frameRatio = fps / targetFps;
@@ -489,17 +531,26 @@ export function timeDisplacementRenderer(
   params: EvaluatedEffectParams,
 ): EffectStackResult {
   // Validate numeric params (NaN bypasses === 0 check)
-  const rawMaxDisplacement = params.max_displacement ?? 10;
-  const maxDisplacement = Number.isFinite(rawMaxDisplacement)
-    ? rawMaxDisplacement
+  // Type proof: max_displacement ∈ ℝ ∧ finite(max_displacement) → max_displacement ∈ ℝ₊
+  const maxDisplacementValue = params.max_displacement;
+  const maxDisplacement = isFiniteNumber(maxDisplacementValue) && maxDisplacementValue >= 0
+    ? maxDisplacementValue
     : 10;
-  const mapType = params.map_type ?? "gradient-h";
-  const rawMapScale = params.map_scale ?? 1;
-  const mapScale = Number.isFinite(rawMapScale) ? rawMapScale : 1;
-  const rawBias = params.time_offset_bias ?? 0;
-  const bias = Number.isFinite(rawBias) ? rawBias : 0;
-  const frame = params._frame ?? 0;
-  const layerId = params._layerId ?? "default";
+  // Type proof: map_type ∈ {"gradient-h", "gradient-v", "radial", "spiral"} ∪ {undefined}
+  const mapTypeValue = params.map_type;
+  const mapType = typeof mapTypeValue === "string" ? mapTypeValue : "gradient-h";
+  // Type proof: map_scale ∈ ℝ ∧ finite(map_scale) → map_scale ∈ ℝ₊
+  const mapScaleValue = params.map_scale;
+  const mapScale = isFiniteNumber(mapScaleValue) && mapScaleValue > 0 ? mapScaleValue : 1;
+  // Type proof: time_offset_bias ∈ ℝ ∧ finite(time_offset_bias) → time_offset_bias ∈ ℝ
+  const biasValue = params.time_offset_bias;
+  const bias = isFiniteNumber(biasValue) ? biasValue : 0;
+  // Type proof: _frame ∈ ℕ ∪ {undefined} → _frame ∈ ℕ
+  const frameValue = params._frame;
+  const frame = isFiniteNumber(frameValue) && Number.isInteger(frameValue) && frameValue >= 0 ? frameValue : 0;
+  // Type proof: _layerId ∈ string ∪ {undefined}
+  const layerIdValue = params._layerId;
+  const layerId = typeof layerIdValue === "string" ? layerIdValue : "default";
 
   // No effect if max displacement is 0
   if (maxDisplacement === 0) {
@@ -580,9 +631,18 @@ export function freezeFrameRenderer(
   input: EffectStackResult,
   params: EvaluatedEffectParams,
 ): EffectStackResult {
-  const freezeAtFrame = Math.max(0, Math.round(params.freeze_at_frame ?? 0));
-  const frame = params._frame ?? 0;
-  const layerId = params._layerId ?? "default";
+  // Type proof: freeze_at_frame ∈ ℕ ∪ {undefined} → freeze_at_frame ∈ ℕ
+  const freezeAtFrameValue = params.freeze_at_frame;
+  const freezeAtFrameRaw = isFiniteNumber(freezeAtFrameValue) && Number.isInteger(freezeAtFrameValue)
+    ? freezeAtFrameValue
+    : 0;
+  const freezeAtFrame = Math.max(0, Math.round(freezeAtFrameRaw));
+  // Type proof: _frame ∈ ℕ ∪ {undefined} → _frame ∈ ℕ
+  const frameValue = params._frame;
+  const frame = isFiniteNumber(frameValue) && Number.isInteger(frameValue) && frameValue >= 0 ? frameValue : 0;
+  // Type proof: _layerId ∈ string ∪ {undefined}
+  const layerIdValue = params._layerId;
+  const layerId = typeof layerIdValue === "string" ? layerIdValue : "default";
   const cacheKey = `${layerId}_freeze`;
 
   // Get frame buffer for storing/retrieving frames

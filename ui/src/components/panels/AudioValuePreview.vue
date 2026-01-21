@@ -15,17 +15,17 @@
 
 import { computed, ref } from "vue";
 import { getFeatureAtFrame, isBeatAtFrame } from "@/services/audioFeatures";
-import { useCompositorStore } from "@/stores/compositorStore";
 import { useAudioStore } from "@/stores/audioStore";
+import { useAnimationStore } from "@/stores/animationStore";
 
-const store = useCompositorStore();
 const audioStore = useAudioStore();
+const animationStore = useAnimationStore();
 
 // Whether to show expanded view
 const expanded = ref(false);
 
 // Get current frame
-const currentFrame = computed(() => store.currentFrame);
+const currentFrame = computed(() => animationStore.currentFrame);
 
 // Check if audio is loaded
 const hasAudio = computed(() => !!audioStore.audioAnalysis);
@@ -64,14 +64,21 @@ const isBeat = computed(() => {
 });
 
 // HPSS values
+// Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??/?.
 const harmonic = computed(() => {
-  if (!audioAnalysis.value?.harmonicEnergy) return 0;
-  return audioAnalysis.value.harmonicEnergy[currentFrame.value] ?? 0;
+  const analysis = audioAnalysis.value;
+  if (!analysis || !analysis.harmonicEnergy) return 0;
+  const frame = currentFrame.value;
+  const value = analysis.harmonicEnergy[frame];
+  return (typeof value === "number" && Number.isFinite(value)) ? value : 0;
 });
 
 const percussive = computed(() => {
-  if (!audioAnalysis.value?.percussiveEnergy) return 0;
-  return audioAnalysis.value.percussiveEnergy[currentFrame.value] ?? 0;
+  const analysis = audioAnalysis.value;
+  if (!analysis || !analysis.percussiveEnergy) return 0;
+  const frame = currentFrame.value;
+  const value = analysis.percussiveEnergy[frame];
+  return (typeof value === "number" && Number.isFinite(value)) ? value : 0;
 });
 
 // Spectral features
@@ -91,6 +98,21 @@ const spectralFlux = computed(() => {
     "spectralFlux",
     currentFrame.value,
   );
+});
+
+// Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??/?.
+// Computed properties for audioAnalysis optional properties
+const audioAnalysisBpm = computed(() => {
+  const analysis = audioAnalysis.value;
+  if (analysis === null || analysis === undefined || typeof analysis !== "object" || !("bpm" in analysis)) {
+    return "N/A";
+  }
+  const bpm = analysis.bpm;
+  return (typeof bpm === "number" && Number.isFinite(bpm)) ? bpm.toFixed(1) : "N/A";
+});
+const audioAnalysisFrameCount = computed(() => {
+  const analysis = audioAnalysis.value;
+  return (analysis !== null && analysis !== undefined && typeof analysis === "object" && "frameCount" in analysis && typeof analysis.frameCount === "number" && Number.isFinite(analysis.frameCount)) ? analysis.frameCount : 0;
 });
 
 // Format percentage
@@ -174,11 +196,11 @@ const toggleExpanded = () => {
       <div class="section-title">Info</div>
       <div class="info-row">
         <span>BPM:</span>
-        <span class="info-value">{{ audioAnalysis?.bpm?.toFixed(1) ?? 'N/A' }}</span>
+        <span class="info-value">{{ audioAnalysisBpm }}</span>
       </div>
       <div class="info-row">
         <span>Frame:</span>
-        <span class="info-value">{{ currentFrame }} / {{ audioAnalysis?.frameCount ?? 0 }}</span>
+        <span class="info-value">{{ currentFrame }} / {{ audioAnalysisFrameCount }}</span>
       </div>
     </div>
   </div>

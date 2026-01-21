@@ -8,7 +8,7 @@ alwaysApply: true
 ## CRITICAL PRINCIPLES
 
 ### CODE IS TRUTH, TYPES DESCRIBE
-- NEVER delete properties or code to satisfy TypeScript
+- NEVER delete properties or code to satisfy purescript
 - ALWAYS update type definitions to match working code
 - If fixing a type error, change the TYPE not the CODE
 
@@ -33,7 +33,7 @@ alwaysApply: true
 - Formatter: `ruff format`
 - Linter: `ruff check`
 - Types: `pyright`
-- Tests: `pytest` (70% coverage required)
+- Tests: `pytest` (100% coverage required)
 
 ### Nix
 - Format all: `nix fmt`

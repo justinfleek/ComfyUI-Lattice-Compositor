@@ -53,11 +53,8 @@ interface TweetNaCl {
 async function loadNaCl(): Promise<TweetNaCl | null> {
   try {
     return await import("tweetnacl");
-  } catch {
-    console.warn(
-      "[SECURITY] tweetnacl not installed - template signing unavailable",
-    );
-    return null;
+  } catch (error) {
+    throw new Error(`[TemplateVerifier] tweetnacl not installed - template signing unavailable: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
@@ -99,14 +96,23 @@ export interface VerificationResult {
  * Template data structure for signing (excludes _signature)
  * Based on LatticeTemplate but allows partial data for flexibility
  */
+import type { JSONValue } from "@/types/dataAsset";
+
+/**
+ * All possible JavaScript values that can be validated at runtime
+ * Used as input type for validators (replaces unknown)
+ */
+type RuntimeValue = string | number | boolean | object | null | undefined | bigint | symbol;
+
 export interface TemplateDataForSigning {
   formatVersion?: string;
-  templateConfig?: unknown;
+  templateConfig?: JSONValue;
   composition?: SerializedComposition;
-  assets?: unknown[];
-  fonts?: unknown[];
+  assets?: JSONValue[];
+  fonts?: JSONValue[];
   posterImage?: string;
-  [key: string]: unknown; // Allow additional properties for extensibility
+  // Index signature allows additional properties - SerializedComposition extends JSONValue
+  [key: string]: JSONValue | SerializedComposition | undefined;
 }
 
 export interface SignedTemplate {
@@ -152,7 +158,7 @@ const SUPPORTED_VERSIONS = ["1.0"];
  * @returns Verification result
  */
 export async function verifyTemplate(
-  template: unknown,
+  template: RuntimeValue,
 ): Promise<VerificationResult> {
   // Type check
   if (!template || typeof template !== "object") {
@@ -208,10 +214,7 @@ export async function verifyTemplate(
   // Verify the signature
   try {
     // Extract template data (everything except _signature) for verification
-    const { _signature: _, ...templateData } = template as Record<
-      string,
-      unknown
-    >;
+    const { _signature: _, ...templateData } = template as TemplateDataForSigning & { _signature?: TemplateSignature };
     const isValid = await verifySignature(templateData, signature);
 
     if (!isValid) {
@@ -272,7 +275,7 @@ export async function verifyTemplate(
 /**
  * Check if a template is officially signed (quick check).
  */
-export async function isOfficialTemplate(template: unknown): Promise<boolean> {
+export async function isOfficialTemplate(template: RuntimeValue): Promise<boolean> {
   const result = await verifyTemplate(template);
   return result.isOfficial;
 }
@@ -344,7 +347,8 @@ export async function signTemplate(
 
     // Create canonical JSON of template data (excluding any existing signature)
     const { _signature, ...templateData } = template;
-    const canonical = createCanonicalJson(templateData);
+    // Type assertion: TemplateDataForSigning is JSON-serializable
+    const canonical = createCanonicalJson(templateData as JSONValue);
     const messageBytes = new TextEncoder().encode(canonical);
 
     // Sign
@@ -393,7 +397,8 @@ async function verifySignature(
     const signatureBytes = base64ToUint8Array(signature.signature);
 
     // Create canonical JSON of the data
-    const canonical = createCanonicalJson(data);
+    // Type assertion: TemplateDataForSigning is JSON-serializable
+    const canonical = createCanonicalJson(data as JSONValue);
     const messageBytes = new TextEncoder().encode(canonical);
 
     // Verify
@@ -407,10 +412,10 @@ async function verifySignature(
 /**
  * Validate signature structure.
  */
-function isValidSignatureStructure(sig: unknown): sig is TemplateSignature {
+function isValidSignatureStructure(sig: RuntimeValue): sig is TemplateSignature {
   if (!sig || typeof sig !== "object") return false;
 
-  const s = sig as { algorithm?: unknown; publicKey?: unknown; signature?: unknown; version?: unknown; signedAt?: unknown };
+  const s = sig as { algorithm?: JSONValue; publicKey?: JSONValue; signature?: JSONValue; version?: JSONValue; signedAt?: JSONValue };
 
   return (
     s.algorithm === "Ed25519" &&
@@ -432,14 +437,14 @@ function isValidSignatureStructure(sig: unknown): sig is TemplateSignature {
  * Type guard for objects that can be canonicalized
  */
 interface CanonicalizableObject {
-  [key: string]: unknown;
+  [key: string]: JSONValue;
 }
 
-function isCanonicalizableObject(value: unknown): value is CanonicalizableObject {
+function isCanonicalizableObject(value: RuntimeValue): value is CanonicalizableObject {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function createCanonicalJson(obj: unknown): string {
+function createCanonicalJson(obj: JSONValue): string {
   return JSON.stringify(obj, (_, value) => {
     // Only sort object keys, leave arrays and primitives alone
     if (isCanonicalizableObject(value)) {
@@ -527,10 +532,10 @@ export function shouldWarnBeforeLoading(
  */
 export function getLoadingWarning(
   verification: VerificationResult,
-): string | null {
+): string {
   switch (verification.status) {
     case "official":
-      return null;
+      throw new Error("[TemplateVerifier] No loading warning for official templates");
     case "third-party-valid":
       return "This template is signed by a third party. Only load templates from sources you trust.";
     case "third-party-invalid":

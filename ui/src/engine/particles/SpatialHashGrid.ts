@@ -11,7 +11,7 @@
  * - Cell size should be >= max interaction radius
  */
 
-import { PARTICLE_STRIDE } from "./types";
+import { PARTICLE_STRIDE, type ISpatialHash } from "./types";
 
 // ============================================================================
 // TYPES
@@ -32,7 +32,7 @@ export interface SpatialHashConfig {
 // SPATIAL HASH GRID CLASS
 // ============================================================================
 
-export class SpatialHashGrid {
+export class SpatialHashGrid implements ISpatialHash {
   private readonly maxParticles: number;
   private cellSize: number;
   private cells: Map<string, number[]> = new Map();
@@ -87,7 +87,11 @@ export class SpatialHashGrid {
       if (!this.cells.has(key)) {
         this.cells.set(key, []);
       }
-      this.cells.get(key)?.push(i);
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const cellArray = this.cells.get(key);
+      if (cellArray != null && Array.isArray(cellArray)) {
+        cellArray.push(i);
+      }
       this.particleCells.set(i, key);
     }
   }
@@ -98,9 +102,11 @@ export class SpatialHashGrid {
 
   /**
    * Get all particle indices in a cell
+   * Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
    */
   getCell(key: string): number[] {
-    return this.cells.get(key) ?? [];
+    const cell = this.cells.get(key);
+    return (cell !== null && cell !== undefined && Array.isArray(cell)) ? cell : [];
   }
 
   /**

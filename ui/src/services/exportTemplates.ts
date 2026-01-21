@@ -161,12 +161,17 @@ class ExportTemplateService {
 
   /**
    * Get the last used template
+   * @throws Error if no template has been used yet
    */
-  getLastUsedTemplate(): ExportTemplate | undefined {
-    if (this.store.lastUsedTemplateId) {
-      return this.getTemplate(this.store.lastUsedTemplateId);
+  getLastUsedTemplate(): ExportTemplate {
+    if (!this.store.lastUsedTemplateId) {
+      throw new Error("[ExportTemplates] Cannot get last used template: No template has been used yet");
     }
-    return undefined;
+    const template = this.getTemplate(this.store.lastUsedTemplateId);
+    if (!template) {
+      throw new Error(`[ExportTemplates] Cannot get last used template: Template "${this.store.lastUsedTemplateId}" not found`);
+    }
+    return template;
   }
 
   /**
@@ -196,18 +201,20 @@ class ExportTemplateService {
 
   /**
    * Update an existing template
+   * @throws Error if template not found or is a default template
    */
   updateTemplate(
     id: string,
     updates: Partial<Pick<ExportTemplate, "name" | "description" | "config">>,
-  ): ExportTemplate | null {
+  ): ExportTemplate {
     const index = this.store.templates.findIndex((t) => t.id === id);
-    if (index === -1) return null;
+    if (index === -1) {
+      throw new Error(`[ExportTemplates] Cannot update template: Template "${id}" not found`);
+    }
 
     // Don't allow modifying default templates directly
     if (id.startsWith("default-")) {
-      console.warn("[ExportTemplates] Cannot modify default templates");
-      return null;
+      throw new Error(`[ExportTemplates] Cannot update template: Template "${id}" is a default template and cannot be modified`);
     }
 
     this.store.templates[index] = {
@@ -256,10 +263,13 @@ class ExportTemplateService {
 
   /**
    * Duplicate a template (useful for customizing defaults)
+   * @throws Error if template not found
    */
-  duplicateTemplate(id: string, newName?: string): ExportTemplate | null {
+  duplicateTemplate(id: string, newName?: string): ExportTemplate {
     const original = this.getTemplate(id);
-    if (!original) return null;
+    if (!original) {
+      throw new Error(`[ExportTemplates] Cannot duplicate template: Template "${id}" not found`);
+    }
 
     return this.saveTemplate(
       newName || `${original.name} (Copy)`,

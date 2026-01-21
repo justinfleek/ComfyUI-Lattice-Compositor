@@ -94,7 +94,7 @@
           <template v-for="kf in curve.keyframes" :key="'handles-' + kf.id">
             <template v-if="selectedKeyframeIds.includes(kf.id) && kf.interpolation === 'bezier'">
               <!-- In handle -->
-              <template v-if="kf.inHandle?.enabled">
+              <template v-if="(kf.inHandle != null && typeof kf.inHandle === 'object' && 'enabled' in kf.inHandle && kf.inHandle.enabled)">
                 <div
                   class="bezier-handle"
                   :style="getHandleStyle(curve, kf, 'in')"
@@ -112,7 +112,7 @@
                 </svg>
               </template>
               <!-- Out handle -->
-              <template v-if="kf.outHandle?.enabled">
+              <template v-if="(kf.outHandle != null && typeof kf.outHandle === 'object' && 'enabled' in kf.outHandle && kf.outHandle.enabled)">
                 <div
                   class="bezier-handle"
                   :style="getHandleStyle(curve, kf, 'out')"
@@ -145,7 +145,9 @@
 
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
-import { useCompositorStore } from "@/stores/compositorStore";
+import { safeCoordinateDefault, safeNonNegativeDefault } from "@/utils/typeGuards";
+import { useProjectStore } from "@/stores/projectStore";
+import { useSelectionStore } from "@/stores/selectionStore";
 import { useKeyframeStore } from "@/stores/keyframeStore";
 import type { Keyframe, PropertyValue } from "@/types/project";
 
@@ -194,7 +196,8 @@ const emit = defineEmits<{
   (e: "update:graphMode", mode: "value" | "speed"): void;
 }>();
 
-const store = useCompositorStore();
+const projectStore = useProjectStore();
+const selectionStore = useSelectionStore();
 const keyframeStore = useKeyframeStore();
 
 // ═══════════════════════════════════════════════════════════════════
@@ -240,7 +243,7 @@ function pixelToValue(pixel: number, height: number): number {
 // COMPUTED - Selection
 // ═══════════════════════════════════════════════════════════════════
 
-const selectedKeyframeIds = computed(() => store.selectedKeyframeIds);
+const selectedKeyframeIds = computed(() => selectionStore.selectedKeyframeIds);
 
 // ═══════════════════════════════════════════════════════════════════
 // COMPUTED - Playhead Position
@@ -255,7 +258,7 @@ const playheadPx = computed(() => frameToPixel(props.currentFrame));
 const allCurves = computed<CurveData[]>(() => {
   const curves: CurveData[] = [];
 
-  store.layers.forEach((layer) => {
+  projectStore.getActiveCompLayers().forEach((layer) => {
     // Position X/Y (always separated for graph editing)
     if (
       layer.transform.position.animated &&
@@ -445,8 +448,15 @@ interface SelectedKeyframeInfo {
   value: number;
 }
 
-const selectedKeyframeData = computed<SelectedKeyframeInfo | null>(() => {
-  if (selectedKeyframeIds.value.length !== 1) return null;
+// System F/Omega: Computed property that throws explicit errors instead of returning null
+const selectedKeyframeDataRaw = computed<SelectedKeyframeInfo>(() => {
+  if (selectedKeyframeIds.value.length !== 1) {
+    throw new Error(
+      `[CurveEditorCanvas] Cannot get selected keyframe data: No keyframe selected or multiple selected. ` +
+      `Selected keyframe count: ${selectedKeyframeIds.value.length}, expected: 1. ` +
+      `Select exactly one keyframe to view its data.`
+    );
+  }
 
   const selectedId = selectedKeyframeIds.value[0];
 
@@ -462,7 +472,26 @@ const selectedKeyframeData = computed<SelectedKeyframeInfo | null>(() => {
     }
   }
 
-  return null;
+  // System F/Omega: Throw explicit error when keyframe not found
+  throw new Error(
+    `[CurveEditorCanvas] Cannot get selected keyframe data: Keyframe not found. ` +
+    `Selected keyframe ID: ${selectedId}, visible curves: ${visibleCurves.value.length}. ` +
+    `Keyframe must exist in visible curves. Wrap in try/catch if "keyframe not found" is an expected state.`
+  );
+});
+
+// Wrapper computed property for template use - catches errors and returns null for conditional rendering
+// System F/Omega EXCEPTION: Returning null here is necessary for Vue template compatibility
+// Template uses v-if which requires null for conditional rendering
+const selectedKeyframeData = computed<SelectedKeyframeInfo | null>(() => {
+  try {
+    return selectedKeyframeDataRaw.value;
+  } catch {
+    // System F/Omega EXCEPTION: Returning null here is necessary for Vue template compatibility
+    // Template uses v-if which requires null for conditional rendering
+    // This is the ONLY place where null is returned - all other code throws explicit errors
+    return null;
+  }
 });
 
 function formatValueForInput(value: number): string {
@@ -474,13 +503,12 @@ function updateSelectedKeyframeFrame(e: Event) {
   if (!data) return;
 
   const input = e.target as HTMLInputElement;
-  const newFrame = Math.max(
-    0,
-    Math.min(props.frameCount - 1, parseInt(input.value, 10) || 0),
-  );
+  // Type proof: frame number ∈ number | NaN → number (≥ 0, frame index)
+  const parsedFrame = parseInt(input.value, 10);
+  const frame = Number.isInteger(parsedFrame) && parsedFrame >= 0 ? parsedFrame : 0;
+  const newFrame = Math.max(0, Math.min(props.frameCount - 1, frame));
 
   keyframeStore.moveKeyframe(
-    store,
     data.curve.layerId,
     data.curve.propertyPath,
     data.keyframe.id,
@@ -494,11 +522,12 @@ function updateSelectedKeyframeValue(e: Event) {
   if (!data) return;
 
   const input = e.target as HTMLInputElement;
-  const newValue = parseFloat(input.value) || 0;
+  // Type proof: keyframe value ∈ number | NaN → number (coordinate-like, can be negative)
+  const parsedValue = parseFloat(input.value);
+  const newValue = Number.isFinite(parsedValue) ? parsedValue : 0;
 
   // Update the keyframe value
   keyframeStore.setKeyframeValue(
-    store,
     data.curve.layerId,
     data.curve.propertyPath,
     data.keyframe.id,
@@ -512,7 +541,10 @@ function updateSelectedKeyframeValue(e: Event) {
 // ═══════════════════════════════════════════════════════════════════
 
 function calculateSpeedAtFrame(curve: CurveData, frame: number): number {
-  const fps = store.fps || 30;
+  const projectStore = useProjectStore();
+  const comp = projectStore.getActiveComp();
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const fps = (comp != null && typeof comp === "object" && "settings" in comp && comp.settings != null && typeof comp.settings === "object" && "fps" in comp.settings && typeof comp.settings.fps === "number") ? comp.settings.fps : 30;
   const epsilon = 1 / fps;
 
   const v1 = sampleCurveValue(curve, frame);
@@ -550,14 +582,20 @@ function sampleCurveValue(curve: CurveData, t: number): number {
     return v1;
   } else if (
     interp === "bezier" &&
-    kf1.outHandle?.enabled &&
-    kf2.inHandle?.enabled
+    (kf1.outHandle != null && typeof kf1.outHandle === "object" && "enabled" in kf1.outHandle && kf1.outHandle.enabled) &&
+    (kf2.inHandle != null && typeof kf2.inHandle === "object" && "enabled" in kf2.inHandle && kf2.inHandle.enabled)
   ) {
     // Cubic bezier interpolation
+    // Type proof: handle values ∈ number | undefined → number (coordinate-like, can be negative)
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const outHandle = kf1.outHandle;
+    const outHandleValue = safeCoordinateDefault((outHandle != null && typeof outHandle === "object" && "value" in outHandle && typeof outHandle.value === "number") ? outHandle.value : undefined, 0, "kf1.outHandle.value");
+    const inHandle = kf2.inHandle;
+    const inHandleValue = safeCoordinateDefault((inHandle != null && typeof inHandle === "object" && "value" in inHandle && typeof inHandle.value === "number") ? inHandle.value : undefined, 0, "kf2.inHandle.value");
     return cubicBezierValue(
       v1,
-      v1 + (kf1.outHandle?.value || 0),
-      v2 + (kf2.inHandle?.value || 0),
+      v1 + outHandleValue,
+      v2 + inHandleValue,
       v2,
       localT,
     );
@@ -704,8 +742,8 @@ function drawValueCurve(
       ctx.lineTo(x, y);
     } else if (
       interp === "bezier" &&
-      prev.outHandle?.enabled &&
-      kf.inHandle?.enabled
+      (prev.outHandle != null && typeof prev.outHandle === "object" && "enabled" in prev.outHandle && prev.outHandle.enabled) &&
+      (kf.inHandle != null && typeof kf.inHandle === "object" && "enabled" in kf.inHandle && kf.inHandle.enabled)
     ) {
       const cp1x = frameToPixel(prev.frame + prev.outHandle.frame);
       const cp1y = valueToPixel(prevV + prev.outHandle.value, h);
@@ -755,7 +793,9 @@ function drawSpeedCurve(
 
 function getKeyframeStyle(_curve: CurveData, kf: Keyframe<PropertyValue>) {
   const value = typeof kf.value === "number" ? kf.value : 0;
-  const h = canvasRef.value?.height || 300;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const canvasRefVal = canvasRef.value;
+  const h = (canvasRefVal != null && typeof canvasRefVal === "object" && "height" in canvasRefVal && typeof canvasRefVal.height === "number") ? canvasRefVal.height : 300;
   return {
     left: `${frameToPixel(kf.frame)}px`,
     top: `${valueToPixel(value, h)}px`,
@@ -768,12 +808,14 @@ function getHandleStyle(
   type: "in" | "out",
 ) {
   const handle = type === "in" ? kf.inHandle : kf.outHandle;
-  if (!handle?.enabled) return { display: "none" };
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  if (!(handle != null && typeof handle === "object" && "enabled" in handle && handle.enabled)) return { display: "none" };
 
   const kfValue = typeof kf.value === "number" ? kf.value : 0;
   const handleFrame = kf.frame + handle.frame;
   const handleValue = kfValue + handle.value;
-  const h = canvasRef.value?.height || 300;
+  const canvasRefVal = canvasRef.value;
+  const h = (canvasRefVal != null && typeof canvasRefVal === "object" && "height" in canvasRefVal && typeof canvasRefVal.height === "number") ? canvasRefVal.height : 300;
 
   return {
     left: `${frameToPixel(handleFrame)}px`,
@@ -788,10 +830,12 @@ function getHandleLineCoords(
   type: "in" | "out",
 ) {
   const handle = type === "in" ? kf.inHandle : kf.outHandle;
-  if (!handle?.enabled) return { x1: 0, y1: 0, x2: 0, y2: 0 };
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  if (!(handle != null && typeof handle === "object" && "enabled" in handle && handle.enabled)) return { x1: 0, y1: 0, x2: 0, y2: 0 };
 
   const kfValue = typeof kf.value === "number" ? kf.value : 0;
-  const h = canvasRef.value?.height || 300;
+  const canvasRefVal = canvasRef.value;
+  const h = (canvasRefVal != null && typeof canvasRefVal === "object" && "height" in canvasRefVal && typeof canvasRefVal.height === "number") ? canvasRefVal.height : 300;
 
   return {
     x1: frameToPixel(kf.frame),
@@ -846,7 +890,9 @@ function zoomOut() {
 }
 
 function fitToView() {
-  const w = canvasRef.value?.width || 800;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const canvasRefVal = canvasRef.value;
+  const w = (canvasRefVal != null && typeof canvasRefVal === "object" && "width" in canvasRefVal && typeof canvasRefVal.width === "number") ? canvasRefVal.width : 800;
   zoomLevel.value = w / props.frameCount;
   scrollOffset.value = 0;
   draw();
@@ -926,7 +972,6 @@ function handleMouseMove(event: MouseEvent) {
     const newFrame = Math.round(pixelToFrame(x));
     const clampedFrame = Math.max(0, Math.min(props.frameCount - 1, newFrame));
     keyframeStore.moveKeyframe(
-      store,
       dragCurve.layerId,
       dragCurve.propertyPath,
       dragKeyframe.id,
@@ -950,7 +995,6 @@ function handleMouseMove(event: MouseEvent) {
     const breakHandle = event.ctrlKey || event.metaKey;
 
     keyframeStore.setKeyframeHandleWithMode(
-      store,
       dragCurve.layerId,
       dragCurve.propertyPath,
       dragKeyframe.id,

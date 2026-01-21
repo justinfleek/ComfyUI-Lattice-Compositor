@@ -8,6 +8,7 @@
  * @see docs/MASTER_REFACTOR_PLAN.md
  */
 
+import { isFiniteNumber, safeCoordinateDefault } from "@/utils/typeGuards";
 import { defineStore } from "pinia";
 import {
   type DepthEstimationResult,
@@ -34,7 +35,7 @@ export interface DecompositionStoreAccess {
     composition: { width: number; height: number };
     meta: { modified: string };
   };
-  createLayer(type: string, name: string): Layer;
+  createLayer(type: Layer["type"], name?: string): Layer;
   setLayerParent(layerId: string, parentId: string | null): void;
   pushHistory(): void;
 }
@@ -113,8 +114,12 @@ async function createLayerFromDecomposed(
 
     const imageData: ImageLayerData = {
       assetId,
+      source: "",
       fit: "none",
+      cropEnabled: false,
+      cropRect: { x: 0, y: 0, width: 0, height: 0 },
       sourceType: "generated",
+      segmentationMaskId: "",
     };
     layer.data = imageData;
 
@@ -136,8 +141,10 @@ async function createLayerFromDecomposed(
     );
     return layer;
   } catch (error) {
-    storeLogger.error("Failed to create layer from decomposed:", error);
-    return null;
+    if (error instanceof Error && error.message.startsWith("[DecompositionStore]")) {
+      throw error;
+    }
+    throw new Error(`[DecompositionStore] Failed to create layer from decomposed: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
@@ -180,7 +187,10 @@ export const useDecompositionStore = defineStore("decomposition", {
 
       try {
         // Step 1: Decompose image using Qwen model
-        onProgress?.("decomposing", "Decomposing image into layers...", 0);
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+        if (onProgress != null && typeof onProgress === "function") {
+          onProgress("decomposing", "Decomposing image into layers...", 0);
+        }
 
         const decomposed = await service.decomposeWithAutoSetup(
           imageDataUrl,
@@ -199,7 +209,10 @@ export const useDecompositionStore = defineStore("decomposition", {
         storeLogger.info(`Decomposition complete: ${decomposed.length} layers`);
 
         // Step 2: Prepare layer analysis for depth estimation
-        onProgress?.("analyzing", "Analyzing layer depths...", 50);
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+        if (onProgress != null && typeof onProgress === "function") {
+          onProgress("analyzing", "Analyzing layer depths...", 50);
+        }
 
         const layerInputs: LayerAnalysisInput[] = decomposed.map(
           (layer, index) => ({
@@ -214,7 +227,10 @@ export const useDecompositionStore = defineStore("decomposition", {
 
         if (autoDepthEstimation) {
           try {
-            onProgress?.("estimating", "Estimating layer depths with AI...", 60);
+            // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+            if (onProgress != null && typeof onProgress === "function") {
+              onProgress("estimating", "Estimating layer depths with AI...", 60);
+            }
             const estimator = getLLMDepthEstimator();
             depthResult = await estimator.estimateDepths(layerInputs, {
               provider: depthProvider,
@@ -235,13 +251,19 @@ export const useDecompositionStore = defineStore("decomposition", {
         // Step 4: Create group layer if requested
         let groupLayerId: string | undefined;
         if (groupLayers) {
-          onProgress?.("creating", "Creating layer group...", 70);
+          // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+          if (onProgress != null && typeof onProgress === "function") {
+            onProgress("creating", "Creating layer group...", 70);
+          }
           const groupLayer = store.createLayer("null", groupName);
           groupLayerId = groupLayer.id;
         }
 
         // Step 5: Create image layers sorted by depth (farthest first)
-        onProgress?.("creating", "Creating layers...", 75);
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+        if (onProgress != null && typeof onProgress === "function") {
+          onProgress("creating", "Creating layers...", 75);
+        }
 
         const sortedLayers = [...decomposed]
           .map((layer, index) => ({
@@ -251,24 +273,38 @@ export const useDecompositionStore = defineStore("decomposition", {
               depthResult.layers[index],
           }))
           .sort(
-            (a, b) =>
-              (b.depth?.estimatedDepth || 0) - (a.depth?.estimatedDepth || 0),
+            (a, b) => {
+              // Type proof: estimatedDepth ∈ number | undefined → number (coordinate-like, can be negative)
+              // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+              const depthAObj = a.depth;
+              const depthA = safeCoordinateDefault((depthAObj != null && typeof depthAObj === "object" && "estimatedDepth" in depthAObj && typeof depthAObj.estimatedDepth === "number") ? depthAObj.estimatedDepth : undefined, 0, "a.depth.estimatedDepth");
+              const depthBObj = b.depth;
+              const depthB = safeCoordinateDefault((depthBObj != null && typeof depthBObj === "object" && "estimatedDepth" in depthBObj && typeof depthBObj.estimatedDepth === "number") ? depthBObj.estimatedDepth : undefined, 0, "b.depth.estimatedDepth");
+              return depthB - depthA;
+            },
           );
 
         for (let i = 0; i < sortedLayers.length; i++) {
           const { decomposed: layer, depth } = sortedLayers[i];
 
-          onProgress?.(
-            "creating",
-            `Creating layer ${i + 1}/${sortedLayers.length}...`,
-            75 + (i / sortedLayers.length) * 20,
-          );
+          // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+          if (onProgress != null && typeof onProgress === "function") {
+            onProgress(
+              "creating",
+              `Creating layer ${i + 1}/${sortedLayers.length}...`,
+              75 + (i / sortedLayers.length) * 20,
+            );
+          }
 
+          // Type proof: suggestedZPosition ∈ number | undefined → number (coordinate-like, can be negative)
+          // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+          const zPosition = safeCoordinateDefault((depth != null && typeof depth === "object" && "suggestedZPosition" in depth && typeof depth.suggestedZPosition === "number") ? depth.suggestedZPosition : undefined, 0, "depth.suggestedZPosition");
+          const contentDescription = (depth != null && typeof depth === "object" && "contentDescription" in depth && typeof depth.contentDescription === "string") ? depth.contentDescription : undefined;
           const createdLayer = await createLayerFromDecomposed(
             store,
             layer,
-            depth?.contentDescription || layer.label,
-            depth?.suggestedZPosition || 0,
+            contentDescription || layer.label,
+            zPosition,
           );
 
           if (createdLayer) {
@@ -280,7 +316,10 @@ export const useDecompositionStore = defineStore("decomposition", {
         }
 
         // Step 6: Finalize
-        onProgress?.("complete", `Created ${createdLayers.length} layers`, 100);
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+        if (onProgress != null && typeof onProgress === "function") {
+          onProgress("complete", `Created ${createdLayers.length} layers`, 100);
+        }
         store.project.meta.modified = new Date().toISOString();
         store.pushHistory();
 
@@ -297,13 +336,11 @@ export const useDecompositionStore = defineStore("decomposition", {
       } catch (error) {
         const errorMsg = error instanceof Error ? error.message : "Unknown error";
         storeLogger.error("Layer decomposition failed:", error);
-        onProgress?.("error", errorMsg, 0);
-
-        return {
-          success: false,
-          layers: createdLayers,
-          error: errorMsg,
-        };
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+        if (onProgress != null && typeof onProgress === "function") {
+          onProgress("error", errorMsg, 0);
+        }
+        throw new Error(`[DecompositionStore] Layer decomposition failed: ${errorMsg}. Check model availability and input image.`);
       }
     },
 
@@ -316,24 +353,21 @@ export const useDecompositionStore = defineStore("decomposition", {
       verified: boolean;
       error?: string;
     }> {
-      try {
-        const service = getLayerDecompositionService();
-        const status = await service.getStatus();
+      const service = getLayerDecompositionService();
+      const status = await service.getStatus();
 
-        return {
-          downloaded: status.downloaded,
-          loaded: status.loaded,
-          verified: status.verification?.verified ?? false,
-          error: status.error || undefined,
-        };
-      } catch (error) {
-        return {
-          downloaded: false,
-          loaded: false,
-          verified: false,
-          error: error instanceof Error ? error.message : "Unknown error",
-        };
-      }
+      return {
+        downloaded: status.downloaded,
+        loaded: status.loaded,
+        // Type proof: verified ∈ boolean | undefined → boolean
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+        verified: (() => {
+          const verification = (status != null && typeof status === "object" && "verification" in status && status.verification != null && typeof status.verification === "object") ? status.verification : undefined;
+          const verifiedValue = (verification != null && typeof verification === "object" && "verified" in verification && typeof verification.verified === "boolean") ? verification.verified : undefined;
+          return verifiedValue === true;
+        })(),
+        error: status.error || undefined,
+      };
     },
 
     /**
@@ -369,14 +403,15 @@ export const useDecompositionStore = defineStore("decomposition", {
         }
 
         await service.downloadModel();
-        stopPolling?.();
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+        if (stopPolling != null && typeof stopPolling === "function") {
+          stopPolling();
+        }
 
         return { success: true };
       } catch (error) {
-        return {
-          success: false,
-          error: error instanceof Error ? error.message : "Download failed",
-        };
+        const errorMessage = error instanceof Error ? error.message : "Download failed";
+        throw new Error(`[DecompositionStore] Model download failed: ${errorMessage}. Check network connection and storage space.`);
       }
     },
 
@@ -391,25 +426,15 @@ export const useDecompositionStore = defineStore("decomposition", {
       message: string;
     }> {
       const service = getLayerDecompositionService();
-
-      try {
-        const result = await service.verifyModel();
-        return {
-          verified: result.verified,
-          filesChecked: result.files_checked,
-          filesValid: result.files_valid,
-          filesInvalid: result.files_invalid,
-          message: result.message,
-        };
-      } catch (error) {
-        return {
-          verified: false,
-          filesChecked: 0,
-          filesValid: 0,
-          filesInvalid: [],
-          message: error instanceof Error ? error.message : "Verification failed",
-        };
-      }
+      const result = await service.verifyModel();
+      
+      return {
+        verified: result.verified,
+        filesChecked: result.files_checked,
+        filesValid: result.files_valid,
+        filesInvalid: result.files_invalid,
+        message: result.message,
+      };
     },
   },
 });

@@ -9,7 +9,7 @@
 </template>
 
 <script setup lang="ts">
-import { useCompositorStore } from "@/stores/compositorStore";
+import { useAnimationStore } from "@/stores/animationStore";
 import { createKeyframe } from "@/types/animation";
 import type { RoundedCornersOperator } from "@/types/shapes";
 
@@ -18,7 +18,7 @@ const props = defineProps<{
   layerId: string;
 }>();
 const emit = defineEmits(["update"]);
-const store = useCompositorStore();
+const animationStore = useAnimationStore();
 
 function updateNumber(prop: "radius", value: number) {
   const updated = { ...props.operator };
@@ -29,7 +29,7 @@ function updateNumber(prop: "radius", value: number) {
 function toggleKeyframe() {
   const updated = { ...props.operator };
   const animProp = updated.radius;
-  const frame = store.currentFrame;
+  const frame = animationStore.currentFrame;
   const hasKf = animProp.keyframes.some((k) => k.frame === frame);
   if (hasKf) {
     animProp.keyframes = animProp.keyframes.filter((k) => k.frame !== frame);

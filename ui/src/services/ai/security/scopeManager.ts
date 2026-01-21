@@ -13,6 +13,7 @@
  * @see docs/SECURITY_THREAT_MODEL.md
  */
 
+import type { JSONValue } from "@/types/dataAsset";
 import { logAuditEntry } from "../../security/auditLog";
 import type { ToolCall } from "../toolDefinitions";
 
@@ -90,7 +91,7 @@ export interface AgentScope {
   /**
    * Custom validation function for tool calls
    */
-  customValidator?: (toolName: string, args: Record<string, unknown>) => boolean;
+  customValidator?: (toolName: string, args: Record<string, JSONValue>) => boolean;
 }
 
 /**
@@ -305,7 +306,7 @@ export const SCOPE_PRESETS: Record<string, AgentScope> = {
 export class ScopeManager {
   private currentScope: AgentScope;
   private operationCounts: Map<string, { count: number; resetAt: number }> = new Map();
-  private pendingConfirmations: Map<string, { toolName: string; args: Record<string, unknown>; timestamp: number }> = new Map();
+  private pendingConfirmations: Map<string, { toolName: string; args: Record<string, JSONValue>; timestamp: number }> = new Map();
 
   /**
    * Create a new scope manager
@@ -357,7 +358,7 @@ export class ScopeManager {
   /**
    * Check if a tool is allowed in the current scope
    */
-  checkToolAllowed(toolName: string, args?: Record<string, unknown>): ScopeCheckResult {
+  checkToolAllowed(toolName: string, args?: Record<string, JSONValue>): ScopeCheckResult {
     const scope = this.currentScope;
 
     // 1. Check explicit denial FIRST (overrides allow)
@@ -437,7 +438,7 @@ export class ScopeManager {
    */
   private checkCapabilityRestrictions(
     toolName: string,
-    args?: Record<string, unknown>,
+    args?: Record<string, JSONValue>,
   ): ScopeCheckResult {
     const scope = this.currentScope;
 
@@ -498,22 +499,26 @@ export class ScopeManager {
       }
 
       // Check path if provided
-      if (args?.path && typeof args.path === "string") {
-        if (!this.isPathAllowed(args.path)) {
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const argsPath = (args != null && typeof args === "object" && "path" in args && args.path != null && typeof args.path === "string") ? args.path : undefined;
+      if (argsPath != null) {
+        if (!this.isPathAllowed(argsPath)) {
           return {
             allowed: false,
-            reason: `Path '${args.path}' not allowed in scope '${scope.name}'`,
+            reason: `Path '${argsPath}' not allowed in scope '${scope.name}'`,
           };
         }
       }
     }
 
     // Keyframe count check
-    if (args?.keyframes && Array.isArray(args.keyframes)) {
-      if (args.keyframes.length > scope.maxKeyframesPerOperation) {
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const argsKeyframes = (args != null && typeof args === "object" && "keyframes" in args && args.keyframes != null && Array.isArray(args.keyframes)) ? args.keyframes : undefined;
+    if (argsKeyframes != null) {
+      if (argsKeyframes.length > scope.maxKeyframesPerOperation) {
         return {
           allowed: false,
-          reason: `Too many keyframes (${args.keyframes.length} > ${scope.maxKeyframesPerOperation}) for scope '${scope.name}'`,
+          reason: `Too many keyframes (${argsKeyframes.length} > ${scope.maxKeyframesPerOperation}) for scope '${scope.name}'`,
         };
       }
     }
@@ -562,7 +567,7 @@ export class ScopeManager {
    */
   requestConfirmation(
     toolName: string,
-    args: Record<string, unknown>,
+    args: Record<string, JSONValue>,
   ): string {
     const confirmationId = `confirm-${Date.now()}-${Math.random().toString(36).slice(2)}`;
     this.pendingConfirmations.set(confirmationId, {
@@ -576,16 +581,16 @@ export class ScopeManager {
   /**
    * Confirm a pending tool call
    */
-  confirmToolCall(confirmationId: string): { toolName: string; args: Record<string, unknown> } | null {
+  confirmToolCall(confirmationId: string): { toolName: string; args: Record<string, JSONValue> } {
     const pending = this.pendingConfirmations.get(confirmationId);
     if (!pending) {
-      return null;
+      throw new Error(`[ScopeManager] Confirmation "${confirmationId}" not found`);
     }
 
     // Check if confirmation is still valid (5 minute timeout)
     if (Date.now() - pending.timestamp > 5 * 60 * 1000) {
       this.pendingConfirmations.delete(confirmationId);
-      return null;
+      throw new Error(`[ScopeManager] Confirmation "${confirmationId}" has expired (5 minute timeout)`);
     }
 
     this.pendingConfirmations.delete(confirmationId);
@@ -651,7 +656,7 @@ export const scopeManager = new ScopeManager(SCOPE_PRESETS.readonly);
 /**
  * Quick check if a tool is allowed
  */
-export function isToolAllowed(toolName: string, args?: Record<string, unknown>): boolean {
+export function isToolAllowed(toolName: string, args?: Record<string, JSONValue>): boolean {
   return scopeManager.checkToolAllowed(toolName, args).allowed;
 }
 

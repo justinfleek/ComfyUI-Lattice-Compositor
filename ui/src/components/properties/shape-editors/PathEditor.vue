@@ -12,7 +12,7 @@
     </div>
     <div class="info-row">
       <span class="info-label">Vertices:</span>
-      <span class="info-value">{{ shape.path.value.vertices?.length || 0 }}</span>
+      <span class="info-value">{{ getVertexCount() }}</span>
     </div>
     <div class="info-row">
       <span class="info-label">Closed:</span>
@@ -22,10 +22,20 @@
 </template>
 
 <script setup lang="ts">
+import { safeNonNegativeDefault } from "@/utils/typeGuards";
 import type { PathShape } from "@/types/shapes";
 
 const props = defineProps<{ shape: PathShape; layerId: string }>();
 const emit = defineEmits(["update"]);
+
+// Type proof: vertices.length ∈ number | undefined → number (≥ 0, count)
+function getVertexCount(): number {
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const pathValue = (props.shape != null && typeof props.shape === "object" && "path" in props.shape && props.shape.path != null && typeof props.shape.path === "object" && "value" in props.shape.path && props.shape.path.value != null && typeof props.shape.path.value === "object") ? props.shape.path.value : undefined;
+  const vertices = (pathValue != null && typeof pathValue === "object" && "vertices" in pathValue && pathValue.vertices != null && Array.isArray(pathValue.vertices)) ? pathValue.vertices : undefined;
+  const verticesLength = (vertices != null && Array.isArray(vertices)) ? vertices.length : undefined;
+  return safeNonNegativeDefault(verticesLength, 0, "shape.path.value.vertices.length");
+}
 
 function updateDirection(e: Event) {
   const updated = { ...props.shape };

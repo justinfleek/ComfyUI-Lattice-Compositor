@@ -136,12 +136,12 @@
 
 <script setup lang="ts">
 import { computed } from "vue";
-import { useCompositorStore } from "@/stores/compositorStore";
+import { useSelectionStore } from "@/stores/selectionStore";
 import type { Camera3D } from "@/types/camera";
 import type { LatticeEngine } from "@/engine/LatticeEngine";
 
-const store = useCompositorStore();
-const selectedLayerId = computed(() => store.selectedLayerIds[0] || "");
+const selectionStore = useSelectionStore();
+const selectedLayerId = computed(() => selectionStore.singleSelectedLayerId || "");
 
 export type AITab = "chat" | "generate" | "flow" | "decompose";
 

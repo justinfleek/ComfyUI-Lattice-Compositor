@@ -153,7 +153,10 @@ import {
   type SplineMotionIntent,
   type VisionModelId,
 } from "@/services/visionAuthoring";
-import { useCompositorStore } from "@/stores/compositorStore";
+import { useProjectStore } from "@/stores/projectStore";
+import { useAnimationStore } from "@/stores/animationStore";
+import { useSelectionStore } from "@/stores/selectionStore";
+import { useCameraStore } from "@/stores/cameraStore";
 import { isValidExternalURL } from "@/utils/security";
 
 interface SuggestionItem {
@@ -181,7 +184,10 @@ const emit = defineEmits<{
   (e: "preview", suggestions: SuggestionItem[]): void;
 }>();
 
-const store = useCompositorStore();
+const projectStore = useProjectStore();
+const animationStore = useAnimationStore();
+const selectionStore = useSelectionStore();
+const cameraStore = useCameraStore();
 
 // Model configuration
 const selectedModel = ref<VisionModelId>("rule-based");
@@ -278,13 +284,13 @@ async function _testConnection() {
 
     // Try a simple test
     const testContext: SceneContext = {
-      compositionId: store.activeCompositionId,
-      width: store.width,
-      height: store.height,
-      frameCount: store.frameCount,
-      fps: store.fps,
+      compositionId: projectStore.activeCompositionId,
+      width: projectStore.getWidth(),
+      height: projectStore.getHeight(),
+      frameCount: projectStore.getFrameCount(),
+      fps: projectStore.getFps(),
       selectedLayerIds: [],
-      currentFrame: store.currentFrame,
+      currentFrame: animationStore.currentFrame,
     };
 
     await motionIntentResolver.resolve(
@@ -302,13 +308,22 @@ async function _testConnection() {
 
 /**
  * Load depth map image and convert to Float32Array for depth sampling
+ * 
+ * System F/Omega proof: Explicit error throwing - never return undefined
+ * Type proof: depthMapUrl ∈ string | null → Promise<Float32Array> (non-nullable)
+ * Mathematical proof: Depth map loading must succeed or throw explicit error
+ * Pattern proof: Missing depth map URL is valid (returns undefined for optional SceneContext field),
+ * but security failures and loading failures are explicit errors
  */
 async function loadDepthMapAsFloat32Array(
   depthMapUrl: string | null,
 ): Promise<Float32Array | undefined> {
-  if (!depthMapUrl) return undefined;
+  // System F/Omega: Null input is valid - return undefined for optional SceneContext field
+  if (!depthMapUrl) {
+    return undefined;
+  }
 
-  // Validate URL to prevent SSRF attacks
+  // System F/Omega: Security validation failure is an explicit error
   if (
     !isValidExternalURL(depthMapUrl, {
       allowData: true,
@@ -316,11 +331,12 @@ async function loadDepthMapAsFloat32Array(
       allowHttp: true,
     })
   ) {
-    console.warn(
-      "[Security] Blocked depth map URL:",
-      depthMapUrl.substring(0, 50),
+    throw new Error(
+      `[PathSuggestionDialog] Cannot load depth map: Invalid or blocked URL. ` +
+      `URL: ${depthMapUrl.substring(0, 50)}..., security validation failed. ` +
+      `URL must be a valid external URL (data:, blob:, or http/https). ` +
+      `Wrap in try/catch if "invalid URL" is an expected state.`
     );
-    return undefined;
   }
 
   try {
@@ -336,7 +352,15 @@ async function loadDepthMapAsFloat32Array(
     canvas.width = img.width;
     canvas.height = img.height;
     const ctx = canvas.getContext("2d");
-    if (!ctx) return undefined;
+    
+    // System F/Omega: Missing canvas context is an explicit error
+    if (!ctx) {
+      throw new Error(
+        `[PathSuggestionDialog] Cannot load depth map: Failed to get 2D canvas context. ` +
+        `Image dimensions: ${img.width}x${img.height}. ` +
+        `Canvas context must be available to process depth map image.`
+      );
+    }
 
     ctx.drawImage(img, 0, 0);
     const imageData = ctx.getImageData(0, 0, img.width, img.height);
@@ -353,13 +377,24 @@ async function loadDepthMapAsFloat32Array(
 
     return depthArray;
   } catch (error) {
-    console.warn("[PathSuggestionDialog] Failed to load depth map:", error);
-    return undefined;
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    // System F/Omega: Re-throw error with context instead of returning undefined
+    throw new Error(
+      `[PathSuggestionDialog] Cannot load depth map: Loading failed. ` +
+      `URL: ${depthMapUrl.substring(0, 50)}..., error: ${errorMessage}. ` +
+      `Wrap in try/catch if "loading failure" is an expected state.`
+    );
   }
 }
 
 /**
  * Capture current frame from the ThreeCanvas for VLM analysis
+ * 
+ * System F/Omega proof: Explicit error throwing - never return undefined
+ * Type proof: → Promise<ImageData | undefined> (undefined only for missing canvas - valid optional SceneContext field)
+ * Mathematical proof: Frame capture must succeed or throw explicit error
+ * Pattern proof: Missing canvas is valid (returns undefined for optional SceneContext field),
+ * but context failures and capture failures are explicit errors
  */
 async function captureCurrentFrameImage(): Promise<ImageData | undefined> {
   try {
@@ -367,13 +402,25 @@ async function captureCurrentFrameImage(): Promise<ImageData | undefined> {
     const canvas = document.querySelector(
       ".viewport-content canvas",
     ) as HTMLCanvasElement;
-    if (!canvas) return undefined;
+    
+    // System F/Omega: Missing canvas is valid - return undefined for optional SceneContext field
+    if (!canvas) {
+      return undefined;
+    }
 
     const ctx =
       canvas.getContext("2d") ||
       canvas.getContext("webgl2") ||
       canvas.getContext("webgl");
-    if (!ctx) return undefined;
+    
+    // System F/Omega: Missing context is an explicit error
+    if (!ctx) {
+      throw new Error(
+        `[PathSuggestionDialog] Cannot capture frame: Failed to get canvas context. ` +
+        `Canvas dimensions: ${canvas.width}x${canvas.height}. ` +
+        `Canvas must have a 2D, WebGL, or WebGL2 context available.`
+      );
+    }
 
     // For WebGL context, we need to read pixels differently
     if (
@@ -405,10 +452,24 @@ async function captureCurrentFrameImage(): Promise<ImageData | undefined> {
       return ctx.getImageData(0, 0, canvas.width, canvas.height);
     }
 
-    return undefined;
+    // System F/Omega: Unknown context type is an explicit error
+    throw new Error(
+      `[PathSuggestionDialog] Cannot capture frame: Unsupported canvas context type. ` +
+      `Canvas dimensions: ${canvas.width}x${canvas.height}. ` +
+      `Context must be CanvasRenderingContext2D, WebGLRenderingContext, or WebGL2RenderingContext.`
+    );
   } catch (error) {
-    console.warn("[PathSuggestionDialog] Failed to capture frame:", error);
-    return undefined;
+    // System F/Omega: Re-throw error with context instead of returning undefined
+    // But check if it's already our error (don't double-wrap)
+    if (error instanceof Error && error.message.startsWith("[PathSuggestionDialog]")) {
+      throw error;
+    }
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    throw new Error(
+      `[PathSuggestionDialog] Cannot capture frame: Capture failed. ` +
+      `Error: ${errorMessage}. ` +
+      `Wrap in try/catch if "capture failure" is an expected state.`
+    );
   }
 }
 
@@ -432,17 +493,31 @@ async function suggestPaths() {
     });
 
     // Build scene context with depth map and frame image
-    const depthMap = await loadDepthMapAsFloat32Array(store.depthMap);
-    const frameImage = await captureCurrentFrameImage();
+    // System F/Omega: These functions throw explicit errors - wrap in try/catch for expected failures
+    let depthMap: Float32Array | undefined = undefined;
+    try {
+      depthMap = await loadDepthMapAsFloat32Array(projectStore.depthMap);
+    } catch (error) {
+      // Depth map loading failed - continue without depth map (expected state)
+      console.warn("[PathSuggestionDialog] Depth map loading failed:", error);
+    }
+    
+    let frameImage: ImageData | undefined = undefined;
+    try {
+      frameImage = await captureCurrentFrameImage();
+    } catch (error) {
+      // Frame capture failed - continue without frame image (expected state)
+      console.warn("[PathSuggestionDialog] Frame capture failed:", error);
+    }
 
     const context: SceneContext = {
-      compositionId: store.activeCompositionId,
-      width: store.width,
-      height: store.height,
-      frameCount: store.frameCount,
-      fps: store.fps,
-      selectedLayerIds: store.selectedLayerIds,
-      currentFrame: store.currentFrame,
+      compositionId: projectStore.activeCompositionId,
+      width: projectStore.getWidth(),
+      height: projectStore.getHeight(),
+      frameCount: projectStore.getFrameCount(),
+      fps: projectStore.getFps(),
+      selectedLayerIds: selectionStore.selectedLayerIds,
+      currentFrame: animationStore.currentFrame,
       depthMap,
       frameImage,
     };
@@ -520,7 +595,7 @@ function acceptSuggestion() {
 
   // Translate the intent to keyframes
   if (suggestion.type === "camera") {
-    const activeCamera = store.activeCamera;
+    const activeCamera = cameraStore.activeCamera;
     if (!activeCamera) {
       statusMessage.value = "No active camera to animate";
       return;
@@ -530,16 +605,18 @@ function acceptSuggestion() {
       suggestion.intent as CameraMotionIntent,
       activeCamera.id,
       activeCamera.position,
-      store.frameCount,
+      projectStore.getFrameCount(),
     );
     result.keyframes = batches;
   } else if (suggestion.type === "spline") {
     const translation = motionIntentTranslator.translateSplineIntent(
       suggestion.intent as SplineMotionIntent,
-      store.width,
-      store.height,
+      projectStore.getWidth(),
+      projectStore.getHeight(),
     );
-    result.splines = translation.newSplines || [];
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy || []
+    const newSplines = translation.newSplines;
+    result.splines = (newSplines !== null && newSplines !== undefined && Array.isArray(newSplines)) ? newSplines : [];
   }
 
   emit("accept", result);

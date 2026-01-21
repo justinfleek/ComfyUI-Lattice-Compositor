@@ -10,7 +10,8 @@
 
 import { describe, test, expect, beforeEach } from 'vitest';
 import { setActivePinia, createPinia } from 'pinia';
-import { useCompositorStore } from '@/stores/compositorStore';
+import { useProjectStore } from '@/stores/projectStore';
+import { useLayerStore } from '@/stores/layerStore';
 import { executeToolCall } from '@/services/ai/actionExecutor';
 import type { ToolCall } from '@/services/ai/toolDefinitions';
 
@@ -25,11 +26,11 @@ describe('BUG Regression: Missing Undo/Redo', () => {
    * After fix: All state-modifying actions call pushHistory(), enabling undo/redo
    */
   test('original counterexample now passes - actions can be undone', async () => {
-    const store = useCompositorStore();
+    const projectStore = useProjectStore();
     
     // Get initial history count
-    const initialHistoryLength = store.historyStack.length;
-    const initialHistoryIndex = store.historyIndex;
+    const initialHistoryLength = projectStore.historyStack.length;
+    const initialHistoryIndex = projectStore.historyIndex;
 
     // Execute an action that was missing pushHistory()
     const createLayerCall: ToolCall = {
@@ -44,30 +45,31 @@ describe('BUG Regression: Missing Undo/Redo', () => {
     await executeToolCall(createLayerCall);
 
     // Verify history was updated (pushHistory was called)
-    expect(store.historyStack.length).toBeGreaterThan(initialHistoryLength);
-    expect(store.historyIndex).toBeGreaterThan(initialHistoryIndex);
+    expect(projectStore.historyStack.length).toBeGreaterThan(initialHistoryLength);
+    expect(projectStore.historyIndex).toBeGreaterThan(initialHistoryIndex);
 
     // Verify we can undo
-    const layerCountBeforeUndo = store.getActiveCompLayers().length;
-    store.undo();
+    const layerCountBeforeUndo = projectStore.getActiveCompLayers().length;
+    projectStore.undo();
     
     // Layer should be removed after undo
-    expect(store.getActiveCompLayers().length).toBeLessThan(layerCountBeforeUndo);
+    expect(projectStore.getActiveCompLayers().length).toBeLessThan(layerCountBeforeUndo);
     
     // Verify we can redo
-    store.redo();
-    expect(store.getActiveCompLayers().length).toBe(layerCountBeforeUndo);
+    projectStore.redo();
+    expect(projectStore.getActiveCompLayers().length).toBe(layerCountBeforeUndo);
   });
 
   /**
    * Additional edge cases related to this bug.
    */
   test('layer deletion can be undone', async () => {
-    const store = useCompositorStore();
+    const projectStore = useProjectStore();
+    const layerStore = useLayerStore();
     
     // Create a layer first
-    const layer = store.addLayer('solid', 'Test Layer');
-    const initialHistoryLength = store.historyStack.length;
+    const layer = layerStore.createLayer('solid', 'Test Layer');
+    const initialHistoryLength = projectStore.historyStack.length;
 
     // Delete the layer
     const deleteCall: ToolCall = {
@@ -81,24 +83,25 @@ describe('BUG Regression: Missing Undo/Redo', () => {
     await executeToolCall(deleteCall);
 
     // Verify history was updated
-    expect(store.historyStack.length).toBeGreaterThan(initialHistoryLength);
+    expect(projectStore.historyStack.length).toBeGreaterThan(initialHistoryLength);
     
     // Verify undo restores the layer
-    const layerCountBeforeUndo = store.getActiveCompLayers().length;
-    store.undo();
-    expect(store.getActiveCompLayers().length).toBeGreaterThan(layerCountBeforeUndo);
+    const layerCountBeforeUndo = projectStore.getActiveCompLayers().length;
+    projectStore.undo();
+    expect(projectStore.getActiveCompLayers().length).toBeGreaterThan(layerCountBeforeUndo);
     
     // Verify redo removes it again
-    store.redo();
-    expect(store.getActiveCompLayers().length).toBe(layerCountBeforeUndo);
+    projectStore.redo();
+    expect(projectStore.getActiveCompLayers().length).toBe(layerCountBeforeUndo);
   });
 
   test('layer property changes can be undone', async () => {
-    const store = useCompositorStore();
+    const projectStore = useProjectStore();
+    const layerStore = useLayerStore();
     
-    const layer = store.addLayer('solid', 'Test Layer');
+    const layer = layerStore.createLayer('solid', 'Test Layer');
     const initialOpacity = layer.opacity.value;
-    const initialHistoryLength = store.historyStack.length;
+    const initialHistoryLength = projectStore.historyStack.length;
 
     // Change a property
     const setPropertyCall: ToolCall = {
@@ -114,26 +117,27 @@ describe('BUG Regression: Missing Undo/Redo', () => {
     await executeToolCall(setPropertyCall);
 
     // Verify history was updated
-    expect(store.historyStack.length).toBeGreaterThan(initialHistoryLength);
+    expect(projectStore.historyStack.length).toBeGreaterThan(initialHistoryLength);
     
     // Verify undo restores original value
-    store.undo();
-    const layerAfterUndo = store.getActiveCompLayers().find(l => l.id === layer.id);
+    projectStore.undo();
+    const layerAfterUndo = projectStore.getActiveCompLayers().find(l => l.id === layer.id);
     expect(layerAfterUndo?.opacity.value).toBe(initialOpacity);
     
     // Verify redo applies change again
-    store.redo();
-    const layerAfterRedo = store.getActiveCompLayers().find(l => l.id === layer.id);
+    projectStore.redo();
+    const layerAfterRedo = projectStore.getActiveCompLayers().find(l => l.id === layer.id);
     expect(layerAfterRedo?.opacity.value).toBe(50);
   });
 
   test('keyframe addition can be undone', async () => {
-    const store = useCompositorStore();
+    const projectStore = useProjectStore();
+    const layerStore = useLayerStore();
     
-    const layer = store.addLayer('solid', 'Test Layer');
+    const layer = layerStore.createLayer('solid', 'Test Layer');
     const property = layer.opacity;
     const initialKeyframeCount = property.keyframes.length;
-    const initialHistoryLength = store.historyStack.length;
+    const initialHistoryLength = projectStore.historyStack.length;
 
     // Add a keyframe
     const addKeyframeCall: ToolCall = {
@@ -150,23 +154,23 @@ describe('BUG Regression: Missing Undo/Redo', () => {
     await executeToolCall(addKeyframeCall);
 
     // Verify history was updated
-    expect(store.historyStack.length).toBeGreaterThan(initialHistoryLength);
+    expect(projectStore.historyStack.length).toBeGreaterThan(initialHistoryLength);
     
     // Verify undo removes the keyframe
-    store.undo();
-    const layerAfterUndo = store.getActiveCompLayers().find(l => l.id === layer.id);
+    projectStore.undo();
+    const layerAfterUndo = projectStore.getActiveCompLayers().find(l => l.id === layer.id);
     expect(layerAfterUndo?.opacity.keyframes.length).toBe(initialKeyframeCount);
     
     // Verify redo adds it back
-    store.redo();
-    const layerAfterRedo = store.getActiveCompLayers().find(l => l.id === layer.id);
+    projectStore.redo();
+    const layerAfterRedo = projectStore.getActiveCompLayers().find(l => l.id === layer.id);
     expect(layerAfterRedo?.opacity.keyframes.length).toBeGreaterThan(initialKeyframeCount);
   });
 
   test('multiple actions create multiple history entries', async () => {
-    const store = useCompositorStore();
+    const projectStore = useProjectStore();
     
-    const initialHistoryLength = store.historyStack.length;
+    const initialHistoryLength = projectStore.historyStack.length;
 
     // Execute multiple actions
     await executeToolCall({
@@ -188,27 +192,28 @@ describe('BUG Regression: Missing Undo/Redo', () => {
     });
 
     // Each action should create a history entry
-    expect(store.historyStack.length).toBeGreaterThanOrEqual(initialHistoryLength + 3);
+    expect(projectStore.historyStack.length).toBeGreaterThanOrEqual(initialHistoryLength + 3);
     
     // Should be able to undo all three
-    const layerCountAfterActions = store.getActiveCompLayers().length;
-    store.undo();
-    store.undo();
-    store.undo();
-    expect(store.getActiveCompLayers().length).toBeLessThan(layerCountAfterActions);
+    const layerCountAfterActions = projectStore.getActiveCompLayers().length;
+    projectStore.undo();
+    projectStore.undo();
+    projectStore.undo();
+    expect(projectStore.getActiveCompLayers().length).toBeLessThan(layerCountAfterActions);
     
     // Should be able to redo all three
-    store.redo();
-    store.redo();
-    store.redo();
-    expect(store.getActiveCompLayers().length).toBe(layerCountAfterActions);
+    projectStore.redo();
+    projectStore.redo();
+    projectStore.redo();
+    expect(projectStore.getActiveCompLayers().length).toBe(layerCountAfterActions);
   });
 
   test('expression changes can be undone', async () => {
-    const store = useCompositorStore();
+    const projectStore = useProjectStore();
+    const layerStore = useLayerStore();
     
-    const layer = store.addLayer('solid', 'Test Layer');
-    const initialHistoryLength = store.historyStack.length;
+    const layer = layerStore.createLayer('solid', 'Test Layer');
+    const initialHistoryLength = projectStore.historyStack.length;
 
     // Set an expression
     const setExpressionCall: ToolCall = {
@@ -225,16 +230,16 @@ describe('BUG Regression: Missing Undo/Redo', () => {
     await executeToolCall(setExpressionCall);
 
     // Verify history was updated
-    expect(store.historyStack.length).toBeGreaterThan(initialHistoryLength);
+    expect(projectStore.historyStack.length).toBeGreaterThan(initialHistoryLength);
     
     // Verify undo removes expression
-    store.undo();
-    const layerAfterUndo = store.getActiveCompLayers().find(l => l.id === layer.id);
+    projectStore.undo();
+    const layerAfterUndo = projectStore.getActiveCompLayers().find(l => l.id === layer.id);
     expect(layerAfterUndo?.opacity.expression).toBeUndefined();
     
     // Verify redo restores expression
-    store.redo();
-    const layerAfterRedo = store.getActiveCompLayers().find(l => l.id === layer.id);
+    projectStore.redo();
+    const layerAfterRedo = projectStore.getActiveCompLayers().find(l => l.id === layer.id);
     expect(layerAfterRedo?.opacity.expression).toBeDefined();
   });
 });

@@ -171,32 +171,60 @@ export class DepthflowLayer extends BaseLayer {
    * Extract depthflow data with defaults
    */
   private extractDepthflowData(layerData: Layer): DepthflowLayerData {
-    const data = layerData.data as DepthflowLayerData | null;
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining/nullish coalescing
+    // Pattern match: data ∈ DepthflowLayerData | null → DepthflowLayerData (with explicit defaults)
+    const data = (layerData.data !== null && typeof layerData.data === "object") ? layerData.data as DepthflowLayerData : null;
+
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+    // Pattern match: Extract each property with explicit type narrowing and defaults
+    const sourceLayerIdValue = (data !== null && typeof data === "object" && "sourceLayerId" in data && typeof data.sourceLayerId === "string") ? data.sourceLayerId : "";
+    const depthLayerIdValue = (data !== null && typeof data === "object" && "depthLayerId" in data && typeof data.depthLayerId === "string") ? data.depthLayerId : "";
+    
+    // Pattern match: config properties with explicit type narrowing
+    const configData = (data !== null && typeof data === "object" && "config" in data && typeof data.config === "object" && data.config !== null) ? data.config : null;
+    const presetValue = (configData !== null && typeof configData === "object" && "preset" in configData && typeof configData.preset === "string") ? configData.preset : "static";
+    const zoomValue = (configData !== null && typeof configData === "object" && "zoom" in configData && typeof configData.zoom === "number" && Number.isFinite(configData.zoom)) ? configData.zoom : 1;
+    const offsetXValue = (configData !== null && typeof configData === "object" && "offsetX" in configData && typeof configData.offsetX === "number" && Number.isFinite(configData.offsetX)) ? configData.offsetX : 0;
+    const offsetYValue = (configData !== null && typeof configData === "object" && "offsetY" in configData && typeof configData.offsetY === "number" && Number.isFinite(configData.offsetY)) ? configData.offsetY : 0;
+    const rotationValue = (configData !== null && typeof configData === "object" && "rotation" in configData && typeof configData.rotation === "number" && Number.isFinite(configData.rotation)) ? configData.rotation : 0;
+    const depthScaleValue = (configData !== null && typeof configData === "object" && "depthScale" in configData && typeof configData.depthScale === "number" && Number.isFinite(configData.depthScale)) ? configData.depthScale : 0.1;
+    const focusDepthValue = (configData !== null && typeof configData === "object" && "focusDepth" in configData && typeof configData.focusDepth === "number" && Number.isFinite(configData.focusDepth)) ? configData.focusDepth : 0.5;
+    const dollyZoomValue = (configData !== null && typeof configData === "object" && "dollyZoom" in configData && typeof configData.dollyZoom === "number" && Number.isFinite(configData.dollyZoom)) ? configData.dollyZoom : 0;
+    const orbitRadiusValue = (configData !== null && typeof configData === "object" && "orbitRadius" in configData && typeof configData.orbitRadius === "number" && Number.isFinite(configData.orbitRadius)) ? configData.orbitRadius : 0.1;
+    const orbitSpeedValue = (configData !== null && typeof configData === "object" && "orbitSpeed" in configData && typeof configData.orbitSpeed === "number" && Number.isFinite(configData.orbitSpeed)) ? configData.orbitSpeed : 1;
+    const swingAmplitudeValue = (configData !== null && typeof configData === "object" && "swingAmplitude" in configData && typeof configData.swingAmplitude === "number" && Number.isFinite(configData.swingAmplitude)) ? configData.swingAmplitude : 0.05;
+    const swingFrequencyValue = (configData !== null && typeof configData === "object" && "swingFrequency" in configData && typeof configData.swingFrequency === "number" && Number.isFinite(configData.swingFrequency)) ? configData.swingFrequency : 1;
+    const edgeDilationValue = (configData !== null && typeof configData === "object" && "edgeDilation" in configData && typeof configData.edgeDilation === "number" && Number.isFinite(configData.edgeDilation)) ? configData.edgeDilation : 0;
+    const inpaintEdgesValue = (configData !== null && typeof configData === "object" && "inpaintEdges" in configData && typeof configData.inpaintEdges === "boolean") ? configData.inpaintEdges : false;
+    
+    const animatedZoomValue = (data !== null && typeof data === "object" && "animatedZoom" in data) ? data.animatedZoom : undefined;
+    const animatedOffsetXValue = (data !== null && typeof data === "object" && "animatedOffsetX" in data) ? data.animatedOffsetX : undefined;
 
     return {
-      sourceLayerId: data?.sourceLayerId ?? "",
-      depthLayerId: data?.depthLayerId ?? "",
+      sourceLayerId: sourceLayerIdValue,
+      depthLayerId: depthLayerIdValue,
       config: {
-        preset: data?.config?.preset ?? "static",
-        zoom: data?.config?.zoom ?? 1,
-        offsetX: data?.config?.offsetX ?? 0,
-        offsetY: data?.config?.offsetY ?? 0,
-        rotation: data?.config?.rotation ?? 0,
-        depthScale: data?.config?.depthScale ?? 0.1,
-        focusDepth: data?.config?.focusDepth ?? 0.5,
-        dollyZoom: data?.config?.dollyZoom ?? 0,
-        orbitRadius: data?.config?.orbitRadius ?? 0.1,
-        orbitSpeed: data?.config?.orbitSpeed ?? 1,
-        swingAmplitude: data?.config?.swingAmplitude ?? 0.05,
-        swingFrequency: data?.config?.swingFrequency ?? 1,
-        edgeDilation: data?.config?.edgeDilation ?? 0,
-        inpaintEdges: data?.config?.inpaintEdges ?? false,
+        preset: presetValue,
+        zoom: zoomValue,
+        offsetX: offsetXValue,
+        offsetY: offsetYValue,
+        rotation: rotationValue,
+        depthScale: depthScaleValue,
+        focusDepth: focusDepthValue,
+        dollyZoom: dollyZoomValue,
+        orbitRadius: orbitRadiusValue,
+        orbitSpeed: orbitSpeedValue,
+        swingAmplitude: swingAmplitudeValue,
+        swingFrequency: swingFrequencyValue,
+        edgeDilation: edgeDilationValue,
+        inpaintEdges: inpaintEdgesValue,
       },
-      animatedZoom: data?.animatedZoom,
-      animatedOffsetX: data?.animatedOffsetX,
-      animatedOffsetY: data?.animatedOffsetY,
-      animatedRotation: data?.animatedRotation,
-      animatedDepthScale: data?.animatedDepthScale,
+      animatedZoom: animatedZoomValue,
+      animatedOffsetX: animatedOffsetXValue,
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      animatedOffsetY: (data != null && typeof data === "object" && "animatedOffsetY" in data && typeof data.animatedOffsetY === "boolean") ? data.animatedOffsetY : undefined,
+      animatedRotation: (data != null && typeof data === "object" && "animatedRotation" in data && typeof data.animatedRotation === "boolean") ? data.animatedRotation : undefined,
+      animatedDepthScale: (data != null && typeof data === "object" && "animatedDepthScale" in data && typeof data.animatedDepthScale === "boolean") ? data.animatedDepthScale : undefined,
     };
   }
 
@@ -206,13 +234,14 @@ export class DepthflowLayer extends BaseLayer {
   private async loadTextures(): Promise<void> {
     // Load source texture
     if (this.depthflowData.sourceLayerId) {
-      const sourceTexture = await this.loadTextureFromLayer(
-        this.depthflowData.sourceLayerId,
-      );
-      if (sourceTexture) {
+      // System F/Omega: loadTextureFromLayer throws explicit errors - wrap in try/catch for expected failures
+      try {
+        const sourceTexture = await this.loadTextureFromLayer(
+          this.depthflowData.sourceLayerId,
+        );
         this.sourceTexture = sourceTexture;
         this.material.uniforms.sourceTexture.value = sourceTexture;
-
+        
         // Update dimensions from texture
         if (sourceTexture.image) {
           this.setDimensions(
@@ -220,36 +249,62 @@ export class DepthflowLayer extends BaseLayer {
             sourceTexture.image.height,
           );
         }
+      } catch (error) {
+        // Texture not available - skip source texture (expected state)
+        layerLogger.warn(
+          `DepthflowLayer: Could not load source texture:`,
+          error instanceof Error ? error.message : String(error),
+        );
       }
     }
 
     // Load depth texture
     if (this.depthflowData.depthLayerId) {
-      const depthTexture = await this.loadTextureFromLayer(
-        this.depthflowData.depthLayerId,
-      );
-      if (depthTexture) {
+      // System F/Omega: loadTextureFromLayer throws explicit errors - wrap in try/catch for expected failures
+      try {
+        const depthTexture = await this.loadTextureFromLayer(
+          this.depthflowData.depthLayerId,
+        );
         this.depthTexture = depthTexture;
         this.material.uniforms.depthTexture.value = depthTexture;
+      } catch (error) {
+        // Texture not available - skip depth texture (expected state)
+        layerLogger.warn(
+          `DepthflowLayer: Could not load depth texture:`,
+          error instanceof Error ? error.message : String(error),
+        );
       }
     }
   }
 
   /**
    * Load texture from a layer (image layer asset)
+   * 
+   * System F/Omega proof: Explicit error throwing - never return null
+   * Type proof: layerId ∈ string → Promise<THREE.Texture> (non-nullable)
+   * Mathematical proof: Texture loading must succeed or throw explicit error
+   * Pattern proof: Missing texture is an explicit error condition
    */
   private async loadTextureFromLayer(
     layerId: string,
-  ): Promise<THREE.Texture | null> {
-    // Try to get the layer's texture from ResourceManager
-    // This assumes the source layer is an image layer with an assetId
-    const texture = this.resources.getLayerTexture(layerId);
-    if (texture) return texture;
-
-    layerLogger.warn(
-      `DepthflowLayer: Could not load texture for layer ${layerId}`,
-    );
-    return null;
+  ): Promise<THREE.Texture> {
+    // System F/Omega: getLayerTexture throws explicit errors - propagate them
+    try {
+      const texture = this.resources.getLayerTexture(layerId);
+      return texture;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      layerLogger.warn(
+        `DepthflowLayer: Could not load texture for layer ${layerId}:`,
+        errorMessage,
+      );
+      throw new Error(
+        `[DepthflowLayer] Cannot load texture from layer: Texture not found. ` +
+        `Layer ID: ${layerId}. ` +
+        `Original error: ${errorMessage}. ` +
+        `Wrap in try/catch if "texture not cached" is an expected state.`
+      );
+    }
   }
 
   /**
@@ -276,11 +331,27 @@ export class DepthflowLayer extends BaseLayer {
    */
   async setSourceLayer(layerId: string): Promise<void> {
     this.depthflowData.sourceLayerId = layerId;
-    const texture = await this.loadTextureFromLayer(layerId);
-    if (texture) {
-      this.sourceTexture?.dispose();
+    // System F/Omega: loadTextureFromLayer throws explicit errors - wrap in try/catch for expected failures
+    try {
+      const texture = await this.loadTextureFromLayer(layerId);
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const sourceTexture = this.sourceTexture;
+      if (sourceTexture != null && typeof sourceTexture === "object" && typeof sourceTexture.dispose === "function") {
+        sourceTexture.dispose();
+      }
       this.sourceTexture = texture;
       this.material.uniforms.sourceTexture.value = texture;
+    } catch (error) {
+      // Texture not available - clear source texture (expected state)
+      layerLogger.warn(
+        `DepthflowLayer: Could not set source layer texture:`,
+        error instanceof Error ? error.message : String(error),
+      );
+      const sourceTexture = this.sourceTexture;
+      if (sourceTexture != null && typeof sourceTexture === "object" && typeof sourceTexture.dispose === "function") {
+        sourceTexture.dispose();
+      }
+      this.sourceTexture = null;
     }
   }
 
@@ -289,11 +360,27 @@ export class DepthflowLayer extends BaseLayer {
    */
   async setDepthLayer(layerId: string): Promise<void> {
     this.depthflowData.depthLayerId = layerId;
-    const texture = await this.loadTextureFromLayer(layerId);
-    if (texture) {
-      this.depthTexture?.dispose();
+    // System F/Omega: loadTextureFromLayer throws explicit errors - wrap in try/catch for expected failures
+    try {
+      const texture = await this.loadTextureFromLayer(layerId);
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const depthTexture = this.depthTexture;
+      if (depthTexture != null && typeof depthTexture === "object" && typeof depthTexture.dispose === "function") {
+        depthTexture.dispose();
+      }
       this.depthTexture = texture;
       this.material.uniforms.depthTexture.value = texture;
+    } catch (error) {
+      // Texture not available - clear depth texture (expected state)
+      layerLogger.warn(
+        `DepthflowLayer: Could not set depth layer texture:`,
+        error instanceof Error ? error.message : String(error),
+      );
+      const depthTexture = this.depthTexture;
+      if (depthTexture != null && typeof depthTexture === "object" && typeof depthTexture.dispose === "function") {
+        depthTexture.dispose();
+      }
+      this.depthTexture = null;
     }
   }
 
@@ -492,11 +579,12 @@ export class DepthflowLayer extends BaseLayer {
     }
 
     if (props.offsetX !== undefined || props.offsetY !== undefined) {
-      const offsetX =
-        (props.offsetX as number) ?? this.material.uniforms.offset.value.x;
-      const offsetY =
-        (props.offsetY as number) ?? this.material.uniforms.offset.value.y;
-      this.material.uniforms.offset.value.set(offsetX, offsetY);
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+      // Pattern match: props.offsetX ∈ PropertyValue | undefined → number (fallback to material uniform)
+      const offsetXValue = (typeof props.offsetX === "number" && Number.isFinite(props.offsetX)) ? props.offsetX : this.material.uniforms.offset.value.x;
+      // Pattern match: props.offsetY ∈ PropertyValue | undefined → number (fallback to material uniform)
+      const offsetYValue = (typeof props.offsetY === "number" && Number.isFinite(props.offsetY)) ? props.offsetY : this.material.uniforms.offset.value.y;
+      this.material.uniforms.offset.value.set(offsetXValue, offsetYValue);
     }
 
     if (props.rotation !== undefined) {
@@ -612,8 +700,15 @@ export class DepthflowLayer extends BaseLayer {
 
   protected onDispose(): void {
     // Dispose textures
-    this.sourceTexture?.dispose();
-    this.depthTexture?.dispose();
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const sourceTexture = this.sourceTexture;
+    if (sourceTexture != null && typeof sourceTexture === "object" && typeof sourceTexture.dispose === "function") {
+      sourceTexture.dispose();
+    }
+    const depthTexture = this.depthTexture;
+    if (depthTexture != null && typeof depthTexture === "object" && typeof depthTexture.dispose === "function") {
+      depthTexture.dispose();
+    }
 
     // Dispose geometry and material
     this.geometry.dispose();

@@ -88,8 +88,8 @@
 
 <script setup lang="ts">
 import { computed } from "vue";
-import { useCompositorStore } from "@/stores/compositorStore";
 import { useLayerStore } from "@/stores/layerStore";
+import { useProjectStore } from "@/stores/projectStore";
 import type { GroupLayerData, Layer, LayerType } from "@/types/project";
 
 const props = defineProps<{
@@ -99,14 +99,14 @@ const props = defineProps<{
 const emit =
   defineEmits<(e: "update", data: Partial<GroupLayerData>) => void>();
 
-const store = useCompositorStore();
 const layerStore = useLayerStore();
+const projectStore = useProjectStore();
 
 const groupData = computed(() => props.layer.data as GroupLayerData);
 
 // Find child layers (layers that have this group as parent)
 const childLayers = computed(() => {
-  return store.layers.filter((l) => l.parentId === props.layer.id);
+  return projectStore.getActiveCompLayers().filter((l) => l.parentId === props.layer.id);
 });
 
 const childCount = computed(() => childLayers.value.length);
@@ -131,7 +131,7 @@ function updateData<K extends keyof GroupLayerData>(
 }
 
 function selectLayer(layerId: string) {
-  layerStore.selectLayer(store, layerId);
+  layerStore.selectLayer(layerId);
 }
 
 function getLayerIcon(type: LayerType): string {

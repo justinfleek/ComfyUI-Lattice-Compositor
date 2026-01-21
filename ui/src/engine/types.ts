@@ -337,10 +337,12 @@ export type EngineEventType =
   | "transform-dragging"
   | "transform-end";
 
+import type { JSONValue } from "@/types/dataAsset";
+
 export interface EngineEvent {
   type: EngineEventType;
   timestamp: number;
-  data?: unknown;
+  data?: JSONValue;
 }
 
 export type EngineEventHandler = (event: EngineEvent) => void;

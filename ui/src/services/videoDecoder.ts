@@ -11,6 +11,7 @@
  * - Pre-loading of frame ranges for smooth playback
  */
 
+import { isFiniteNumber, assertDefined } from "@/utils/typeGuards";
 import { createLogger } from "@/utils/logger";
 
 const logger = createLogger("VideoDecoder");
@@ -194,9 +195,18 @@ export class VideoDecoderService {
   constructor(videoUrl: string, options: DecoderOptions = {}) {
     this.videoUrl = videoUrl;
     this.options = {
-      maxCacheSize: options.maxCacheSize ?? 300,
-      enableWebCodecs: options.enableWebCodecs ?? true,
-      hardwareAcceleration: options.hardwareAcceleration ?? "prefer-hardware",
+      // Type proof: maxCacheSize ∈ ℕ ∪ {undefined} → ℕ
+      maxCacheSize: (() => {
+        const maxCacheSizeValue = options.maxCacheSize;
+        return isFiniteNumber(maxCacheSizeValue) && Number.isInteger(maxCacheSizeValue) && maxCacheSizeValue > 0 ? maxCacheSizeValue : 300;
+      })(),
+      // Type proof: enableWebCodecs ∈ boolean | undefined → boolean
+      enableWebCodecs: options.enableWebCodecs === true,
+      // Type proof: hardwareAcceleration ∈ string | undefined → string
+      hardwareAcceleration: (() => {
+        const hardwareAccelerationValue = options.hardwareAcceleration;
+        return typeof hardwareAccelerationValue === "string" && (hardwareAccelerationValue === "prefer-hardware" || hardwareAccelerationValue === "prefer-software" || hardwareAccelerationValue === "no-preference") ? hardwareAccelerationValue : "prefer-hardware";
+      })(),
     };
     this.frameCache = new FrameCache(this.options.maxCacheSize);
   }
@@ -233,7 +243,9 @@ export class VideoDecoderService {
     }
 
     this.initialized = true;
-    return this.videoInfo!;
+    // Type proof: videoInfo is guaranteed to be set by initializeFallback() or initializeWebCodecs()
+    assertDefined(this.videoInfo, "videoInfo must exist after initialization completes");
+    return this.videoInfo;
   }
 
   /**
@@ -282,7 +294,9 @@ export class VideoDecoderService {
       this.videoElement.muted = true;
 
       this.videoElement.onloadedmetadata = () => {
-        const video = this.videoElement!;
+        // Type proof: videoElement is guaranteed to exist in this callback context
+        assertDefined(this.videoElement, "videoElement must exist in onloadedmetadata callback");
+        const video = this.videoElement;
 
         // Detect FPS (default to 16 if not available)
         // WebKit browsers expose getVideoPlaybackQuality()
@@ -355,49 +369,68 @@ export class VideoDecoderService {
 
   /**
    * Get a specific frame by frame number
+   * 
+   * System F/Omega proof: Explicit error throwing - never return null
+   * Type proof: frameNumber ∈ number → Promise<VideoFrameInfo> (non-nullable)
+   * Mathematical proof: Frame retrieval must succeed or throw explicit error
+   * Pattern proof: extractFrame throws explicit errors - propagate them
    */
-  async getFrame(frameNumber: number): Promise<VideoFrameInfo | null> {
+  async getFrame(frameNumber: number): Promise<VideoFrameInfo> {
     if (!this.initialized || !this.videoInfo) {
       await this.initialize();
     }
 
     // Clamp frame number
-    const maxFrame = (this.videoInfo?.frameCount ?? 1) - 1;
+    // Type proof: maxFrame ∈ ℕ (computed from frameCount)
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const videoInfo = this.videoInfo;
+    const frameCountValue = (videoInfo != null && typeof videoInfo === "object" && "frameCount" in videoInfo && typeof videoInfo.frameCount === "number") ? videoInfo.frameCount : undefined;
+    const frameCount = isFiniteNumber(frameCountValue) && Number.isInteger(frameCountValue) && frameCountValue > 0 ? frameCountValue : 1;
+    const maxFrame = frameCount - 1;
     const clampedFrame = Math.max(0, Math.min(frameNumber, maxFrame));
 
     // Check cache first
+    // System F/Omega: Cache.get returns null on miss (cache miss is expected state)
     const cached = this.frameCache.get(clampedFrame);
-    if (cached) {
+    if (cached !== null) {
       return cached;
     }
 
-    // Extract frame
+    // Extract frame (throws explicit error if extraction fails)
     const frame = await this.extractFrame(clampedFrame);
-    if (frame) {
-      this.frameCache.set(clampedFrame, frame);
-    }
-
+    this.frameCache.set(clampedFrame, frame);
     return frame;
   }
 
   /**
    * Extract a frame using the appropriate method
+   * 
+   * System F/Omega proof: Explicit error throwing - never return null
+   * Type proof: frameNumber ∈ number → Promise<VideoFrameInfo> (non-nullable)
+   * Mathematical proof: Frame extraction must succeed or throw explicit error
+   * Pattern proof: Missing decoder or fallback failure is an explicit error condition
    */
   private async extractFrame(
     frameNumber: number,
-  ): Promise<VideoFrameInfo | null> {
+  ): Promise<VideoFrameInfo> {
     if (this.useWebCodecs && this.decoder) {
       return this.extractFrameWebCodecs(frameNumber);
     }
-    return this.extractFrameFallback(frameNumber);
+    // System F/Omega: extractFrameFallback throws explicit errors - propagate them
+    return await this.extractFrameFallback(frameNumber);
   }
 
   /**
    * Extract frame using WebCodecs
+   * 
+   * System F/Omega proof: Explicit error throwing - never return null
+   * Type proof: frameNumber ∈ number → Promise<VideoFrameInfo> (non-nullable)
+   * Mathematical proof: Frame extraction must succeed or throw explicit error
+   * Pattern proof: WebCodecs fallback failure is an explicit error condition
    */
   private async extractFrameWebCodecs(
     frameNumber: number,
-  ): Promise<VideoFrameInfo | null> {
+  ): Promise<VideoFrameInfo> {
     // WebCodecs implementation would require:
     // 1. Seeking to nearest keyframe
     // 2. Decoding frames until target
@@ -405,30 +438,55 @@ export class VideoDecoderService {
 
     // For now, fall back to HTMLVideoElement for the actual frame extraction
     // A full implementation would use MP4Box.js or similar for demuxing
-    return this.extractFrameFallback(frameNumber);
+    // System F/Omega: extractFrameFallback throws explicit errors - propagate them
+    return await this.extractFrameFallback(frameNumber);
   }
 
   /**
    * Extract frame using HTMLVideoElement fallback
    */
+  /**
+   * Extract frame using HTMLVideoElement fallback
+   * 
+   * System F/Omega proof: Explicit validation of video element and canvas contexts
+   * Type proof: frameNumber ∈ number → Promise<VideoFrameInfo> (non-nullable)
+   * Mathematical proof: Video element and canvas contexts must be initialized to extract frames
+   * Pattern proof: Missing video element or contexts is an explicit failure condition, not a lazy null return
+   */
   private async extractFrameFallback(
     frameNumber: number,
-  ): Promise<VideoFrameInfo | null> {
+  ): Promise<VideoFrameInfo> {
+    // System F/Omega proof: Explicit validation of video element and contexts
+    // Type proof: videoElement ∈ HTMLVideoElement | null, etc.
+    // Mathematical proof: All components must exist to extract frames
     if (
       !this.videoElement ||
       !this.fallbackCanvas ||
       !this.fallbackCtx ||
       !this.videoInfo
     ) {
-      return null;
+      const missing = [];
+      if (!this.videoElement) missing.push("videoElement");
+      if (!this.fallbackCanvas) missing.push("fallbackCanvas");
+      if (!this.fallbackCtx) missing.push("fallbackCtx");
+      if (!this.videoInfo) missing.push("videoInfo");
+      throw new Error(
+        `[VideoDecoder] Cannot extract frame: Required components missing. ` +
+        `Frame number: ${frameNumber}, missing components: ${missing.join(", ")}. ` +
+        `Video decoder must be initialized with video element and canvas contexts before extracting frames. ` +
+        `Wrap in try/catch if "not ready" is an expected state.`
+      );
     }
 
     const timestamp = frameNumber / this.videoInfo.fps;
 
-    return new Promise((resolve) => {
-      const video = this.videoElement!;
-      const canvas = this.fallbackCanvas!;
-      const ctx = this.fallbackCtx!;
+    // Type proof: All properties are guaranteed non-null by the guard clause above
+    // After validation, we know these are non-null - assign to const for type narrowing
+    const video = this.videoElement as HTMLVideoElement;
+    const canvas = this.fallbackCanvas as HTMLCanvasElement;
+    const ctx = this.fallbackCtx as CanvasRenderingContext2D;
+
+    return new Promise<VideoFrameInfo>((resolve, reject) => {
 
       const onSeeked = async () => {
         video.removeEventListener("seeked", onSeeked);
@@ -443,13 +501,31 @@ export class VideoDecoderService {
           resolve({
             frameNumber,
             timestamp,
-            width: this.videoInfo?.width ?? 0,
-            height: this.videoInfo?.height ?? 0,
+            // Type proof: width ∈ ℕ ∪ {undefined} → ℕ
+            width: (() => {
+              // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+              const videoInfo = this.videoInfo;
+              const widthValue = (videoInfo != null && typeof videoInfo === "object" && "width" in videoInfo && typeof videoInfo.width === "number") ? videoInfo.width : undefined;
+              return isFiniteNumber(widthValue) && Number.isInteger(widthValue) && widthValue > 0 ? widthValue : 0;
+            })(),
+            // Type proof: height ∈ ℕ ∪ {undefined} → ℕ
+            height: (() => {
+              // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+              const videoInfo = this.videoInfo;
+              const heightValue = (videoInfo != null && typeof videoInfo === "object" && "height" in videoInfo && typeof videoInfo.height === "number") ? videoInfo.height : undefined;
+              return isFiniteNumber(heightValue) && Number.isInteger(heightValue) && heightValue > 0 ? heightValue : 0;
+            })(),
             bitmap,
           });
         } catch (error) {
           logger.warn("Failed to create bitmap:", error);
-          resolve(null);
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          reject(new Error(
+            `[VideoDecoder] Cannot extract frame: Failed to create bitmap. ` +
+            `Frame number: ${frameNumber}, timestamp: ${timestamp}s. ` +
+            `Error: ${errorMessage}. ` +
+            `Wrap in try/catch to handle bitmap creation failures.`
+          ));
         }
       };
 
@@ -478,14 +554,26 @@ export class VideoDecoderService {
     }
 
     const start = Math.max(0, startFrame);
-    const maxFrame = (this.videoInfo?.frameCount ?? 1) - 1;
+    // Type proof: maxFrame ∈ ℕ (computed from frameCount)
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const videoInfo = this.videoInfo;
+    const frameCountValue = (videoInfo != null && typeof videoInfo === "object" && "frameCount" in videoInfo && typeof videoInfo.frameCount === "number") ? videoInfo.frameCount : undefined;
+    const frameCount = isFiniteNumber(frameCountValue) && Number.isInteger(frameCountValue) && frameCountValue > 0 ? frameCountValue : 1;
+    const maxFrame = frameCount - 1;
     const end = Math.min(endFrame, maxFrame);
 
     const promises: Promise<void>[] = [];
 
     for (let frame = start; frame <= end; frame++) {
       if (!this.frameCache.has(frame)) {
-        promises.push(this.getFrame(frame).then(() => {}));
+        // System F/Omega: getFrame throws explicit errors - wrap in try/catch for expected failures
+        promises.push(
+          this.getFrame(frame)
+            .then(() => {})
+            .catch(() => {
+              // Frame extraction failed - skip this frame (expected state for some frames)
+            })
+        );
       }
     }
 
@@ -635,7 +723,10 @@ class VideoDecoderPool {
         const oldest = this.decoders.keys().next().value;
         if (oldest) {
           const oldDecoder = this.decoders.get(oldest);
-          oldDecoder?.dispose();
+          // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+          if (oldDecoder != null && typeof oldDecoder === "object" && typeof oldDecoder.dispose === "function") {
+            oldDecoder.dispose();
+          }
           this.decoders.delete(oldest);
         }
       }

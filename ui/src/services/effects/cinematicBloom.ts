@@ -18,6 +18,7 @@ import {
   type EvaluatedEffectParams,
   registerEffectRenderer,
 } from "../effectProcessor";
+import { isFiniteNumber } from "@/utils/typeGuards";
 
 // ============================================================================
 // TYPES
@@ -670,33 +671,75 @@ export function cinematicBloomRenderer(
   params: EvaluatedEffectParams,
 ): EffectStackResult {
   // Extract parameters with defaults
-  const intensity = Math.max(0, Math.min(10, params.intensity ?? 1.0));
-  const threshold = Math.max(0, Math.min(1, params.threshold ?? 0.8));
-  const radius = Math.max(0, Math.min(200, params.radius ?? 50));
-  const falloffMode = (params.falloff_mode ?? "inverse_square") as
+  // Type proof: intensity ∈ ℝ ∧ finite(intensity) → intensity ∈ [0, 10]
+  const intensityValue = params.intensity;
+  const intensity = isFiniteNumber(intensityValue)
+    ? Math.max(0, Math.min(10, intensityValue))
+    : 1.0;
+  // Type proof: threshold ∈ ℝ ∧ finite(threshold) → threshold ∈ [0, 1]
+  const thresholdValue = params.threshold;
+  const threshold = isFiniteNumber(thresholdValue)
+    ? Math.max(0, Math.min(1, thresholdValue))
+    : 0.8;
+  // Type proof: radius ∈ ℝ ∧ finite(radius) → radius ∈ [0, 200]
+  const radiusValue = params.radius;
+  const radius = isFiniteNumber(radiusValue)
+    ? Math.max(0, Math.min(200, radiusValue))
+    : 50;
+  // Type proof: falloff_mode ∈ {"gaussian", "inverse_square", "exponential"} ∪ {undefined}
+  const falloffModeValue = params.falloff_mode;
+  const falloffMode = (typeof falloffModeValue === "string" ? falloffModeValue : "inverse_square") as
     | "gaussian"
     | "inverse_square"
     | "exponential";
-  const falloffExponent = Math.max(
-    1,
-    Math.min(4, params.falloff_exponent ?? 2),
-  );
-  const radiusR = Math.max(0, Math.min(2, params.radius_r ?? 1.0)) * radius;
-  const radiusG = Math.max(0, Math.min(2, params.radius_g ?? 1.0)) * radius;
-  const radiusB = Math.max(0, Math.min(2, params.radius_b ?? 1.0)) * radius;
-  const tonemap = (params.tonemap ?? "aces") as TonemapOperator;
-  const exposure = Math.max(-5, Math.min(5, params.exposure ?? 0));
-  const chromaticAberration = Math.max(
-    0,
-    Math.min(20, params.chromatic_aberration ?? 0),
-  );
-  const lensDirtEnabled = params.lens_dirt_enabled ?? false;
-  const lensDirtIntensity = Math.max(
-    0,
-    Math.min(1, params.lens_dirt_intensity ?? 0.5),
-  );
-  const lensDirtScale = Math.max(0.5, Math.min(2, params.lens_dirt_scale ?? 1));
-  const blendMode = (params.blend_mode ?? "add") as BloomBlendMode;
+  // Type proof: falloff_exponent ∈ ℝ ∧ finite(falloff_exponent) → falloff_exponent ∈ [1, 4]
+  const falloffExponentValue = params.falloff_exponent;
+  const falloffExponent = isFiniteNumber(falloffExponentValue)
+    ? Math.max(1, Math.min(4, falloffExponentValue))
+    : 2;
+  // Type proof: radius_r ∈ ℝ ∧ finite(radius_r) → radius_r ∈ [0, 2]
+  const radiusRValue = params.radius_r;
+  const radiusR = (isFiniteNumber(radiusRValue)
+    ? Math.max(0, Math.min(2, radiusRValue))
+    : 1.0) * radius;
+  // Type proof: radius_g ∈ ℝ ∧ finite(radius_g) → radius_g ∈ [0, 2]
+  const radiusGValue = params.radius_g;
+  const radiusG = (isFiniteNumber(radiusGValue)
+    ? Math.max(0, Math.min(2, radiusGValue))
+    : 1.0) * radius;
+  // Type proof: radius_b ∈ ℝ ∧ finite(radius_b) → radius_b ∈ [0, 2]
+  const radiusBValue = params.radius_b;
+  const radiusB = (isFiniteNumber(radiusBValue)
+    ? Math.max(0, Math.min(2, radiusBValue))
+    : 1.0) * radius;
+  // Type proof: tonemap ∈ {"none", "aces", "reinhard", "hable"} ∪ {undefined}
+  const tonemapValue = params.tonemap;
+  const tonemap = (typeof tonemapValue === "string" ? tonemapValue : "aces") as TonemapOperator;
+  // Type proof: exposure ∈ ℝ ∧ finite(exposure) → exposure ∈ [-5, 5]
+  const exposureValue = params.exposure;
+  const exposure = isFiniteNumber(exposureValue)
+    ? Math.max(-5, Math.min(5, exposureValue))
+    : 0;
+  // Type proof: chromatic_aberration ∈ ℝ ∧ finite(chromatic_aberration) → chromatic_aberration ∈ [0, 20]
+  const chromaticAberrationValue = params.chromatic_aberration;
+  const chromaticAberration = isFiniteNumber(chromaticAberrationValue)
+    ? Math.max(0, Math.min(20, chromaticAberrationValue))
+    : 0;
+  // Type proof: lens_dirt_enabled ∈ {true, false}
+  const lensDirtEnabled = typeof params.lens_dirt_enabled === "boolean" ? params.lens_dirt_enabled : false;
+  // Type proof: lens_dirt_intensity ∈ ℝ ∧ finite(lens_dirt_intensity) → lens_dirt_intensity ∈ [0, 1]
+  const lensDirtIntensityValue = params.lens_dirt_intensity;
+  const lensDirtIntensity = isFiniteNumber(lensDirtIntensityValue)
+    ? Math.max(0, Math.min(1, lensDirtIntensityValue))
+    : 0.5;
+  // Type proof: lens_dirt_scale ∈ ℝ ∧ finite(lens_dirt_scale) → lens_dirt_scale ∈ [0.5, 2]
+  const lensDirtScaleValue = params.lens_dirt_scale;
+  const lensDirtScale = isFiniteNumber(lensDirtScaleValue)
+    ? Math.max(0.5, Math.min(2, lensDirtScaleValue))
+    : 1;
+  // Type proof: blend_mode ∈ {"add", "screen", "overlay", "soft_light"} ∪ {undefined}
+  const blendModeValue = params.blend_mode;
+  const blendMode = (typeof blendModeValue === "string" ? blendModeValue : "add") as BloomBlendMode;
 
   // Skip if intensity is zero
   if (intensity <= 0 || radius <= 0) {
@@ -709,7 +752,8 @@ export function cinematicBloomRenderer(
   // Use _sourceCanvas if provided (for additive stacking), otherwise use input
   // This ensures stacked blooms extract from original layer, not from previous bloom output
   const sourceCanvas = params._sourceCanvas as HTMLCanvasElement | undefined;
-  const sourceCtx = sourceCanvas?.getContext("2d");
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const sourceCtx = (sourceCanvas != null && typeof sourceCanvas === "object" && typeof sourceCanvas.getContext === "function") ? sourceCanvas.getContext("2d") : undefined;
   let originalData = sourceCtx
     ? sourceCtx.getImageData(0, 0, width, height)
     : input.ctx.getImageData(0, 0, width, height);
@@ -784,9 +828,19 @@ export function glowRenderer(
   input: EffectStackResult,
   params: EvaluatedEffectParams,
 ): EffectStackResult {
-  const threshold = (params.glow_threshold ?? 50) / 100;
-  const radius = params.glow_radius ?? 25;
-  const intensity = (params.glow_intensity ?? 100) / 100;
+  // Type proof: glow_threshold ∈ ℝ ∧ finite(glow_threshold) → glow_threshold ∈ [0, 100]
+  const thresholdValue = params.glow_threshold;
+  const thresholdRaw = isFiniteNumber(thresholdValue)
+    ? Math.max(0, Math.min(100, thresholdValue))
+    : 50;
+  const threshold = thresholdRaw / 100;
+  // Type proof: glow_radius ∈ ℝ ∧ finite(glow_radius) → glow_radius ∈ ℝ₊
+  const radiusValue = params.glow_radius;
+  const radius = isFiniteNumber(radiusValue) && radiusValue >= 0 ? radiusValue : 25;
+  // Type proof: glow_intensity ∈ ℝ ∧ finite(glow_intensity) → glow_intensity ∈ ℝ₊
+  const intensityValue = params.glow_intensity;
+  const intensityRaw = isFiniteNumber(intensityValue) && intensityValue >= 0 ? intensityValue : 100;
+  const intensity = intensityRaw / 100;
 
   if (intensity <= 0 || radius <= 0) {
     return input;

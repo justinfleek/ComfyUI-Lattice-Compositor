@@ -6,6 +6,7 @@
  */
 
 import type { ExpressionContext, TextAnimatorContext } from "./types";
+import { isFiniteNumber } from "@/utils/typeGuards";
 
 // Re-export types
 export type { TextAnimatorContext } from "./types";
@@ -89,15 +90,28 @@ export function evaluateTextAnimatorExpression(
   ) => number | number[] | string,
 ): number | number[] | string {
   // Add text animator variables to context, using JSON.stringify for proper escaping
+  // Type proof: number | undefined → number
+  const wordIndex = isFiniteNumber(ctx.wordIndex) && ctx.wordIndex >= 0
+    ? ctx.wordIndex
+    : 0;
+  const lineIndex = isFiniteNumber(ctx.lineIndex) && ctx.lineIndex >= 0
+    ? ctx.lineIndex
+    : 0;
+  const charInWord = isFiniteNumber(ctx.charInWord) && ctx.charInWord >= 0
+    ? ctx.charInWord
+    : 0;
+  const charInLine = isFiniteNumber(ctx.charInLine) && ctx.charInLine >= 0
+    ? ctx.charInLine
+    : 0;
   const extendedCode = `
     const textIndex = ${ctx.textIndex};
     const textTotal = ${ctx.textTotal};
     const selectorValue = ${ctx.selectorValue};
     const char = ${JSON.stringify(ctx.char)};
-    const wordIndex = ${ctx.wordIndex ?? 0};
-    const lineIndex = ${ctx.lineIndex ?? 0};
-    const charInWord = ${ctx.charInWord ?? 0};
-    const charInLine = ${ctx.charInLine ?? 0};
+    const wordIndex = ${wordIndex};
+    const lineIndex = ${lineIndex};
+    const charInWord = ${charInWord};
+    const charInLine = ${charInLine};
     ${code}
   `;
 

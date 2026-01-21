@@ -20,6 +20,7 @@
 
 import type { AnimatableProperty, Layer } from "@/types/project";
 import { interpolateProperty } from "./interpolation";
+import { isFiniteNumber } from "@/utils/typeGuards";
 
 // ============================================================================
 // TYPES
@@ -101,7 +102,10 @@ export function getSourceTime(
   } = options;
 
   // Get time stretch (default 100 = normal speed)
-  const timeStretch = layer.timeStretch ?? 100;
+  // Type proof: timeStretch ∈ number | undefined → number
+  const timeStretch = isFiniteNumber(layer.timeStretch)
+    ? layer.timeStretch
+    : 100;
 
   // Calculate effective speed: 100% stretch = 1x speed, 200% = 0.5x, 50% = 2x
   // Formula: effectiveSpeed = 100 / timeStretch
@@ -122,7 +126,10 @@ export function getSourceTime(
   }
 
   // Calculate time relative to layer start
-  const layerStartFrame = layer.startFrame ?? 0;
+  // Type proof: layerStartFrame ∈ number | undefined → number
+  const layerStartFrame = isFiniteNumber(layer.startFrame)
+    ? Math.floor(layer.startFrame)
+    : 0;
   const layerFrame = compFrame - layerStartFrame;
 
   // Apply time stretch to get source frame
@@ -209,8 +216,21 @@ export function calculateStretchedEndpoints(
   newTimeStretch: number,
   anchorFrame?: number,
 ): { startFrame: number; endFrame: number } {
-  const currentStretch = layer.timeStretch ?? 100;
-  const anchor = layer.stretchAnchor ?? "startFrame";
+  // Type proof: currentStretch ∈ number | undefined → number
+  const currentStretch = isFiniteNumber(layer.timeStretch)
+    ? layer.timeStretch
+    : 100;
+  // Type proof: anchor ∈ string | undefined → string
+  const validAnchors: ("startFrame" | "endFrame" | "currentFrame")[] = [
+    "startFrame",
+    "endFrame",
+    "currentFrame",
+  ];
+  const anchor =
+    typeof layer.stretchAnchor === "string" &&
+    validAnchors.includes(layer.stretchAnchor as "startFrame" | "endFrame" | "currentFrame")
+      ? (layer.stretchAnchor as "startFrame" | "endFrame" | "currentFrame")
+      : "startFrame";
 
   const currentDuration = layer.endFrame - layer.startFrame;
   // Calculate original source duration
@@ -260,8 +280,14 @@ export function isLayerVisibleAtFrame(
   layer: Layer,
   compFrame: number,
 ): boolean {
-  const start = layer.startFrame ?? 0;
-  const end = layer.endFrame ?? 80;
+  // Type proof: start ∈ number | undefined → number
+  const start = isFiniteNumber(layer.startFrame)
+    ? Math.floor(layer.startFrame)
+    : 0;
+  // Type proof: end ∈ number | undefined → number
+  const end = isFiniteNumber(layer.endFrame)
+    ? Math.floor(layer.endFrame)
+    : 80;
   return compFrame >= start && compFrame <= end;
 }
 
@@ -302,7 +328,10 @@ export function getSourceFrame(
  * @returns New timeStretch value
  */
 export function reverseTimeStretch(layer: Layer): number {
-  const current = layer.timeStretch ?? 100;
+  // Type proof: current ∈ number | undefined → number
+  const current = isFiniteNumber(layer.timeStretch)
+    ? layer.timeStretch
+    : 100;
   return -current;
 }
 
@@ -313,7 +342,11 @@ export function reverseTimeStretch(layer: Layer): number {
  * @returns True if playback is reversed
  */
 export function isReversed(layer: Layer): boolean {
-  return (layer.timeStretch ?? 100) < 0;
+  // Type proof: timeStretch ∈ number | undefined → number
+  const timeStretch = isFiniteNumber(layer.timeStretch)
+    ? layer.timeStretch
+    : 100;
+  return timeStretch < 0;
 }
 
 // ============================================================================

@@ -59,19 +59,36 @@ export class AudioLayer extends BaseLayer {
    * Extract audio layer data from layer object
    */
   private extractAudioData(layerData: Layer): AudioLayerData {
-    const data = layerData.data as Partial<AudioLayerData> | undefined;
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining/nullish coalescing
+    // Pattern match: data ∈ Partial<AudioLayerData> | undefined → AudioLayerData (with explicit defaults)
+    const data = (layerData.data !== null && typeof layerData.data === "object") ? layerData.data as Partial<AudioLayerData> : undefined;
+    
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+    // Pattern match: Extract each property with explicit type narrowing and defaults
+    const assetIdValue = (data !== undefined && typeof data === "object" && data !== null && "assetId" in data && data.assetId !== null && typeof data.assetId === "string") ? data.assetId : null;
+    const levelValue = (data !== undefined && typeof data === "object" && data !== null && "level" in data && data.level !== null && typeof data.level === "object") ? data.level : createAnimatableProperty("Level", 0, "number");
+    const mutedValue = (data !== undefined && typeof data === "object" && data !== null && "muted" in data && typeof data.muted === "boolean") ? data.muted : false;
+    const soloValue = (data !== undefined && typeof data === "object" && data !== null && "solo" in data && typeof data.solo === "boolean") ? data.solo : false;
+    const panValue = (data !== undefined && typeof data === "object" && data !== null && "pan" in data && data.pan !== null && typeof data.pan === "object") ? data.pan : createAnimatableProperty("Pan", 0, "number");
+    const loopValue = (data !== undefined && typeof data === "object" && data !== null && "loop" in data && typeof data.loop === "boolean") ? data.loop : false;
+    const startTimeValue = (data !== undefined && typeof data === "object" && data !== null && "startTime" in data && typeof data.startTime === "number" && Number.isFinite(data.startTime)) ? data.startTime : 0;
+    const speedValue = (data !== undefined && typeof data === "object" && data !== null && "speed" in data && typeof data.speed === "number" && Number.isFinite(data.speed)) ? data.speed : 1;
+    const showWaveformValue = (data !== undefined && typeof data === "object" && data !== null && "showWaveform" in data && typeof data.showWaveform === "boolean") ? data.showWaveform : true;
+    const waveformColorValue = (data !== undefined && typeof data === "object" && data !== null && "waveformColor" in data && typeof data.waveformColor === "string" && data.waveformColor.length > 0) ? data.waveformColor : "#4a90d9";
+    const exposeFeaturesValue = (data !== undefined && typeof data === "object" && data !== null && "exposeFeatures" in data && typeof data.exposeFeatures === "boolean") ? data.exposeFeatures : false;
+    
     return {
-      assetId: data?.assetId ?? null,
-      level: data?.level ?? createAnimatableProperty("Level", 0, "number"),
-      muted: data?.muted ?? false,
-      solo: data?.solo ?? false,
-      pan: data?.pan ?? createAnimatableProperty("Pan", 0, "number"),
-      loop: data?.loop ?? false,
-      startTime: data?.startTime ?? 0,
-      speed: data?.speed ?? 1,
-      showWaveform: data?.showWaveform ?? true,
-      waveformColor: data?.waveformColor ?? "#4a90d9",
-      exposeFeatures: data?.exposeFeatures ?? false,
+      assetId: assetIdValue,
+      level: levelValue,
+      muted: mutedValue,
+      solo: soloValue,
+      pan: panValue,
+      loop: loopValue,
+      startTime: startTimeValue,
+      speed: speedValue,
+      showWaveform: showWaveformValue,
+      waveformColor: waveformColorValue,
+      exposeFeatures: exposeFeaturesValue,
     };
   }
 
@@ -224,8 +241,11 @@ export class AudioLayer extends BaseLayer {
     if (this.audioData.loop) return true;
 
     // Check against audio duration if we have a buffer
-    if (this.playbackNodes?.buffer) {
-      return audioTime < this.playbackNodes.buffer.duration;
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const playbackNodes = this.playbackNodes;
+    const playbackNodesBuffer = (playbackNodes != null && typeof playbackNodes === "object" && "buffer" in playbackNodes && playbackNodes.buffer != null && typeof playbackNodes.buffer === "object") ? playbackNodes.buffer : undefined;
+    if (playbackNodesBuffer != null && typeof playbackNodesBuffer === "object" && "duration" in playbackNodesBuffer && typeof playbackNodesBuffer.duration === "number") {
+      return audioTime < playbackNodesBuffer.duration;
     }
 
     return true;
@@ -261,8 +281,13 @@ export class AudioLayer extends BaseLayer {
     };
 
     // Apply initial level
-    this.updateGain(this.audioData.level?.value ?? 0);
-    this.updatePan(this.audioData.pan?.value ?? 0);
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining/nullish coalescing
+    // Pattern match: audioData.level.value ∈ number | undefined → number (default 0)
+    const levelValue = (typeof this.audioData.level === "object" && this.audioData.level !== null && "value" in this.audioData.level && typeof this.audioData.level.value === "number" && Number.isFinite(this.audioData.level.value)) ? this.audioData.level.value : 0;
+    this.updateGain(levelValue);
+    // Pattern match: audioData.pan.value ∈ number | undefined → number (default 0)
+    const panValue = (typeof this.audioData.pan === "object" && this.audioData.pan !== null && "value" in this.audioData.pan && typeof this.audioData.pan.value === "number" && Number.isFinite(this.audioData.pan.value)) ? this.audioData.pan.value : 0;
+    this.updatePan(panValue);
   }
 
   /**
@@ -342,7 +367,9 @@ export class AudioLayer extends BaseLayer {
    * Check if currently playing
    */
   get isPlaying(): boolean {
-    return this.playbackNodes?.isPlaying ?? false;
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining/nullish coalescing
+    // Pattern match: playbackNodes.isPlaying ∈ boolean | undefined → boolean (default false)
+    return (this.playbackNodes !== null && typeof this.playbackNodes === "object" && "isPlaying" in this.playbackNodes && typeof this.playbackNodes.isPlaying === "boolean") ? this.playbackNodes.isPlaying : false;
   }
 
   /**
@@ -455,7 +482,9 @@ export class AudioLayer extends BaseLayer {
    * Get the AudioBuffer (if loaded)
    */
   getAudioBuffer(): AudioBuffer | null {
-    return this.playbackNodes?.buffer ?? null;
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining/nullish coalescing
+    // Pattern match: playbackNodes.buffer ∈ AudioBuffer | null | undefined → AudioBuffer | null (default null)
+    return (this.playbackNodes !== null && typeof this.playbackNodes === "object" && "buffer" in this.playbackNodes && this.playbackNodes.buffer !== null) ? this.playbackNodes.buffer : null;
   }
 
   /**

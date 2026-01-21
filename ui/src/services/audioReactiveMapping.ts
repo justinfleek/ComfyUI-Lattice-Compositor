@@ -9,6 +9,7 @@
 import type { AudioFeature } from "@/engine/particles/types";
 import type { AudioAnalysis, PeakData } from "./audioFeatures";
 import { getFeatureAtFrame, isPeakAtFrame } from "./audioFeatures";
+import { safeNonNegativeDefault } from "@/utils/typeGuards";
 
 // Re-export for consumers that import from this module
 export type { AudioFeature };
@@ -318,7 +319,12 @@ export class AudioReactiveMapper {
 
     // Apply release envelope (ATI style)
     // Value decays slowly after peak, creating smooth response
-    const releaseEnvelope = this.releaseEnvelopes.get(mappingId) || 0;
+    // Type proof: releaseEnvelope ∈ number | undefined → number (≥ 0, envelope value)
+    const releaseEnvelope = safeNonNegativeDefault(
+      this.releaseEnvelopes.get(mappingId),
+      0,
+      "releaseEnvelopes.get(mappingId)",
+    );
     if (value > releaseEnvelope) {
       // Attack: follow input immediately
       this.releaseEnvelopes.set(mappingId, value);
@@ -339,7 +345,12 @@ export class AudioReactiveMapper {
         this.getFeatureAtFrame(mapping.feature, frame) > mapping.beatThreshold;
 
       if (isBeat) {
-        const currentToggle = this.beatToggleStates.get(mappingId) || 0;
+        // Type proof: beatToggleState ∈ number | undefined → number (≥ 0, toggle state 0 or 1)
+        const currentToggle = safeNonNegativeDefault(
+          this.beatToggleStates.get(mappingId),
+          0,
+          "beatToggleStates.get(mappingId)",
+        );
 
         switch (mapping.beatResponse) {
           case "flip":
@@ -362,7 +373,12 @@ export class AudioReactiveMapper {
 
       // Apply flip effect if active
       if (mapping.beatResponse === "flip") {
-        const toggle = this.beatToggleStates.get(mappingId) || 0;
+        // Type proof: beatToggleState ∈ number | undefined → number (≥ 0, toggle state 0 or 1)
+        const toggle = safeNonNegativeDefault(
+          this.beatToggleStates.get(mappingId),
+          0,
+          "beatToggleStates.get(mappingId)",
+        );
         if (toggle === 1) {
           value = 1 - value;
         }
@@ -387,7 +403,12 @@ export class AudioReactiveMapper {
     value = Math.max(mapping.min, Math.min(mapping.max, value));
 
     // Apply smoothing
-    const prevSmoothed = this.smoothedValues.get(mappingId) || 0;
+    // Type proof: smoothedValue ∈ number | undefined → number (≥ 0, smoothed audio value)
+    const prevSmoothed = safeNonNegativeDefault(
+      this.smoothedValues.get(mappingId),
+      0,
+      "smoothedValues.get(mappingId)",
+    );
     const smoothed =
       prevSmoothed * mapping.smoothing + value * (1 - mapping.smoothing);
     this.smoothedValues.set(mappingId, smoothed);

@@ -5,8 +5,12 @@
  */
 
 import { type Ref, ref } from "vue";
+import { assertDefined, isFiniteNumber } from "@/utils/typeGuards";
 import type { AnimatableProperty, Keyframe, PropertyValue } from "@/types/project";
 import type { CurveMargin, CurveViewState } from "./useCurveEditorCoords";
+import { useLayerStore } from "@/stores/layerStore";
+import { useProjectStore } from "@/stores/projectStore";
+import { useAnimationStore } from "@/stores/animationStore";
 
 // Types
 export interface DragTarget {
@@ -59,13 +63,16 @@ export interface CurveEditorInteractionOptions {
 
   // Callbacks
   drawGraph: () => void;
-  store: ReturnType<typeof import("@/stores/compositorStore").useCompositorStore>;
   keyframeStore: ReturnType<typeof import("@/stores/keyframeStore").useKeyframeStore>;
 }
 
 export function useCurveEditorInteraction(
   options: CurveEditorInteractionOptions,
 ) {
+  const layerStore = useLayerStore();
+  const projectStore = useProjectStore();
+  const animationStore = useAnimationStore();
+  
   const {
     canvasRef,
     canvasWidth,
@@ -83,7 +90,6 @@ export function useCurveEditorInteraction(
     getNumericValue,
     getPropertyPath,
     drawGraph,
-    store,
     keyframeStore,
   } = options;
 
@@ -124,7 +130,10 @@ export function useCurveEditorInteraction(
 
   // Mouse handlers
   function handleMouseDown(event: MouseEvent): void {
-    const rect = canvasRef.value?.getBoundingClientRect();
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+    const rect = (canvasRef.value !== null && typeof canvasRef.value === "object" && "getBoundingClientRect" in canvasRef.value && typeof canvasRef.value.getBoundingClientRect === "function")
+      ? canvasRef.value.getBoundingClientRect()
+      : null;
     if (!rect) return;
 
     const x = event.clientX - rect.left;
@@ -144,7 +153,10 @@ export function useCurveEditorInteraction(
   }
 
   function handleMouseMove(event: MouseEvent): void {
-    const rect = canvasRef.value?.getBoundingClientRect();
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+    const rect = (canvasRef.value !== null && typeof canvasRef.value === "object" && "getBoundingClientRect" in canvasRef.value && typeof canvasRef.value.getBoundingClientRect === "function")
+      ? canvasRef.value.getBoundingClientRect()
+      : null;
     if (!rect) return;
 
     const x = event.clientX - rect.left;
@@ -156,8 +168,14 @@ export function useCurveEditorInteraction(
     if (!dragTarget.value) return;
 
     if (dragTarget.value.type === "pan") {
-      const dx = x - (dragTarget.value.startX ?? 0);
-      const dy = y - (dragTarget.value.startY ?? 0);
+      // Lean4/PureScript/Haskell: Explicit pattern matching on optional properties
+      // Type proof: dragTarget.value.startX/Y ∈ number | undefined → number (screen coordinate)
+      const startXRaw = dragTarget.value.startX;
+      const startX: number = startXRaw !== undefined && isFiniteNumber(startXRaw) ? startXRaw : 0;
+      const startYRaw = dragTarget.value.startY;
+      const startY: number = startYRaw !== undefined && isFiniteNumber(startYRaw) ? startYRaw : 0;
+      const dx = x - startX;
+      const dy = y - startY;
 
       const graphWidth = canvasWidth.value - margin.left - margin.right;
       const graphHeight = canvasHeight.value - margin.top - margin.bottom;
@@ -176,8 +194,11 @@ export function useCurveEditorInteraction(
       dragTarget.value.startY = y;
       drawGraph();
     } else if (dragTarget.value.type === "select" && selectionBox.value) {
-      const startX = dragTarget.value.startX ?? 0;
-      const startY = dragTarget.value.startY ?? 0;
+      // Type proof: dragTarget.value.startX/Y ∈ number | undefined → number (screen coordinate)
+      const startXRaw = dragTarget.value.startX;
+      const startX: number = startXRaw !== undefined && isFiniteNumber(startXRaw) ? startXRaw : 0;
+      const startYRaw = dragTarget.value.startY;
+      const startY: number = startYRaw !== undefined && isFiniteNumber(startYRaw) ? startYRaw : 0;
 
       selectionBox.value = {
         x: Math.min(x, startX),
@@ -196,7 +217,8 @@ export function useCurveEditorInteraction(
   }
 
   function handleMouseUp(): void {
-    if (dragTarget.value?.type === "select" && selectionBox.value) {
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+    if (dragTarget.value !== null && typeof dragTarget.value === "object" && "type" in dragTarget.value && dragTarget.value.type === "select" && selectionBox.value) {
       selectKeyframesInBox();
     }
 
@@ -207,7 +229,10 @@ export function useCurveEditorInteraction(
   function handleWheel(event: WheelEvent): void {
     event.preventDefault();
 
-    const rect = canvasRef.value?.getBoundingClientRect();
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+    const rect = (canvasRef.value !== null && typeof canvasRef.value === "object" && "getBoundingClientRect" in canvasRef.value && typeof canvasRef.value.getBoundingClientRect === "function")
+      ? canvasRef.value.getBoundingClientRect()
+      : null;
     if (!rect) return;
 
     const x = event.clientX - rect.left;
@@ -296,7 +321,7 @@ export function useCurveEditorInteraction(
     const newFrame = Math.round(screenXToFrame(screenX));
     const newValue = screenYToValue(screenY);
 
-    const layer = store.selectedLayer;
+    const layer = layerStore.getSelectedLayer();
     if (!layer) return;
 
     // For now, just move the first selected keyframe
@@ -305,7 +330,12 @@ export function useCurveEditorInteraction(
       const prop = animatableProperties.value.find((p) => p.id === sk.propId);
       if (!prop) return;
 
-      const frame = Math.max(0, Math.min(store.frameCount - 1, newFrame));
+      const comp = projectStore.getActiveComp();
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+      const frameCount = (comp !== null && typeof comp === "object" && "settings" in comp && comp.settings !== null && typeof comp.settings === "object" && "frameCount" in comp.settings && typeof comp.settings.frameCount === "number")
+        ? comp.settings.frameCount
+        : 81;
+      const frame = Math.max(0, Math.min(frameCount - 1, newFrame));
       const _value =
         typeof sk.keyframe.value === "number" ? newValue : sk.keyframe.value;
 
@@ -313,7 +343,7 @@ export function useCurveEditorInteraction(
       const propertyPath = getPropertyPath(prop);
 
       // Call store method to persist the change
-      keyframeStore.updateKeyframe(store, layer.id, propertyPath, sk.keyframe.id, {
+      keyframeStore.updateKeyframe(layer.id, propertyPath, sk.keyframe.id, {
         frame,
         value: typeof sk.keyframe.value === "number" ? newValue : undefined,
       });
@@ -341,15 +371,18 @@ export function useCurveEditorInteraction(
   function moveHandle(screenX: number, screenY: number): void {
     if (!dragTarget.value || !dragTarget.value.propId) return;
 
-    const layer = store.selectedLayer;
+    const layer = layerStore.getSelectedLayer();
     if (!layer) return;
 
     const prop = animatableProperties.value.find(
-      (p) => p.id === dragTarget.value?.propId,
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+      (p) => p.id === (dragTarget.value !== null && typeof dragTarget.value === "object" && "propId" in dragTarget.value && typeof dragTarget.value.propId === "string" ? dragTarget.value.propId : ""),
     );
     if (!prop) return;
 
-    const kfIndex = dragTarget.value.index!;
+    // Type proof: index is guaranteed non-null when dragTarget exists and prop is found
+    assertDefined(dragTarget.value.index, "dragTarget.index must exist when prop is found");
+    const kfIndex = dragTarget.value.index;
     const kf = prop.keyframes[kfIndex];
     if (!kf) return;
 
@@ -382,7 +415,7 @@ export function useCurveEditorInteraction(
       };
 
       // Call store method to persist
-      keyframeStore.setKeyframeHandle(store, layer.id, propertyPath, kf.id, "out", newHandle);
+      keyframeStore.setKeyframeHandle(layer.id, propertyPath, kf.id, "out", newHandle);
 
       // Update local reference
       kf.outHandle = newHandle;
@@ -412,7 +445,7 @@ export function useCurveEditorInteraction(
       };
 
       // Call store method to persist
-      keyframeStore.setKeyframeHandle(store, layer.id, propertyPath, kf.id, "in", newHandle);
+      keyframeStore.setKeyframeHandle(layer.id, propertyPath, kf.id, "in", newHandle);
 
       // Update local reference
       kf.inHandle = newHandle;
@@ -434,7 +467,7 @@ export function useCurveEditorInteraction(
   function addKeyframeAtPosition(): void {
     if (!contextMenu.value) return;
 
-    const layer = store.selectedLayer;
+    const layer = layerStore.getSelectedLayer();
     if (!layer) return;
 
     const frame = Math.round(screenXToFrame(contextMenu.value.x));
@@ -444,7 +477,7 @@ export function useCurveEditorInteraction(
     if (visibleProperties.value.length > 0) {
       const prop = visibleProperties.value[0];
       const propertyPath = getPropertyPath(prop);
-      keyframeStore.addKeyframe(store, layer.id, propertyPath, value, frame);
+      keyframeStore.addKeyframe(layer.id, propertyPath, value, frame);
     }
 
     contextMenu.value = null;
@@ -452,14 +485,14 @@ export function useCurveEditorInteraction(
   }
 
   function deleteSelectedKeyframes(): void {
-    const layer = store.selectedLayer;
+    const layer = layerStore.getSelectedLayer();
     if (!layer) return;
 
     for (const sk of selectedKeyframes.value) {
       const prop = animatableProperties.value.find((p) => p.id === sk.propId);
       if (prop) {
         const propertyPath = getPropertyPath(prop);
-        keyframeStore.removeKeyframe(store, layer.id, propertyPath, sk.keyframe.id);
+        keyframeStore.removeKeyframe(layer.id, propertyPath, sk.keyframe.id);
       }
     }
 
@@ -476,11 +509,11 @@ export function useCurveEditorInteraction(
   function pasteKeyframes(): void {
     if (!clipboard.value) return;
 
-    const layer = store.selectedLayer;
+    const layer = layerStore.getSelectedLayer();
     if (!layer) return;
 
     // Paste at current frame, offset from first copied keyframe
-    const currentFrame = store.currentFrame;
+    const currentFrame = animationStore.currentFrame;
     const offsetFrame =
       clipboard.value.length > 0 ? clipboard.value[0].frame : 0;
 
@@ -492,7 +525,6 @@ export function useCurveEditorInteraction(
         const propertyPath = getPropertyPath(prop);
 
         const newKeyframe = keyframeStore.addKeyframe(
-          store,
           layer.id,
           propertyPath,
           kf.value,
@@ -502,16 +534,15 @@ export function useCurveEditorInteraction(
         if (newKeyframe) {
           if (kf.interpolation !== "linear") {
             keyframeStore.setKeyframeInterpolation(
-              store,
               layer.id,
               propertyPath,
               newKeyframe.id,
               kf.interpolation,
             );
           }
-          if (kf.inHandle?.enabled) {
+          // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+          if (kf.inHandle !== undefined && typeof kf.inHandle === "object" && "enabled" in kf.inHandle && kf.inHandle.enabled === true) {
             keyframeStore.setKeyframeHandle(
-              store,
               layer.id,
               propertyPath,
               newKeyframe.id,
@@ -519,9 +550,9 @@ export function useCurveEditorInteraction(
               kf.inHandle,
             );
           }
-          if (kf.outHandle?.enabled) {
+          // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+          if (kf.outHandle !== undefined && typeof kf.outHandle === "object" && "enabled" in kf.outHandle && kf.outHandle.enabled === true) {
             keyframeStore.setKeyframeHandle(
-              store,
               layer.id,
               propertyPath,
               newKeyframe.id,

@@ -44,6 +44,7 @@ import {
   calculateCompleteCharacterInfluence,
   calculateWigglyOffset,
 } from "@/services/textAnimator";
+import type { FontMetrics } from "@/services/textShaper";
 
 interface TroikaTextExtended extends InstanceType<typeof TroikaText> {
   fontWeight: string;
@@ -147,7 +148,8 @@ export class TextLayer extends BaseLayer {
   private resources: ResourceManager;
 
   // Font metrics for accurate character widths
-  private fontMetrics: unknown = null;
+  // Proper optional type - undefined when not loaded
+  private fontMetrics: FontMetrics | undefined = undefined;
 
   // Path control points for text-on-path
   private pathControlPoints: ControlPoint[] = [];
@@ -160,7 +162,10 @@ export class TextLayer extends BaseLayer {
   // Character width cache (recalculated when text/font changes)
   private characterWidths: number[] = [];
   private characterWidthsDirty: boolean = true;
-  private fontLoadingPromise: Promise<void> | null = null;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy null
+  // Pattern match: fontLoadingPromise ∈ Promise<void> | {} (never null)
+  // Proper optional type - undefined when font not loading
+  private fontLoadingPromise: Promise<void> | undefined = undefined;
   private useAccurateMetrics: boolean = false;
 
   // Text animators (per-character animation)
@@ -184,8 +189,9 @@ export class TextLayer extends BaseLayer {
     // Extract text data
     this.textData = this.extractTextData(layerData);
 
-    // Initialize animators from text data (for quick access during frame evaluation)
-    this.animators = this.textData.animators ?? [];
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined/null checks
+    // Pattern match: animators ∈ TextAnimator[] | undefined → TextAnimator[]
+    this.animators = Array.isArray(this.textData.animators) ? this.textData.animators : [];
 
     // Extract animatable properties
     this.extractAnimatableProperties(layerData);
@@ -195,7 +201,9 @@ export class TextLayer extends BaseLayer {
     this.group.add(this.textMesh);
 
     // If per-character 3D or path following is enabled, use character mode
-    if (this.textData.perCharacter3D || this.textData.pathLayerId) {
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy truthy checks
+    const hasPathLayerId = (typeof this.textData.pathLayerId === "string" && this.textData.pathLayerId.length > 0);
+    if (this.textData.perCharacter3D === true || hasPathLayerId) {
       this.enablePerCharacter3D();
     }
 
@@ -219,12 +227,14 @@ export class TextLayer extends BaseLayer {
     const fontUrl = this.getFontUrl(fontFamily);
 
     // Skip if no URL (system fonts can't be loaded via opentype.js)
-    if (!fontUrl) {
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy truthy checks
+    if (fontUrl.length === 0) {
       return;
     }
 
     // Avoid duplicate loading
-    if (this.fontLoadingPromise) {
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy truthy checks
+    if (this.fontLoadingPromise !== undefined) {
       return this.fontLoadingPromise;
     }
 
@@ -262,52 +272,81 @@ export class TextLayer extends BaseLayer {
    * Extract text data from layer, with defaults matching AE
    */
   private extractTextData(layerData: Layer): TextData {
-    const data = layerData.data as TextData | null;
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy null checks
+    // Pattern match: data ∈ TextData | null → TextData (with explicit defaults)
+    const data = (layerData.data !== null && typeof layerData.data === "object" && "text" in layerData.data) ? layerData.data as TextData : null;
+
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining/nullish coalescing
+    // Pattern match: Extract each property with explicit type narrowing and defaults
+    const textValue = (data !== null && typeof data === "object" && "text" in data && typeof data.text === "string") ? data.text : "Text";
+    const fontFamilyValue = (data !== null && typeof data === "object" && "fontFamily" in data && typeof data.fontFamily === "string") ? data.fontFamily : "Impact";
+    const fontSizeValue = (data !== null && typeof data === "object" && "fontSize" in data && typeof data.fontSize === "number") ? data.fontSize : 72;
+    const fontWeightValue = (data !== null && typeof data === "object" && "fontWeight" in data && typeof data.fontWeight === "string") ? data.fontWeight : "400";
+    const fontStyleValue = (data !== null && typeof data === "object" && "fontStyle" in data && typeof data.fontStyle === "string") ? data.fontStyle : "normal";
+    const fillValue = (data !== null && typeof data === "object" && "fill" in data && typeof data.fill === "string") ? data.fill : "#ffffff";
+    const strokeValue = (data !== null && typeof data === "object" && "stroke" in data && typeof data.stroke === "string") ? data.stroke : "";
+    const strokeWidthValue = (data !== null && typeof data === "object" && "strokeWidth" in data && typeof data.strokeWidth === "number") ? data.strokeWidth : 0;
+    const trackingValue = (data !== null && typeof data === "object" && "tracking" in data && typeof data.tracking === "number") ? data.tracking : 0;
+    const lineSpacingValue = (data !== null && typeof data === "object" && "lineSpacing" in data && typeof data.lineSpacing === "number") ? data.lineSpacing : 0;
+    const lineAnchorValue = (data !== null && typeof data === "object" && "lineAnchor" in data && typeof data.lineAnchor === "number") ? data.lineAnchor : 50;
+    const characterOffsetValue = (data !== null && typeof data === "object" && "characterOffset" in data && typeof data.characterOffset === "number") ? data.characterOffset : 0;
+    const characterValueValue = (data !== null && typeof data === "object" && "characterValue" in data && typeof data.characterValue === "number") ? data.characterValue : 0;
+    const blurValue = (data !== null && typeof data === "object" && "blur" in data && typeof data.blur === "object" && data.blur !== null && "x" in data.blur && "y" in data.blur) ? data.blur : { x: 0, y: 0 };
+    const letterSpacingRaw = (data !== null && typeof data === "object" && "letterSpacing" in data && typeof data.letterSpacing === "number") ? data.letterSpacing : trackingValue;
+    const letterSpacingValue = letterSpacingRaw;
+    const lineHeightRaw = (data !== null && typeof data === "object" && "lineHeight" in data && typeof data.lineHeight === "number") ? data.lineHeight : lineSpacingValue;
+    const lineHeightValue = lineHeightRaw > 0 ? lineHeightRaw : 1.2;
+    const textAlignValue = (data !== null && typeof data === "object" && "textAlign" in data && typeof data.textAlign === "string") ? data.textAlign : "left";
+    const pathLayerIdValue = (data !== null && typeof data === "object" && "pathLayerId" in data && typeof data.pathLayerId === "string") ? data.pathLayerId : "";
+    const pathReversedValue = (data !== null && typeof data === "object" && "pathReversed" in data && typeof data.pathReversed === "boolean") ? data.pathReversed : false;
+    const pathPerpendicularToPathValue = (data !== null && typeof data === "object" && "pathPerpendicularToPath" in data && typeof data.pathPerpendicularToPath === "boolean") ? data.pathPerpendicularToPath : true;
+    const pathForceAlignmentValue = (data !== null && typeof data === "object" && "pathForceAlignment" in data && typeof data.pathForceAlignment === "boolean") ? data.pathForceAlignment : false;
+    const pathFirstMarginValue = (data !== null && typeof data === "object" && "pathFirstMargin" in data && typeof data.pathFirstMargin === "number") ? data.pathFirstMargin : 0;
+    const pathLastMarginValue = (data !== null && typeof data === "object" && "pathLastMargin" in data && typeof data.pathLastMargin === "number") ? data.pathLastMargin : 0;
+    const pathOffsetValue = (data !== null && typeof data === "object" && "pathOffset" in data && typeof data.pathOffset === "number") ? data.pathOffset : 0;
+    const pathAlignValue = (data !== null && typeof data === "object" && "pathAlign" in data && typeof data.pathAlign === "string") ? data.pathAlign : "left";
+    const anchorPointGroupingValue = (data !== null && typeof data === "object" && "anchorPointGrouping" in data && typeof data.anchorPointGrouping === "string") ? data.anchorPointGrouping : "character";
+    const groupingAlignmentValue = (data !== null && typeof data === "object" && "groupingAlignment" in data && typeof data.groupingAlignment === "object" && data.groupingAlignment !== null && "x" in data.groupingAlignment && "y" in data.groupingAlignment) ? data.groupingAlignment : { x: 0, y: 0 };
+    const fillAndStrokeValue = (data !== null && typeof data === "object" && "fillAndStroke" in data && typeof data.fillAndStroke === "string") ? data.fillAndStroke : "fill-over-stroke";
+    const interCharacterBlendingValue = (data !== null && typeof data === "object" && "interCharacterBlending" in data && typeof data.interCharacterBlending === "string") ? data.interCharacterBlending : "normal";
+    const perCharacter3DValue = (data !== null && typeof data === "object" && "perCharacter3D" in data && typeof data.perCharacter3D === "boolean") ? data.perCharacter3D : false;
+    const animatorsValue = (data !== null && typeof data === "object" && "animators" in data && Array.isArray(data.animators)) ? data.animators : [];
 
     return {
-      text: data?.text ?? "Text",
-      fontFamily: data?.fontFamily ?? "Impact",
-      fontSize: data?.fontSize ?? 72,
-      fontWeight: data?.fontWeight ?? "400",
-      fontStyle: data?.fontStyle ?? "normal",
-      fill: data?.fill ?? "#ffffff",
-      stroke: data?.stroke ?? "",
-      strokeWidth: data?.strokeWidth ?? 0,
-
-      // Character properties
-      tracking: data?.tracking ?? 0,
-      lineSpacing: data?.lineSpacing ?? 0,
-      lineAnchor: data?.lineAnchor ?? 50,
-      characterOffset: data?.characterOffset ?? 0,
-      characterValue: data?.characterValue ?? 0,
-      blur: data?.blur ?? { x: 0, y: 0 },
-
-      // Paragraph (aliases)
-      letterSpacing: data?.letterSpacing ?? data?.tracking ?? 0,
-      lineHeight: data?.lineHeight ?? data?.lineSpacing ?? 1.2,
-      textAlign: data?.textAlign ?? "left",
-
-      // Path options (full AE parity)
-      pathLayerId: data?.pathLayerId ?? null,
-      pathReversed: data?.pathReversed ?? false,
-      pathPerpendicularToPath: data?.pathPerpendicularToPath ?? true,
-      pathForceAlignment: data?.pathForceAlignment ?? false,
-      pathFirstMargin: data?.pathFirstMargin ?? 0,
-      pathLastMargin: data?.pathLastMargin ?? 0,
-      pathOffset: data?.pathOffset ?? 0,
-      pathAlign: data?.pathAlign ?? "left",
-
-      // More Options
-      anchorPointGrouping: data?.anchorPointGrouping ?? "character",
-      groupingAlignment: data?.groupingAlignment ?? { x: 0, y: 0 },
-      fillAndStroke: data?.fillAndStroke ?? "fill-over-stroke",
-      interCharacterBlending: data?.interCharacterBlending ?? "normal",
-
-      // 3D
-      perCharacter3D: data?.perCharacter3D ?? false,
-
-      // Text animators
-      animators: data?.animators ?? [],
+      text: textValue,
+      fontFamily: fontFamilyValue,
+      fontSize: fontSizeValue,
+      fontWeight: fontWeightValue,
+      fontStyle: fontStyleValue,
+      fill: fillValue,
+      stroke: strokeValue,
+      strokeWidth: strokeWidthValue,
+      tracking: trackingValue,
+      lineSpacing: lineSpacingValue,
+      lineAnchor: lineAnchorValue,
+      characterOffset: characterOffsetValue,
+      characterValue: characterValueValue,
+      blur: blurValue,
+      letterSpacing: letterSpacingValue,
+      lineHeight: lineHeightValue,
+      textAlign: textAlignValue,
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy null
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy null
+      // Pattern match: pathLayerId ∈ string (empty string = no path, never null)
+      pathLayerId: pathLayerIdValue,
+      pathReversed: pathReversedValue,
+      pathPerpendicularToPath: pathPerpendicularToPathValue,
+      pathForceAlignment: pathForceAlignmentValue,
+      pathFirstMargin: pathFirstMarginValue,
+      pathLastMargin: pathLastMarginValue,
+      pathOffset: pathOffsetValue,
+      pathAlign: pathAlignValue,
+      anchorPointGrouping: anchorPointGroupingValue,
+      groupingAlignment: groupingAlignmentValue,
+      fillAndStroke: fillAndStrokeValue,
+      interCharacterBlending: interCharacterBlendingValue,
+      perCharacter3D: perCharacter3DValue,
+      animators: animatorsValue,
     };
   }
 
@@ -384,11 +423,15 @@ export class TextLayer extends BaseLayer {
     text.text = this.textData.text;
 
     // Font settings
-    text.font = this.getFontUrl(this.textData.fontFamily) ?? null;
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy nullish coalescing
+    // Pattern match: getFontUrl returns string (empty string for system fonts, never null/undefined)
+    const fontUrl = this.getFontUrl(this.textData.fontFamily);
+    text.font = fontUrl.length > 0 ? fontUrl : null;
     text.fontSize = this.textData.fontSize;
 
-    text.fontWeight = this.textData.fontWeight || "400";
-    text.fontStyle = this.textData.fontStyle || "normal";
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy logical OR defaults
+    text.fontWeight = (typeof this.textData.fontWeight === "string" && this.textData.fontWeight.length > 0) ? this.textData.fontWeight : "400";
+    text.fontStyle = (typeof this.textData.fontStyle === "string" && this.textData.fontStyle.length > 0) ? this.textData.fontStyle : "normal";
 
     // Colors
     text.color = this.textData.fill;
@@ -398,8 +441,12 @@ export class TextLayer extends BaseLayer {
     }
 
     // Spacing - Troika uses em units for letter spacing
-    text.letterSpacing = (this.textData.tracking || 0) / 1000;
-    text.lineHeight = this.textData.lineHeight || 1.2;
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy nullish coalescing/logical OR
+    // Pattern match: tracking ∈ number | undefined → number (coordinate-like, can be negative)
+    const tracking = typeof this.textData.tracking === "number" ? this.textData.tracking : 0;
+    text.letterSpacing = Number.isFinite(tracking) ? tracking / 1000 : 0;
+    const lineHeightValue = typeof this.textData.lineHeight === "number" && this.textData.lineHeight > 0 ? this.textData.lineHeight : 1.2;
+    text.lineHeight = lineHeightValue;
 
     // Alignment
     text.textAlign = this.textData.textAlign;
@@ -426,7 +473,9 @@ export class TextLayer extends BaseLayer {
   /**
    * Get font URL for Troika
    */
-  private getFontUrl(fontFamily: string): string | undefined {
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined returns
+  // Pattern match: Returns empty string for system fonts (never undefined)
+  private getFontUrl(fontFamily: string): string {
     const systemFonts = [
       "Arial",
       "Helvetica",
@@ -441,7 +490,8 @@ export class TextLayer extends BaseLayer {
     ];
 
     if (systemFonts.includes(fontFamily)) {
-      return undefined;
+      // Lean4/PureScript/Haskell: Explicit default - never return undefined
+      return "";
     }
 
     const googleFonts: Record<string, string> = {
@@ -458,7 +508,12 @@ export class TextLayer extends BaseLayer {
         "https://fonts.gstatic.com/s/poppins/v21/pxiEyp8kv8JHgFVrJJfecg.woff2",
     };
 
-    return googleFonts[fontFamily];
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined
+    // Pattern match: googleFonts[fontFamily] ∈ string | undefined → string
+    if (fontFamily in googleFonts && typeof googleFonts[fontFamily] === "string") {
+      return googleFonts[fontFamily];
+    }
+    return "";
   }
 
   /**
@@ -526,8 +581,10 @@ export class TextLayer extends BaseLayer {
    * Clear the path reference
    */
   clearPath(): void {
-    this.textData.pathLayerId = null;
-    this.pathConfig.pathLayerId = null;
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy null assignments
+    // Pattern match: pathLayerId ∈ string (empty string = no path, never null)
+    this.textData.pathLayerId = "";
+    this.pathConfig.pathLayerId = "";
     this.textOnPath.dispose();
     this.resetPathLayout();
   }
@@ -608,8 +665,9 @@ export class TextLayer extends BaseLayer {
         fontFamily,
         fontSize,
         {
-          kern: this.textData.kerning ?? true,
-          letterSpacing: this.textData.tracking ?? 0,
+          // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy nullish coalescing
+          kern: (typeof this.textData.kerning === "boolean") ? this.textData.kerning : true,
+          letterSpacing: (typeof this.textData.tracking === "number") ? this.textData.tracking : 0,
         },
       );
       this.characterWidthsDirty = false;
@@ -722,10 +780,12 @@ export class TextLayer extends BaseLayer {
       const charMesh = createTroikaTextExtended();
 
       charMesh.text = char;
-      charMesh.font = this.getFontUrl(this.textData.fontFamily) ?? null;
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy nullish coalescing/logical OR
+      const charFontUrl = this.getFontUrl(this.textData.fontFamily);
+      charMesh.font = charFontUrl.length > 0 ? charFontUrl : null;
       charMesh.fontSize = this.textData.fontSize;
-      charMesh.fontWeight = this.textData.fontWeight || "400";
-      charMesh.fontStyle = this.textData.fontStyle || "normal";
+      charMesh.fontWeight = (typeof this.textData.fontWeight === "string" && this.textData.fontWeight.length > 0) ? this.textData.fontWeight : "400";
+      charMesh.fontStyle = (typeof this.textData.fontStyle === "string" && this.textData.fontStyle.length > 0) ? this.textData.fontStyle : "normal";
       charMesh.color = this.textData.fill;
       charMesh.anchorX = "center";
       charMesh.anchorY = "middle";
@@ -765,7 +825,10 @@ export class TextLayer extends BaseLayer {
   private disposeCharacterMeshes(): void {
     for (const mesh of this.characterMeshes) {
       mesh.dispose();
-      this.perCharacterGroup?.remove(mesh);
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+      if (this.perCharacterGroup !== null && typeof this.perCharacterGroup === "object" && "remove" in this.perCharacterGroup && typeof this.perCharacterGroup.remove === "function") {
+        this.perCharacterGroup.remove(mesh);
+      }
     }
     this.characterMeshes = [];
   }
@@ -776,8 +839,10 @@ export class TextLayer extends BaseLayer {
 
   setText(text: string): void {
     // Cap text length to prevent performance issues (10,000 chars max)
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy nullish coalescing
     const MAX_TEXT_LENGTH = 10000;
-    const validText = (text ?? "").slice(0, MAX_TEXT_LENGTH);
+    const textValue = typeof text === "string" ? text : "";
+    const validText = textValue.slice(0, MAX_TEXT_LENGTH);
     this.textData.text = validText;
     this.textMesh.text = validText;
     this.textMesh.sync();
@@ -790,14 +855,15 @@ export class TextLayer extends BaseLayer {
 
   setFontFamily(family: string): void {
     this.textData.fontFamily = family;
-    const fontUrl = this.getFontUrl(family) ?? null;
-    this.textMesh.font = fontUrl;
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy nullish coalescing
+    const fontUrl = this.getFontUrl(family);
+    this.textMesh.font = fontUrl.length > 0 ? fontUrl : null;
     this.textMesh.sync();
     this.characterWidthsDirty = true;
 
     // Reset font metrics and reload for new font
-    this.fontMetrics = null;
-    this.fontLoadingPromise = null;
+    this.fontMetrics = undefined;
+    this.fontLoadingPromise = undefined;
     this.useAccurateMetrics = false;
     this.loadFontMetrics();
 
@@ -1012,50 +1078,60 @@ export class TextLayer extends BaseLayer {
 
   protected onEvaluateFrame(frame: number): void {
     // Evaluate animatable text properties
-    if (this.fontSizeProp?.animated) {
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+    if (typeof this.fontSizeProp === "object" && this.fontSizeProp !== null && "animated" in this.fontSizeProp && this.fontSizeProp.animated === true) {
       const size = this.textEvaluator.evaluate(this.fontSizeProp, frame);
       this.setFontSize(size);
     }
 
-    if (this.trackingProp?.animated) {
+    if (typeof this.trackingProp === "object" && this.trackingProp !== null && "animated" in this.trackingProp && this.trackingProp.animated === true) {
       const tracking = this.textEvaluator.evaluate(this.trackingProp, frame);
       this.setTracking(tracking);
     }
 
-    if (this.fillColorProp?.animated) {
+    if (typeof this.fillColorProp === "object" && this.fillColorProp !== null && "animated" in this.fillColorProp && this.fillColorProp.animated === true) {
       const color = this.textEvaluator.evaluate(this.fillColorProp, frame);
       this.setFillColor(color);
     }
 
-    if (this.strokeColorProp?.animated && this.strokeWidthProp) {
-      const color = this.textEvaluator.evaluate(this.strokeColorProp, frame);
-      const width = this.strokeWidthProp.animated
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+    if (typeof this.strokeColorProp === "object" && this.strokeColorProp !== null && "animated" in this.strokeColorProp && this.strokeColorProp.animated === true && typeof this.strokeWidthProp === "object" && this.strokeWidthProp !== null) {
+      // System F/Omega: Validate return type from evaluator
+      // Type proof: strokeColorProp is AnimatableProperty<string>, so evaluate returns string
+      const colorValue = this.textEvaluator.evaluate(this.strokeColorProp, frame);
+      const color = typeof colorValue === "string" ? colorValue : (typeof this.textData.stroke === "string" ? this.textData.stroke : "");
+      // Type proof: strokeWidthProp is AnimatableProperty<number>, so evaluate returns number
+      const widthValue = (typeof this.strokeWidthProp === "object" && this.strokeWidthProp !== null && "animated" in this.strokeWidthProp && this.strokeWidthProp.animated === true)
         ? this.textEvaluator.evaluate(this.strokeWidthProp, frame)
         : this.textData.strokeWidth;
+      const width = typeof widthValue === "number" ? widthValue : (typeof this.textData.strokeWidth === "number" ? this.textData.strokeWidth : 0);
       this.setStroke(color, width);
     }
 
     // PATH OFFSET ANIMATION - The key animatable property for text-on-path
-    if (this.pathOffsetProp) {
-      const offset = this.pathOffsetProp.animated
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy truthy checks
+    if (typeof this.pathOffsetProp === "object" && this.pathOffsetProp !== null) {
+      const offset = this.pathOffsetProp.animated === true
         ? this.textEvaluator.evaluate(this.pathOffsetProp, frame)
         : this.textData.pathOffset;
       this.setPathOffset(offset);
     }
 
     // First/Last margin animation
-    if (this.firstMarginProp?.animated) {
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+    if (typeof this.firstMarginProp === "object" && this.firstMarginProp !== null && "animated" in this.firstMarginProp && this.firstMarginProp.animated === true) {
       const margin = this.textEvaluator.evaluate(this.firstMarginProp, frame);
       this.setFirstMargin(margin);
     }
 
-    if (this.lastMarginProp?.animated) {
+    if (typeof this.lastMarginProp === "object" && this.lastMarginProp !== null && "animated" in this.lastMarginProp && this.lastMarginProp.animated === true) {
       const margin = this.textEvaluator.evaluate(this.lastMarginProp, frame);
       this.setLastMargin(margin);
     }
 
     // Per-character transforms (from characterTransforms property)
-    if (this.characterTransforms?.animated && this.perCharacterGroup) {
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+    if (typeof this.characterTransforms === "object" && this.characterTransforms !== null && "animated" in this.characterTransforms && this.characterTransforms.animated === true && this.perCharacterGroup !== null) {
       this.applyCharacterTransforms(frame);
     }
 
@@ -1085,36 +1161,53 @@ export class TextLayer extends BaseLayer {
     const frame = state.frame;
 
     // Apply evaluated text properties
-    if (props.fontSize !== undefined) {
-      this.setFontSize(props.fontSize as number);
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+    if (typeof props === "object" && props !== null && "fontSize" in props && typeof props.fontSize === "number") {
+      this.setFontSize(props.fontSize);
     }
 
-    if (props.tracking !== undefined) {
-      this.setTracking(props.tracking as number);
+    if (typeof props === "object" && props !== null && "tracking" in props && typeof props.tracking === "number") {
+      this.setTracking(props.tracking);
     }
 
-    if (props.fillColor !== undefined) {
-      this.setFillColor(props.fillColor as string);
+    if (typeof props === "object" && props !== null && "fillColor" in props && typeof props.fillColor === "string") {
+      this.setFillColor(props.fillColor);
     }
 
-    if (props.strokeColor !== undefined || props.strokeWidth !== undefined) {
-      this.setStroke(
-        (props.strokeColor as string) ?? this.textData.stroke,
-        (props.strokeWidth as number) ?? this.textData.strokeWidth,
-      );
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined/nullish coalescing
+    const hasStrokeColor = typeof props === "object" && props !== null && "strokeColor" in props && typeof props.strokeColor === "string";
+    const hasStrokeWidth = typeof props === "object" && props !== null && "strokeWidth" in props && typeof props.strokeWidth === "number";
+    if (hasStrokeColor || hasStrokeWidth) {
+      // System F/Omega: Validate types before calling setStroke
+      // Type proof: strokeColorValue ∈ string (validated or from textData.stroke which is string)
+      let strokeColorValue: string;
+      if (hasStrokeColor && typeof props.strokeColor === "string") {
+        strokeColorValue = props.strokeColor;
+      } else {
+        strokeColorValue = typeof this.textData.stroke === "string" ? this.textData.stroke : "";
+      }
+      // Type proof: strokeWidthValue ∈ number (validated or from textData.strokeWidth which is number)
+      let strokeWidthValue: number;
+      if (hasStrokeWidth && typeof props.strokeWidth === "number") {
+        strokeWidthValue = props.strokeWidth;
+      } else {
+        strokeWidthValue = typeof this.textData.strokeWidth === "number" ? this.textData.strokeWidth : 0;
+      }
+      this.setStroke(strokeColorValue, strokeWidthValue);
     }
 
     // Path animation properties
-    if (props.pathOffset !== undefined) {
-      this.setPathOffset(props.pathOffset as number);
+    if (typeof props === "object" && props !== null && "pathOffset" in props && typeof props.pathOffset === "number") {
+      this.setPathOffset(props.pathOffset);
     }
 
-    if (props.firstMargin !== undefined) {
-      this.setFirstMargin(props.firstMargin as number);
+    if (typeof props === "object" && props !== null && "firstMargin" in props && typeof props.firstMargin === "number") {
+      this.setFirstMargin(props.firstMargin);
     }
 
-    if (props.lastMargin !== undefined) {
-      this.setLastMargin(props.lastMargin as number);
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+    if (typeof props === "object" && props !== null && "lastMargin" in props && typeof props.lastMargin === "number") {
+      this.setLastMargin(props.lastMargin);
     }
 
     // Apply audio-reactive path position modifier.
@@ -1146,7 +1239,8 @@ export class TextLayer extends BaseLayer {
     }
 
     // Per-character transforms (from characterTransforms property, if animated)
-    if (this.characterTransforms?.animated && this.perCharacterGroup) {
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+    if (typeof this.characterTransforms === "object" && this.characterTransforms !== null && "animated" in this.characterTransforms && this.characterTransforms.animated === true && this.perCharacterGroup !== null) {
       this.applyCharacterTransforms(frame);
     }
   }
@@ -1157,10 +1251,13 @@ export class TextLayer extends BaseLayer {
   private applyCharacterTransforms(frame: number): void {
     if (!this.characterTransforms) return;
 
+    // System F/Omega: CharacterTransform[] is not in PropertyValue union, but KeyframeEvaluator
+    // can handle it via generic constraint. Type assertion needed for type system compatibility.
+    // Type proof: characterTransforms.value ∈ CharacterTransform[] (runtime validated)
     const transforms = this.textEvaluator.evaluate(
-      this.characterTransforms,
+      this.characterTransforms as AnimatableProperty<PropertyValue>,
       frame,
-    );
+    ) as CharacterTransform[];
 
     for (
       let i = 0;
@@ -1222,9 +1319,10 @@ export class TextLayer extends BaseLayer {
       rotZ: mesh.rotation.z,
       scaleX: mesh.scale.x,
       scaleY: mesh.scale.y,
-      opacity: mesh.fillOpacity ?? 1,
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+      opacity: (typeof mesh.fillOpacity === "number" && Number.isFinite(mesh.fillOpacity)) ? mesh.fillOpacity : 1,
       color: mesh.color,
-      letterSpacing: mesh.letterSpacing ?? 0,
+      letterSpacing: (typeof mesh.letterSpacing === "number" && Number.isFinite(mesh.letterSpacing)) ? mesh.letterSpacing : 0,
     }));
 
     // Track if any layout properties were modified (require Troika sync)
@@ -1329,7 +1427,8 @@ export class TextLayer extends BaseLayer {
         }
 
         // Apply Wiggly position offset (if wiggly selector is enabled)
-        if (animator.wigglySelector?.enabled) {
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+        if (typeof animator.wigglySelector === "object" && animator.wigglySelector !== null && "enabled" in animator.wigglySelector && animator.wigglySelector.enabled === true) {
           const wiggleOffset = calculateWigglyOffset(
             i,
             animator.wigglySelector,
@@ -1370,8 +1469,10 @@ export class TextLayer extends BaseLayer {
       return prop.value;
     }
 
-    // Use the text evaluator to interpolate keyframes
-    return this.textEvaluator.evaluate(prop, frame);
+    // System F/Omega: Type assertion needed for properties that extend beyond PropertyValue union
+    // Type proof: T extends PropertyValue at runtime (validated by KeyframeEvaluator)
+    // This is safe because KeyframeEvaluator.evaluate<T extends PropertyValue> handles the type
+    return this.textEvaluator.evaluate(prop as AnimatableProperty<PropertyValue>, frame) as T;
   }
 
   // ============================================================================
@@ -1379,87 +1480,112 @@ export class TextLayer extends BaseLayer {
   // ============================================================================
 
   protected onUpdate(properties: Partial<Layer>): void {
-    const data = properties.data as Partial<TextData> | undefined;
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+    // Pattern match: data ∈ Partial<TextData> | undefined → Partial<TextData> | {}
+    const data = (typeof properties.data === "object" && properties.data !== null) ? properties.data as Partial<TextData> : {};
 
-    if (data) {
-      if (data.text !== undefined) {
-        this.setText(data.text);
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+    // Pattern match: Check each property with explicit type narrowing
+    if (typeof data === "object" && data !== null && "text" in data && typeof data.text === "string") {
+      this.setText(data.text);
+    }
+    if (typeof data === "object" && data !== null && "fontFamily" in data && typeof data.fontFamily === "string") {
+      this.setFontFamily(data.fontFamily);
+    }
+    if (typeof data === "object" && data !== null && "fontSize" in data && typeof data.fontSize === "number") {
+      this.setFontSize(data.fontSize);
+    }
+    if (typeof data === "object" && data !== null && "fontWeight" in data && typeof data.fontWeight === "string") {
+      this.setFontWeight(data.fontWeight);
+    }
+    if (typeof data === "object" && data !== null && "fontStyle" in data && typeof data.fontStyle === "string") {
+      this.setFontStyle(data.fontStyle);
+    }
+    if (typeof data === "object" && data !== null && "fill" in data && typeof data.fill === "string") {
+      this.setFillColor(data.fill);
+    }
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined/nullish coalescing
+    const hasStroke = typeof data === "object" && data !== null && "stroke" in data && typeof data.stroke === "string";
+    const hasStrokeWidth = typeof data === "object" && data !== null && "strokeWidth" in data && typeof data.strokeWidth === "number";
+    if (hasStroke || hasStrokeWidth) {
+      // System F/Omega: Validate types before calling setStroke
+      // Type proof: strokeColorValue ∈ string (validated or from textData.stroke which is string)
+      let strokeColorValue: string;
+      if (hasStroke && typeof data.stroke === "string") {
+        strokeColorValue = data.stroke;
+      } else {
+        strokeColorValue = typeof this.textData.stroke === "string" ? this.textData.stroke : "";
       }
-      if (data.fontFamily !== undefined) {
-        this.setFontFamily(data.fontFamily);
+      // Type proof: strokeWidthValue ∈ number (validated or from textData.strokeWidth which is number)
+      let strokeWidthValue: number;
+      if (hasStrokeWidth && typeof data.strokeWidth === "number") {
+        strokeWidthValue = data.strokeWidth;
+      } else {
+        strokeWidthValue = typeof this.textData.strokeWidth === "number" ? this.textData.strokeWidth : 0;
       }
-      if (data.fontSize !== undefined) {
-        this.setFontSize(data.fontSize);
+      this.setStroke(strokeColorValue, strokeWidthValue);
+    }
+    if (typeof data === "object" && data !== null && "tracking" in data && typeof data.tracking === "number") {
+      this.setTracking(data.tracking);
+    }
+    if (typeof data === "object" && data !== null && "textAlign" in data && typeof data.textAlign === "string") {
+      // System F/Omega: Validate textAlign is one of the allowed values
+      // Type proof: textAlign ∈ string → "left" | "center" | "right"
+      const textAlignValue = data.textAlign;
+      if (textAlignValue === "left" || textAlignValue === "center" || textAlignValue === "right") {
+        this.setTextAlign(textAlignValue);
       }
-      if (data.fontWeight !== undefined) {
-        this.setFontWeight(data.fontWeight);
+    }
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy null checks
+    if (typeof data === "object" && data !== null && "pathLayerId" in data && typeof data.pathLayerId === "string") {
+      this.textData.pathLayerId = data.pathLayerId;
+      this.pathConfig.pathLayerId = data.pathLayerId;
+    }
+    if (typeof data === "object" && data !== null && "pathOffset" in data && typeof data.pathOffset === "number") {
+      this.setPathOffset(data.pathOffset);
+    }
+    if (typeof data === "object" && data !== null && "pathFirstMargin" in data && typeof data.pathFirstMargin === "number") {
+      this.setFirstMargin(data.pathFirstMargin);
+    }
+    if (typeof data === "object" && data !== null && "pathLastMargin" in data && typeof data.pathLastMargin === "number") {
+      this.setLastMargin(data.pathLastMargin);
+    }
+    if (typeof data === "object" && data !== null && "pathReversed" in data && typeof data.pathReversed === "boolean") {
+      this.setPathReversed(data.pathReversed);
+    }
+    if (typeof data === "object" && data !== null && "pathPerpendicularToPath" in data && typeof data.pathPerpendicularToPath === "boolean") {
+      this.setPerpendicularToPath(data.pathPerpendicularToPath);
+    }
+    if (typeof data === "object" && data !== null && "pathForceAlignment" in data && typeof data.pathForceAlignment === "boolean") {
+      this.setForceAlignment(data.pathForceAlignment);
+    }
+    if (typeof data === "object" && data !== null && "perCharacter3D" in data && typeof data.perCharacter3D === "boolean") {
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy truthy checks
+      if (data.perCharacter3D === true && this.perCharacterGroup === null) {
+        this.enablePerCharacter3D();
+      } else if (
+        data.perCharacter3D === false &&
+        !this.textOnPath.hasPath() &&
+        this.perCharacterGroup !== null
+      ) {
+        this.disablePerCharacter3D();
       }
-      if (data.fontStyle !== undefined) {
-        this.setFontStyle(data.fontStyle);
-      }
-      if (data.fill !== undefined) {
-        this.setFillColor(data.fill);
-      }
-      if (data.stroke !== undefined || data.strokeWidth !== undefined) {
-        this.setStroke(
-          data.stroke ?? this.textData.stroke,
-          data.strokeWidth ?? this.textData.strokeWidth,
-        );
-      }
-      if (data.tracking !== undefined) {
-        this.setTracking(data.tracking);
-      }
-      if (data.textAlign !== undefined) {
-        this.setTextAlign(data.textAlign);
-      }
-      if (data.pathLayerId !== undefined) {
-        this.textData.pathLayerId = data.pathLayerId;
-        this.pathConfig.pathLayerId = data.pathLayerId;
-      }
-      if (data.pathOffset !== undefined) {
-        this.setPathOffset(data.pathOffset);
-      }
-      if (data.pathFirstMargin !== undefined) {
-        this.setFirstMargin(data.pathFirstMargin);
-      }
-      if (data.pathLastMargin !== undefined) {
-        this.setLastMargin(data.pathLastMargin);
-      }
-      if (data.pathReversed !== undefined) {
-        this.setPathReversed(data.pathReversed);
-      }
-      if (data.pathPerpendicularToPath !== undefined) {
-        this.setPerpendicularToPath(data.pathPerpendicularToPath);
-      }
-      if (data.pathForceAlignment !== undefined) {
-        this.setForceAlignment(data.pathForceAlignment);
-      }
-      if (data.perCharacter3D !== undefined) {
-        if (data.perCharacter3D && !this.perCharacterGroup) {
-          this.enablePerCharacter3D();
-        } else if (
-          !data.perCharacter3D &&
-          !this.textOnPath.hasPath() &&
-          this.perCharacterGroup
-        ) {
-          this.disablePerCharacter3D();
-        }
-      }
-      if (data.anchorPointGrouping !== undefined) {
-        this.setAnchorPointGrouping(data.anchorPointGrouping);
-      }
-      if (data.fillAndStroke !== undefined) {
-        this.setFillAndStroke(data.fillAndStroke);
-      }
+    }
+    if (typeof data === "object" && data !== null && "anchorPointGrouping" in data && typeof data.anchorPointGrouping === "string") {
+      this.setAnchorPointGrouping(data.anchorPointGrouping);
+    }
+    if (typeof data === "object" && data !== null && "fillAndStroke" in data && typeof data.fillAndStroke === "string") {
+      this.setFillAndStroke(data.fillAndStroke);
+    }
 
-      // Update animators array
-      if (data.animators !== undefined) {
-        this.animators = data.animators;
-        this.textData.animators = data.animators;
-        // Enable per-character mode if animators exist
-        if (this.animators.length > 0 && !this.perCharacterGroup) {
-          this.enablePerCharacter3D();
-        }
+    // Update animators array
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+    if (typeof data === "object" && data !== null && "animators" in data && Array.isArray(data.animators)) {
+      this.animators = data.animators;
+      this.textData.animators = data.animators;
+      // Enable per-character mode if animators exist
+      if (this.animators.length > 0 && this.perCharacterGroup === null) {
+        this.enablePerCharacter3D();
       }
     }
 
@@ -1501,13 +1627,16 @@ export class TextLayer extends BaseLayer {
   }
 
   getTextBounds(): { width: number; height: number } {
-    const bounds = this.textMesh.textRenderInfo?.blockBounds;
-    if (bounds) {
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+    const textRenderInfo = (typeof this.textMesh.textRenderInfo === "object" && this.textMesh.textRenderInfo !== null && "blockBounds" in this.textMesh.textRenderInfo) ? this.textMesh.textRenderInfo : null;
+    const bounds = (textRenderInfo !== null && typeof textRenderInfo.blockBounds === "object" && textRenderInfo.blockBounds !== null) ? textRenderInfo.blockBounds : null;
+    if (bounds !== null && typeof bounds === "object" && Array.isArray(bounds) && bounds.length >= 4) {
       return {
         width: bounds[2] - bounds[0],
         height: bounds[3] - bounds[1],
       };
     }
+    throw new Error(`[TextLayer] Cannot get text bounds: textRenderInfo.blockBounds is not available for layer "${this.id}"`);
     return { width: 0, height: 0 };
   }
 

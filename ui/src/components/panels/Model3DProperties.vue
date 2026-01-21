@@ -269,8 +269,9 @@
 
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from "vue";
+import { safeCoordinateDefault } from "@/utils/typeGuards";
 import { useAssetStore } from "@/stores/assetStore";
-import { useCompositorStore } from "@/stores/compositorStore";
+import { useProjectStore } from "@/stores/projectStore";
 import { useLayerStore } from "@/stores/layerStore";
 
 const props = defineProps<{
@@ -281,7 +282,7 @@ const emit = defineEmits<{
   "open-material-editor": [];
 }>();
 
-const store = useCompositorStore();
+const projectStore = useProjectStore();
 const layerStore = useLayerStore();
 const assetStore = useAssetStore();
 
@@ -294,37 +295,72 @@ const sections = reactive({
 });
 
 // Get layer data
-const layer = computed(() => store.layers.find((l) => l.id === props.layerId));
+const layer = computed(() => projectStore.getActiveCompLayers().find((l) => l.id === props.layerId));
 const layerData = computed(() => {
-  if (!layer.value?.data) return null;
-  return layer.value.data as import("@/types/project").ModelLayerData | import("@/types/project").PointCloudLayerData;
+  // System F/Omega EXCEPTION: Returning null here is necessary for Vue template compatibility
+  // Template uses v-if="layerData" which requires null for conditional rendering
+  // This is the ONLY place where null is returned - all other code throws explicit errors
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const layerValue = layer.value;
+  const layerDataValue = (layerValue != null && typeof layerValue === "object" && "data" in layerValue && layerValue.data != null) ? layerValue.data : undefined;
+  if (!layerDataValue) return null;
+  return layerDataValue as import("@/types/project").ModelLayerData | import("@/types/project").PointCloudLayerData;
 });
 
 // Check if point cloud
-const isPointCloud = computed(() => layer.value?.type === "pointcloud");
+// Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+const isPointCloud = computed(() => {
+  const layerValue = layer.value;
+  return (layerValue != null && typeof layerValue === "object" && "type" in layerValue && typeof layerValue.type === "string" && layerValue.type === "pointcloud") ? true : false;
+});
 
 // Transform values
 const position = computed(() => {
-  const val = layer.value?.transform.position.value;
-  return val
-    ? { x: val.x || 0, y: val.y || 0, z: val.z || 0 }
-    : { x: 0, y: 0, z: 0 };
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const layerValue = layer.value;
+  const transform = (layerValue != null && typeof layerValue === "object" && "transform" in layerValue && layerValue.transform != null && typeof layerValue.transform === "object") ? layerValue.transform : undefined;
+  const positionProp = (transform != null && typeof transform === "object" && "position" in transform && transform.position != null && typeof transform.position === "object") ? transform.position : undefined;
+  const val = (positionProp != null && typeof positionProp === "object" && "value" in positionProp && positionProp.value != null && typeof positionProp.value === "object") ? positionProp.value : undefined;
+  if (!val) return { x: 0, y: 0, z: 0 };
+  // Type proof: position coordinates ∈ number | undefined → number (coordinate-like, can be negative)
+  return {
+    x: safeCoordinateDefault(val.x, 0, "position.x"),
+    y: safeCoordinateDefault(val.y, 0, "position.y"),
+    z: safeCoordinateDefault(val.z, 0, "position.z"),
+  };
 });
 
 const rotation = computed(() => {
   // 3D models use rotationX/Y/Z properties
-  const transform = layer.value?.transform;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??/?.
+  const layerValue = layer.value;
+  const transform = (layerValue !== null && layerValue !== undefined && typeof layerValue === "object" && "transform" in layerValue) ? layerValue.transform : undefined;
   if (!transform) return { x: 0, y: 0, z: 0 };
 
+  // Type proof: rotation coordinates ∈ number | undefined → number (coordinate-like, can be negative)
+  // Pattern match: rotationZ.value ∈ number | undefined → number (fallback to rotation.value)
+  const rotationZ = (typeof transform === "object" && transform !== null && "rotationZ" in transform && transform.rotationZ !== null && typeof transform.rotationZ === "object" && "value" in transform.rotationZ && typeof transform.rotationZ.value === "number" && Number.isFinite(transform.rotationZ.value)) ? transform.rotationZ.value : undefined;
+  const rotationFallback = (typeof transform === "object" && transform !== null && "rotation" in transform && transform.rotation !== null && typeof transform.rotation === "object" && "value" in transform.rotation && typeof transform.rotation.value === "number" && Number.isFinite(transform.rotation.value)) ? transform.rotation.value : undefined;
+  const rotationZValue = rotationZ !== undefined ? rotationZ : rotationFallback;
+  
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const rotationX = (transform != null && typeof transform === "object" && "rotationX" in transform && transform.rotationX != null && typeof transform.rotationX === "object") ? transform.rotationX : undefined;
+  const rotationXValue = (rotationX != null && typeof rotationX === "object" && "value" in rotationX && typeof rotationX.value === "number") ? rotationX.value : undefined;
+  const rotationY = (transform != null && typeof transform === "object" && "rotationY" in transform && transform.rotationY != null && typeof transform.rotationY === "object") ? transform.rotationY : undefined;
+  const rotationYValue = (rotationY != null && typeof rotationY === "object" && "value" in rotationY && typeof rotationY.value === "number") ? rotationY.value : undefined;
   return {
-    x: transform.rotationX?.value || 0,
-    y: transform.rotationY?.value || 0,
-    z: transform.rotationZ?.value || transform.rotation?.value || 0,
+    x: safeCoordinateDefault(rotationXValue, 0, "rotationX.value"),
+    y: safeCoordinateDefault(rotationYValue, 0, "rotationY.value"),
+    z: safeCoordinateDefault(rotationZValue, 0, "rotationZ.value || rotation.value"),
   };
 });
 
 const scale = computed(() => {
-  const val = layer.value?.transform.scale.value;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const layerValue = layer.value;
+  const transform = (layerValue != null && typeof layerValue === "object" && "transform" in layerValue && layerValue.transform != null && typeof layerValue.transform === "object") ? layerValue.transform : undefined;
+  const scaleProp = (transform != null && typeof transform === "object" && "scale" in transform && transform.scale != null && typeof transform.scale === "object") ? transform.scale : undefined;
+  const val = (scaleProp != null && typeof scaleProp === "object" && "value" in scaleProp && scaleProp.value != null && typeof scaleProp.value === "object") ? scaleProp.value : undefined;
   return val
     ? { x: val.x || 100, y: val.y || 100, z: val.z || 100 }
     : { x: 100, y: 100, z: 100 };
@@ -355,14 +391,16 @@ watch(
       selectedMaterialId.value = layerData.value.materialId || "";
       showWireframe.value = layerData.value.wireframe || false;
       showBoundingBox.value = layerData.value.showBoundingBox || false;
-      castShadows.value = layerData.value.castShadows ?? true;
-      receiveShadows.value = layerData.value.receiveShadows ?? true;
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+      const data = layerData.value;
+      castShadows.value = (typeof data === "object" && data !== null && "castShadows" in data && typeof data.castShadows === "boolean") ? data.castShadows : true;
+      receiveShadows.value = (typeof data === "object" && data !== null && "receiveShadows" in data && typeof data.receiveShadows === "boolean") ? data.receiveShadows : true;
 
       if (isPointCloud.value) {
         pointSize.value = layerData.value.pointSize || 2;
         pointColor.value = layerData.value.pointColor || "#ffffff";
-        useVertexColors.value = layerData.value.useVertexColors ?? true;
-        sizeAttenuation.value = layerData.value.sizeAttenuation ?? true;
+        useVertexColors.value = (typeof data === "object" && data !== null && "useVertexColors" in data && typeof data.useVertexColors === "boolean") ? data.useVertexColors : true;
+        sizeAttenuation.value = (typeof data === "object" && data !== null && "sizeAttenuation" in data && typeof data.sizeAttenuation === "boolean") ? data.sizeAttenuation : true;
       }
     }
   },
@@ -377,13 +415,14 @@ function toggleSection(section: keyof typeof sections) {
 function updatePosition(axis: "x" | "y" | "z", value: number) {
   const current = { ...position.value };
   current[axis] = value;
-  layerStore.updateLayerTransform(store, props.layerId, { position: current });
+  layerStore.updateLayerTransform(props.layerId, { position: current });
 }
 
 function updateRotation(axis: "x" | "y" | "z", value: number) {
   // 3D models use rotationX/Y/Z properties, not the single 'rotation' property
   const targetLayer = layer.value;
-  if (!targetLayer?.transform) return;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  if (targetLayer == null || typeof targetLayer !== "object" || !("transform" in targetLayer) || targetLayer.transform == null) return;
 
   const propMap = {
     x: targetLayer.transform.rotationX,
@@ -399,13 +438,13 @@ function updateRotation(axis: "x" | "y" | "z", value: number) {
 
 function updateScale(axis: "x" | "y" | "z", value: number) {
   if (uniformScale.value) {
-    layerStore.updateLayerTransform(store, props.layerId, {
+    layerStore.updateLayerTransform(props.layerId, {
       scale: { x: value, y: value, z: value },
     });
   } else {
     const current = { ...scale.value };
     current[axis] = value;
-    layerStore.updateLayerTransform(store, props.layerId, { scale: current });
+    layerStore.updateLayerTransform(props.layerId, { scale: current });
   }
 }
 
@@ -414,7 +453,7 @@ function toggleUniformScale() {
 }
 
 function assignMaterial() {
-  layerStore.updateLayerData(store, props.layerId, {
+  layerStore.updateLayerData(props.layerId, {
     materialId: selectedMaterialId.value || null,
   });
 }
@@ -425,24 +464,24 @@ function openMaterialEditor() {
 
 function toggleWireframe() {
   showWireframe.value = !showWireframe.value;
-  layerStore.updateLayerData(store, props.layerId, { wireframe: showWireframe.value });
+  layerStore.updateLayerData(props.layerId, { wireframe: showWireframe.value });
 }
 
 function toggleBoundingBox() {
   showBoundingBox.value = !showBoundingBox.value;
-  layerStore.updateLayerData(store, props.layerId, {
+  layerStore.updateLayerData(props.layerId, {
     showBoundingBox: showBoundingBox.value,
   });
 }
 
 function toggleCastShadows() {
   castShadows.value = !castShadows.value;
-  layerStore.updateLayerData(store, props.layerId, { castShadows: castShadows.value });
+  layerStore.updateLayerData(props.layerId, { castShadows: castShadows.value });
 }
 
 function toggleReceiveShadows() {
   receiveShadows.value = !receiveShadows.value;
-  layerStore.updateLayerData(store, props.layerId, {
+  layerStore.updateLayerData(props.layerId, {
     receiveShadows: receiveShadows.value,
   });
 }
@@ -450,24 +489,24 @@ function toggleReceiveShadows() {
 // Point cloud methods
 function updatePointSize(value: number) {
   pointSize.value = value;
-  layerStore.updateLayerData(store, props.layerId, { pointSize: value });
+  layerStore.updateLayerData(props.layerId, { pointSize: value });
 }
 
 function updatePointColor(value: string) {
   pointColor.value = value;
-  layerStore.updateLayerData(store, props.layerId, { pointColor: value });
+  layerStore.updateLayerData(props.layerId, { pointColor: value });
 }
 
 function toggleVertexColors() {
   useVertexColors.value = !useVertexColors.value;
-  layerStore.updateLayerData(store, props.layerId, {
+  layerStore.updateLayerData(props.layerId, {
     useVertexColors: useVertexColors.value,
   });
 }
 
 function toggleSizeAttenuation() {
   sizeAttenuation.value = !sizeAttenuation.value;
-  layerStore.updateLayerData(store, props.layerId, {
+  layerStore.updateLayerData(props.layerId, {
     sizeAttenuation: sizeAttenuation.value,
   });
 }

@@ -188,9 +188,12 @@ import {
   simplifyKeyframes,
   smoothMotion,
 } from "@/services/motionRecording";
-import { useCompositorStore } from "@/stores/compositorStore";
 import { useLayerStore } from "@/stores/layerStore";
 import { useKeyframeStore } from "@/stores/keyframeStore";
+import { useSelectionStore } from "@/stores/selectionStore";
+import { useProjectStore } from "@/stores/projectStore";
+import { useAnimationStore } from "@/stores/animationStore";
+import type { PropertyValue } from "@/types/animation";
 
 const props = defineProps<{
   visible: boolean;
@@ -200,11 +203,13 @@ const emit = defineEmits<{
   close: [];
   startCapture: [];
   stopCapture: [];
-  apply: [keyframes: Array<{ id: string; frame: number; value: unknown }>];
+  apply: [keyframes: Array<{ id: string; frame: number; value: PropertyValue }>];
 }>();
 
-const store = useCompositorStore();
 const layerStore = useLayerStore();
+const selectionStore = useSelectionStore();
+const projectStore = useProjectStore();
+const animationStore = useAnimationStore();
 
 // Settings
 const captureSpeed = ref(1.0);
@@ -218,10 +223,14 @@ let recorder: MotionRecorder | null = null;
 
 // Computed
 const targetLayerName = computed(() => {
-  const layers = store.selectedLayerIds;
-  if (layers.length === 0) return null;
-  const layer = layerStore.getLayerById(store, layers[0]);
-  return layer?.name || "Unknown Layer";
+  const layers = selectionStore.selectedLayerIds;
+  if (layers.length === 0) {
+    throw new Error("[MotionSketchPanel] Cannot render: No layers available");
+  }
+  const layer = layerStore.getLayerById(layers[0]);
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const layerName = (layer != null && typeof layer === "object" && "name" in layer && typeof layer.name === "string") ? layer.name : undefined;
+  return layerName != null ? layerName : "Unknown Layer";
 });
 
 const statusText = computed(() => {
@@ -288,7 +297,7 @@ function formatDuration(ms: number): string {
 }
 
 function startRecording() {
-  const layerId = store.selectedLayerIds[0];
+  const layerId = selectionStore.selectedLayerIds[0];
   if (!layerId) return;
 
   recorder = new MotionRecorder(layerId, {
@@ -328,19 +337,19 @@ function initRecording(x: number, y: number) {
 function applyMotion() {
   if (!recordedMotion.value || recordedMotion.value.samples.length < 2) return;
 
-  const layerId = store.selectedLayerIds[0];
+  const layerId = selectionStore.selectedLayerIds[0];
   if (!layerId) return;
 
   // Process motion: smooth -> convert -> simplify
   const smoothed = smoothMotion(recordedMotion.value, smoothing.value);
-  const fps = store.fps || 30;
-  const startFrame = store.currentFrame;
+  const fps = projectStore.getFps();
+  const startFrame = animationStore.currentFrame;
   const keyframes = convertMotionToKeyframes(smoothed, fps, startFrame);
   const simplified = simplifyKeyframes(keyframes, simplifyTolerance.value);
 
   // Apply keyframes to layer position
   simplified.forEach((kf) => {
-    keyframeStore.addKeyframe(store, layerId, "transform.position", kf.value, kf.frame);
+    keyframeStore.addKeyframe(layerId, "transform.position", kf.value, kf.frame);
   });
 
   emit("apply", simplified);

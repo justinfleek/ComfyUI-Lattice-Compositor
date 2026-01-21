@@ -545,13 +545,27 @@ export class GaussianSplattingService {
 
   /**
    * Create renderable points for a scene
+   * 
+   * System F/Omega proof: Explicit validation of scene existence
+   * Type proof: id ∈ string → THREE.Points (non-nullable)
+   * Mathematical proof: Scene must exist to create renderable points
+   * Pattern proof: Missing scene is an explicit failure condition, not a lazy null return
    */
-  createPoints(id: string): THREE.Points | null {
+  createPoints(id: string): THREE.Points {
     const scene = this.scenes.get(id);
+    
+    // System F/Omega proof: Explicit validation of scene existence
+    // Type proof: scenes.get(id) returns Scene | undefined
+    // Mathematical proof: Scene must exist in scenes map to create points
     if (!scene) {
-      logger.warn(`Scene "${id}" not found`);
-      return null;
+      throw new Error(
+        `[GaussianSplatting] Cannot create points: Scene not found. ` +
+        `Scene ID: ${id}, scenes available: ${Array.from(this.scenes.keys()).join(", ") || "none"}. ` +
+        `Scene must be loaded before creating renderable points. ` +
+        `Wrap in try/catch if "scene not loaded" is an expected state.`
+      );
     }
+    
     return createGaussianPoints(scene, this.quality);
   }
 
@@ -585,14 +599,30 @@ export class GaussianSplattingService {
 
   /**
    * Get scene statistics
+   * 
+   * System F/Omega proof: Explicit validation of scene existence
+   * Type proof: id ∈ string → { gaussianCount: number; shDegree: number; boundingBox: {...} } (non-nullable)
+   * Mathematical proof: Scene must exist to retrieve statistics
+   * Pattern proof: Missing scene is an explicit failure condition, not a lazy null return
    */
   getStats(id: string): {
     gaussianCount: number;
     shDegree: number;
     boundingBox: { min: THREE.Vector3; max: THREE.Vector3 };
-  } | null {
+  } {
     const scene = this.scenes.get(id);
-    if (!scene) return null;
+    
+    // System F/Omega proof: Explicit validation of scene existence
+    // Type proof: scenes.get(id) returns Scene | undefined
+    // Mathematical proof: Scene must exist in scenes map to retrieve statistics
+    if (!scene) {
+      throw new Error(
+        `[GaussianSplatting] Cannot get scene stats: Scene not found. ` +
+        `Scene ID: ${id}, scenes available: ${Array.from(this.scenes.keys()).join(", ") || "none"}. ` +
+        `Scene must be loaded before retrieving statistics. ` +
+        `Wrap in try/catch if "scene not loaded" is an expected state.`
+      );
+    }
 
     return {
       gaussianCount: scene.gaussians.length,

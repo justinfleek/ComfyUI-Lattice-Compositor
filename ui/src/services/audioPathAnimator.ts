@@ -7,6 +7,8 @@
  * - accumulate: travels forward on sound, bounces at ends
  */
 
+import { isFiniteNumber } from "@/utils/typeGuards";
+
 export type MovementMode = "amplitude" | "accumulate";
 
 export interface PathAnimatorConfig {
@@ -82,13 +84,16 @@ export class AudioPathAnimator {
     config?: Partial<PathAnimatorConfig>,
   ) {
     // Handle overloaded constructor signatures
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy || {}
     if (typeof pathDataOrConfig === "string") {
       // Called as: new AudioPathAnimator(pathData, config)
-      this.config = { ...DEFAULT_CONFIG, ...(config || {}) };
+      const configObj = (config !== null && config !== undefined && typeof config === "object" && config !== null) ? config : {};
+      this.config = { ...DEFAULT_CONFIG, ...configObj };
       this.setPath(pathDataOrConfig);
     } else {
       // Called as: new AudioPathAnimator(config) or new AudioPathAnimator()
-      this.config = { ...DEFAULT_CONFIG, ...(pathDataOrConfig || {}) };
+      const pathDataOrConfigObj = (pathDataOrConfig !== null && pathDataOrConfig !== undefined && typeof pathDataOrConfig === "object" && pathDataOrConfig !== null) ? pathDataOrConfig : {};
+      this.config = { ...DEFAULT_CONFIG, ...pathDataOrConfigObj };
     }
 
     this.state = {
@@ -117,7 +122,9 @@ export class AudioPathAnimator {
    */
   private parsePath(pathData: string): PathSegment[] {
     const segments: PathSegment[] = [];
-    const commands = pathData.match(/[MLCQZ][^MLCQZ]*/gi) || [];
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy || []
+    const matchResult = pathData.match(/[MLCQZ][^MLCQZ]*/gi);
+    const commands = (matchResult !== null && matchResult !== undefined && Array.isArray(matchResult)) ? matchResult : [];
 
     let currentX = 0;
     let currentY = 0;
@@ -133,8 +140,15 @@ export class AudioPathAnimator {
 
       switch (type) {
         case "M":
-          currentX = nums[0] || 0;
-          currentY = nums[1] || 0;
+          // Type proof: coordinates ∈ number | undefined → number (coordinate-like, can be negative)
+          // Lean4/PureScript/Haskell: Explicit pattern matching on array access
+          // Type proof: nums[i] ∈ number | undefined → number (coordinate-like, can be negative)
+          const xRaw = nums[0];
+          const x: number = xRaw !== undefined && isFiniteNumber(xRaw) ? xRaw : 0;
+          const yRaw = nums[1];
+          const y: number = yRaw !== undefined && isFiniteNumber(yRaw) ? yRaw : 0;
+          currentX = Number.isFinite(x) ? x : 0;
+          currentY = Number.isFinite(y) ? y : 0;
           segments.push({
             type: "M",
             points: [currentX, currentY],

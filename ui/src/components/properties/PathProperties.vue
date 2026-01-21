@@ -88,7 +88,7 @@
 
         <div class="property-row info-row">
           <span class="info-label">Points:</span>
-          <span class="info-value">{{ pathData.controlPoints?.length || 0 }}</span>
+          <span class="info-value">{{ getControlPointCount() }}</span>
         </div>
 
         <div class="property-row info-row">
@@ -142,14 +142,17 @@
 
 <script setup lang="ts">
 import { computed, ref } from "vue";
-import { useCompositorStore } from "@/stores/compositorStore";
+import { safeNonNegativeDefault } from "@/utils/typeGuards";
 import { useLayerStore } from "@/stores/layerStore";
+import { useProjectStore } from "@/stores/projectStore";
 import type { Layer, PathLayerData } from "@/types/project";
+import type { JSONValue } from "@/types/dataAsset";
+import type { PropertyValue } from "@/types/animation";
 
 const props = defineProps<{ layer: Layer }>();
 const emit = defineEmits(["update"]);
-const store = useCompositorStore();
 const layerStore = useLayerStore();
+const projectStore = useProjectStore();
 
 const expandedSections = ref<string[]>(["guide", "path"]);
 
@@ -174,8 +177,29 @@ const pathData = computed<PathLayerData>(() => {
   );
 });
 
-const dashValue = computed(() => pathData.value.guideDashPattern?.[0] ?? 10);
-const gapValue = computed(() => pathData.value.guideDashPattern?.[1] ?? 5);
+// Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??/?.
+const dashValue = computed(() => {
+  const dashPattern = pathData.value.guideDashPattern;
+  if (Array.isArray(dashPattern) && dashPattern.length > 0 && typeof dashPattern[0] === "number" && Number.isFinite(dashPattern[0])) {
+    return dashPattern[0];
+  }
+  return 10;
+});
+const gapValue = computed(() => {
+  const dashPattern = pathData.value.guideDashPattern;
+  if (Array.isArray(dashPattern) && dashPattern.length > 1 && typeof dashPattern[1] === "number" && Number.isFinite(dashPattern[1])) {
+    return dashPattern[1];
+  }
+  return 5;
+});
+
+// Type proof: controlPoints.length ∈ number | undefined → number (≥ 0, count)
+function getControlPointCount(): number {
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const controlPoints = (pathData.value != null && typeof pathData.value === "object" && "controlPoints" in pathData.value && Array.isArray(pathData.value.controlPoints)) ? pathData.value.controlPoints : undefined;
+  const controlPointsLength = (controlPoints != null && Array.isArray(controlPoints)) ? controlPoints.length : undefined;
+  return safeNonNegativeDefault(controlPointsLength, 0, "pathData.controlPoints.length");
+}
 
 // Find layers that reference this path
 const attachedLayers = computed(() => {
@@ -187,11 +211,12 @@ const attachedLayers = computed(() => {
     usage: string;
   }> = [];
 
-  for (const layer of store.layers) {
+  for (const layer of projectStore.getActiveCompLayers()) {
     // Check text layers for path reference
     if (layer.type === "text") {
-      const textData = layer.data as { pathLayerId?: string } | null;
-      if (textData?.pathLayerId === layerId) {
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining/null checks
+      const textData = (typeof layer.data === "object" && layer.data !== null) ? layer.data as { pathLayerId?: string } : {};
+      if (typeof textData === "object" && textData !== null && "pathLayerId" in textData && typeof textData.pathLayerId === "string" && textData.pathLayerId === layerId) {
         attached.push({
           id: layer.id,
           name: layer.name,
@@ -206,7 +231,10 @@ const attachedLayers = computed(() => {
       const cameraData = layer.data as {
         trajectory?: { splineLayerId?: string };
       } | null;
-      if (cameraData?.trajectory?.splineLayerId === layerId) {
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const trajectory = (cameraData != null && typeof cameraData === "object" && "trajectory" in cameraData && cameraData.trajectory != null && typeof cameraData.trajectory === "object") ? cameraData.trajectory : undefined;
+      const splineLayerId = (trajectory != null && typeof trajectory === "object" && "splineLayerId" in trajectory && typeof trajectory.splineLayerId === "string") ? trajectory.splineLayerId : undefined;
+      if (splineLayerId === layerId) {
         attached.push({
           id: layer.id,
           name: layer.name,
@@ -221,9 +249,17 @@ const attachedLayers = computed(() => {
       const particleData = layer.data as {
         emitters?: Array<{ shape?: string; splinePath?: { layerId?: string } }>;
       } | null;
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const emitters = (particleData != null && typeof particleData === "object" && "emitters" in particleData && Array.isArray(particleData.emitters)) ? particleData.emitters : undefined;
       if (
-        particleData?.emitters?.some(
-          (e) => e.shape === "spline" && e.splinePath?.layerId === layerId,
+        emitters != null &&
+        emitters.some(
+          (e) => {
+            const shape = (e != null && typeof e === "object" && "shape" in e && typeof e.shape === "string") ? e.shape : undefined;
+            const splinePath = (e != null && typeof e === "object" && "splinePath" in e && e.splinePath != null && typeof e.splinePath === "object") ? e.splinePath : undefined;
+            const splinePathLayerId = (splinePath != null && typeof splinePath === "object" && "layerId" in splinePath && typeof splinePath.layerId === "string") ? splinePath.layerId : undefined;
+            return shape === "spline" && splinePathLayerId === layerId;
+          },
         )
       ) {
         attached.push({
@@ -250,8 +286,8 @@ function toggleSection(section: string) {
 }
 
 // Update layer data
-function update(key: keyof PathLayerData | string, value: any) {
-  layerStore.updateLayer(store, props.layer.id, {
+function update(key: keyof PathLayerData | string, value: PropertyValue | JSONValue) {
+  layerStore.updateLayer(props.layer.id, {
     data: { ...pathData.value, [key]: value },
   });
   emit("update");
@@ -265,16 +301,22 @@ function toggleGuide(e: Event) {
 
 // Update dash pattern
 function updateDash(value: number) {
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??/?.
+  const dashPattern = pathData.value.guideDashPattern;
+  const gapValue = (Array.isArray(dashPattern) && dashPattern.length > 1 && typeof dashPattern[1] === "number" && Number.isFinite(dashPattern[1])) ? dashPattern[1] : 5;
   const pattern: [number, number] = [
     value,
-    pathData.value.guideDashPattern?.[1] ?? 5,
+    gapValue,
   ];
   update("guideDashPattern", pattern);
 }
 
 function updateGap(value: number) {
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??/?.
+  const dashPattern = pathData.value.guideDashPattern;
+  const dashValue = (Array.isArray(dashPattern) && dashPattern.length > 0 && typeof dashPattern[0] === "number" && Number.isFinite(dashPattern[0])) ? dashPattern[0] : 10;
   const pattern: [number, number] = [
-    pathData.value.guideDashPattern?.[0] ?? 10,
+    dashValue,
     value,
   ];
   update("guideDashPattern", pattern);
@@ -291,8 +333,10 @@ function applyPreset(preset: (typeof guidePresets)[0]) {
 }
 
 function isPresetActive(preset: (typeof guidePresets)[0]): boolean {
-  const dash = pathData.value.guideDashPattern?.[0] ?? 10;
-  const gap = pathData.value.guideDashPattern?.[1] ?? 5;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??/?.
+  const dashPattern = pathData.value.guideDashPattern;
+  const dash = (Array.isArray(dashPattern) && dashPattern.length > 0 && typeof dashPattern[0] === "number" && Number.isFinite(dashPattern[0])) ? dashPattern[0] : 10;
+  const gap = (Array.isArray(dashPattern) && dashPattern.length > 1 && typeof dashPattern[1] === "number" && Number.isFinite(dashPattern[1])) ? dashPattern[1] : 5;
   if (preset.dash === 0 && preset.gap === 0) {
     return gap === 0;
   }
@@ -311,7 +355,7 @@ function getLayerIcon(type: string): string {
 
 // Select attached layer
 function selectLayer(layerId: string) {
-  layerStore.selectLayer(store, layerId);
+  layerStore.selectLayer(layerId);
 }
 </script>
 

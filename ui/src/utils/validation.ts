@@ -5,6 +5,14 @@
 // These functions ACTUALLY CHECK values at runtime, not just assert types.
 // ============================================================================
 
+import type { JSONValue } from "@/types/dataAsset";
+
+/**
+ * All possible JavaScript values that can be validated at runtime
+ * Used as input type for validators (replaces unknown)
+ */
+type RuntimeValue = string | number | boolean | object | null | undefined | bigint | symbol;
+
 /**
  * Validation result - either success with typed value, or failure with error message
  */
@@ -34,7 +42,7 @@ export function fail<T>(error: string): ValidationResult<T> {
  * Validate that value is a string
  */
 export function validateString(
-  value: unknown,
+  value: RuntimeValue,
   name: string,
   options: { minLength?: number; maxLength?: number; allowEmpty?: boolean } = {},
 ): ValidationResult<string> {
@@ -57,7 +65,7 @@ export function validateString(
  * Validate that value is a finite number (not NaN, not Infinity)
  */
 export function validateFiniteNumber(
-  value: unknown,
+  value: RuntimeValue,
   name: string,
   options: { min?: number; max?: number; allowNaN?: boolean } = {},
 ): ValidationResult<number> {
@@ -69,7 +77,7 @@ export function validateFiniteNumber(
   }
 
   if (!Number.isFinite(num)) {
-    return fail(`${name} must be a finite number, got ${value}`);
+    return fail(`${name} must be a finite number, got ${String(value)}`);
   }
 
   if (options.min !== undefined && num < options.min) {
@@ -87,7 +95,7 @@ export function validateFiniteNumber(
  * Validate that value is an integer
  */
 export function validateInteger(
-  value: unknown,
+  value: RuntimeValue,
   name: string,
   options: { min?: number; max?: number } = {},
 ): ValidationResult<number> {
@@ -105,7 +113,7 @@ export function validateInteger(
  * Validate that value is a boolean
  */
 export function validateBoolean(
-  value: unknown,
+  value: RuntimeValue,
   name: string,
 ): ValidationResult<boolean> {
   if (typeof value !== "boolean") {
@@ -118,7 +126,7 @@ export function validateBoolean(
  * Validate that value is one of allowed values
  */
 export function validateEnum<T extends string>(
-  value: unknown,
+  value: RuntimeValue,
   name: string,
   allowed: readonly T[],
 ): ValidationResult<T> {
@@ -138,10 +146,10 @@ export function validateEnum<T extends string>(
 /**
  * Validate that value is an array
  */
-export function validateArray<T>(
-  value: unknown,
+export function validateArray<T extends JSONValue>(
+  value: RuntimeValue,
   name: string,
-  itemValidator: (item: unknown, index: number) => ValidationResult<T>,
+  itemValidator: (item: JSONValue, index: number) => ValidationResult<T>,
   options: { minLength?: number; maxLength?: number } = {},
 ): ValidationResult<T[]> {
   if (!Array.isArray(value)) {
@@ -158,7 +166,8 @@ export function validateArray<T>(
 
   const result: T[] = [];
   for (let i = 0; i < value.length; i++) {
-    const itemResult = itemValidator(value[i], i);
+    const itemValue = value[i] as JSONValue;
+    const itemResult = itemValidator(itemValue, i);
     if (!itemResult.ok) {
       return fail(`${name}[${i}]: ${itemResult.error}`);
     }
@@ -172,7 +181,7 @@ export function validateArray<T>(
  * Validate array of finite numbers
  */
 export function validateNumberArray(
-  value: unknown,
+  value: RuntimeValue,
   name: string,
   options: {
     minLength?: number;
@@ -184,11 +193,13 @@ export function validateNumberArray(
   return validateArray(
     value,
     name,
-    (item, i) =>
-      validateFiniteNumber(item, `item ${i}`, {
+    (item, i) => {
+      const itemValue = item as RuntimeValue;
+      return validateFiniteNumber(itemValue, `item ${i}`, {
         min: options.min,
         max: options.max,
-      }),
+      });
+    },
     { minLength: options.minLength, maxLength: options.maxLength },
   );
 }
@@ -201,14 +212,14 @@ export function validateNumberArray(
  * Generic object type for validation
  */
 export interface ValidatedObject {
-  [key: string]: unknown;
+  [key: string]: JSONValue;
 }
 
 /**
  * Validate that value is a non-null object
  */
 export function validateObject(
-  value: unknown,
+  value: RuntimeValue,
   name: string,
 ): ValidationResult<ValidatedObject> {
   if (typeof value !== "object" || value === null) {
@@ -223,17 +234,19 @@ export function validateObject(
  * Validate a Vec2 (x, y coordinates)
  */
 export function validateVec2(
-  value: unknown,
+  value: RuntimeValue,
   name: string,
 ): ValidationResult<{ x: number; y: number }> {
   const objResult = validateObject(value, name);
   if (!objResult.ok) return objResult;
 
   const obj = objResult.value;
-  const x = validateFiniteNumber(obj.x, `${name}.x`);
+  const xValue = obj.x as RuntimeValue;
+  const x = validateFiniteNumber(xValue, `${name}.x`);
   if (!x.ok) return x;
 
-  const y = validateFiniteNumber(obj.y, `${name}.y`);
+  const yValue = obj.y as RuntimeValue;
+  const y = validateFiniteNumber(yValue, `${name}.y`);
   if (!y.ok) return y;
 
   return ok({ x: x.value, y: y.value });
@@ -243,7 +256,7 @@ export function validateVec2(
  * Validate a Vec3 (x, y, z coordinates)
  */
 export function validateVec3(
-  value: unknown,
+  value: RuntimeValue,
   name: string,
   options: { allowMissingZ?: boolean } = {},
 ): ValidationResult<{ x: number; y: number; z: number }> {
@@ -251,17 +264,20 @@ export function validateVec3(
   if (!objResult.ok) return objResult;
 
   const obj = objResult.value;
-  const x = validateFiniteNumber(obj.x, `${name}.x`);
+  const xValue = obj.x as RuntimeValue;
+  const x = validateFiniteNumber(xValue, `${name}.x`);
   if (!x.ok) return x;
 
-  const y = validateFiniteNumber(obj.y, `${name}.y`);
+  const yValue = obj.y as RuntimeValue;
+  const y = validateFiniteNumber(yValue, `${name}.y`);
   if (!y.ok) return y;
 
   let z: number;
   if (obj.z === undefined && options.allowMissingZ) {
     z = 0;
   } else {
-    const zResult = validateFiniteNumber(obj.z, `${name}.z`);
+    const zValue = obj.z as RuntimeValue;
+    const zResult = validateFiniteNumber(zValue, `${name}.z`);
     if (!zResult.ok) return zResult;
     z = zResult.value;
   }
@@ -273,24 +289,28 @@ export function validateVec3(
  * Validate a color object (r, g, b, optional a)
  */
 export function validateColor(
-  value: unknown,
+  value: RuntimeValue,
   name: string,
 ): ValidationResult<{ r: number; g: number; b: number; a?: number }> {
   const objResult = validateObject(value, name);
   if (!objResult.ok) return objResult;
 
   const obj = objResult.value;
-  const r = validateFiniteNumber(obj.r, `${name}.r`, { min: 0, max: 255 });
+  const rValue = obj.r as RuntimeValue;
+  const r = validateFiniteNumber(rValue, `${name}.r`, { min: 0, max: 255 });
   if (!r.ok) return r;
 
-  const g = validateFiniteNumber(obj.g, `${name}.g`, { min: 0, max: 255 });
+  const gValue = obj.g as RuntimeValue;
+  const g = validateFiniteNumber(gValue, `${name}.g`, { min: 0, max: 255 });
   if (!g.ok) return g;
 
-  const b = validateFiniteNumber(obj.b, `${name}.b`, { min: 0, max: 255 });
+  const bValue = obj.b as RuntimeValue;
+  const b = validateFiniteNumber(bValue, `${name}.b`, { min: 0, max: 255 });
   if (!b.ok) return b;
 
   if (obj.a !== undefined) {
-    const a = validateFiniteNumber(obj.a, `${name}.a`, { min: 0, max: 1 });
+    const aValue = obj.a as RuntimeValue;
+    const a = validateFiniteNumber(aValue, `${name}.a`, { min: 0, max: 1 });
     if (!a.ok) return a;
     return ok({ r: r.value, g: g.value, b: b.value, a: a.value });
   }
@@ -305,9 +325,9 @@ export function validateColor(
 /**
  * Make a validator optional - returns undefined if value is undefined/null
  */
-export function optional<T>(
-  validator: (value: unknown, name: string) => ValidationResult<T>,
-): (value: unknown, name: string) => ValidationResult<T | undefined> {
+export function optional<T extends JSONValue>(
+  validator: (value: RuntimeValue, name: string) => ValidationResult<T>,
+): (value: RuntimeValue, name: string) => ValidationResult<T | undefined> {
   return (value, name) => {
     if (value === undefined || value === null) {
       return ok(undefined);
@@ -319,10 +339,10 @@ export function optional<T>(
 /**
  * Provide a default value if undefined
  */
-export function withDefault<T>(
-  validator: (value: unknown, name: string) => ValidationResult<T>,
+export function withDefault<T extends JSONValue>(
+  validator: (value: RuntimeValue, name: string) => ValidationResult<T>,
   defaultValue: T,
-): (value: unknown, name: string) => ValidationResult<T> {
+): (value: RuntimeValue, name: string) => ValidationResult<T> {
   return (value, name) => {
     if (value === undefined || value === null) {
       return ok(defaultValue);
@@ -340,10 +360,10 @@ export function withDefault<T>(
  * Returns typed object if all validations pass
  */
 export function validateSchema<T extends ValidatedObject>(
-  value: unknown,
+  value: RuntimeValue,
   name: string,
   schema: {
-    [K in keyof T]: (value: unknown, name: string) => ValidationResult<T[K]>;
+    [K in keyof T]: (value: JSONValue, name: string) => ValidationResult<T[K]>;
   },
 ): ValidationResult<T> {
   const objResult = validateObject(value, name);
@@ -354,8 +374,9 @@ export function validateSchema<T extends ValidatedObject>(
 
   for (const key of Object.keys(schema) as (keyof T)[]) {
     const fieldValidator = schema[key];
+    const fieldValue = obj[key as string] as JSONValue;
     const fieldResult = fieldValidator(
-      obj[key as string],
+      fieldValue,
       `${name}.${String(key)}`,
     );
     if (!fieldResult.ok) {

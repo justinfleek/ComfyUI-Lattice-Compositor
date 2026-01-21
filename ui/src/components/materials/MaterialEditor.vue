@@ -113,16 +113,16 @@
         <div class="texture-grid">
           <TextureUpload
             mapType="albedo"
-            :textureUrl="material.maps?.albedo"
+            :textureUrl="materialMapsAlbedo"
             @upload="(file: File, dataUrl: string) => uploadTexture('albedo', file, dataUrl)"
             @remove="removeTexture('albedo')"
           />
 
           <TextureUpload
             mapType="normal"
-            :textureUrl="material.maps?.normal"
+            :textureUrl="materialMapsNormal"
             :normalScale="material.normalScale"
-            :showSettings="!!material.maps?.normal"
+            :showSettings="!!materialMapsNormal"
             @upload="(file: File, dataUrl: string) => uploadTexture('normal', file, dataUrl)"
             @remove="removeTexture('normal')"
             @update:normalScale="updateMaterial('normalScale', $event)"
@@ -130,42 +130,42 @@
 
           <TextureUpload
             mapType="roughness"
-            :textureUrl="material.maps?.roughness"
+            :textureUrl="materialMapsRoughness"
             @upload="(file: File, dataUrl: string) => uploadTexture('roughness', file, dataUrl)"
             @remove="removeTexture('roughness')"
           />
 
           <TextureUpload
             mapType="metalness"
-            :textureUrl="material.maps?.metalness"
+            :textureUrl="materialMapsMetalness"
             @upload="(file: File, dataUrl: string) => uploadTexture('metalness', file, dataUrl)"
             @remove="removeTexture('metalness')"
           />
 
           <TextureUpload
             mapType="ao"
-            :textureUrl="material.maps?.ao"
+            :textureUrl="materialMapsAo"
             @upload="(file: File, dataUrl: string) => uploadTexture('ao', file, dataUrl)"
             @remove="removeTexture('ao')"
           />
 
           <TextureUpload
             mapType="emissive"
-            :textureUrl="material.maps?.emissive"
+            :textureUrl="materialMapsEmissive"
             @upload="(file: File, dataUrl: string) => uploadTexture('emissive', file, dataUrl)"
             @remove="removeTexture('emissive')"
           />
 
           <TextureUpload
             mapType="height"
-            :textureUrl="material.maps?.height"
+            :textureUrl="materialMapsHeight"
             @upload="(file: File, dataUrl: string) => uploadTexture('height', file, dataUrl)"
             @remove="removeTexture('height')"
           />
 
           <TextureUpload
             mapType="opacity"
-            :textureUrl="material.maps?.opacity"
+            :textureUrl="materialMapsOpacity"
             @upload="(file: File, dataUrl: string) => uploadTexture('opacity', file, dataUrl)"
             @remove="removeTexture('opacity')"
           />
@@ -177,15 +177,13 @@
             <label>UV Repeat</label>
             <div class="repeat-inputs">
               <ScrubableNumber
-                :modelValue="material.textureRepeat?.x ?? 1"
-                @update:modelValue="updateTextureRepeat('x', $event)"
+                v-model="materialTextureRepeatX"
                 :min="0.01"
                 :step="0.1"
               />
               <span class="separator">x</span>
               <ScrubableNumber
-                :modelValue="material.textureRepeat?.y ?? 1"
-                @update:modelValue="updateTextureRepeat('y', $event)"
+                v-model="materialTextureRepeatY"
                 :min="0.01"
                 :step="0.1"
               />
@@ -399,6 +397,79 @@ const sections = reactive({
 // Computed
 const hasAnyTexture = computed(() => {
   return Object.values(material.maps).some((url) => !!url);
+});
+
+// Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+// Computed properties for texture map URLs
+const materialMapsAlbedo = computed(() => {
+  const maps = (material != null && typeof material === "object" && "maps" in material && material.maps != null && typeof material.maps === "object") ? material.maps : undefined;
+  return (maps != null && typeof maps === "object" && "albedo" in maps && typeof maps.albedo === "string") ? maps.albedo : undefined;
+});
+
+const materialMapsNormal = computed(() => {
+  const maps = (material != null && typeof material === "object" && "maps" in material && material.maps != null && typeof material.maps === "object") ? material.maps : undefined;
+  return (maps != null && typeof maps === "object" && "normal" in maps && typeof maps.normal === "string") ? maps.normal : undefined;
+});
+
+const materialMapsRoughness = computed(() => {
+  const maps = (material != null && typeof material === "object" && "maps" in material && material.maps != null && typeof material.maps === "object") ? material.maps : undefined;
+  return (maps != null && typeof maps === "object" && "roughness" in maps && typeof maps.roughness === "string") ? maps.roughness : undefined;
+});
+
+const materialMapsMetalness = computed(() => {
+  const maps = (material != null && typeof material === "object" && "maps" in material && material.maps != null && typeof material.maps === "object") ? material.maps : undefined;
+  return (maps != null && typeof maps === "object" && "metalness" in maps && typeof maps.metalness === "string") ? maps.metalness : undefined;
+});
+
+const materialMapsAo = computed(() => {
+  const maps = (material != null && typeof material === "object" && "maps" in material && material.maps != null && typeof material.maps === "object") ? material.maps : undefined;
+  return (maps != null && typeof maps === "object" && "ao" in maps && typeof maps.ao === "string") ? maps.ao : undefined;
+});
+
+const materialMapsEmissive = computed(() => {
+  const maps = (material != null && typeof material === "object" && "maps" in material && material.maps != null && typeof material.maps === "object") ? material.maps : undefined;
+  return (maps != null && typeof maps === "object" && "emissive" in maps && typeof maps.emissive === "string") ? maps.emissive : undefined;
+});
+
+const materialMapsHeight = computed(() => {
+  const maps = (material != null && typeof material === "object" && "maps" in material && material.maps != null && typeof material.maps === "object") ? material.maps : undefined;
+  return (maps != null && typeof maps === "object" && "height" in maps && typeof maps.height === "string") ? maps.height : undefined;
+});
+
+const materialMapsOpacity = computed(() => {
+  const maps = (material != null && typeof material === "object" && "maps" in material && material.maps != null && typeof material.maps === "object") ? material.maps : undefined;
+  return (maps != null && typeof maps === "object" && "opacity" in maps && typeof maps.opacity === "string") ? maps.opacity : undefined;
+});
+
+// Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??/?.
+// Computed properties for optional textureRepeat properties
+const materialTextureRepeatX = computed({
+  get: () => {
+    const repeat = material.textureRepeat;
+    return (repeat !== null && repeat !== undefined && typeof repeat === "object" && "x" in repeat && typeof repeat.x === "number" && Number.isFinite(repeat.x)) ? repeat.x : 1;
+  },
+  set: (value: number) => {
+    if (!material.textureRepeat) {
+      material.textureRepeat = { x: value, y: materialTextureRepeatY.value };
+    } else {
+      material.textureRepeat.x = value;
+    }
+    emitUpdate();
+  },
+});
+const materialTextureRepeatY = computed({
+  get: () => {
+    const repeat = material.textureRepeat;
+    return (repeat !== null && repeat !== undefined && typeof repeat === "object" && "y" in repeat && typeof repeat.y === "number" && Number.isFinite(repeat.y)) ? repeat.y : 1;
+  },
+  set: (value: number) => {
+    if (!material.textureRepeat) {
+      material.textureRepeat = { x: materialTextureRepeatX.value, y: value };
+    } else {
+      material.textureRepeat.y = value;
+    }
+    emitUpdate();
+  },
 });
 
 // Watch for external changes

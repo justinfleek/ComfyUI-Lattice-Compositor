@@ -69,7 +69,7 @@
           <div class="icon-col" @mousedown.stop="toggleEffectLayer" :title="(layer.effectLayer || layer.adjustmentLayer) ? 'Disable Effect Layer' : 'Make Effect Layer'">
             <span :class="{ active: layer.effectLayer || layer.adjustmentLayer }">◐</span>
           </div>
-          <div class="icon-col" @mousedown.stop="layerStore.toggleLayer3D(store, layer.id)" :title="layer.threeD ? 'Make 2D Layer' : 'Make 3D Layer'">
+          <div class="icon-col" @mousedown.stop="layerStore.toggleLayer3D(layer.id)" :title="layer.threeD ? 'Make 2D Layer' : 'Make 3D Layer'">
             <span :class="{ active: layer.threeD }">⬡</span>
           </div>
         </div>
@@ -184,10 +184,13 @@ import {
   renderTimelineWaveform,
   type WaveformData,
 } from "@/services/timelineWaveform";
+import { assertDefined } from "@/utils/typeGuards";
 import { useAudioStore } from "@/stores/audioStore";
-import { useCompositorStore } from "@/stores/compositorStore";
-import { useLayerStore } from "@/stores/layerStore";
 import { useAnimationStore } from "@/stores/animationStore";
+import { useLayerStore } from "@/stores/layerStore";
+import { useProjectStore } from "@/stores/projectStore";
+import { useSelectionStore } from "@/stores/selectionStore";
+import { useCompositionStore } from "@/stores/compositionStore";
 
 const props = defineProps([
   "layer",
@@ -200,10 +203,40 @@ const props = defineProps([
   "gridStyle",
 ]);
 const emit = defineEmits(["toggleExpand", "select", "updateLayer"]);
-const store = useCompositorStore();
 const layerStore = useLayerStore();
 const audioStore = useAudioStore();
 const animationStore = useAnimationStore();
+const projectStore = useProjectStore();
+const selectionStore = useSelectionStore();
+const compositionStore = useCompositionStore();
+
+// Helper function to create AnimationStoreAccess
+function getAnimationStoreAccess() {
+  return {
+    project: projectStore.project,
+    activeCompositionId: projectStore.activeCompositionId,
+    currentFrame: animationStore.currentFrame,
+    fps: projectStore.getFps(),
+    frameCount: projectStore.getFrameCount(),
+    selectedLayerIds: selectionStore.selectedLayerIds,
+    getActiveComp: () => projectStore.getActiveComp(),
+    pushHistory: () => projectStore.pushHistory(),
+  };
+}
+
+// Helper function to create CompositionStoreAccess
+function getCompositionStoreAccess() {
+  return {
+    project: projectStore.project,
+    activeCompositionId: projectStore.activeCompositionId,
+    openCompositionIds: projectStore.openCompositionIds,
+    compositionBreadcrumbs: projectStore.compositionBreadcrumbs,
+    selectedLayerIds: selectionStore.selectedLayerIds,
+    getActiveComp: () => projectStore.getActiveComp(),
+    switchComposition: (id: string) => compositionStore.switchComposition(getCompositionStoreAccess(), id),
+    pushHistory: () => projectStore.pushHistory(),
+  };
+}
 
 // Waveform state
 const waveformCanvasRef = ref<HTMLCanvasElement | null>(null);
@@ -214,23 +247,59 @@ const isAudioLayer = computed(
   () => props.layer.type === "audio" || props.layer.type === "video",
 );
 
-// Get audio asset ID for the layer
-const audioAssetId = computed(() => {
+// System F/Omega: Computed property that throws explicit errors instead of returning null
+const audioAssetIdRaw = computed(() => {
   if (props.layer.type === "audio") {
-    return props.layer.data?.assetId || props.layer.id;
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const data = props.layer.data;
+    const assetId = (data != null && typeof data === "object" && "assetId" in data && typeof data.assetId === "string") ? data.assetId : undefined;
+    return assetId || props.layer.id;
   }
   if (props.layer.type === "video") {
-    return props.layer.data?.audioAssetId;
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const data = props.layer.data;
+    const audioAssetId = (data != null && typeof data === "object" && "audioAssetId" in data && typeof data.audioAssetId === "string") ? data.audioAssetId : undefined;
+    // System F/Omega: Throw explicit error if video layer has no audio asset ID
+    if (!audioAssetId) {
+      throw new Error(
+        `[EnhancedLayerTrack] Cannot get audio asset ID: Video layer has no audio asset. ` +
+        `Layer ID: ${props.layer.id}, name: ${props.layer.name}. ` +
+        `Video layer must have an audioAssetId in its data. Wrap in try/catch if "no audio" is an expected state.`
+      );
+    }
+    return audioAssetId;
   }
-  return null;
+  
+  // System F/Omega: Throw explicit error for non-audio/video layers
+  throw new Error(
+    `[EnhancedLayerTrack] Cannot get audio asset ID: Layer is not audio or video type. ` +
+    `Layer type: "${props.layer.type}", layer ID: ${props.layer.id}, name: ${props.layer.name}. ` +
+    `Only audio and video layers have audio asset IDs. Wrap in try/catch if "no audio asset" is an expected state.`
+  );
+});
+
+// Wrapper computed property for template use - catches errors and returns null for conditional rendering
+// System F/Omega EXCEPTION: Returning null here is necessary for Vue template compatibility
+// Template uses v-if and null checks which require null for conditional rendering
+const audioAssetId = computed<string | null>(() => {
+  try {
+    return audioAssetIdRaw.value;
+  } catch {
+    // System F/Omega EXCEPTION: Returning null here is necessary for Vue template compatibility
+    // Template uses v-if and null checks which require null for conditional rendering
+    // This is the ONLY place where null is returned - all other code throws explicit errors
+    return null;
+  }
 });
 
 const localExpanded = ref(false);
-const isExpanded = computed(
-  () => props.isExpandedExternal ?? localExpanded.value,
-);
+// Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+// Pattern match: isExpandedExternal ∈ boolean | undefined → boolean (fallback to localExpanded)
+const isExpanded = computed(() => {
+  return (typeof props.isExpandedExternal === "boolean") ? props.isExpandedExternal : localExpanded.value;
+});
 const isSelected = computed(() =>
-  store.selectedLayerIds.includes(props.layer.id),
+  selectionStore.selectedLayerIds.includes(props.layer.id),
 );
 
 // Drag reorder state
@@ -247,7 +316,9 @@ function onDragEnd() {
 }
 
 function onDragOver(event: DragEvent) {
-  const data = event.dataTransfer?.types.includes("application/layer-reorder");
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const dataTransfer = (event != null && typeof event === "object" && "dataTransfer" in event && event.dataTransfer != null && typeof event.dataTransfer === "object") ? event.dataTransfer : undefined;
+  const data = (dataTransfer != null && typeof dataTransfer === "object" && "types" in dataTransfer && dataTransfer.types != null && typeof dataTransfer.types.includes === "function") ? dataTransfer.types.includes("application/layer-reorder") : false;
   if (data) {
     isDragTarget.value = true;
   }
@@ -262,15 +333,17 @@ function onDrop(event: DragEvent) {
 
   // Check for Alt+drag asset replacement
   if (event.altKey) {
-    const projectItemData = event.dataTransfer?.getData(
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const dataTransfer = (event != null && typeof event === "object" && "dataTransfer" in event && event.dataTransfer != null && typeof event.dataTransfer === "object") ? event.dataTransfer : undefined;
+    const projectItemData = (dataTransfer != null && typeof dataTransfer === "object" && typeof dataTransfer.getData === "function") ? dataTransfer.getData(
       "application/project-item",
-    );
+    ) : undefined;
     if (projectItemData) {
       try {
         const item = JSON.parse(projectItemData);
         if (item && (item.type === "asset" || item.type === "composition")) {
           // Replace layer source with new asset
-          layerStore.replaceLayerSource(store, props.layer.id, item);
+          layerStore.replaceLayerSource(props.layer.id, item);
           console.log(
             `[Lattice] Replaced layer source: ${props.layer.name} → ${item.name}`,
           );
@@ -286,13 +359,15 @@ function onDrop(event: DragEvent) {
   }
 
   // Normal layer reorder handling
-  const draggedLayerId = event.dataTransfer?.getData(
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const dataTransfer = (event != null && typeof event === "object" && "dataTransfer" in event && event.dataTransfer != null && typeof event.dataTransfer === "object") ? event.dataTransfer : undefined;
+  const draggedLayerId = (dataTransfer != null && typeof dataTransfer === "object" && typeof dataTransfer.getData === "function") ? dataTransfer.getData(
     "application/layer-reorder",
-  );
+  ) : undefined;
   if (!draggedLayerId || draggedLayerId === props.layer.id) return;
 
   // Find the indices
-  const layers = store.layers;
+  const layers = projectStore.getActiveCompLayers();
   const draggedIndex = layers.findIndex((l) => l.id === draggedLayerId);
   const targetIndex = layers.findIndex((l) => l.id === props.layer.id);
 
@@ -301,7 +376,7 @@ function onDrop(event: DragEvent) {
     targetIndex !== -1 &&
     draggedIndex !== targetIndex
   ) {
-    layerStore.moveLayer(store, draggedLayerId, targetIndex);
+    layerStore.moveLayer(draggedLayerId, targetIndex);
     console.log(
       `[Lattice] Moved layer from index ${draggedIndex} to ${targetIndex}`,
     );
@@ -357,9 +432,12 @@ const labelColors = [
   "#90c8e0", // Pale Blue
 ];
 
-const availableParents = computed(
-  () => (props.allLayers as Layer[] | undefined)?.filter((l: Layer) => l.id !== props.layer.id) || [],
-);
+// Lean4/PureScript/Haskell: Explicit pattern matching - no lazy || []
+const availableParents = computed(() => {
+  const allLayers = props.allLayers as Layer[] | undefined;
+  const filtered = (allLayers !== null && allLayers !== undefined && Array.isArray(allLayers)) ? allLayers.filter((l: Layer) => l.id !== props.layer.id) : undefined;
+  return (filtered !== null && filtered !== undefined && Array.isArray(filtered)) ? filtered : [];
+});
 
 // Grouping Logic
 const groupedProperties = computed(() => {
@@ -509,7 +587,9 @@ const groupedProperties = computed(() => {
         path: "data.closed",
         name: "Closed",
         property: {
-          value: splineData.closed ?? false,
+          // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+          // Pattern match: splineData.closed ∈ boolean | undefined → boolean (default false)
+          value: (typeof splineData.closed === "boolean") ? splineData.closed : false,
           type: "boolean",
           animatable: false,
         },
@@ -522,7 +602,9 @@ const groupedProperties = computed(() => {
         path: "data.lineCap",
         name: "Line Cap",
         property: {
-          value: splineData.lineCap ?? "round",
+          // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+          // Pattern match: splineData.lineCap ∈ string | undefined → string (default "round")
+          value: (typeof splineData.lineCap === "string" && splineData.lineCap.length > 0) ? splineData.lineCap : "round",
           type: "dropdown",
           options: ["butt", "round", "square"],
           animatable: false,
@@ -532,7 +614,9 @@ const groupedProperties = computed(() => {
         path: "data.lineJoin",
         name: "Line Join",
         property: {
-          value: splineData.lineJoin ?? "round",
+          // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+          // Pattern match: splineData.lineJoin ∈ string | undefined → string (default "round")
+          value: (typeof splineData.lineJoin === "string" && splineData.lineJoin.length > 0) ? splineData.lineJoin : "round",
           type: "dropdown",
           options: ["miter", "round", "bevel"],
           animatable: false,
@@ -542,7 +626,9 @@ const groupedProperties = computed(() => {
         path: "data.dashArray",
         name: "Dashes",
         property: {
-          value: splineData.dashArray ?? "",
+          // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+          // Pattern match: splineData.dashArray ∈ string | undefined → string (default "")
+          value: (typeof splineData.dashArray === "string") ? splineData.dashArray : "",
           type: "string",
           placeholder: "10, 5",
           animatable: false,
@@ -552,7 +638,9 @@ const groupedProperties = computed(() => {
         path: "data.dashOffset",
         name: "Dash Offset",
         property: {
-          value: splineData.dashOffset ?? 0,
+          // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+          // Pattern match: splineData.dashOffset ∈ number | undefined → number (default 0)
+          value: (typeof splineData.dashOffset === "number" && Number.isFinite(splineData.dashOffset)) ? splineData.dashOffset : 0,
           type: "number",
           animatable: false,
         },
@@ -573,8 +661,11 @@ const groupedProperties = computed(() => {
 
 const barStyle = computed(() => {
   const frameCount = props.frameCount || 81;
-  const inPoint = props.layer.inPoint ?? 0;
-  const outPoint = props.layer.outPoint ?? frameCount - 1;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+  // Pattern match: layer.inPoint ∈ number | undefined → number (default 0)
+  const inPoint = (typeof props.layer.inPoint === "number" && Number.isFinite(props.layer.inPoint)) ? props.layer.inPoint : 0;
+  // Pattern match: layer.outPoint ∈ number | undefined → number (default frameCount - 1)
+  const outPoint = (typeof props.layer.outPoint === "number" && Number.isFinite(props.layer.outPoint)) ? props.layer.outPoint : frameCount - 1;
 
   // Use CSS percentages - positions relative to parent container width
   // This ensures layer bar fills viewport when layer spans full composition
@@ -613,9 +704,12 @@ function getLayerIcon(t: string) {
 
 // Double-click: enter nested comp or start rename
 function handleDoubleClick() {
-  if (props.layer.type === "nestedComp" && props.layer.data?.compositionId) {
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const data = props.layer.data;
+  const compositionId = (data != null && typeof data === "object" && "compositionId" in data && typeof data.compositionId === "string") ? data.compositionId : undefined;
+  if (props.layer.type === "nestedComp" && compositionId) {
     // Enter the nested composition
-    store.enterNestedComp(props.layer.data.compositionId);
+    compositionStore.enterNestedComp(getCompositionStoreAccess(), compositionId);
   } else {
     // Start rename for other layer types
     startRename();
@@ -625,7 +719,13 @@ function handleDoubleClick() {
 function startRename() {
   isRenaming.value = true;
   renameVal.value = props.layer.name;
-  nextTick(() => renameInput.value?.focus());
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  nextTick(() => {
+    const renameInputVal = renameInput.value;
+    if (renameInputVal != null && typeof renameInputVal === "object" && typeof renameInputVal.focus === "function") {
+      renameInputVal.focus();
+    }
+  });
 }
 function saveRename() {
   emit("updateLayer", props.layer.id, { name: renameVal.value });
@@ -656,10 +756,10 @@ function getSnapTargets(): number[] {
   const targets: number[] = [];
 
   // Add playhead position
-  targets.push(animationStore.getCurrentFrame(store));
+  targets.push(animationStore.getCurrentFrame(getAnimationStoreAccess()));
 
   // Add all other layer in/out points
-  const layers = props.allLayers || store.layers;
+  const layers = props.allLayers || projectStore.getActiveCompLayers();
   for (const layer of layers) {
     if (layer.id === props.layer.id) continue; // Skip self
     if (layer.inPoint !== undefined) targets.push(layer.inPoint);
@@ -671,9 +771,11 @@ function getSnapTargets(): number[] {
   targets.push(props.frameCount - 1);
 
   // Add markers if available
-  const composition = store.activeComposition;
-  if (composition?.markers) {
-    for (const marker of composition.markers) {
+  const composition = projectStore.getActiveComp();
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const markers = (composition != null && typeof composition === "object" && "markers" in composition && composition.markers != null && Array.isArray(composition.markers)) ? composition.markers : undefined;
+  if (markers) {
+    for (const marker of markers) {
       targets.push(marker.frame);
     }
   }
@@ -699,8 +801,11 @@ function snapToNearest(value: number, targets: number[]): number {
 function startDrag(e: MouseEvent) {
   isDragging.value = true;
   dragStartX.value = e.clientX;
-  dragStartInPoint.value = props.layer.inPoint ?? 0;
-  dragStartOutPoint.value = props.layer.outPoint ?? props.frameCount - 1;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+  // Pattern match: layer.inPoint ∈ number | undefined → number (default 0)
+  dragStartInPoint.value = (typeof props.layer.inPoint === "number" && Number.isFinite(props.layer.inPoint)) ? props.layer.inPoint : 0;
+  // Pattern match: layer.outPoint ∈ number | undefined → number (default frameCount - 1)
+  dragStartOutPoint.value = (typeof props.layer.outPoint === "number" && Number.isFinite(props.layer.outPoint)) ? props.layer.outPoint : props.frameCount - 1;
   document.addEventListener("mousemove", onDrag);
   document.addEventListener("mouseup", stopDrag);
 }
@@ -708,7 +813,9 @@ function startDrag(e: MouseEvent) {
 function startResizeLeft(e: MouseEvent) {
   isResizingLeft.value = true;
   dragStartX.value = e.clientX;
-  dragStartInPoint.value = props.layer.inPoint ?? 0;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+  // Pattern match: layer.inPoint ∈ number | undefined → number (default 0)
+  dragStartInPoint.value = (typeof props.layer.inPoint === "number" && Number.isFinite(props.layer.inPoint)) ? props.layer.inPoint : 0;
   document.addEventListener("mousemove", onResizeLeft);
   document.addEventListener("mouseup", stopDrag);
 }
@@ -716,7 +823,9 @@ function startResizeLeft(e: MouseEvent) {
 function startResizeRight(e: MouseEvent) {
   isResizingRight.value = true;
   dragStartX.value = e.clientX;
-  dragStartOutPoint.value = props.layer.outPoint ?? props.frameCount - 1;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+  // Pattern match: layer.outPoint ∈ number | undefined → number (default frameCount - 1)
+  dragStartOutPoint.value = (typeof props.layer.outPoint === "number" && Number.isFinite(props.layer.outPoint)) ? props.layer.outPoint : props.frameCount - 1;
   document.addEventListener("mousemove", onResizeRight);
   document.addEventListener("mouseup", stopDrag);
 }
@@ -776,7 +885,9 @@ function onResizeLeft(e: MouseEvent) {
   }
 
   // Clamp: can't go below 0 or past outPoint
-  const outPoint = props.layer.outPoint ?? props.frameCount - 1;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+  // Pattern match: layer.outPoint ∈ number | undefined → number (default frameCount - 1)
+  const outPoint = (typeof props.layer.outPoint === "number" && Number.isFinite(props.layer.outPoint)) ? props.layer.outPoint : props.frameCount - 1;
   newInPoint = Math.max(0, Math.min(newInPoint, outPoint - 1));
 
   emit("updateLayer", props.layer.id, { inPoint: newInPoint });
@@ -794,7 +905,9 @@ function onResizeRight(e: MouseEvent) {
   }
 
   // Clamp: can't go past frameCount or before inPoint
-  const inPoint = props.layer.inPoint ?? 0;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+  // Pattern match: layer.inPoint ∈ number | undefined → number (default 0)
+  const inPoint = (typeof props.layer.inPoint === "number" && Number.isFinite(props.layer.inPoint)) ? props.layer.inPoint : 0;
   newOutPoint = Math.max(
     inPoint + 1,
     Math.min(newOutPoint, props.frameCount - 1),
@@ -877,7 +990,7 @@ function closeColorPicker() {
 
 // Reset transform to default values
 function resetTransform() {
-  const comp = store.getActiveComp();
+  const comp = projectStore.getActiveComp();
   if (!comp) return;
 
   // Default values
@@ -912,7 +1025,7 @@ function resetTransform() {
   if (t.orientation) t.orientation.value = { ...defaultTransform.orientation };
   if (props.layer.opacity) props.layer.opacity.value = defaultTransform.opacity;
 
-  store.project.meta.modified = new Date().toISOString();
+  projectStore.project.meta.modified = new Date().toISOString();
   console.log(
     "[EnhancedLayerTrack] Reset transform for layer:",
     props.layer.name,
@@ -935,7 +1048,7 @@ function hideContextMenu() {
 }
 
 function duplicateLayer() {
-  layerStore.duplicateLayer(store, props.layer.id);
+  layerStore.duplicateLayer(props.layer.id);
   hideContextMenu();
 }
 
@@ -944,7 +1057,13 @@ function renameFromMenu() {
   nextTick(() => {
     isRenaming.value = true;
     renameVal.value = props.layer.name;
-    nextTick(() => renameInput.value?.focus());
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    nextTick(() => {
+      const renameInputVal = renameInput.value;
+      if (renameInputVal != null && typeof renameInputVal === "object" && typeof renameInputVal.focus === "function") {
+        renameInputVal.focus();
+      }
+    });
   });
 }
 
@@ -959,13 +1078,13 @@ function toggleLayerLock() {
 }
 
 function toggleLayer3D() {
-  layerStore.toggleLayer3D(store, props.layer.id);
+  layerStore.toggleLayer3D(props.layer.id);
   hideContextMenu();
 }
 
 function nestLayer() {
-  layerStore.selectLayer(store, props.layer.id);
-  store.nestSelectedLayers(`${props.layer.name} Nested`);
+  layerStore.selectLayer(props.layer.id);
+  compositionStore.nestSelectedLayers(`${props.layer.name} Nested`);
   hideContextMenu();
 }
 
@@ -974,7 +1093,7 @@ async function convertToSplines() {
   if (props.layer.type !== "text") return;
 
   try {
-    const result = await layerStore.convertTextLayerToSplines(store, props.layer.id, {
+    const result = await layerStore.convertTextLayerToSplines(props.layer.id, {
       perCharacter: true,
       groupCharacters: true,
       keepOriginal: true,
@@ -992,7 +1111,7 @@ async function convertToSplines() {
 }
 
 function deleteLayer() {
-  layerStore.deleteLayer(store, props.layer.id);
+  layerStore.deleteLayer(props.layer.id);
   hideContextMenu();
 }
 
@@ -1006,7 +1125,9 @@ function handleOutsideClick(e: MouseEvent) {
     const target = e.target as HTMLElement;
     const colorPicker = document.querySelector(".layer-color-picker");
     const labelBox = target.closest(".label-box");
-    if (colorPicker?.contains(target) || labelBox) {
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const containsTarget = (colorPicker != null && typeof colorPicker === "object" && typeof colorPicker.contains === "function") ? colorPicker.contains(target) : false;
+    if (containsTarget || labelBox) {
       return; // Don't close if clicked inside picker or on label box
     }
     closeColorPicker();
@@ -1057,19 +1178,28 @@ function renderWaveformToCanvas() {
   if (!waveformCanvasRef.value || !waveformData.value) return;
 
   const canvas = waveformCanvasRef.value;
-  const parentWidth = canvas.parentElement?.clientWidth || 200;
-  const parentHeight = canvas.parentElement?.clientHeight || 24;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const parentElement = (canvas != null && typeof canvas === "object" && "parentElement" in canvas && canvas.parentElement != null && typeof canvas.parentElement === "object") ? canvas.parentElement : undefined;
+  const parentWidth = (parentElement != null && typeof parentElement === "object" && typeof parentElement.clientWidth === "number") ? parentElement.clientWidth : 200;
+  const parentHeight = (parentElement != null && typeof parentElement === "object" && typeof parentElement.clientHeight === "number") ? parentElement.clientHeight : 24;
 
   const frameCount = props.frameCount || 81;
-  const fps = store.fps || 16;
-  const inPoint = props.layer.inPoint ?? props.layer.startFrame ?? 0;
-  const outPoint =
-    props.layer.outPoint ?? props.layer.endFrame ?? frameCount - 1;
+  const projectStore = useProjectStore();
+  const fps = projectStore.getFps();
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+  // Pattern match: layer.inPoint ∈ number | undefined → number (fallback chain: startFrame → 0)
+  const inPointValue = (typeof props.layer.inPoint === "number" && Number.isFinite(props.layer.inPoint)) ? props.layer.inPoint : ((typeof props.layer.startFrame === "number" && Number.isFinite(props.layer.startFrame)) ? props.layer.startFrame : 0);
+  const inPoint = inPointValue;
+  // Pattern match: layer.outPoint ∈ number | undefined → number (fallback chain: endFrame → frameCount - 1)
+  const outPointValue = (typeof props.layer.outPoint === "number" && Number.isFinite(props.layer.outPoint)) ? props.layer.outPoint : ((typeof props.layer.endFrame === "number" && Number.isFinite(props.layer.endFrame)) ? props.layer.endFrame : frameCount - 1);
+  const outPoint = outPointValue;
 
   // visibleStart/visibleEnd match layer timing (canvas shows layer bar, not full timeline)
+  // Type proof: audioAssetId is guaranteed non-null by isAudioLayer check and initializeWaveform guard
+  assertDefined(audioAssetId.value, "audioAssetId must exist when rendering waveform for audio layer");
   renderTimelineWaveform(canvas, waveformData.value, {
     layerId: props.layer.id,
-    audioId: audioAssetId.value!,
+    audioId: audioAssetId.value,
     layerColor: props.layer.labelColor || "#D4A574",
     startFrame: inPoint,
     endFrame: outPoint,

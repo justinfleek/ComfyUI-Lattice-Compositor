@@ -27,9 +27,11 @@ function getLODMultiplier(distToCamera: number, config: LODConfig): number {
   let multiplier = 1.0;
 
   // Check each LOD level (distances should be ascending)
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
   for (let i = 0; i < distances.length; i++) {
     if (distToCamera > distances[i]) {
-      multiplier = multipliers[i] ?? 1.0;
+      const mult = multipliers[i];
+      multiplier = (mult !== null && mult !== undefined && typeof mult === "number" && Number.isFinite(mult) && mult > 0) ? mult : 1.0;
     }
   }
 

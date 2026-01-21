@@ -6,6 +6,14 @@
  */
 
 import type { AnimatableProperty, Keyframe } from "@/types/project";
+import { isFiniteNumber } from "@/utils/typeGuards";
+import type { PropertyValue } from "@/types/animation";
+
+/**
+ * All possible JavaScript values that can be validated at runtime
+ * Used as input type for validators (replaces unknown)
+ */
+type RuntimeValue = string | number | boolean | object | null | undefined | bigint | symbol;
 
 export interface CurveViewState {
   frameStart: number;
@@ -101,7 +109,7 @@ export function screenYToValue(
  * Get screen X coordinate for a keyframe
  */
 export function getKeyframeScreenX(
-  kf: Keyframe<any>,
+  kf: Keyframe<PropertyValue>,
   viewState: CurveViewState,
   canvasWidth: number,
   margin?: CurveMargin,
@@ -113,8 +121,8 @@ export function getKeyframeScreenX(
  * Get screen Y coordinate for a keyframe
  */
 export function getKeyframeScreenY(
-  _prop: AnimatableProperty<any>,
-  kf: Keyframe<any>,
+  _prop: AnimatableProperty<PropertyValue>,
+  kf: Keyframe<PropertyValue>,
   viewState: CurveViewState,
   canvasHeight: number,
   margin?: CurveMargin,
@@ -135,7 +143,7 @@ interface PositionLike {
 /**
  * Type guard for position-like objects
  */
-function isPositionLike(value: unknown): value is PositionLike {
+function isPositionLike(value: RuntimeValue): value is PositionLike {
   return (
     typeof value === "object" &&
     value !== null &&
@@ -146,7 +154,7 @@ function isPositionLike(value: unknown): value is PositionLike {
 /**
  * Extract numeric value from keyframe value (handles number and object types)
  */
-export function getNumericValue(value: unknown): number {
+export function getNumericValue(value: RuntimeValue): number {
   if (typeof value === "number") return value;
   if (isPositionLike(value)) {
     if (typeof value.x === "number") return value.x;
@@ -161,7 +169,7 @@ export function getNumericValue(value: unknown): number {
  */
 export function getKeyframeDisplayValue(
   selection:
-    | { propId: string; index: number; keyframe: Keyframe<any> }
+    | { propId: string; index: number; keyframe: Keyframe<PropertyValue> }
     | undefined,
 ): number {
   if (!selection) return 0;
@@ -169,7 +177,9 @@ export function getKeyframeDisplayValue(
   return typeof value === "number"
     ? value
     : typeof value === "object"
-      ? (value.x ?? 0)
+      // Lean4/PureScript/Haskell: Explicit pattern matching on optional property
+      // Type proof: value.x ∈ number | undefined → number (coordinate-like, can be negative)
+      ? (value.x !== undefined && isFiniteNumber(value.x) ? value.x : 0)
       : 0;
 }
 
@@ -181,14 +191,15 @@ export function getKeyframeDisplayValue(
  * Get screen X coordinate for outgoing handle
  */
 export function getOutHandleX(
-  prop: AnimatableProperty<any>,
+  prop: AnimatableProperty<PropertyValue>,
   kfIndex: number,
   viewState: CurveViewState,
   canvasWidth: number,
   margin?: CurveMargin,
 ): number {
   const kf = prop.keyframes[kfIndex];
-  if (!kf || !kf.outHandle?.enabled) {
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+  if (!kf || !(kf.outHandle !== undefined && typeof kf.outHandle === "object" && "enabled" in kf.outHandle && kf.outHandle.enabled === true)) {
     return frameToScreenX(kf.frame, viewState, canvasWidth, margin);
   }
   const handleFrame = kf.frame + kf.outHandle.frame;
@@ -199,14 +210,15 @@ export function getOutHandleX(
  * Get screen Y coordinate for outgoing handle
  */
 export function getOutHandleY(
-  prop: AnimatableProperty<any>,
+  prop: AnimatableProperty<PropertyValue>,
   kfIndex: number,
   viewState: CurveViewState,
   canvasHeight: number,
   margin?: CurveMargin,
 ): number {
   const kf = prop.keyframes[kfIndex];
-  if (!kf || !kf.outHandle?.enabled) {
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+  if (!kf || !(kf.outHandle !== undefined && typeof kf.outHandle === "object" && "enabled" in kf.outHandle && kf.outHandle.enabled === true)) {
     return valueToScreenY(
       getNumericValue(kf.value),
       viewState,
@@ -222,14 +234,15 @@ export function getOutHandleY(
  * Get screen X coordinate for incoming handle
  */
 export function getInHandleX(
-  prop: AnimatableProperty<any>,
+  prop: AnimatableProperty<PropertyValue>,
   kfIndex: number,
   viewState: CurveViewState,
   canvasWidth: number,
   margin?: CurveMargin,
 ): number {
   const kf = prop.keyframes[kfIndex];
-  if (!kf || !kf.inHandle?.enabled) {
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+  if (!kf || !(kf.inHandle !== undefined && typeof kf.inHandle === "object" && "enabled" in kf.inHandle && kf.inHandle.enabled === true)) {
     return frameToScreenX(kf.frame, viewState, canvasWidth, margin);
   }
   const handleFrame = kf.frame + kf.inHandle.frame;
@@ -240,14 +253,15 @@ export function getInHandleX(
  * Get screen Y coordinate for incoming handle
  */
 export function getInHandleY(
-  prop: AnimatableProperty<any>,
+  prop: AnimatableProperty<PropertyValue>,
   kfIndex: number,
   viewState: CurveViewState,
   canvasHeight: number,
   margin?: CurveMargin,
 ): number {
   const kf = prop.keyframes[kfIndex];
-  if (!kf || !kf.inHandle?.enabled) {
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+  if (!kf || !(kf.inHandle !== undefined && typeof kf.inHandle === "object" && "enabled" in kf.inHandle && kf.inHandle.enabled === true)) {
     return valueToScreenY(
       getNumericValue(kf.value),
       viewState,
@@ -267,7 +281,7 @@ export function getInHandleY(
  * Check if a keyframe is within the current view bounds
  */
 export function isKeyframeInView(
-  kf: Keyframe<any>,
+  kf: Keyframe<PropertyValue>,
   viewState: CurveViewState,
 ): boolean {
   return kf.frame >= viewState.frameStart && kf.frame <= viewState.frameEnd;
@@ -294,7 +308,7 @@ export function calculateGridStep(
 /**
  * Get property path from AnimatableProperty name for store operations
  */
-export function getPropertyPath(prop: AnimatableProperty<any>): string {
+export function getPropertyPath(prop: AnimatableProperty<PropertyValue>): string {
   const name = prop.name.toLowerCase();
   if (name === "position") return "transform.position";
   if (name === "scale") return "transform.scale";

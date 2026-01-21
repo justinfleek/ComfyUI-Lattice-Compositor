@@ -4,12 +4,13 @@
  */
 
 import { DEPTH_FORMAT_SPECS } from "@/config/exportPresets";
+import { isFiniteNumber, safeCoordinateDefault } from "@/utils/typeGuards";
 import type { Camera3D } from "@/types/camera";
 import type { DepthMapFormat } from "@/types/export";
 import type { Layer } from "@/types/project";
 import type { LatticeEngine } from "@/engine/LatticeEngine";
 import type { BaseLayer } from "@/engine/layers/BaseLayer";
-import type { ExportedParticle } from "@/engine/particles/GPUParticleSystem";
+import type { ExportedParticle } from "@/engine/particles/types";
 
 // ============================================================================
 // Types
@@ -157,20 +158,26 @@ export function renderDepthFrame(
  * Get layer Z depth at frame
  */
 function getLayerDepth(layer: Layer, frame: number): number {
-  const position = layer.transform?.position;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const transform = (layer != null && typeof layer === "object" && "transform" in layer && layer.transform != null && typeof layer.transform === "object") ? layer.transform : undefined;
+  const position = (transform != null && typeof transform === "object" && "position" in transform && transform.position != null) ? transform.position : undefined;
   if (!position) return 0;
 
   // Check for animated position
   if (position.keyframes && position.keyframes.length > 0) {
     // Interpolate keyframes
-    return interpolateValue(position.keyframes, frame, 2) || 0;
+    // Type proof: interpolated z coordinate ∈ number (interpolateValue throws if no keyframes)
+    const interpolatedZ = interpolateValue(position.keyframes, frame, 2);
+    return safeCoordinateDefault(interpolatedZ, 0, "interpolated z coordinate");
   }
 
   // Static position
   if (position.value) {
     const value = position.value;
     if (typeof value === "object" && "z" in value) {
-      return (value as { z?: number }).z ?? 0;
+      // Type proof: z ∈ ℝ ∪ {undefined} → z ∈ ℝ
+      const zValue = (value as { z?: number }).z;
+      return isFiniteNumber(zValue) ? zValue : 0;
     }
   }
 
@@ -180,21 +187,23 @@ function getLayerDepth(layer: Layer, frame: number): number {
 
 /**
  * Get layer opacity at frame
- * BUG FIX: Use nullish coalescing (??) instead of || to handle 0 opacity correctly
+ * Type proof: opacity ∈ ℝ ∧ finite(opacity) → opacity ∈ [0, 1]
  */
 function getLayerOpacity(layer: Layer, frame: number): number {
-  if (
-    layer.opacity &&
-    "keyframes" in layer.opacity &&
-    layer.opacity.keyframes?.length > 0
-  ) {
-    const interpolated = interpolateValue(layer.opacity.keyframes, frame);
-    return (interpolated ?? 100) / 100;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const opacity = (layer != null && typeof layer === "object" && "opacity" in layer && layer.opacity != null && typeof layer.opacity === "object") ? layer.opacity : undefined;
+  const keyframes = (opacity != null && typeof opacity === "object" && "keyframes" in opacity && Array.isArray(opacity.keyframes) && opacity.keyframes.length > 0) ? opacity.keyframes : undefined;
+  if (keyframes != null) {
+    const interpolated = interpolateValue(keyframes, frame);
+    // Type proof: interpolated ∈ ℝ (interpolateValue throws if no keyframes)
+    const opacityValue = isFiniteNumber(interpolated) ? interpolated : 100;
+    return Math.max(0, Math.min(1, opacityValue / 100));
   }
 
   if (layer.opacity && "value" in layer.opacity) {
-    // BUG FIX: 0 is a valid opacity value, don't treat it as falsy
-    return (layer.opacity.value ?? 100) / 100;
+    // Type proof: value ∈ ℝ ∪ {undefined} → value ∈ ℝ
+    const opacityValue = isFiniteNumber(layer.opacity.value) ? layer.opacity.value : 100;
+    return Math.max(0, Math.min(1, opacityValue / 100));
   }
 
   return 1;
@@ -214,24 +223,32 @@ function getLayerScreenBounds(
   let x = 0,
     y = 0;
 
-  const position = layer.transform?.position;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const transform = (layer != null && typeof layer === "object" && "transform" in layer && layer.transform != null && typeof layer.transform === "object") ? layer.transform : undefined;
+  const position = (transform != null && typeof transform === "object" && "position" in transform && transform.position != null && typeof transform.position === "object") ? transform.position : undefined;
   if (position && "value" in position) {
     const value = position.value;
     if (Array.isArray(value)) {
-      x = value[0] || 0;
-      y = value[1] || 0;
+      // Type proof: x/y coordinates ∈ number | undefined → number (coordinate-like, can be negative)
+      x = safeCoordinateDefault(value[0], 0, "position.value[0]");
+      y = safeCoordinateDefault(value[1], 0, "position.value[1]");
     }
   }
 
   // Get layer dimensions (assuming they're stored or can be derived)
   const layerWithDimensions = layer as Layer & { width?: number; height?: number };
-  const layerWidth = layerWithDimensions.width ?? screenWidth;
-  const layerHeight = layerWithDimensions.height ?? screenHeight;
+  // Type proof: width ∈ ℕ ∧ finite(width) → width ∈ ℕ₊
+  const layerWidthValue = layerWithDimensions.width;
+  const layerWidth = isFiniteNumber(layerWidthValue) && Number.isInteger(layerWidthValue) && layerWidthValue > 0 ? layerWidthValue : screenWidth;
+  // Type proof: height ∈ ℕ ∧ finite(height) → height ∈ ℕ₊
+  const layerHeightValue = layerWithDimensions.height;
+  const layerHeight = isFiniteNumber(layerHeightValue) && Number.isInteger(layerHeightValue) && layerHeightValue > 0 ? layerHeightValue : screenHeight;
 
   // Get scale from transform
   let scaleX = 1,
     scaleY = 1;
-  const scale = layer.transform?.scale;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const scale = (transform != null && typeof transform === "object" && "scale" in transform && transform.scale != null && typeof transform.scale === "object") ? transform.scale : undefined;
   if (scale && "value" in scale) {
     const value = scale.value;
     if (Array.isArray(value)) {
@@ -247,12 +264,16 @@ function getLayerScreenBounds(
   // Get anchor point from transform
   let anchorX = 0.5,
     anchorY = 0.5;
-  const anchorPoint = layer.transform?.anchorPoint;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const anchorPoint = (transform != null && typeof transform === "object" && "anchorPoint" in transform && transform.anchorPoint != null && typeof transform.anchorPoint === "object") ? transform.anchorPoint : undefined;
   if (anchorPoint && "value" in anchorPoint) {
     const value = anchorPoint.value;
     if (Array.isArray(value)) {
-      anchorX = (value[0] || 0) / layerWidth + 0.5;
-      anchorY = (value[1] || 0) / layerHeight + 0.5;
+      // Type proof: anchor coordinates ∈ number | undefined → number (coordinate-like, can be negative)
+      const anchorXValue = safeCoordinateDefault(value[0], 0, "anchorPoint.value[0]");
+      const anchorYValue = safeCoordinateDefault(value[1], 0, "anchorPoint.value[1]");
+      anchorX = anchorXValue / layerWidth + 0.5;
+      anchorY = anchorYValue / layerHeight + 0.5;
     }
   }
 
@@ -272,7 +293,17 @@ function getLayerScreenBounds(
     Math.min(screenHeight - clippedY, finalHeight - (clippedY - screenY)),
   );
 
-  if (clippedWidth <= 0 || clippedHeight <= 0) return null;
+  // System F/Omega proof: Explicit validation of geometric constraints
+  // Type proof: clippedWidth ∈ ℝ, clippedHeight ∈ ℝ
+  // Mathematical proof: Rectangle dimensions must be positive (width > 0 ∧ height > 0)
+  // Geometric proof: A rectangle with zero or negative dimensions has no area and cannot be rendered
+  if (!Number.isFinite(clippedWidth) || !Number.isFinite(clippedHeight)) {
+    throw new Error(`[DepthRenderer] Cannot get clipped bounds: Clipped dimensions are non-finite (width: ${clippedWidth}, height: ${clippedHeight}). Screen bounds: (${screenX}, ${screenY}, ${screenWidth}×${screenHeight}), Final bounds: (${screenX}, ${screenY}, ${finalWidth}×${finalHeight}). This indicates a mathematical error in clipping calculation - dimensions must be finite real numbers.`);
+  }
+  
+  if (clippedWidth <= 0 || clippedHeight <= 0) {
+    throw new Error(`[DepthRenderer] Cannot get clipped bounds: Clipped dimensions are invalid (width: ${clippedWidth}, height: ${clippedHeight}). Screen bounds: (${screenX}, ${screenY}, ${screenWidth}×${screenHeight}), Final bounds: (${screenX}, ${screenY}, ${finalWidth}×${finalHeight}). Geometric constraint violation: Rectangle dimensions must be positive (width > 0 ∧ height > 0). Layer may be completely outside viewport or clipping calculation failed.`);
+  }
 
   return {
     x: clippedX,
@@ -314,8 +345,12 @@ function fillDepthFromDepthflow(
   const depthData = layer.depthMapData;
   if (!depthData) return;
   
-  const depthWidth = layer.depthWidth ?? bounds.width;
-  const depthHeight = layer.depthHeight ?? bounds.height;
+  // Type proof: depthWidth ∈ ℕ ∧ finite(depthWidth) → depthWidth ∈ ℕ₊
+  const depthWidthValue = layer.depthWidth;
+  const depthWidth = isFiniteNumber(depthWidthValue) && Number.isInteger(depthWidthValue) && depthWidthValue > 0 ? depthWidthValue : bounds.width;
+  // Type proof: depthHeight ∈ ℕ ∧ finite(depthHeight) → depthHeight ∈ ℕ₊
+  const depthHeightValue = layer.depthHeight;
+  const depthHeight = isFiniteNumber(depthHeightValue) && Number.isInteger(depthHeightValue) && depthHeightValue > 0 ? depthHeightValue : bounds.height;
 
   for (let y = 0; y < bounds.height; y++) {
     for (let x = 0; x < bounds.width; x++) {
@@ -422,7 +457,10 @@ function fillDepthFromParticles(
     const screenY = Math.floor(p.y);
 
     // Particle radius in pixels (half of size)
-    const radius = Math.max(1, Math.floor((p.size ?? 10) / 2));
+    // Type proof: size ∈ ℝ ∧ finite(size) → size ∈ ℝ₊
+    const sizeValue = p.size;
+    const size = isFiniteNumber(sizeValue) && sizeValue >= 0 ? sizeValue : 10;
+    const radius = Math.max(1, Math.floor(size / 2));
 
     // Render circular splat
     for (let dy = -radius; dy <= radius; dy++) {
@@ -483,12 +521,36 @@ interface Keyframe {
   value: number | number[];
 }
 
+/**
+ * Interpolate keyframe value at specific frame
+ * 
+ * System F/Omega proof: Type guard for keyframes array
+ * Type proof: keyframes: Keyframe[] → requires non-empty array for interpolation
+ * Mathematical proof: Interpolation requires at least one point (keyframe)
+ * 
+ * @param keyframes - Array of keyframes (must be non-empty)
+ * @param frame - Target frame number (must be finite)
+ * @param index - Optional array index for multi-dimensional values
+ * @returns Interpolated numeric value (finite, real number)
+ * @throws Error if keyframes array is empty or invalid
+ */
 function interpolateValue(
   keyframes: Keyframe[],
   frame: number,
   index?: number,
-): number | null {
-  if (!keyframes || keyframes.length === 0) return null;
+): number {
+  // System F/Omega proof: Explicit pattern matching for array validation
+  // Type proof: keyframes ∈ Keyframe[] → keyframes.length ∈ ℕ
+  // Mathematical proof: Empty array (length = 0) cannot provide interpolation points
+  if (typeof keyframes !== "object" || keyframes === null || !Array.isArray(keyframes)) {
+    throw new Error(`[DepthRenderer] Cannot interpolate value: keyframes parameter is not a valid array (got ${typeof keyframes}). Frame: ${frame}${index !== undefined ? `, index: ${index}` : ""}. This indicates a type system violation - keyframes must be a non-null array.`);
+  }
+  
+  // Type proof: keyframes.length ∈ ℕ → keyframes.length ≥ 0
+  // Mathematical proof: Interpolation requires at least one keyframe (length ≥ 1)
+  if (keyframes.length === 0) {
+    throw new Error(`[DepthRenderer] Cannot interpolate value: Keyframe array is empty (length: 0). Frame: ${frame}${index !== undefined ? `, index: ${index}` : ""}. Interpolation requires at least one keyframe to provide a value. Check that keyframes exist for this property at this frame range.`);
+  }
 
   // Find surrounding keyframes
   let prev = keyframes[0];
@@ -511,14 +573,18 @@ function interpolateValue(
 
   // Linear interpolation
   const t = (frame - prev.frame) / (next.frame - prev.frame);
-  const prevValue =
+  const rawPrevValue =
     index !== undefined && Array.isArray(prev.value)
       ? prev.value[index]
       : prev.value;
-  const nextValue =
+  const rawNextValue =
     index !== undefined && Array.isArray(next.value)
       ? next.value[index]
       : next.value;
+  
+  // Ensure values are numbers for arithmetic
+  const prevValue = typeof rawPrevValue === "number" ? rawPrevValue : 0;
+  const nextValue = typeof rawNextValue === "number" ? rawNextValue : 0;
 
   return prevValue + (nextValue - prevValue) * t;
 }
@@ -986,7 +1052,10 @@ export async function exportDepthSequence(
     // This returns the path that would be used
     outputPaths.push(outputPath);
 
-    onProgress?.(i + 1, totalFrames);
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    if (onProgress != null && typeof onProgress === "function") {
+      onProgress(i + 1, totalFrames);
+    }
   }
 
   return outputPaths;

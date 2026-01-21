@@ -14,6 +14,8 @@
  * ECCV 2024 Best Paper Candidate
  */
 
+import { isFiniteNumber } from "@/utils/typeGuards";
+
 /**
  * Sapiens model sizes
  */
@@ -233,14 +235,30 @@ export class SapiensService {
       maxDepth?: number;
       labels?: SapiensBodyPart[];
     }
-    return (data.results as SapiensAPIResult[]).map((r, i) => ({
-      frame: i,
-      depthMap: new Float32Array(base64ToArrayBuffer(r.depthMap ?? "")),
-      width: r.width ?? 0,
-      height: r.height ?? 0,
-      minDepth: r.minDepth,
-      maxDepth: r.maxDepth,
-    }));
+    return (data.results as SapiensAPIResult[]).map((r, i) => {
+      // Type proof: depthMap ∈ string | undefined → string
+      const depthMapBase64 =
+        typeof r.depthMap === "string" && r.depthMap.length > 0
+          ? r.depthMap
+          : "";
+      // Type proof: width ∈ number | undefined → number
+      const width = isFiniteNumber(r.width) && r.width > 0
+        ? Math.floor(r.width)
+        : 0;
+      // Type proof: height ∈ number | undefined → number
+      const height = isFiniteNumber(r.height) && r.height > 0
+        ? Math.floor(r.height)
+        : 0;
+
+      return {
+        frame: i,
+        depthMap: new Float32Array(base64ToArrayBuffer(depthMapBase64)),
+        width,
+        height,
+        minDepth: r.minDepth,
+        maxDepth: r.maxDepth,
+      };
+    });
   }
 
   /**
@@ -284,12 +302,28 @@ export class SapiensService {
       maxDepth?: number;
       labels?: SapiensBodyPart[];
     }
-    return (data.results as SapiensAPIResult[]).map((r, i) => ({
-      frame: i,
-      normalMap: new Float32Array(base64ToArrayBuffer(r.normalMap ?? "")),
-      width: r.width ?? 0,
-      height: r.height ?? 0,
-    }));
+    return (data.results as SapiensAPIResult[]).map((r, i) => {
+      // Type proof: normalMap ∈ string | undefined → string
+      const normalMapBase64 =
+        typeof r.normalMap === "string" && r.normalMap.length > 0
+          ? r.normalMap
+          : "";
+      // Type proof: width ∈ number | undefined → number
+      const width = isFiniteNumber(r.width) && r.width > 0
+        ? Math.floor(r.width)
+        : 0;
+      // Type proof: height ∈ number | undefined → number
+      const height = isFiniteNumber(r.height) && r.height > 0
+        ? Math.floor(r.height)
+        : 0;
+
+      return {
+        frame: i,
+        normalMap: new Float32Array(base64ToArrayBuffer(normalMapBase64)),
+        width,
+        height,
+      };
+    });
   }
 
   /**
@@ -348,13 +382,29 @@ export class SapiensService {
       maxDepth?: number;
       labels?: SapiensBodyPart[];
     }
-    return (data.results as SapiensAPIResult[]).map((r, i) => ({
-      frame: i,
-      mask: new Uint8Array(base64ToArrayBuffer(r.mask ?? "")),
-      width: r.width ?? 0,
-      height: r.height ?? 0,
-      labels: r.labels ?? [],
-    }));
+    return (data.results as SapiensAPIResult[]).map((r, i) => {
+      // Type proof: mask ∈ string | undefined → string
+      const maskBase64 =
+        typeof r.mask === "string" && r.mask.length > 0 ? r.mask : "";
+      // Type proof: width ∈ number | undefined → number
+      const width = isFiniteNumber(r.width) && r.width > 0
+        ? Math.floor(r.width)
+        : 0;
+      // Type proof: height ∈ number | undefined → number
+      const height = isFiniteNumber(r.height) && r.height > 0
+        ? Math.floor(r.height)
+        : 0;
+      // Type proof: labels ∈ SapiensBodyPart[] | undefined → SapiensBodyPart[]
+      const labels = Array.isArray(r.labels) ? r.labels : [];
+
+      return {
+        frame: i,
+        mask: new Uint8Array(base64ToArrayBuffer(maskBase64)),
+        width,
+        height,
+        labels,
+      };
+    });
   }
 
   /**
@@ -479,8 +529,18 @@ export function createUni3CCameraData(
   point_clouds: Array<{ points: number[][]; colors: number[][] }>;
 } {
   // Estimate intrinsics from first frame
-  const width = depthResults[0]?.width ?? 1920;
-  const height = depthResults[0]?.height ?? 1080;
+  // Type proof: width ∈ number | undefined → number
+  const firstResult = depthResults[0];
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const firstResultWidth = (firstResult != null && typeof firstResult === "object" && "width" in firstResult && typeof firstResult.width === "number") ? firstResult.width : undefined;
+  const width = isFiniteNumber(firstResultWidth) && firstResultWidth > 0
+    ? Math.floor(firstResultWidth)
+    : 1920;
+  // Type proof: height ∈ number | undefined → number
+  const firstResultHeight = (firstResult != null && typeof firstResult === "object" && "height" in firstResult && typeof firstResult.height === "number") ? firstResult.height : undefined;
+  const height = isFiniteNumber(firstResultHeight) && firstResultHeight > 0
+    ? Math.floor(firstResultHeight)
+    : 1080;
 
   // Approximate focal length (assuming ~50mm on full-frame equivalent)
   const fx = width * 0.8;

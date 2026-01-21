@@ -227,24 +227,27 @@ export function booleanOperation(
     const paperA = latticePathToPaperPath(pathA);
     const paperB = latticePathToPaperPath(pathB);
 
+    // Type proof: insert ∈ boolean | undefined → boolean
+    const insert = typeof options.insert === "boolean" ? options.insert : false;
+
     let result: paper.PathItem | null = null;
 
     // Perform operation
     switch (operation) {
       case "unite":
-        result = paperA.unite(paperB, { insert: options.insert ?? false });
+        result = paperA.unite(paperB, { insert });
         break;
       case "subtract":
-        result = paperA.subtract(paperB, { insert: options.insert ?? false });
+        result = paperA.subtract(paperB, { insert });
         break;
       case "intersect":
-        result = paperA.intersect(paperB, { insert: options.insert ?? false });
+        result = paperA.intersect(paperB, { insert });
         break;
       case "exclude":
-        result = paperA.exclude(paperB, { insert: options.insert ?? false });
+        result = paperA.exclude(paperB, { insert });
         break;
       case "divide":
-        result = paperA.divide(paperB, { insert: options.insert ?? false });
+        result = paperA.divide(paperB, { insert });
         break;
     }
 
@@ -259,17 +262,17 @@ export function booleanOperation(
       result.remove();
     }
 
+    if (paths.length === 0) {
+      throw new Error(`[BezierBoolean] Boolean operation "${operation}" produced no paths. Check input paths and operation type.`);
+    }
     return {
       paths,
-      success: paths.length > 0,
+      success: true,
     };
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
     logger.warn(`Boolean operation "${operation}" failed:`, error);
-    return {
-      paths: [],
-      success: false,
-      error: error instanceof Error ? error.message : "Unknown error",
-    };
+    throw new Error(`[BezierBoolean] Boolean operation "${operation}" failed: ${errorMessage}. Check input paths and operation parameters.`);
   }
 }
 
@@ -507,10 +510,15 @@ export function getPointOnPath(
     );
     paperPath.remove();
 
-    return point ? { x: point.x, y: point.y } : null;
+    if (!point) {
+      throw new Error(`[BezierBoolean] Failed to get point on path at offset ${offset}`);
+    }
+    return { x: point.x, y: point.y };
   } catch (error) {
-    logger.warn("Failed to get point on path:", error);
-    return null;
+    if (error instanceof Error && error.message.startsWith("[BezierBoolean]")) {
+      throw error;
+    }
+    throw new Error(`[BezierBoolean] Failed to get point on path: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
@@ -530,10 +538,15 @@ export function getTangentOnPath(
     );
     paperPath.remove();
 
-    return tangent ? { x: tangent.x, y: tangent.y } : null;
+    if (!tangent) {
+      throw new Error(`[BezierBoolean] Failed to get tangent on path at offset ${offset}`);
+    }
+    return { x: tangent.x, y: tangent.y };
   } catch (error) {
-    logger.warn("Failed to get tangent on path:", error);
-    return null;
+    if (error instanceof Error && error.message.startsWith("[BezierBoolean]")) {
+      throw error;
+    }
+    throw new Error(`[BezierBoolean] Failed to get tangent on path: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
@@ -553,10 +566,15 @@ export function getNormalOnPath(
     );
     paperPath.remove();
 
-    return normal ? { x: normal.x, y: normal.y } : null;
+    if (!normal) {
+      throw new Error(`[BezierBoolean] Failed to get normal on path at offset ${offset}`);
+    }
+    return { x: normal.x, y: normal.y };
   } catch (error) {
-    logger.warn("Failed to get normal on path:", error);
-    return null;
+    if (error instanceof Error && error.message.startsWith("[BezierBoolean]")) {
+      throw error;
+    }
+    throw new Error(`[BezierBoolean] Failed to get normal on path: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 

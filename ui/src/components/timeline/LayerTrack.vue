@@ -70,7 +70,7 @@
 
 <script setup lang="ts">
 import { computed, ref } from "vue";
-import { useCompositorStore } from "@/stores/compositorStore";
+import { useSelectionStore } from "@/stores/selectionStore";
 import type { Keyframe, Layer } from "@/types/project";
 
 interface Props {
@@ -86,15 +86,15 @@ const emit = defineEmits<{
   (e: "selectKeyframe", keyframeId: string): void;
 }>();
 
-const store = useCompositorStore();
+const selectionStore = useSelectionStore();
 
 const trackAreaRef = ref<HTMLDivElement | null>(null);
 
 // Selection state
 const isSelected = computed(() =>
-  store.selectedLayerIds.includes(props.layer.id),
+  selectionStore.selectedLayerIds.includes(props.layer.id),
 );
-const selectedKeyframeIds = computed(() => store.selectedKeyframeIds);
+const selectedKeyframeIds = computed(() => selectionStore.selectedKeyframeIds);
 
 // Calculate duration bar style using startFrame/endFrame (primary properties)
 const durationBarStyle = computed(() => {
@@ -128,7 +128,9 @@ const allKeyframes = computed(() => {
       { name: "rotation", prop: transform.rotation },
     ];
     transformProps.forEach(({ name, prop }) => {
-      if (prop?.animated) {
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const propAnimated = (prop != null && typeof prop === "object" && "animated" in prop && typeof prop.animated === "boolean" && prop.animated) ? true : false;
+      if (propAnimated) {
         prop.keyframes.forEach((kf: import("@/types/project").Keyframe<unknown>) => {
           keyframes.push({ ...kf, propertyName: name });
         });

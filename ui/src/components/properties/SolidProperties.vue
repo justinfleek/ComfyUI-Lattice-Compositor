@@ -63,19 +63,19 @@
             <label title="Shadow opacity (0-100%)">Shadow Opacity</label>
             <input
               type="range"
-              :value="solidData.shadowOpacity ?? 50"
+              :value="solidData.shadowOpacity"
               min="0"
               max="100"
               step="1"
               @input="updateSolidData('shadowOpacity', Number(($event.target as HTMLInputElement).value))"
             />
-            <span class="value-display">{{ solidData.shadowOpacity ?? 50 }}%</span>
+            <span class="value-display">{{ solidData.shadowOpacity }}%</span>
           </div>
           <div class="property-row">
             <label title="Shadow color (usually black)">Shadow Color</label>
             <input
               type="color"
-              :value="solidData.shadowColor ?? '#000000'"
+              :value="solidData.shadowColor"
               @change="updateSolidData('shadowColor', ($event.target as HTMLInputElement).value)"
             />
           </div>
@@ -104,8 +104,8 @@
 
 <script setup lang="ts">
 import { computed, reactive } from "vue";
-import { useCompositorStore } from "@/stores/compositorStore";
 import { useLayerStore } from "@/stores/layerStore";
+import { useProjectStore } from "@/stores/projectStore";
 import type { SolidLayerData } from "@/types/project";
 
 const props = defineProps<{
@@ -115,8 +115,8 @@ const props = defineProps<{
 const emit =
   defineEmits<(e: "update", data: Partial<SolidLayerData>) => void>();
 
-const store = useCompositorStore();
 const layerStore = useLayerStore();
+const projectStore = useProjectStore();
 
 // Expanded sections
 const expandedSections = reactive(new Set<string>(["color", "shadow"]));
@@ -130,18 +130,33 @@ function toggleSection(section: string) {
 }
 
 // Get layer data
-const layer = computed(() => store.layers.find((l) => l.id === props.layerId));
+const layer = computed(() => projectStore.getActiveCompLayers().find((l) => l.id === props.layerId));
 
 const solidData = computed<SolidLayerData>(() => {
-  const data = layer.value?.data as SolidLayerData | undefined;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??/?. 
+  // Pattern match: layer.value.data ∈ SolidLayerData | undefined → SolidLayerData (with explicit defaults)
+  const layerValue = layer.value;
+  const data = (layerValue !== undefined && layerValue !== null && typeof layerValue === "object" && "data" in layerValue) 
+    ? layerValue.data as SolidLayerData | undefined 
+    : undefined;
+  
+  // Extract each property with explicit type narrowing and validated defaults
+  const color = (data !== undefined && data !== null && typeof data === "object" && "color" in data && typeof data.color === "string") ? data.color : "#808080";
+  const width = (data !== undefined && data !== null && typeof data === "object" && "width" in data && typeof data.width === "number" && Number.isFinite(data.width)) ? data.width : 1920;
+  const height = (data !== undefined && data !== null && typeof data === "object" && "height" in data && typeof data.height === "number" && Number.isFinite(data.height)) ? data.height : 1080;
+  const shadowCatcher = (data !== undefined && data !== null && typeof data === "object" && "shadowCatcher" in data && typeof data.shadowCatcher === "boolean") ? data.shadowCatcher : false;
+  const shadowOpacity = (data !== undefined && data !== null && typeof data === "object" && "shadowOpacity" in data && typeof data.shadowOpacity === "number" && Number.isFinite(data.shadowOpacity)) ? data.shadowOpacity : 50;
+  const shadowColor = (data !== undefined && data !== null && typeof data === "object" && "shadowColor" in data && typeof data.shadowColor === "string") ? data.shadowColor : "#000000";
+  const receiveShadow = (data !== undefined && data !== null && typeof data === "object" && "receiveShadow" in data && typeof data.receiveShadow === "boolean") ? data.receiveShadow : false;
+  
   return {
-    color: data?.color ?? "#808080",
-    width: data?.width ?? 1920,
-    height: data?.height ?? 1080,
-    shadowCatcher: data?.shadowCatcher ?? false,
-    shadowOpacity: data?.shadowOpacity ?? 50,
-    shadowColor: data?.shadowColor ?? "#000000",
-    receiveShadow: data?.receiveShadow ?? false,
+    color,
+    width,
+    height,
+    shadowCatcher,
+    shadowOpacity,
+    shadowColor,
+    receiveShadow,
   };
 });
 
@@ -149,7 +164,7 @@ function updateSolidData<K extends keyof SolidLayerData>(
   key: K,
   value: SolidLayerData[K],
 ) {
-  layerStore.updateLayerData(store, props.layerId, { [key]: value });
+  layerStore.updateLayerData(props.layerId, { [key]: value });
   emit("update", { [key]: value });
 }
 </script>

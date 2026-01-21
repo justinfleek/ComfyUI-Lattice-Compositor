@@ -10,6 +10,7 @@
  * - 7 generative flow patterns: spiral, wave, explosion, vortex, data-river, morph, swarm
  */
 
+import { isFiniteNumber } from "@/utils/typeGuards";
 import type { GenerativeFlowConfig, WanMoveTrajectory } from "./wanMoveExport";
 
 // ============================================================================
@@ -99,11 +100,20 @@ export function generateSpiralFlow(
   config: GenerativeFlowConfig,
 ): WanMoveTrajectory {
   const { numPoints, numFrames, width, height, params } = config;
-  const rng = new SeededRandom(params.seed ?? 42);
+  // Type proof: seed ∈ ℕ ∪ {undefined} → ℕ
+  const seedValue = params.seed;
+  const seed = isFiniteNumber(seedValue) && Number.isInteger(seedValue) && seedValue >= 0 ? seedValue : 42;
+  const rng = new SeededRandom(seed);
 
-  const turns = params.spiralTurns ?? 3;
-  const expansion = params.spiralExpansion ?? 1.5;
-  const noise = params.noiseStrength ?? 0.1;
+  // Type proof: spiralTurns ∈ ℝ ∪ {undefined} → ℝ
+  const spiralTurnsValue = params.spiralTurns;
+  const turns = isFiniteNumber(spiralTurnsValue) && spiralTurnsValue > 0 ? spiralTurnsValue : 3;
+  // Type proof: spiralExpansion ∈ ℝ ∪ {undefined} → ℝ
+  const spiralExpansionValue = params.spiralExpansion;
+  const expansion = isFiniteNumber(spiralExpansionValue) && spiralExpansionValue > 0 ? spiralExpansionValue : 1.5;
+  // Type proof: noiseStrength ∈ ℝ ∪ {undefined} → ℝ
+  const noiseStrengthValue = params.noiseStrength;
+  const noise = isFiniteNumber(noiseStrengthValue) && noiseStrengthValue >= 0 ? noiseStrengthValue : 0.1;
 
   const centerX = width / 2;
   const centerY = height / 2;
@@ -127,7 +137,7 @@ export function generateSpiralFlow(
       const radius = (radiusOffset + t * expansion) * maxRadius;
 
       // Add noise for organic feel
-      const noiseVal = simplexNoise2D(i * 0.1, f * 0.05, params.seed ?? 42);
+      const noiseVal = simplexNoise2D(i * 0.1, f * 0.05, seed);
       const noisedRadius = radius * (1 + (noiseVal - 0.5) * noise * 2);
 
       const x = centerX + Math.cos(angle) * noisedRadius;
@@ -161,13 +171,26 @@ export function generateWaveFlow(
   config: GenerativeFlowConfig,
 ): WanMoveTrajectory {
   const { numPoints, numFrames, width, height, params } = config;
-  const rng = new SeededRandom(params.seed ?? 42);
+  // Type proof: seed ∈ ℕ ∪ {undefined} → ℕ
+  const seedValue = params.seed;
+  const seed = isFiniteNumber(seedValue) && Number.isInteger(seedValue) && seedValue >= 0 ? seedValue : 42;
+  const rng = new SeededRandom(seed);
 
-  const amplitude = params.waveAmplitude ?? height * 0.15;
-  const frequency = params.waveFrequency ?? 3;
-  const speed = params.waveSpeed ?? 0.1;
-  const layers = params.waveLayers ?? 5;
-  const noise = params.noiseStrength ?? 0.05;
+  // Type proof: waveAmplitude ∈ ℝ ∪ {undefined} → ℝ
+  const waveAmplitudeValue = params.waveAmplitude;
+  const amplitude = isFiniteNumber(waveAmplitudeValue) && waveAmplitudeValue > 0 ? waveAmplitudeValue : height * 0.15;
+  // Type proof: waveFrequency ∈ ℝ ∪ {undefined} → ℝ
+  const waveFrequencyValue = params.waveFrequency;
+  const frequency = isFiniteNumber(waveFrequencyValue) && waveFrequencyValue > 0 ? waveFrequencyValue : 3;
+  // Type proof: waveSpeed ∈ ℝ ∪ {undefined} → ℝ
+  const waveSpeedValue = params.waveSpeed;
+  const speed = isFiniteNumber(waveSpeedValue) && waveSpeedValue > 0 ? waveSpeedValue : 0.1;
+  // Type proof: waveLayers ∈ ℕ ∪ {undefined} → ℕ
+  const waveLayersValue = params.waveLayers;
+  const layers = isFiniteNumber(waveLayersValue) && Number.isInteger(waveLayersValue) && waveLayersValue > 0 ? waveLayersValue : 5;
+  // Type proof: noiseStrength ∈ ℝ ∪ {undefined} → ℝ
+  const noiseStrengthValue = params.noiseStrength;
+  const noise = isFiniteNumber(noiseStrengthValue) && noiseStrengthValue >= 0 ? noiseStrengthValue : 0.05;
 
   const tracks: number[][][] = [];
   const visibility: boolean[][] = [];
@@ -199,7 +222,7 @@ export function generateWaveFlow(
       const noiseVal = simplexNoise2D(
         x * 0.01,
         f * 0.05 + layer,
-        params.seed ?? 42,
+        seed,
       );
       const noisedY = y + (noiseVal - 0.5) * amplitude * noise * 4;
 
@@ -229,12 +252,32 @@ export function generateExplosionFlow(
   config: GenerativeFlowConfig,
 ): WanMoveTrajectory {
   const { numPoints, numFrames, width, height, params } = config;
-  const rng = new SeededRandom(params.seed ?? 42);
+  // Type proof: seed ∈ ℕ ∪ {undefined} → ℕ
+  const seedValue = params.seed;
+  const seed = isFiniteNumber(seedValue) && Number.isInteger(seedValue) && seedValue >= 0 ? seedValue : 42;
+  const rng = new SeededRandom(seed);
 
-  const explosionSpeed = params.explosionSpeed ?? 1.0;
-  const decay = params.explosionDecay ?? 0.95;
-  const center = params.explosionCenter ?? { x: width / 2, y: height / 2 };
-  const noise = params.noiseStrength ?? 0.1;
+  // Type proof: explosionSpeed ∈ ℝ ∪ {undefined} → ℝ
+  const explosionSpeedValue = params.explosionSpeed;
+  const explosionSpeed = isFiniteNumber(explosionSpeedValue) && explosionSpeedValue > 0 ? explosionSpeedValue : 1.0;
+  // Type proof: explosionDecay ∈ ℝ ∪ {undefined} → ℝ
+  const explosionDecayValue = params.explosionDecay;
+  const decay = isFiniteNumber(explosionDecayValue) && explosionDecayValue >= 0 && explosionDecayValue <= 1 ? explosionDecayValue : 0.95;
+  // Type proof: explosionCenter ∈ {x: ℝ, y: ℝ} | undefined → {x: ℝ, y: ℝ}
+  const explosionCenterValue = params.explosionCenter;
+  const center = (() => {
+    if (explosionCenterValue !== undefined && typeof explosionCenterValue === "object" && explosionCenterValue !== null) {
+      const centerX = explosionCenterValue.x;
+      const centerY = explosionCenterValue.y;
+      if (isFiniteNumber(centerX) && isFiniteNumber(centerY)) {
+        return { x: centerX, y: centerY };
+      }
+    }
+    return { x: width / 2, y: height / 2 };
+  })();
+  // Type proof: noiseStrength ∈ ℝ ∪ {undefined} → ℝ
+  const noiseStrengthValue = params.noiseStrength;
+  const noise = isFiniteNumber(noiseStrengthValue) && noiseStrengthValue >= 0 ? noiseStrengthValue : 0.1;
 
   const tracks: number[][][] = [];
   const visibility: boolean[][] = [];
@@ -264,11 +307,11 @@ export function generateExplosionFlow(
         // Exploding outward
         // Add noise for turbulence
         const noiseX =
-          (simplexNoise2D(i * 0.1, f * 0.1, params.seed ?? 42) - 0.5) *
+          (simplexNoise2D(i * 0.1, f * 0.1, seed) - 0.5) *
           noise *
           50;
         const noiseY =
-          (simplexNoise2D(i * 0.1 + 100, f * 0.1, params.seed ?? 42) - 0.5) *
+          (simplexNoise2D(i * 0.1 + 100, f * 0.1, seed) - 0.5) *
           noise *
           50;
 
@@ -306,12 +349,32 @@ export function generateVortexFlow(
   config: GenerativeFlowConfig,
 ): WanMoveTrajectory {
   const { numPoints, numFrames, width, height, params } = config;
-  const rng = new SeededRandom(params.seed ?? 42);
+  // Type proof: seed ∈ ℕ ∪ {undefined} → ℕ
+  const seedValue = params.seed;
+  const seed = isFiniteNumber(seedValue) && Number.isInteger(seedValue) && seedValue >= 0 ? seedValue : 42;
+  const rng = new SeededRandom(seed);
 
-  const strength = params.vortexStrength ?? 0.5;
-  const maxRadius = params.vortexRadius ?? Math.min(width, height) * 0.4;
-  const center = params.vortexCenter ?? { x: width / 2, y: height / 2 };
-  const noise = params.noiseStrength ?? 0.05;
+  // Type proof: vortexStrength ∈ ℝ ∪ {undefined} → ℝ
+  const vortexStrengthValue = params.vortexStrength;
+  const strength = isFiniteNumber(vortexStrengthValue) && vortexStrengthValue >= 0 ? vortexStrengthValue : 0.5;
+  // Type proof: vortexRadius ∈ ℝ ∪ {undefined} → ℝ
+  const vortexRadiusValue = params.vortexRadius;
+  const maxRadius = isFiniteNumber(vortexRadiusValue) && vortexRadiusValue > 0 ? vortexRadiusValue : Math.min(width, height) * 0.4;
+  // Type proof: vortexCenter ∈ {x: ℝ, y: ℝ} | undefined → {x: ℝ, y: ℝ}
+  const vortexCenterValue = params.vortexCenter;
+  const center = (() => {
+    if (vortexCenterValue !== undefined && typeof vortexCenterValue === "object" && vortexCenterValue !== null) {
+      const centerX = vortexCenterValue.x;
+      const centerY = vortexCenterValue.y;
+      if (isFiniteNumber(centerX) && isFiniteNumber(centerY)) {
+        return { x: centerX, y: centerY };
+      }
+    }
+    return { x: width / 2, y: height / 2 };
+  })();
+  // Type proof: noiseStrength ∈ ℝ ∪ {undefined} → ℝ
+  const noiseStrengthValue = params.noiseStrength;
+  const noise = isFiniteNumber(noiseStrengthValue) && noiseStrengthValue >= 0 ? noiseStrengthValue : 0.05;
 
   const tracks: number[][][] = [];
   const visibility: boolean[][] = [];
@@ -333,7 +396,7 @@ export function generateVortexFlow(
       radius = Math.max(10, radius - radius * 0.01 * strength);
 
       // Add noise
-      const noiseVal = simplexNoise2D(angle, radius * 0.01, params.seed ?? 42);
+      const noiseVal = simplexNoise2D(angle, radius * 0.01, seed);
       const noisedRadius = radius * (1 + (noiseVal - 0.5) * noise);
 
       const x = center.x + Math.cos(angle) * noisedRadius;
@@ -365,11 +428,20 @@ export function generateDataRiverFlow(
   config: GenerativeFlowConfig,
 ): WanMoveTrajectory {
   const { numPoints, numFrames, width, height, params } = config;
-  const rng = new SeededRandom(params.seed ?? 42);
+  // Type proof: seed ∈ ℕ ∪ {undefined} → ℕ
+  const seedValue = params.seed;
+  const seed = isFiniteNumber(seedValue) && Number.isInteger(seedValue) && seedValue >= 0 ? seedValue : 42;
+  const rng = new SeededRandom(seed);
 
-  const riverWidth = params.riverWidth ?? height * 0.3;
-  const curve = params.riverCurve ?? 0.5;
-  const turbulence = params.riverTurbulence ?? 0.1;
+  // Type proof: riverWidth ∈ ℝ ∪ {undefined} → ℝ
+  const riverWidthValue = params.riverWidth;
+  const riverWidth = isFiniteNumber(riverWidthValue) && riverWidthValue > 0 ? riverWidthValue : height * 0.3;
+  // Type proof: riverCurve ∈ ℝ ∪ {undefined} → ℝ
+  const riverCurveValue = params.riverCurve;
+  const curve = isFiniteNumber(riverCurveValue) && riverCurveValue >= 0 ? riverCurveValue : 0.5;
+  // Type proof: riverTurbulence ∈ ℝ ∪ {undefined} → ℝ
+  const riverTurbulenceValue = params.riverTurbulence;
+  const turbulence = isFiniteNumber(riverTurbulenceValue) && riverTurbulenceValue >= 0 ? riverTurbulenceValue : 0.1;
 
   const tracks: number[][][] = [];
   const visibility: boolean[][] = [];
@@ -399,7 +471,7 @@ export function generateDataRiverFlow(
       const turbNoise = simplexNoise2D(
         x * 0.01,
         f * 0.05 + i * 0.1,
-        params.seed ?? 42,
+        seed,
       );
       const y =
         baseY + laneOffset + (turbNoise - 0.5) * riverWidth * turbulence * 2;
@@ -430,11 +502,20 @@ export function generateMorphFlow(
   config: GenerativeFlowConfig,
 ): WanMoveTrajectory {
   const { numPoints, numFrames, width, height, params } = config;
-  const rng = new SeededRandom(params.seed ?? 42);
+  // Type proof: seed ∈ ℕ ∪ {undefined} → ℕ
+  const seedValue = params.seed;
+  const seed = isFiniteNumber(seedValue) && Number.isInteger(seedValue) && seedValue >= 0 ? seedValue : 42;
+  const rng = new SeededRandom(seed);
 
-  const sourceShape = params.morphSource ?? "grid";
-  const targetShape = params.morphTarget ?? "circle";
-  const easing = params.morphEasing ?? "ease-in-out";
+  // Type proof: morphSource ∈ string | undefined → string
+  const morphSourceValue = params.morphSource;
+  const sourceShape = typeof morphSourceValue === "string" && (morphSourceValue === "grid" || morphSourceValue === "circle" || morphSourceValue === "random") ? morphSourceValue : "grid";
+  // Type proof: morphTarget ∈ string | undefined → string
+  const morphTargetValue = params.morphTarget;
+  const targetShape = typeof morphTargetValue === "string" && (morphTargetValue === "grid" || morphTargetValue === "circle" || morphTargetValue === "random") ? morphTargetValue : "circle";
+  // Type proof: morphEasing ∈ string | undefined → string
+  const morphEasingValue = params.morphEasing;
+  const easing = typeof morphEasingValue === "string" && (morphEasingValue === "ease-in" || morphEasingValue === "ease-out" || morphEasingValue === "ease-in-out") ? morphEasingValue : "ease-in-out";
 
   // Generate source positions
   const sourcePositions: { x: number; y: number }[] = [];
@@ -517,7 +598,7 @@ export function generateMorphFlow(
       const easedT = easingFn(t);
 
       // Add slight noise for organic movement
-      const noise = simplexNoise2D(i * 0.1, f * 0.02, params.seed ?? 42);
+      const noise = simplexNoise2D(i * 0.1, f * 0.02, seed);
       const noiseOffset = (noise - 0.5) * 20;
 
       const x =
@@ -555,12 +636,23 @@ export function generateSwarmFlow(
   config: GenerativeFlowConfig,
 ): WanMoveTrajectory {
   const { numPoints, numFrames, width, height, params } = config;
-  const rng = new SeededRandom(params.seed ?? 42);
+  // Type proof: seed ∈ ℕ ∪ {undefined} → ℕ
+  const seedValue = params.seed;
+  const seed = isFiniteNumber(seedValue) && Number.isInteger(seedValue) && seedValue >= 0 ? seedValue : 42;
+  const rng = new SeededRandom(seed);
 
-  const cohesion = params.swarmCohesion ?? 0.01;
-  const separation = params.swarmSeparation ?? 30;
-  const alignment = params.swarmAlignment ?? 0.05;
-  const maxSpeed = params.swarmSpeed ?? 5;
+  // Type proof: swarmCohesion ∈ ℝ ∪ {undefined} → ℝ
+  const swarmCohesionValue = params.swarmCohesion;
+  const cohesion = isFiniteNumber(swarmCohesionValue) && swarmCohesionValue >= 0 ? swarmCohesionValue : 0.01;
+  // Type proof: swarmSeparation ∈ ℝ ∪ {undefined} → ℝ
+  const swarmSeparationValue = params.swarmSeparation;
+  const separation = isFiniteNumber(swarmSeparationValue) && swarmSeparationValue >= 0 ? swarmSeparationValue : 30;
+  // Type proof: swarmAlignment ∈ ℝ ∪ {undefined} → ℝ
+  const swarmAlignmentValue = params.swarmAlignment;
+  const alignment = isFiniteNumber(swarmAlignmentValue) && swarmAlignmentValue >= 0 ? swarmAlignmentValue : 0.05;
+  // Type proof: swarmSpeed ∈ ℝ ∪ {undefined} → ℝ
+  const swarmSpeedValue = params.swarmSpeed;
+  const maxSpeed = isFiniteNumber(swarmSpeedValue) && swarmSpeedValue > 0 ? swarmSpeedValue : 5;
 
   // Initialize particles
   const particles: { x: number; y: number; vx: number; vy: number }[] = [];

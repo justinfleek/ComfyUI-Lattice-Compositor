@@ -73,7 +73,7 @@
           :cy="point.handleIn.y"
           r="4"
           class="handle-point"
-          :class="{ active: dragTarget?.type === 'handleIn' && dragTarget.pointId === point.id }"
+          :class="{ active: getDragTargetType() === 'handleIn' && getDragTargetPointId() === point.id }"
           :style="{ fill: strokeColor }"
           @mousedown.stop="startDragHandle(point.id, 'in', $event)"
         />
@@ -83,7 +83,7 @@
           :cy="point.handleOut.y"
           r="4"
           class="handle-point"
-          :class="{ active: dragTarget?.type === 'handleOut' && dragTarget.pointId === point.id }"
+          :class="{ active: getDragTargetType() === 'handleOut' && getDragTargetPointId() === point.id }"
           :style="{ fill: strokeColor }"
           @mousedown.stop="startDragHandle(point.id, 'out', $event)"
         />
@@ -204,7 +204,7 @@
           <polygon
             :points="getZHandlePoints(point)"
             class="z-handle"
-            :class="{ active: dragTarget?.type === 'depth' && dragTarget.pointId === point.id }"
+            :class="{ active: getDragTargetType() === 'depth' && getDragTargetPointId() === point.id }"
             @mousedown.stop="startDragDepth(point.id, $event)"
           />
           <!-- Depth value label -->
@@ -262,10 +262,11 @@
  * Refactored to use useSplineInteraction composable for interaction logic.
  */
 import { computed, type ComputedRef, onMounted, onUnmounted, ref, toRef } from "vue";
+import { assertDefined, safeNonNegativeDefault } from "@/utils/typeGuards";
 import { useSplineInteraction } from "@/composables/useSplineInteraction";
 import { interpolateProperty } from "@/services/interpolation";
-import { useCompositorStore } from "@/stores/compositorStore";
 import { useLayerStore } from "@/stores/layerStore";
+import { useProjectStore } from "@/stores/projectStore";
 import type {
   AnimatableProperty,
   ControlPoint,
@@ -312,8 +313,8 @@ const emit = defineEmits<{
   (e: "togglePenMode"): void;
 }>();
 
-const store = useCompositorStore();
 const layerStore = useLayerStore();
+const projectStore = useProjectStore();
 
 // Toolbar state
 const smoothTolerance = ref(10);
@@ -333,7 +334,7 @@ const layerTransform = computed(() => {
     };
   }
 
-  const layer = store.layers.find((l) => l.id === props.layerId);
+  const layer = projectStore.getActiveCompLayers().find((l) => l.id === props.layerId);
   if (!layer) {
     return {
       position: { x: 0, y: 0 },
@@ -345,15 +346,23 @@ const layerTransform = computed(() => {
 
   const t = layer.transform;
 
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
   const getVal = <T extends PropertyValue>(
     prop: AnimatableProperty<T> | undefined,
     defaultVal: T,
   ): T => {
     if (!prop) return defaultVal;
-    if (prop.animated && prop.keyframes?.length > 0) {
-      return (interpolateProperty(prop, props.currentFrame) ?? defaultVal) as T;
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const keyframes = (prop != null && typeof prop === "object" && "keyframes" in prop && prop.keyframes != null && Array.isArray(prop.keyframes)) ? prop.keyframes : undefined;
+    const keyframesLength = keyframes != null ? keyframes.length : 0;
+    if (prop.animated && keyframesLength > 0) {
+      // Pattern match: interpolateProperty result ∈ T | undefined → T (use default if undefined)
+      const interpolated = interpolateProperty(prop, props.currentFrame);
+      return (interpolated !== undefined && interpolated !== null) ? interpolated as T : defaultVal;
     }
-    return (prop.value ?? defaultVal) as T;
+    // Pattern match: prop.value ∈ T | undefined → T (use default if undefined)
+    const value = prop.value;
+    return (value !== undefined && value !== null) ? value as T : defaultVal;
   };
 
   const position = getVal(t.position, {
@@ -416,41 +425,47 @@ function inverseTransformPoint(p: { x: number; y: number }): {
 // COMPUTED PROPERTIES
 // ============================================================================
 
+// Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??/?.
 const isClosed = computed(() => {
   if (!props.layerId) return false;
-  const layer = store.layers.find((l) => l.id === props.layerId);
+  const layer = projectStore.getActiveCompLayers().find((l) => l.id === props.layerId);
   if (!layer || !isSplineOrPathType(layer.type)) return false;
-  return (layer.data as SplineData | PathLayerData)?.closed ?? false;
+  const layerData = layer.data as SplineData | PathLayerData;
+  return (layerData !== null && layerData !== undefined && typeof layerData === "object" && "closed" in layerData && typeof layerData.closed === "boolean") ? layerData.closed : false;
 });
 
 const is3DLayer = computed(() => {
   if (!props.layerId) return false;
-  const layer = store.layers.find((l) => l.id === props.layerId);
-  return layer?.threeD ?? false;
+  const layer = projectStore.getActiveCompLayers().find((l) => l.id === props.layerId);
+  return (layer !== null && layer !== undefined && typeof layer === "object" && "threeD" in layer && typeof layer.threeD === "boolean") ? layer.threeD : false;
 });
 
 const isSplineAnimated = computed(() => {
   if (!props.layerId) return false;
-  const layer = store.layers.find((l) => l.id === props.layerId);
+  const layer = projectStore.getActiveCompLayers().find((l) => l.id === props.layerId);
   if (!layer || layer.type !== "spline") return false;
   const splineData = layer.data as SplineData;
-  return splineData?.animated === true;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const animated = (splineData != null && typeof splineData === "object" && "animated" in splineData && typeof splineData.animated === "boolean" && splineData.animated) ? true : false;
+  return animated === true;
 });
 
 const rawControlPoints = computed<(ControlPoint | EvaluatedControlPoint)[]>(
   () => {
     if (!props.layerId) return [];
 
-    const layer = store.layers.find((l) => l.id === props.layerId);
+    const layer = projectStore.getActiveCompLayers().find((l) => l.id === props.layerId);
     if (!layer || !isSplineOrPathType(layer.type) || !layer.data) return [];
 
     const layerData = layer.data as SplineData | PathLayerData;
 
     if (layerData.animated && layerData.animatedControlPoints) {
-      return layerStore.getEvaluatedSplinePoints(store, props.layerId, props.currentFrame);
+      return layerStore.getEvaluatedSplinePoints(props.layerId, props.currentFrame);
     }
 
-    return layerData.controlPoints || [];
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy || []
+    const controlPoints = layerData.controlPoints;
+    return (controlPoints !== null && controlPoints !== undefined && Array.isArray(controlPoints)) ? controlPoints : [];
   },
 );
 
@@ -557,7 +572,6 @@ const interaction = useSplineInteraction({
   }>,
   transformPoint,
   inverseTransformPoint,
-  store,
   layerStore,
   emit: {
     pointAdded: (point) => emit("pointAdded", point),
@@ -603,19 +617,34 @@ const {
 // COMPONENT-SPECIFIC FUNCTIONS
 // ============================================================================
 
+// Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+function getDragTargetType(): string | undefined {
+  const dragTargetValue = dragTarget.value;
+  return (dragTargetValue != null && typeof dragTargetValue === "object" && "type" in dragTargetValue && typeof dragTargetValue.type === "string") ? dragTargetValue.type : undefined;
+}
+
+function getDragTargetPointId(): string | undefined {
+  const dragTargetValue = dragTarget.value;
+  return (dragTargetValue != null && typeof dragTargetValue === "object" && "pointId" in dragTargetValue && typeof dragTargetValue.pointId === "string") ? dragTargetValue.pointId : undefined;
+}
+
+// Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??/?.
 const selectedPointDepth = computed(() => {
   if (!selectedPointId.value) return 0;
   const point = visibleControlPoints.value.find(
     (p) => p.id === selectedPointId.value,
   );
-  return point?.depth ?? 0;
+  return (point !== null && point !== undefined && typeof point === "object" && "depth" in point && typeof point.depth === "number" && Number.isFinite(point.depth)) ? point.depth : 0;
 });
 
 function updateSelectedPointDepth(event: Event) {
   if (!selectedPointId.value || !props.layerId) return;
   const input = event.target as HTMLInputElement;
-  const newDepth = Math.max(0, parseFloat(input.value) || 0);
-  layerStore.updateSplineControlPoint(store, props.layerId, selectedPointId.value, {
+  // Type proof: depth ∈ number | NaN → number (≥ 0, z-coordinate depth)
+  const parsedDepth = parseFloat(input.value);
+  const depth = Number.isFinite(parsedDepth) && parsedDepth >= 0 ? parsedDepth : 0;
+  const newDepth = Math.max(0, depth);
+  layerStore.updateSplineControlPoint(props.layerId, selectedPointId.value, {
     depth: newDepth,
   });
   emit("pathUpdated");
@@ -623,12 +652,13 @@ function updateSelectedPointDepth(event: Event) {
 
 function adjustSelectedPointDepth(delta: number) {
   if (!selectedPointId.value || !props.layerId) return;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??/?.
   const point = visibleControlPoints.value.find(
     (p) => p.id === selectedPointId.value,
   );
-  const currentDepth = point?.depth ?? 0;
+  const currentDepth = (point !== null && point !== undefined && typeof point === "object" && "depth" in point && typeof point.depth === "number" && Number.isFinite(point.depth)) ? point.depth : 0;
   const newDepth = Math.max(0, currentDepth + delta);
-  layerStore.updateSplineControlPoint(store, props.layerId, selectedPointId.value, {
+  layerStore.updateSplineControlPoint(props.layerId, selectedPointId.value, {
     depth: newDepth,
   });
   emit("pathUpdated");
@@ -636,7 +666,7 @@ function adjustSelectedPointDepth(delta: number) {
 
 function toggleClosePath() {
   if (!props.layerId) return;
-  layerStore.updateLayerData(store, props.layerId, { closed: !isClosed.value });
+  layerStore.updateLayerData(props.layerId, { closed: !isClosed.value });
   emit("pathUpdated");
 }
 
@@ -648,7 +678,7 @@ function smoothSelectedPoints() {
   } else if (selectedPointId.value) {
     smoothSpecificPoints([selectedPointId.value]);
   } else {
-    layerStore.smoothSplineHandles(store, props.layerId, smoothTolerance.value * 2);
+    layerStore.smoothSplineHandles(props.layerId, smoothTolerance.value * 2);
   }
   emit("pathUpdated");
 }
@@ -656,7 +686,7 @@ function smoothSelectedPoints() {
 function smoothSpecificPoints(pointIds: string[]) {
   if (!props.layerId) return;
 
-  const layer = store.layers.find((l) => l.id === props.layerId);
+  const layer = projectStore.getActiveCompLayers().find((l) => l.id === props.layerId);
   if (!layer || !isSplineOrPathType(layer.type) || !layer.data) return;
 
   const splineData = layer.data as SplineData | PathLayerData;
@@ -700,7 +730,9 @@ function smoothSpecificPoints(pointIds: string[]) {
       y: cp.y + normalized.y * handleLength,
     };
 
-    layerStore.updateSplineControlPoint(store, props.layerId!, pointId, {
+    // Type proof: layerId is guaranteed non-null by guard clause at function start
+    assertDefined(props.layerId, "layerId must exist when smoothSpecificPoints is called");
+    layerStore.updateSplineControlPoint(props.layerId, pointId, {
       type: "smooth",
       handleIn: {
         x: cp.handleIn
@@ -724,13 +756,13 @@ function smoothSpecificPoints(pointIds: string[]) {
 
 function simplifySpline() {
   if (!props.layerId) return;
-  layerStore.simplifySpline(store, props.layerId, smoothTolerance.value);
+  layerStore.simplifySpline(props.layerId, smoothTolerance.value);
   emit("pathUpdated");
 }
 
 function toggleSplineAnimation() {
   if (!props.layerId) return;
-  layerStore.enableSplineAnimation(store, props.layerId);
+  layerStore.enableSplineAnimation(props.layerId);
   emit("pathUpdated");
 }
 
@@ -738,18 +770,19 @@ function keyframeSelectedPoints() {
   if (!props.layerId || selectedPointIds.value.length === 0) return;
   const frame = props.currentFrame;
   for (const pointId of selectedPointIds.value) {
-    layerStore.addSplinePointPositionKeyframe(store, props.layerId, pointId, frame);
+    layerStore.addSplinePointPositionKeyframe(props.layerId, pointId, frame);
   }
   emit("pathUpdated");
 }
 
 function pointHasKeyframes(pointId: string): boolean {
   if (!props.layerId) return false;
-  return layerStore.hasSplinePointKeyframes(store, props.layerId, pointId);
+  return layerStore.hasSplinePointKeyframes(props.layerId, pointId);
 }
 
+// Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
 function getPointDepth(point: ControlPoint | EvaluatedControlPoint): number {
-  return point.depth ?? 0;
+  return (typeof point.depth === "number" && Number.isFinite(point.depth)) ? point.depth : 0;
 }
 
 function getDepthOffset(point: ControlPoint | EvaluatedControlPoint): number {

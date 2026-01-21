@@ -1,0 +1,31 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+cd ui
+
+echo "🔍 Running pre-commit checks..."
+
+# Format code
+echo "📝 Formatting code..."
+npm run format
+
+# Fix linting issues
+echo "🔧 Fixing linting issues..."
+npm run lint:fix
+
+# Type check
+echo "✅ Type checking..."
+npm run typecheck || {
+  echo "❌ Type check failed. Please fix type errors before committing."
+  exit 1
+}
+
+# Check for lazy patterns
+echo "🔍 Checking for lazy code patterns..."
+npm run check:lazy || {
+  echo "❌ Lazy code patterns detected. Please fix before committing."
+  echo "   Run 'npm run check:lazy:strict' for detailed report."
+  exit 1
+}
+
+echo "✅ All pre-commit checks passed!"

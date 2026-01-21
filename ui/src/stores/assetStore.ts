@@ -10,6 +10,7 @@
  * - HDRI environment maps
  */
 
+import { isFiniteNumber } from "@/utils/typeGuards";
 import { defineStore } from "pinia";
 import * as THREE from "three";
 import {
@@ -184,7 +185,11 @@ export const useAssetStore = defineStore("assets", {
       Array.from(state.materials.values()),
     selectedMaterial: (state): StoredMaterial | null =>
       state.selectedMaterialId
-        ? (state.materials.get(state.selectedMaterialId) ?? null)
+        ? (() => {
+            // Type proof: materials.get(id) ∈ StoredMaterial | undefined → StoredMaterial | null
+            const material = state.materials.get(state.selectedMaterialId);
+            return material !== undefined ? material : null;
+          })()
         : null,
 
     // SVG Documents
@@ -192,7 +197,11 @@ export const useAssetStore = defineStore("assets", {
       Array.from(state.svgDocuments.values()),
     selectedSvgDocument: (state): StoredSVGDocument | null =>
       state.selectedSvgId
-        ? (state.svgDocuments.get(state.selectedSvgId) ?? null)
+        ? (() => {
+            // Type proof: svgDocuments.get(id) ∈ StoredSVGDocument | undefined → StoredSVGDocument | null
+            const svgDoc = state.svgDocuments.get(state.selectedSvgId);
+            return svgDoc !== undefined ? svgDoc : null;
+          })()
         : null,
 
     // Mesh Particles
@@ -200,7 +209,11 @@ export const useAssetStore = defineStore("assets", {
       Array.from(state.meshParticles.values()),
     selectedMeshParticle: (state): StoredMeshParticle | null =>
       state.selectedMeshParticleId
-        ? (state.meshParticles.get(state.selectedMeshParticleId) ?? null)
+        ? (() => {
+            // Type proof: meshParticles.get(id) ∈ StoredMeshParticle | undefined → StoredMeshParticle | null
+            const meshParticle = state.meshParticles.get(state.selectedMeshParticleId);
+            return meshParticle !== undefined ? meshParticle : null;
+          })()
         : null,
 
     // Sprite Sheets
@@ -208,7 +221,11 @@ export const useAssetStore = defineStore("assets", {
       Array.from(state.spriteSheets.values()),
     selectedSpriteSheet: (state): StoredSpriteSheet | null =>
       state.selectedSpriteSheetId
-        ? (state.spriteSheets.get(state.selectedSpriteSheetId) ?? null)
+        ? (() => {
+            // Type proof: spriteSheets.get(id) ∈ StoredSpriteSheet | undefined → StoredSpriteSheet | null
+            const spriteSheet = state.spriteSheets.get(state.selectedSpriteSheetId);
+            return spriteSheet !== undefined ? spriteSheet : null;
+          })()
         : null,
 
     // Combined loading state
@@ -263,7 +280,9 @@ export const useAssetStore = defineStore("assets", {
         },
       };
 
-      const presetConfig = presetConfigs[presetName] || {};
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy || {}
+      const presetConfigRaw = presetConfigs[presetName];
+      const presetConfig = (presetConfigRaw !== null && presetConfigRaw !== undefined && typeof presetConfigRaw === "object" && presetConfigRaw !== null) ? presetConfigRaw : {};
       const config: PBRMaterialConfig = this.createDefaultMaterialConfig(
         id,
         customName || presetName,
@@ -397,9 +416,11 @@ export const useAssetStore = defineStore("assets", {
      * Note: This creates a simple THREE.MeshStandardMaterial without async texture loading
      * For full PBR with textures, use materialSystem.createPBRMaterial()
      */
-    getThreeMaterial(id: string): THREE.Material | null {
+    getThreeMaterial(id: string): THREE.Material {
       const stored = this.materials.get(id);
-      if (!stored) return null;
+      if (!stored) {
+        throw new Error(`[AssetStore] Material "${id}" not found`);
+      }
 
       const config = stored.config;
       const material = new THREE.MeshStandardMaterial({
@@ -469,7 +490,7 @@ export const useAssetStore = defineStore("assets", {
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         this.lastError = `SVG import failed: ${message}`;
-        return { success: false, error: message };
+        throw new Error(`[AssetStore] SVG import failed: ${message}. Check file format and try again.`);
       } finally {
         this.isLoadingSvg = false;
       }
@@ -509,7 +530,7 @@ export const useAssetStore = defineStore("assets", {
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         this.lastError = `SVG import failed: ${message}`;
-        return { success: false, error: message };
+        throw new Error(`[AssetStore] SVG import from URL failed: ${message}. Check URL and network connection.`);
       } finally {
         this.isLoadingSvg = false;
       }
@@ -551,9 +572,11 @@ export const useAssetStore = defineStore("assets", {
     /**
      * Create a Three.js Group with all extruded SVG paths
      */
-    createExtrudedGroup(svgId: string): THREE.Group | null {
+    createExtrudedGroup(svgId: string): THREE.Group {
       const stored = this.svgDocuments.get(svgId);
-      if (!stored) return null;
+      if (!stored) {
+        throw new Error(`[AssetStore] SVG document "${svgId}" not found`);
+      }
 
       return svgExtrusionService.createLayeredMeshes(
         stored.document,
@@ -619,9 +642,14 @@ export const useAssetStore = defineStore("assets", {
       pathIndex: number,
       name?: string,
       options?: { extrusionDepth?: number; scale?: number },
-    ): string | null {
+    ): string {
       const stored = this.svgDocuments.get(svgId);
-      if (!stored || pathIndex >= stored.document.paths.length) return null;
+      if (!stored) {
+        throw new Error(`[AssetStore] SVG document "${svgId}" not found`);
+      }
+      if (pathIndex >= stored.document.paths.length) {
+        throw new Error(`[AssetStore] Path index ${pathIndex} is out of bounds (SVG "${svgId}" has ${stored.document.paths.length} paths)`);
+      }
 
       const path = stored.document.paths[pathIndex];
       const registration = meshParticleManager.registerFromSVG(
@@ -631,7 +659,9 @@ export const useAssetStore = defineStore("assets", {
         options,
       );
 
-      if (!registration) return null;
+      if (!registration) {
+        throw new Error(`[AssetStore] Failed to register mesh particle from SVG "${svgId}" path index ${pathIndex}`);
+      }
 
       const storedMesh: StoredMeshParticle = {
         id: registration.id,
@@ -670,7 +700,8 @@ export const useAssetStore = defineStore("assets", {
         maxInstances,
         material || undefined,
       );
-      return result?.mesh || null;
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      return (result != null && typeof result === "object" && "mesh" in result && result.mesh != null) ? result.mesh : null;
     },
 
     /**
@@ -705,8 +736,9 @@ export const useAssetStore = defineStore("assets", {
           columns,
           rows,
           {
-            name: options?.name || file.name.replace(/\.[^.]+$/, ""),
-            frameRate: options?.frameRate,
+            // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+            name: (options != null && typeof options === "object" && "name" in options && typeof options.name === "string") ? options.name : file.name.replace(/\.[^.]+$/, ""),
+            frameRate: (options != null && typeof options === "object" && "frameRate" in options) ? options.frameRate : undefined,
           },
         );
 
@@ -724,7 +756,7 @@ export const useAssetStore = defineStore("assets", {
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         this.lastError = `Sprite sheet import failed: ${message}`;
-        return { success: false, error: message };
+        throw new Error(`[AssetStore] Sprite sheet import failed: ${message}. Check file format, dimensions, and grid configuration.`);
       } finally {
         this.isLoadingSpriteSheet = false;
       }
@@ -738,7 +770,10 @@ export const useAssetStore = defineStore("assets", {
       options?: { name?: string; showWarnings?: boolean },
     ): Promise<AssetImportResult & { validation?: SpriteValidationResult }> {
       const toastStore = useToastStore();
-      const showWarnings = options?.showWarnings ?? true;
+      // Type proof: showWarnings ∈ boolean | undefined → boolean
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const showWarningsValue = (options != null && typeof options === "object" && "showWarnings" in options && typeof options.showWarnings === "boolean") ? options.showWarnings : undefined;
+      const showWarnings = showWarningsValue === true;
 
       // Validate first
       const validation = await loadAndValidateSprite(file);
@@ -746,10 +781,11 @@ export const useAssetStore = defineStore("assets", {
       if (!validation.canImport) {
         // Handle blocking errors
         this.handleValidationIssues(validation.issues, toastStore, true);
-        this.lastError =
-          validation.issues.find((i) => i.severity === "error")?.message ||
-          "Validation failed";
-        return { success: false, error: this.lastError, validation };
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+        const errorIssue = validation.issues.find((i) => i.severity === "error");
+        const errorMessage = (errorIssue != null && typeof errorIssue === "object" && "message" in errorIssue && typeof errorIssue.message === "string") ? errorIssue.message : undefined;
+        this.lastError = errorMessage || "Validation failed";
+        throw new Error(`[AssetStore] Sprite import validation failed: ${this.lastError}. Fix validation issues before importing.`);
       }
 
       // Show warnings if enabled
@@ -759,13 +795,11 @@ export const useAssetStore = defineStore("assets", {
 
       // Import as 1x1 spritesheet
       const result = await this.importSpriteSheet(file, 1, 1, options);
-
-      if (result.success) {
-        toastStore.success(
-          `Sprite "${options?.name || file.name}" imported successfully`,
-        );
-      }
-
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const spriteName = (options != null && typeof options === "object" && "name" in options && typeof options.name === "string") ? options.name : file.name;
+      toastStore.success(
+        `Sprite "${spriteName}" imported successfully`,
+      );
       return { ...result, validation };
     },
 
@@ -781,7 +815,10 @@ export const useAssetStore = defineStore("assets", {
       AssetImportResult & { validation?: SpritesheetValidationResult }
     > {
       const toastStore = useToastStore();
-      const showWarnings = options?.showWarnings ?? true;
+      // Type proof: showWarnings ∈ boolean | undefined → boolean
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const showWarningsValue = (options != null && typeof options === "object" && "showWarnings" in options && typeof options.showWarnings === "boolean") ? options.showWarnings : undefined;
+      const showWarnings = showWarningsValue === true;
 
       // Validate first
       const validation = await loadAndValidateSpritesheet(file, columns, rows);
@@ -789,10 +826,11 @@ export const useAssetStore = defineStore("assets", {
       if (!validation.canImport) {
         // Handle blocking errors
         this.handleValidationIssues(validation.issues, toastStore, true);
-        this.lastError =
-          validation.issues.find((i) => i.severity === "error")?.message ||
-          "Validation failed";
-        return { success: false, error: this.lastError, validation };
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+        const errorIssue = validation.issues.find((i) => i.severity === "error");
+        const errorMessage = (errorIssue != null && typeof errorIssue === "object" && "message" in errorIssue && typeof errorIssue.message === "string") ? errorIssue.message : undefined;
+        this.lastError = errorMessage || "Validation failed";
+        throw new Error(`[AssetStore] Sprite sheet import validation failed: ${this.lastError}. Fix validation issues before importing.`);
       }
 
       // Show warnings if enabled
@@ -802,14 +840,14 @@ export const useAssetStore = defineStore("assets", {
 
       // Import the spritesheet
       const result = await this.importSpriteSheet(file, columns, rows, options);
-
-      if (result.success && validation.metadata) {
+      if (validation.metadata) {
         const meta = validation.metadata;
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+        const spriteSheetName = (options != null && typeof options === "object" && "name" in options && typeof options.name === "string") ? options.name : file.name;
         toastStore.success(
-          `Sprite sheet "${options?.name || file.name}" imported: ${meta.totalFrames} frames (${meta.frameWidth}x${meta.frameHeight}px each)`,
+          `Sprite sheet "${spriteSheetName}" imported: ${meta.totalFrames} frames (${meta.frameWidth}x${meta.frameHeight}px each)`,
         );
       }
-
       return { ...result, validation };
     },
 
@@ -842,9 +880,24 @@ export const useAssetStore = defineStore("assets", {
       spriteSheetService.addAnimation(sheetId, {
         name,
         frames,
-        frameRate: options?.frameRate ?? 24,
-        loop: options?.loop ?? true,
-        pingPong: options?.pingPong ?? false,
+        // Type proof: frameRate ∈ ℝ ∪ {undefined} → ℝ
+        frameRate: (() => {
+          // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+          const frameRateValue = (options != null && typeof options === "object" && "frameRate" in options) ? options.frameRate : undefined;
+          return isFiniteNumber(frameRateValue) && frameRateValue > 0 ? frameRateValue : 24;
+        })(),
+        // Type proof: loop ∈ boolean | undefined → boolean
+        loop: (() => {
+          // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+          const loopValue = (options != null && typeof options === "object" && "loop" in options && typeof options.loop === "boolean") ? options.loop : undefined;
+          return loopValue === true;
+        })(),
+        // Type proof: pingPong ∈ boolean | undefined → boolean
+        pingPong: (() => {
+          // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+          const pingPongValue = (options != null && typeof options === "object" && "pingPong" in options && typeof options.pingPong === "boolean") ? options.pingPong : undefined;
+          return pingPongValue === true;
+        })(),
       });
     },
 
@@ -862,7 +915,8 @@ export const useAssetStore = defineStore("assets", {
      */
     deleteSpriteSheet(id: string): void {
       const stored = this.spriteSheets.get(id);
-      if (stored?.textureUrl) {
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      if (stored != null && typeof stored === "object" && "textureUrl" in stored && typeof stored.textureUrl === "string" && stored.textureUrl !== "") {
         URL.revokeObjectURL(stored.textureUrl);
       }
       spriteSheetService.removeSheet(id);
@@ -894,10 +948,24 @@ export const useAssetStore = defineStore("assets", {
         this.environment = {
           ...this.environment,
           url,
-          intensity: options?.intensity ?? this.environment.intensity,
-          rotation: options?.rotation ?? this.environment.rotation,
-          useAsBackground:
-            options?.useAsBackground ?? this.environment.useAsBackground,
+          // Type proof: intensity ∈ ℝ ∪ {undefined} → ℝ
+          intensity: (() => {
+            // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+            const intensityValue = (options != null && typeof options === "object" && "intensity" in options) ? options.intensity : undefined;
+            return isFiniteNumber(intensityValue) && intensityValue >= 0 ? intensityValue : this.environment.intensity;
+          })(),
+          // Type proof: rotation ∈ ℝ ∪ {undefined} → ℝ
+          rotation: (() => {
+            // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+            const rotationValue = (options != null && typeof options === "object" && "rotation" in options) ? options.rotation : undefined;
+            return isFiniteNumber(rotationValue) ? rotationValue : this.environment.rotation;
+          })(),
+          // Type proof: useAsBackground ∈ boolean | undefined → boolean
+          useAsBackground: (() => {
+            // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+            const useAsBackgroundValue = (options != null && typeof options === "object" && "useAsBackground" in options && typeof options.useAsBackground === "boolean") ? options.useAsBackground : undefined;
+            return useAsBackgroundValue === true;
+          })(),
           enabled: true,
         };
 
@@ -906,7 +974,7 @@ export const useAssetStore = defineStore("assets", {
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         this.lastError = `Environment load failed: ${message}`;
-        return { success: false, error: message };
+        throw new Error(`[AssetStore] Environment load failed: ${message}. Check file format (HDR/EXR) and try again.`);
       } finally {
         this.isLoadingEnvironment = false;
       }
@@ -932,7 +1000,7 @@ export const useAssetStore = defineStore("assets", {
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         this.lastError = `Environment preset load failed: ${message}`;
-        return { success: false, error: message };
+        throw new Error(`[AssetStore] Environment preset load failed: ${message}. Check preset URL and network connection.`);
       } finally {
         this.isLoadingEnvironment = false;
       }

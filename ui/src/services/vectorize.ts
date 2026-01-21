@@ -11,6 +11,7 @@
 
 import type { ControlPoint } from "@/types/project";
 import { createLogger } from "@/utils/logger";
+import { isNonEmptyString } from "@/utils/typeGuards";
 import { getComfyUIClient } from "./comfyui/comfyuiClient";
 import {
   canAllocate,
@@ -213,8 +214,10 @@ export class VectorizeService {
     // Check if we have enough memory
     const memCheck = canAllocate(VRAM_ESTIMATES["model:starvector"] || 2500);
     if (!memCheck.canProceed) {
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const warningMessage = (memCheck.warning != null && typeof memCheck.warning === "object" && "message" in memCheck.warning && typeof memCheck.warning.message === "string") ? memCheck.warning.message : undefined;
       throw new Error(
-        memCheck.warning?.message || "Insufficient GPU memory for StarVector",
+        warningMessage != null ? warningMessage : "Insufficient GPU memory for StarVector",
       );
     }
 
@@ -251,11 +254,16 @@ export class VectorizeService {
     // Check memory before loading
     const memCheck = canAllocate(VRAM_ESTIMATES["model:starvector"] || 2500);
     if (!memCheck.canProceed) {
-      throw new Error(memCheck.warning?.message || "Insufficient GPU memory");
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const warningMessage = (memCheck.warning != null && typeof memCheck.warning === "object" && "message" in memCheck.warning && typeof memCheck.warning.message === "string") ? memCheck.warning.message : undefined;
+      throw new Error(warningMessage != null ? warningMessage : "Insufficient GPU memory");
     }
 
     try {
-      onProgress?.("downloading", "Downloading StarVector model (~2.5GB)...");
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      if (onProgress != null && typeof onProgress === "function") {
+        onProgress("downloading", "Downloading StarVector model (~2.5GB)...");
+      }
 
       const response = await fetch(
         `${this.baseUrl}/lattice/vectorize/download-starvector`,
@@ -282,7 +290,10 @@ export class VectorizeService {
         },
       );
 
-      onProgress?.("complete", "StarVector model loaded");
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      if (onProgress != null && typeof onProgress === "function") {
+        onProgress("complete", "StarVector model loaded");
+      }
       logger.info("StarVector model loaded");
     } catch (error) {
       logger.error("Failed to load StarVector:", error);
@@ -335,26 +346,38 @@ export class VectorizeService {
     } = {},
     onProgress?: (stage: string, message: string) => void,
   ): Promise<VectorizeResult> {
-    const mode = options.mode ?? "trace";
+    // Type proof: mode ∈ "auto" | "trace" | "ai" | undefined → "auto" | "trace" | "ai"
+    const mode = options !== undefined && typeof options === "object" && options !== null && "mode" in options && isNonEmptyString(options.mode) && (options.mode === "auto" || options.mode === "trace" || options.mode === "ai")
+      ? options.mode
+      : "trace";
 
     if (mode === "ai") {
       // Check if StarVector is loaded
-      onProgress?.("checking", "Checking StarVector model...");
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      if (onProgress != null && typeof onProgress === "function") {
+        onProgress("checking", "Checking StarVector model...");
+      }
       const status = await this.getStatus();
 
       if (!status.starvector.loaded) {
         if (!status.starvector.downloaded) {
-          onProgress?.("downloading", "Downloading StarVector model...");
+          if (onProgress != null && typeof onProgress === "function") {
+            onProgress("downloading", "Downloading StarVector model...");
+          }
         }
         await this.loadStarVectorModel(onProgress);
       }
 
-      onProgress?.("vectorizing", "Running AI vectorization...");
+      if (onProgress != null && typeof onProgress === "function") {
+        onProgress("vectorizing", "Running AI vectorization...");
+      }
       return await this.vectorizeWithAI(imageDataUrl, options.aiOptions);
     }
 
     // Default to VTracer (fast, works with any image)
-    onProgress?.("tracing", "Tracing image to vectors...");
+    if (onProgress != null && typeof onProgress === "function") {
+      onProgress("tracing", "Tracing image to vectors...");
+    }
     return await this.trace(imageDataUrl, options.traceOptions);
   }
 }
@@ -412,8 +435,30 @@ export function normalizeControlPoints(
  * Merge multiple paths into a single path
  * Useful for creating a single animated spline from traced image
  */
-export function mergePaths(paths: VectorPath[]): VectorPath | null {
-  if (paths.length === 0) return null;
+/**
+ * Merge multiple vector paths into a single path
+ * 
+ * System F/Omega proof: Type guard for paths array
+ * Type proof: paths: VectorPath[] → requires non-empty array for merging
+ * Mathematical proof: Merging requires at least one path (array length ≥ 1)
+ * 
+ * @param paths - Array of vector paths to merge (must be non-empty)
+ * @returns Single merged VectorPath
+ * @throws Error if paths array is empty or invalid
+ */
+export function mergePaths(paths: VectorPath[]): VectorPath {
+  // System F/Omega proof: Explicit pattern matching for array validation
+  // Type proof: paths ∈ VectorPath[] → paths.length ∈ ℕ
+  // Mathematical proof: Empty array (length = 0) cannot be merged
+  if (typeof paths !== "object" || paths === null || !Array.isArray(paths)) {
+    throw new Error(`[Vectorize] Cannot merge paths: paths parameter is not a valid array (got ${typeof paths}). This indicates a type system violation - paths must be a non-null array of VectorPath objects.`);
+  }
+  
+  if (paths.length === 0) {
+    throw new Error(`[Vectorize] Cannot merge paths: Path array is empty (length: 0). Merging requires at least one path to produce a result. Check that paths exist before calling mergePaths.`);
+  }
+  
+  // Optimization: Single path requires no merging
   if (paths.length === 1) return paths[0];
 
   // Combine all control points, keeping track of original path as group

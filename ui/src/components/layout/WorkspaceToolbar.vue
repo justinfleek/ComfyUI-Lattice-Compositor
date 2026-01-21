@@ -277,10 +277,13 @@
 
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
-import { useCompositorStore } from "@/stores/compositorStore";
+import { safeNonNegativeDefault } from "@/utils/typeGuards";
 import { usePlaybackStore } from "@/stores/playbackStore";
 import { type ThemeName, useThemeStore } from "@/stores/themeStore";
 import { useAnimationStore } from "@/stores/animationStore";
+import { useProjectStore } from "@/stores/projectStore";
+import { useUIStore } from "@/stores/uiStore";
+import { useSegmentationStore } from "@/stores/segmentationStore";
 
 const props = defineProps<{
   currentTool: string;
@@ -297,10 +300,12 @@ const emit = defineEmits<{
   (e: "showTemplateBuilder"): void;
 }>();
 
-const store = useCompositorStore();
 const _playbackStore = usePlaybackStore();
 const themeStore = useThemeStore();
 const animationStore = useAnimationStore();
+const projectStore = useProjectStore();
+const uiStore = useUIStore();
+const segmentationStore = useSegmentationStore();
 
 // Shape tool state
 const isShapeTool = computed(() =>
@@ -325,26 +330,58 @@ const shapeOptions = computed(() => ({
 watch(
   shapeOptions,
   (options) => {
-    store.setShapeToolOptions(options);
+    uiStore.setShapeToolOptions(options);
   },
   { immediate: true, deep: true },
 );
 
 // Segment state from store
-const segmentMode = computed(() => store.segmentMode);
-const segmentPendingMask = computed(() => store.segmentPendingMask);
-const segmentIsLoading = computed(() => store.segmentIsLoading);
+const segmentMode = computed(() => segmentationStore.segmentMode);
+const segmentPendingMask = computed(() => segmentationStore.segmentPendingMask);
+const segmentIsLoading = computed(() => segmentationStore.segmentIsLoading);
 
 function setSegmentMode(mode: "point" | "box") {
-  store.setSegmentMode(mode);
+  segmentationStore.setSegmentMode(mode);
 }
 
-function confirmSegmentMask() {
-  store.confirmSegmentMask();
+/**
+ * Confirm segment mask and create layer
+ * 
+ * System F/Omega proof: Explicit error throwing - never return null
+ * Type proof: → Promise<Layer> (non-nullable)
+ * Mathematical proof: Mask confirmation must succeed or throw explicit error
+ * Pattern proof: Missing mask or source image is an explicit error condition
+ */
+async function confirmSegmentMask(): Promise<Layer> {
+  // System F/Omega: Throw explicit errors for missing prerequisites
+  if (!segmentationStore.segmentPendingMask) {
+    throw new Error(
+      `[WorkspaceToolbar] Cannot confirm segment mask: No pending mask available. ` +
+      `Create a segmentation mask first before confirming.`
+    );
+  }
+  
+  if (!projectStore.sourceImage) {
+    throw new Error(
+      `[WorkspaceToolbar] Cannot confirm segment mask: No source image available. ` +
+      `Load a source image first before creating a mask layer.`
+    );
+  }
+
+  const layer = await segmentationStore.createLayerFromMask(
+    projectStore.sourceImage,
+    segmentationStore.segmentPendingMask,
+    undefined,
+    false,
+  );
+
+  segmentationStore.clearSegmentPendingMask();
+
+  return layer;
 }
 
 function clearSegmentMask() {
-  store.clearSegmentPendingMask();
+  segmentationStore.clearSegmentPendingMask();
 }
 
 // Theme selector
@@ -408,50 +445,91 @@ onUnmounted(() => {
 
 // Timecode
 const formattedTimecode = computed(() => {
-  const frame = store.currentFrame;
-  const fps = store.activeComposition?.settings.fps || 16;
-  const seconds = Math.floor(frame / fps);
-  const frames = frame % fps;
+  const frame = animationStore.currentFrame;
+  const activeComp = projectStore.getActiveComp();
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const settings = (activeComp != null && typeof activeComp === "object" && "settings" in activeComp && activeComp.settings != null && typeof activeComp.settings === "object") ? activeComp.settings : undefined;
+  const fps = (settings != null && typeof settings === "object" && "fps" in settings && typeof settings.fps === "number") ? settings.fps : undefined;
+  const fpsValue = fps != null ? fps : 16;
+  const seconds = Math.floor(frame / fpsValue);
+  const frames = frame % fpsValue;
   const minutes = Math.floor(seconds / 60);
   const secs = seconds % 60;
   return `${minutes.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}:${frames.toString().padStart(2, "0")}`;
 });
 
+// Helper function to create AnimationStoreAccess
+function getAnimationStoreAccess() {
+  const playbackStore = usePlaybackStore();
+  return {
+    get isPlaying() {
+      return playbackStore.isPlaying;
+    },
+    getActiveComp: () => projectStore.getActiveComp(),
+    get currentFrame() {
+      return animationStore.currentFrame;
+    },
+    get frameCount() {
+      const comp = projectStore.getActiveComp();
+      // Type proof: frameCount ∈ number | undefined → number (≥ 0, frame count)
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const settings = (comp != null && typeof comp === "object" && "settings" in comp && comp.settings != null && typeof comp.settings === "object") ? comp.settings : undefined;
+      const frameCount = (settings != null && typeof settings === "object" && "frameCount" in settings && typeof settings.frameCount === "number") ? settings.frameCount : undefined;
+      return safeNonNegativeDefault(frameCount, 0, "comp.settings.frameCount");
+    },
+    get fps() {
+      const comp = projectStore.getActiveComp();
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const settings = (comp != null && typeof comp === "object" && "settings" in comp && comp.settings != null && typeof comp.settings === "object") ? comp.settings : undefined;
+      const fps = (settings != null && typeof settings === "object" && "fps" in settings && typeof settings.fps === "number") ? settings.fps : undefined;
+      return fps != null ? fps : 16;
+    },
+  };
+}
+
 // Playback controls
 function goToStart() {
-  animationStore.setFrame(store, 0);
+  animationStore.setFrame(getAnimationStoreAccess(), 0);
 }
 
 function goToEnd() {
-  const frameCount = store.activeComposition?.settings.frameCount || 81;
-  animationStore.setFrame(store, frameCount - 1);
+  const activeComp = projectStore.getActiveComp();
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const settings = (activeComp != null && typeof activeComp === "object" && "settings" in activeComp && activeComp.settings != null && typeof activeComp.settings === "object") ? activeComp.settings : undefined;
+  const frameCount = (settings != null && typeof settings === "object" && "frameCount" in settings && typeof settings.frameCount === "number") ? settings.frameCount : undefined;
+  const frameCountValue = frameCount != null ? frameCount : 81;
+  animationStore.setFrame(getAnimationStoreAccess(), frameCountValue - 1);
 }
 
 function stepBackward() {
-  const newFrame = Math.max(0, store.currentFrame - 1);
-  animationStore.setFrame(store, newFrame);
+  const newFrame = Math.max(0, animationStore.currentFrame - 1);
+  animationStore.setFrame(getAnimationStoreAccess(), newFrame);
 }
 
 function stepForward() {
-  const frameCount = store.activeComposition?.settings.frameCount || 81;
-  const newFrame = Math.min(frameCount - 1, store.currentFrame + 1);
-  animationStore.setFrame(store, newFrame);
+  const activeComp = projectStore.getActiveComp();
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const settings = (activeComp != null && typeof activeComp === "object" && "settings" in activeComp && activeComp.settings != null && typeof activeComp.settings === "object") ? activeComp.settings : undefined;
+  const frameCount = (settings != null && typeof settings === "object" && "frameCount" in settings && typeof settings.frameCount === "number") ? settings.frameCount : undefined;
+  const frameCountValue = frameCount != null ? frameCount : 81;
+  const newFrame = Math.min(frameCountValue - 1, animationStore.currentFrame + 1);
+  animationStore.setFrame(getAnimationStoreAccess(), newFrame);
 }
 
 function togglePlay() {
-  animationStore.togglePlayback(store);
+  animationStore.togglePlayback(getAnimationStoreAccess());
 }
 
 // Undo/Redo
-const canUndo = computed(() => store.canUndo);
-const canRedo = computed(() => store.canRedo);
+const canUndo = computed(() => projectStore.canUndo());
+const canRedo = computed(() => projectStore.canRedo());
 
 function undo() {
-  store.undo();
+  projectStore.undo();
 }
 
 function redo() {
-  store.redo();
+  projectStore.redo();
 }
 </script>
 

@@ -10,6 +10,13 @@
 import { defineStore } from "pinia";
 import type { DepthflowLayerData, Layer } from "@/types/project";
 import { createAnimatableProperty } from "@/types/project";
+import type { JSONValue } from "@/types/dataAsset";
+
+/**
+ * All possible JavaScript values that can be validated at runtime
+ * Used as input type for validators (replaces unknown)
+ */
+type RuntimeValue = string | number | boolean | object | null | undefined | bigint | symbol;
 
 // ============================================================================
 // STORE ACCESS INTERFACE
@@ -31,7 +38,7 @@ export interface DepthflowStoreAccess {
  * Sanitize numeric config value, returning default if invalid.
  * Prevents NaN/Infinity corruption in layer data.
  */
-function sanitizeNumber(value: unknown, defaultValue: number): number {
+function sanitizeNumber(value: RuntimeValue, defaultValue: number): number {
   if (typeof value !== "number" || !Number.isFinite(value)) {
     return defaultValue;
   }

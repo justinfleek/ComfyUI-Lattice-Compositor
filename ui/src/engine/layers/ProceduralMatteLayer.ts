@@ -16,6 +16,7 @@
 
 import * as THREE from "three";
 import type { Layer, ProceduralMatteData } from "@/types/project";
+import { assertDefined } from "@/utils/typeGuards";
 import { KeyframeEvaluator } from "../animation/KeyframeEvaluator";
 import { BaseLayer } from "./BaseLayer";
 
@@ -55,14 +56,20 @@ export class ProceduralMatteLayer extends BaseLayer {
     this.matteData = this.extractMatteData(layerData);
 
     // Initialize random seed - use deterministic seed based on layer ID
-    this.noiseSeed =
-      this.matteData.parameters.seed ?? this.hashLayerId(layerData.id);
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+    const seed = this.matteData.parameters.seed;
+    this.noiseSeed = (seed !== null && seed !== undefined && typeof seed === "number" && Number.isFinite(seed)) ? seed : this.hashLayerId(layerData.id);
 
     // Create render canvas
     this.renderCanvas = document.createElement("canvas");
     this.renderCanvas.width = this.width;
     this.renderCanvas.height = this.height;
-    this.renderCtx = this.renderCanvas.getContext("2d")!;
+    // Type proof: getContext("2d") returns non-null for HTMLCanvasElement
+    const ctx = this.renderCanvas.getContext("2d");
+    if (!ctx) {
+      throw new TypeError("Failed to get 2d context from HTMLCanvasElement");
+    }
+    this.renderCtx = ctx;
 
     // Create mesh
     this.createMesh();
@@ -325,9 +332,12 @@ export class ProceduralMatteLayer extends BaseLayer {
     time: number,
   ): void {
     const params = this.matteData.parameters;
+    // Type proof: angle and blend are required for linear_gradient pattern
+    assertDefined(params.angle, "angle parameter is required for linear_gradient pattern");
+    assertDefined(params.blend, "blend parameter is required for linear_gradient pattern");
     const angle: number =
-      this.matteEvaluator.evaluate(params.angle!, frame) + time * 360;
-    const blend: number = this.matteEvaluator.evaluate(params.blend!, frame);
+      this.matteEvaluator.evaluate(params.angle, frame) + time * 360;
+    const blend: number = this.matteEvaluator.evaluate(params.blend, frame);
 
     const rad = (angle * Math.PI) / 180;
     const cos = Math.cos(rad);
@@ -360,16 +370,20 @@ export class ProceduralMatteLayer extends BaseLayer {
     time: number,
   ): void {
     const params = this.matteData.parameters;
+    // Type proof: centerX, centerY, and radius are required for radial_gradient pattern
+    assertDefined(params.centerX, "centerX parameter is required for radial_gradient pattern");
+    assertDefined(params.centerY, "centerY parameter is required for radial_gradient pattern");
+    assertDefined(params.radius, "radius parameter is required for radial_gradient pattern");
     const centerX: number = this.matteEvaluator.evaluate(
-      params.centerX!,
+      params.centerX,
       frame,
     );
     const centerY: number = this.matteEvaluator.evaluate(
-      params.centerY!,
+      params.centerY,
       frame,
     );
     const radius: number =
-      this.matteEvaluator.evaluate(params.radius!, frame) + time * 0.5;
+      this.matteEvaluator.evaluate(params.radius, frame) + time * 0.5;
     const blend: number = params.blend
       ? this.matteEvaluator.evaluate(params.blend, frame)
       : 0.3;
@@ -433,8 +447,10 @@ export class ProceduralMatteLayer extends BaseLayer {
     time: number,
   ): void {
     const params = this.matteData.parameters;
+    // Type proof: progress is required for ramp pattern
+    assertDefined(params.progress, "progress parameter is required for ramp pattern");
     const progress: number = this.matteEvaluator.evaluate(
-      params.progress!,
+      params.progress,
       frame,
     );
     const softness: number = params.softness
@@ -481,7 +497,8 @@ export class ProceduralMatteLayer extends BaseLayer {
     const scale: number = params.scale
       ? this.matteEvaluator.evaluate(params.scale, frame)
       : 50;
-    const octaves = params.octaves ?? 4;
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+    const octaves = (typeof params.octaves === "number" && Number.isFinite(params.octaves) && params.octaves > 0) ? params.octaves : 4;
 
     const imageData = ctx.getImageData(0, 0, w, h);
     const data = imageData.data;
@@ -835,7 +852,8 @@ export class ProceduralMatteLayer extends BaseLayer {
     const angle = params.angle
       ? this.matteEvaluator.evaluate(params.angle, frame)
       : 0;
-    const waveType = params.waveType ?? "sine";
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+    const waveType = (typeof params.waveType === "string" && params.waveType.length > 0) ? params.waveType : "sine";
 
     const imageData = ctx.getImageData(0, 0, w, h);
     const data = imageData.data;
@@ -1013,7 +1031,12 @@ export class ProceduralMatteLayer extends BaseLayer {
   // SOURCE CANVAS (for effects and track mattes)
   // ============================================================================
 
-  protected getSourceCanvas(): HTMLCanvasElement | null {
+  // Throw explicit error if render canvas is missing
+  protected getSourceCanvas(): HTMLCanvasElement {
+    const hasRenderCanvas = typeof this.renderCanvas === "object" && this.renderCanvas !== null;
+    if (!hasRenderCanvas) {
+      throw new Error(`[ProceduralMatteLayer] Layer "${this.id}" cannot provide source canvas: renderCanvas is null. Render canvas creation failed. This is a rendering system error.`);
+    }
     return this.renderCanvas;
   }
 

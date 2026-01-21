@@ -8,7 +8,7 @@
 import * as THREE from "three";
 import { type ComputedRef, computed, type Ref, ref } from "vue";
 import type { LatticeEngine } from "@/engine";
-import { useCompositorStore } from "@/stores/compositorStore";
+import { useProjectStore } from "@/stores/projectStore";
 
 export interface SafeFrameBounds {
   left: number;
@@ -56,8 +56,7 @@ export function useViewportGuides(options: UseViewportGuidesOptions) {
     zoom,
     viewportTransform,
   } = options;
-
-  const store = useCompositorStore();
+  const projectStore = useProjectStore();
 
   // Camera update trigger - increment to force boundary recalculation
   const cameraUpdateTrigger = ref(0);
@@ -93,8 +92,8 @@ export function useViewportGuides(options: UseViewportGuidesOptions) {
 
     const viewportWidth = canvasWidth.value;
     const viewportHeight = canvasHeight.value;
-    const compWidth = store.width || 1920;
-    const compHeight = store.height || 1080;
+    const compWidth = projectStore.getWidth();
+    const compHeight = projectStore.getHeight();
 
     // Check for valid viewport dimensions
     if (viewportWidth <= 0 || viewportHeight <= 0) {
@@ -208,8 +207,8 @@ export function useViewportGuides(options: UseViewportGuidesOptions) {
 
     const viewportWidth = canvasWidth.value;
     const viewportHeight = canvasHeight.value;
-    const compWidth = store.width || 1920;
-    const compHeight = store.height || 1080;
+    const compWidth = projectStore.getWidth();
+    const compHeight = projectStore.getHeight();
 
     // Check for valid dimensions
     if (

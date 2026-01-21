@@ -64,10 +64,9 @@ export const useHistoryStore = defineStore("history", {
      * Get the previous state (for undo)
      * Returns null if we can't undo
      */
-    undo(): LatticeProject | null {
+    undo(): LatticeProject {
       if (!this.canUndo) {
-        storeLogger.debug("Cannot undo: at beginning of history");
-        return null;
+        throw new Error("[HistoryStore] Cannot undo: at beginning of history");
       }
 
       this.index--;
@@ -81,10 +80,9 @@ export const useHistoryStore = defineStore("history", {
      * Get the next state (for redo)
      * Returns null if we can't redo
      */
-    redo(): LatticeProject | null {
+    redo(): LatticeProject {
       if (!this.canRedo) {
-        storeLogger.debug("Cannot redo: at end of history");
-        return null;
+        throw new Error("[HistoryStore] Cannot redo: at end of history");
       }
 
       this.index++;

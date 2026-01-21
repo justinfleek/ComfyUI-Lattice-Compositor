@@ -150,7 +150,7 @@
 
 <script setup lang="ts">
 import { computed } from "vue";
-import { useCompositorStore } from "@/stores/compositorStore";
+import { useAnimationStore } from "@/stores/animationStore";
 import { useKeyframeStore } from "@/stores/keyframeStore";
 import type {
   AnimatableProperty,
@@ -165,7 +165,7 @@ const props = defineProps<{
 const emit =
   defineEmits<(e: "update", data: Partial<DepthLayerData>) => void>();
 
-const store = useCompositorStore();
+const animationStore = useAnimationStore();
 const keyframeStore = useKeyframeStore();
 
 const depthData = computed(() => props.layer.data as DepthLayerData);
@@ -177,17 +177,18 @@ function updateData<K extends keyof DepthLayerData>(
   emit("update", { [key]: value } as Partial<DepthLayerData>);
 }
 
+// Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??/?.
 function getAnimatableValue(
   prop: AnimatableProperty<number> | undefined,
 ): number {
-  return prop?.value ?? 0;
+  return (prop !== null && prop !== undefined && typeof prop === "object" && "value" in prop && typeof prop.value === "number" && Number.isFinite(prop.value)) ? prop.value : 0;
 }
 
 function isAnimated(propName: string): boolean {
   const prop = depthData.value[propName as keyof DepthLayerData] as
     | AnimatableProperty<number>
     | undefined;
-  return prop?.animated ?? false;
+  return (prop !== null && prop !== undefined && typeof prop === "object" && "animated" in prop && typeof prop.animated === "boolean") ? prop.animated : false;
 }
 
 function updateAnimatable(propName: string, value: number) {
@@ -207,11 +208,10 @@ function toggleKeyframe(propName: string) {
   ] as AnimatableProperty<number>;
   if (prop) {
     keyframeStore.addKeyframe(
-      store,
       props.layer.id,
       `data.${propName}`,
       prop.value,
-      store.currentFrame,
+      animationStore.currentFrame,
     );
   }
 }

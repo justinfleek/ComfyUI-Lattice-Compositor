@@ -47,6 +47,7 @@ import {
   type ToolCall,
   type ToolResult,
 } from "./toolDefinitions";
+import { isFiniteNumber } from "@/utils/typeGuards";
 
 // ============================================================================
 // SECURITY: High-Risk Tool Definitions
@@ -355,7 +356,11 @@ ${instruction}
     ];
 
     while (this.state.iterationCount < this.config.maxIterations) {
-      if (this.abortController?.signal.aborted) {
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const abortController = (this != null && typeof this === "object" && "abortController" in this && this.abortController != null && typeof this.abortController === "object") ? this.abortController : undefined;
+      const abortSignal = (abortController != null && typeof abortController === "object" && "signal" in abortController && abortController.signal != null && typeof abortController.signal === "object") ? abortController.signal : undefined;
+      const signalAborted = (abortSignal != null && typeof abortSignal === "object" && "aborted" in abortSignal && typeof abortSignal.aborted === "boolean" && abortSignal.aborted) ? true : false;
+      if (signalAborted) {
         throw new Error("Operation cancelled");
       }
 
@@ -412,7 +417,11 @@ ${instruction}
         max_tokens: this.config.maxTokens,
         temperature: this.config.temperature,
       }),
-      signal: this.abortController?.signal,
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      signal: (() => {
+        const abortController = (this != null && typeof this === "object" && "abortController" in this && this.abortController != null && typeof this.abortController === "object") ? this.abortController : undefined;
+        return (abortController != null && typeof abortController === "object" && "signal" in abortController && abortController.signal != null) ? abortController.signal : undefined;
+      })(),
     });
 
     const result = await response.json();
@@ -456,12 +465,7 @@ ${instruction}
           const errorMsg = `[SECURITY] Rate limit exceeded: ${rateLimitStatus.blockedReason}`;
           console.warn(errorMsg);
           await logToolResult(call.name, false, errorMsg);
-          results.push({
-            toolCallId: call.id,
-            success: false,
-            error: errorMsg,
-          });
-          continue;
+          throw new Error(`[AICompositorAgent] ${errorMsg} Rate limit exceeded for tool "${call.name}".`);
         }
 
         // Get memory summary once - needed by both VRAM check and confirmation dialog
@@ -480,19 +484,18 @@ ${instruction}
           );
 
           if (!memCheck.canProceed) {
+            // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+            const memCheckWarning = (memCheck != null && typeof memCheck === "object" && "warning" in memCheck && memCheck.warning != null && typeof memCheck.warning === "object") ? memCheck.warning : undefined;
+            const warningSuggestions = (memCheckWarning != null && typeof memCheckWarning === "object" && "suggestions" in memCheckWarning && memCheckWarning.suggestions != null && Array.isArray(memCheckWarning.suggestions)) ? memCheckWarning.suggestions : undefined;
+            const suggestionsText = (warningSuggestions != null && Array.isArray(warningSuggestions)) ? warningSuggestions.join(" ") : "";
             const errorMsg =
               `[SECURITY] Insufficient GPU memory for ${call.name}. ` +
               `Required: ~${Math.round(highRiskInfo.vramEstimateMB / 1000)}GB, ` +
               `Available: ~${Math.round(memSummary.available / 1000)}GB. ` +
-              `${memCheck.warning?.suggestions.join(" ") || ""}`;
+              `${suggestionsText}`;
             console.warn(errorMsg);
             await logToolResult(call.name, false, errorMsg);
-            results.push({
-              toolCallId: call.id,
-              success: false,
-              error: errorMsg,
-            });
-            continue;
+            throw new Error(`[AICompositorAgent] ${errorMsg} Free GPU memory or reduce VRAM requirements.`);
           }
         }
 
@@ -504,12 +507,7 @@ ${instruction}
               `Call setConfirmationCallback() to enable high-risk operations.`;
             console.warn(errorMsg);
             await logToolResult(call.name, false, errorMsg);
-            results.push({
-              toolCallId: call.id,
-              success: false,
-              error: errorMsg,
-            });
-            continue;
+            throw new Error(`[AICompositorAgent] ${errorMsg} Register a confirmation callback before executing high-risk operations.`);
           }
 
           const confirmed = await this.confirmationCallback({
@@ -527,12 +525,7 @@ ${instruction}
           if (!confirmed) {
             console.log(`[SECURITY] User declined ${call.name}`);
             await logToolResult(call.name, false, "User declined confirmation");
-            results.push({
-              toolCallId: call.id,
-              success: false,
-              error: `Operation cancelled by user: ${highRiskInfo.description}`,
-            });
-            continue;
+            throw new Error(`[AICompositorAgent] Operation cancelled by user: ${highRiskInfo.description}. User declined confirmation for high-risk operation.`);
           }
 
           console.log(`[SECURITY] User approved ${call.name}`);
@@ -546,10 +539,15 @@ ${instruction}
         this.state.backendCallsThisSession.push(call.name);
 
         const updatedStatus = checkRateLimit(call.name);
+        // Type proof: number | undefined → proper conditional formatting
+        // Construct log message based on whether session limit exists
+        const sessionInfo = isFiniteNumber(updatedStatus.maxPerSession) && updatedStatus.maxPerSession > 0
+          ? `session: ${updatedStatus.callsThisSession}/${updatedStatus.maxPerSession}`
+          : `session: ${updatedStatus.callsThisSession}`;
         console.log(
           `[SECURITY] Backend call recorded: ${call.name} ` +
             `(today: ${updatedStatus.callsToday}/${updatedStatus.maxPerDay}, ` +
-            `session: ${updatedStatus.callsThisSession}/${updatedStatus.maxPerSession ?? "∞"})`,
+            `${sessionInfo})`,
         );
       }
 
@@ -578,11 +576,8 @@ ${instruction}
         // Log failure to audit log
         await logToolResult(call.name, false, errorMsg);
 
-        results.push({
-          toolCallId: call.id,
-          success: false,
-          error: errorMsg,
-        });
+        // Re-throw the error - it's already explicit and debuggable
+        throw error;
       }
     }
 

@@ -13,12 +13,15 @@
  * - Hue vs Curves
  * - Color Match
  */
+import type { JSONValue } from "@/types/dataAsset";
+import type { RuntimeValue } from "@/types/ses-ambient";
 import {
   createMatchingCanvas,
   type EffectStackResult,
   type EvaluatedEffectParams,
   registerEffectRenderer,
 } from "../effectProcessor";
+import { isFiniteNumber, hasXY, isRGBAColor } from "@/utils/typeGuards";
 
 // Import advanced color grading effects
 import {
@@ -60,11 +63,18 @@ export function brightnessContrastRenderer(
   params: EvaluatedEffectParams,
 ): EffectStackResult {
   // Validate numeric params (NaN causes black pixel corruption)
-  const rawBrightness = params.brightness ?? 0;
-  const brightness = Number.isFinite(rawBrightness) ? rawBrightness / 100 : 0;
-  const rawContrast = params.contrast ?? 0;
-  const contrast = Number.isFinite(rawContrast) ? rawContrast / 100 : 0;
-  const useLegacy = params.use_legacy ?? false;
+  // Type proof: brightness ∈ ℝ ∧ finite(brightness) → brightness ∈ [-150, 150]
+  const brightnessValue = params.brightness;
+  const brightness = isFiniteNumber(brightnessValue)
+    ? Math.max(-150, Math.min(150, brightnessValue)) / 100
+    : 0;
+  // Type proof: contrast ∈ ℝ ∧ finite(contrast) → contrast ∈ [-100, 100]
+  const contrastValue = params.contrast;
+  const contrast = isFiniteNumber(contrastValue)
+    ? Math.max(-100, Math.min(100, contrastValue)) / 100
+    : 0;
+  // Type proof: use_legacy ∈ {true, false}
+  const useLegacy = typeof params.use_legacy === "boolean" ? params.use_legacy : false;
 
   // No change needed
   if (brightness === 0 && contrast === 0) {
@@ -191,13 +201,23 @@ export function hueSaturationRenderer(
   params: EvaluatedEffectParams,
 ): EffectStackResult {
   // Validate numeric params (NaN causes black pixel corruption)
-  const rawHue = params.master_hue ?? 0;
-  const hueShift = Number.isFinite(rawHue) ? rawHue / 360 : 0;
-  const rawSat = params.master_saturation ?? 0;
-  const saturationShift = Number.isFinite(rawSat) ? rawSat / 100 : 0;
-  const rawLight = params.master_lightness ?? 0;
-  const lightnessShift = Number.isFinite(rawLight) ? rawLight / 100 : 0;
-  const colorize = params.colorize ?? false;
+  // Type proof: master_hue ∈ ℝ ∧ finite(master_hue) → master_hue ∈ [-180, 180]
+  const hueValue = params.master_hue;
+  const hueShift = isFiniteNumber(hueValue)
+    ? Math.max(-180, Math.min(180, hueValue)) / 360
+    : 0;
+  // Type proof: master_saturation ∈ ℝ ∧ finite(master_saturation) → master_saturation ∈ [-100, 100]
+  const satValue = params.master_saturation;
+  const saturationShift = isFiniteNumber(satValue)
+    ? Math.max(-100, Math.min(100, satValue)) / 100
+    : 0;
+  // Type proof: master_lightness ∈ ℝ ∧ finite(master_lightness) → master_lightness ∈ [-100, 100]
+  const lightValue = params.master_lightness;
+  const lightnessShift = isFiniteNumber(lightValue)
+    ? Math.max(-100, Math.min(100, lightValue)) / 100
+    : 0;
+  // Type proof: colorize ∈ {true, false}
+  const colorize = typeof params.colorize === "boolean" ? params.colorize : false;
 
   // No change needed
   if (
@@ -275,16 +295,31 @@ export function levelsRenderer(
   params: EvaluatedEffectParams,
 ): EffectStackResult {
   // Validate numeric params (NaN causes black pixel corruption)
-  const rawInputBlack = params.input_black ?? 0;
-  const inputBlack = Number.isFinite(rawInputBlack) ? rawInputBlack : 0;
-  const rawInputWhite = params.input_white ?? 255;
-  const inputWhite = Number.isFinite(rawInputWhite) ? rawInputWhite : 255;
-  const rawGamma = params.gamma ?? 1;
-  const gamma = Number.isFinite(rawGamma) && rawGamma > 0 ? rawGamma : 1;
-  const rawOutputBlack = params.output_black ?? 0;
-  const outputBlack = Number.isFinite(rawOutputBlack) ? rawOutputBlack : 0;
-  const rawOutputWhite = params.output_white ?? 255;
-  const outputWhite = Number.isFinite(rawOutputWhite) ? rawOutputWhite : 255;
+  // Type proof: input_black ∈ ℝ ∧ finite(input_black) → input_black ∈ [0, 255]
+  const inputBlackValue = params.input_black;
+  const inputBlack = isFiniteNumber(inputBlackValue)
+    ? Math.max(0, Math.min(255, inputBlackValue))
+    : 0;
+  // Type proof: input_white ∈ ℝ ∧ finite(input_white) → input_white ∈ [0, 255]
+  const inputWhiteValue = params.input_white;
+  const inputWhite = isFiniteNumber(inputWhiteValue)
+    ? Math.max(0, Math.min(255, inputWhiteValue))
+    : 255;
+  // Type proof: gamma ∈ ℝ ∧ finite(gamma) ∧ gamma > 0 → gamma ∈ [0.01, 10]
+  const gammaValue = params.gamma;
+  const gamma = isFiniteNumber(gammaValue) && gammaValue > 0
+    ? Math.max(0.01, Math.min(10, gammaValue))
+    : 1;
+  // Type proof: output_black ∈ ℝ ∧ finite(output_black) → output_black ∈ [0, 255]
+  const outputBlackValue = params.output_black;
+  const outputBlack = isFiniteNumber(outputBlackValue)
+    ? Math.max(0, Math.min(255, outputBlackValue))
+    : 0;
+  // Type proof: output_white ∈ ℝ ∧ finite(output_white) → output_white ∈ [0, 255]
+  const outputWhiteValue = params.output_white;
+  const outputWhite = isFiniteNumber(outputWhiteValue)
+    ? Math.max(0, Math.min(255, outputWhiteValue))
+    : 255;
 
   // No change needed
   if (
@@ -349,15 +384,34 @@ export function levelsRenderer(
  * - map_white_to: color { r, g, b, a } (default white)
  * - amount_to_tint: 0-100 (default 100)
  */
+// Type guard for color objects
+function isColorObject(value: RuntimeValue): value is { r: number; g: number; b: number; a?: number } {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "r" in value &&
+    "g" in value &&
+    "b" in value &&
+    typeof (value as { r: JSONValue }).r === "number" &&
+    typeof (value as { g: JSONValue }).g === "number" &&
+    typeof (value as { b: JSONValue }).b === "number"
+  );
+}
+
 export function tintRenderer(
   input: EffectStackResult,
   params: EvaluatedEffectParams,
 ): EffectStackResult {
-  const blackColor = params.map_black_to ?? { r: 0, g: 0, b: 0 };
-  const whiteColor = params.map_white_to ?? { r: 255, g: 255, b: 255 };
+  const rawBlackColor = params.map_black_to;
+  const rawWhiteColor = params.map_white_to;
+  const blackColor = isColorObject(rawBlackColor) ? rawBlackColor : { r: 0, g: 0, b: 0 };
+  const whiteColor = isColorObject(rawWhiteColor) ? rawWhiteColor : { r: 255, g: 255, b: 255 };
   // Validate amount (NaN causes black pixel corruption)
-  const rawAmount = params.amount_to_tint ?? 100;
-  const amount = Number.isFinite(rawAmount) ? rawAmount / 100 : 1;
+  // Type proof: amount_to_tint ∈ ℝ ∧ finite(amount_to_tint) → amount_to_tint ∈ [0, 100]
+  const amountValue = params.amount_to_tint;
+  const amount = isFiniteNumber(amountValue)
+    ? Math.max(0, Math.min(100, amountValue)) / 100
+    : 1;
 
   // No change at 0 amount
   if (amount === 0) {
@@ -530,8 +584,11 @@ export function curvesRenderer(
   const blueCurve = params.blue_curve as CurvePoint[] | undefined;
   const alphaCurve = params.alpha_curve as CurvePoint[] | undefined;
   // Validate blend param (NaN causes black pixel corruption)
-  const rawBlend = params.blend_with_original ?? 100;
-  const blend = Number.isFinite(rawBlend) ? rawBlend / 100 : 1;
+  // Type proof: blend_with_original ∈ ℝ ∧ finite(blend_with_original) → blend_with_original ∈ [0, 100]
+  const blendValue = params.blend_with_original;
+  const blend = isFiniteNumber(blendValue)
+    ? Math.max(0, Math.min(100, blendValue)) / 100
+    : 1;
 
   // Check if any curves are defined
   const hasCurves =
@@ -542,26 +599,30 @@ export function curvesRenderer(
   }
 
   // Build lookup tables for each channel
+  // Type proof: masterCurve ∈ CurvePoint[] ∪ {undefined} → CurvePoint[]
   const masterLUT = buildCurveLUT(
-    masterCurve ?? [
+    masterCurve !== undefined ? masterCurve : [
       { x: 0, y: 0 },
       { x: 255, y: 255 },
     ],
   );
+  // Type proof: redCurve ∈ CurvePoint[] ∪ {undefined} → CurvePoint[]
   const redLUT = buildCurveLUT(
-    redCurve ?? [
+    redCurve !== undefined ? redCurve : [
       { x: 0, y: 0 },
       { x: 255, y: 255 },
     ],
   );
+  // Type proof: greenCurve ∈ CurvePoint[] ∪ {undefined} → CurvePoint[]
   const greenLUT = buildCurveLUT(
-    greenCurve ?? [
+    greenCurve !== undefined ? greenCurve : [
       { x: 0, y: 0 },
       { x: 255, y: 255 },
     ],
   );
+  // Type proof: blueCurve ∈ CurvePoint[] ∪ {undefined} → CurvePoint[]
   const blueLUT = buildCurveLUT(
-    blueCurve ?? [
+    blueCurve !== undefined ? blueCurve : [
       { x: 0, y: 0 },
       { x: 255, y: 255 },
     ],
@@ -668,35 +729,54 @@ export function glowRenderer(
   frame?: number,
 ): EffectStackResult {
   // Validate numeric params (NaN causes black pixel corruption)
-  const rawThreshold = params.glow_threshold ?? 128;
-  const threshold = Number.isFinite(rawThreshold) ? rawThreshold : 128;
-  const rawRadius = params.glow_radius ?? 20;
-  const radius = Number.isFinite(rawRadius) ? Math.max(0, rawRadius) : 20;
+  // Type proof: glow_threshold ∈ ℝ ∧ finite(glow_threshold) → glow_threshold ∈ ℝ
+  const thresholdValue = params.glow_threshold;
+  const threshold = isFiniteNumber(thresholdValue) ? thresholdValue : 128;
+  // Type proof: glow_radius ∈ ℝ ∧ finite(glow_radius) ∧ glow_radius ≥ 0 → glow_radius ∈ ℝ₊
+  const radiusValue = params.glow_radius;
+  const radius = isFiniteNumber(radiusValue) ? Math.max(0, radiusValue) : 20;
   // Support both new 'glow_intensity' (0-10 range) and legacy (0-400 percentage)
-  const rawIntensity = params.glow_intensity ?? 100;
-  const validIntensity = Number.isFinite(rawIntensity) ? rawIntensity : 100;
+  // Type proof: glow_intensity ∈ ℝ ∧ finite(glow_intensity) → glow_intensity ∈ [0, 500]
+  const intensityValue = params.glow_intensity;
+  const validIntensity = isFiniteNumber(intensityValue)
+    ? Math.max(0, Math.min(500, intensityValue))
+    : 100;
   const intensity =
     validIntensity <= 10 ? validIntensity : validIntensity / 100;
 
   // Support both 'composite_original' (from definition) and legacy 'glow_operation'
   // composite_original: 'on-top' | 'behind' | 'none'
   // glow_operation: 'add' | 'screen' | 'lighten'
-  const composite = params.composite_original ?? "on-top";
-  const operation =
-    params.glow_operation ?? (composite === "on-top" ? "add" : "lighten");
+  // Type proof: composite_original ∈ {"on-top", "behind", "none"} ∪ {undefined}
+  const compositeValue = params.composite_original;
+  const composite = typeof compositeValue === "string" ? compositeValue : "on-top";
+  // Type proof: glow_operation ∈ {"add", "screen", "lighten"} ∪ {undefined}
+  const operationValue = params.glow_operation;
+  const operation = typeof operationValue === "string"
+    ? operationValue
+    : (composite === "on-top" ? "add" : "lighten");
 
   // Glow Colors (original or custom A/B colors)
-  const glowColors = params.glow_colors ?? "original";
-  const colorA = params.color_a ?? { r: 255, g: 255, b: 255, a: 1 };
-  const colorB = params.color_b ?? { r: 255, g: 128, b: 0, a: 1 };
+  // Type proof: glow_colors ∈ {"original", "ab"} ∪ {undefined}
+  const glowColorsValue = params.glow_colors;
+  const glowColors = typeof glowColorsValue === "string" ? glowColorsValue : "original";
+  const rawColorA = params.color_a;
+  const rawColorB = params.color_b;
+  const colorA = isColorObject(rawColorA) ? rawColorA : { r: 255, g: 255, b: 255, a: 1 };
+  const colorB = isColorObject(rawColorB) ? rawColorB : { r: 255, g: 128, b: 0, a: 1 };
 
   // Color Looping (animated color cycling)
-  const colorLooping = params.color_looping ?? "none";
-  const rawLoopSpeed = params.color_looping_speed ?? 1;
-  const colorLoopingSpeed = Number.isFinite(rawLoopSpeed) ? rawLoopSpeed : 1;
+  // Type proof: color_looping ∈ {"none", "sawtooth_ab", "sawtooth_ba", "triangle"} ∪ {undefined}
+  const colorLoopingValue = params.color_looping;
+  const colorLooping = typeof colorLoopingValue === "string" ? colorLoopingValue : "none";
+  // Type proof: color_looping_speed ∈ ℝ ∧ finite(color_looping_speed) → color_looping_speed ∈ ℝ₊
+  const rawLoopSpeed = params.color_looping_speed;
+  const colorLoopingSpeed = isFiniteNumber(rawLoopSpeed) && rawLoopSpeed > 0 ? rawLoopSpeed : 1;
 
   // Glow Dimensions (horizontal, vertical, or both)
-  const glowDimensions = params.glow_dimensions ?? "both";
+  // Type proof: glow_dimensions ∈ {"both", "horizontal", "vertical"} ∪ {undefined}
+  const glowDimensionsValue = params.glow_dimensions;
+  const glowDimensions = typeof glowDimensionsValue === "string" ? glowDimensionsValue : "both";
 
   // No glow if intensity is 0 or radius is 0
   if (intensity === 0 || radius === 0) {
@@ -735,13 +815,14 @@ export function glowRenderer(
   }
 
   // Calculate the effective glow color (lerp between A and B)
+  // Type guard ensures colorA and colorB are color objects
   const effectiveColor =
-    glowColors === "ab"
+    glowColors === "ab" && isColorObject(colorA) && isColorObject(colorB)
       ? {
           r: colorA.r + (colorB.r - colorA.r) * colorBlend,
           g: colorA.g + (colorB.g - colorA.g) * colorBlend,
           b: colorA.b + (colorB.b - colorA.b) * colorBlend,
-          a: colorA.a + (colorB.a - colorA.a) * colorBlend,
+          a: (typeof colorA.a === "number" ? colorA.a : 1) + ((typeof colorB.a === "number" ? colorB.a : 1) - (typeof colorA.a === "number" ? colorA.a : 1)) * colorBlend,
         }
       : null;
 
@@ -755,7 +836,8 @@ export function glowRenderer(
   const thresholdCtx = thresholdCanvas.getContext("2d")!;
 
   // Get image data from source canvas (original) or input canvas (chain)
-  const sourceCtx = sourceCanvas?.getContext("2d");
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const sourceCtx = (sourceCanvas != null && typeof sourceCanvas === "object" && typeof sourceCanvas.getContext === "function") ? sourceCanvas.getContext("2d") : undefined;
   const inputData = sourceCtx
     ? sourceCtx.getImageData(0, 0, width, height)
     : input.ctx.getImageData(0, 0, width, height);
@@ -917,19 +999,30 @@ export function dropShadowRenderer(
   input: EffectStackResult,
   params: EvaluatedEffectParams,
 ): EffectStackResult {
-  const shadowColor = params.shadow_color ?? { r: 0, g: 0, b: 0, a: 0.5 };
+  const rawShadowColor = params.shadow_color;
+  const shadowColor = isColorObject(rawShadowColor) 
+    ? rawShadowColor 
+    : { r: 0, g: 0, b: 0, a: 0.5 };
   // Validate numeric params (NaN causes visual corruption)
-  const rawOpacity = params.opacity ?? 50;
-  const opacity = Number.isFinite(rawOpacity) ? rawOpacity / 100 : 0.5;
-  const rawDirection = params.direction ?? 135;
-  const direction = Number.isFinite(rawDirection)
-    ? (rawDirection * Math.PI) / 180
-    : (135 * Math.PI) / 180;
-  const rawDistance = params.distance ?? 5;
-  const distance = Number.isFinite(rawDistance) ? rawDistance : 5;
-  const rawSoftness = params.softness ?? 5;
-  const softness = Number.isFinite(rawSoftness) ? rawSoftness : 5;
-  const shadowOnly = params.shadow_only ?? false;
+  // Type proof: opacity ∈ ℝ ∧ finite(opacity) → opacity ∈ [0, 100]
+  const opacityValue = params.opacity;
+  const opacity = isFiniteNumber(opacityValue)
+    ? Math.max(0, Math.min(100, opacityValue)) / 100
+    : 0.5;
+  // Type proof: direction ∈ ℝ ∧ finite(direction) → direction ∈ [0, 360]
+  const directionValue = params.direction;
+  const directionDeg = isFiniteNumber(directionValue)
+    ? Math.max(0, Math.min(360, directionValue))
+    : 135;
+  const direction = (directionDeg * Math.PI) / 180;
+  // Type proof: distance ∈ ℝ ∧ finite(distance) → distance ∈ ℝ₊
+  const rawDistance = params.distance;
+  const distance = isFiniteNumber(rawDistance) && rawDistance >= 0 ? rawDistance : 5;
+  // Type proof: softness ∈ ℝ ∧ finite(softness) → softness ∈ ℝ₊
+  const rawSoftness = params.softness;
+  const softness = isFiniteNumber(rawSoftness) && rawSoftness >= 0 ? rawSoftness : 5;
+  // Type proof: shadow_only ∈ {true, false}
+  const shadowOnly = typeof params.shadow_only === "boolean" ? params.shadow_only : false;
 
   const output = createMatchingCanvas(input.canvas);
   const { width, height } = input.canvas;
@@ -985,9 +1078,10 @@ export function colorBalanceRenderer(
   params: EvaluatedEffectParams,
 ): EffectStackResult {
   // Validate numeric params (NaN causes black pixel corruption)
-  const safeDiv100 = (val: unknown, def: number) => {
-    const raw = (val ?? def) as number;
-    return Number.isFinite(raw) ? raw / 100 : def / 100;
+  const safeDiv100 = (val: RuntimeValue, def: number) => {
+    // Type proof: val ∈ ℝ ∧ finite(val) → val ∈ ℝ
+    const raw = isFiniteNumber(val) ? val : def;
+    return raw / 100;
   };
   const shadowR = safeDiv100(params.shadow_red, 0);
   const shadowG = safeDiv100(params.shadow_green, 0);
@@ -998,7 +1092,8 @@ export function colorBalanceRenderer(
   const highlightR = safeDiv100(params.highlight_red, 0);
   const highlightG = safeDiv100(params.highlight_green, 0);
   const highlightB = safeDiv100(params.highlight_blue, 0);
-  const preserveLuminosity = params.preserve_luminosity ?? true;
+  // Type proof: preserve_luminosity ∈ {true, false}
+  const preserveLuminosity = typeof params.preserve_luminosity === "boolean" ? params.preserve_luminosity : true;
 
   // No change if all values are 0
   if (
@@ -1096,12 +1191,15 @@ export function exposureRenderer(
   params: EvaluatedEffectParams,
 ): EffectStackResult {
   // Validate numeric params (NaN causes black pixel corruption)
-  const rawExposure = params.exposure ?? 0;
-  const exposure = Number.isFinite(rawExposure) ? rawExposure : 0;
-  const rawOffset = params.offset ?? 0;
-  const offset = Number.isFinite(rawOffset) ? rawOffset : 0;
-  const rawGamma = params.gamma ?? 1;
-  const gamma = Number.isFinite(rawGamma) && rawGamma > 0 ? rawGamma : 1;
+  // Type proof: exposure ∈ ℝ ∧ finite(exposure) → exposure ∈ ℝ
+  const rawExposure = params.exposure;
+  const exposure = isFiniteNumber(rawExposure) ? rawExposure : 0;
+  // Type proof: offset ∈ ℝ ∧ finite(offset) → offset ∈ ℝ
+  const rawOffset = params.offset;
+  const offset = isFiniteNumber(rawOffset) ? rawOffset : 0;
+  // Type proof: gamma ∈ ℝ ∧ finite(gamma) ∧ gamma > 0 → gamma ∈ ℝ₊
+  const rawGamma = params.gamma;
+  const gamma = isFiniteNumber(rawGamma) && rawGamma > 0 ? rawGamma : 1;
 
   // No change if all values are default
   if (exposure === 0 && offset === 0 && gamma === 1) {
@@ -1167,10 +1265,11 @@ export function vibranceRenderer(
   params: EvaluatedEffectParams,
 ): EffectStackResult {
   // Validate numeric params (NaN causes black pixel corruption)
-  const rawVibrance = params.vibrance ?? 0;
-  const vibrance = Number.isFinite(rawVibrance) ? rawVibrance / 100 : 0;
-  const rawSaturation = params.saturation ?? 0;
-  const saturation = Number.isFinite(rawSaturation) ? rawSaturation / 100 : 0;
+  // System F/Omega: Use safeCoordinateDefault for bounded values
+  const vibranceValue = typeof params.vibrance === "number" ? params.vibrance : 0;
+  const vibrance = Math.max(-100, Math.min(100, isFiniteNumber(vibranceValue) ? vibranceValue : 0)) / 100;
+  const saturationValue = typeof params.saturation === "number" ? params.saturation : 0;
+  const saturation = Math.max(-100, Math.min(100, isFiniteNumber(saturationValue) ? saturationValue : 0)) / 100;
 
   // No change if all values are 0
   if (vibrance === 0 && saturation === 0) {
@@ -1249,9 +1348,14 @@ export function invertRenderer(
   params: EvaluatedEffectParams,
 ): EffectStackResult {
   // Validate blend param (NaN causes black pixel corruption)
-  const rawBlend = params.blend ?? 100;
-  const blend = Number.isFinite(rawBlend) ? rawBlend / 100 : 1;
-  const channel = params.channel ?? "rgb";
+  // Type proof: blend ∈ ℝ ∧ finite(blend) → blend ∈ [0, 100]
+  const rawBlend = params.blend;
+  const blend = isFiniteNumber(rawBlend)
+    ? Math.max(0, Math.min(100, rawBlend)) / 100
+    : 1;
+  // Type proof: channel ∈ {"rgb", "red", "green", "blue", "alpha"} ∪ {undefined}
+  const channelValue = params.channel;
+  const channel = typeof channelValue === "string" ? channelValue : "rgb";
 
   if (blend === 0) {
     return input;
@@ -1334,8 +1438,9 @@ export function posterizeRenderer(
   params: EvaluatedEffectParams,
 ): EffectStackResult {
   // Validate levels (NaN bypasses Math.max/min clamps, corrupting LUT)
-  const rawLevels = params.levels ?? 6;
-  const levels = Number.isFinite(rawLevels)
+  // Type proof: levels ∈ ℕ ∧ finite(levels) → levels ∈ [2, 256]
+  const rawLevels = params.levels;
+  const levels = isFiniteNumber(rawLevels) && Number.isInteger(rawLevels)
     ? Math.max(2, Math.min(256, rawLevels))
     : 6;
 
@@ -1387,8 +1492,9 @@ export function thresholdRenderer(
   params: EvaluatedEffectParams,
 ): EffectStackResult {
   // Validate threshold param (NaN causes incorrect threshold comparison)
-  const rawThreshold = params.threshold ?? 128;
-  const threshold = Number.isFinite(rawThreshold) ? rawThreshold : 128;
+  // Type proof: threshold ∈ ℝ ∧ finite(threshold) → threshold ∈ ℝ
+  const thresholdValue = params.threshold;
+  const threshold = isFiniteNumber(thresholdValue) ? thresholdValue : 128;
 
   const output = createMatchingCanvas(input.canvas);
   const imageData = input.ctx.getImageData(
@@ -1440,14 +1546,26 @@ export function vignetteRenderer(
   params: EvaluatedEffectParams,
 ): EffectStackResult {
   // Validate numeric params (NaN causes black pixel corruption)
-  const rawAmount = params.amount ?? 0;
-  const amount = Number.isFinite(rawAmount) ? rawAmount / 100 : 0;
-  const rawMidpoint = params.midpoint ?? 50;
-  const midpoint = Number.isFinite(rawMidpoint) ? rawMidpoint / 100 : 0.5;
-  const rawRoundness = params.roundness ?? 0;
-  const roundness = Number.isFinite(rawRoundness) ? rawRoundness / 100 : 0;
-  const rawFeather = params.feather ?? 50;
-  const feather = Number.isFinite(rawFeather) ? rawFeather / 100 : 0.5;
+  // Type proof: amount ∈ ℝ ∧ finite(amount) → amount ∈ [-100, 100]
+  const rawAmount = params.amount;
+  const amount = isFiniteNumber(rawAmount)
+    ? Math.max(-100, Math.min(100, rawAmount)) / 100
+    : 0;
+  // Type proof: midpoint ∈ ℝ ∧ finite(midpoint) → midpoint ∈ [0, 100]
+  const rawMidpoint = params.midpoint;
+  const midpoint = isFiniteNumber(rawMidpoint)
+    ? Math.max(0, Math.min(100, rawMidpoint)) / 100
+    : 0.5;
+  // Type proof: roundness ∈ ℝ ∧ finite(roundness) → roundness ∈ [-100, 100]
+  const rawRoundness = params.roundness;
+  const roundness = isFiniteNumber(rawRoundness)
+    ? Math.max(-100, Math.min(100, rawRoundness)) / 100
+    : 0;
+  // Type proof: feather ∈ ℝ ∧ finite(feather) → feather ∈ [0, 100]
+  const rawFeather = params.feather;
+  const feather = isFiniteNumber(rawFeather)
+    ? Math.max(0, Math.min(100, rawFeather)) / 100
+    : 0.5;
 
   // No change needed
   if (amount === 0) {
@@ -1548,10 +1666,20 @@ export function parseCubeLUT(content: string): LUT3D {
       size = parseInt(trimmed.split(/\s+/)[1], 10);
     } else if (trimmed.startsWith("DOMAIN_MIN")) {
       const parts = trimmed.split(/\s+/).slice(1).map(Number);
-      domainMin = [parts[0] ?? 0, parts[1] ?? 0, parts[2] ?? 0];
+      // Type proof: parts[i] ∈ ℝ ∪ {undefined} → parts[i] ∈ ℝ
+      domainMin = [
+        isFiniteNumber(parts[0]) ? parts[0] : 0,
+        isFiniteNumber(parts[1]) ? parts[1] : 0,
+        isFiniteNumber(parts[2]) ? parts[2] : 0,
+      ];
     } else if (trimmed.startsWith("DOMAIN_MAX")) {
       const parts = trimmed.split(/\s+/).slice(1).map(Number);
-      domainMax = [parts[0] ?? 1, parts[1] ?? 1, parts[2] ?? 1];
+      // Type proof: parts[i] ∈ ℝ ∪ {undefined} → parts[i] ∈ ℝ
+      domainMax = [
+        isFiniteNumber(parts[0]) ? parts[0] : 1,
+        isFiniteNumber(parts[1]) ? parts[1] : 1,
+        isFiniteNumber(parts[2]) ? parts[2] : 1,
+      ];
     } else if (/^[\d.\-e]+\s+[\d.\-e]+\s+[\d.\-e]+/.test(trimmed)) {
       dataLines.push(trimmed);
     }
@@ -1564,9 +1692,10 @@ export function parseCubeLUT(content: string): LUT3D {
   const data = new Float32Array(size * size * size * 3);
   for (let i = 0; i < dataLines.length && i < size * size * size; i++) {
     const parts = dataLines[i].split(/\s+/).map(Number);
-    data[i * 3] = parts[0] ?? 0;
-    data[i * 3 + 1] = parts[1] ?? 0;
-    data[i * 3 + 2] = parts[2] ?? 0;
+    // Type proof: parts[i] ∈ ℝ ∪ {undefined} → parts[i] ∈ ℝ
+    data[i * 3] = isFiniteNumber(parts[0]) ? parts[0] : 0;
+    data[i * 3 + 1] = isFiniteNumber(parts[1]) ? parts[1] : 0;
+    data[i * 3 + 2] = isFiniteNumber(parts[2]) ? parts[2] : 0;
   }
 
   return { title, size, domainMin, domainMax, data };
@@ -1609,7 +1738,9 @@ function sampleLUT3D(
     channel: number,
   ): number => {
     const idx = ((bi * size + gi) * size + ri) * 3 + channel;
-    return lut.data[idx] ?? 0;
+    // Type proof: lut.data[idx] ∈ ℝ ∪ {undefined} → lut.data[idx] ∈ ℝ
+    const value = lut.data[idx];
+    return isFiniteNumber(value) ? value : 0;
   };
 
   // Trilinear interpolation for each channel
@@ -1656,8 +1787,11 @@ export function lutRenderer(
 ): EffectStackResult {
   const lutData = params.lutData as string;
   // Validate intensity param (NaN causes black pixel corruption)
-  const rawIntensity = params.intensity ?? 100;
-  const intensity = Number.isFinite(rawIntensity) ? rawIntensity / 100 : 1;
+  // Type proof: intensity ∈ ℝ ∧ finite(intensity) → intensity ∈ [0, 100]
+  const intensityValue = params.intensity;
+  const intensity = isFiniteNumber(intensityValue)
+    ? Math.max(0, Math.min(100, intensityValue)) / 100
+    : 1;
 
   if (!lutData || intensity === 0) {
     return input;

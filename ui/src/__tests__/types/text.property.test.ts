@@ -122,9 +122,9 @@ describe("PROPERTY: createDefaultTextData", () => {
     expect(textData.textAlign).toBe("center");
   });
 
-  it("pathLayerId defaults to null", () => {
+  it("pathLayerId defaults to empty string", () => {
     const textData = createDefaultTextData();
-    expect(textData.pathLayerId).toBeNull();
+    expect(textData.pathLayerId).toBe("");
   });
 
   it("pathReversed defaults to false", () => {

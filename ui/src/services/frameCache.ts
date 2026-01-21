@@ -175,8 +175,12 @@ class LRUTracker {
     this.nodeMap.delete(key);
   }
 
-  getOldest(): string | null {
-    return this.head?.key ?? null;
+  getOldest(): string {
+    // Type proof: head ∈ LRUNode | null → key ∈ string
+    if (this.head !== null && typeof this.head === "object" && "key" in this.head && typeof this.head.key === "string") {
+      return this.head.key;
+    }
+    throw new Error("[FrameCache] Cannot get oldest LRU node: Cache is empty");
   }
 
   has(key: string): boolean {
@@ -258,19 +262,20 @@ export class FrameCache {
 
   /**
    * Get a cached frame
-   * @returns The cached frame or null if not found/invalid
+   * @returns The cached frame
+   * @throws Error if frame is not cached, cache is invalid, or frame is compressed (use getAsync)
    */
   get(
     frame: number,
     compositionId: string,
     currentStateHash?: string,
-  ): ImageData | null {
+  ): ImageData {
     const key = this.getCacheKey(frame, compositionId);
     const cached = this.cache.get(key);
 
     if (!cached) {
       this.stats.misses++;
-      return null;
+      throw new Error(`[FrameCache] Cache miss: Frame ${frame} not found in cache for composition "${compositionId}"`);
     }
 
     // Check if cache is still valid (state hasn't changed)
@@ -278,7 +283,7 @@ export class FrameCache {
       // State changed, invalidate this entry
       this.remove(frame, compositionId);
       this.stats.misses++;
-      return null;
+      throw new Error(`[FrameCache] Cache entry invalidated: Frame ${frame} for composition "${compositionId}" has changed state hash`);
     }
 
     // Update LRU order - O(1)
@@ -287,9 +292,8 @@ export class FrameCache {
 
     // Return decompressed data if needed
     if (cached.compressed) {
-      // Compressed data needs async decompression - return null for sync access
-      // Caller should use getAsync for compressed frames
-      return null;
+      // Compressed data needs async decompression - throw error for sync access
+      throw new Error(`[FrameCache] Cannot get compressed frame synchronously: Frame ${frame} for composition "${compositionId}" is compressed. Use getAsync() instead`);
     }
 
     return cached.data as ImageData;
@@ -297,25 +301,27 @@ export class FrameCache {
 
   /**
    * Get a cached frame (async, supports compression)
+   * @returns The cached frame
+   * @throws Error if frame is not cached or cache is invalid
    */
   async getAsync(
     frame: number,
     compositionId: string,
     currentStateHash?: string,
-  ): Promise<ImageData | null> {
+  ): Promise<ImageData> {
     const key = this.getCacheKey(frame, compositionId);
     const cached = this.cache.get(key);
 
     if (!cached) {
       this.stats.misses++;
-      return null;
+      throw new Error(`[FrameCache] Cache miss: Frame ${frame} not found in cache for composition "${compositionId}"`);
     }
 
     // Check if cache is still valid
     if (currentStateHash && cached.stateHash !== currentStateHash) {
       this.remove(frame, compositionId);
       this.stats.misses++;
-      return null;
+      throw new Error(`[FrameCache] Cache entry invalidated: Frame ${frame} for composition "${compositionId}" has changed state hash`);
     }
 
     // Update LRU order - O(1)
@@ -609,8 +615,13 @@ export class FrameCache {
         this.currentMemory + requiredSize > this.config.maxMemoryBytes) &&
       this.lru.size > 0
     ) {
-      const oldestKey = this.lru.getOldest();
-      if (!oldestKey) break;
+      let oldestKey: string;
+      try {
+        oldestKey = this.lru.getOldest();
+      } catch {
+        // Cache is empty, cannot evict
+        break;
+      }
 
       const cached = this.cache.get(oldestKey);
       if (cached) {

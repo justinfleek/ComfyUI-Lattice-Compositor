@@ -185,8 +185,10 @@ export class MaterialSystem {
     let url = urlOrAssetId;
     if (this.assetGetter) {
       const asset = this.assetGetter(urlOrAssetId);
-      if (asset?.data) {
-        url = asset.data;
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const assetData = (asset != null && typeof asset === "object" && "data" in asset && asset.data != null) ? asset.data : undefined;
+      if (assetData != null) {
+        url = assetData;
       }
     }
 
@@ -198,16 +200,20 @@ export class MaterialSystem {
           this.configureTextureForMapType(texture, mapType);
 
           // Apply options
-          if (options?.repeat) {
-            texture.repeat.set(options.repeat.x, options.repeat.y);
+          // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+          const optionsRepeat = (options != null && typeof options === "object" && "repeat" in options && options.repeat != null && typeof options.repeat === "object") ? options.repeat : undefined;
+          if (optionsRepeat != null) {
+            texture.repeat.set(optionsRepeat.x, optionsRepeat.y);
             texture.wrapS = THREE.RepeatWrapping;
             texture.wrapT = THREE.RepeatWrapping;
           }
-          if (options?.offset) {
-            texture.offset.set(options.offset.x, options.offset.y);
+          const optionsOffset = (options != null && typeof options === "object" && "offset" in options && options.offset != null && typeof options.offset === "object") ? options.offset : undefined;
+          if (optionsOffset != null) {
+            texture.offset.set(optionsOffset.x, optionsOffset.y);
           }
-          if (options?.rotation !== undefined) {
-            texture.rotation = options.rotation * (Math.PI / 180);
+          const optionsRotation = (options != null && typeof options === "object" && "rotation" in options && typeof options.rotation === "number") ? options.rotation : undefined;
+          if (optionsRotation !== undefined) {
+            texture.rotation = optionsRotation * (Math.PI / 180);
           }
 
           this.textureCache.set(cacheKey, texture);
@@ -461,8 +467,10 @@ export class MaterialSystem {
     let url = urlOrAssetId;
     if (this.assetGetter) {
       const asset = this.assetGetter(urlOrAssetId);
-      if (asset?.data) {
-        url = asset.data;
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const assetData = (asset != null && typeof asset === "object" && "data" in asset && asset.data != null) ? asset.data : undefined;
+      if (assetData != null) {
+        url = assetData;
       }
     }
 
@@ -475,8 +483,10 @@ export class MaterialSystem {
         url,
         (texture) => {
           // Generate PMREM from equirectangular HDR
-          const envMap =
-            this.pmremGenerator?.fromEquirectangular(texture).texture;
+          // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+          const fromEquirectangular = (this.pmremGenerator != null && typeof this.pmremGenerator === "object" && typeof this.pmremGenerator.fromEquirectangular === "function") ? this.pmremGenerator.fromEquirectangular : undefined;
+          const pmremResult = fromEquirectangular != null ? fromEquirectangular(texture) : undefined;
+          const envMap = (pmremResult != null && typeof pmremResult === "object" && "texture" in pmremResult && pmremResult.texture != null) ? pmremResult.texture : undefined;
           texture.dispose();
 
           if (!envMap) {

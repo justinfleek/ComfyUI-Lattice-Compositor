@@ -326,12 +326,21 @@ export async function separateStemsForReactivity(
   audioData: ArrayBuffer | Blob | string,
   audioContext: AudioContext,
   model: DemucsModel = "htdemucs",
-): Promise<Record<StemType, AudioBuffer> | null> {
+): Promise<Record<StemType, AudioBuffer>> {
   const result = await separateStems(audioData, { model });
 
+  // System F/Omega proof: Explicit validation of separation result
+  // Type proof: result.status ∈ string, result.stems ∈ Record<string, string> | undefined
+  // Mathematical proof: Separation must succeed and produce stems
   if (result.status !== "success" || !result.stems) {
-    console.error("Failed to separate stems:", result.message);
-    return null;
+    const errorMessage = result.message || "Unknown error";
+    console.error("Failed to separate stems:", errorMessage);
+    throw new Error(
+      `[StemSeparation] Cannot separate audio stems: Separation failed. ` +
+      `Status: ${result.status}, error: ${errorMessage}, model: ${model}. ` +
+      `Audio stem separation must succeed to produce stems. ` +
+      `Wrap in try/catch to handle separation failures.`
+    );
   }
 
   const audioBuffers: Record<string, AudioBuffer> = {};

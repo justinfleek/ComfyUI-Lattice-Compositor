@@ -22,7 +22,7 @@
         <div class="property-row">
           <label>FOV</label>
           <ScrubableNumber
-            :modelValue="getPropertyValue('FOV') ?? 50"
+            :modelValue="getFOVValue()"
             @update:modelValue="(v: number) => updateAnimatable('FOV', v, 'animatedFov')"
             :min="10"
             :max="120"
@@ -34,7 +34,7 @@
         <div class="property-row">
           <label>Focal Length</label>
           <ScrubableNumber
-            :modelValue="getPropertyValue('Focal Length') ?? 50"
+            :modelValue="getFocalLengthValue()"
             @update:modelValue="(v: number) => updateAnimatable('Focal Length', v, 'animatedFocalLength')"
             :min="10"
             :max="300"
@@ -63,7 +63,7 @@
         <div class="property-row">
           <label>Focus Distance</label>
           <ScrubableNumber
-            :modelValue="getPropertyValue('Focus Distance') ?? depthOfField.focusDistance"
+            :modelValue="getFocusDistanceValue()"
             @update:modelValue="(v: number) => updateDOFAnimatable('Focus Distance', v, 'focusDistance')"
             :min="0"
             :max="10000"
@@ -75,7 +75,7 @@
         <div class="property-row">
           <label>Aperture</label>
           <ScrubableNumber
-            :modelValue="getPropertyValue('Aperture') ?? depthOfField.aperture"
+            :modelValue="getApertureValue()"
             @update:modelValue="(v: number) => updateDOFAnimatable('Aperture', v, 'aperture')"
             :min="0.5"
             :max="32"
@@ -88,7 +88,7 @@
         <div class="property-row">
           <label>Blur Level</label>
           <ScrubableNumber
-            :modelValue="getPropertyValue('Blur Level') ?? depthOfField.blurLevel"
+            :modelValue="getBlurLevelValue()"
             @update:modelValue="(v: number) => updateDOFAnimatable('Blur Level', v, 'blurLevel')"
             :min="0"
             :max="100"
@@ -135,7 +135,7 @@
         <div class="property-row">
           <label>Position</label>
           <ScrubableNumber
-            :modelValue="getPropertyValue('Path Position') ?? pathFollowing.parameter?.value ?? 0"
+            :modelValue="getPathPositionValue()"
             @update:modelValue="(v: number) => updatePathProperty('parameter', v)"
             :min="0"
             :max="1"
@@ -148,7 +148,7 @@
         <div class="property-row">
           <label>Look Ahead</label>
           <ScrubableNumber
-            :modelValue="pathFollowing.lookAhead ?? 0.05"
+            :modelValue="getPathLookAheadValue()"
             @update:modelValue="(v: number) => updatePathConfig('lookAhead', v)"
             :min="0"
             :max="0.5"
@@ -160,7 +160,7 @@
         <div class="property-row">
           <label>Banking</label>
           <ScrubableNumber
-            :modelValue="pathFollowing.bankingStrength ?? 0"
+            :modelValue="getPathBankingStrengthValue()"
             @update:modelValue="(v: number) => updatePathConfig('bankingStrength', v)"
             :min="0"
             :max="1"
@@ -171,7 +171,7 @@
         <div class="property-row">
           <label>Height Offset</label>
           <ScrubableNumber
-            :modelValue="pathFollowing.offsetY ?? 0"
+            :modelValue="getPathOffsetYValue()"
             @update:modelValue="(v: number) => updatePathConfig('offsetY', v)"
             unit="px"
           />
@@ -202,7 +202,7 @@
         <div v-if="pathFollowing.autoAdvance" class="property-row">
           <label>Speed</label>
           <ScrubableNumber
-            :modelValue="pathFollowing.autoAdvanceSpeed ?? 0.01"
+            :modelValue="getPathAutoAdvanceSpeedValue()"
             @update:modelValue="(v: number) => updatePathConfig('autoAdvanceSpeed', v)"
             :min="0.001"
             :max="0.1"
@@ -522,13 +522,15 @@
 
 <script setup lang="ts">
 import { computed, ref } from "vue";
+import { safeArrayDefault } from "@/utils/typeGuards";
 import {
   createTrajectoryFromPreset,
   generateTrajectoryKeyframes,
   type TrajectoryType,
 } from "@/services/cameraTrajectory";
-import { useCompositorStore } from "@/stores/compositorStore";
+import { useAnimationStore } from "@/stores/animationStore";
 import { useLayerStore } from "@/stores/layerStore";
+import { useProjectStore } from "@/stores/projectStore";
 import { createKeyframe } from "@/types/animation";
 import type {
   AnimatableProperty,
@@ -540,11 +542,14 @@ import type {
   Layer,
   Vec3,
 } from "@/types/project";
+import type { JSONValue } from "@/types/dataAsset";
+import type { PropertyValue } from "@/types/animation";
 
 const props = defineProps<{ layer: Layer }>();
 const emit = defineEmits(["update"]);
-const store = useCompositorStore();
+const animationStore = useAnimationStore();
 const layerStore = useLayerStore();
+const projectStore = useProjectStore();
 
 const expandedSections = ref<string[]>(["settings", "dof"]);
 
@@ -600,7 +605,7 @@ const pathFollowing = computed<CameraPathFollowing>(() => {
 // Get available spline and path layers for path following
 // Camera can follow both visible shape splines (e.g., logo outline) and invisible path guides
 const splineLayers = computed(() => {
-  return store.layers.filter(
+  return projectStore.getActiveCompLayers().filter(
     (l) =>
       (l.type === "spline" || l.type === "path") && l.id !== props.layer.id,
   );
@@ -651,8 +656,8 @@ function toggleSection(section: string) {
 }
 
 // Update camera data
-function update(key: keyof CameraLayerData | string, value: unknown) {
-  layerStore.updateLayer(store, props.layer.id, {
+function update(key: keyof CameraLayerData | string, value: PropertyValue | JSONValue) {
+  layerStore.updateLayer(props.layer.id, {
     data: { ...cameraData.value, [key]: value },
   });
   emit("update");
@@ -728,8 +733,12 @@ function updateRackFocusConfig(
 
 // Apply trajectory preset
 function applyTrajectory(trajectoryType: TrajectoryType) {
-  const comp = store.getActiveComp();
-  const compSettings = comp?.settings || {
+  const projectStore = useProjectStore();
+  const comp = projectStore.getActiveComp();
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining/nullish coalescing
+  // Pattern match: comp.settings ∈ CompositionSettings | undefined → CompositionSettings (default)
+  const compSettingsValue = (comp !== null && typeof comp === "object" && "settings" in comp && typeof comp.settings === "object" && comp.settings !== null) ? comp.settings : undefined;
+  const compSettings = (compSettingsValue !== undefined) ? compSettingsValue : {
     width: 1920,
     height: 1080,
     frameCount: 81,
@@ -768,10 +777,13 @@ function updatePathProperty(_key: string, value: number) {
   // Also update in layer.properties if it exists (via store)
   const prop = getProperty("Path Position");
   if (prop) {
-    const updatedProperties = (props.layer.properties || []).map((p) =>
-      p.name === "Path Position" ? { ...p, value } : p,
-    );
-    layerStore.updateLayer(store, props.layer.id, { properties: updatedProperties });
+    // System F/Omega: Use safeArrayDefault instead of lazy || [] fallback
+    const updatedProperties = safeArrayDefault(
+      props.layer.properties,
+      [],
+      "layer.properties",
+    ).map((p) => (p.name === "Path Position" ? { ...p, value } : p));
+    layerStore.updateLayer(props.layer.id, { properties: updatedProperties });
   }
 }
 
@@ -786,22 +798,27 @@ function getCameraAnimatableProperty(
   if (dataKey === "animatedFocusDistance") return data.animatedFocusDistance;
   if (dataKey === "animatedAperture") return data.animatedAperture;
   if (dataKey === "animatedBlurLevel") return data.animatedBlurLevel;
-  return undefined;
+  throw new Error(`[CameraProperties] Invalid animatable property key: "${dataKey}". Expected "animatedFocalLength", "animatedFocusDistance", "animatedAperture", or "animatedBlurLevel"`);
 }
 
 // Type-safe accessor for CameraLayerData Vec3 animatable properties
+// Lean4/PureScript/Haskell: Returns undefined if property doesn't exist (matches optional type)
 function getCameraVec3AnimatableProperty(
   data: CameraLayerData,
   dataKey: string,
 ): AnimatableProperty<Vec3> | undefined {
   if (dataKey === "animatedPosition") return data.animatedPosition;
   if (dataKey === "animatedTarget") return data.animatedTarget;
-  return undefined;
+  throw new Error(`[CameraProperties] Invalid Vec3 animatable property key: "${dataKey}". Expected "animatedPosition" or "animatedTarget"`);
 }
 
 // Get animatable property from layer.properties
+// Lean4/PureScript/Haskell: Returns undefined if not found (no throwing for missing properties)
+// Pattern match: layer.properties ∈ AnimatableProperty<any>[] | undefined → AnimatableProperty<number> | undefined
 function getProperty(name: string): AnimatableProperty<number> | undefined {
-  const found = props.layer.properties?.find((p) => p.name === name);
+  const propertiesArray = (props.layer.properties !== null && typeof props.layer.properties === "object" && Array.isArray(props.layer.properties)) ? props.layer.properties : undefined;
+  if (propertiesArray === undefined) return undefined;
+  const found = propertiesArray.find((p) => p.name === name);
   if (found && "value" in found && typeof found.value === "number") {
     return found as AnimatableProperty<number>;
   }
@@ -811,13 +828,17 @@ function getProperty(name: string): AnimatableProperty<number> | undefined {
 // Get property value
 function getPropertyValue(name: string): number | undefined {
   const prop = getProperty(name);
-  return prop?.value;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+  // Pattern match: prop.value ∈ number | undefined → number | undefined
+  return (prop !== undefined && typeof prop === "object" && prop !== null && "value" in prop && typeof prop.value === "number" && Number.isFinite(prop.value)) ? prop.value : undefined;
 }
 
 // Check if animated
 function isAnimated(name: string): boolean {
   const prop = getProperty(name);
-  return prop?.animated ?? false;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining/nullish coalescing
+  // Pattern match: prop.animated ∈ boolean | undefined → boolean (default false)
+  return (prop !== undefined && prop !== null && typeof prop === "object" && "animated" in prop && typeof prop.animated === "boolean") ? prop.animated : false;
 }
 
 // Update animatable property
@@ -825,10 +846,13 @@ function updateAnimatable(propName: string, value: number, dataKey: string) {
   // Update in layer.properties (via store)
   const prop = getProperty(propName);
   if (prop) {
-    const updatedProperties = (props.layer.properties || []).map((p) =>
-      p.name === propName ? { ...p, value } : p,
-    );
-    layerStore.updateLayer(store, props.layer.id, { properties: updatedProperties });
+    // System F/Omega: Use safeArrayDefault instead of lazy || [] fallback
+    const updatedProperties = safeArrayDefault(
+      props.layer.properties,
+      [],
+      "layer.properties",
+    ).map((p) => (p.name === propName ? { ...p, value } : p));
+    layerStore.updateLayer(props.layer.id, { properties: updatedProperties });
   }
 
   // Update in camera data's animated property (type-safe)
@@ -852,17 +876,25 @@ function updateDOFAnimatable(
   // Also update in layer.properties (via store)
   const prop = getProperty(propName);
   if (prop) {
-    const updatedProperties = (props.layer.properties || []).map((p) =>
-      p.name === propName ? { ...p, value } : p,
-    );
-    layerStore.updateLayer(store, props.layer.id, { properties: updatedProperties });
+    // System F/Omega: Use safeArrayDefault instead of lazy || [] fallback
+    const updatedProperties = safeArrayDefault(
+      props.layer.properties,
+      [],
+      "layer.properties",
+    ).map((p) => (p.name === propName ? { ...p, value } : p));
+    layerStore.updateLayer(props.layer.id, { properties: updatedProperties });
   }
   emit("update");
 }
 
 // Ensure property exists in layer.properties
 function ensureProperty(propName: string, defaultValue: number, group: string) {
-  const existingProperties = props.layer.properties || [];
+  // System F/Omega: Use safeArrayDefault instead of lazy || [] fallback
+  const existingProperties = safeArrayDefault(
+    props.layer.properties,
+    [],
+    "layer.properties",
+  );
   const existing = existingProperties.find((p) => p.name === propName);
 
   if (!existing) {
@@ -877,7 +909,7 @@ function ensureProperty(propName: string, defaultValue: number, group: string) {
     } as AnimatableProperty<number>;
 
     // Update via store to track in history
-    layerStore.updateLayer(store, props.layer.id, {
+    layerStore.updateLayer(props.layer.id, {
       properties: [...existingProperties, newProperty],
     });
   }
@@ -901,7 +933,7 @@ function toggleKeyframe(
 
   const prop = getProperty(propName);
   if (prop) {
-    const frame = store.currentFrame;
+    const frame = animationStore.currentFrame;
     const hasKeyframeAtFrame = prop.keyframes.some((k) => k.frame === frame);
 
     let updatedKeyframes: typeof prop.keyframes;
@@ -919,12 +951,17 @@ function toggleKeyframe(
     }
 
     // Update via store to track in history
-    const updatedProperties = (props.layer.properties || []).map((p) =>
+    // System F/Omega: Use safeArrayDefault instead of lazy || [] fallback
+    const updatedProperties = safeArrayDefault(
+      props.layer.properties,
+      [],
+      "layer.properties",
+    ).map((p) =>
       p.name === propName
         ? { ...p, keyframes: updatedKeyframes, animated: updatedAnimated }
         : p,
     );
-    layerStore.updateLayer(store, props.layer.id, { properties: updatedProperties });
+    layerStore.updateLayer(props.layer.id, { properties: updatedProperties });
     emit("update");
   }
 }
@@ -933,13 +970,13 @@ function toggleKeyframe(
 function togglePathKeyframe(propName: string) {
   ensureProperty(
     propName,
-    pathFollowing.value.parameter?.value ?? 0,
+    getPathParameterValue(),
     "Path Following",
   );
 
   const prop = getProperty(propName);
   if (prop) {
-    const frame = store.currentFrame;
+    const frame = animationStore.currentFrame;
     const hasKeyframeAtFrame = prop.keyframes.some((k) => k.frame === frame);
 
     let updatedKeyframes: typeof prop.keyframes;
@@ -957,12 +994,17 @@ function togglePathKeyframe(propName: string) {
     }
 
     // Update via store to track in history
-    const updatedProperties = (props.layer.properties || []).map((p) =>
+    // System F/Omega: Use safeArrayDefault instead of lazy || [] fallback
+    const updatedProperties = safeArrayDefault(
+      props.layer.properties,
+      [],
+      "layer.properties",
+    ).map((p) =>
       p.name === propName
         ? { ...p, keyframes: updatedKeyframes, animated: updatedAnimated }
         : p,
     );
-    layerStore.updateLayer(store, props.layer.id, { properties: updatedProperties });
+    layerStore.updateLayer(props.layer.id, { properties: updatedProperties });
     emit("update");
   }
 }
@@ -972,8 +1014,16 @@ function getVec3Value(propName: string, axis: "x" | "y" | "z"): number {
   const dataKey =
     propName === "Position" ? "animatedPosition" : "animatedTarget";
   const animProp = getCameraVec3AnimatableProperty(cameraData.value, dataKey);
-  if (animProp?.value) {
-    return animProp.value[axis] ?? 0;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining/nullish coalescing
+  // Pattern match: animProp ∈ AnimatableProperty<Vec3> | undefined → Vec3 | undefined
+  if (animProp !== undefined && animProp !== null && typeof animProp === "object" && "value" in animProp) {
+    // Pattern match: animProp.value ∈ Vec3 | undefined → Vec3 | undefined
+    const animPropValue = (typeof animProp.value === "object" && animProp.value !== null) ? animProp.value : undefined;
+    if (animPropValue !== undefined) {
+      // Pattern match: animPropValue[axis] ∈ number | undefined → number (default 0)
+      const axisValue = (axis in animPropValue && typeof animPropValue[axis] === "number" && Number.isFinite(animPropValue[axis])) ? animPropValue[axis] : undefined;
+      return (axisValue !== undefined) ? axisValue : 0;
+    }
   }
   return 0;
 }
@@ -1020,7 +1070,7 @@ function toggleVec3Keyframe(propName: string, dataKey: string) {
     };
   }
 
-  const frame = store.currentFrame;
+  const frame = animationStore.currentFrame;
   const hasKeyframeAtFrame = animProp.keyframes.some((k) => k.frame === frame);
 
   if (hasKeyframeAtFrame) {
@@ -1034,6 +1084,74 @@ function toggleVec3Keyframe(propName: string, dataKey: string) {
   }
 
   update(dataKey, animProp);
+}
+
+// Lean4/PureScript/Haskell: Helper functions for Vue template bindings - explicit pattern matching
+// Pattern match: getPropertyValue('FOV') ∈ number | undefined → number (default 50)
+function getFOVValue(): number {
+  const propValue = getPropertyValue('FOV');
+  return (typeof propValue === "number" && Number.isFinite(propValue)) ? propValue : 50;
+}
+
+// Pattern match: getPropertyValue('Focal Length') ∈ number | undefined → number (default 50)
+function getFocalLengthValue(): number {
+  const propValue = getPropertyValue('Focal Length');
+  return (typeof propValue === "number" && Number.isFinite(propValue)) ? propValue : 50;
+}
+
+// Pattern match: getPropertyValue('Focus Distance') ∈ number | undefined → number (fallback to depthOfField.focusDistance)
+function getFocusDistanceValue(): number {
+  const propValue = getPropertyValue('Focus Distance');
+  if (typeof propValue === "number" && Number.isFinite(propValue)) return propValue;
+  return (typeof depthOfField.value.focusDistance === "number" && Number.isFinite(depthOfField.value.focusDistance)) ? depthOfField.value.focusDistance : 0;
+}
+
+// Pattern match: getPropertyValue('Aperture') ∈ number | undefined → number (fallback to depthOfField.aperture)
+function getApertureValue(): number {
+  const propValue = getPropertyValue('Aperture');
+  if (typeof propValue === "number" && Number.isFinite(propValue)) return propValue;
+  return (typeof depthOfField.value.aperture === "number" && Number.isFinite(depthOfField.value.aperture)) ? depthOfField.value.aperture : 2.8;
+}
+
+// Pattern match: getPropertyValue('Blur Level') ∈ number | undefined → number (fallback to depthOfField.blurLevel)
+function getBlurLevelValue(): number {
+  const propValue = getPropertyValue('Blur Level');
+  if (typeof propValue === "number" && Number.isFinite(propValue)) return propValue;
+  return (typeof depthOfField.value.blurLevel === "number" && Number.isFinite(depthOfField.value.blurLevel)) ? depthOfField.value.blurLevel : 0;
+}
+
+// Pattern match: getPropertyValue('Path Position') ∈ number | undefined → number (fallback chain: pathFollowing.parameter.value → 0)
+function getPathPositionValue(): number {
+  const propValue = getPropertyValue('Path Position');
+  if (typeof propValue === "number" && Number.isFinite(propValue)) return propValue;
+  const parameterValue = (pathFollowing.value.parameter !== null && typeof pathFollowing.value.parameter === "object" && "value" in pathFollowing.value.parameter && typeof pathFollowing.value.parameter.value === "number" && Number.isFinite(pathFollowing.value.parameter.value)) ? pathFollowing.value.parameter.value : undefined;
+  return (parameterValue !== undefined) ? parameterValue : 0;
+}
+
+// Pattern match: pathFollowing.lookAhead ∈ number | undefined → number (default 0.05)
+function getPathLookAheadValue(): number {
+  return (typeof pathFollowing.value.lookAhead === "number" && Number.isFinite(pathFollowing.value.lookAhead)) ? pathFollowing.value.lookAhead : 0.05;
+}
+
+// Pattern match: pathFollowing.bankingStrength ∈ number | undefined → number (default 0)
+function getPathBankingStrengthValue(): number {
+  return (typeof pathFollowing.value.bankingStrength === "number" && Number.isFinite(pathFollowing.value.bankingStrength)) ? pathFollowing.value.bankingStrength : 0;
+}
+
+// Pattern match: pathFollowing.offsetY ∈ number | undefined → number (default 0)
+function getPathOffsetYValue(): number {
+  return (typeof pathFollowing.value.offsetY === "number" && Number.isFinite(pathFollowing.value.offsetY)) ? pathFollowing.value.offsetY : 0;
+}
+
+// Pattern match: pathFollowing.autoAdvanceSpeed ∈ number | undefined → number (default 0.01)
+function getPathAutoAdvanceSpeedValue(): number {
+  return (typeof pathFollowing.value.autoAdvanceSpeed === "number" && Number.isFinite(pathFollowing.value.autoAdvanceSpeed)) ? pathFollowing.value.autoAdvanceSpeed : 0.01;
+}
+
+// Pattern match: pathFollowing.parameter.value ∈ number | undefined → number (default 0)
+function getPathParameterValue(): number {
+  const parameterData = (pathFollowing.value.parameter !== null && typeof pathFollowing.value.parameter === "object" && "value" in pathFollowing.value.parameter && typeof pathFollowing.value.parameter.value === "number" && Number.isFinite(pathFollowing.value.parameter.value)) ? pathFollowing.value.parameter.value : undefined;
+  return (parameterData !== undefined) ? parameterData : 0;
 }
 </script>
 

@@ -12,8 +12,15 @@ import type {
   InterpolationType,
   Keyframe,
 } from "@/types/project";
+import type { PropertyValue } from "@/types/animation";
 import { isFiniteNumber, hasXY, isNumberArray } from "@/utils/typeGuards";
 import { easingFunctions } from "./EasingFunctions";
+
+/**
+ * All possible JavaScript values that can be validated at runtime
+ * Used as input type for validators (replaces unknown)
+ */
+type RuntimeValue = string | number | boolean | object | null | undefined | bigint | symbol;
 
 // Type-safe cache entry that preserves property type
 type TypedCacheEntry<T> = {
@@ -25,18 +32,18 @@ type TypedCacheEntry<T> = {
 export class KeyframeEvaluator {
   // Type-safe cache: Map keyed by property ID, but stores full property reference for type verification
   // We verify property identity on retrieval to ensure type safety without assertions
-  private cache: Map<string, TypedCacheEntry<unknown>> = new Map();
+  private cache: Map<string, TypedCacheEntry<PropertyValue>> = new Map();
 
   /**
    * Evaluate an animatable property at a given frame
    */
-  evaluate<T>(property: AnimatableProperty<T>, frame: number): T {
+  evaluate<T extends PropertyValue>(property: AnimatableProperty<T>, frame: number): T {
     // Check cache
     const cacheKey = property.id;
     const cached = this.cache.get(cacheKey);
     
     // Type-safe retrieval: verify property object identity matches (ensures type match)
-    if (cached && cached.property === (property as AnimatableProperty<unknown>) && cached.frame === frame) {
+    if (cached && cached.property === (property as AnimatableProperty<PropertyValue>) && cached.frame === frame) {
       // Property identity match guarantees type match - TypeScript can't prove this but it's runtime-safe
       // We need to structure this so TypeScript understands the type relationship
       const typedCached = cached as TypedCacheEntry<T>;
@@ -59,9 +66,9 @@ export class KeyframeEvaluator {
     // Cache result with property reference for type verification
     // PropertyValue is the union type for all possible keyframe values
     this.cache.set(cacheKey, {
-      property: property as AnimatableProperty<import("@/types/animation").PropertyValue>,
+      property: property as AnimatableProperty<PropertyValue>,
       frame,
-      value: value as import("@/types/animation").PropertyValue,
+      value: value as PropertyValue,
     });
 
     return value;
@@ -70,7 +77,7 @@ export class KeyframeEvaluator {
   /**
    * Evaluate keyframes at a given frame
    */
-  private evaluateKeyframes<T>(
+  private evaluateKeyframes<T extends PropertyValue>(
     keyframes: Keyframe<T>[],
     frame: number,
     defaultValue: T,
@@ -164,7 +171,10 @@ export class KeyframeEvaluator {
     const outHandle = prevKeyframe.outHandle;
     const inHandle = nextKeyframe.inHandle;
 
-    if (!outHandle?.enabled && !inHandle?.enabled) {
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const outHandleEnabled = (outHandle != null && typeof outHandle === "object" && "enabled" in outHandle && typeof outHandle.enabled === "boolean" && outHandle.enabled) ? true : false;
+    const inHandleEnabled = (inHandle != null && typeof inHandle === "object" && "enabled" in inHandle && typeof inHandle.enabled === "boolean" && inHandle.enabled) ? true : false;
+    if (!outHandleEnabled && !inHandleEnabled) {
       return t; // No handles, use linear
     }
 
@@ -174,16 +184,16 @@ export class KeyframeEvaluator {
     // Control points for cubic bezier
     const p0 = { x: 0, y: 0 };
     const p1 = {
-      x: outHandle?.enabled
+      x: outHandleEnabled
         ? Math.min(1, Math.max(0, outHandle.frame / frameDiff))
         : 0.33,
-      y: outHandle?.enabled ? outHandle.value : 0,
+      y: outHandleEnabled ? outHandle.value : 0,
     };
     const p2 = {
-      x: inHandle?.enabled
+      x: inHandleEnabled
         ? Math.min(1, Math.max(0, 1 + inHandle.frame / frameDiff))
         : 0.67,
-      y: inHandle?.enabled ? 1 + inHandle.value : 1,
+      y: inHandleEnabled ? 1 + inHandle.value : 1,
     };
     const p3 = { x: 1, y: 1 };
 
@@ -285,7 +295,7 @@ export class KeyframeEvaluator {
    *
    * Each branch validates types with proper type guards before interpolation.
    */
-  private interpolateValue<T>(from: T, to: T, t: number, _defaultValue: T): T {
+  private interpolateValue<T extends PropertyValue>(from: T, to: T, t: number, _defaultValue: T): T {
     // Number - use type guard to validate both values
     if (isFiniteNumber(from) && isFiniteNumber(to)) {
       // Safe: both values confirmed as finite numbers
@@ -312,7 +322,8 @@ export class KeyframeEvaluator {
     if (isNumberArray(from) && isNumberArray(to)) {
       // Safe: both values confirmed as number[]
       const result = this.interpolateArray(from, to, t);
-      return result as T; // T is number[] in this branch
+      // Type assertion: T extends PropertyValue, and number[] is a valid PropertyValue
+      return result as unknown as T; // T is number[] in this branch
     }
 
     // Default: return from value (no interpolation for unsupported types)
@@ -323,7 +334,7 @@ export class KeyframeEvaluator {
    * Check if value is position-like (has x, y properties)
    */
   private isPositionLike(
-    value: unknown,
+    value: RuntimeValue,
   ): value is { x: number; y: number; z?: number } {
     return (
       value !== null &&
@@ -347,7 +358,12 @@ export class KeyframeEvaluator {
     };
 
     if ("z" in from || "z" in to) {
-      result.z = (from.z ?? 0) + ((to.z ?? 0) - (from.z ?? 0)) * t;
+      // Type proof: z ∈ ℝ ∪ {undefined} → z ∈ ℝ
+      const fromZValue = from.z;
+      const fromZ = isFiniteNumber(fromZValue) ? fromZValue : 0;
+      const toZValue = to.z;
+      const toZ = isFiniteNumber(toZValue) ? toZValue : 0;
+      result.z = fromZ + (toZ - fromZ) * t;
     }
 
     return result;
@@ -375,8 +391,11 @@ export class KeyframeEvaluator {
     const result: number[] = [];
 
     for (let i = 0; i < length; i++) {
-      const fromVal = from[i] ?? 0;
-      const toVal = to[i] ?? 0;
+      // Type proof: from[i], to[i] ∈ ℝ ∪ {undefined} → ℝ
+      const fromValRaw = from[i];
+      const fromVal = isFiniteNumber(fromValRaw) ? fromValRaw : 0;
+      const toValRaw = to[i];
+      const toVal = isFiniteNumber(toValRaw) ? toValRaw : 0;
       result.push(fromVal + (toVal - fromVal) * t);
     }
 

@@ -23,13 +23,18 @@ function makeControlPoint(x: number, y: number, opts?: {
   handleOut?: { x: number; y: number } | null;
   type?: "corner" | "smooth" | "symmetric";
 }) {
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??/?.
+  const id = (opts !== null && opts !== undefined && typeof opts === "object" && "id" in opts && typeof opts.id === "string" && opts.id.length > 0) ? opts.id : `cp-${x}-${y}`;
+  const handleIn = (opts !== null && opts !== undefined && typeof opts === "object" && "handleIn" in opts) ? opts.handleIn : null;
+  const handleOut = (opts !== null && opts !== undefined && typeof opts === "object" && "handleOut" in opts) ? opts.handleOut : null;
+  const type = (opts !== null && opts !== undefined && typeof opts === "object" && "type" in opts && typeof opts.type === "string" && (opts.type === "corner" || opts.type === "smooth" || opts.type === "symmetric")) ? opts.type as const : "corner" as const;
   return {
-    id: opts?.id ?? `cp-${x}-${y}`,
+    id,
     x,
     y,
-    handleIn: opts?.handleIn ?? null,
-    handleOut: opts?.handleOut ?? null,
-    type: opts?.type ?? "corner" as const,
+    handleIn,
+    handleOut,
+    type,
   };
 }
 

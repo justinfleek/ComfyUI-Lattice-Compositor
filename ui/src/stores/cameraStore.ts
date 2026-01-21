@@ -7,6 +7,7 @@
  * @see docs/MASTER_REFACTOR_PLAN.md Phase 4
  */
 
+import { isFiniteNumber } from "@/utils/typeGuards";
 import { defineStore } from "pinia";
 import { interpolateCameraAtFrame } from "@/services/export/cameraExportFormats";
 import type {
@@ -86,9 +87,15 @@ export const useCameraStore = defineStore("camera", {
   }),
   
   getters: {
-    activeCamera(): Camera3D | null {
-      if (!this.activeCameraId) return null;
-      return this.cameras.get(this.activeCameraId) || null;
+    activeCamera(): Camera3D {
+      if (!this.activeCameraId) {
+        throw new Error("[CameraStore] Cannot get active camera: No active camera ID set");
+      }
+      const camera = this.cameras.get(this.activeCameraId);
+      if (!camera) {
+        throw new Error(`[CameraStore] Cannot get active camera: Camera "${this.activeCameraId}" not found`);
+      }
+      return camera;
     },
     allCameras(): Camera3D[] {
       return Array.from(this.cameras.values());
@@ -108,10 +115,14 @@ export const useCameraStore = defineStore("camera", {
       const cameraId = `camera_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
       const cameraName = name || `Camera ${this.cameras.size + 1}`;
 
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const compSettings = (comp != null && typeof comp === "object" && "settings" in comp && comp.settings != null && typeof comp.settings === "object") ? comp.settings : undefined;
+      const compWidth = (compSettings != null && typeof compSettings === "object" && "width" in compSettings && typeof compSettings.width === "number") ? compSettings.width : undefined;
+      const compHeight = (compSettings != null && typeof compSettings === "object" && "height" in compSettings && typeof compSettings.height === "number") ? compSettings.height : undefined;
       const camera = createDefaultCamera(
         cameraId,
-        comp?.settings.width || 1024,
-        comp?.settings.height || 1024,
+        compWidth != null ? compWidth : 1024,
+        compHeight != null ? compHeight : 1024,
       );
       camera.name = cameraName;
 
@@ -122,7 +133,8 @@ export const useCameraStore = defineStore("camera", {
       }
 
       const layerId = `layer_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
-      const frameCount = (comp?.settings.frameCount || 81) - 1;
+      const compFrameCount = (compSettings != null && typeof compSettings === "object" && "frameCount" in compSettings && typeof compSettings.frameCount === "number") ? compSettings.frameCount : undefined;
+      const frameCount = (compFrameCount != null ? compFrameCount : 81) - 1;
       const layer: Layer = {
         id: layerId,
         name: cameraName,
@@ -192,8 +204,12 @@ export const useCameraStore = defineStore("camera", {
       const layers = projectStore.getActiveCompLayers();
 
       const layerIndex = layers.findIndex(
-        (l) =>
-          l.type === "camera" && (l.data as CameraLayerData)?.cameraId === cameraId,
+        (l) => {
+          // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+          const layerData = (l != null && typeof l === "object" && "data" in l && l.data != null) ? l.data as CameraLayerData : undefined;
+          const layerCameraId = (layerData != null && typeof layerData === "object" && "cameraId" in layerData && typeof layerData.cameraId === "string") ? layerData.cameraId : undefined;
+          return l.type === "camera" && layerCameraId === cameraId;
+        },
       );
 
       if (layerIndex !== -1) {
@@ -223,7 +239,9 @@ export const useCameraStore = defineStore("camera", {
     // ========================================================================
 
     getCameraKeyframes(cameraId: string): CameraKeyframe[] {
-      return this.cameraKeyframes.get(cameraId) || [];
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy || []
+      const keyframes = this.cameraKeyframes.get(cameraId);
+      return (keyframes !== null && keyframes !== undefined && Array.isArray(keyframes)) ? keyframes : [];
     },
 
     addCameraKeyframe(cameraId: string, keyframe: CameraKeyframe): void {
@@ -263,9 +281,11 @@ export const useCameraStore = defineStore("camera", {
     // Camera Interpolation
     // ========================================================================
 
-    getCameraAtFrame(cameraId: string, frame: number): Camera3D | null {
+    getCameraAtFrame(cameraId: string, frame: number): Camera3D {
       const camera = this.cameras.get(cameraId);
-      if (!camera) return null;
+      if (!camera) {
+        throw new Error(`[CameraStore] Cannot get camera at frame: Camera "${cameraId}" not found`);
+      }
 
       const keyframes = this.cameraKeyframes.get(cameraId);
       if (!keyframes || keyframes.length === 0) {
@@ -288,11 +308,17 @@ export const useCameraStore = defineStore("camera", {
       };
     },
 
-    getActiveCameraAtFrame(frame?: number): Camera3D | null {
-      if (!this.activeCameraId) return null;
+    getActiveCameraAtFrame(frame?: number): Camera3D {
+      if (!this.activeCameraId) {
+        throw new Error("[CameraStore] Cannot get active camera at frame: No active camera ID set");
+      }
       const animationStore = useAnimationStore();
       const projectStore = useProjectStore();
-      const currentFrame = projectStore.getActiveComp()?.currentFrame ?? 0;
+      // Type proof: currentFrame ∈ ℕ ∪ {undefined} → ℕ
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const activeComp = projectStore.getActiveComp();
+      const compCurrentFrameValue = (activeComp != null && typeof activeComp === "object" && "currentFrame" in activeComp && typeof activeComp.currentFrame === "number") ? activeComp.currentFrame : undefined;
+      const currentFrame = isFiniteNumber(compCurrentFrameValue) && Number.isInteger(compCurrentFrameValue) && compCurrentFrameValue >= 0 ? compCurrentFrameValue : 0;
       const targetFrame = safeFrame(frame, currentFrame);
       return this.getCameraAtFrame(this.activeCameraId, targetFrame);
     },

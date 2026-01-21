@@ -129,10 +129,14 @@ export const usePresetStore = defineStore("presets", {
         }
 
         return results.filter(
-          (p) =>
-            p.name.toLowerCase().includes(q) ||
-            p.description?.toLowerCase().includes(q) ||
-            p.tags?.some((t) => t.toLowerCase().includes(q)),
+          (p) => {
+            // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+            const presetDescription = (p != null && typeof p === "object" && "description" in p && p.description != null && typeof p.description === "string") ? p.description : undefined;
+            const descriptionMatches = (presetDescription != null && typeof presetDescription.toLowerCase === "function" && presetDescription.toLowerCase().includes(q)) ? true : false;
+            const presetTags = (p != null && typeof p === "object" && "tags" in p && p.tags != null && Array.isArray(p.tags)) ? p.tags : undefined;
+            const tagsMatch = (presetTags != null && Array.isArray(presetTags) && presetTags.some((t) => typeof t === "string" && t.toLowerCase().includes(q))) ? true : false;
+            return p.name.toLowerCase().includes(q) || descriptionMatches || tagsMatch;
+          }
         );
       };
     },
@@ -156,7 +160,9 @@ export const usePresetStore = defineStore("presets", {
         const stored = localStorage.getItem(STORAGE_KEY);
         if (stored) {
           const data = JSON.parse(stored) as PresetCollection;
-          this.presets = data.presets || [];
+          // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy || []
+          const presets = data.presets;
+          this.presets = (presets !== null && presets !== undefined && Array.isArray(presets)) ? presets : [];
         }
       } catch (error) {
         console.warn("Failed to load presets from localStorage:", error);
@@ -247,9 +253,11 @@ export const usePresetStore = defineStore("presets", {
     /**
      * Duplicate a preset
      */
-    duplicatePreset(id: string): string | null {
+    duplicatePreset(id: string): string {
       const preset = this.allPresets.find((p) => p.id === id);
-      if (!preset) return null;
+      if (!preset) {
+        throw new Error(`[PresetStore] Cannot duplicate preset: Preset "${id}" not found`);
+      }
 
       const duplicated = {
         ...preset,

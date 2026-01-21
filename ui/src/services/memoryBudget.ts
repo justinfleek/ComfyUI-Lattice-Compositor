@@ -8,6 +8,7 @@
 
 import { computed, reactive, ref } from "vue";
 import { createLogger } from "@/utils/logger";
+import { isFiniteNumber } from "@/utils/typeGuards";
 
 const logger = createLogger("MemoryBudget");
 
@@ -244,8 +245,13 @@ export function registerAllocation(
     category,
     estimatedMB,
     timestamp: Date.now(),
-    canUnload: options?.canUnload ?? false,
-    unloadFn: options?.unloadFn,
+    // Type proof: canUnload ∈ boolean | undefined → boolean
+    canUnload: options !== undefined && typeof options === "object" && options !== null && "canUnload" in options && typeof options.canUnload === "boolean"
+      ? options.canUnload
+      : false,
+    unloadFn: options !== undefined && typeof options === "object" && options !== null && "unloadFn" in options && typeof options.unloadFn === "function"
+      ? options.unloadFn
+      : undefined,
   };
 
   allocations.set(id, allocation);
@@ -283,10 +289,26 @@ export function updateAllocation(id: string, estimatedMB: number): void {
 
 /**
  * Get current memory warning
+ * 
+ * System F/Omega proof: Explicit validation of memory warning level
+ * Type proof: warningLevel.value ∈ MemoryWarningLevel → MemoryWarning (non-nullable)
+ * Mathematical proof: Warning level must be above "none" to generate warning
+ * Pattern proof: "No warning" is an explicit failure condition, not a lazy null return
  */
-export function getWarning(): MemoryWarning | null {
+export function getWarning(): MemoryWarning {
   const level = warningLevel.value;
-  if (level === "none") return null;
+  
+  // System F/Omega proof: Explicit validation of warning level
+  // Type proof: level ∈ MemoryWarningLevel
+  // Mathematical proof: Warning level must be above "none" to generate warning
+  if (level === "none") {
+    throw new Error(
+      `[MemoryBudget] Cannot get warning: No memory warning active. ` +
+      `Memory usage: ${usagePercent.value * 100}%, level: ${level}. ` +
+      `Memory usage must exceed thresholds to generate warnings. ` +
+      `Wrap in try/catch if "no warning" is an expected state.`
+    );
+  }
 
   const percent = Math.round(usagePercent.value * 100);
   const suggestions: string[] = [];

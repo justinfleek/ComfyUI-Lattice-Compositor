@@ -303,9 +303,13 @@ const cameraSuggestions = computed<CameraSuggestion[]>(() => {
     if (s.type !== "camera" || !s.points || s.points.length < 2) return [];
     const firstPoint = s.points[0];
     const lastPoint = s.points[s.points.length - 1];
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const suggestionDescription = (s != null && typeof s === "object" && "description" in s && s.description != null && typeof s.description === "string") ? s.description : undefined;
+    const descriptionFirstWord = (suggestionDescription != null && typeof suggestionDescription.split === "function") ? suggestionDescription.split(" ")[0] : undefined;
+    const cameraType = (descriptionFirstWord != null && typeof descriptionFirstWord === "string") ? descriptionFirstWord : "Camera";
     return [
       {
-        type: s.description?.split(" ")[0] || "Camera",
+        type: cameraType,
         startX: firstPoint.x,
         startY: firstPoint.y,
         endX: lastPoint.x,

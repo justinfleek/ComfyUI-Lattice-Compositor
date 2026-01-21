@@ -3,6 +3,8 @@
  * Provides minimal stubs for Three.js classes used in the codebase
  */
 
+import type { JSONValue } from "@/types/dataAsset";
+
 // Vector classes
 export class Vector2 {
   x: number;
@@ -245,7 +247,7 @@ export class Object3D {
   matrixWorld = new Matrix4();
   visible = true;
   renderOrder = 0;
-  userData: Record<string, any> = {};
+  userData: Record<string, JSONValue> = {};
 
   add(object: Object3D) {
     object.parent = this;
@@ -287,7 +289,7 @@ export class Scene extends Object3D {
 // Geometry
 export class BufferGeometry {
   uuid = Math.random().toString();
-  attributes: Record<string, unknown> = {};
+  attributes: Record<string, JSONValue> = {};
   index: number | null = null;
   dispose() {}
   setAttribute(_name: string, _attr: unknown) {
@@ -341,7 +343,7 @@ export class LineBasicMaterial extends Material {
 }
 
 export class ShaderMaterial extends Material {
-  uniforms: Record<string, any> = {};
+  uniforms: Record<string, JSONValue> = {};
   vertexShader = "";
   fragmentShader = "";
 }
@@ -521,7 +523,7 @@ export class WebGLRenderTarget {
   height: number;
   texture = new Texture();
 
-  constructor(width: number, height: number, _options?: Record<string, unknown>) {
+  constructor(width: number, height: number, _options?: Record<string, JSONValue>) {
     this.width = width;
     this.height = height;
   }

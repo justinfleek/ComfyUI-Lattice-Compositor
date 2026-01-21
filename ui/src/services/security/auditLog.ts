@@ -12,7 +12,15 @@
  * @see AUDIT/SECURITY_ARCHITECTURE.md
  */
 
-import type { ToolCall } from "@/services/ai/toolDefinitions";
+import { isFiniteNumber, safeNonNegativeDefault } from "@/utils/typeGuards";
+
+import type { JSONValue } from "@/types/dataAsset";
+
+/**
+ * Type for tool arguments in audit logs.
+ * Uses Record<string, JSONValue> for runtime iteration while staying type-safe.
+ */
+type ToolArgsRecord = Record<string, JSONValue>;
 
 // ============================================================================
 // Types
@@ -44,7 +52,7 @@ export interface AuditLogEntry {
   /** Tool name (for tool events) */
   toolName?: string;
   /** Tool arguments (sanitized) */
-  toolArguments?: ToolCall["arguments"];
+  toolArguments?: ToolArgsRecord;
   /** Result or error message */
   message: string;
   /** Success/failure for tool calls */
@@ -227,7 +235,7 @@ export async function logAuditEntry(
  */
 export async function logToolCall(
   toolName: string,
-  toolArguments: ToolCall["arguments"],
+  toolArguments: ToolArgsRecord,
   userAction?: string,
 ): Promise<void> {
   await logAuditEntry({
@@ -361,8 +369,14 @@ export async function queryAuditLog(
         cursor = index.openCursor(null, "prev"); // Newest first
       }
 
-      const limit = query.limit ?? 100;
-      const offset = query.offset ?? 0;
+      // Type proof: number | undefined → number
+      const limit = isFiniteNumber(query.limit) && query.limit > 0
+        ? query.limit
+        : 100;
+      // Type proof: number | undefined → number
+      const offset = isFiniteNumber(query.offset) && query.offset >= 0
+        ? query.offset
+        : 0;
       let skipped = 0;
 
       cursor.onsuccess = () => {
@@ -446,17 +460,20 @@ export async function getAuditStats(): Promise<AuditLogStats> {
         const entry = result.value as AuditLogEntry;
 
         // Track by category
+        // Type proof: count ∈ number | undefined → number (≥ 0, count)
         stats.byCategory[entry.category] =
-          (stats.byCategory[entry.category] || 0) + 1;
+          safeNonNegativeDefault(stats.byCategory[entry.category], 0, `stats.byCategory[${entry.category}]`) + 1;
 
         // Track by severity
+        // Type proof: count ∈ number | undefined → number (≥ 0, count)
         stats.bySeverity[entry.severity] =
-          (stats.bySeverity[entry.severity] || 0) + 1;
+          safeNonNegativeDefault(stats.bySeverity[entry.severity], 0, `stats.bySeverity[${entry.severity}]`) + 1;
 
         // Track by tool name
         if (entry.toolName) {
+          // Type proof: count ∈ number | undefined → number (≥ 0, count)
           stats.byToolName[entry.toolName] =
-            (stats.byToolName[entry.toolName] || 0) + 1;
+            safeNonNegativeDefault(stats.byToolName[entry.toolName], 0, `stats.byToolName[${entry.toolName}]`) + 1;
         }
 
         // Track oldest/newest
@@ -648,9 +665,9 @@ export async function clearAuditLog(
  * Removes potentially sensitive data, truncates long strings.
  */
 function sanitizeArguments(
-  args: ToolCall["arguments"],
-): ToolCall["arguments"] {
-  const sanitized: ToolCall["arguments"] = {};
+  args: ToolArgsRecord,
+): ToolArgsRecord {
+  const sanitized: ToolArgsRecord = {};
 
   for (const [key, value] of Object.entries(args)) {
     // Skip potentially sensitive keys

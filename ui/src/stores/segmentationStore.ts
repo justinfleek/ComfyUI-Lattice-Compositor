@@ -141,8 +141,12 @@ export const useSegmentationStore = defineStore("segmentation", {
 
         const imageData: ImageLayerData = {
           assetId,
+          source: "",
           fit: "none",
+          cropEnabled: false,
+          cropRect: { x: 0, y: 0, width: 0, height: 0 },
           sourceType: "segmented",
+          segmentationMaskId: "",
         };
         layer.data = imageData;
 
@@ -174,30 +178,33 @@ export const useSegmentationStore = defineStore("segmentation", {
         );
         return layer;
       } catch (err) {
-        storeLogger.error("Failed to create layer from mask:", err);
-        return null;
+        if (err instanceof Error && err.message.startsWith("[SegmentationStore]")) {
+          throw err;
+        }
+        throw new Error(`[SegmentationStore] Failed to create layer from mask: ${err instanceof Error ? err.message : String(err)}`);
       }
     },
 
     async segmentToLayerByPoint(
       point: SegmentationPoint,
       options: SegmentationOptions = {},
-    ): Promise<Layer | null> {
+    ): Promise<Layer> {
       const projectStore = useProjectStore();
       if (!projectStore.sourceImage) {
-        storeLogger.warn("No source image for segmentation");
-        return null;
+        throw new Error("[SegmentationStore] Cannot segment by point: No source image available");
       }
 
       try {
         const result = await segmentByPoint(projectStore.sourceImage, point, options.model);
 
-        if (result.status !== "success" || !result.masks?.length) {
-          storeLogger.warn("Segmentation returned no masks:", result.message);
-          return null;
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+        const resultMasks = (result != null && typeof result === "object" && "masks" in result && result.masks != null && Array.isArray(result.masks)) ? result.masks : undefined;
+        const masksLength = resultMasks != null ? resultMasks.length : 0;
+        if (result.status !== "success" || masksLength === 0) {
+          throw new Error(`[SegmentationStore] Segmentation by point failed: ${result.message || "No masks returned"}`);
         }
 
-        const mask = result.masks[0];
+        const mask = resultMasks[0];
         return this.createLayerFromMask(
           projectStore.sourceImage,
           mask,
@@ -205,8 +212,10 @@ export const useSegmentationStore = defineStore("segmentation", {
           options.positionAtCenter,
         );
       } catch (err) {
-        storeLogger.error("Segmentation by point failed:", err);
-        return null;
+        if (err instanceof Error && err.message.startsWith("[SegmentationStore]")) {
+          throw err;
+        }
+        throw new Error(`[SegmentationStore] Segmentation by point failed: ${err instanceof Error ? err.message : String(err)}`);
       }
     },
 
@@ -214,22 +223,23 @@ export const useSegmentationStore = defineStore("segmentation", {
       foregroundPoints: SegmentationPoint[],
       backgroundPoints: SegmentationPoint[] = [],
       options: SegmentationOptions = {},
-    ): Promise<Layer | null> {
+    ): Promise<Layer> {
       const projectStore = useProjectStore();
       if (!projectStore.sourceImage) {
-        storeLogger.warn("No source image for segmentation");
-        return null;
+        throw new Error("[SegmentationStore] Cannot segment by multiple points: No source image available");
       }
 
       try {
         const result = await segmentByMultiplePoints(projectStore.sourceImage, foregroundPoints, backgroundPoints, options.model);
 
-        if (result.status !== "success" || !result.masks?.length) {
-          storeLogger.warn("Segmentation returned no masks:", result.message);
-          return null;
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+        const resultMasks = (result != null && typeof result === "object" && "masks" in result && result.masks != null && Array.isArray(result.masks)) ? result.masks : undefined;
+        const masksLength = resultMasks != null ? resultMasks.length : 0;
+        if (result.status !== "success" || masksLength === 0) {
+          throw new Error(`[SegmentationStore] Segmentation by multiple points failed: ${result.message || "No masks returned"}`);
         }
 
-        const mask = result.masks[0];
+        const mask = resultMasks[0];
         return this.createLayerFromMask(
           projectStore.sourceImage,
           mask,
@@ -237,30 +247,33 @@ export const useSegmentationStore = defineStore("segmentation", {
           options.positionAtCenter,
         );
       } catch (err) {
-        storeLogger.error("Segmentation by multiple points failed:", err);
-        return null;
+        if (err instanceof Error && err.message.startsWith("[SegmentationStore]")) {
+          throw err;
+        }
+        throw new Error(`[SegmentationStore] Segmentation by multiple points failed: ${err instanceof Error ? err.message : String(err)}`);
       }
     },
 
     async segmentToLayerByBox(
       box: [number, number, number, number],
       options: SegmentationOptions = {},
-    ): Promise<Layer | null> {
+    ): Promise<Layer> {
       const projectStore = useProjectStore();
       if (!projectStore.sourceImage) {
-        storeLogger.warn("No source image for segmentation");
-        return null;
+        throw new Error("[SegmentationStore] Cannot segment by box: No source image available");
       }
 
       try {
         const result = await segmentByBox(projectStore.sourceImage, box, options.model);
 
-        if (result.status !== "success" || !result.masks?.length) {
-          storeLogger.warn("Segmentation returned no masks:", result.message);
-          return null;
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+        const resultMasks = (result != null && typeof result === "object" && "masks" in result && result.masks != null && Array.isArray(result.masks)) ? result.masks : undefined;
+        const masksLength = resultMasks != null ? resultMasks.length : 0;
+        if (result.status !== "success" || masksLength === 0) {
+          throw new Error(`[SegmentationStore] Segmentation by box failed: ${result.message || "No masks returned"}`);
         }
 
-        const mask = result.masks[0];
+        const mask = resultMasks[0];
         return this.createLayerFromMask(
           projectStore.sourceImage,
           mask,
@@ -268,8 +281,10 @@ export const useSegmentationStore = defineStore("segmentation", {
           options.positionAtCenter,
         );
       } catch (err) {
-        storeLogger.error("Segmentation by box failed:", err);
-        return null;
+        if (err instanceof Error && err.message.startsWith("[SegmentationStore]")) {
+          throw err;
+        }
+        throw new Error(`[SegmentationStore] Segmentation by box failed: ${err instanceof Error ? err.message : String(err)}`);
       }
     },
 
@@ -289,7 +304,10 @@ export const useSegmentationStore = defineStore("segmentation", {
           maxMasks: options.maxMasks,
         });
 
-        if (result.status !== "success" || !result.masks?.length) {
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+        const resultMasks = (result != null && typeof result === "object" && "masks" in result && result.masks != null && Array.isArray(result.masks)) ? result.masks : undefined;
+        const masksLength = resultMasks != null ? resultMasks.length : 0;
+        if (result.status !== "success" || masksLength === 0) {
           storeLogger.warn("Auto segmentation returned no masks:", result.message);
           return [];
         }
@@ -297,8 +315,8 @@ export const useSegmentationStore = defineStore("segmentation", {
         const layers: Layer[] = [];
         const namePrefix = options.namePrefix || "Segment";
 
-        for (let i = 0; i < result.masks.length; i++) {
-          const mask = result.masks[i];
+        for (let i = 0; i < resultMasks.length; i++) {
+          const mask = resultMasks[i];
           const layer = await this.createLayerFromMask(
             projectStore.sourceImage,
             mask,

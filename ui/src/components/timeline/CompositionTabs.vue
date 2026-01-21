@@ -76,13 +76,13 @@
         <button @click="duplicateComposition">Duplicate</button>
         <button @click="openInNewTab">Open in New Tab</button>
         <hr />
-        <button @click="setAsMainComp" :disabled="contextMenu.comp?.id === mainCompositionId">
+        <button @click="setAsMainComp" :disabled="getContextMenuCompId() === mainCompositionId">
           Set as Main Composition
         </button>
         <hr />
         <button
           @click="deleteComposition"
-          :disabled="contextMenu.comp?.id === mainCompositionId"
+          :disabled="getContextMenuCompId() === mainCompositionId"
           class="danger"
         >
           Delete Composition
@@ -94,8 +94,10 @@
 
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, ref } from "vue";
-import { useCompositorStore } from "@/stores/compositorStore";
 import { useCompositionStore } from "@/stores/compositionStore";
+import type { CompositionStoreAccess } from "@/stores/compositionStore";
+import { useProjectStore } from "@/stores/projectStore";
+import { useSelectionStore } from "@/stores/selectionStore";
 import type { Composition } from "@/types/project";
 
 const emit = defineEmits<{
@@ -103,11 +105,40 @@ const emit = defineEmits<{
   (e: "openCompositionSettings"): void;
 }>();
 
-const store = useCompositorStore();
 const compositionStore = useCompositionStore();
+const projectStore = useProjectStore();
+const selectionStore = useSelectionStore();
 
-// Computed from store
-const breadcrumbPath = computed(() => store.breadcrumbPath);
+// Helper to create CompositionStoreAccess for composition operations
+function getCompositionStoreAccess(): CompositionStoreAccess {
+  return {
+    project: {
+      compositions: projectStore.project.compositions,
+      mainCompositionId: projectStore.project.mainCompositionId,
+      composition: projectStore.project.composition,
+      meta: projectStore.project.meta,
+    },
+    activeCompositionId: projectStore.activeCompositionId,
+    openCompositionIds: projectStore.openCompositionIds,
+    compositionBreadcrumbs: projectStore.compositionBreadcrumbs,
+    selectedLayerIds: selectionStore.selectedLayerIds,
+    getActiveComp: () => projectStore.getActiveComp(),
+    switchComposition: (compId: string) => {
+      compositionStore.switchComposition(getCompositionStoreAccess(), compId);
+    },
+    pushHistory: () => projectStore.pushHistory(),
+  };
+}
+
+// Computed from stores
+const breadcrumbPath = computed(() => {
+  return projectStore.compositionBreadcrumbs.map((id: string) => {
+    const comp = projectStore.project.compositions[id];
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const compName = (comp != null && typeof comp === "object" && "name" in comp && typeof comp.name === "string") ? comp.name : undefined;
+    return { id, name: compName != null ? compName : id };
+  });
+});
 
 // State
 const editingId = ref<string | null>(null);
@@ -126,27 +157,37 @@ const contextMenu = ref<{
   comp: null,
 });
 
+// Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+function getContextMenuCompId(): string | undefined {
+  const comp = contextMenu.value.comp;
+  return (comp != null && typeof comp === "object" && "id" in comp && typeof comp.id === "string") ? comp.id : undefined;
+}
+
 // Computed
-const openCompositions = computed(() => store.openCompositions);
-const activeCompositionId = computed(() => store.activeCompositionId);
-const mainCompositionId = computed(() => store.project.mainCompositionId);
+const openCompositions = computed(() => {
+  return projectStore.openCompositionIds
+    .map((id: string) => projectStore.project.compositions[id])
+    .filter(Boolean) as Composition[];
+});
+const activeCompositionId = computed(() => projectStore.activeCompositionId);
+const mainCompositionId = computed(() => projectStore.project.mainCompositionId);
 
 // Methods
 function switchToComposition(compId: string) {
-  store.switchComposition(compId);
+  compositionStore.switchComposition(getCompositionStoreAccess(), compId);
 }
 
 function closeTab(compId: string) {
-  store.closeCompositionTab(compId);
+  compositionStore.closeCompositionTab(getCompositionStoreAccess(), compId);
 }
 
 // Breadcrumb navigation
 function navigateToBreadcrumb(idx: number) {
-  store.navigateToBreadcrumb(idx);
+  compositionStore.navigateToBreadcrumb(getCompositionStoreAccess(), idx);
 }
 
 function navigateBack() {
-  store.navigateBack();
+  compositionStore.navigateBack(getCompositionStoreAccess());
 }
 
 function formatCompInfo(comp: Composition): string {
@@ -158,14 +199,24 @@ function startRename(comp: Composition) {
   editingId.value = comp.id;
   editingName.value = comp.name;
   nextTick(() => {
-    renameInput.value?.focus();
-    renameInput.value?.select();
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const renameInputValue = renameInput.value;
+    if (renameInputValue != null && typeof renameInputValue === "object" && typeof renameInputValue.focus === "function") {
+      renameInputValue.focus();
+    }
+    if (renameInputValue != null && typeof renameInputValue === "object" && typeof renameInputValue.select === "function") {
+      renameInputValue.select();
+    }
   });
 }
 
 function finishRename() {
   if (editingId.value && editingName.value.trim()) {
-    store.renameComposition(editingId.value, editingName.value.trim());
+    compositionStore.renameComposition(
+      getCompositionStoreAccess(),
+      editingId.value,
+      editingName.value.trim(),
+    );
   }
   editingId.value = null;
   editingName.value = "";
@@ -196,7 +247,10 @@ function openCompSettings() {
     contextMenu.value.comp &&
     contextMenu.value.comp.id !== activeCompositionId.value
   ) {
-    store.switchComposition(contextMenu.value.comp.id);
+    compositionStore.switchComposition(
+      getCompositionStoreAccess(),
+      contextMenu.value.comp.id,
+    );
   }
   emit("openCompositionSettings");
   hideContextMenu();
@@ -213,7 +267,6 @@ function duplicateComposition() {
   if (contextMenu.value.comp) {
     const original = contextMenu.value.comp;
     const newComp = compositionStore.createComposition(
-      store,
       `${original.name} Copy`,
       original.settings,
       original.isNestedComp,
@@ -255,14 +308,15 @@ function duplicateComposition() {
 
 function openInNewTab() {
   if (contextMenu.value.comp) {
-    store.switchComposition(contextMenu.value.comp.id);
+    compositionStore.switchComposition(getCompositionStoreAccess(), contextMenu.value.comp.id);
   }
   hideContextMenu();
 }
 
 function setAsMainComp() {
   if (contextMenu.value.comp) {
-    store.project.mainCompositionId = contextMenu.value.comp.id;
+    projectStore.project.mainCompositionId = contextMenu.value.comp.id;
+    projectStore.pushHistory();
     console.log(
       "[CompositionTabs] Set main composition:",
       contextMenu.value.comp.name,
@@ -276,7 +330,7 @@ function deleteComposition() {
     contextMenu.value.comp &&
     contextMenu.value.comp.id !== mainCompositionId.value
   ) {
-    compositionStore.deleteComposition(store, contextMenu.value.comp.id);
+    compositionStore.deleteComposition(getCompositionStoreAccess(), contextMenu.value.comp.id);
   }
   hideContextMenu();
 }

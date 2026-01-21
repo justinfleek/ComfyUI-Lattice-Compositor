@@ -6,6 +6,8 @@
  * - temporalJitter: Smooth noise with Catmull-Rom interpolation
  */
 
+import { isFiniteNumber } from "@/utils/typeGuards";
+
 // ============================================================================
 // TYPES
 // ============================================================================
@@ -34,7 +36,8 @@ export function jitter(
   amplitudeMultiplier: number = 0.5,
   time?: number,
 ): number | number[] {
-  const t = time ?? ctx.time;
+  // Type proof: number | undefined → number
+  const t = isFiniteNumber(time) ? time : ctx.time;
   const { value } = ctx;
 
   // Guard against invalid octaves (prevents infinite loop)
@@ -89,7 +92,8 @@ export function temporalJitter(
   octaves: number = 1,
   time?: number,
 ): number | number[] {
-  const t = time ?? ctx.time;
+  // Type proof: number | undefined → number
+  const t = isFiniteNumber(time) ? time : ctx.time;
 
   // Guard against invalid frequency (prevents division by zero)
   if (!Number.isFinite(frequency) || frequency <= 0) {

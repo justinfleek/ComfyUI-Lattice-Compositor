@@ -69,7 +69,9 @@ export function getEvaluatedLayerProperties(
   if (!layer) return new Map();
 
   // Get composition context for expressions
-  const comp = store.getActiveComp?.();
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const getActiveComp = (store != null && typeof store === "object" && "getActiveComp" in store && typeof store.getActiveComp === "function") ? store.getActiveComp : undefined;
+  const comp = (getActiveComp != null && typeof getActiveComp === "function") ? getActiveComp() : undefined;
   // Validate fps (nullish coalescing doesn't catch NaN)
   const fps = Number.isFinite(store.fps) && store.fps > 0 ? store.fps : 16;
   // Validate duration calculation to prevent NaN propagation
@@ -246,7 +248,10 @@ export function createPropertyLinkDriver(
 
   const success = addPropertyDriver(store, driver);
   if (!success) {
-    return null; // Circular dependency detected
+    // PropertyPath is a string union type, so it's always a string
+    const sourcePath = String(sourceProperty);
+    const targetPath = String(targetProperty);
+    throw new Error(`[ExpressionStore] Cannot create property driver: Circular dependency detected between "${sourceLayerId}.${sourcePath}" and "${targetLayerId}.${targetPath}"`);
   }
 
   return driver;

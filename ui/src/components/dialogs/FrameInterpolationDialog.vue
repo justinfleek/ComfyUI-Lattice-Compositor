@@ -50,7 +50,7 @@
                 v-model.number="startFrame"
                 type="number"
                 :min="0"
-                :max="store.frameCount - 1"
+                :max="projectStore.getFrameCount() - 1"
               />
             </div>
             <span class="range-separator">to</span>
@@ -60,7 +60,7 @@
                 v-model.number="endFrame"
                 type="number"
                 :min="startFrame"
-                :max="store.frameCount - 1"
+                :max="projectStore.getFrameCount() - 1"
               />
             </div>
           </div>
@@ -172,21 +172,21 @@ import {
   interpolateSequence,
   isInterpolationAvailable,
 } from "@/services/video/frameInterpolation";
-import { useCompositorStore } from "@/stores/compositorStore";
+import { useProjectStore } from "@/stores/projectStore";
 
 const emit = defineEmits<{
   (e: "close"): void;
   (e: "complete", frames: string[]): void;
 }>();
 
-const store = useCompositorStore();
+const projectStore = useProjectStore();
 
 // State
 const backendAvailable = ref(false);
 const models = ref<InterpolationModel[]>([]);
 const mode = ref<"upscale" | "slowmo">("upscale");
 const startFrame = ref(0);
-const endFrame = ref(Math.min(30, store.frameCount - 1));
+const endFrame = ref(Math.min(30, projectStore.getFrameCount() - 1));
 const factor = ref<number>(2);
 const selectedModel = ref<RIFEModel>("rife-v4.6");
 const useEnsemble = ref(false);
@@ -221,20 +221,21 @@ const estimatedOutputFrames = computed(() => {
 });
 
 const estimatedFps = computed(() => {
-  const baseFps = store.project?.meta?.fps ?? 24;
+  const baseFps = projectStore.getFps();
   return baseFps * factor.value;
 });
 
 const slowmoDuration = computed(() => factor.value);
 
+// Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??/?.
 const currentModelDescription = computed(() => {
   const model = models.value.find((m) => m.id === selectedModel.value);
-  return model?.description ?? "Select a model";
+  return (model !== null && model !== undefined && typeof model === "object" && "description" in model && typeof model.description === "string") ? model.description : "Select a model";
 });
 
 const currentModelSupportsEnsemble = computed(() => {
   const model = models.value.find((m) => m.id === selectedModel.value);
-  return model?.supports_ensemble ?? false;
+  return (model !== null && model !== undefined && typeof model === "object" && "supports_ensemble" in model && typeof model.supports_ensemble === "boolean") ? model.supports_ensemble : false;
 });
 
 const canProcess = computed(() => {
@@ -316,15 +317,15 @@ async function collectFrames(): Promise<string[]> {
     if (engine && typeof engine.renderFrameToCanvas === "function") {
       const canvas = await engine.renderFrameToCanvas(
         i,
-        store.width,
-        store.height,
+        projectStore.getWidth(),
+        projectStore.getHeight(),
       );
       frameData = canvas.toDataURL("image/png").split(",")[1];
     } else {
       // Fallback: create a placeholder
       const canvas = document.createElement("canvas");
-      canvas.width = store.width;
-      canvas.height = store.height;
+      canvas.width = projectStore.getWidth();
+      canvas.height = projectStore.getHeight();
       const ctx = canvas.getContext("2d")!;
       ctx.fillStyle = "#333";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -356,7 +357,7 @@ onMounted(async () => {
   }
 
   // Set initial frame range
-  endFrame.value = Math.min(store.frameCount - 1, startFrame.value + 30);
+  endFrame.value = Math.min(projectStore.getFrameCount() - 1, startFrame.value + 30);
 });
 </script>
 

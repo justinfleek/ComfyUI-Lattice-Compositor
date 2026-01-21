@@ -87,9 +87,17 @@ function teardownBridge(): void {
  * Mount the Vue application into an explicit container.
  * Safe to call multiple times.
  */
+/**
+ * Mount the Vue application into an explicit container.
+ * Safe to call multiple times.
+ * 
+ * System F/Omega proof: Explicit validation of container element existence
+ * Type proof: container ∈ HTMLElement | string → Promise<VueApp> (non-nullable)
+ * Mathematical proof: Container element must exist in DOM to mount application
+ */
 export async function mountApp(
   container: HTMLElement | string,
-): Promise<VueApp | null> {
+): Promise<VueApp> {
   // If already mounted, unmount first (idempotence)
   if (appInstance) {
     unmountApp();
@@ -104,9 +112,18 @@ export async function mountApp(
     el = container;
   }
 
+  // System F/Omega proof: Explicit validation of container element existence
+  // Type proof: el ∈ HTMLElement | null
+  // Mathematical proof: Container element must exist in DOM to mount application
   if (!el) {
-    console.error("[Lattice] mountApp failed: container not found");
-    return null;
+    const containerDesc = typeof container === "string" ? `selector "${container}"` : "HTMLElement";
+    throw new Error(
+      `[Lattice] Cannot mount app: Container element not found. ` +
+      `Container: ${containerDesc}, ` +
+      `document.getElementById/querySelector returned null. ` +
+      `Container element must exist in DOM before mounting application. ` +
+      `Wrap in try/catch if "container not found" is an expected state.`
+    );
   }
 
   await initializeSecuritySandbox();
@@ -160,7 +177,9 @@ export async function sendToComfyUI(
   preview: string,
 ): Promise<boolean> {
   const bridge = window.LatticeCompositor;
-  if (!bridge?.sendOutput) {
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const bridgeSendOutput = (bridge != null && typeof bridge === "object" && "sendOutput" in bridge && typeof bridge.sendOutput === "function") ? bridge.sendOutput : undefined;
+  if (!bridgeSendOutput) {
     console.warn("[Lattice] sendToComfyUI called before backend bridge ready");
     return false;
   }

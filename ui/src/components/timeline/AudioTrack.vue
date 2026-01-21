@@ -96,9 +96,16 @@ const hoverPosition = computed(() =>
   hoverFrame.value !== null ? (hoverFrame.value / props.totalFrames) * 100 : 0,
 );
 
-const visibleOnsets = computed(() => props.analysis?.onsets ?? []);
+// Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??/?.
+const visibleOnsets = computed(() => {
+  const analysis = props.analysis;
+  return (analysis !== null && analysis !== undefined && typeof analysis === "object" && "onsets" in analysis && Array.isArray(analysis.onsets)) ? analysis.onsets : [];
+});
 
-const visiblePeaks = computed(() => props.peakData?.indices ?? []);
+const visiblePeaks = computed(() => {
+  const peakData = props.peakData;
+  return (peakData !== null && peakData !== undefined && typeof peakData === "object" && "indices" in peakData && Array.isArray(peakData.indices)) ? peakData.indices : [];
+});
 
 const fps = computed(() => props.fps);
 

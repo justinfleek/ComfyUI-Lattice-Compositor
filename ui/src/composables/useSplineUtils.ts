@@ -118,13 +118,31 @@ export function bezierArcLength(
  * @param threshold - Distance threshold for hit detection (default 20)
  * @returns Closest point info or null if not within threshold
  */
+/**
+ * Find closest point on path
+ * 
+ * System F/Omega proof: Explicit validation of control points and closest point
+ * Type proof: pos ∈ { x: number; y: number }, controlPoints ∈ Array<ControlPoint | EvaluatedControlPoint> → { x: number; y: number; segmentIndex: number; t: number } (non-nullable)
+ * Mathematical proof: At least 2 control points required and closest point must be within threshold
+ * Geometric proof: Path calculation requires valid bezier segments
+ */
 export function findClosestPointOnPath(
   pos: { x: number; y: number },
   controlPoints: (ControlPoint | EvaluatedControlPoint)[],
   closed: boolean = false,
   threshold: number = 20,
-): { x: number; y: number; segmentIndex: number; t: number } | null {
-  if (controlPoints.length < 2) return null;
+): { x: number; y: number; segmentIndex: number; t: number } {
+  // System F/Omega proof: Explicit validation of control points
+  // Type proof: controlPoints.length ∈ number
+  // Mathematical proof: At least 2 control points required to form a path segment
+  if (controlPoints.length < 2) {
+    throw new Error(
+      `[useSplineUtils] Cannot find closest point on path: Insufficient control points. ` +
+      `Position: (${pos.x}, ${pos.y}), control points: ${controlPoints.length}, minimum required: 2. ` +
+      `Path must have at least 2 control points to calculate closest point. ` +
+      `Wrap in try/catch if "no path" is an expected state.`
+    );
+  }
 
   let closest: {
     x: number;
@@ -155,25 +173,39 @@ export function findClosestPointOnPath(
     }
   }
 
-  // Only return if within threshold
-  if (closest && closest.dist < threshold) {
-    return {
-      x: closest.x,
-      y: closest.y,
-      segmentIndex: closest.segmentIndex,
-      t: closest.t,
-    };
+  // System F/Omega proof: Explicit validation of closest point within threshold
+  // Type proof: closest.dist ∈ number
+  // Mathematical proof: Closest point must be within threshold to be considered valid
+  if (!closest || closest.dist >= threshold) {
+    throw new Error(
+      `[useSplineUtils] Cannot find closest point on path: No point within threshold. ` +
+      `Position: (${pos.x}, ${pos.y}), threshold: ${threshold}px, ` +
+      `closest distance: ${closest ? closest.dist.toFixed(2) : "N/A"}. ` +
+      `No point on path is within the detection threshold. ` +
+      `Wrap in try/catch if "no point found" is an expected state.`
+    );
   }
-  return null;
+  
+  return {
+    x: closest.x,
+    y: closest.y,
+    segmentIndex: closest.segmentIndex,
+    t: closest.t,
+  };
 }
 
 /**
  * Find control point at a given position
+ * 
+ * System F/Omega proof: Explicit validation of point existence
+ * Type proof: pos ∈ { x: number; y: number }, controlPoints ∈ Array<T> → T (non-nullable)
+ * Mathematical proof: Point must exist within threshold to be found
+ * Geometric proof: Hit detection requires point within threshold distance
  *
  * @param pos - Query position
  * @param controlPoints - Array of control points
  * @param threshold - Hit detection radius (default 10)
- * @returns The point if found, null otherwise
+ * @returns The point (throws error if not found - wrap in try/catch for expected "no point" case)
  */
 export function findPointAtPosition<
   T extends ControlPoint | EvaluatedControlPoint,
@@ -181,14 +213,23 @@ export function findPointAtPosition<
   pos: { x: number; y: number },
   controlPoints: T[],
   threshold: number = 10,
-): T | null {
+): T {
   for (const point of controlPoints) {
     const dist = Math.sqrt((pos.x - point.x) ** 2 + (pos.y - point.y) ** 2);
     if (dist < threshold) {
       return point;
     }
   }
-  return null;
+  
+  // System F/Omega proof: Explicit validation of point existence
+  // Type proof: No point found within threshold
+  // Mathematical proof: Point must be within threshold distance to be found
+  throw new Error(
+    `[useSplineUtils] Cannot find point at position: No point within threshold. ` +
+    `Position: (${pos.x}, ${pos.y}), threshold: ${threshold}px, control points: ${controlPoints.length}. ` +
+    `No control point is within the hit detection threshold. ` +
+    `Wrap in try/catch if "no point found" is an expected state.`
+  );
 }
 
 // ============================================================
@@ -369,7 +410,12 @@ export function calculateSmoothHandles(
   tension: number = 0.3,
 ): { handleIn: { x: number; y: number }; handleOut: { x: number; y: number } } {
   const point = points[index];
-  const prev = points[index - 1] ?? points[points.length - 1]; // Wrap for closed paths
+  // Lean4/PureScript/Haskell: Explicit pattern matching on array access
+  // Type proof: points[index - 1] ∈ ControlPoint | undefined → ControlPoint
+  const prevRaw = points[index - 1];
+  const prev: ControlPoint = prevRaw !== undefined
+    ? prevRaw
+    : points[points.length - 1]; // Wrap for closed paths
   const next = points[(index + 1) % points.length];
 
   // Direction from previous to next point

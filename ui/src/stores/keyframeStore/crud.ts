@@ -5,6 +5,7 @@
  */
 
 import { markLayerDirty } from "@/services/layerEvaluationCache";
+import { isFiniteNumber } from "@/utils/typeGuards";
 import type {
   AnimatableProperty,
   Keyframe,
@@ -28,19 +29,25 @@ import { useAnimationStore } from "../animationStore";
  * @param propertyPath - Property path (e.g., 'position', 'transform.position')
  * @param value - The keyframe value
  * @param atFrame - Frame to add keyframe at (defaults to current frame)
- * @returns The created keyframe or null if failed
+ * @returns The created keyframe
+ * @throws Error if layer or property not found
  */
 export function addKeyframe<T>(
   layerId: string,
   propertyPath: string,
   value: T,
   atFrame?: number,
-): Keyframe<T> | null {
+): Keyframe<T> {
   const projectStore = useProjectStore();
   const animationStore = useAnimationStore();
   const comp = projectStore.getActiveComp();
   // Validate frame (nullish coalescing doesn't catch NaN)
-  const frame = safeFrame(atFrame ?? animationStore.currentFrame, 0);
+  // Type proof: atFrame ∈ ℕ ∪ {undefined}, currentFrame ∈ ℕ → ℕ
+  const atFrameValue = atFrame;
+  const frameValue = isFiniteNumber(atFrameValue) && Number.isInteger(atFrameValue) && atFrameValue >= 0
+    ? atFrameValue
+    : animationStore.currentFrame;
+  const frame = safeFrame(frameValue, 0);
 
   storeLogger.debug("addKeyframe called:", {
     layerId,
@@ -51,16 +58,14 @@ export function addKeyframe<T>(
 
   const layer = projectStore.getActiveCompLayers().find((l) => l.id === layerId);
   if (!layer) {
-    storeLogger.debug("addKeyframe: layer not found");
-    return null;
+    throw new Error(`[KeyframeStore] Cannot add keyframe: Layer "${layerId}" not found`);
   }
 
   const property = findPropertyByPath(layer, propertyPath) as
     | AnimatableProperty<T>
     | undefined;
   if (!property) {
-    storeLogger.debug("addKeyframe: property not found:", propertyPath);
-    return null;
+    throw new Error(`[KeyframeStore] Cannot add keyframe: Property "${propertyPath}" not found on layer "${layerId}"`);
   }
 
   // Enable animation
@@ -174,7 +179,7 @@ export function clearKeyframes(
 export function updateLayerProperty(
   layerId: string,
   propertyPath: string,
-  propertyData: Partial<AnimatableProperty<any>>,
+  propertyData: Partial<AnimatableProperty<PropertyValue>>,
 ): boolean {
   const projectStore = useProjectStore();
   const layer = projectStore.getActiveCompLayers().find((l) => l.id === layerId);
@@ -187,7 +192,7 @@ export function updateLayerProperty(
   const normalizedPath = propertyPath.replace(/^transform\./, "");
 
   // Get reference to the actual property object
-  let property: AnimatableProperty<any> | undefined;
+  let property: AnimatableProperty<PropertyValue> | undefined;
 
   // Check transform properties
   if (normalizedPath === "position") {
@@ -201,7 +206,7 @@ export function updateLayerProperty(
   } else if (normalizedPath === "origin") {
     property = layer.transform.origin;
   } else if (propertyPath === "opacity") {
-    property = layer.opacity as AnimatableProperty<any>;
+    property = layer.opacity as AnimatableProperty<PropertyValue>;
   } else if (normalizedPath === "rotationX" && layer.transform.rotationX) {
     property = layer.transform.rotationX;
   } else if (normalizedPath === "rotationY" && layer.transform.rotationY) {
@@ -253,7 +258,11 @@ export function updateLayerProperty(
     // 1. Project load (pre-validates all expressions)
     // 2. Expression editor UI (validates before applying)
     const expr = propertyData.expression;
-    if (expr?.type === "custom" && expr?.params?.code) {
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const exprType = (expr != null && typeof expr === "object" && "type" in expr && typeof expr.type === "string") ? expr.type : undefined;
+    const exprParams = (expr != null && typeof expr === "object" && "params" in expr && expr.params != null && typeof expr.params === "object") ? expr.params : undefined;
+    const exprParamsCode = (exprParams != null && typeof exprParams === "object" && "code" in exprParams && exprParams.code != null) ? exprParams.code : undefined;
+    if (exprType === "custom" && exprParamsCode != null) {
       storeLogger.error(
         "updateLayerProperty: Custom expressions must be applied through expression editor (requires async validation)",
       );
@@ -358,7 +367,7 @@ export function moveKeyframes(
     string,
     {
       layer: Layer;
-      property: AnimatableProperty<unknown>;
+      property: AnimatableProperty<PropertyValue>;
       keyframeIds: Set<string>;
     }
   >();
@@ -390,7 +399,7 @@ export function moveKeyframes(
 
     // Calculate target frames for all selected keyframes
     const moves: Array<{
-      kf: Keyframe<unknown>;
+      kf: Keyframe<PropertyValue>;
       originalFrame: number;
       targetFrame: number;
     }> = [];
@@ -406,7 +415,7 @@ export function moveKeyframes(
     // (when two selected keyframes end up at same frame after move)
     const targetFrameMap = new Map<
       number,
-      { kf: Keyframe<unknown>; originalFrame: number }
+      { kf: Keyframe<PropertyValue>; originalFrame: number }
     >();
     moves.sort((a, b) => b.originalFrame - a.originalFrame);
     for (const move of moves) {
@@ -427,7 +436,7 @@ export function moveKeyframes(
     // Remove:
     // 1. Non-selected keyframes at target frames (collision with moved keyframes)
     // 2. Selected keyframes that lost collision with other selected keyframes
-    property.keyframes = property.keyframes.filter((kf: Keyframe<unknown>) => {
+    property.keyframes = property.keyframes.filter((kf: Keyframe<PropertyValue>) => {
       if (!keyframeIds.has(kf.id)) {
         // Non-selected: keep unless at a target frame
         return !targetFrameMap.has(kf.frame);
@@ -443,7 +452,7 @@ export function moveKeyframes(
 
     // Re-sort keyframes by frame (maintains interpolation system invariant)
     property.keyframes.sort(
-      (a: Keyframe<unknown>, b: Keyframe<unknown>) => a.frame - b.frame,
+      (a: Keyframe<PropertyValue>, b: Keyframe<PropertyValue>) => a.frame - b.frame,
     );
   }
 

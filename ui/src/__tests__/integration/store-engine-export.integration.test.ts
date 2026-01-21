@@ -524,10 +524,12 @@ describe("Full Pipeline: Store → Engine → Export", () => {
       const frameState = engine.evaluate(frame, project);
       if (frameState.layers.length > 0) {
         const pos = frameState.layers[0].transform.position;
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+        const posZ = (pos.z !== null && pos.z !== undefined && typeof pos.z === "number" && Number.isFinite(pos.z)) ? pos.z : 0;
         exportData.frames.push({
           frame,
           opacity: frameState.layers[0].opacity,
-          position: { x: pos.x, y: pos.y, z: pos.z ?? 0 },
+          position: { x: pos.x, y: pos.y, z: posZ },
         });
       }
     }

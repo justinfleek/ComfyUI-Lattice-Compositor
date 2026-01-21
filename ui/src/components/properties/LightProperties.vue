@@ -44,12 +44,12 @@
             <label>Cone Angle</label>
             <div class="control-row">
               <AngleDial
-                :modelValue="lightData.coneAngle ?? 90"
+                :modelValue="lightDataConeAngle"
                 @update:modelValue="(v: number) => update('coneAngle', v)"
                 :size="32"
               />
               <ScrubableNumber
-                :modelValue="lightData.coneAngle ?? 90"
+                :modelValue="lightDataConeAngle"
                 @update:modelValue="(v: number) => update('coneAngle', v)"
                 unit="°"
               />
@@ -59,7 +59,7 @@
           <div class="property-group">
             <label>Cone Feather</label>
             <SliderInput
-              :modelValue="lightData.coneFeather ?? 50"
+              :modelValue="lightDataConeFeather"
               @update:modelValue="(v: number) => update('coneFeather', v)"
               :min="0"
               :max="100"
@@ -94,7 +94,7 @@
         <div class="property-group" v-if="lightData.lightType !== 'ambient'">
           <label>Falloff Distance</label>
           <ScrubableNumber
-            :modelValue="lightData.falloffDistance ?? 500"
+            :modelValue="lightDataFalloffDistance"
             @update:modelValue="(v: number) => update('falloffDistance', v)"
             :min="0"
             unit="px"
@@ -116,7 +116,7 @@
           <div class="property-group">
             <label>Shadow Darkness</label>
             <SliderInput
-              :modelValue="lightData.shadowDarkness ?? 100"
+              :modelValue="lightDataShadowDarkness"
               @update:modelValue="(v: number) => update('shadowDarkness', v)"
               :min="0"
               :max="100"
@@ -127,7 +127,7 @@
           <div class="property-group">
             <label>Shadow Diffusion</label>
             <ScrubableNumber
-              :modelValue="lightData.shadowDiffusion ?? 0"
+              :modelValue="lightDataShadowDiffusion"
               @update:modelValue="(v: number) => update('shadowDiffusion', v)"
               :min="0"
               unit="px"
@@ -145,7 +145,6 @@
 
 <script setup lang="ts">
 import { computed } from "vue";
-import { useCompositorStore } from "@/stores/compositorStore";
 import { useLayerStore } from "@/stores/layerStore";
 import type { Layer } from "@/types/project";
 
@@ -165,7 +164,6 @@ interface LightData {
 
 const props = defineProps<{ layer: Layer }>();
 const emit = defineEmits(["update"]);
-const store = useCompositorStore();
 const layerStore = useLayerStore();
 
 const lightData = computed<LightData>(() => {
@@ -186,6 +184,29 @@ const lightData = computed<LightData>(() => {
   );
 });
 
+// Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+// Computed properties for optional lightData properties
+const lightDataConeAngle = computed(() => {
+  const data = lightData.value;
+  return (typeof data === "object" && data !== null && "coneAngle" in data && typeof data.coneAngle === "number" && Number.isFinite(data.coneAngle)) ? data.coneAngle : 90;
+});
+const lightDataConeFeather = computed(() => {
+  const data = lightData.value;
+  return (typeof data === "object" && data !== null && "coneFeather" in data && typeof data.coneFeather === "number" && Number.isFinite(data.coneFeather)) ? data.coneFeather : 50;
+});
+const lightDataFalloffDistance = computed(() => {
+  const data = lightData.value;
+  return (typeof data === "object" && data !== null && "falloffDistance" in data && typeof data.falloffDistance === "number" && Number.isFinite(data.falloffDistance)) ? data.falloffDistance : 500;
+});
+const lightDataShadowDarkness = computed(() => {
+  const data = lightData.value;
+  return (typeof data === "object" && data !== null && "shadowDarkness" in data && typeof data.shadowDarkness === "number" && Number.isFinite(data.shadowDarkness)) ? data.shadowDarkness : 100;
+});
+const lightDataShadowDiffusion = computed(() => {
+  const data = lightData.value;
+  return (typeof data === "object" && data !== null && "shadowDiffusion" in data && typeof data.shadowDiffusion === "number" && Number.isFinite(data.shadowDiffusion)) ? data.shadowDiffusion : 0;
+});
+
 function update(key: keyof LightData, value: LightData[keyof LightData]) {
   // Cast to LightLayerData - local LightData interface matches LightLayerData structure
   const updatedData: import("@/types/project").LightLayerData = {
@@ -193,7 +214,7 @@ function update(key: keyof LightData, value: LightData[keyof LightData]) {
     [key]: value,
   } as import("@/types/project").LightLayerData;
   
-  layerStore.updateLayer(store, props.layer.id, {
+  layerStore.updateLayer(props.layer.id, {
     data: updatedData,
   });
   emit("update");

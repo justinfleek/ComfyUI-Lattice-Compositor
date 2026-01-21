@@ -12,7 +12,7 @@ import {
   separateScaleDimensions,
 } from "@/types/transform";
 import { useLayerStore } from "@/stores/layerStore";
-import type { KeyframeStoreAccess } from "./types";
+import { useProjectStore } from "../projectStore";
 
 // ============================================================================
 // SEPARATE DIMENSIONS
@@ -23,17 +23,17 @@ import type { KeyframeStoreAccess } from "./types";
  * After separation, positionX, positionY, positionZ can have different keyframes.
  */
 export function separatePositionDimensionsAction(
-  store: KeyframeStoreAccess,
   layerId: string,
 ): boolean {
-  const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
+  const projectStore = useProjectStore();
+  const layer = projectStore.getActiveCompLayers().find((l) => l.id === layerId);
   if (!layer) return false;
 
   separatePositionDimensions(layer.transform);
 
   markLayerDirty(layerId);
-  store.project.meta.modified = new Date().toISOString();
-  store.pushHistory();
+  projectStore.project.meta.modified = new Date().toISOString();
+  projectStore.pushHistory();
 
   return true;
 }
@@ -43,17 +43,17 @@ export function separatePositionDimensionsAction(
  * Merges X, Y, Z keyframes at each unique frame.
  */
 export function linkPositionDimensionsAction(
-  store: KeyframeStoreAccess,
   layerId: string,
 ): boolean {
-  const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
+  const projectStore = useProjectStore();
+  const layer = projectStore.getActiveCompLayers().find((l) => l.id === layerId);
   if (!layer) return false;
 
   linkPositionDimensions(layer.transform);
 
   markLayerDirty(layerId);
-  store.project.meta.modified = new Date().toISOString();
-  store.pushHistory();
+  projectStore.project.meta.modified = new Date().toISOString();
+  projectStore.pushHistory();
 
   return true;
 }
@@ -62,17 +62,17 @@ export function linkPositionDimensionsAction(
  * Separate scale into individual X, Y, Z properties.
  */
 export function separateScaleDimensionsAction(
-  store: KeyframeStoreAccess,
   layerId: string,
 ): boolean {
-  const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
+  const projectStore = useProjectStore();
+  const layer = projectStore.getActiveCompLayers().find((l) => l.id === layerId);
   if (!layer) return false;
 
   separateScaleDimensions(layer.transform);
 
   markLayerDirty(layerId);
-  store.project.meta.modified = new Date().toISOString();
-  store.pushHistory();
+  projectStore.project.meta.modified = new Date().toISOString();
+  projectStore.pushHistory();
 
   return true;
 }
@@ -81,17 +81,17 @@ export function separateScaleDimensionsAction(
  * Link scale dimensions back into a combined property.
  */
 export function linkScaleDimensionsAction(
-  store: KeyframeStoreAccess,
   layerId: string,
 ): boolean {
-  const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
+  const projectStore = useProjectStore();
+  const layer = projectStore.getActiveCompLayers().find((l) => l.id === layerId);
   if (!layer) return false;
 
   linkScaleDimensions(layer.transform);
 
   markLayerDirty(layerId);
-  store.project.meta.modified = new Date().toISOString();
-  store.pushHistory();
+  projectStore.project.meta.modified = new Date().toISOString();
+  projectStore.pushHistory();
 
   return true;
 }
@@ -100,24 +100,28 @@ export function linkScaleDimensionsAction(
  * Check if a layer has separated position dimensions.
  */
 export function hasPositionSeparated(
-  store: KeyframeStoreAccess,
   layerId: string,
 ): boolean {
   const layerStore = useLayerStore();
-  const layer = layerStore.getLayerById(store, layerId);
+  const layer = layerStore.getLayerById(layerId);
   if (!layer) return false;
-  return layer.transform.separateDimensions?.position === true;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const separateDimensions = (layer.transform != null && typeof layer.transform === "object" && "separateDimensions" in layer.transform && layer.transform.separateDimensions != null && typeof layer.transform.separateDimensions === "object") ? layer.transform.separateDimensions : undefined;
+  const positionSeparated = (separateDimensions != null && typeof separateDimensions === "object" && "position" in separateDimensions && typeof separateDimensions.position === "boolean" && separateDimensions.position) ? true : false;
+  return positionSeparated === true;
 }
 
 /**
  * Check if a layer has separated scale dimensions.
  */
 export function hasScaleSeparated(
-  store: KeyframeStoreAccess,
   layerId: string,
 ): boolean {
   const layerStore = useLayerStore();
-  const layer = layerStore.getLayerById(store, layerId);
+  const layer = layerStore.getLayerById(layerId);
   if (!layer) return false;
-  return layer.transform.separateDimensions?.scale === true;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const separateDimensions = (layer.transform != null && typeof layer.transform === "object" && "separateDimensions" in layer.transform && layer.transform.separateDimensions != null && typeof layer.transform.separateDimensions === "object") ? layer.transform.separateDimensions : undefined;
+  const scaleSeparated = (separateDimensions != null && typeof separateDimensions === "object" && "scale" in separateDimensions && typeof separateDimensions.scale === "boolean" && separateDimensions.scale) ? true : false;
+  return scaleSeparated === true;
 }

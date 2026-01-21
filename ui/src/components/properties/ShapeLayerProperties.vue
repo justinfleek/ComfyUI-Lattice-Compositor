@@ -29,7 +29,8 @@
       <div class="section-header" @click="toggleSection('contents')">
         <span class="expand-icon">{{ expandedSections.includes('contents') ? '▼' : '►' }}</span>
         <span class="section-title">Contents</span>
-        <span class="item-count" v-if="layerData.contents?.length">{{ layerData.contents.length }}</span>
+        <!-- Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?. -->
+        <span class="item-count" v-if="layerContents.length > 0">{{ layerContents.length }}</span>
       </div>
       <div v-if="expandedSections.includes('contents')" class="section-content">
         <!-- Add Content Button -->
@@ -70,7 +71,7 @@
 
         <!-- Contents List -->
         <div class="contents-list">
-          <template v-for="(item, index) in layerData.contents || []" :key="item.name + index">
+          <template v-for="(item, index) in layerContents" :key="item.name + index">
             <ShapeContentItem
               :item="item"
               :index="index"
@@ -84,7 +85,8 @@
           </template>
         </div>
 
-        <div v-if="!layerData.contents?.length" class="no-contents">
+        <!-- Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?. -->
+        <div v-if="layerContents.length === 0" class="no-contents">
           No shape contents. Add a generator (Rectangle, Ellipse) and modifiers (Fill, Stroke).
         </div>
       </div>
@@ -94,7 +96,7 @@
 
 <script setup lang="ts">
 import { computed, ref } from "vue";
-import { useCompositorStore } from "@/stores/compositorStore";
+import { safeArrayDefault } from "@/utils/typeGuards";
 import { useLayerStore } from "@/stores/layerStore";
 import type { Layer } from "@/types/project";
 import type { ShapeContent, ShapeLayerData } from "@/types/shapes";
@@ -124,7 +126,6 @@ import {
 
 const props = defineProps<{ layer: Layer }>();
 const emit = defineEmits(["update"]);
-const store = useCompositorStore();
 const layerStore = useLayerStore();
 
 const expandedSections = ref<string[]>(["contents", "settings"]);
@@ -139,6 +140,11 @@ const layerData = computed<ShapeLayerData>(() => {
   return data;
 });
 
+// System F/Omega: Safe array access for layer contents (computed for template reactivity)
+const layerContents = computed(() => {
+  return safeArrayDefault(layerData.value.contents, [], "layerData.contents");
+});
+
 function toggleSection(section: string) {
   const idx = expandedSections.value.indexOf(section);
   if (idx >= 0) {
@@ -149,7 +155,7 @@ function toggleSection(section: string) {
 }
 
 function updateData() {
-  layerStore.updateLayer(store, props.layer.id, {
+  layerStore.updateLayer(props.layer.id, {
     data: { ...layerData.value },
   });
   emit("update");
@@ -158,7 +164,10 @@ function updateData() {
 function addContent() {
   if (!newContentType.value) return;
 
-  const contents = [...(layerData.value.contents || [])];
+  // System F/Omega: Use safeArrayDefault instead of lazy || [] fallback
+  const contents = [
+    ...safeArrayDefault(layerData.value.contents, [], "layerData.contents"),
+  ];
   let newItem: ShapeContent;
 
   switch (newContentType.value) {
@@ -232,7 +241,7 @@ function addContent() {
 
   contents.push(newItem);
 
-  layerStore.updateLayer(store, props.layer.id, {
+  layerStore.updateLayer(props.layer.id, {
     data: { ...layerData.value, contents },
   });
   emit("update");
@@ -240,34 +249,43 @@ function addContent() {
 }
 
 function updateContentItem(index: number, updatedItem: ShapeContent) {
-  const contents = [...(layerData.value.contents || [])];
+  // System F/Omega: Use safeArrayDefault instead of lazy || [] fallback
+  const contents = [
+    ...safeArrayDefault(layerData.value.contents, [], "layerData.contents"),
+  ];
   contents[index] = updatedItem;
 
-  layerStore.updateLayer(store, props.layer.id, {
+  layerStore.updateLayer(props.layer.id, {
     data: { ...layerData.value, contents },
   });
   emit("update");
 }
 
 function deleteContentItem(index: number) {
-  const contents = [...(layerData.value.contents || [])];
+  // System F/Omega: Use safeArrayDefault instead of lazy || [] fallback
+  const contents = [
+    ...safeArrayDefault(layerData.value.contents, [], "layerData.contents"),
+  ];
   contents.splice(index, 1);
 
-  layerStore.updateLayer(store, props.layer.id, {
+  layerStore.updateLayer(props.layer.id, {
     data: { ...layerData.value, contents },
   });
   emit("update");
 }
 
 function moveContentItem(index: number, direction: -1 | 1) {
-  const contents = [...(layerData.value.contents || [])];
+  // System F/Omega: Use safeArrayDefault instead of lazy || [] fallback
+  const contents = [
+    ...safeArrayDefault(layerData.value.contents, [], "layerData.contents"),
+  ];
   const newIndex = index + direction;
   if (newIndex < 0 || newIndex >= contents.length) return;
 
   // Swap items
   [contents[index], contents[newIndex]] = [contents[newIndex], contents[index]];
 
-  layerStore.updateLayer(store, props.layer.id, {
+  layerStore.updateLayer(props.layer.id, {
     data: { ...layerData.value, contents },
   });
   emit("update");

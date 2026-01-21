@@ -1,0 +1,15 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+cd ui
+
+echo "🔍 Running pre-push checks..."
+
+# Run all checks
+echo "🔍 Running comprehensive checks..."
+npm run check:all || {
+  echo "❌ Pre-push checks failed. Please fix issues before pushing."
+  exit 1
+}
+
+echo "✅ All pre-push checks passed!"

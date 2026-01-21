@@ -10,6 +10,7 @@
 import * as THREE from "three";
 import type { Layer } from "@/types/project";
 import { layerLogger } from "@/utils/logger";
+import { assertDefined } from "@/utils/typeGuards";
 import type { ResourceManager } from "../core/ResourceManager";
 import { BaseLayer } from "./BaseLayer";
 
@@ -104,17 +105,29 @@ export class ImageLayer extends BaseLayer {
     
     // Handle runtime properties that may exist but aren't in type definition
     const runtimeData = imageData as import("@/types/project").ImageLayerData & {
-      source?: string;
       url?: string;
       width?: number;
       height?: number;
     };
 
+    // Helper to convert empty strings to null for source resolution
+    const nonEmpty = (s: string | undefined): string | null =>
+      s !== undefined && s !== "" ? s : null;
+
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+    // Priority: source > url (legacy) > assetId
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+    const sourceValue = nonEmpty(imageData.source);
+    const urlValue = nonEmpty(runtimeData.url);
+    const assetIdValue = nonEmpty(imageData.assetId);
+    const source = (sourceValue !== null && sourceValue !== undefined) ? sourceValue : ((urlValue !== null && urlValue !== undefined) ? urlValue : assetIdValue);
+    const targetWidth = (runtimeData.width !== null && runtimeData.width !== undefined && typeof runtimeData.width === "number" && Number.isFinite(runtimeData.width)) ? runtimeData.width : null;
+    const targetHeight = (runtimeData.height !== null && runtimeData.height !== undefined && typeof runtimeData.height === "number" && Number.isFinite(runtimeData.height)) ? runtimeData.height : null;
     return {
-      source: runtimeData.source ?? runtimeData.url ?? imageData.assetId ?? null,
-      targetWidth: runtimeData.width ?? null,
-      targetHeight: runtimeData.height ?? null,
-      fit: imageData.fit ?? "none",
+      source,
+      targetWidth,
+      targetHeight,
+      fit: imageData.fit,
     };
   }
 
@@ -230,7 +243,13 @@ export class ImageLayer extends BaseLayer {
       Number.isFinite(this.targetHeight) &&
       this.targetHeight > 0;
     if (validTargetWidth && validTargetHeight && this.fit !== "none") {
-      const targetAspect = this.targetWidth! / this.targetHeight!;
+      // Type proof: targetWidth and targetHeight are guaranteed non-null by validTargetWidth/validTargetHeight checks above
+      assertDefined(this.targetWidth, "targetWidth must be non-null when validTargetWidth is true");
+      assertDefined(this.targetHeight, "targetHeight must be non-null when validTargetHeight is true");
+      const targetWidth = this.targetWidth;
+      const targetHeight = this.targetHeight;
+      
+      const targetAspect = targetWidth / targetHeight;
       const imageAspect = finalWidth / finalHeight;
 
       switch (this.fit) {
@@ -238,12 +257,12 @@ export class ImageLayer extends BaseLayer {
           // Scale to fit within target bounds, preserving aspect ratio
           if (imageAspect > targetAspect) {
             // Image is wider than target - fit to width
-            finalWidth = this.targetWidth!;
-            finalHeight = this.targetWidth! / imageAspect;
+            finalWidth = targetWidth;
+            finalHeight = targetWidth / imageAspect;
           } else {
             // Image is taller than target - fit to height
-            finalHeight = this.targetHeight!;
-            finalWidth = this.targetHeight! * imageAspect;
+            finalHeight = targetHeight;
+            finalWidth = targetHeight * imageAspect;
           }
           break;
 
@@ -251,19 +270,19 @@ export class ImageLayer extends BaseLayer {
           // Scale to cover target bounds, preserving aspect ratio (may crop)
           if (imageAspect > targetAspect) {
             // Image is wider than target - fit to height, crop width
-            finalHeight = this.targetHeight!;
-            finalWidth = this.targetHeight! * imageAspect;
+            finalHeight = targetHeight;
+            finalWidth = targetHeight * imageAspect;
           } else {
             // Image is taller than target - fit to width, crop height
-            finalWidth = this.targetWidth!;
-            finalHeight = this.targetWidth! / imageAspect;
+            finalWidth = targetWidth;
+            finalHeight = targetWidth / imageAspect;
           }
           break;
 
         case "fill":
           // Stretch to fill target bounds exactly (ignores aspect ratio)
-          finalWidth = this.targetWidth!;
-          finalHeight = this.targetHeight!;
+          finalWidth = targetWidth;
+          finalHeight = targetHeight;
           break;
       }
     }
@@ -328,35 +347,56 @@ export class ImageLayer extends BaseLayer {
    * Get source canvas for effect processing
    * Renders the original texture to a 2D canvas
    */
-  protected override getSourceCanvas(): HTMLCanvasElement | null {
-    if (!this.originalTexture?.image) {
-      return null;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy null returns
+  // Pattern match: Returns HTMLCanvasElement | {} (empty object sentinel instead of null)
+  protected override getSourceCanvas(): HTMLCanvasElement {
+    // Throw explicit error if texture is missing
+    const hasOriginalTexture = typeof this.originalTexture === "object" && this.originalTexture !== null;
+    if (!hasOriginalTexture) {
+      throw new Error(`[ImageLayer] Layer "${this.id}" cannot provide source canvas: originalTexture is missing. Load an image asset before applying effects.`);
     }
-
-    const image = this.originalTexture.image as
+    const originalTextureTyped = this.originalTexture as THREE.Texture;
+    const hasImage = typeof originalTextureTyped.image === "object" && originalTextureTyped.image !== null;
+    if (!hasImage) {
+      throw new Error(`[ImageLayer] Layer "${this.id}" cannot provide source canvas: texture image is missing. The texture exists but has no image data. Reload the image asset.`);
+    }
+    const image = originalTextureTyped.image as
       | HTMLImageElement
       | HTMLCanvasElement
       | ImageBitmap;
 
-    // Lazy create/resize canvas
-    if (
-      !this.textureCanvas ||
-      this.textureCanvas.width !== this.imageWidth ||
-      this.textureCanvas.height !== this.imageHeight
-    ) {
-      this.textureCanvas = document.createElement("canvas");
-      this.textureCanvas.width = this.imageWidth;
-      this.textureCanvas.height = this.imageHeight;
-      this.textureCanvasCtx = this.textureCanvas.getContext("2d");
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy truthy checks
+    const hasTextureCanvas = typeof this.textureCanvas === "object" && this.textureCanvas !== null;
+    let textureCanvasTyped: HTMLCanvasElement;
+    if (!hasTextureCanvas) {
+      textureCanvasTyped = document.createElement("canvas");
+      textureCanvasTyped.width = this.imageWidth;
+      textureCanvasTyped.height = this.imageHeight;
+      this.textureCanvas = textureCanvasTyped;
+      this.textureCanvasCtx = textureCanvasTyped.getContext("2d");
+    } else {
+      textureCanvasTyped = this.textureCanvas as HTMLCanvasElement;
+      const needsResize = textureCanvasTyped.width !== this.imageWidth ||
+        textureCanvasTyped.height !== this.imageHeight;
+      if (needsResize) {
+        textureCanvasTyped.width = this.imageWidth;
+        textureCanvasTyped.height = this.imageHeight;
+        this.textureCanvasCtx = textureCanvasTyped.getContext("2d");
+      }
     }
 
-    if (!this.textureCanvasCtx) {
-      return null;
+    // Throw explicit error if canvas context is missing
+    const hasTextureCanvasCtx = typeof this.textureCanvasCtx === "object" && this.textureCanvasCtx !== null;
+    if (!hasTextureCanvasCtx) {
+      throw new Error(`[ImageLayer] Layer "${this.id}" cannot provide source canvas: textureCanvasCtx is null. Canvas context creation failed. This is a rendering system error.`);
     }
+
+    // Pattern match: Narrow textureCanvasCtx to non-null after type guard
+    const textureCanvasCtxTyped = this.textureCanvasCtx as CanvasRenderingContext2D;
 
     // Draw original image to canvas
-    this.textureCanvasCtx.clearRect(0, 0, this.imageWidth, this.imageHeight);
-    this.textureCanvasCtx.drawImage(
+    textureCanvasCtxTyped.clearRect(0, 0, this.imageWidth, this.imageHeight);
+    textureCanvasCtxTyped.drawImage(
       image,
       0,
       0,
@@ -364,7 +404,7 @@ export class ImageLayer extends BaseLayer {
       this.imageHeight,
     );
 
-    return this.textureCanvas;
+    return textureCanvasTyped;
   }
 
   /**
@@ -421,17 +461,24 @@ export class ImageLayer extends BaseLayer {
       
       // Handle runtime properties that may exist but aren't in type definition
       const runtimeData = imageData as import("@/types/project").ImageLayerData & {
-        source?: string;
         url?: string;
         width?: number;
         height?: number;
       };
-      
+
       let needsResize = false;
 
-      // Handle source change
-      const newSource = runtimeData.source ?? runtimeData.url ?? imageData.assetId;
-      if (newSource && newSource !== this.sourceUrl) {
+      // Helper to convert empty strings to null for source resolution
+      const nonEmpty = (s: string | undefined): string | null =>
+        s !== undefined && s !== "" ? s : null;
+
+      // Handle source change - priority: source > url (legacy) > assetId
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+      const sourceValue = nonEmpty(imageData.source);
+      const urlValue = nonEmpty(runtimeData.url);
+      const assetIdValue = nonEmpty(imageData.assetId);
+      const newSource = (sourceValue !== null && sourceValue !== undefined) ? sourceValue : ((urlValue !== null && urlValue !== undefined) ? urlValue : assetIdValue);
+      if (newSource !== null && newSource !== this.sourceUrl) {
         this.loadImage(newSource);
       }
 
@@ -443,8 +490,8 @@ export class ImageLayer extends BaseLayer {
 
       // Handle target dimension change (for fit calculations)
       if (runtimeData.width !== undefined || runtimeData.height !== undefined) {
-        this.targetWidth = runtimeData.width ?? this.targetWidth;
-        this.targetHeight = runtimeData.height ?? this.targetHeight;
+        this.targetWidth = (runtimeData.width !== null && runtimeData.width !== undefined && typeof runtimeData.width === "number" && Number.isFinite(runtimeData.width)) ? runtimeData.width : this.targetWidth;
+        this.targetHeight = (runtimeData.height !== null && runtimeData.height !== undefined && typeof runtimeData.height === "number" && Number.isFinite(runtimeData.height)) ? runtimeData.height : this.targetHeight;
         needsResize = true;
       }
 

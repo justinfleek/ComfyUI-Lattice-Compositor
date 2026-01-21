@@ -44,23 +44,40 @@ export class DepthLayer extends BaseLayer {
    * Extract depth layer data from layer object
    */
   private extractDepthData(layerData: Layer): DepthLayerData {
-    const data = layerData.data as Partial<DepthLayerData> | undefined;
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining/nullish coalescing
+    // Pattern match: data ∈ Partial<DepthLayerData> | undefined → DepthLayerData (with explicit defaults)
+    const data = (layerData.data !== null && typeof layerData.data === "object") ? layerData.data as Partial<DepthLayerData> : undefined;
+    
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+    // Pattern match: Extract each property with explicit type narrowing and defaults
+    const assetIdValue = (data !== undefined && typeof data === "object" && data !== null && "assetId" in data && data.assetId !== null && typeof data.assetId === "string") ? data.assetId : null;
+    const visualizationModeValue = (data !== undefined && typeof data === "object" && data !== null && "visualizationMode" in data && typeof data.visualizationMode === "string") ? data.visualizationMode : "colormap";
+    const colorMapValue = (data !== undefined && typeof data === "object" && data !== null && "colorMap" in data && typeof data.colorMap === "string") ? data.colorMap : "turbo";
+    const invertValue = (data !== undefined && typeof data === "object" && data !== null && "invert" in data && typeof data.invert === "boolean") ? data.invert : false;
+    const minDepthValue = (data !== undefined && typeof data === "object" && data !== null && "minDepth" in data && typeof data.minDepth === "number" && Number.isFinite(data.minDepth)) ? data.minDepth : 0;
+    const maxDepthValue = (data !== undefined && typeof data === "object" && data !== null && "maxDepth" in data && typeof data.maxDepth === "number" && Number.isFinite(data.maxDepth)) ? data.maxDepth : 1;
+    const autoNormalizeValue = (data !== undefined && typeof data === "object" && data !== null && "autoNormalize" in data && typeof data.autoNormalize === "boolean") ? data.autoNormalize : true;
+    const contourLevelsValue = (data !== undefined && typeof data === "object" && data !== null && "contourLevels" in data && typeof data.contourLevels === "number" && Number.isFinite(data.contourLevels)) ? data.contourLevels : 10;
+    const contourColorValue = (data !== undefined && typeof data === "object" && data !== null && "contourColor" in data && typeof data.contourColor === "string" && data.contourColor.length > 0) ? data.contourColor : "#ffffff";
+    const contourWidthValue = (data !== undefined && typeof data === "object" && data !== null && "contourWidth" in data && typeof data.contourWidth === "number" && Number.isFinite(data.contourWidth)) ? data.contourWidth : 1.0;
+    const meshDisplacementValue = (data !== undefined && typeof data === "object" && data !== null && "meshDisplacement" in data && data.meshDisplacement !== null && typeof data.meshDisplacement === "object") ? data.meshDisplacement : createAnimatableProperty("Mesh Displacement", 50, "number");
+    const meshResolutionValue = (data !== undefined && typeof data === "object" && data !== null && "meshResolution" in data && typeof data.meshResolution === "number" && Number.isFinite(data.meshResolution)) ? data.meshResolution : 64;
+    const wireframeValue = (data !== undefined && typeof data === "object" && data !== null && "wireframe" in data && typeof data.wireframe === "boolean") ? data.wireframe : false;
+    
     return {
-      assetId: data?.assetId ?? null,
-      visualizationMode: data?.visualizationMode ?? "colormap",
-      colorMap: data?.colorMap ?? "turbo",
-      invert: data?.invert ?? false,
-      minDepth: data?.minDepth ?? 0,
-      maxDepth: data?.maxDepth ?? 1,
-      autoNormalize: data?.autoNormalize ?? true,
-      contourLevels: data?.contourLevels ?? 10,
-      contourColor: data?.contourColor ?? "#ffffff",
-      contourWidth: data?.contourWidth ?? 1.0,
-      meshDisplacement:
-        data?.meshDisplacement ??
-        createAnimatableProperty("Mesh Displacement", 50, "number"),
-      meshResolution: data?.meshResolution ?? 64,
-      wireframe: data?.wireframe ?? false,
+      assetId: assetIdValue,
+      visualizationMode: visualizationModeValue,
+      colorMap: colorMapValue,
+      invert: invertValue,
+      minDepth: minDepthValue,
+      maxDepth: maxDepthValue,
+      autoNormalize: autoNormalizeValue,
+      contourLevels: contourLevelsValue,
+      contourColor: contourColorValue,
+      contourWidth: contourWidthValue,
+      meshDisplacement: meshDisplacementValue,
+      meshResolution: meshResolutionValue,
+      wireframe: wireframeValue,
     };
   }
 

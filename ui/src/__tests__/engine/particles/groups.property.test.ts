@@ -36,10 +36,12 @@ class ParticleGroupSystem {
 
   addGroup(config: ParticleGroupConfig): void {
     // Validate and sanitize
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+    const enabled = (config.enabled !== null && config.enabled !== undefined && typeof config.enabled === "boolean") ? config.enabled : true;
     const sanitized: ParticleGroupConfig = {
       id: config.id || `group_${Date.now()}`,
       name: config.name || "Unnamed",
-      enabled: config.enabled ?? true,
+      enabled,
       color: this.validateColor(config.color),
       collisionMask: this.validateMask(config.collisionMask),
       connectionMask: this.validateMask(config.connectionMask),
@@ -116,12 +118,17 @@ class ParticleGroupSystem {
     return (groupA.connectionMask & (1 << indexB)) !== 0;
   }
 
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??/?.
   getCollisionMask(groupId: string): number {
-    return this.groups.get(groupId)?.collisionMask ?? 0;
+    const group = this.groups.get(groupId);
+    const collisionMask = (group !== null && group !== undefined && typeof group === "object" && "collisionMask" in group && typeof group.collisionMask === "number" && Number.isFinite(group.collisionMask)) ? group.collisionMask : undefined;
+    return collisionMask !== undefined ? collisionMask : 0;
   }
 
   getConnectionMask(groupId: string): number {
-    return this.groups.get(groupId)?.connectionMask ?? 0;
+    const group = this.groups.get(groupId);
+    const connectionMask = (group !== null && group !== undefined && typeof group === "object" && "connectionMask" in group && typeof group.connectionMask === "number" && Number.isFinite(group.connectionMask)) ? group.connectionMask : undefined;
+    return connectionMask !== undefined ? connectionMask : 0;
   }
 
   private validateMask(mask: number): number {

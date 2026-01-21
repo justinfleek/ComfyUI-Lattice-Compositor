@@ -4,6 +4,7 @@
  * Manages playback state including play/pause, frame navigation, and scrubbing.
  * This is a focused store extracted from compositorStore for better maintainability.
  */
+import { isFiniteNumber } from "@/utils/typeGuards";
 import { defineStore } from "pinia";
 import { validateFps } from "@/utils/fpsUtils";
 import { storeLogger } from "@/utils/logger";
@@ -34,9 +35,17 @@ export const usePlaybackStore = defineStore("playback", {
     playing: (state) => state.isPlaying,
     hasWorkArea: (state) =>
       state.workAreaStart !== null && state.workAreaEnd !== null,
-    effectiveStartFrame: (state) => state.workAreaStart ?? 0,
-    effectiveEndFrame: (state) => (frameCount: number) =>
-      state.workAreaEnd ?? frameCount - 1,
+    // Type proof: effectiveStartFrame ∈ ℕ ∪ {undefined} → ℕ
+    effectiveStartFrame: (state) => {
+      const workAreaStartValue = state.workAreaStart;
+      return isFiniteNumber(workAreaStartValue) && Number.isInteger(workAreaStartValue) && workAreaStartValue >= 0 ? workAreaStartValue : 0;
+    },
+    // Type proof: effectiveEndFrame ∈ ℕ ∪ {undefined} → ℕ
+    effectiveEndFrame: (state) => (frameCount: number) => {
+      const workAreaEndValue = state.workAreaEnd;
+      const frameCountValue = isFiniteNumber(frameCount) && Number.isInteger(frameCount) && frameCount > 0 ? frameCount : 1;
+      return isFiniteNumber(workAreaEndValue) && Number.isInteger(workAreaEndValue) && workAreaEndValue >= 0 ? workAreaEndValue : frameCountValue - 1;
+    },
   },
 
   actions: {
@@ -81,8 +90,13 @@ export const usePlaybackStore = defineStore("playback", {
       this.playbackStartFrame = currentFrame;
 
       // Determine effective playback range (work area or full comp)
-      const rangeStart = this.workAreaStart ?? 0;
-      const rangeEnd = this.workAreaEnd ?? frameCount - 1;
+      // Type proof: rangeStart ∈ ℕ ∪ {undefined} → ℕ
+      const workAreaStartValue = this.workAreaStart;
+      const rangeStart = isFiniteNumber(workAreaStartValue) && Number.isInteger(workAreaStartValue) && workAreaStartValue >= 0 ? workAreaStartValue : 0;
+      // Type proof: rangeEnd ∈ ℕ ∪ {undefined} → ℕ
+      const workAreaEndValue = this.workAreaEnd;
+      const frameCountValue = isFiniteNumber(frameCount) && Number.isInteger(frameCount) && frameCount > 0 ? frameCount : 1;
+      const rangeEnd = isFiniteNumber(workAreaEndValue) && Number.isInteger(workAreaEndValue) && workAreaEndValue >= 0 ? workAreaEndValue : frameCountValue - 1;
       const rangeLength = rangeEnd - rangeStart + 1;
 
       // If current frame is outside work area, jump to work area start

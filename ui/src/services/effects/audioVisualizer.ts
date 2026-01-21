@@ -12,6 +12,7 @@ import {
   type EvaluatedEffectParams,
   registerEffectRenderer,
 } from "../effectProcessor";
+import { safeNonNegativeDefault } from "@/utils/typeGuards";
 
 // ============================================================================
 // TYPES
@@ -263,9 +264,12 @@ function generateSpectrumData(
 ): number[] {
   const spectrum: number[] = new Array(bands).fill(0);
 
-  if (audioData?.frequencyBands && frame < audioData.frameCount) {
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const audioDataFrequencyBands = (audioData != null && typeof audioData === "object" && "frequencyBands" in audioData && audioData.frequencyBands != null && typeof audioData.frequencyBands === "object") ? audioData.frequencyBands : undefined;
+  const audioDataFrameCount = (audioData != null && typeof audioData === "object" && "frameCount" in audioData && typeof audioData.frameCount === "number") ? audioData.frameCount : undefined;
+  if (audioDataFrequencyBands != null && audioDataFrameCount != null && frame < audioDataFrameCount) {
     // Use real audio data
-    const { sub, bass, lowMid, mid, highMid, high } = audioData.frequencyBands;
+    const { sub, bass, lowMid, mid, highMid, high } = audioDataFrequencyBands;
 
     // Map frequency bands to spectrum
     // sub: 0-5%, bass: 5-15%, lowMid: 15-30%, mid: 30-50%, highMid: 50-70%, high: 70-100%
@@ -273,18 +277,19 @@ function generateSpectrumData(
       const t = i / bands;
       let value = 0;
 
+      // Type proof: audio frequency values ∈ number | undefined → number (≥ 0, amplitude)
       if (t < 0.05) {
-        value = sub[frame] || 0;
+        value = safeNonNegativeDefault(sub[frame], 0, "sub[frame]");
       } else if (t < 0.15) {
-        value = bass[frame] || 0;
+        value = safeNonNegativeDefault(bass[frame], 0, "bass[frame]");
       } else if (t < 0.3) {
-        value = lowMid[frame] || 0;
+        value = safeNonNegativeDefault(lowMid[frame], 0, "lowMid[frame]");
       } else if (t < 0.5) {
-        value = mid[frame] || 0;
+        value = safeNonNegativeDefault(mid[frame], 0, "mid[frame]");
       } else if (t < 0.7) {
-        value = highMid[frame] || 0;
+        value = safeNonNegativeDefault(highMid[frame], 0, "highMid[frame]");
       } else {
-        value = high[frame] || 0;
+        value = safeNonNegativeDefault(high[frame], 0, "high[frame]");
       }
 
       // Add some variation within bands
@@ -462,7 +467,10 @@ function generateWaveformData(
   const waveform: number[] = new Array(samples).fill(0);
   const halfSamples = Math.floor(samples / 2);
 
-  if (audioData?.amplitudeEnvelope && frame < audioData.frameCount) {
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const audioDataAmplitudeEnvelope = (audioData != null && typeof audioData === "object" && "amplitudeEnvelope" in audioData && audioData.amplitudeEnvelope != null && Array.isArray(audioData.amplitudeEnvelope)) ? audioData.amplitudeEnvelope : undefined;
+  const audioDataFrameCount = (audioData != null && typeof audioData === "object" && "frameCount" in audioData && typeof audioData.frameCount === "number") ? audioData.frameCount : undefined;
+  if (audioDataAmplitudeEnvelope != null && audioDataFrameCount != null && frame < audioDataFrameCount) {
     // Use real audio data, centered on current frame
     for (let i = 0; i < samples; i++) {
       const sampleFrame = frame - halfSamples + i;

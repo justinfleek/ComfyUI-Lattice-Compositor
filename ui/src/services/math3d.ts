@@ -591,12 +591,24 @@ export function invertMat4(m: Mat4): Mat4 | null {
 
   const det = n11 * t11 + n21 * t12 + n31 * t13 + n41 * t14;
 
+  // System F/Omega proof: Explicit validation of matrix invertibility
+  // Type proof: det ∈ ℝ
+  // Mathematical proof: Matrix is invertible ⟺ det ≠ 0
+  // Linear algebra proof: Singular matrix (det = 0) has no inverse
+  if (!Number.isFinite(det)) {
+    math3dWarn('SINGULAR_MATRIX',
+      'Cannot invert matrix: Determinant is non-finite',
+      { determinant: det }
+    );
+    throw new Error(`[Math3D] Cannot invert matrix: Determinant is non-finite (det = ${det}). Matrix inversion requires a finite real-valued determinant. This indicates a numerical error in determinant calculation - check matrix values for NaN or Infinity.`);
+  }
+  
   if (det === 0) {
     math3dWarn('SINGULAR_MATRIX',
       'Cannot invert singular matrix (determinant = 0)',
       { determinant: det }
     );
-    return null;
+    throw new Error(`[Math3D] Cannot invert matrix: Matrix is singular (determinant = 0). Linear algebra constraint violation: Matrix is invertible ⟺ det ≠ 0. Singular matrices have no inverse - check if matrix rows/columns are linearly dependent.`);
   }
   
   // Warn on near-singular matrices that may cause precision issues

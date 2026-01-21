@@ -12,7 +12,7 @@ import * as THREE from "three";
 import { BokehPass } from "three/examples/jsm/postprocessing/BokehPass.js";
 import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
 import { OutputPass } from "three/examples/jsm/postprocessing/OutputPass.js";
-import type { Pass } from "three/examples/jsm/postprocessing/Pass.js";
+import { Pass } from "three/examples/jsm/postprocessing/Pass.js";
 import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
 import { ShaderPass } from "three/examples/jsm/postprocessing/ShaderPass.js";
 import { SSAOPass } from "three/examples/jsm/postprocessing/SSAOPass.js";
@@ -27,6 +27,62 @@ import type { SceneManager } from "./SceneManager";
 
 // Local Pass type since PostPass doesn't exist in main namespace
 type PostPass = Pass;
+
+// ============================================================================
+// SENTINEL PASS OBJECTS - Lean4/PureScript/Haskell: Explicit pattern matching
+// Pattern match: Never use null - use sentinel objects that implement Pass interface
+// ============================================================================
+
+/**
+ * Sentinel "uninitialized" pass object
+ * Extends Pass class but does nothing (no-op)
+ * Used instead of null to eliminate lazy null checks
+ * Lean4/PureScript/Haskell: Explicit pattern matching - no lazy null
+ */
+class SentinelPass extends Pass {
+  constructor() {
+    super();
+    this.enabled = false;
+    this.needsSwap = false;
+    this.clear = false;
+    this.renderToScreen = false;
+  }
+  
+  setSize(_width: number, _height: number): void {
+    // No-op
+  }
+  
+  render(
+    _renderer: THREE.WebGLRenderer,
+    _writeBuffer: THREE.WebGLRenderTarget,
+    _readBuffer: THREE.WebGLRenderTarget,
+    _deltaTime?: number,
+    _maskActive?: boolean,
+  ): void {
+    // No-op
+  }
+  
+  dispose(): void {
+    // No-op
+  }
+}
+
+// Singleton sentinel instance
+const SENTINEL_PASS = new SentinelPass();
+
+/**
+ * Type guard to check if a pass is the sentinel (uninitialized)
+ */
+function isSentinelPass(pass: Pass): boolean {
+  return pass === SENTINEL_PASS;
+}
+
+/**
+ * Type guard to check if a pass is initialized (not sentinel)
+ */
+function isInitializedPass<T extends Pass>(pass: T | SentinelPass): pass is T {
+  return pass !== SENTINEL_PASS;
+}
 
 // ============================================================================
 // TYPE EXTENSIONS FOR THREE.JS POST-PROCESSING
@@ -45,25 +101,28 @@ interface BokehPassOptions {
 }
 
 /**
- * Extended BokehPass interface with uniforms property
- * BokehPass has uniforms but TypeScript types may not expose them
+ * Extended BokehPass type with uniforms property
+ * BokehPass has uniforms at runtime but TypeScript types may not expose them
+ * System F/Omega proof: Use intersection type instead of interface extension
+ * Type proof: BokehPass & { uniforms?: {...} } allows runtime property access
  */
-interface BokehPassWithUniforms extends BokehPass {
+type BokehPassWithUniforms = BokehPass & {
   uniforms?: {
     focus?: { value: number };
     aperture?: { value: number };
     maxblur?: { value: number };
   };
-}
+};
 
 /**
- * Extended EffectComposer interface with renderTarget properties
+ * Extended EffectComposer type with renderTarget properties
+ * System F/Omega proof: Use intersection type instead of interface extension
  * EffectComposer has renderTarget1/renderTarget2 but TypeScript types may not expose them
  */
-interface EffectComposerWithTargets extends EffectComposer {
+type EffectComposerWithTargets = EffectComposer & {
   renderTarget1?: THREE.WebGLRenderTarget;
   renderTarget2?: THREE.WebGLRenderTarget;
-}
+};
 
 // ============================================================================
 // DOF CONFIGURATION
@@ -151,7 +210,9 @@ export class RenderPipeline {
   private renderMode: "color" | "depth" | "normal" = "color";
 
   // DOF pass
-  private bokehPass: BokehPass | null = null;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy null
+  // Pattern match: Use sentinel object instead of null
+  private bokehPass: BokehPass | SentinelPass = SENTINEL_PASS;
   private dofConfig: DOFConfig = {
     enabled: false,
     focusDistance: 500,
@@ -160,7 +221,9 @@ export class RenderPipeline {
   };
 
   // SSAO pass
-  private ssaoPass: SSAOPass | null = null;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy null
+  // Pattern match: Use sentinel object instead of null
+  private ssaoPass: SSAOPass | SentinelPass = SENTINEL_PASS;
   private ssaoConfig: SSAOConfig = {
     enabled: false,
     kernelRadius: 8,
@@ -171,7 +234,9 @@ export class RenderPipeline {
   };
 
   // Bloom pass (for emissive objects and lights)
-  private bloomPass: UnrealBloomPass | null = null;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy null
+  // Pattern match: Use sentinel object instead of null
+  private bloomPass: UnrealBloomPass | SentinelPass = SENTINEL_PASS;
   private bloomConfig: BloomConfig = {
     enabled: false,
     strength: 1.5,
@@ -198,13 +263,22 @@ export class RenderPipeline {
     this.camera = camera;
     this.width = config.width;
     this.height = config.height;
-    this.pixelRatio = config.pixelRatio ?? Math.min(window.devicePixelRatio, 2);
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy null/undefined
+    // PureScript: case config.pixelRatio of Just x -> x; Nothing -> default
+    if (typeof config.pixelRatio === "number") {
+      this.pixelRatio = config.pixelRatio;
+    } else {
+      this.pixelRatio = Math.min(window.devicePixelRatio, 2);
+    }
 
     // Create WebGL renderer with optimized settings
     this.renderer = new THREE.WebGLRenderer({
       canvas: config.canvas,
-      antialias: config.antialias ?? true,
-      alpha: config.alpha ?? true,
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined/null checks
+      // Pattern match: antialias ∈ boolean | undefined → boolean (never check undefined)
+      antialias: (typeof config.antialias === "boolean") ? config.antialias : true,
+      // Pattern match: alpha ∈ boolean | undefined → boolean (never check undefined)
+      alpha: (typeof config.alpha === "boolean") ? config.alpha : true,
       preserveDrawingBuffer: true, // Required for frame capture
       powerPreference: "high-performance",
       stencil: false,
@@ -344,7 +418,9 @@ export class RenderPipeline {
         }
       `,
       uniforms: {
-        tDepth: { value: null },
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy null
+        // Pattern match: Use empty texture instead of null for Three.js uniforms
+        tDepth: { value: new THREE.DataTexture(new Uint8Array([0, 0, 0, 0]), 1, 1) },
         cameraNear: { value: 0.1 },
         cameraFar: { value: 10000 },
       },
@@ -403,15 +479,16 @@ export class RenderPipeline {
 
     if (this.dofConfig.enabled) {
       // Create or update bokeh pass
-      if (!this.bokehPass) {
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy truthy checks
+      if (isSentinelPass(this.bokehPass)) {
         this.createBokehPass();
       }
       this.updateBokehPass();
     } else {
       // Remove bokeh pass if it exists
-      if (this.bokehPass) {
+      if (isInitializedPass(this.bokehPass)) {
         this.composer.removePass(this.bokehPass);
-        this.bokehPass = null;
+        this.bokehPass = SENTINEL_PASS;
       }
     }
   }
@@ -454,10 +531,13 @@ export class RenderPipeline {
    * Update bokeh pass parameters
    */
   private updateBokehPass(): void {
-    if (!this.bokehPass) return;
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy truthy checks
+    if (isSentinelPass(this.bokehPass)) return;
 
     // Type-safe access to uniforms (may not be in TypeScript types but exists at runtime)
-    const bokehWithUniforms = this.bokehPass as BokehPassWithUniforms;
+    // Pattern match: bokehPass is guaranteed to be BokehPass here (not SentinelPass)
+    const bokehPass = this.bokehPass as BokehPass;
+    const bokehWithUniforms = bokehPass as BokehPassWithUniforms;
     if (bokehWithUniforms.uniforms) {
       if (bokehWithUniforms.uniforms.focus) {
         bokehWithUniforms.uniforms.focus.value = this.dofConfig.focusDistance;
@@ -503,14 +583,15 @@ export class RenderPipeline {
     this.ssaoConfig = { ...this.ssaoConfig, ...config };
 
     if (this.ssaoConfig.enabled) {
-      if (!this.ssaoPass) {
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy truthy checks
+      if (isSentinelPass(this.ssaoPass)) {
         this.createSSAOPass();
       }
       this.updateSSAOPass();
     } else {
-      if (this.ssaoPass) {
+      if (isInitializedPass(this.ssaoPass)) {
         this.composer.removePass(this.ssaoPass);
-        this.ssaoPass = null;
+        this.ssaoPass = SENTINEL_PASS;
       }
     }
   }
@@ -529,12 +610,13 @@ export class RenderPipeline {
     const scaledWidth = Math.floor(this.width * this.pixelRatio);
     const scaledHeight = Math.floor(this.height * this.pixelRatio);
 
-    this.ssaoPass = new SSAOPass(
+    const ssaoPass = new SSAOPass(
       this.scene.scene,
       this.camera.camera,
       scaledWidth,
       scaledHeight,
     );
+    this.ssaoPass = ssaoPass;
 
     // SSAO should be applied early in the pipeline (after render, before DOF)
     // Find the render pass and insert after it
@@ -543,9 +625,9 @@ export class RenderPipeline {
     );
 
     if (renderPassIndex > -1) {
-      this.composer.insertPass(this.ssaoPass, renderPassIndex + 1);
+      this.composer.insertPass(ssaoPass, renderPassIndex + 1);
     } else {
-      this.addPass(this.ssaoPass);
+      this.addPass(ssaoPass);
     }
   }
 
@@ -553,11 +635,14 @@ export class RenderPipeline {
    * Update SSAO pass parameters
    */
   private updateSSAOPass(): void {
-    if (!this.ssaoPass) return;
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy truthy checks
+    if (isSentinelPass(this.ssaoPass)) return;
 
-    this.ssaoPass.kernelRadius = this.ssaoConfig.kernelRadius;
-    this.ssaoPass.minDistance = this.ssaoConfig.minDistance;
-    this.ssaoPass.maxDistance = this.ssaoConfig.maxDistance;
+    // Pattern match: ssaoPass is guaranteed to be SSAOPass here (not SentinelPass)
+    const ssaoPass = this.ssaoPass as SSAOPass;
+    ssaoPass.kernelRadius = this.ssaoConfig.kernelRadius;
+    ssaoPass.minDistance = this.ssaoConfig.minDistance;
+    ssaoPass.maxDistance = this.ssaoConfig.maxDistance;
 
     // Map output mode to SSAOPass output enum
     const outputMap: Record<SSAOConfig["output"], number> = {
@@ -567,7 +652,7 @@ export class RenderPipeline {
       depth: SSAOPass.OUTPUT.Depth,
       normal: SSAOPass.OUTPUT.Normal,
     };
-    this.ssaoPass.output = outputMap[this.ssaoConfig.output];
+    ssaoPass.output = outputMap[this.ssaoConfig.output];
   }
 
   /**
@@ -603,14 +688,15 @@ export class RenderPipeline {
     this.bloomConfig = { ...this.bloomConfig, ...config };
 
     if (this.bloomConfig.enabled) {
-      if (!this.bloomPass) {
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy truthy checks
+      if (isSentinelPass(this.bloomPass)) {
         this.createBloomPass();
       }
       this.updateBloomPass();
     } else {
-      if (this.bloomPass) {
+      if (isInitializedPass(this.bloomPass)) {
         this.composer.removePass(this.bloomPass);
-        this.bloomPass = null;
+        this.bloomPass = SENTINEL_PASS;
       }
     }
   }
@@ -629,12 +715,13 @@ export class RenderPipeline {
     const scaledWidth = Math.floor(this.width * this.pixelRatio);
     const scaledHeight = Math.floor(this.height * this.pixelRatio);
 
-    this.bloomPass = new UnrealBloomPass(
+    const bloomPass = new UnrealBloomPass(
       new THREE.Vector2(scaledWidth, scaledHeight),
       this.bloomConfig.strength,
       this.bloomConfig.radius,
       this.bloomConfig.threshold,
     );
+    this.bloomPass = bloomPass;
 
     // Insert bloom after SSAO but before DOF
     // Find SSAO pass first
@@ -643,16 +730,16 @@ export class RenderPipeline {
     );
 
     if (ssaoIndex > -1) {
-      this.composer.insertPass(this.bloomPass, ssaoIndex + 1);
+      this.composer.insertPass(bloomPass, ssaoIndex + 1);
     } else {
       // Insert after render pass
       const renderIndex = this.composer.passes.findIndex(
         (p) => p.constructor.name === "RenderPass",
       );
       if (renderIndex > -1) {
-        this.composer.insertPass(this.bloomPass, renderIndex + 1);
+        this.composer.insertPass(bloomPass, renderIndex + 1);
       } else {
-        this.addPass(this.bloomPass);
+        this.addPass(bloomPass);
       }
     }
   }
@@ -661,11 +748,14 @@ export class RenderPipeline {
    * Update bloom pass parameters
    */
   private updateBloomPass(): void {
-    if (!this.bloomPass) return;
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy truthy checks
+    if (isSentinelPass(this.bloomPass)) return;
 
-    this.bloomPass.strength = this.bloomConfig.strength;
-    this.bloomPass.radius = this.bloomConfig.radius;
-    this.bloomPass.threshold = this.bloomConfig.threshold;
+    // Pattern match: bloomPass is guaranteed to be UnrealBloomPass here (not SentinelPass)
+    const bloomPass = this.bloomPass as UnrealBloomPass;
+    bloomPass.strength = this.bloomConfig.strength;
+    bloomPass.radius = this.bloomConfig.radius;
+    bloomPass.threshold = this.bloomConfig.threshold;
   }
 
   /**
@@ -735,13 +825,23 @@ export class RenderPipeline {
    */
   setMotionBlurPreset(presetName: string): void {
     const preset = MOTION_BLUR_PRESETS[presetName];
-    if (preset) {
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy null checks
+    // Pattern match: preset ∈ MotionBlurSettings | undefined (never null)
+    if (typeof preset === "object" && preset !== null) {
+      // Pattern match: type ∈ MotionBlurType | undefined → MotionBlurType
+      const typeValue = (typeof preset.type === "string" && preset.type.length > 0) ? preset.type : "standard";
+      // Pattern match: shutterAngle ∈ number | undefined → number
+      const shutterAngleValue = (typeof preset.shutterAngle === "number" && Number.isFinite(preset.shutterAngle)) ? preset.shutterAngle : 180;
+      // Pattern match: shutterPhase ∈ number | undefined → number
+      const shutterPhaseValue = (typeof preset.shutterPhase === "number" && Number.isFinite(preset.shutterPhase)) ? preset.shutterPhase : -90;
+      // Pattern match: samplesPerFrame ∈ number | undefined → number
+      const samplesPerFrameValue = (typeof preset.samplesPerFrame === "number" && Number.isFinite(preset.samplesPerFrame) && preset.samplesPerFrame > 0) ? preset.samplesPerFrame : 16;
       this.setMotionBlur({
         enabled: true,
-        type: preset.type || "standard",
-        shutterAngle: preset.shutterAngle || 180,
-        shutterPhase: preset.shutterPhase || -90,
-        samplesPerFrame: preset.samplesPerFrame || 16,
+        type: typeValue,
+        shutterAngle: shutterAngleValue,
+        shutterPhase: shutterPhaseValue,
+        samplesPerFrame: samplesPerFrameValue,
         preset: presetName,
       });
     }
@@ -779,7 +879,9 @@ export class RenderPipeline {
       this.scene.prepareForRender();
 
       // Ensure camera has layers (cross-Three.js compatibility)
-      if (this.camera?.camera && !this.camera.camera.layers) {
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy null checks
+      // Pattern match: this.camera is always initialized (never null)
+      if (typeof this.camera === "object" && "camera" in this.camera && typeof this.camera.camera === "object" && this.camera.camera !== null && !this.camera.camera.layers) {
         this.camera.camera.layers = new THREE.Layers();
       }
 
@@ -806,10 +908,14 @@ export class RenderPipeline {
   // ============================================================================
 
   // Depth visualization pass for post-processing
-  private depthVisualizationPass: ShaderPass | null = null;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy null
+  // Pattern match: Use sentinel object instead of null
+  private depthVisualizationPass: ShaderPass | SentinelPass = SENTINEL_PASS;
 
   // Normal visualization pass for post-processing
-  private normalVisualizationPass: ShaderPass | null = null;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy null
+  // Pattern match: Use sentinel object instead of null
+  private normalVisualizationPass: ShaderPass | SentinelPass = SENTINEL_PASS;
 
   /**
    * Set the render mode (color, depth, normal)
@@ -819,25 +925,37 @@ export class RenderPipeline {
   setRenderMode(mode: "color" | "depth" | "normal"): void {
     this.renderMode = mode;
 
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy truthy checks
     // Remove existing visualization passes
-    if (this.depthVisualizationPass) {
+    if (isInitializedPass(this.depthVisualizationPass)) {
       this.composer.removePass(this.depthVisualizationPass);
-      this.depthVisualizationPass = null;
+      this.depthVisualizationPass = SENTINEL_PASS;
     }
-    if (this.normalVisualizationPass) {
+    if (isInitializedPass(this.normalVisualizationPass)) {
       this.composer.removePass(this.normalVisualizationPass);
-      this.normalVisualizationPass = null;
+      this.normalVisualizationPass = SENTINEL_PASS;
     }
 
     // Clear any override material
-    this.scene.scene.overrideMaterial = null;
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy null
+    // Pattern match: Three.js overrideMaterial accepts null for "no override"
+    // Note: Three.js API requires null here - this is the only acceptable use of null
+    // as it's part of the Three.js Scene API contract
+    const currentOverride = this.scene.scene.overrideMaterial;
+    if (currentOverride !== null && typeof currentOverride === "object") {
+      // Three.js API contract: null means "no override material"
+      // This is the ONLY acceptable null assignment in this file (Three.js API requirement)
+      this.scene.scene.overrideMaterial = null;
+    }
 
     if (mode === "depth") {
       // Create depth visualization pass that reads from the depth buffer
       // Uses the colorTarget's depth texture which contains actual Z-depth of ALL geometry
-      this.depthVisualizationPass = new ShaderPass({
+      const depthVisualizationPass = new ShaderPass({
         uniforms: {
-          tDiffuse: { value: null },
+          // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy null
+          // Pattern match: Use empty texture instead of null for Three.js uniforms
+          tDiffuse: { value: new THREE.DataTexture(new Uint8Array([0, 0, 0, 0]), 1, 1) },
           tDepth: { value: this.colorTarget.depthTexture },
           cameraNear: { value: this.camera.camera.near },
           cameraFar: { value: this.camera.camera.far },
@@ -876,10 +994,11 @@ export class RenderPipeline {
         (p) => p.constructor.name === "OutputPass",
       );
       if (outputIndex > -1) {
-        this.composer.insertPass(this.depthVisualizationPass, outputIndex);
+        this.composer.insertPass(depthVisualizationPass, outputIndex);
       } else {
-        this.composer.addPass(this.depthVisualizationPass);
+        this.composer.addPass(depthVisualizationPass);
       }
+      this.depthVisualizationPass = depthVisualizationPass;
     } else if (mode === "normal") {
       // Screen-space normal reconstruction from depth buffer
       // This works with ALL geometry including text, particles, etc.
@@ -887,9 +1006,11 @@ export class RenderPipeline {
       const scaledWidth = Math.floor(this.width * this.pixelRatio);
       const scaledHeight = Math.floor(this.height * this.pixelRatio);
 
-      this.normalVisualizationPass = new ShaderPass({
+      const normalVisualizationPass = new ShaderPass({
         uniforms: {
-          tDiffuse: { value: null },
+          // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy null
+          // Pattern match: Use empty texture instead of null for Three.js uniforms
+          tDiffuse: { value: new THREE.DataTexture(new Uint8Array([0, 0, 0, 0]), 1, 1) },
           tDepth: { value: this.colorTarget.depthTexture },
           cameraNear: { value: this.camera.camera.near },
           cameraFar: { value: this.camera.camera.far },
@@ -979,10 +1100,11 @@ export class RenderPipeline {
         (p) => p.constructor.name === "OutputPass",
       );
       if (outputIndex > -1) {
-        this.composer.insertPass(this.normalVisualizationPass, outputIndex);
+        this.composer.insertPass(normalVisualizationPass, outputIndex);
       } else {
-        this.composer.addPass(this.normalVisualizationPass);
+        this.composer.addPass(normalVisualizationPass);
       }
+      this.normalVisualizationPass = normalVisualizationPass;
     }
     // For 'color' mode, passes are already removed and override cleared
   }
@@ -1111,26 +1233,27 @@ export class RenderPipeline {
     this.captureCanvas.width = scaledWidth;
     this.captureCanvas.height = scaledHeight;
 
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy truthy checks
     // Recreate bokeh pass if DOF is enabled (needs new render targets)
-    if (this.bokehPass && this.dofConfig.enabled) {
+    if (isInitializedPass(this.bokehPass) && this.dofConfig.enabled) {
       this.composer.removePass(this.bokehPass);
-      this.bokehPass = null;
+      this.bokehPass = SENTINEL_PASS;
       this.createBokehPass();
     }
 
     // Recreate SSAO pass if enabled (needs new dimensions)
-    if (this.ssaoPass && this.ssaoConfig.enabled) {
+    if (isInitializedPass(this.ssaoPass) && this.ssaoConfig.enabled) {
       this.composer.removePass(this.ssaoPass);
-      this.ssaoPass = null;
+      this.ssaoPass = SENTINEL_PASS;
       this.createSSAOPass();
       this.updateSSAOPass();
     }
 
     // Recreate bloom pass if enabled (needs new dimensions)
-    if (this.bloomPass && this.bloomConfig.enabled) {
+    if (isInitializedPass(this.bloomPass) && this.bloomConfig.enabled) {
       this.composer.removePass(this.bloomPass);
       this.bloomPass.dispose();
-      this.bloomPass = null;
+      this.bloomPass = SENTINEL_PASS;
       this.createBloomPass();
       this.updateBloomPass();
     }
@@ -1257,23 +1380,24 @@ export class RenderPipeline {
    * Dispose all resources
    */
   dispose(): void {
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy truthy checks
     // Dispose DOF pass if enabled
-    if (this.bokehPass) {
+    if (isInitializedPass(this.bokehPass)) {
       this.composer.removePass(this.bokehPass);
-      this.bokehPass = null;
+      this.bokehPass = SENTINEL_PASS;
     }
 
     // Dispose SSAO pass if enabled
-    if (this.ssaoPass) {
+    if (isInitializedPass(this.ssaoPass)) {
       this.composer.removePass(this.ssaoPass);
-      this.ssaoPass = null;
+      this.ssaoPass = SENTINEL_PASS;
     }
 
     // Dispose bloom pass if enabled
-    if (this.bloomPass) {
+    if (isInitializedPass(this.bloomPass)) {
       this.composer.removePass(this.bloomPass);
       this.bloomPass.dispose();
-      this.bloomPass = null;
+      this.bloomPass = SENTINEL_PASS;
     }
 
     // Dispose nested composition targets

@@ -7,6 +7,7 @@
  * @see docs/MASTER_REFACTOR_PLAN.md Phase 3
  */
 
+import { isFiniteNumber } from "@/utils/typeGuards";
 import { defineStore } from "pinia";
 import {
   AudioPathAnimator,
@@ -16,6 +17,7 @@ import {
 import type { AnimatableProperty, Keyframe, Layer } from "@/types/project";
 import { storeLogger } from "@/utils/logger";
 import { useAudioStore } from "@/stores/audioStore";
+import { useProjectStore } from "@/stores/projectStore";
 
 // ============================================================================
 // TYPES
@@ -254,7 +256,11 @@ export const useAudioKeyframeStore = defineStore("audioKeyframe", {
       if (!audioStore.audioAnalysis) return;
 
       const projectStore = useProjectStore();
-      const frame = projectStore.getActiveComp()?.currentFrame ?? 0;
+      // Type proof: frame ∈ ℕ ∪ {undefined} → ℕ
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const activeComp = projectStore.getActiveComp();
+      const compCurrentFrameValue = (activeComp != null && typeof activeComp === "object" && "currentFrame" in activeComp && typeof activeComp.currentFrame === "number") ? activeComp.currentFrame : undefined;
+      const frame = isFiniteNumber(compCurrentFrameValue) && Number.isInteger(compCurrentFrameValue) && compCurrentFrameValue >= 0 ? compCurrentFrameValue : 0;
       const amplitude = audioStore.getFeatureAtFrame({
         project: projectStore.project,
         pathAnimators: this.pathAnimators,
@@ -299,8 +305,7 @@ export const useAudioKeyframeStore = defineStore("audioKeyframe", {
       const audioStore = useAudioStore();
 
       if (!audioStore.audioAnalysis || !audioStore.audioBuffer) {
-        storeLogger.error("convertAudioToKeyframes: No audio loaded");
-        return null;
+        throw new Error("[AudioKeyframeStore] Cannot convert audio to keyframes: No audio loaded");
       }
 
       const {
@@ -441,8 +446,7 @@ export const useAudioKeyframeStore = defineStore("audioKeyframe", {
       const audioStore = useAudioStore();
 
       if (!audioStore.audioAnalysis) {
-        storeLogger.error("convertFrequencyBandsToKeyframes: No audio loaded");
-        return null;
+        throw new Error("[AudioKeyframeStore] Cannot convert frequency bands to keyframes: No audio analysis available");
       }
 
       const {
@@ -517,8 +521,7 @@ export const useAudioKeyframeStore = defineStore("audioKeyframe", {
       const audioStore = useAudioStore();
 
       if (!audioStore.audioAnalysis || !audioStore.audioBuffer) {
-        storeLogger.error("convertAllAudioFeaturesToKeyframes: No audio loaded");
-        return null;
+        throw new Error("[AudioKeyframeStore] Cannot convert all audio features to keyframes: No audio loaded");
       }
 
       const { name = "Audio Features", scale = 100, smoothing = 0 } = options;
@@ -601,8 +604,10 @@ export const useAudioKeyframeStore = defineStore("audioKeyframe", {
       }
 
       // Spectral features section
-      if (analysis.spectralCentroid?.length > 0) {
-        const normalizedCentroid = analysis.spectralCentroid.map((v) =>
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const spectralCentroid = (analysis != null && typeof analysis === "object" && "spectralCentroid" in analysis && Array.isArray(analysis.spectralCentroid)) ? analysis.spectralCentroid : undefined;
+      if (spectralCentroid != null && spectralCentroid.length > 0) {
+        const normalizedCentroid = spectralCentroid.map((v) =>
           Math.min(1, v / 10000),
         );
         const centroidProp = createAmplitudeProperty(
@@ -616,20 +621,22 @@ export const useAudioKeyframeStore = defineStore("audioKeyframe", {
         result.spectral.centroid = centroidProp.id;
       }
 
-      if (analysis.spectralFlux?.length > 0) {
+      const spectralFlux = (analysis != null && typeof analysis === "object" && "spectralFlux" in analysis && Array.isArray(analysis.spectralFlux)) ? analysis.spectralFlux : undefined;
+      if (spectralFlux != null && spectralFlux.length > 0) {
         const fluxProp = createAmplitudeProperty(
           "Spectral - Flux",
           smoothing > 0
-            ? applySmoothing(analysis.spectralFlux, smoothing)
-            : analysis.spectralFlux,
+            ? applySmoothing(spectralFlux, smoothing)
+            : spectralFlux,
           scale,
         );
         layer.properties.push(fluxProp);
         result.spectral.flux = fluxProp.id;
       }
 
-      if (analysis.spectralRolloff?.length > 0) {
-        const normalizedRolloff = analysis.spectralRolloff.map((v) =>
+      const spectralRolloff = (analysis != null && typeof analysis === "object" && "spectralRolloff" in analysis && Array.isArray(analysis.spectralRolloff)) ? analysis.spectralRolloff : undefined;
+      if (spectralRolloff != null && spectralRolloff.length > 0) {
+        const normalizedRolloff = spectralRolloff.map((v) =>
           Math.min(1, v / 10000),
         );
         const rolloffProp = createAmplitudeProperty(
@@ -643,12 +650,13 @@ export const useAudioKeyframeStore = defineStore("audioKeyframe", {
         result.spectral.rolloff = rolloffProp.id;
       }
 
-      if (analysis.spectralFlatness?.length > 0) {
+      const spectralFlatness = (analysis != null && typeof analysis === "object" && "spectralFlatness" in analysis && Array.isArray(analysis.spectralFlatness)) ? analysis.spectralFlatness : undefined;
+      if (spectralFlatness != null && spectralFlatness.length > 0) {
         const flatnessProp = createAmplitudeProperty(
           "Spectral - Flatness",
           smoothing > 0
-            ? applySmoothing(analysis.spectralFlatness, smoothing)
-            : analysis.spectralFlatness,
+            ? applySmoothing(spectralFlatness, smoothing)
+            : spectralFlatness,
           scale,
         );
         layer.properties.push(flatnessProp);
@@ -656,24 +664,26 @@ export const useAudioKeyframeStore = defineStore("audioKeyframe", {
       }
 
       // Dynamics section
-      if (analysis.rmsEnergy?.length > 0) {
+      const rmsEnergy = (analysis != null && typeof analysis === "object" && "rmsEnergy" in analysis && Array.isArray(analysis.rmsEnergy)) ? analysis.rmsEnergy : undefined;
+      if (rmsEnergy != null && rmsEnergy.length > 0) {
         const rmsProp = createAmplitudeProperty(
           "Dynamics - RMS Energy",
           smoothing > 0
-            ? applySmoothing(analysis.rmsEnergy, smoothing)
-            : analysis.rmsEnergy,
+            ? applySmoothing(rmsEnergy, smoothing)
+            : rmsEnergy,
           scale,
         );
         layer.properties.push(rmsProp);
         result.dynamics.rms = rmsProp.id;
       }
 
-      if (analysis.zeroCrossingRate?.length > 0) {
+      const zeroCrossingRate = (analysis != null && typeof analysis === "object" && "zeroCrossingRate" in analysis && Array.isArray(analysis.zeroCrossingRate)) ? analysis.zeroCrossingRate : undefined;
+      if (zeroCrossingRate != null && zeroCrossingRate.length > 0) {
         const zcrProp = createAmplitudeProperty(
           "Dynamics - Zero Crossing Rate",
           smoothing > 0
-            ? applySmoothing(analysis.zeroCrossingRate, smoothing)
-            : analysis.zeroCrossingRate,
+            ? applySmoothing(zeroCrossingRate, smoothing)
+            : zeroCrossingRate,
           scale,
         );
         layer.properties.push(zcrProp);

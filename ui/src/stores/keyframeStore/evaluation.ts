@@ -6,24 +6,11 @@
  */
 
 import { interpolateProperty } from "@/services/interpolation";
+import { isFiniteNumber } from "@/utils/typeGuards";
 import type { Layer, AnimatableProperty } from "@/types/project";
 import type { PropertyPath } from "@/services/propertyDriver";
-
-/**
- * Extended interface for property evaluation operations.
- * Requires composition context (fps, frameCount, currentFrame).
- */
-export interface PropertyEvaluationAccess {
-  /** Get all layers in active composition */
-  getActiveCompLayers(): Layer[];
-  /** Get the currently active composition */
-  getActiveComp(): {
-    currentFrame: number;
-    settings: { fps: number; frameCount: number };
-  } | null;
-  /** Get FPS from active composition */
-  readonly fps: number;
-}
+import { useProjectStore } from "../projectStore";
+import { useAnimationStore } from "../animationStore";
 
 /**
  * Get a single scalar property value at a specific frame.
@@ -38,17 +25,19 @@ export interface PropertyEvaluationAccess {
  * @returns Scalar value or null if not found
  */
 export function getPropertyValueAtFrame(
-  store: PropertyEvaluationAccess,
   layerId: string,
   propertyPath: PropertyPath | string,
   frame: number,
-): number | null {
-  const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
-  if (!layer) return null;
+): number {
+  const projectStore = useProjectStore();
+  const layer = projectStore.getActiveCompLayers().find((l) => l.id === layerId);
+  if (!layer) {
+    throw new Error(`[KeyframeStore] Cannot get property value at frame: Layer "${layerId}" not found`);
+  }
 
   // Get composition context for expressions
-  const comp = store.getActiveComp();
-  const fps = store.fps;
+  const comp = projectStore.getActiveComp();
+  const fps = projectStore.getFps();
   const duration = comp
     ? comp.settings.frameCount / comp.settings.fps
     : undefined;
@@ -64,7 +53,10 @@ export function getPropertyValueAtFrame(
         layerId,
         duration,
       );
-      return parts[2] === "x" ? p.x : parts[2] === "y" ? p.y : (p.z ?? 0);
+      // Type proof: z ∈ ℝ ∪ {undefined} → z ∈ ℝ
+      const zValue = p.z;
+      const z = isFiniteNumber(zValue) ? zValue : 0;
+      return parts[2] === "x" ? p.x : parts[2] === "y" ? p.y : z;
     }
     if (parts[1] === "anchorPoint" || parts[1] === "origin") {
       // Use origin (new name) with fallback to anchorPoint
@@ -77,11 +69,17 @@ export function getPropertyValueAtFrame(
         layerId,
         duration,
       );
-      return parts[2] === "x" ? a.x : parts[2] === "y" ? a.y : (a.z ?? 0);
+      // Type proof: z ∈ ℝ ∪ {undefined} → z ∈ ℝ
+      const zValue = a.z;
+      const z = isFiniteNumber(zValue) ? zValue : 0;
+      return parts[2] === "x" ? a.x : parts[2] === "y" ? a.y : z;
     }
     if (parts[1] === "scale") {
       const s = interpolateProperty(t.scale, frame, fps, layerId, duration);
-      return parts[2] === "x" ? s.x : parts[2] === "y" ? s.y : (s.z ?? 100);
+      // Type proof: z ∈ ℝ ∪ {undefined} → z ∈ ℝ
+      const zValue = s.z;
+      const z = isFiniteNumber(zValue) ? zValue : 100;
+      return parts[2] === "x" ? s.x : parts[2] === "y" ? s.y : z;
     }
     if (parts[1] === "rotation")
       return interpolateProperty(t.rotation, frame, fps, layerId, duration);
@@ -129,17 +127,19 @@ export function getPropertyValueAtFrame(
  * @returns Array for vector properties, number for scalars, null if not found
  */
 export function evaluatePropertyAtFrame(
-  store: PropertyEvaluationAccess,
   layerId: string,
   propertyPath: string,
   frame: number,
-): number[] | number | null {
-  const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
-  if (!layer) return null;
+): number[] | number {
+  const projectStore = useProjectStore();
+  const layer = projectStore.getActiveCompLayers().find((l) => l.id === layerId);
+  if (!layer) {
+    throw new Error(`[KeyframeStore] Cannot get property value at frame: Layer "${layerId}" not found`);
+  }
 
   // Get composition context for expressions
-  const comp = store.getActiveComp();
-  const fps = store.fps;
+  const comp = projectStore.getActiveComp();
+  const fps = projectStore.getFps();
   const duration = comp
     ? comp.settings.frameCount / comp.settings.fps
     : undefined;
@@ -158,7 +158,10 @@ export function evaluatePropertyAtFrame(
       layerId,
       duration,
     );
-    return [p.x, p.y, p.z ?? 0];
+    // Type proof: z ∈ ℝ ∪ {undefined} → z ∈ ℝ
+    const zValue = p.z;
+    const z = isFiniteNumber(zValue) ? zValue : 0;
+    return [p.x, p.y, z];
   }
 
   if (
@@ -166,7 +169,9 @@ export function evaluatePropertyAtFrame(
     (t.origin || t.anchorPoint)
   ) {
     const originProp = t.origin || t.anchorPoint;
-    if (!originProp) return null;
+    if (!originProp) {
+      throw new Error(`[KeyframeStore] Cannot get layer origin: Layer "${layerId}" has no origin or anchorPoint property`);
+    }
     const a = interpolateProperty(
       originProp,
       frame,
@@ -174,12 +179,18 @@ export function evaluatePropertyAtFrame(
       layerId,
       duration,
     );
-    return [a.x, a.y, a.z ?? 0];
+    // Type proof: z ∈ ℝ ∪ {undefined} → z ∈ ℝ
+    const zValue = a.z;
+    const z = isFiniteNumber(zValue) ? zValue : 0;
+    return [a.x, a.y, z];
   }
 
   if (normalizedPath === "scale" && t.scale) {
     const s = interpolateProperty(t.scale, frame, fps, layerId, duration);
-    return [s.x, s.y, s.z ?? 100];
+    // Type proof: z ∈ ℝ ∪ {undefined} → z ∈ ℝ
+    const zValue = s.z;
+    const z = isFiniteNumber(zValue) ? zValue : 100;
+    return [s.x, s.y, z];
   }
 
   if (normalizedPath === "rotation" && t.rotation) {
@@ -206,7 +217,10 @@ export function evaluatePropertyAtFrame(
       layerId,
       duration,
     );
-    return [o.x, o.y, o.z ?? 0];
+    // Type proof: z ∈ ℝ ∪ {undefined} → z ∈ ℝ
+    const zValue = o.z;
+    const z = isFiniteNumber(zValue) ? zValue : 0;
+    return [o.x, o.y, z];
   }
 
   if (propertyPath === "opacity" && layer.opacity) {
@@ -240,29 +254,32 @@ export function evaluatePropertyAtFrame(
     ) {
       // Type guard for position-like objects
       const posValue = value as { x: number; y: number; z?: number };
-      return [posValue.x, posValue.y, posValue.z ?? 0];
+      // Type proof: z ∈ ℝ ∪ {undefined} → z ∈ ℝ
+      const zValue = posValue.z;
+      const z = isFiniteNumber(zValue) ? zValue : 0;
+      return [posValue.x, posValue.y, z];
     }
     return value;
   }
 
-  return null;
+  throw new Error(`[KeyframeStore] Cannot evaluate property "${propertyPath}" at frame ${frame} for layer "${layerId}": Property not found or unsupported`);
 }
 
 /**
  * Get interpolated value for any animatable property at current frame.
  * Convenience method that passes fps and duration from composition settings.
  *
- * @param store - Store with composition access
  * @param property - The animatable property to interpolate
  * @returns The interpolated value at the current frame
  */
 export function getInterpolatedValue<T>(
-  store: PropertyEvaluationAccess,
   property: AnimatableProperty<T>,
 ): T {
-  const comp = store.getActiveComp();
-  const frame = comp?.currentFrame ?? 0;
-  const fps = store.fps;
+  const projectStore = useProjectStore();
+  const animationStore = useAnimationStore();
+  const comp = projectStore.getActiveComp();
+  const frame = animationStore.currentFrame;
+  const fps = projectStore.getFps();
   const duration = comp
     ? comp.settings.frameCount / comp.settings.fps
     : undefined;

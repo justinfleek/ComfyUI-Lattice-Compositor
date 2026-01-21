@@ -225,10 +225,17 @@ const emit = defineEmits<{
 const threeCanvasRef = ref<InstanceType<typeof ThreeCanvas> | null>(null);
 
 // Expose threeCanvasRef to parent
+// Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??/?.
 defineExpose({
   threeCanvasRef,
-  getEngine: () => threeCanvasRef.value?.engine ?? null,
-  engine: computed(() => threeCanvasRef.value?.engine ?? null),
+  getEngine: () => {
+    const ref = threeCanvasRef.value;
+    return (ref !== null && ref !== undefined && typeof ref === "object" && "engine" in ref && ref.engine !== null && ref.engine !== undefined) ? ref.engine : null;
+  },
+  engine: computed(() => {
+    const ref = threeCanvasRef.value;
+    return (ref !== null && ref !== undefined && typeof ref === "object" && "engine" in ref && ref.engine !== null && ref.engine !== undefined) ? ref.engine : null;
+  }),
 });
 
 // View option toggles

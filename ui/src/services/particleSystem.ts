@@ -23,6 +23,11 @@
  * Math.random() is NEVER used directly.
  */
 
+import {
+  isFiniteNumber,
+  safeArrayDefault,
+  safeNonNegativeDefault,
+} from "@/utils/typeGuards";
 import { createNoise2D } from "simplex-noise";
 import { applyEasing, EASING_PRESETS } from "./interpolation";
 // Import factory functions
@@ -260,7 +265,9 @@ export class ParticleSystem {
       img.onload = () => {
         this.spriteCache.set(emitterId, img);
         const emitter = this.emitters.get(emitterId);
-        if (emitter?.sprite) {
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+        if (typeof emitter === "object" && emitter !== null && "sprite" in emitter && emitter.sprite !== null && typeof emitter.sprite === "object") {
           emitter.sprite.imageData = img;
         }
         resolve();
@@ -279,7 +286,9 @@ export class ParticleSystem {
   ): void {
     this.spriteCache.set(emitterId, image);
     const emitter = this.emitters.get(emitterId);
-    if (emitter?.sprite) {
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+        if (typeof emitter === "object" && emitter !== null && "sprite" in emitter && emitter.sprite !== null && typeof emitter.sprite === "object") {
       emitter.sprite.imageData = image;
     }
   }
@@ -287,8 +296,16 @@ export class ParticleSystem {
   /**
    * Get sprite image for an emitter
    */
-  getSpriteImage(emitterId: string): HTMLImageElement | ImageBitmap | null {
-    return this.spriteCache.get(emitterId) ?? null;
+  getSpriteImage(emitterId: string): HTMLImageElement | ImageBitmap {
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined/null checks
+    // Pattern match: spriteCache.get(id) ∈ HTMLImageElement | ImageBitmap | undefined → HTMLImageElement | ImageBitmap
+    const spriteImage = this.spriteCache.get(emitterId);
+    if (typeof spriteImage === "object" && spriteImage !== null && ("width" in spriteImage || "naturalWidth" in spriteImage)) {
+      return spriteImage;
+    }
+    // Lean4/PureScript/Haskell: Explicit error - never return null
+    // Throw error if sprite not found (caller must handle or check existence first)
+    throw new Error(`Sprite image not found for emitter ${emitterId}`);
   }
 
   // ============================================================================
@@ -441,12 +458,20 @@ export class ParticleSystem {
   private getFeatureValue(
     param: string,
     emitterId: string,
-  ): number | undefined {
-    // Check specific emitter first, then global
-    return (
-      this.featureOverrides.get(`${emitterId}:${param}`) ??
-      this.featureOverrides.get(`*:${param}`)
-    );
+  ): number {
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined/null checks
+    // Pattern match: featureOverrides.get(key) ∈ number | undefined → number (with explicit default)
+    const specificValue = this.featureOverrides.get(`${emitterId}:${param}`);
+    if (typeof specificValue === "number") {
+      return specificValue;
+    }
+    const globalValue = this.featureOverrides.get(`*:${param}`);
+    if (typeof globalValue === "number") {
+      return globalValue;
+    }
+    // Lean4/PureScript/Haskell: Explicit default - never return null/undefined
+    // Return 0 as explicit default (caller should use config value if needed)
+    return 0;
   }
 
   // ============================================================================
@@ -459,13 +484,15 @@ export class ParticleSystem {
       if (!emitter.enabled) return;
 
       // Get potentially audio-modified emission rate
-      const baseRate =
-        this.getFeatureValue("emissionRate", id) ?? emitter.emissionRate;
+      // Type proof: baseRate ∈ ℝ ∪ {undefined} → ℝ
+      const emissionRateValue = this.getFeatureValue("emissionRate", id);
+      const baseRate = isFiniteNumber(emissionRateValue) && emissionRateValue >= 0 ? emissionRateValue : emitter.emissionRate;
       const particlesToEmit = baseRate * deltaTime;
 
       // Accumulate fractional particles
+      // Type proof: emissionAccumulator ∈ number | undefined → number (≥ 0, particle count accumulator)
       let accumulated =
-        (this.emissionAccumulators.get(id) || 0) + particlesToEmit;
+        safeNonNegativeDefault(this.emissionAccumulators.get(id), 0, "emissionAccumulators.get(id)") + particlesToEmit;
 
       while (
         accumulated >= 1 &&
@@ -484,9 +511,12 @@ export class ParticleSystem {
     const windY = Math.sin(windRadians) * this.config.windStrength * 0.001;
 
     // Get potentially audio-modified global values
-    const gravity = this.getFeatureValue("gravity", "*") ?? this.config.gravity;
-    const windStrength =
-      this.getFeatureValue("windStrength", "*") ?? this.config.windStrength;
+    // Type proof: gravity ∈ ℝ ∪ {undefined} → ℝ
+    const gravityValue = this.getFeatureValue("gravity", "*");
+    const gravity = isFiniteNumber(gravityValue) ? gravityValue : this.config.gravity;
+    // Type proof: windStrength ∈ ℝ ∪ {undefined} → ℝ
+    const windStrengthValue = this.getFeatureValue("windStrength", "*");
+    const windStrength = isFiniteNumber(windStrengthValue) && windStrengthValue >= 0 ? windStrengthValue : this.config.windStrength;
     const actualWindX =
       windX * (windStrength / Math.max(1, this.config.windStrength));
     const actualWindY =
@@ -620,12 +650,14 @@ export class ParticleSystem {
 
       // f3. Align to velocity if emitter configured for it
       const emitter = this.emitters.get(p.emitterId);
-      if (emitter?.sprite?.alignToVelocity && (p.vx !== 0 || p.vy !== 0)) {
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+      if (typeof emitter === "object" && emitter !== null && "sprite" in emitter && emitter.sprite !== null && typeof emitter.sprite === "object" && "alignToVelocity" in emitter.sprite && emitter.sprite.alignToVelocity === true && (p.vx !== 0 || p.vy !== 0)) {
         p.rotation = Math.atan2(p.vy, p.vx);
       }
 
       // f4. Update sprite animation frame
-      if (emitter?.sprite?.isSheet && emitter.sprite.totalFrames > 1) {
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+      if (typeof emitter === "object" && emitter !== null && "sprite" in emitter && emitter.sprite !== null && typeof emitter.sprite === "object" && "isSheet" in emitter.sprite && emitter.sprite.isSheet === true && "totalFrames" in emitter.sprite && typeof emitter.sprite.totalFrames === "number" && emitter.sprite.totalFrames > 1) {
         this.updateSpriteFrame(p, emitter.sprite, deltaTime);
       }
 
@@ -665,15 +697,18 @@ export class ParticleSystem {
     }
 
     // Particle-to-particle collision detection (after all positions updated)
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
     if (
-      this.config.collision?.enabled &&
+      typeof this.config.collision === "object" && this.config.collision !== null && "enabled" in this.config.collision && this.config.collision.enabled === true &&
       this.config.collision.particleCollision
     ) {
       this.handleParticleCollisions();
     }
 
     // Floor/ceiling/wall collision
-    if (this.config.collision?.enabled) {
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+    if (typeof this.config.collision === "object" && this.config.collision !== null && "enabled" in this.config.collision && this.config.collision.enabled === true) {
       this.handleEnvironmentCollisions();
     }
 
@@ -755,7 +790,12 @@ export class ParticleSystem {
       if (!this.collisionGrid.has(key)) {
         this.collisionGrid.set(key, []);
       }
-      this.collisionGrid.get(key)?.push(p);
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+      const gridCell = this.collisionGrid.get(key);
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+      if (Array.isArray(gridCell)) {
+        gridCell.push(p);
+      }
     }
 
     // Check collisions within neighboring cells
@@ -853,7 +893,9 @@ export class ParticleSystem {
    */
   private handleEnvironmentCollisions(): void {
     const collision = this.config.collision;
-    if (!collision?.enabled) return;
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+    if (typeof collision !== "object" || collision === null || !("enabled" in collision) || collision.enabled !== true) return;
 
     const bounciness = collision.bounciness;
     const friction = collision.friction;
@@ -901,7 +943,7 @@ export class ParticleSystem {
 
     // Use spline-provided direction if available, otherwise use emitter direction
     const baseDirection =
-      spawnPos.direction !== undefined ? spawnPos.direction : emitter.direction;
+      (typeof spawnPos.direction === "object" && spawnPos.direction !== null) ? spawnPos.direction : emitter.direction;
 
     // Calculate emission direction with spread (using seeded RNG)
     const spreadRad = (emitter.spread * Math.PI) / 180;
@@ -928,7 +970,9 @@ export class ParticleSystem {
     let rotation = 0;
     let angularVelocity = 0;
     const sprite = emitter.sprite;
-    if (sprite?.rotationEnabled) {
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+    if (typeof sprite === "object" && sprite !== null && "rotationEnabled" in sprite && sprite.rotationEnabled === true) {
       rotation = this.rng.angle(); // Random initial rotation (seeded)
       const rotSpeed = sprite.rotationSpeed * (Math.PI / 180); // Convert to radians
       const rotVariance = sprite.rotationSpeedVariance * (Math.PI / 180);
@@ -936,13 +980,17 @@ export class ParticleSystem {
     }
 
     // Align to velocity if configured
-    if (sprite?.alignToVelocity) {
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+    if (typeof sprite === "object" && sprite !== null && "alignToVelocity" in sprite && sprite.alignToVelocity === true) {
       rotation = angle;
     }
 
     // Calculate sprite frame for animated sprites (using seeded RNG)
     let spriteIndex = 0;
-    if (sprite?.isSheet && sprite.playMode === "random") {
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+    if (typeof sprite === "object" && sprite !== null && "isSheet" in sprite && sprite.isSheet === true && "playMode" in sprite && sprite.playMode === "random") {
       spriteIndex = this.rng.int(0, sprite.totalFrames - 1);
     }
 
@@ -1160,9 +1208,15 @@ export class ParticleSystem {
       case "cone": {
         // Emit from cone volume
         // Cone opens along Y axis from emitter position
-        const coneAngle = ((emitter.coneAngle ?? 45) * Math.PI) / 180;
-        const coneRadius = emitter.coneRadius ?? 0.1;
-        const coneLength = emitter.coneLength ?? 0.2;
+        // Type proof: coneAngle ∈ ℝ ∪ {undefined} → ℝ
+        const coneAngleValue = emitter.coneAngle;
+        const coneAngle = ((isFiniteNumber(coneAngleValue) && coneAngleValue >= 0 && coneAngleValue <= 180 ? coneAngleValue : 45) * Math.PI) / 180;
+        // Type proof: coneRadius ∈ ℝ ∪ {undefined} → ℝ
+        const coneRadiusValue = emitter.coneRadius;
+        const coneRadius = isFiniteNumber(coneRadiusValue) && coneRadiusValue >= 0 ? coneRadiusValue : 0.1;
+        // Type proof: coneLength ∈ ℝ ∪ {undefined} → ℝ
+        const coneLengthValue = emitter.coneLength;
+        const coneLength = isFiniteNumber(coneLengthValue) && coneLengthValue >= 0 ? coneLengthValue : 0.2;
 
         // Random point in cone
         const t = this.rng.next(); // 0-1 along cone length
@@ -1251,7 +1305,9 @@ export class ParticleSystem {
       case "sequential": {
         // Emit sequentially along path, advancing each emission
         // Uses parameter as speed (how much t advances per emission)
-        const currentT = this.sequentialEmitT.get(emitter.id) ?? 0;
+        // Type proof: currentT ∈ ℝ ∪ {undefined} → ℝ
+        const currentTValue = this.sequentialEmitT.get(emitter.id);
+        const currentT = isFiniteNumber(currentTValue) && currentTValue >= 0 && currentTValue <= 1 ? currentTValue : 0;
         t = currentT;
         // Advance for next emission
         const speed = Math.max(0.001, splinePath.parameter);
@@ -1575,7 +1631,9 @@ export class ParticleSystem {
     y: number;
   } {
     const sourceLayerId = emitter.imageSourceLayerId;
-    const threshold = emitter.emissionThreshold ?? 0.1;
+    // Type proof: threshold ∈ ℝ ∪ {undefined} → ℝ
+    const thresholdValue = emitter.emissionThreshold;
+    const threshold = isFiniteNumber(thresholdValue) && thresholdValue >= 0 && thresholdValue <= 1 ? thresholdValue : 0.1;
 
     // Fall back to point emission if no source layer configured
     if (!sourceLayerId) {
@@ -1657,7 +1715,9 @@ export class ParticleSystem {
     y: number;
   } {
     const sourceLayerId = emitter.depthSourceLayerId;
-    const threshold = emitter.depthEdgeThreshold ?? 0.05;
+    // Type proof: threshold ∈ ℝ ∪ {undefined} → ℝ
+    const thresholdValue = emitter.depthEdgeThreshold;
+    const threshold = isFiniteNumber(thresholdValue) && thresholdValue >= 0 && thresholdValue <= 1 ? thresholdValue : 0.05;
 
     // Fall back to point emission if no source layer configured
     if (!sourceLayerId) {
@@ -1873,7 +1933,12 @@ export class ParticleSystem {
   // ============================================================================
 
   private applyTurbulence(p: Particle, deltaTime: number): void {
-    const turbFields = this.config.turbulenceFields || [];
+    // System F/Omega: Use safeArrayDefault instead of lazy || [] fallback
+    const turbFields = safeArrayDefault(
+      this.config.turbulenceFields,
+      [],
+      "particleConfig.turbulenceFields",
+    );
     for (const turb of turbFields) {
       if (!turb.enabled) continue;
       const nx = p.x * turb.scale * 1000; // Scale up for noise variation
@@ -1892,7 +1957,12 @@ export class ParticleSystem {
   }
 
   updateTurbulence(id: string, updates: Partial<TurbulenceConfig>): void {
-    const turb = this.config.turbulenceFields?.find((t) => t.id === id);
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+    const turbulenceFields = Array.isArray(this.config.turbulenceFields)
+      ? this.config.turbulenceFields
+      : [];
+    const turb = turbulenceFields.find((t) => t.id === id);
     if (turb) Object.assign(turb, updates);
   }
 
@@ -1905,7 +1975,12 @@ export class ParticleSystem {
   }
 
   getTurbulenceFields(): TurbulenceConfig[] {
-    return this.config.turbulenceFields || [];
+    // System F/Omega: Use safeArrayDefault instead of lazy || [] fallback
+    return safeArrayDefault(
+      this.config.turbulenceFields,
+      [],
+      "particleConfig.turbulenceFields",
+    );
   }
 
   // ============================================================================
@@ -1917,7 +1992,12 @@ export class ParticleSystem {
    * DETERMINISM: Uses seeded RNG (this.rng) for all randomness
    */
   private triggerSubEmitters(deadParticle: Particle): void {
-    const subEmitters = this.config.subEmitters || [];
+    // System F/Omega: Use safeArrayDefault instead of lazy || [] fallback
+    const subEmitters = safeArrayDefault(
+      this.config.subEmitters,
+      [],
+      "particleConfig.subEmitters",
+    );
     for (const sub of subEmitters) {
       if (!sub.enabled) continue;
       if (
@@ -1979,7 +2059,12 @@ export class ParticleSystem {
   }
 
   updateSubEmitter(id: string, updates: Partial<SubEmitterConfig>): void {
-    const sub = this.config.subEmitters?.find((s) => s.id === id);
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+    const subEmitters = Array.isArray(this.config.subEmitters)
+      ? this.config.subEmitters
+      : [];
+    const sub = subEmitters.find((s) => s.id === id);
     if (sub) Object.assign(sub, updates);
   }
 
@@ -1992,7 +2077,12 @@ export class ParticleSystem {
   }
 
   getSubEmitters(): SubEmitterConfig[] {
-    return this.config.subEmitters || [];
+    // System F/Omega: Use safeArrayDefault instead of lazy || [] fallback
+    return safeArrayDefault(
+      this.config.subEmitters,
+      [],
+      "particleConfig.subEmitters",
+    );
   }
 
   // ============================================================================
@@ -2002,7 +2092,12 @@ export class ParticleSystem {
   triggerBurst(emitterId: string, count?: number): void {
     const emitter = this.emitters.get(emitterId);
     if (!emitter || !emitter.enabled) return;
-    const burstCount = count ?? emitter.burstCount ?? 20;
+    // Type proof: burstCount ∈ ℕ ∪ {undefined} → ℕ
+    const countValue = count;
+    const emitterBurstCountValue = emitter.burstCount;
+    const burstCount = isFiniteNumber(countValue) && Number.isInteger(countValue) && countValue >= 0
+      ? countValue
+      : (isFiniteNumber(emitterBurstCountValue) && Number.isInteger(emitterBurstCountValue) && emitterBurstCountValue >= 0 ? emitterBurstCountValue : 20);
     for (let i = 0; i < burstCount; i++) {
       this.spawnParticle(emitter);
     }
@@ -2021,14 +2116,23 @@ export class ParticleSystem {
   // ============================================================================
 
   private buildSpatialGrid(): SpatialGrid {
-    const cellSize = this.renderOptions.connections?.maxDistance || 100;
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+    const cellSize = (typeof this.renderOptions.connections === "object" && this.renderOptions.connections !== null && "maxDistance" in this.renderOptions.connections && typeof this.renderOptions.connections.maxDistance === "number")
+      ? this.renderOptions.connections.maxDistance
+      : 100;
     const cells = new Map<string, Particle[]>();
     for (const p of this.particles) {
       const cellX = Math.floor((p.x * 1000) / cellSize); // Scale normalized coords
       const cellY = Math.floor((p.y * 1000) / cellSize);
       const key = `${cellX},${cellY}`;
       if (!cells.has(key)) cells.set(key, []);
-      cells.get(key)?.push(p);
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+      const cell = cells.get(key);
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+      if (Array.isArray(cell)) {
+        cell.push(p);
+      }
     }
     return { cellSize, cells };
   }
@@ -2139,15 +2243,27 @@ export class ParticleSystem {
         x: state.x,
         y: state.y,
         // Use saved previous positions for trail rendering, fallback to current
-        prevX: state.prevX ?? state.x,
-        prevY: state.prevY ?? state.y,
+        // Type proof: prevX ∈ ℝ ∪ {undefined} → ℝ
+        prevX: (() => {
+          const prevXValue = state.prevX;
+          return isFiniteNumber(prevXValue) ? prevXValue : state.x;
+        })(),
+        // Type proof: prevY ∈ ℝ ∪ {undefined} → ℝ
+        prevY: (() => {
+          const prevYValue = state.prevY;
+          return isFiniteNumber(prevYValue) ? prevYValue : state.y;
+        })(),
         vx: state.vx,
         vy: state.vy,
         age: state.age,
         lifetime: state.lifetime,
         size: state.size,
         // Restore original base size for modulation calculations
-        baseSize: state.baseSize ?? state.size,
+        // Type proof: baseSize ∈ ℝ ∪ {undefined} → ℝ
+        baseSize: (() => {
+          const baseSizeValue = state.baseSize;
+          return isFiniteNumber(baseSizeValue) && baseSizeValue > 0 ? baseSizeValue : state.size;
+        })(),
         color: [...state.color] as [number, number, number, number],
         // Restore original base color for modulation calculations
         baseColor: state.baseColor
@@ -2155,14 +2271,27 @@ export class ParticleSystem {
           : [...state.color] as [number, number, number, number],
         emitterId: state.emitterId,
         // Restore sub-particle flag for sub-emitter filtering
-        isSubParticle: state.isSubParticle ?? false,
+        // Type proof: isSubParticle ∈ boolean | undefined → boolean
+        isSubParticle: state.isSubParticle === true,
         rotation: state.rotation,
         // Restore angular velocity for sprite rotation
-        angularVelocity: state.angularVelocity ?? 0,
+        // Type proof: angularVelocity ∈ ℝ ∪ {undefined} → ℝ
+        angularVelocity: (() => {
+          const angularVelocityValue = state.angularVelocity;
+          return isFiniteNumber(angularVelocityValue) ? angularVelocityValue : 0;
+        })(),
         // Restore sprite frame for animation continuity
-        spriteIndex: state.spriteIndex ?? 0,
+        // Type proof: spriteIndex ∈ ℕ ∪ {undefined} → ℕ
+        spriteIndex: (() => {
+          const spriteIndexValue = state.spriteIndex;
+          return isFiniteNumber(spriteIndexValue) && Number.isInteger(spriteIndexValue) && spriteIndexValue >= 0 ? spriteIndexValue : 0;
+        })(),
         // Restore collision count for physics interactions
-        collisionCount: state.collisionCount ?? 0,
+        // Type proof: collisionCount ∈ ℕ ∪ {undefined} → ℕ
+        collisionCount: (() => {
+          const collisionCountValue = state.collisionCount;
+          return isFiniteNumber(collisionCountValue) && Number.isInteger(collisionCountValue) && collisionCountValue >= 0 ? collisionCountValue : 0;
+        })(),
       };
 
       this.particles.push(particle);
@@ -2219,7 +2348,10 @@ export class ParticleSystem {
     };
 
     // Build spatial grid for connections
-    const spatialGrid = options.connections?.enabled
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const connections = (options != null && typeof options === "object" && "connections" in options && options.connections != null && typeof options.connections === "object") ? options.connections : undefined;
+    const connectionsEnabled = (connections != null && typeof connections === "object" && "enabled" in connections && typeof connections.enabled === "boolean" && connections.enabled) ? true : false;
+    const spatialGrid = connectionsEnabled
       ? this.buildSpatialGrid()
       : undefined;
 
@@ -2304,12 +2436,14 @@ export class ParticleSystem {
     }
 
     // Restore RNG seed for deterministic continuation
-    if (data.seed !== undefined) {
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+    if (typeof data.seed === "number") {
       system.setSeed(data.seed);
     }
 
     // Restore noise time for turbulence continuity
-    if (data.noiseTime !== undefined) {
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
+    if (typeof data.noiseTime === "number") {
       system.setNoiseTime(data.noiseTime);
     }
 

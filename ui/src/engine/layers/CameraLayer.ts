@@ -114,12 +114,16 @@ export class CameraLayer extends BaseLayer {
    * Extract camera layer data with defaults
    */
   private extractCameraData(layerData: Layer): CameraLayerData {
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??/?.
     const data = layerData.data as CameraLayerData | null;
+    const cameraId = (data !== null && data !== undefined && typeof data === "object" && "cameraId" in data && typeof data.cameraId === "string") ? data.cameraId : "";
+    const isActiveCamera = (data !== null && data !== undefined && typeof data === "object" && "isActiveCamera" in data && typeof data.isActiveCamera === "boolean") ? data.isActiveCamera : false;
+    const pathFollowing = (data !== null && data !== undefined && typeof data === "object" && "pathFollowing" in data) ? data.pathFollowing : undefined;
 
     return {
-      cameraId: data?.cameraId ?? "",
-      isActiveCamera: data?.isActiveCamera ?? false,
-      pathFollowing: data?.pathFollowing,
+      cameraId,
+      isActiveCamera,
+      pathFollowing,
     };
   }
 
@@ -161,9 +165,11 @@ export class CameraLayer extends BaseLayer {
 
   /**
    * Check if path following is active
+   * Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??/?.
    */
   isFollowingPath(): boolean {
-    return this.cameraData.pathFollowing?.enabled ?? false;
+    const pathFollowing = this.cameraData.pathFollowing;
+    return (pathFollowing !== null && pathFollowing !== undefined && typeof pathFollowing === "object" && "enabled" in pathFollowing && typeof pathFollowing.enabled === "boolean") ? pathFollowing.enabled : false;
   }
 
   /**
@@ -264,8 +270,14 @@ export class CameraLayer extends BaseLayer {
    * Create frustum visualization
    */
   private createFrustum(): void {
-    const camera = this.getCamera();
-    if (!camera) return;
+    // System F/Omega pattern: Wrap in try/catch for expected "camera not available" case
+    let camera: Camera3D;
+    try {
+      camera = this.getCamera();
+    } catch (error) {
+      // Camera not available - skip frustum update (expected state)
+      return;
+    }
 
     this.frustumHelper = new THREE.Group();
     this.frustumHelper.name = `camera_frustum_${this.id}`;
@@ -375,24 +387,95 @@ export class CameraLayer extends BaseLayer {
 
   /**
    * Get the linked Camera3D object (base, without interpolation)
+   * 
+   * System F/Omega proof: Explicit validation of camera getter and camera existence
+   * Type proof: cameraGetter ∈ CameraGetter | undefined, cameraId ∈ string | undefined → Camera3D (non-nullable)
+   * Mathematical proof: Camera getter must be set and camera must exist to retrieve camera data
+   * Pattern proof: Missing getter or camera is an explicit failure condition, not a lazy null return
    */
-  getCamera(): Camera3D | null {
-    if (!this.cameraGetter || !this.cameraData.cameraId) return null;
-    return this.cameraGetter(this.cameraData.cameraId);
+  getCamera(): Camera3D {
+    // System F/Omega proof: Explicit validation of camera getter
+    // Type proof: cameraGetter ∈ CameraGetter | undefined
+    // Mathematical proof: Camera getter must be set to retrieve camera data
+    if (!this.cameraGetter) {
+      throw new Error(
+        `[CameraLayer] Cannot get camera: Camera getter not set. ` +
+        `Layer ID: ${this.id}. ` +
+        `Camera layer must have a camera getter configured before retrieving camera data. ` +
+        `Wrap in try/catch if "camera not available" is an expected state.`
+      );
+    }
+
+    // System F/Omega proof: Explicit validation of camera ID
+    // Type proof: cameraData.cameraId ∈ string | undefined
+    // Mathematical proof: Camera ID must be set to retrieve camera data
+    if (!this.cameraData.cameraId) {
+      throw new Error(
+        `[CameraLayer] Cannot get camera: Camera ID not set. ` +
+        `Layer ID: ${this.id}. ` +
+        `Camera layer must have a camera ID configured before retrieving camera data. ` +
+        `Wrap in try/catch if "camera not available" is an expected state.`
+      );
+    }
+
+    const camera = this.cameraGetter(this.cameraData.cameraId);
+    
+    // System F/Omega proof: Explicit validation of camera existence
+    // Type proof: cameraGetter returns Camera3D | null
+    // Mathematical proof: Camera must exist in store to retrieve it
+    if (camera === null) {
+      throw new Error(
+        `[CameraLayer] Cannot get camera: Camera not found in store. ` +
+        `Layer ID: ${this.id}, camera ID: ${this.cameraData.cameraId}. ` +
+        `Camera does not exist in the camera store. ` +
+        `Wrap in try/catch if "camera not available" is an expected state.`
+      );
+    }
+
+    return camera;
   }
 
   /**
    * Get the camera with keyframe interpolation applied at the current frame
+   * 
+   * System F/Omega proof: Explicit validation of camera ID and camera existence
+   * Type proof: currentFrame ∈ number → Camera3D (non-nullable)
+   * Mathematical proof: Camera ID must be set and camera must exist to retrieve interpolated camera
+   * Pattern proof: Missing camera ID or camera is an explicit failure condition, not a lazy null return
    */
-  getCameraAtCurrentFrame(): Camera3D | null {
-    if (!this.cameraData.cameraId) return null;
+  getCameraAtCurrentFrame(): Camera3D {
+    // System F/Omega proof: Explicit validation of camera ID
+    // Type proof: cameraData.cameraId ∈ string | undefined
+    // Mathematical proof: Camera ID must be set to retrieve camera data
+    if (!this.cameraData.cameraId) {
+      throw new Error(
+        `[CameraLayer] Cannot get camera at frame: Camera ID not set. ` +
+        `Layer ID: ${this.id}, current frame: ${this.currentFrame}. ` +
+        `Camera layer must have a camera ID configured before retrieving camera data. ` +
+        `Wrap in try/catch if "camera not available" is an expected state.`
+      );
+    }
 
     // If we have a frame-aware getter, use it for interpolation
     if (this.cameraAtFrameGetter) {
-      return this.cameraAtFrameGetter(
+      const camera = this.cameraAtFrameGetter(
         this.cameraData.cameraId,
         this.currentFrame,
       );
+      
+      // System F/Omega proof: Explicit validation of camera existence
+      // Type proof: cameraAtFrameGetter returns Camera3D | null
+      // Mathematical proof: Camera must exist in store to retrieve it
+      if (camera === null) {
+        throw new Error(
+          `[CameraLayer] Cannot get camera at frame: Camera not found in store. ` +
+          `Layer ID: ${this.id}, camera ID: ${this.cameraData.cameraId}, frame: ${this.currentFrame}. ` +
+          `Camera does not exist in the camera store. ` +
+          `Wrap in try/catch if "camera not available" is an expected state.`
+        );
+      }
+      
+      return camera;
     }
 
     // Fallback to base camera if no frame getter
@@ -468,10 +551,13 @@ export class CameraLayer extends BaseLayer {
 
     // Check for path following
     const pathFollowing = this.cameraData.pathFollowing;
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const pathFollowingEnabled = (pathFollowing != null && typeof pathFollowing === "object" && "enabled" in pathFollowing && typeof pathFollowing.enabled === "boolean" && pathFollowing.enabled) ? true : false;
+    const pathFollowingPathLayerId = (pathFollowing != null && typeof pathFollowing === "object" && "pathLayerId" in pathFollowing && pathFollowing.pathLayerId != null) ? pathFollowing.pathLayerId : undefined;
     const usePathFollowing =
-      pathFollowing?.enabled &&
-      pathFollowing.pathLayerId &&
-      this.splineProvider;
+      pathFollowingEnabled &&
+      pathFollowingPathLayerId != null &&
+      this.splineProvider != null;
 
     if (usePathFollowing && pathFollowing) {
       // Apply path following
@@ -537,9 +623,12 @@ export class CameraLayer extends BaseLayer {
     const props = state.properties;
 
     // Apply evaluated path parameter if using path following
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const pathFollowing = this.cameraData.pathFollowing;
+    const pathFollowingEnabled = (pathFollowing != null && typeof pathFollowing === "object" && "enabled" in pathFollowing && typeof pathFollowing.enabled === "boolean" && pathFollowing.enabled) ? true : false;
     if (
       props.pathParameter !== undefined &&
-      this.cameraData.pathFollowing?.enabled
+      pathFollowingEnabled
     ) {
       // Update the parameter value directly for the next evaluation
       this.cameraData.pathFollowing.parameter.value =
@@ -738,7 +827,9 @@ export class CameraLayer extends BaseLayer {
       if (data.pathFollowing !== undefined) {
         this.cameraData.pathFollowing = data.pathFollowing;
         // Reset auto-advance when path changes
-        if (data.pathFollowing?.autoAdvance) {
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+        const pathFollowingAutoAdvance = (data.pathFollowing != null && typeof data.pathFollowing === "object" && "autoAdvance" in data.pathFollowing && typeof data.pathFollowing.autoAdvance === "boolean" && data.pathFollowing.autoAdvance) ? true : false;
+        if (pathFollowingAutoAdvance) {
           this.autoAdvanceT = 0;
         }
       }
@@ -761,9 +852,8 @@ export class CameraLayer extends BaseLayer {
     nearClip: number;
     farClip: number;
   } | null {
-    // Use interpolated camera for accurate rendering
+    // System F/Omega pattern: getCameraAtCurrentFrame now throws explicit errors
     const camera = this.getCameraAtCurrentFrame();
-    if (!camera) return null;
 
     return {
       position: { ...camera.position },

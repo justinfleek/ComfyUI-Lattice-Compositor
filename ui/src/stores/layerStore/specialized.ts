@@ -68,7 +68,7 @@ export function createTextLayer(
     lineHeight: 1.2,
     textAlign: "left" as const,
     // Path Options (Full AE Parity)
-    pathLayerId: null,
+    pathLayerId: "",
     pathReversed: false,
     pathPerpendicularToPath: true,
     pathForceAlignment: false,
@@ -186,7 +186,15 @@ export function replaceLayerSource(
   ) {
     // Convert solid to image layer (source replacement changes type)
     (layer as Layer).type = "image";
-    const imageData: ImageLayerData = { assetId, fit: "none" };
+    const imageData: ImageLayerData = {
+        assetId,
+        source: "",
+        fit: "none",
+        cropEnabled: false,
+        cropRect: { x: 0, y: 0, width: 0, height: 0 },
+        sourceType: "file",
+        segmentationMaskId: "",
+      };
     layer.data = imageData;
     layer.name = newSource.name || layer.name;
   } else if (
@@ -211,13 +219,24 @@ export function replaceLayerSource(
   } else if (newSource.type === "asset" && assetId) {
     // Generic asset replacement - determine new type from asset or file extension
     const path = newSource.path || "";
-    const ext = path.split(".").pop()?.toLowerCase() || "";
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const pathParts = path.split(".");
+    const lastPart = (pathParts != null && Array.isArray(pathParts) && pathParts.length > 0) ? pathParts[pathParts.length - 1] : undefined;
+    const ext = (lastPart != null && typeof lastPart === "string" && typeof lastPart.toLowerCase === "function") ? lastPart.toLowerCase() : "";
     const imageExts = ["png", "jpg", "jpeg", "gif", "webp", "svg"];
     const videoExts = ["mp4", "webm", "mov", "avi"];
 
     if (imageExts.includes(ext)) {
       (layer as Layer).type = "image";
-      const imageData: ImageLayerData = { assetId, fit: "none" };
+      const imageData: ImageLayerData = {
+        assetId,
+        source: "",
+        fit: "none",
+        cropEnabled: false,
+        cropRect: { x: 0, y: 0, width: 0, height: 0 },
+        sourceType: "file",
+        segmentationMaskId: "",
+      };
       layer.data = imageData;
     } else if (videoExts.includes(ext)) {
       (layer as Layer).type = "video";
@@ -310,10 +329,14 @@ export function createCameraLayer(
   const cameraName = name || `Camera ${cameraStore.cameras.size + 1}`;
 
   // Create the camera object
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const compSettings = (comp != null && typeof comp === "object" && "settings" in comp && comp.settings != null && typeof comp.settings === "object") ? comp.settings : undefined;
+  const compWidth = (compSettings != null && typeof compSettings === "object" && "width" in compSettings && typeof compSettings.width === "number") ? compSettings.width : undefined;
+  const compHeight = (compSettings != null && typeof compSettings === "object" && "height" in compSettings && typeof compSettings.height === "number") ? compSettings.height : undefined;
   const camera = createDefaultCamera(
     cameraId,
-    comp?.settings.width || 1024,
-    comp?.settings.height || 1024,
+    compWidth != null ? compWidth : 1024,
+    compHeight != null ? compHeight : 1024,
   );
   camera.name = cameraName;
 

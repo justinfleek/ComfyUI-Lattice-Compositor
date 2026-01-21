@@ -13,6 +13,7 @@
 
 import * as THREE from "three";
 import { TransformControls } from "three/examples/jsm/controls/TransformControls.js";
+import type { JSONValue } from "@/types/dataAsset";
 import type { CameraController } from "./core/CameraController";
 import type { LayerManager } from "./core/LayerManager";
 import type { RenderPipeline } from "./core/RenderPipeline";
@@ -57,7 +58,7 @@ export interface TransformControlsManagerDeps {
   layers: LayerManager;
   camera: CameraController;
   renderer: RenderPipeline;
-  emit: (type: string, data?: unknown) => void;
+  emit: (type: string, data?: JSONValue) => void;
   getLayerObject: (layerId: string) => THREE.Object3D | null;
   resetOrbitTargetToCenter: () => void;
   setOrbitTarget: (x: number, y: number, z: number) => void;
@@ -131,13 +132,14 @@ export class TransformControlsManager {
       // Ensure all gizmo objects have proper children arrays
       // (fixes multi-Three.js instance issues)
       // TransformControls extends Object3D internally but TypeScript types may not reflect this
+      // System F/Omega: Use `as unknown as` for intentional conversions when runtime supports it
       this.ensureObjectChildren(
-        this.transformControls as THREE.Object3D,
+        this.transformControls as unknown as THREE.Object3D,
       );
 
       // Add to scene (TransformControls extends Object3D internally)
       this.deps.scene.addUIElement(
-        this.transformControls as THREE.Object3D,
+        this.transformControls as unknown as THREE.Object3D,
       );
     } catch (e) {
       console.error("[TransformControlsManager] Failed to initialize:", e);
@@ -168,8 +170,12 @@ export class TransformControlsManager {
 
       // Get the layer to access anchor point
       const layer = this.deps.layers.getLayer(this.selectedLayerId);
-      const layerData = layer?.getLayerData?.();
-      const anchorPointValue = layerData?.transform?.anchorPoint?.value;
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const getLayerData = (layer != null && typeof layer === "object" && typeof layer.getLayerData === "function") ? layer.getLayerData : undefined;
+      const layerData = getLayerData != null ? getLayerData() : undefined;
+      const transform = (layerData != null && typeof layerData === "object" && "transform" in layerData && layerData.transform != null && typeof layerData.transform === "object") ? layerData.transform : undefined;
+      const anchorPoint = (transform != null && typeof transform === "object" && "anchorPoint" in transform && transform.anchorPoint != null && typeof transform.anchorPoint === "object") ? transform.anchorPoint : undefined;
+      const anchorPointValue = (anchorPoint != null && typeof anchorPoint === "object" && "value" in anchorPoint && anchorPoint.value != null && typeof anchorPoint.value === "object") ? anchorPoint.value : undefined;
       // Type-safe access - anchorPoint.value is { x: number; y: number; z?: number }
       const anchorX = (typeof anchorPointValue === "object" && anchorPointValue !== null && "x" in anchorPointValue) ? anchorPointValue.x : 0;
       const anchorY = (typeof anchorPointValue === "object" && anchorPointValue !== null && "y" in anchorPointValue) ? anchorPointValue.y : 0;
@@ -313,9 +319,11 @@ export class TransformControlsManager {
 
   /**
    * Check if transform controls are dragging
+   * Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??/?.
    */
   isDragging(): boolean {
-    return this.transformControls?.dragging ?? false;
+    const controls = this.transformControls;
+    return (controls !== null && controls !== undefined && typeof controls === "object" && "dragging" in controls && typeof controls.dragging === "boolean") ? controls.dragging : false;
   }
 
   /**

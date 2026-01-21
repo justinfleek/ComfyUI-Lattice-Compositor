@@ -12,6 +12,7 @@
  */
 
 import { createLogger } from "@/utils/logger";
+import { isFiniteNumber } from "@/utils/typeGuards";
 
 const logger = createLogger("RenderQueue");
 
@@ -211,7 +212,12 @@ class RenderQueueDB {
       const store = transaction.objectStore(JOBS_STORE);
       const request = store.getAll();
 
-      request.onsuccess = () => resolve(request.result || []);
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy || []
+      request.onsuccess = () => {
+        const result = request.result;
+        const resultArray = (result !== null && result !== undefined && Array.isArray(result)) ? result : [];
+        resolve(resultArray);
+      };
       request.onerror = () => reject(request.error);
     });
   }
@@ -272,7 +278,12 @@ class RenderQueueDB {
       const index = store.index("jobId");
       const request = index.getAll(IDBKeyRange.only(jobId));
 
-      request.onsuccess = () => resolve(request.result || []);
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy || []
+      request.onsuccess = () => {
+        const result = request.result;
+        const resultArray = (result !== null && result !== undefined && Array.isArray(result)) ? result : [];
+        resolve(resultArray);
+      };
       request.onerror = () => reject(request.error);
     });
   }
@@ -344,12 +355,37 @@ export class RenderQueueManager {
   ) => Promise<Blob>;
 
   constructor(config: Partial<RenderQueueConfig> = {}) {
+    // Type proof: maxConcurrentJobs ∈ number | undefined → number
+    const maxConcurrentJobs = isFiniteNumber(config.maxConcurrentJobs) &&
+      config.maxConcurrentJobs > 0
+      ? Math.floor(config.maxConcurrentJobs)
+      : 1;
+    // Type proof: workerPoolSize ∈ number | undefined → number
+    const workerPoolSize = isFiniteNumber(config.workerPoolSize) &&
+      config.workerPoolSize > 0
+      ? Math.floor(config.workerPoolSize)
+      : 4;
+    // Type proof: batchSize ∈ number | undefined → number
+    const batchSize = isFiniteNumber(config.batchSize) && config.batchSize > 0
+      ? Math.floor(config.batchSize)
+      : 10;
+    // Type proof: autoSaveInterval ∈ number | undefined → number
+    const autoSaveInterval = isFiniteNumber(config.autoSaveInterval) &&
+      config.autoSaveInterval > 0
+      ? Math.floor(config.autoSaveInterval)
+      : 5000;
+    // Type proof: dbName ∈ string | undefined → string
+    const dbName =
+      typeof config.dbName === "string" && config.dbName.length > 0
+        ? config.dbName
+        : "lattice-render-queue";
+
     this.config = {
-      maxConcurrentJobs: config.maxConcurrentJobs ?? 1,
-      workerPoolSize: config.workerPoolSize ?? 4,
-      batchSize: config.batchSize ?? 10,
-      autoSaveInterval: config.autoSaveInterval ?? 5000,
-      dbName: config.dbName ?? "lattice-render-queue",
+      maxConcurrentJobs,
+      workerPoolSize,
+      batchSize,
+      autoSaveInterval,
+      dbName,
     };
 
     this.db = new RenderQueueDB(this.config.dbName);
@@ -402,10 +438,15 @@ export class RenderQueueManager {
   async addJob(config: Omit<RenderJobConfig, "id">): Promise<string> {
     const jobId = `render-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
 
+    // Type proof: priority ∈ number | undefined → number
+    const priority = isFiniteNumber(config.priority)
+      ? config.priority
+      : this.jobs.size;
+
     const job: RenderJob = {
       ...config,
       id: jobId,
-      priority: config.priority ?? this.jobs.size,
+      priority,
       progress: {
         status: "pending",
         currentFrame: config.startFrame,
@@ -586,7 +627,11 @@ export class RenderQueueManager {
     if (pendingJobs.length === 0) {
       this.isRunning = false;
       this.stopAutoSave();
-      this.onQueueEmptyCallback?.();
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const onQueueEmptyCallback = this.onQueueEmptyCallback;
+      if (onQueueEmptyCallback != null && typeof onQueueEmptyCallback === "function") {
+        onQueueEmptyCallback();
+      }
       logger.debug("Render queue empty");
       return;
     }
@@ -606,7 +651,8 @@ export class RenderQueueManager {
 
     this.activeJobId = job.id;
     job.progress.status = "rendering";
-    job.startedAt = job.startedAt ?? Date.now();
+    // Type proof: startedAt ∈ number | undefined → number
+    job.startedAt = isFiniteNumber(job.startedAt) ? job.startedAt : Date.now();
     this.startTime = Date.now();
     this.framesRenderedThisSession = 0;
 
@@ -673,7 +719,11 @@ export class RenderQueueManager {
       await this.db.saveJob(job);
 
       this.notifyProgress(job.id, job.progress);
-      this.onJobCompleteCallback?.(job.id, allFrames);
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const onJobCompleteCallback = this.onJobCompleteCallback;
+      if (onJobCompleteCallback != null && typeof onJobCompleteCallback === "function") {
+        onJobCompleteCallback(job.id, allFrames);
+      }
 
       // Clear temporary frames from IndexedDB
       await this.db.clearCompletedFrames(job.id);
@@ -687,7 +737,11 @@ export class RenderQueueManager {
       await this.db.saveJob(job);
 
       this.notifyProgress(job.id, job.progress);
-      this.onJobErrorCallback?.(job.id, job.progress.error);
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const onJobErrorCallback = this.onJobErrorCallback;
+      if (onJobErrorCallback != null && typeof onJobErrorCallback === "function") {
+        onJobErrorCallback(job.id, job.progress.error);
+      }
 
       logger.warn(`Render job failed: ${job.id}`, error);
     }
@@ -770,7 +824,11 @@ export class RenderQueueManager {
   }
 
   private notifyProgress(jobId: string, progress: RenderJobProgress): void {
-    this.onProgressCallback?.(jobId, progress);
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const onProgressCallback = this.onProgressCallback;
+    if (onProgressCallback != null && typeof onProgressCallback === "function") {
+      onProgressCallback(jobId, progress);
+    }
   }
 
   // ============================================================================
@@ -804,9 +862,15 @@ export class RenderQueueManager {
         }
         return sum + (j.progress.currentFrame - j.startFrame);
       }, 0),
-      averageFps: this.activeJobId
-        ? (this.jobs.get(this.activeJobId)?.progress.framesPerSecond ?? 0)
-        : 0,
+      // Type proof: averageFps ∈ number | undefined → number
+      averageFps: (() => {
+        if (!this.activeJobId) return 0;
+        const activeJob = this.jobs.get(this.activeJobId);
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+        const activeJobProgress = (activeJob != null && typeof activeJob === "object" && "progress" in activeJob && activeJob.progress != null && typeof activeJob.progress === "object") ? activeJob.progress : undefined;
+        const framesPerSecond = (activeJobProgress != null && typeof activeJobProgress === "object" && "framesPerSecond" in activeJobProgress && typeof activeJobProgress.framesPerSecond === "number") ? activeJobProgress.framesPerSecond : undefined;
+        return isFiniteNumber(framesPerSecond) ? framesPerSecond : 0;
+      })(),
     };
   }
 

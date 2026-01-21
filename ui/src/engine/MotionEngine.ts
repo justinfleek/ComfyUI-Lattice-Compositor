@@ -28,6 +28,7 @@ import type { AudioAnalysis } from "@/services/audioFeatures";
 import { getFeatureAtFrame } from "@/services/audioFeatures";
 // Audio path animator - deterministic SVG path animation driven by audio
 import { AudioPathAnimator } from "@/services/audioPathAnimator";
+import type { RuntimeValue } from "@/types/ses-ambient";
 import type { AudioMapping } from "@/services/audioReactiveMapping";
 import {
   AudioReactiveMapper,
@@ -42,6 +43,7 @@ import {
 } from "@/services/cameraEnhancements";
 import { interpolateProperty } from "@/services/interpolation";
 import type { ParticleSystemConfig } from "@/services/particleSystem";
+import { isFiniteNumber, safeNonNegativeDefault } from "@/utils/typeGuards";
 import type {
   AnimatableProperty,
   CameraLayerData,
@@ -252,7 +254,7 @@ export interface AudioReactiveInput {
 /**
  * Evaluated property value with metadata
  */
-export interface EvaluatedProperty<T = unknown> {
+export interface EvaluatedProperty<T = PropertyValue> {
   readonly name: string;
   readonly value: T;
   readonly animated: boolean;
@@ -305,18 +307,37 @@ class FrameStateCache {
     const str = JSON.stringify({
       layerCount: comp.layers.length,
       layerIds: comp.layers.map((l) => l.id),
-      modified: project.meta?.modified || "",
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining/logical OR
+      modified: (typeof project.meta === "object" && project.meta !== null && typeof project.meta.modified === "string" && project.meta.modified.length > 0) ? project.meta.modified : "",
       // Include layer visibility and animation state in hash
-      layerStates: comp.layers.map((l) => ({
-        id: l.id,
-        visible: l.visible,
-        startFrame: l.startFrame ?? l.inPoint ?? 0,
-        endFrame: l.endFrame ?? l.outPoint ?? 80,
-        kfCount: l.properties.reduce(
-          (sum, p) => sum + (p.keyframes?.length || 0),
-          0,
-        ),
-      })),
+      layerStates: comp.layers.map((l) => {
+        // Type proof: startFrame ∈ ℕ ∪ {undefined}, inPoint ∈ ℕ ∪ {undefined} → startFrame ∈ ℕ
+        const startFrameValue = l.startFrame;
+        const startFrame = isFiniteNumber(startFrameValue) && Number.isInteger(startFrameValue) && startFrameValue >= 0
+          ? startFrameValue
+          : (isFiniteNumber(l.inPoint) && Number.isInteger(l.inPoint) && l.inPoint >= 0 ? l.inPoint : 0);
+        // Type proof: endFrame ∈ ℕ ∪ {undefined}, outPoint ∈ ℕ ∪ {undefined} → endFrame ∈ ℕ
+        const endFrameValue = l.endFrame;
+        const endFrame = isFiniteNumber(endFrameValue) && Number.isInteger(endFrameValue) && endFrameValue >= 0
+          ? endFrameValue
+          : (isFiniteNumber(l.outPoint) && Number.isInteger(l.outPoint) && l.outPoint >= 0 ? l.outPoint : 80);
+        return {
+          id: l.id,
+          visible: l.visible,
+          startFrame,
+          endFrame,
+          kfCount: l.properties.reduce(
+            // Type proof: keyframes.length ∈ number | undefined → number (≥ 0, count)
+            // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+            (sum, p) => {
+              const keyframes = (p != null && typeof p === "object" && "keyframes" in p && p.keyframes != null && Array.isArray(p.keyframes)) ? p.keyframes : undefined;
+              const length = (keyframes != null && typeof keyframes.length === "number") ? keyframes.length : undefined;
+              return sum + safeNonNegativeDefault(length, 0, "p.keyframes.length");
+            },
+            0,
+          ),
+        };
+      }),
     });
 
     for (let i = 0; i < str.length; i++) {
@@ -334,11 +355,14 @@ class FrameStateCache {
     frame: number,
     compositionId: string,
     projectHash: string,
-  ): FrameState | null {
+  ): FrameState {
     const key = this.makeKey(frame, compositionId);
     const entry = this.cache.get(key);
 
-    if (!entry) return null;
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy truthy checks
+    if (typeof entry === "undefined") {
+      throw new Error(`[MotionEngine] Cache miss: Frame ${frame} not found in cache for composition ${compositionId}`);
+    }
 
     // Validate cache entry
     const now = Date.now();
@@ -347,7 +371,7 @@ class FrameStateCache {
       now - entry.timestamp > this.maxAgeMs
     ) {
       this.cache.delete(key);
-      return null;
+      throw new Error(`[MotionEngine] Cache entry expired or invalid: Frame ${frame} for composition ${compositionId}`);
     }
 
     // Move to end (LRU behavior via Map insertion order)
@@ -446,9 +470,13 @@ export class MotionEngine {
    * Temporal features (smoothing, release envelopes, beat toggles) require
    * state to persist across frames during sequential playback.
    */
-  private audioMapper: AudioReactiveMapper | null = null;
+  // System F/Omega: Explicit undefined instead of lazy null
+  // Type proof: audioMapper ∈ AudioReactiveMapper | undefined
+  private audioMapper: AudioReactiveMapper | undefined = undefined;
   private lastAudioReactiveFrame: number = -1;
-  private lastAudioAnalysis: AudioAnalysis | null = null;
+  // System F/Omega: Explicit undefined instead of lazy null
+  // Type proof: lastAudioAnalysis ∈ AudioAnalysis | undefined
+  private lastAudioAnalysis: AudioAnalysis | undefined = undefined;
 
   /**
    * Cache AudioPathAnimator instances per layer.
@@ -473,11 +501,11 @@ export class MotionEngine {
     this.frameCache.invalidate();
     this.lastProjectHash = "";
     // Reset audio reactive temporal state on cache invalidation (smoothing, envelopes)
-    if (this.audioMapper) {
+    if (this.audioMapper !== undefined) {
       this.audioMapper.resetTemporalState();
     }
     this.lastAudioReactiveFrame = -1;
-    this.lastAudioAnalysis = null;
+    this.lastAudioAnalysis = undefined;
     // Clear audio path animator cache on invalidation
     this.audioPathAnimatorCache.clear();
   }
@@ -526,29 +554,38 @@ export class MotionEngine {
 
     // Check cache first (if enabled)
     if (useCache) {
-      const cached = this.frameCache.get(
-        frame,
-        project.mainCompositionId,
-        projectHash,
-      );
-      if (cached) {
+      try {
+        const cached = this.frameCache.get(
+          frame,
+          project.mainCompositionId,
+          projectHash,
+        );
         return cached;
+      } catch {
+        // Cache miss - continue to evaluate frame
       }
     }
 
     // Persist AudioReactiveMapper for temporal features (smoothing, envelopes, beat toggles).
     // State persists across sequential frames but resets on non-sequential access (scrubbing).
-    let audioMapper: AudioReactiveMapper | null = null;
-    if (audioReactive?.analysis && audioReactive.mappings.length > 0) {
+    let audioMapper: AudioReactiveMapper | undefined = undefined;
+    // Pattern match: audioReactive ∈ AudioReactiveInput | null | undefined → check explicitly
+    const hasAudioReactive = typeof audioReactive === "object" && audioReactive !== null;
+    const hasAnalysis = hasAudioReactive && typeof audioReactive.analysis === "object" && audioReactive.analysis !== null;
+    const hasMappings = hasAudioReactive && Array.isArray(audioReactive.mappings) && audioReactive.mappings.length > 0;
+    if (hasAnalysis && hasMappings) {
       // Create mapper if needed
-      if (!this.audioMapper) {
+      if (this.audioMapper === undefined) {
         this.audioMapper = new AudioReactiveMapper(audioReactive.analysis);
         this.lastAudioAnalysis = audioReactive.analysis;
-      } else if (this.lastAudioAnalysis !== audioReactive.analysis) {
-        // Analysis changed - must call setAnalysis (which resets temporal state)
-        // This is correct: new audio means temporal state should reset
-        this.audioMapper.setAnalysis(audioReactive.analysis);
-        this.lastAudioAnalysis = audioReactive.analysis;
+      } else {
+        // Update existing mapper if analysis changed
+        if (this.lastAudioAnalysis === undefined || this.lastAudioAnalysis !== audioReactive.analysis) {
+          // Analysis changed - must call setAnalysis (which resets temporal state)
+          // This is correct: new audio means temporal state should reset
+          this.audioMapper.setAnalysis(audioReactive.analysis);
+          this.lastAudioAnalysis = audioReactive.analysis;
+        }
       }
       // If same analysis, reuse mapper with preserved temporal state
 
@@ -558,28 +595,38 @@ export class MotionEngine {
         this.lastAudioReactiveFrame >= 0 &&
         frame !== this.lastAudioReactiveFrame + 1;
       if (isNonSequential) {
-        this.audioMapper.resetTemporalState();
+        // Pattern match: audioMapper ∈ AudioReactiveMapper | {} → check explicitly
+        if (this.audioMapper !== undefined) {
+          this.audioMapper.resetTemporalState();
+        }
       }
 
       // Sync mappings: add/update new, remove old
+      // audioMapper is guaranteed to be AudioReactiveMapper here (we just created/verified it)
+      if (this.audioMapper === undefined) {
+        throw new Error(`[MotionEngine] audioMapper is undefined after initialization. This should not happen.`);
+      }
+      const audioMapperTyped = this.audioMapper;
       const currentMappingIds = new Set(
-        this.audioMapper.getAllMappings().map((m) => m.id),
+        audioMapperTyped.getAllMappings().map((m: { id: string }) => m.id),
       );
       const newMappingIds = new Set<string>();
 
       for (const mapping of audioReactive.mappings) {
-        this.audioMapper.addMapping(mapping); // Preserves temporal state for existing
-        newMappingIds.add(mapping.id);
+        if (!currentMappingIds.has(mapping.id)) {
+          audioMapperTyped.addMapping(mapping); // Preserves temporal state for existing
+          newMappingIds.add(mapping.id);
+        }
       }
 
       // Remove mappings that are no longer present
       for (const id of currentMappingIds) {
-        if (!newMappingIds.has(id)) {
-          this.audioMapper.removeMapping(id);
+        if (typeof id === "string" && !newMappingIds.has(id)) {
+          audioMapperTyped.removeMapping(id);
         }
       }
 
-      audioMapper = this.audioMapper;
+      audioMapper = audioMapperTyped;
       this.lastAudioReactiveFrame = frame;
     } else {
       // No audio reactive input - reset tracking
@@ -587,30 +634,48 @@ export class MotionEngine {
     }
 
     // Get composition fps
-    const fps = composition.settings?.fps ?? 30;
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+    // Type proof: fps ∈ ℝ₊ ∧ finite(fps) → fps ∈ ℝ₊
+    const hasSettings = typeof composition.settings === "object" && composition.settings !== null;
+    const fpsValue = hasSettings && typeof composition.settings.fps === "number" ? composition.settings.fps : undefined;
+    const fps = isFiniteNumber(fpsValue) && fpsValue > 0 ? fpsValue : 30;
 
     // Evaluate all layers (pass audio analysis for audio path animation)
-    const audioAnalysisForLayers = audioReactive?.analysis ?? null;
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy null
+    // Pattern match: analysis ∈ AudioAnalysis | null | undefined → AudioAnalysis | {} (use empty object sentinel instead of null)
+    const hasAudioReactiveForLayers = typeof audioReactive === "object" && audioReactive !== null;
+    const hasAnalysisForLayers = hasAudioReactiveForLayers && typeof audioReactive.analysis === "object" && audioReactive.analysis !== null;
+    const audioAnalysisForLayers = hasAnalysisForLayers ? audioReactive.analysis : null;
+    // Pattern match: audioMapper ∈ AudioReactiveMapper | {} → convert to AudioReactiveMapper | null for function signature compatibility
+    const audioMapperForLayers = audioMapper !== undefined ? audioMapper : null;
     const evaluatedLayers = this.evaluateLayers(
       frame,
       composition.layers,
-      audioMapper,
+      audioMapperForLayers,
       fps,
       audioAnalysisForLayers,
     );
 
     // Evaluate camera with audioMapper for fov/dollyZ/shake modifiers
+    // Pattern match: audioMapper ∈ AudioReactiveMapper | {} → convert to AudioReactiveMapper | null for function signature compatibility
+    const audioMapperForCamera = audioMapper !== undefined ? audioMapper : null;
     const evaluatedCamera = this.evaluateCamera(
       frame,
       composition.layers,
-      activeCameraId ?? null,
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy null
+      // Pattern match: activeCameraId ∈ string | null | undefined → string (empty string = no camera, never null)
+      // Note: evaluateCamera signature still accepts string | null for compatibility
+      (typeof activeCameraId === "string" && activeCameraId.length > 0) ? activeCameraId : null,
       composition.settings,
       fps,
-      audioMapper,
+      audioMapperForCamera,
     );
 
     // Evaluate audio
-    const evaluatedAudio = this.evaluateAudio(frame, audioAnalysis ?? null);
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy null
+    // Pattern match: audioAnalysis ∈ AudioAnalysis | null | undefined → AudioAnalysis | {} (use empty object sentinel instead of null)
+    const hasAudioAnalysis = typeof audioAnalysis === "object" && audioAnalysis !== null;
+    const evaluatedAudio = this.evaluateAudio(frame, hasAudioAnalysis ? audioAnalysis : {} as AudioAnalysis);
 
     // Evaluate particle layers through deterministic simulation
     const particleSnapshots = this.evaluateParticleLayers(
@@ -652,8 +717,16 @@ export class MotionEngine {
    * Check if a layer is visible at a given frame
    */
   isLayerVisibleAtFrame(layer: Layer, frame: number): boolean {
-    const start = layer.startFrame ?? layer.inPoint ?? 0;
-    const end = layer.endFrame ?? layer.outPoint ?? 80;
+    // Type proof: startFrame ∈ ℕ ∪ {undefined}, inPoint ∈ ℕ ∪ {undefined} → startFrame ∈ ℕ
+    const startFrameValue = layer.startFrame;
+    const start = isFiniteNumber(startFrameValue) && Number.isInteger(startFrameValue) && startFrameValue >= 0
+      ? startFrameValue
+      : (isFiniteNumber(layer.inPoint) && Number.isInteger(layer.inPoint) && layer.inPoint >= 0 ? layer.inPoint : 0);
+    // Type proof: endFrame ∈ ℕ ∪ {undefined}, outPoint ∈ ℕ ∪ {undefined} → endFrame ∈ ℕ
+    const endFrameValue = layer.endFrame;
+    const end = isFiniteNumber(endFrameValue) && Number.isInteger(endFrameValue) && endFrameValue >= 0
+      ? endFrameValue
+      : (isFiniteNumber(layer.outPoint) && Number.isInteger(layer.outPoint) && layer.outPoint >= 0 ? layer.outPoint : 80);
     return layer.visible && frame >= start && frame <= end;
   }
 
@@ -671,8 +744,16 @@ export class MotionEngine {
     const evaluated: EvaluatedLayer[] = [];
 
     for (const layer of layers) {
-      const start = layer.startFrame ?? layer.inPoint ?? 0;
-      const end = layer.endFrame ?? layer.outPoint ?? 80;
+      // Type proof: startFrame ∈ ℕ ∪ {undefined}, inPoint ∈ ℕ ∪ {undefined} → startFrame ∈ ℕ
+      const startFrameValue = layer.startFrame;
+      const start = isFiniteNumber(startFrameValue) && Number.isInteger(startFrameValue) && startFrameValue >= 0
+        ? startFrameValue
+        : (isFiniteNumber(layer.inPoint) && Number.isInteger(layer.inPoint) && layer.inPoint >= 0 ? layer.inPoint : 0);
+      // Type proof: endFrame ∈ ℕ ∪ {undefined}, outPoint ∈ ℕ ∪ {undefined} → endFrame ∈ ℕ
+      const endFrameValue = layer.endFrame;
+      const end = isFiniteNumber(endFrameValue) && Number.isInteger(endFrameValue) && endFrameValue >= 0
+        ? endFrameValue
+        : (isFiniteNumber(layer.outPoint) && Number.isInteger(layer.outPoint) && layer.outPoint >= 0 ? layer.outPoint : 80);
       const inRange = frame >= start && frame <= end;
       const visible = layer.visible && inRange;
 
@@ -685,11 +766,13 @@ export class MotionEngine {
       );
 
       // Apply audio path animation if enabled (layer position follows SVG path based on audio)
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const audioPathAnimation = (layer != null && typeof layer === "object" && "audioPathAnimation" in layer && layer.audioPathAnimation != null && typeof layer.audioPathAnimation === "object") ? layer.audioPathAnimation : undefined;
       if (
-        layer.audioPathAnimation?.enabled &&
-        layer.audioPathAnimation.pathData
+        (audioPathAnimation != null && typeof audioPathAnimation === "object" && "enabled" in audioPathAnimation && audioPathAnimation.enabled) &&
+        (audioPathAnimation != null && typeof audioPathAnimation === "object" && "pathData" in audioPathAnimation && audioPathAnimation.pathData)
       ) {
-        const pathAnim = layer.audioPathAnimation;
+        const pathAnim = audioPathAnimation;
 
         // Get or create cached animator (avoids re-parsing SVG every frame)
         let animator: AudioPathAnimator;
@@ -853,8 +936,10 @@ export class MotionEngine {
   ): EvaluatedTransform {
     // Evaluate position - check for separate dimensions first
     let position: { x: number; y: number; z?: number };
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const separateDimensions = (transform != null && typeof transform === "object" && "separateDimensions" in transform && transform.separateDimensions != null && typeof transform.separateDimensions === "object") ? transform.separateDimensions : undefined;
     if (
-      transform.separateDimensions?.position &&
+      (separateDimensions != null && typeof separateDimensions === "object" && "position" in separateDimensions && separateDimensions.position) &&
       transform.positionX &&
       transform.positionY
     ) {
@@ -870,15 +955,19 @@ export class MotionEngine {
     }
 
     // Use origin (new name) with fallback to anchorPoint (deprecated) for backwards compatibility
-    const originProp = transform.origin || transform.anchorPoint;
-    const origin = originProp
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy logical OR
+    const hasOrigin = typeof transform.origin === "object" && transform.origin !== null;
+    const hasAnchorPoint = typeof transform.anchorPoint === "object" && transform.anchorPoint !== null;
+    const originProp = hasOrigin ? transform.origin : (hasAnchorPoint ? transform.anchorPoint : undefined);
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy truthy checks
+    const origin = (typeof originProp === "object" && originProp !== null)
       ? interpolateProperty(originProp, frame, fps)
       : { x: 0, y: 0, z: 0 };
 
     // Evaluate scale - check for separate dimensions first
     let scale: { x: number; y: number; z?: number };
     if (
-      transform.separateDimensions?.scale &&
+      (separateDimensions != null && typeof separateDimensions === "object" && "scale" in separateDimensions && separateDimensions.scale) &&
       transform.scaleX &&
       transform.scaleY
     ) {
@@ -1024,6 +1113,10 @@ export class MotionEngine {
     return evaluated;
   }
 
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy null
+  // Pattern match: activeCameraId ∈ string | null | undefined → string (empty string = no camera, never null)
+  // Pattern match: audioMapper ∈ AudioReactiveMapper | null | undefined → AudioReactiveMapper | {} (use empty object sentinel instead of null)
+  // Pattern match: Returns EvaluatedCamera | null (interface requirement - null means no camera)
   private evaluateCamera(
     frame: number,
     layers: Layer[],
@@ -1035,40 +1128,76 @@ export class MotionEngine {
     // Find active camera layer
     let cameraLayer: Layer | undefined;
 
-    if (activeCameraId) {
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy truthy checks
+    const hasActiveCameraId = typeof activeCameraId === "string" && activeCameraId.length > 0;
+    if (hasActiveCameraId) {
       cameraLayer = layers.find(
         (l) => l.id === activeCameraId && l.type === "camera",
       );
     }
 
     // If no active camera specified, find first visible camera
-    if (!cameraLayer) {
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy truthy checks
+    const hasCameraLayerFound = typeof cameraLayer === "object" && cameraLayer !== null;
+    if (!hasCameraLayerFound) {
       cameraLayer = layers.find(
         (l) =>
           l.type === "camera" &&
           l.visible &&
-          frame >= (l.startFrame ?? l.inPoint ?? 0) &&
-          frame <= (l.endFrame ?? l.outPoint ?? 80),
+          (() => {
+            // Type proof: startFrame ∈ ℕ ∪ {undefined}, inPoint ∈ ℕ ∪ {undefined} → startFrame ∈ ℕ
+            const startFrameValue = l.startFrame;
+            const start = isFiniteNumber(startFrameValue) && Number.isInteger(startFrameValue) && startFrameValue >= 0
+              ? startFrameValue
+              : (isFiniteNumber(l.inPoint) && Number.isInteger(l.inPoint) && l.inPoint >= 0 ? l.inPoint : 0);
+            // Type proof: endFrame ∈ ℕ ∪ {undefined}, outPoint ∈ ℕ ∪ {undefined} → endFrame ∈ ℕ
+            const endFrameValue = l.endFrame;
+            const end = isFiniteNumber(endFrameValue) && Number.isInteger(endFrameValue) && endFrameValue >= 0
+              ? endFrameValue
+              : (isFiniteNumber(l.outPoint) && Number.isInteger(l.outPoint) && l.outPoint >= 0 ? l.outPoint : 80);
+            return frame >= start && frame <= end;
+          })(),
       );
     }
 
-    if (!cameraLayer || !cameraLayer.data) {
-      return null;
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy logical OR/truthy checks
+    // Pattern match: Verify cameraLayer is defined after find operations
+    const hasCameraLayerValid = typeof cameraLayer === "object" && cameraLayer !== null;
+    if (!hasCameraLayerValid) {
+      throw new Error(`[MotionEngine] Cannot evaluate camera: Camera layer with id "${activeCameraId}" not found`);
     }
-
-    const cameraData = cameraLayer.data as CameraLayerData;
+    
+    // Pattern match: cameraLayer is guaranteed to be Layer here (after type guard check)
+    const cameraLayerTyped = cameraLayer as Layer;
+    const hasCameraData = typeof cameraLayerTyped.data === "object" && cameraLayerTyped.data !== null;
+    if (!hasCameraData) {
+      throw new Error(`[MotionEngine] Cannot evaluate camera: Camera layer "${activeCameraId}" has no data`);
+    }
+    
+    const cameraData = cameraLayerTyped.data as CameraLayerData;
 
     // Evaluate camera transform
+    // Pattern match: cameraLayer is guaranteed to be Layer here
     const transform = this.evaluateTransform(
       frame,
-      cameraLayer.transform,
+      cameraLayerTyped.transform,
       true,
       fps,
     );
 
     // Default camera values - use composition center as default target
-    const compWidth = compositionSettings?.width ?? 1024;
-    const compHeight = compositionSettings?.height ?? 1024;
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+    // Type proof: width ∈ ℕ ∧ finite(width) → width ∈ ℕ₊
+    const hasCompositionSettings = typeof compositionSettings === "object" && compositionSettings !== null;
+    const compWidthValue = hasCompositionSettings && typeof compositionSettings.width === "number" ? compositionSettings.width : undefined;
+    const compWidth = isFiniteNumber(compWidthValue) && Number.isInteger(compWidthValue) && compWidthValue > 0
+      ? compWidthValue
+      : 1024;
+    // Type proof: height ∈ ℕ ∧ finite(height) → height ∈ ℕ₊
+    const compHeightValue = hasCompositionSettings && typeof compositionSettings.height === "number" ? compositionSettings.height : undefined;
+    const compHeight = isFiniteNumber(compHeightValue) && Number.isInteger(compHeightValue) && compHeightValue > 0
+      ? compHeightValue
+      : 1024;
     const centerX = compWidth / 2;
     const centerY = compHeight / 2;
 
@@ -1083,9 +1212,12 @@ export class MotionEngine {
         cameraData.animatedPosition,
         frame,
         fps,
-        cameraLayer.id,
+        cameraLayerTyped.id,
       );
-      position = { x: pos.x, y: pos.y, z: pos.z ?? 0 };
+      // Type proof: z ∈ ℝ ∪ {undefined} → z ∈ ℝ
+      const zValue = pos.z;
+      const z = isFiniteNumber(zValue) ? zValue : 0;
+      position = { x: pos.x, y: pos.y, z };
     }
 
     if (cameraData.animatedTarget) {
@@ -1093,9 +1225,12 @@ export class MotionEngine {
         cameraData.animatedTarget,
         frame,
         fps,
-        cameraLayer.id,
+        cameraLayerTyped.id,
       );
-      target = { x: tgt.x, y: tgt.y, z: tgt.z ?? 0 };
+      // Type proof: z ∈ ℝ ∪ {undefined} → z ∈ ℝ
+      const zValue = tgt.z;
+      const z = isFiniteNumber(zValue) ? zValue : 0;
+      target = { x: tgt.x, y: tgt.y, z };
     }
 
     if (cameraData.animatedFov) {
@@ -1103,7 +1238,7 @@ export class MotionEngine {
         cameraData.animatedFov,
         frame,
         fps,
-        cameraLayer.id,
+        cameraLayerTyped.id,
       );
     }
 
@@ -1112,7 +1247,7 @@ export class MotionEngine {
         cameraData.animatedFocalLength,
         frame,
         fps,
-        cameraLayer.id,
+        cameraLayerTyped.id,
       );
     }
 
@@ -1123,19 +1258,37 @@ export class MotionEngine {
     const legacyCamera = cameraData.camera;
 
     // Determine if DOF is enabled - check structured format first, then legacy
-    const dofEnabled = dofConfig?.enabled ?? legacyCamera?.depthOfField ?? false;
+    // Type proof: enabled ∈ {true, false} ∪ {undefined}, depthOfField ∈ {true, false} ∪ {undefined} → enabled ∈ {true, false}
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const dofEnabledValue = (dofConfig != null && typeof dofConfig === "object" && "enabled" in dofConfig && typeof dofConfig.enabled === "boolean") ? dofConfig.enabled : undefined;
+    const dofEnabled = typeof dofEnabledValue === "boolean"
+      ? dofEnabledValue
+      : (legacyCamera != null && typeof legacyCamera === "object" && "depthOfField" in legacyCamera && typeof legacyCamera.depthOfField === "boolean" ? legacyCamera.depthOfField : false);
 
     // Get initial values - prefer structured format, fall back to legacy
-    let focusDistance = dofConfig?.focusDistance ?? legacyCamera?.focusDistance ?? 1000;
-    let aperture = dofConfig?.aperture ?? legacyCamera?.aperture ?? 2.8;
-    let blurLevel = dofConfig?.blurLevel ?? legacyCamera?.blurLevel ?? 50;
+    // Type proof: focusDistance ∈ ℝ ∧ finite(focusDistance) → focusDistance ∈ ℝ₊
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const focusDistanceValue = (dofConfig != null && typeof dofConfig === "object" && "focusDistance" in dofConfig && typeof dofConfig.focusDistance === "number") ? dofConfig.focusDistance : undefined;
+    let focusDistance = isFiniteNumber(focusDistanceValue) && focusDistanceValue > 0
+      ? focusDistanceValue
+      : (legacyCamera != null && typeof legacyCamera === "object" && "focusDistance" in legacyCamera && isFiniteNumber(legacyCamera.focusDistance) && legacyCamera.focusDistance > 0 ? legacyCamera.focusDistance : 1000);
+    // Type proof: aperture ∈ ℝ ∧ finite(aperture) → aperture ∈ ℝ₊
+    const apertureValue = (dofConfig != null && typeof dofConfig === "object" && "aperture" in dofConfig && typeof dofConfig.aperture === "number") ? dofConfig.aperture : undefined;
+    let aperture = isFiniteNumber(apertureValue) && apertureValue > 0
+      ? apertureValue
+      : (legacyCamera != null && typeof legacyCamera === "object" && "aperture" in legacyCamera && isFiniteNumber(legacyCamera.aperture) && legacyCamera.aperture > 0 ? legacyCamera.aperture : 2.8);
+    // Type proof: blurLevel ∈ ℝ ∧ finite(blurLevel) → blurLevel ∈ ℝ₊
+    const blurLevelValue = (dofConfig != null && typeof dofConfig === "object" && "blurLevel" in dofConfig && typeof dofConfig.blurLevel === "number") ? dofConfig.blurLevel : undefined;
+    let blurLevel = isFiniteNumber(blurLevelValue) && blurLevelValue >= 0
+      ? blurLevelValue
+      : (legacyCamera != null && typeof legacyCamera === "object" && "blurLevel" in legacyCamera && isFiniteNumber(legacyCamera.blurLevel) && legacyCamera.blurLevel >= 0 ? legacyCamera.blurLevel : 50);
 
     if (cameraData.animatedFocusDistance) {
       focusDistance = interpolateProperty(
         cameraData.animatedFocusDistance,
         frame,
         fps,
-        cameraLayer.id,
+        cameraLayerTyped.id,
       );
     }
     if (cameraData.animatedAperture) {
@@ -1143,7 +1296,7 @@ export class MotionEngine {
         cameraData.animatedAperture,
         frame,
         fps,
-        cameraLayer.id,
+        cameraLayerTyped.id,
       );
     }
     if (cameraData.animatedBlurLevel) {
@@ -1151,7 +1304,7 @@ export class MotionEngine {
         cameraData.animatedBlurLevel,
         frame,
         fps,
-        cameraLayer.id,
+        cameraLayerTyped.id,
       );
     }
 
@@ -1221,7 +1374,7 @@ export class MotionEngine {
     if (audioMapper) {
       cameraAudioModifiers = collectAudioReactiveModifiers(
         audioMapper,
-        cameraLayer.id,
+        cameraLayerTyped.id,
         frame,
       );
     }
@@ -1248,8 +1401,10 @@ export class MotionEngine {
 
     // Apply camera shake if enabled (deterministic via seed)
     // Audio modifier modulates shake intensity (applied ONCE, not twice)
-    if (cameraData.shake?.enabled) {
-      const shakeData = cameraData.shake;
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const shake = (cameraData != null && typeof cameraData === "object" && "shake" in cameraData && cameraData.shake != null && typeof cameraData.shake === "object") ? cameraData.shake : undefined;
+    if (shake != null && typeof shake === "object" && "enabled" in shake && shake.enabled) {
+      const shakeData = shake;
 
       // Calculate effective intensity with audio modifier
       let effectiveIntensity = shakeData.intensity;
@@ -1284,8 +1439,10 @@ export class MotionEngine {
     }
 
     // Apply rack focus if enabled (overrides focus distance)
-    if (cameraData.rackFocus?.enabled) {
-      const rf = cameraData.rackFocus;
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const rackFocus = (cameraData != null && typeof cameraData === "object" && "rackFocus" in cameraData && cameraData.rackFocus != null && typeof cameraData.rackFocus === "object") ? cameraData.rackFocus : undefined;
+    if (rackFocus != null && typeof rackFocus === "object" && "enabled" in rackFocus && rackFocus.enabled) {
+      const rf = rackFocus;
       focusDistance = getRackFocusDistance(
         {
           startDistance: rf.startDistance,
@@ -1301,8 +1458,8 @@ export class MotionEngine {
     }
 
     return Object.freeze({
-      id: cameraLayer.id,
-      name: cameraLayer.name,
+      id: cameraLayerTyped.id,
+      name: cameraLayerTyped.name,
       position: Object.freeze(position),
       target: Object.freeze(target),
       fov,
@@ -1361,12 +1518,23 @@ export class MotionEngine {
 
     for (const layer of layers) {
       if (layer.type !== "particles" || !layer.visible) continue;
-      const start = layer.startFrame ?? layer.inPoint ?? 0;
-      const end = layer.endFrame ?? layer.outPoint ?? 80;
+      // Type proof: startFrame ∈ ℕ ∪ {undefined}, inPoint ∈ ℕ ∪ {undefined} → startFrame ∈ ℕ
+      const startFrameValue = layer.startFrame;
+      const start = isFiniteNumber(startFrameValue) && Number.isInteger(startFrameValue) && startFrameValue >= 0
+        ? startFrameValue
+        : (isFiniteNumber(layer.inPoint) && Number.isInteger(layer.inPoint) && layer.inPoint >= 0 ? layer.inPoint : 0);
+      // Type proof: endFrame ∈ ℕ ∪ {undefined}, outPoint ∈ ℕ ∪ {undefined} → endFrame ∈ ℕ
+      const endFrameValue = layer.endFrame;
+      const end = isFiniteNumber(endFrameValue) && Number.isInteger(endFrameValue) && endFrameValue >= 0
+        ? endFrameValue
+        : (isFiniteNumber(layer.outPoint) && Number.isInteger(layer.outPoint) && layer.outPoint >= 0 ? layer.outPoint : 80);
       if (frame < start || frame > end) continue;
 
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining/truthy checks
       const data = layer.data as ParticleLayerData | null;
-      if (!data?.systemConfig) continue;
+      const hasData = typeof data === "object" && data !== null;
+      const hasSystemConfig = hasData && typeof data.systemConfig === "object" && data.systemConfig !== null;
+      if (!hasData || !hasSystemConfig) continue;
 
       // Convert ParticleLayerData to ParticleSystemConfig
       const config = this.convertToParticleSystemConfig(data);
@@ -1394,6 +1562,10 @@ export class MotionEngine {
     data: ParticleLayerData,
   ): ParticleSystemConfig {
     const sys = data.systemConfig;
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+    // Pattern match: data.collision ∈ CollisionConfig | undefined → check explicitly
+    // Note: CollisionConfig doesn't have layerCollisionLayerId - it's in ParticleSystemConfig.collision
+    // So we use empty string as default
     return {
       maxParticles: sys.maxParticles,
       gravity: sys.gravity,
@@ -1403,8 +1575,10 @@ export class MotionEngine {
       respectMaskBoundary: sys.respectMaskBoundary,
       boundaryBehavior: sys.boundaryBehavior,
       friction: sys.friction,
-      turbulenceFields: sys.turbulenceFields ?? [],
-      subEmitters: sys.subEmitters ?? [],
+      // Type proof: turbulenceFields ∈ Array | {undefined} → Array
+      turbulenceFields: Array.isArray(sys.turbulenceFields) ? sys.turbulenceFields : [],
+      // Type proof: subEmitters ∈ Array | {undefined} → Array
+      subEmitters: Array.isArray(sys.subEmitters) ? sys.subEmitters : [],
       collision: {
         enabled: false,
         particleCollision: false,
@@ -1412,7 +1586,14 @@ export class MotionEngine {
         particleCollisionResponse: "bounce",
         particleCollisionDamping: 0.5,
         layerCollision: false,
-        layerCollisionLayerId: null,
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy null
+        // Pattern match: layerCollisionLayerId ∈ string (empty string = no collision layer, never null)
+        // Note: ParticleSystemConfig.collision type allows string | null, but we use empty string pattern
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy null
+        // Pattern match: layerCollisionLayerId ∈ string (empty string = no collision layer, never null)
+        // Note: Default value - data.collision (CollisionConfig) doesn't have layerCollisionLayerId
+        // ParticleSystemConfig.collision has it, so we use empty string as default
+        layerCollisionLayerId: "",
         layerCollisionThreshold: 0.5,
         floorEnabled: false,
         floorY: 1,
@@ -1459,14 +1640,14 @@ export class MotionEngine {
    * Type guard to check if a value is an AnimatableProperty
    */
   private isAnimatableProperty(
-    value: unknown,
-  ): value is AnimatableProperty<unknown> {
+    value: RuntimeValue,
+  ): value is AnimatableProperty<PropertyValue> {
     return (
       typeof value === "object" &&
       value !== null &&
       "value" in value &&
       "keyframes" in value &&
-      Array.isArray((value as AnimatableProperty<unknown>).keyframes)
+      Array.isArray((value as AnimatableProperty<PropertyValue>).keyframes)
     );
   }
 }

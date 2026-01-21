@@ -76,17 +76,30 @@ export class PathLayer extends BaseLayer {
    * Extract path layer data from layer object
    */
   private extractPathData(layerData: Layer): PathLayerData {
-    const data = layerData.data as PathLayerData | null;
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining/nullish coalescing
+    // Pattern match: data ∈ PathLayerData | null → PathLayerData (with explicit defaults)
+    const data = (layerData.data !== null && typeof layerData.data === "object") ? layerData.data as PathLayerData : null;
+
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+    // Pattern match: Extract each property with explicit type narrowing and defaults
+    const controlPointsValue = (data !== null && typeof data === "object" && "controlPoints" in data && Array.isArray(data.controlPoints)) ? data.controlPoints : [];
+    const closedValue = (data !== null && typeof data === "object" && "closed" in data && typeof data.closed === "boolean") ? data.closed : false;
+    const pathDataValue = (data !== null && typeof data === "object" && "pathData" in data && typeof data.pathData === "string") ? data.pathData : "";
+    const showGuideValue = (data !== null && typeof data === "object" && "showGuide" in data && typeof data.showGuide === "boolean") ? data.showGuide : true;
+    const guideColorValue = (data !== null && typeof data === "object" && "guideColor" in data && typeof data.guideColor === "string") ? data.guideColor : "#00FFFF";
+    const guideDashPatternValue = (data !== null && typeof data === "object" && "guideDashPattern" in data && Array.isArray(data.guideDashPattern) && data.guideDashPattern.length === 2 && typeof data.guideDashPattern[0] === "number" && typeof data.guideDashPattern[1] === "number") ? [data.guideDashPattern[0], data.guideDashPattern[1]] as [number, number] : [10, 5] as [number, number];
+    const animatedControlPointsValue = (data !== null && typeof data === "object" && "animatedControlPoints" in data) ? data.animatedControlPoints : undefined;
+    const animatedValue = (data !== null && typeof data === "object" && "animated" in data && typeof data.animated === "boolean") ? data.animated : undefined;
 
     return {
-      controlPoints: data?.controlPoints ?? [],
-      closed: data?.closed ?? false,
-      pathData: data?.pathData ?? "",
-      showGuide: data?.showGuide ?? true,
-      guideColor: data?.guideColor ?? "#00FFFF",
-      guideDashPattern: data?.guideDashPattern ?? [10, 5],
-      animatedControlPoints: data?.animatedControlPoints,
-      animated: data?.animated,
+      controlPoints: controlPointsValue,
+      closed: closedValue,
+      pathData: pathDataValue,
+      showGuide: showGuideValue,
+      guideColor: guideColorValue,
+      guideDashPattern: guideDashPatternValue,
+      animatedControlPoints: animatedControlPointsValue,
+      animated: animatedValue,
     };
   }
 
@@ -107,25 +120,33 @@ export class PathLayer extends BaseLayer {
       const p0 = points[i];
       const p1 = points[i + 1];
 
-      // Use depth for Z position (if available)
-      const z0 = p0.depth ?? 0;
-      const z1 = p1.depth ?? 0;
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+      // Pattern match: depth ∈ number | undefined → number (default 0)
+      const z0Value = (typeof p0 === "object" && p0 !== null && "depth" in p0 && typeof p0.depth === "number" && Number.isFinite(p0.depth)) ? p0.depth : 0;
+      const z1Value = (typeof p1 === "object" && p1 !== null && "depth" in p1 && typeof p1.depth === "number" && Number.isFinite(p1.depth)) ? p1.depth : 0;
+
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining/nullish coalescing
+      // Pattern match: handleOut ∈ {x?: number, y?: number} | undefined → number (default to point position)
+      const handleOutXValue = (typeof p0 === "object" && p0 !== null && "handleOut" in p0 && typeof p0.handleOut === "object" && p0.handleOut !== null && "x" in p0.handleOut && typeof p0.handleOut.x === "number" && Number.isFinite(p0.handleOut.x)) ? p0.handleOut.x : p0.x;
+      const handleOutYValue = (typeof p0 === "object" && p0 !== null && "handleOut" in p0 && typeof p0.handleOut === "object" && p0.handleOut !== null && "y" in p0.handleOut && typeof p0.handleOut.y === "number" && Number.isFinite(p0.handleOut.y)) ? p0.handleOut.y : p0.y;
+      const handleInXValue = (typeof p1 === "object" && p1 !== null && "handleIn" in p1 && typeof p1.handleIn === "object" && p1.handleIn !== null && "x" in p1.handleIn && typeof p1.handleIn.x === "number" && Number.isFinite(p1.handleIn.x)) ? p1.handleIn.x : p1.x;
+      const handleInYValue = (typeof p1 === "object" && p1 !== null && "handleIn" in p1 && typeof p1.handleIn === "object" && p1.handleIn !== null && "y" in p1.handleIn && typeof p1.handleIn.y === "number" && Number.isFinite(p1.handleIn.y)) ? p1.handleIn.y : p1.y;
 
       // Create bezier curve segment
       // Handles are stored as ABSOLUTE positions
       const bezier = new THREE.CubicBezierCurve3(
-        new THREE.Vector3(p0.x, -p0.y, z0),
+        new THREE.Vector3(p0.x, -p0.y, z0Value),
         new THREE.Vector3(
-          p0.handleOut?.x ?? p0.x,
-          -(p0.handleOut?.y ?? p0.y),
-          z0,
+          handleOutXValue,
+          -handleOutYValue,
+          z0Value,
         ),
         new THREE.Vector3(
-          p1.handleIn?.x ?? p1.x,
-          -(p1.handleIn?.y ?? p1.y),
-          z1,
+          handleInXValue,
+          -handleInYValue,
+          z1Value,
         ),
-        new THREE.Vector3(p1.x, -p1.y, z1),
+        new THREE.Vector3(p1.x, -p1.y, z1Value),
       );
 
       this.curve.add(bezier);
@@ -136,22 +157,31 @@ export class PathLayer extends BaseLayer {
       const lastPoint = points[points.length - 1];
       const firstPoint = points[0];
 
-      const zLast = lastPoint.depth ?? 0;
-      const zFirst = firstPoint.depth ?? 0;
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+      // Pattern match: depth ∈ number | undefined → number (default 0)
+      const zLastValue = (typeof lastPoint === "object" && lastPoint !== null && "depth" in lastPoint && typeof lastPoint.depth === "number" && Number.isFinite(lastPoint.depth)) ? lastPoint.depth : 0;
+      const zFirstValue = (typeof firstPoint === "object" && firstPoint !== null && "depth" in firstPoint && typeof firstPoint.depth === "number" && Number.isFinite(firstPoint.depth)) ? firstPoint.depth : 0;
+
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining/nullish coalescing
+      // Pattern match: handleOut/handleIn ∈ {x?: number, y?: number} | undefined → number (default to point position)
+      const lastHandleOutXValue = (typeof lastPoint === "object" && lastPoint !== null && "handleOut" in lastPoint && typeof lastPoint.handleOut === "object" && lastPoint.handleOut !== null && "x" in lastPoint.handleOut && typeof lastPoint.handleOut.x === "number" && Number.isFinite(lastPoint.handleOut.x)) ? lastPoint.handleOut.x : lastPoint.x;
+      const lastHandleOutYValue = (typeof lastPoint === "object" && lastPoint !== null && "handleOut" in lastPoint && typeof lastPoint.handleOut === "object" && lastPoint.handleOut !== null && "y" in lastPoint.handleOut && typeof lastPoint.handleOut.y === "number" && Number.isFinite(lastPoint.handleOut.y)) ? lastPoint.handleOut.y : lastPoint.y;
+      const firstHandleInXValue = (typeof firstPoint === "object" && firstPoint !== null && "handleIn" in firstPoint && typeof firstPoint.handleIn === "object" && firstPoint.handleIn !== null && "x" in firstPoint.handleIn && typeof firstPoint.handleIn.x === "number" && Number.isFinite(firstPoint.handleIn.x)) ? firstPoint.handleIn.x : firstPoint.x;
+      const firstHandleInYValue = (typeof firstPoint === "object" && firstPoint !== null && "handleIn" in firstPoint && typeof firstPoint.handleIn === "object" && firstPoint.handleIn !== null && "y" in firstPoint.handleIn && typeof firstPoint.handleIn.y === "number" && Number.isFinite(firstPoint.handleIn.y)) ? firstPoint.handleIn.y : firstPoint.y;
 
       const closingBezier = new THREE.CubicBezierCurve3(
-        new THREE.Vector3(lastPoint.x, -lastPoint.y, zLast),
+        new THREE.Vector3(lastPoint.x, -lastPoint.y, zLastValue),
         new THREE.Vector3(
-          lastPoint.handleOut?.x ?? lastPoint.x,
-          -(lastPoint.handleOut?.y ?? lastPoint.y),
-          zLast,
+          lastHandleOutXValue,
+          -lastHandleOutYValue,
+          zLastValue,
         ),
         new THREE.Vector3(
-          firstPoint.handleIn?.x ?? firstPoint.x,
-          -(firstPoint.handleIn?.y ?? firstPoint.y),
-          zFirst,
+          firstHandleInXValue,
+          -firstHandleInYValue,
+          zFirstValue,
         ),
-        new THREE.Vector3(firstPoint.x, -firstPoint.y, zFirst),
+        new THREE.Vector3(firstPoint.x, -firstPoint.y, zFirstValue),
       );
 
       this.curve.add(closingBezier);
@@ -229,9 +259,24 @@ export class PathLayer extends BaseLayer {
 
   /**
    * Get a point on the path at parameter t (0-1)
+   * 
+   * System F/Omega proof: Explicit validation of curve initialization
+   * Type proof: t ∈ number → THREE.Vector3 (non-nullable)
+   * Mathematical proof: Curve must be initialized to calculate point at parameter t
+   * Geometric proof: Point calculation requires valid curve geometry
    */
-  getPointAt(t: number): THREE.Vector3 | null {
-    if (!this.curve) return null;
+  getPointAt(t: number): THREE.Vector3 {
+    // System F/Omega proof: Explicit validation of curve existence
+    // Type proof: curve ∈ THREE.Curve<THREE.Vector3> | null
+    // Mathematical proof: Curve must be initialized before calculating points
+    if (!this.curve) {
+      throw new Error(
+        `[PathLayer] Cannot get point at parameter: Curve not initialized. ` +
+        `Layer ID: ${this.id}, parameter t: ${t}. ` +
+        `Path layer must have a valid curve before calculating points. ` +
+        `Wrap in try/catch if "curve not ready" is an expected state.`
+      );
+    }
     // Validate t (NaN bypasses Math.max/min clamp)
     const validT = Number.isFinite(t) ? Math.max(0, Math.min(1, t)) : 0;
     return this.curve.getPointAt(validT);
@@ -239,9 +284,24 @@ export class PathLayer extends BaseLayer {
 
   /**
    * Get the tangent at parameter t (0-1)
+   * 
+   * System F/Omega proof: Explicit validation of curve initialization
+   * Type proof: t ∈ number → THREE.Vector3 (non-nullable)
+   * Mathematical proof: Curve must be initialized to calculate tangent at parameter t
+   * Geometric proof: Tangent calculation requires valid curve geometry
    */
-  getTangentAt(t: number): THREE.Vector3 | null {
-    if (!this.curve) return null;
+  getTangentAt(t: number): THREE.Vector3 {
+    // System F/Omega proof: Explicit validation of curve existence
+    // Type proof: curve ∈ THREE.Curve<THREE.Vector3> | null
+    // Mathematical proof: Curve must be initialized before calculating tangents
+    if (!this.curve) {
+      throw new Error(
+        `[PathLayer] Cannot get tangent at parameter: Curve not initialized. ` +
+        `Layer ID: ${this.id}, parameter t: ${t}. ` +
+        `Path layer must have a valid curve before calculating tangents. ` +
+        `Wrap in try/catch if "curve not ready" is an expected state.`
+      );
+    }
     // Validate t (NaN bypasses Math.max/min clamp)
     const validT = Number.isFinite(t) ? Math.max(0, Math.min(1, t)) : 0;
     return this.curve.getTangentAt(validT);
@@ -257,14 +317,18 @@ export class PathLayer extends BaseLayer {
 
   /**
    * Get point and rotation for placing objects along path
+   * 
+   * System F/Omega proof: Explicit validation of point and tangent calculation
+   * Type proof: t ∈ number → { position: THREE.Vector3; rotation: number } (non-nullable)
+   * Mathematical proof: Point and tangent must be calculated successfully to determine transform
+   * Geometric proof: Transform calculation requires valid point and tangent vectors
    */
   getTransformAt(
     t: number,
-  ): { position: THREE.Vector3; rotation: number } | null {
+  ): { position: THREE.Vector3; rotation: number } {
+    // System F/Omega pattern: getPointAt and getTangentAt now throw explicit errors
     const point = this.getPointAt(t);
     const tangent = this.getTangentAt(t);
-
-    if (!point || !tangent) return null;
 
     // Calculate rotation from tangent
     const rotation = Math.atan2(tangent.y, tangent.x) * (180 / Math.PI);
@@ -322,7 +386,9 @@ export class PathLayer extends BaseLayer {
         id: cp.id,
         x: cp.x,
         y: cp.y,
-        depth: cp.depth ?? 0,
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+        // Pattern match: depth ∈ number | undefined → number (default 0)
+        depth: (typeof cp === "object" && cp !== null && "depth" in cp && typeof cp.depth === "number" && Number.isFinite(cp.depth)) ? cp.depth : 0,
         handleIn: cp.handleIn,
         handleOut: cp.handleOut,
         type: cp.type,
@@ -513,16 +579,24 @@ export class PathLayer extends BaseLayer {
       const z0 = p0.depth;
       const z1 = p1.depth;
 
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining/nullish coalescing
+      // Pattern match: handleOut/handleIn ∈ {x: number, y: number} | null → number (default to point position)
+      // EvaluatedControlPoint guarantees depth is always number, but handles can be null
+      const handleOutXValue = (typeof p0.handleOut === "object" && p0.handleOut !== null && "x" in p0.handleOut && typeof p0.handleOut.x === "number" && Number.isFinite(p0.handleOut.x)) ? p0.handleOut.x : p0.x;
+      const handleOutYValue = (typeof p0.handleOut === "object" && p0.handleOut !== null && "y" in p0.handleOut && typeof p0.handleOut.y === "number" && Number.isFinite(p0.handleOut.y)) ? p0.handleOut.y : p0.y;
+      const handleInXValue = (typeof p1.handleIn === "object" && p1.handleIn !== null && "x" in p1.handleIn && typeof p1.handleIn.x === "number" && Number.isFinite(p1.handleIn.x)) ? p1.handleIn.x : p1.x;
+      const handleInYValue = (typeof p1.handleIn === "object" && p1.handleIn !== null && "y" in p1.handleIn && typeof p1.handleIn.y === "number" && Number.isFinite(p1.handleIn.y)) ? p1.handleIn.y : p1.y;
+
       const bezier = new THREE.CubicBezierCurve3(
         new THREE.Vector3(p0.x, -p0.y, z0),
         new THREE.Vector3(
-          p0.handleOut?.x ?? p0.x,
-          -(p0.handleOut?.y ?? p0.y),
+          handleOutXValue,
+          -handleOutYValue,
           z0,
         ),
         new THREE.Vector3(
-          p1.handleIn?.x ?? p1.x,
-          -(p1.handleIn?.y ?? p1.y),
+          handleInXValue,
+          -handleInYValue,
           z1,
         ),
         new THREE.Vector3(p1.x, -p1.y, z1),
@@ -536,16 +610,23 @@ export class PathLayer extends BaseLayer {
       const lastPoint = points[points.length - 1];
       const firstPoint = points[0];
 
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining/nullish coalescing
+      // Pattern match: handleOut/handleIn ∈ {x: number, y: number} | null → number (default to point position)
+      const lastHandleOutXValue = (typeof lastPoint.handleOut === "object" && lastPoint.handleOut !== null && "x" in lastPoint.handleOut && typeof lastPoint.handleOut.x === "number" && Number.isFinite(lastPoint.handleOut.x)) ? lastPoint.handleOut.x : lastPoint.x;
+      const lastHandleOutYValue = (typeof lastPoint.handleOut === "object" && lastPoint.handleOut !== null && "y" in lastPoint.handleOut && typeof lastPoint.handleOut.y === "number" && Number.isFinite(lastPoint.handleOut.y)) ? lastPoint.handleOut.y : lastPoint.y;
+      const firstHandleInXValue = (typeof firstPoint.handleIn === "object" && firstPoint.handleIn !== null && "x" in firstPoint.handleIn && typeof firstPoint.handleIn.x === "number" && Number.isFinite(firstPoint.handleIn.x)) ? firstPoint.handleIn.x : firstPoint.x;
+      const firstHandleInYValue = (typeof firstPoint.handleIn === "object" && firstPoint.handleIn !== null && "y" in firstPoint.handleIn && typeof firstPoint.handleIn.y === "number" && Number.isFinite(firstPoint.handleIn.y)) ? firstPoint.handleIn.y : firstPoint.y;
+
       const closingBezier = new THREE.CubicBezierCurve3(
         new THREE.Vector3(lastPoint.x, -lastPoint.y, lastPoint.depth),
         new THREE.Vector3(
-          lastPoint.handleOut?.x ?? lastPoint.x,
-          -(lastPoint.handleOut?.y ?? lastPoint.y),
+          lastHandleOutXValue,
+          -lastHandleOutYValue,
           lastPoint.depth,
         ),
         new THREE.Vector3(
-          firstPoint.handleIn?.x ?? firstPoint.x,
-          -(firstPoint.handleIn?.y ?? firstPoint.y),
+          firstHandleInXValue,
+          -firstHandleInYValue,
           firstPoint.depth,
         ),
         new THREE.Vector3(firstPoint.x, -firstPoint.y, firstPoint.depth),
@@ -566,8 +647,10 @@ export class PathLayer extends BaseLayer {
     const props = state.properties;
 
     // Apply evaluated control points if present
-    if (props.controlPoints !== undefined) {
-      const points = props.controlPoints as EvaluatedControlPoint[];
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy type assertions
+    // Pattern match: props.controlPoints ∈ PropertyValue | undefined → EvaluatedControlPoint[]
+    if (props.controlPoints !== undefined && Array.isArray(props.controlPoints)) {
+      const points = props.controlPoints as unknown as EvaluatedControlPoint[];
       const pointsHash = this.computePointsHash(points);
       if (pointsHash !== this.lastPointsHash) {
         this.buildPathFromEvaluatedPoints(points);

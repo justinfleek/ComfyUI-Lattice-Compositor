@@ -77,7 +77,7 @@
         <div class="property-row">
           <label>Frame Rate</label>
           <ScrubableNumber
-            :modelValue="nestedCompData.frameRate || compInfo?.fps || 30"
+            :modelValue="nestedCompData.frameRate || compInfoFps || 30"
             @update:modelValue="updateFrameRate"
             :min="1" :max="120" :step="1" :precision="0" unit="fps"
           />
@@ -109,8 +109,11 @@
 
 <script setup lang="ts">
 import { computed } from "vue";
-import { useCompositorStore } from "@/stores/compositorStore";
+import { useCompositionStore } from "@/stores/compositionStore";
+import type { CompositionStoreAccess } from "@/stores/compositionStore";
 import { useLayerStore } from "@/stores/layerStore";
+import { useProjectStore } from "@/stores/projectStore";
+import { useSelectionStore } from "@/stores/selectionStore";
 import type {
   AnimatableProperty,
   Layer,
@@ -125,30 +128,64 @@ const props = defineProps<{
 const emit =
   defineEmits<(e: "update", data: Partial<NestedCompData>) => void>();
 
-const store = useCompositorStore();
+const compositionStore = useCompositionStore();
 const layerStore = useLayerStore();
+const projectStore = useProjectStore();
+const selectionStore = useSelectionStore();
+
+// Helper to create CompositionStoreAccess for composition operations
+function getCompositionStoreAccess(): CompositionStoreAccess {
+  return {
+    project: {
+      compositions: projectStore.project.compositions,
+      mainCompositionId: projectStore.project.mainCompositionId,
+      composition: projectStore.project.composition,
+      meta: projectStore.project.meta,
+    },
+    activeCompositionId: projectStore.activeCompositionId,
+    openCompositionIds: compositionStore.openCompositionIds,
+    compositionBreadcrumbs: compositionStore.compositionBreadcrumbs,
+    selectedLayerIds: selectionStore.selectedLayerIds,
+    getActiveComp: () => projectStore.getActiveComp(),
+    switchComposition: (compId: string) => {
+      compositionStore.switchComposition(getCompositionStoreAccess(), compId);
+    },
+    pushHistory: () => projectStore.pushHistory(),
+  };
+}
 
 // Get nested comp data from layer
+// Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??/?.
 const nestedCompData = computed<NestedCompData>(() => {
   const data = props.layer.data as NestedCompData | null;
+  // Extract each property with explicit type narrowing and defaults
+  const compositionId = (data !== null && data !== undefined && typeof data === "object" && "compositionId" in data && typeof data.compositionId === "string") ? data.compositionId : "";
+  // New naming with backwards compatibility - check speedMapEnabled first, then timeRemapEnabled
+  const speedMapEnabledValue = (data !== null && data !== undefined && typeof data === "object" && "speedMapEnabled" in data && typeof data.speedMapEnabled === "boolean") ? data.speedMapEnabled : ((data !== null && data !== undefined && typeof data === "object" && "timeRemapEnabled" in data && typeof data.timeRemapEnabled === "boolean") ? data.timeRemapEnabled : false);
+  const speedMapValue = (data !== null && data !== undefined && typeof data === "object" && "speedMap" in data && data.speedMap !== null && data.speedMap !== undefined) ? data.speedMap : ((data !== null && data !== undefined && typeof data === "object" && "timeRemap" in data && data.timeRemap !== null && data.timeRemap !== undefined) ? data.timeRemap : undefined);
+  // Legacy (deprecated)
+  const timeRemapEnabled = (data !== null && data !== undefined && typeof data === "object" && "timeRemapEnabled" in data && typeof data.timeRemapEnabled === "boolean") ? data.timeRemapEnabled : false;
+  const timeRemap = (data !== null && data !== undefined && typeof data === "object" && "timeRemap" in data) ? data.timeRemap : undefined;
+  const flattenTransform = (data !== null && data !== undefined && typeof data === "object" && "flattenTransform" in data && typeof data.flattenTransform === "boolean") ? data.flattenTransform : false;
+  const overrideFrameRate = (data !== null && data !== undefined && typeof data === "object" && "overrideFrameRate" in data && typeof data.overrideFrameRate === "boolean") ? data.overrideFrameRate : false;
+  const frameRate = (data !== null && data !== undefined && typeof data === "object" && "frameRate" in data) ? data.frameRate : undefined;
+  
   return {
-    compositionId: data?.compositionId ?? "",
-    // New naming with backwards compatibility
-    speedMapEnabled: data?.speedMapEnabled ?? data?.timeRemapEnabled ?? false,
-    speedMap: data?.speedMap ?? data?.timeRemap,
-    // Legacy (deprecated)
-    timeRemapEnabled: data?.timeRemapEnabled ?? false,
-    timeRemap: data?.timeRemap,
-    flattenTransform: data?.flattenTransform ?? false,
-    overrideFrameRate: data?.overrideFrameRate ?? false,
-    frameRate: data?.frameRate,
+    compositionId,
+    speedMapEnabled: speedMapEnabledValue,
+    speedMap: speedMapValue,
+    timeRemapEnabled,
+    timeRemap,
+    flattenTransform,
+    overrideFrameRate,
+    frameRate,
   };
 });
 
 // Get referenced composition info
 const compInfo = computed(() => {
   if (!nestedCompData.value.compositionId) return null;
-  const comp = store.project.compositions[nestedCompData.value.compositionId];
+  const comp = projectStore.project.compositions[nestedCompData.value.compositionId];
   if (!comp) return null;
   return {
     name: comp.name,
@@ -160,17 +197,29 @@ const compInfo = computed(() => {
   };
 });
 
+// Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+const compInfoFps = computed(() => {
+  const info = compInfo.value;
+  return (info != null && typeof info === "object" && "fps" in info && typeof info.fps === "number") ? info.fps : undefined;
+});
+
 // Speed map computed properties (with backwards compatibility)
+// Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
 const speedMapEnabled = computed(() => {
-  return (
-    nestedCompData.value.speedMapEnabled ??
-    nestedCompData.value.timeRemapEnabled ??
-    false
-  );
+  const data = nestedCompData.value;
+  const speedMapEnabledValue = (typeof data === "object" && data !== null && "speedMapEnabled" in data && typeof data.speedMapEnabled === "boolean") ? data.speedMapEnabled : undefined;
+  if (speedMapEnabledValue !== undefined) return speedMapEnabledValue;
+  const timeRemapEnabledValue = (typeof data === "object" && data !== null && "timeRemapEnabled" in data && typeof data.timeRemapEnabled === "boolean") ? data.timeRemapEnabled : undefined;
+  return timeRemapEnabledValue !== undefined ? timeRemapEnabledValue : false;
 });
 
 const speedMapProperty = computed(() => {
-  return nestedCompData.value.speedMap ?? nestedCompData.value.timeRemap;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+  const data = nestedCompData.value;
+  const speedMap = (typeof data === "object" && data !== null && "speedMap" in data && data.speedMap !== null && data.speedMap !== undefined) ? data.speedMap : undefined;
+  if (speedMap !== undefined) return speedMap;
+  const timeRemap = (typeof data === "object" && data !== null && "timeRemap" in data && data.timeRemap !== null && data.timeRemap !== undefined) ? data.timeRemap : undefined;
+  return timeRemap;
 });
 
 const speedMapValue = computed(() => {
@@ -190,7 +239,7 @@ function formatDuration(seconds: number | undefined): string {
 // Enter the nested comp composition
 function enterNestedComp() {
   if (nestedCompData.value.compositionId) {
-    store.enterNestedComp(nestedCompData.value.compositionId);
+    compositionStore.enterNestedComp(getCompositionStoreAccess(), nestedCompData.value.compositionId);
   }
 }
 
@@ -209,7 +258,7 @@ function toggleSpeedMap(e: Event) {
     updates.timeRemap = newProp; // Backwards compatibility
   }
 
-  layerStore.updateLayerData(store, props.layer.id, updates);
+  layerStore.updateLayerData(props.layer.id, updates);
   emit("update", updates);
 }
 
@@ -220,7 +269,7 @@ function updateSpeedMap(value: number) {
       ...prop,
       value,
     };
-    layerStore.updateLayerData(store, props.layer.id, {
+    layerStore.updateLayerData(props.layer.id, {
       speedMap,
       timeRemap: speedMap, // Backwards compatibility
     });
@@ -231,25 +280,27 @@ function updateSpeedMap(value: number) {
 // Frame rate override
 function toggleFrameRateOverride(e: Event) {
   const enabled = (e.target as HTMLInputElement).checked;
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const fpsValue = compInfoFps.value;
   const updates: Partial<NestedCompData> = {
     overrideFrameRate: enabled,
-    frameRate: enabled ? compInfo.value?.fps || 30 : undefined,
+    frameRate: enabled ? (fpsValue != null ? fpsValue : 30) : undefined,
   };
-  layerStore.updateLayerData(store, props.layer.id, updates);
+  layerStore.updateLayerData(props.layer.id, updates);
   emit("update", updates);
 }
 
 function updateFrameRate(value: number) {
-  layerStore.updateLayerData(store, props.layer.id, { frameRate: value });
+  layerStore.updateLayerData(props.layer.id, { frameRate: value });
   emit("update", { frameRate: value });
 }
 
 // Flatten transform
 function updateFlattenTransform(e: Event) {
   const enabled = (e.target as HTMLInputElement).checked;
-  layerStore.updateLayerData(store, props.layer.id, { flattenTransform: enabled });
+  layerStore.updateLayerData(props.layer.id, { flattenTransform: enabled });
   // Also update the layer-level flag
-  layerStore.updateLayer(store, props.layer.id, { flattenTransform: enabled });
+  layerStore.updateLayer(props.layer.id, { flattenTransform: enabled });
   emit("update", { flattenTransform: enabled });
 }
 

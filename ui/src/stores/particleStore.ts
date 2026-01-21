@@ -102,10 +102,12 @@ export const useParticleStore = defineStore("particle", {
       const layer = store.createLayer("particles", "Particle System");
 
       const activeComp = store.getActiveComp();
-      const compWidth =
-        activeComp?.settings.width || store.project.composition.width;
-      const compHeight =
-        activeComp?.settings.height || store.project.composition.height;
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const activeCompSettings = (activeComp != null && typeof activeComp === "object" && "settings" in activeComp && activeComp.settings != null && typeof activeComp.settings === "object") ? activeComp.settings : undefined;
+      const settingsWidth = (activeCompSettings != null && typeof activeCompSettings === "object" && "width" in activeCompSettings && typeof activeCompSettings.width === "number") ? activeCompSettings.width : undefined;
+      const settingsHeight = (activeCompSettings != null && typeof activeCompSettings === "object" && "height" in activeCompSettings && typeof activeCompSettings.height === "number") ? activeCompSettings.height : undefined;
+      const compWidth = settingsWidth != null ? settingsWidth : store.project.composition.width;
+      const compHeight = settingsHeight != null ? settingsHeight : store.project.composition.height;
 
       const particleData: ParticleLayerData = {
         systemConfig: {

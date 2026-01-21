@@ -6,6 +6,7 @@
  */
 
 import type { LatticeProject } from "@/types/project";
+import { safeNonNegativeDefault } from "@/utils/typeGuards";
 import { createLogger } from "@/utils/logger";
 import { ValidationError, validateProjectStructure } from "@/utils/security";
 
@@ -165,7 +166,12 @@ export async function listProjects(): Promise<ListResult> {
     const result = await response.json();
 
     if (result.status === "success") {
-      logger.info(`Found ${result.projects?.length || 0} projects`);
+      // Type proof: projects.length ∈ number | undefined → number (≥ 0, count)
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const resultProjects = (result != null && typeof result === "object" && "projects" in result && result.projects != null && Array.isArray(result.projects)) ? result.projects : undefined;
+      const projectsLength = (resultProjects != null && Array.isArray(resultProjects)) ? resultProjects.length : undefined;
+      const projectCount = safeNonNegativeDefault(projectsLength, 0, "result.projects.length");
+      logger.info(`Found ${projectCount} projects`);
     } else {
       logger.error(`Failed to list projects: ${result.message}`);
     }
@@ -242,7 +248,10 @@ export function exportProjectAsFile(
   project: LatticeProject,
   filename?: string,
 ): void {
-  const name = filename || project.meta?.name || "lattice-project";
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const projectMeta = (project != null && typeof project === "object" && "meta" in project && project.meta != null && typeof project.meta === "object") ? project.meta : undefined;
+  const metaName = (projectMeta != null && typeof projectMeta === "object" && "name" in projectMeta && typeof projectMeta.name === "string") ? projectMeta.name : undefined;
+  const name = filename != null ? filename : (metaName != null ? metaName : "lattice-project");
   const safeName = name.replace(/[^a-zA-Z0-9-_]/g, "_");
 
   const blob = new Blob([JSON.stringify(project, null, 2)], {
@@ -281,7 +290,10 @@ export async function importProjectFromFile(
         validateProjectStructure(data, `Project file '${file.name}'`);
 
         const project = data as LatticeProject;
-        logger.info(`Imported project: ${project.meta?.name || file.name}`);
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+        const projectMeta = (project != null && typeof project === "object" && "meta" in project && project.meta != null && typeof project.meta === "object") ? project.meta : undefined;
+        const metaName = (projectMeta != null && typeof projectMeta === "object" && "name" in projectMeta && typeof projectMeta.name === "string") ? projectMeta.name : undefined;
+        logger.info(`Imported project: ${metaName != null ? metaName : file.name}`);
         resolve(project);
       } catch (error) {
         if (error instanceof ValidationError) {

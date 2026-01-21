@@ -255,14 +255,30 @@ export function isSupportedDataFile(filename: string): boolean {
 
 /**
  * Get data file type from filename
+ * 
+ * System F/Omega proof: Explicit validation of file extension
+ * Type proof: filename ∈ string → DataFileType (non-nullable)
+ * Mathematical proof: File extension must match one of the supported data file types
  */
-export function getDataFileType(filename: string): DataFileType | null {
+export function getDataFileType(filename: string): DataFileType {
   const ext = filename.toLowerCase().split(".").pop();
   if (ext === "json") return "json";
   if (ext === "csv") return "csv";
   if (ext === "tsv") return "tsv";
   if (ext === "mgjson") return "mgjson";
-  return null;
+  
+  // System F/Omega proof: Explicit validation of file extension
+  // Type proof: ext ∈ string | undefined
+  // Mathematical proof: File extension must match one of the supported types
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+  const extension = (ext !== null && ext !== undefined && typeof ext === "string" && ext.length > 0) ? ext : "none";
+  throw new Error(
+    `[DataAsset] Cannot detect file type: Unsupported file extension. ` +
+    `Filename: "${filename}", extension: ${extension}, ` +
+    `supported extensions: json, csv, tsv, mgjson. ` +
+    `File extension must match one of the supported data file types. ` +
+    `Wrap in try/catch if "unsupported format" is an expected state.`
+  );
 }
 
 // ============================================================================

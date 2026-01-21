@@ -99,6 +99,7 @@ import type {
 import { MATERIAL_PRESETS } from "@/types/physics";
 import { PhysicsEngine } from "./PhysicsEngine";
 import { RagdollBuilder } from "./RagdollBuilder";
+import { isFiniteNumber } from "@/utils/typeGuards";
 
 /**
  * Create a new physics engine with default settings
@@ -139,17 +140,24 @@ export function createCircleBody(
     group: 0,
   };
 
+  // Type proof: mass ∈ number | undefined → number
+  const mass = isFiniteNumber(options.mass) && options.mass > 0
+    ? options.mass
+    : 1;
+  // Type proof: material ∈ PhysicsMaterial | undefined → PhysicsMaterial
+  const material = options.material ? options.material : MATERIAL_PRESETS.default;
+
   return {
     id,
     layerId,
     type: options.isStatic ? "static" : "dynamic",
-    mass: options.mass ?? 1,
+    mass,
     position: { ...options.position },
     velocity: { x: 0, y: 0 },
     angle: 0,
     angularVelocity: 0,
     shape: { type: "circle", radius: options.radius },
-    material: options.material ?? MATERIAL_PRESETS.default,
+    material,
     filter: defaultFilter,
     response: "collide",
     linearDamping: 0.1,
@@ -180,17 +188,24 @@ export function createBoxBody(
     group: 0,
   };
 
+  // Type proof: mass ∈ number | undefined → number
+  const mass = isFiniteNumber(options.mass) && options.mass > 0
+    ? options.mass
+    : 1;
+  // Type proof: material ∈ PhysicsMaterial | undefined → PhysicsMaterial
+  const material = options.material ? options.material : MATERIAL_PRESETS.default;
+
   return {
     id,
     layerId,
     type: options.isStatic ? "static" : "dynamic",
-    mass: options.mass ?? 1,
+    mass,
     position: { ...options.position },
     velocity: { x: 0, y: 0 },
     angle: 0,
     angularVelocity: 0,
     shape: { type: "box", width: options.width, height: options.height },
-    material: options.material ?? MATERIAL_PRESETS.default,
+    material,
     filter: defaultFilter,
     response: "collide",
     linearDamping: 0.1,
@@ -239,7 +254,10 @@ export function createClothConfig(
     pinnedCorners?: boolean;
   },
 ): ClothConfig {
-  const spacing = options.spacing ?? 10;
+  // Type proof: spacing ∈ number | undefined → number
+  const spacing = isFiniteNumber(options.spacing) && options.spacing > 0
+    ? options.spacing
+    : 10;
   const pinnedParticles: number[] = [];
 
   if (options.pinnedTop) {

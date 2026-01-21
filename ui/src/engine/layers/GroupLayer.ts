@@ -32,12 +32,17 @@ export class GroupLayer extends BaseLayer {
    * Extract group layer data from layer object
    */
   private extractGroupData(layerData: Layer): GroupLayerData {
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??/?.
     const data = layerData.data as Partial<GroupLayerData> | undefined;
+    const collapsed = (data !== null && data !== undefined && typeof data === "object" && "collapsed" in data && typeof data.collapsed === "boolean") ? data.collapsed : false;
+    const color = (data !== null && data !== undefined && typeof data === "object" && "color" in data && typeof data.color === "string" && data.color.length > 0) ? data.color : "#888888";
+    const passThrough = (data !== null && data !== undefined && typeof data === "object" && "passThrough" in data && typeof data.passThrough === "boolean") ? data.passThrough : true;
+    const isolate = (data !== null && data !== undefined && typeof data === "object" && "isolate" in data && typeof data.isolate === "boolean") ? data.isolate : false;
     return {
-      collapsed: data?.collapsed ?? false,
-      color: data?.color ?? "#888888",
-      passThrough: data?.passThrough ?? true,
-      isolate: data?.isolate ?? false,
+      collapsed,
+      color,
+      passThrough,
+      isolate,
     };
   }
 

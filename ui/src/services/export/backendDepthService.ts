@@ -121,9 +121,12 @@ export class BackendDepthService {
         throw new Error(result.message || "Depth generation failed");
       }
 
-      logger.info(
-        `Depth map generated: ${result.metadata?.width}x${result.metadata?.height}`,
-      );
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const metadata = (result != null && typeof result === "object" && "metadata" in result && result.metadata != null && typeof result.metadata === "object") ? result.metadata : undefined;
+      const width = (metadata != null && typeof metadata === "object" && "width" in metadata && typeof metadata.width === "number") ? metadata.width : undefined;
+      const height = (metadata != null && typeof metadata === "object" && "height" in metadata && typeof metadata.height === "number") ? metadata.height : undefined;
+      const dimensions = (width != null && height != null) ? `${width}x${height}` : "unknown dimensions";
+      logger.info(`Depth map generated: ${dimensions}`);
 
       return result as DepthGenerationResult;
     } catch (error) {
@@ -187,9 +190,12 @@ export class BackendDepthService {
         throw new Error(result.message || "Normal generation failed");
       }
 
-      logger.info(
-        `Normal map generated: ${result.metadata?.width}x${result.metadata?.height}`,
-      );
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const metadata = (result != null && typeof result === "object" && "metadata" in result && result.metadata != null && typeof result.metadata === "object") ? result.metadata : undefined;
+      const width = (metadata != null && typeof metadata === "object" && "width" in metadata && typeof metadata.width === "number") ? metadata.width : undefined;
+      const height = (metadata != null && typeof metadata === "object" && "height" in metadata && typeof metadata.height === "number") ? metadata.height : undefined;
+      const dimensions = (width != null && height != null) ? `${width}x${height}` : "unknown dimensions";
+      logger.info(`Normal map generated: ${dimensions}`);
 
       return result as NormalGenerationResult;
     } catch (error) {

@@ -15,6 +15,7 @@ import type {
   CameraPose,
   CameraTrackingSolve,
 } from "@/types/cameraTracking";
+import { isFiniteNumber, safeNonNegativeDefault } from "@/utils/typeGuards";
 
 /**
  * Camera motion primitives taxonomy (from CameraBench)
@@ -227,10 +228,18 @@ interface VLMResponse {
   summary?: string;
 }
 
+import type { JSONValue } from "@/types/dataAsset";
+
+/**
+ * All possible JavaScript values that can be validated at runtime
+ * Used as input type for validators (replaces unknown)
+ */
+type RuntimeValue = string | number | boolean | object | null | undefined | bigint | symbol;
+
 /**
  * Parse VLM JSON response
  */
-function parseVLMResponse(raw: unknown): CameraMotionAnalysisResult {
+function parseVLMResponse(raw: RuntimeValue): CameraMotionAnalysisResult {
   if (typeof raw !== "object" || raw === null) {
     return {
       segments: [],
@@ -241,18 +250,38 @@ function parseVLMResponse(raw: unknown): CameraMotionAnalysisResult {
 
   const data = raw as VLMResponse;
 
-  const segments = (data.segments ?? []).map((seg) => ({
-    startFrame: typeof seg.startFrame === "number" ? seg.startFrame : Number(seg.startFrame) || 0,
-    endFrame: typeof seg.endFrame === "number" ? seg.endFrame : Number(seg.endFrame) || 0,
-    motion: (seg.motion as CameraMotionPrimitive) || "unknown",
-    confidence: typeof seg.confidence === "number" ? seg.confidence : Number(seg.confidence) || 0.5,
-    description: String(seg.description || ""),
-  }));
+  // Type proof: segments ∈ VLMResponseSegment[] | undefined → VLMResponseSegment[]
+  const segmentsData = Array.isArray(data.segments) ? data.segments : [];
+  const segments = segmentsData.map((seg) => {
+    // Type proof: frame numbers ∈ number | NaN → number (≥ 0, frame index)
+    const startFrameValue = typeof seg.startFrame === "number" ? seg.startFrame : Number(seg.startFrame);
+    const endFrameValue = typeof seg.endFrame === "number" ? seg.endFrame : Number(seg.endFrame);
+    const startFrame = Number.isFinite(startFrameValue) && startFrameValue >= 0 ? startFrameValue : 0;
+    const endFrame = Number.isFinite(endFrameValue) && endFrameValue >= 0 ? endFrameValue : 0;
+    
+    // Type proof: confidence ∈ number | NaN → number (0-1 range, non-negative)
+    const confidenceValue = typeof seg.confidence === "number" ? seg.confidence : Number(seg.confidence);
+    const confidence = Number.isFinite(confidenceValue) && confidenceValue >= 0 && confidenceValue <= 1
+      ? confidenceValue
+      : 0.5;
+    
+    return {
+      startFrame,
+      endFrame,
+      motion: (seg.motion as CameraMotionPrimitive) || "unknown",
+      confidence,
+      description: String(seg.description || ""),
+    };
+  });
 
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  const firstSegment = (segments != null && Array.isArray(segments) && segments.length > 0) ? segments[0] : undefined;
+  const firstSegmentMotion = (firstSegment != null && typeof firstSegment === "object" && "motion" in firstSegment && typeof firstSegment.motion === "string") ? firstSegment.motion : undefined;
+  const motionKey = firstSegmentMotion != null ? firstSegmentMotion : "unknown";
   return {
     segments,
     summary: String(data.summary || "No motion detected"),
-    suggestedPreset: MOTION_TO_TRAJECTORY[segments[0]?.motion || "unknown"],
+    suggestedPreset: MOTION_TO_TRAJECTORY[motionKey],
   };
 }
 
@@ -408,13 +437,20 @@ export function parseUni3CFormat(
       ? data.point_cloud.points.map((p, i) => ({
           id: `pt_${i}`,
           position: { x: p[0], y: p[1], z: p[2] },
-          color: data.point_cloud?.colors?.[i]
-            ? {
-                r: Math.round(data.point_cloud.colors[i][0] * 255),
-                g: Math.round(data.point_cloud.colors[i][1] * 255),
-                b: Math.round(data.point_cloud.colors[i][2] * 255),
-              }
-            : { r: 255, g: 255, b: 255 },
+          // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+          color: (() => {
+            const pointCloud = (data != null && typeof data === "object" && "point_cloud" in data && data.point_cloud != null && typeof data.point_cloud === "object") ? data.point_cloud : undefined;
+            const pointCloudColors = (pointCloud != null && typeof pointCloud === "object" && "colors" in pointCloud && pointCloud.colors != null && Array.isArray(pointCloud.colors)) ? pointCloud.colors : undefined;
+            const colorAtIndex = (pointCloudColors != null && Array.isArray(pointCloudColors) && i >= 0 && i < pointCloudColors.length) ? pointCloudColors[i] : undefined;
+            if (colorAtIndex != null && Array.isArray(colorAtIndex) && colorAtIndex.length >= 3) {
+              return {
+                r: Math.round(colorAtIndex[0] * 255),
+                g: Math.round(colorAtIndex[1] * 255),
+                b: Math.round(colorAtIndex[2] * 255),
+              };
+            }
+            return { r: 255, g: 255, b: 255 };
+          })(),
           track2DIDs: [],
         }))
       : [],
@@ -488,8 +524,14 @@ export function exportToUni3CFormat(
   // Build K matrix from intrinsics
   const fx = intrinsics.focalLength;
   const fy = intrinsics.focalLength; // Assume square pixels
-  const cx = intrinsics.principalPoint?.x ?? 960;
-  const cy = intrinsics.principalPoint?.y ?? 540;
+  // Type proof: principalPoint.x ∈ number | undefined → number
+  const cx = intrinsics.principalPoint && isFiniteNumber(intrinsics.principalPoint.x)
+    ? intrinsics.principalPoint.x
+    : 960;
+  // Type proof: principalPoint.y ∈ number | undefined → number
+  const cy = intrinsics.principalPoint && isFiniteNumber(intrinsics.principalPoint.y)
+    ? intrinsics.principalPoint.y
+    : 540;
 
   const K = [
     [fx, 0, cx],
@@ -509,7 +551,8 @@ export function exportToUni3CFormat(
   });
 
   // Convert 3D track points to point cloud
-  const trackPoints = solve.trackPoints3D ?? [];
+  // Type proof: trackPoints3D ∈ TrackPoint3D[] | undefined → TrackPoint3D[]
+  const trackPoints = Array.isArray(solve.trackPoints3D) ? solve.trackPoints3D : [];
   const point_cloud =
     trackPoints.length > 0
       ? {

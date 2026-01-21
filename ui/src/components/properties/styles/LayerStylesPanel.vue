@@ -59,7 +59,7 @@
         @expand="expandedSections.dropShadow = $event"
       >
         <DropShadowEditor
-          v-if="layerStyles?.dropShadow"
+          v-if="hasDropShadow"
           :style="layerStyles.dropShadow"
           @update="updateDropShadow"
         />
@@ -74,7 +74,7 @@
         @expand="expandedSections.innerShadow = $event"
       >
         <InnerShadowEditor
-          v-if="layerStyles?.innerShadow"
+          v-if="hasInnerShadow"
           :style="layerStyles.innerShadow"
           @update="updateInnerShadow"
         />
@@ -89,7 +89,7 @@
         @expand="expandedSections.outerGlow = $event"
       >
         <OuterGlowEditor
-          v-if="layerStyles?.outerGlow"
+          v-if="hasOuterGlow"
           :style="layerStyles.outerGlow"
           @update="updateOuterGlow"
         />
@@ -104,7 +104,7 @@
         @expand="expandedSections.innerGlow = $event"
       >
         <InnerGlowEditor
-          v-if="layerStyles?.innerGlow"
+          v-if="hasInnerGlow"
           :style="layerStyles.innerGlow"
           @update="updateInnerGlow"
         />
@@ -119,7 +119,7 @@
         @expand="expandedSections.bevelEmboss = $event"
       >
         <BevelEmbossEditor
-          v-if="layerStyles?.bevelEmboss"
+          v-if="hasBevelEmboss"
           :style="layerStyles.bevelEmboss"
           @update="updateBevelEmboss"
         />
@@ -134,7 +134,7 @@
         @expand="expandedSections.satin = $event"
       >
         <SatinEditor
-          v-if="layerStyles?.satin"
+          v-if="hasSatin"
           :style="layerStyles.satin"
           @update="updateSatin"
         />
@@ -149,7 +149,7 @@
         @expand="expandedSections.colorOverlay = $event"
       >
         <ColorOverlayEditor
-          v-if="layerStyles?.colorOverlay"
+          v-if="hasColorOverlay"
           :style="layerStyles.colorOverlay"
           @update="updateColorOverlay"
         />
@@ -164,7 +164,7 @@
         @expand="expandedSections.gradientOverlay = $event"
       >
         <GradientOverlayEditor
-          v-if="layerStyles?.gradientOverlay"
+          v-if="hasGradientOverlay"
           :style="layerStyles.gradientOverlay"
           @update="updateGradientOverlay"
         />
@@ -179,7 +179,7 @@
         @expand="expandedSections.stroke = $event"
       >
         <StrokeEditor
-          v-if="layerStyles?.stroke"
+          v-if="hasStroke"
           :style="layerStyles.stroke"
           @update="updateStroke"
         />
@@ -194,7 +194,7 @@
         @expand="expandedSections.blendingOptions = $event"
       >
         <BlendingOptionsEditor
-          v-if="layerStyles?.blendingOptions"
+          v-if="hasBlendingOptions"
           :options="layerStyles.blendingOptions"
           @update="updateBlendingOptions"
         />
@@ -209,8 +209,9 @@
 
 <script setup lang="ts">
 import { computed, reactive } from "vue";
-import { useCompositorStore } from "@/stores/compositorStore";
 import { useEffectStore } from "@/stores/effectStore";
+import { useProjectStore } from "@/stores/projectStore";
+import { useSelectionStore } from "@/stores/selectionStore";
 import type {
   BevelEmbossUpdate,
   ColorOverlayUpdate,
@@ -229,7 +230,8 @@ import type {
 } from "@/types/layerStyles";
 import type { BlendMode } from "@/types/project";
 
-const store = useCompositorStore();
+const projectStore = useProjectStore();
+const selectionStore = useSelectionStore();
 
 // Track expanded sections - subset of LayerStyles that can be expanded
 type ExpandableStyleType =
@@ -265,14 +267,26 @@ function isExpandableStyleType(
 
 // Computed properties
 const selectedLayer = computed(() => {
-  const layers = store.getActiveCompLayers();
-  const selected = store.selectedLayerIds[0];
-  return layers.find((l) => l.id === selected) ?? null;
+  const layers = projectStore.getActiveCompLayers();
+  const selected = selectionStore.selectedLayerIds[0];
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy nullish coalescing
+  // Pattern match: layers.find(...) ∈ Layer | undefined → Layer | null
+  const foundLayer = layers.find((l) => l.id === selected);
+  return (foundLayer !== undefined) ? foundLayer : null;
 });
 
-const layerStyles = computed(() => selectedLayer.value?.layerStyles);
+// Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+const layerStyles = computed(() => {
+  const selectedLayerVal = selectedLayer.value;
+  return (selectedLayerVal != null && typeof selectedLayerVal === "object" && "layerStyles" in selectedLayerVal && selectedLayerVal.layerStyles != null) ? selectedLayerVal.layerStyles : undefined;
+});
 
-const stylesEnabled = computed(() => layerStyles.value?.enabled ?? false);
+// Lean4/PureScript/Haskell: Explicit pattern matching - no lazy nullish coalescing
+// Pattern match: layerStyles.value.enabled ∈ boolean | undefined → boolean (default false)
+const stylesEnabled = computed(() => {
+  const layerStylesValue = layerStyles.value;
+  return (layerStylesValue !== null && typeof layerStylesValue === "object" && "enabled" in layerStylesValue && typeof layerStylesValue.enabled === "boolean") ? layerStylesValue.enabled : false;
+});
 
 const hasStyles = computed(() => !!layerStyles.value);
 
@@ -283,36 +297,126 @@ const canPaste = computed(() => effectStore.hasStylesInClipboard());
 const presetNames = computed(() => effectStore.getStylePresetNames());
 
 // Individual style enabled states
-const dropShadowEnabled = computed(
-  () => layerStyles.value?.dropShadow?.enabled ?? false,
-);
-const innerShadowEnabled = computed(
-  () => layerStyles.value?.innerShadow?.enabled ?? false,
-);
-const outerGlowEnabled = computed(
-  () => layerStyles.value?.outerGlow?.enabled ?? false,
-);
-const innerGlowEnabled = computed(
-  () => layerStyles.value?.innerGlow?.enabled ?? false,
-);
-const bevelEmbossEnabled = computed(
-  () => layerStyles.value?.bevelEmboss?.enabled ?? false,
-);
-const satinEnabled = computed(
-  () => layerStyles.value?.satin?.enabled ?? false,
-);
-const colorOverlayEnabled = computed(
-  () => layerStyles.value?.colorOverlay?.enabled ?? false,
-);
-const gradientOverlayEnabled = computed(
-  () => layerStyles.value?.gradientOverlay?.enabled ?? false,
-);
-const strokeEnabled = computed(
-  () => layerStyles.value?.stroke?.enabled ?? false,
-);
-const blendingOptionsEnabled = computed(
-  () => !!layerStyles.value?.blendingOptions,
-);
+// Lean4/PureScript/Haskell: Explicit pattern matching - no lazy nullish coalescing
+// Pattern match: layerStyles.value.dropShadow.enabled ∈ boolean | undefined → boolean (default false)
+const dropShadowEnabled = computed(() => {
+  const layerStylesValue = layerStyles.value;
+  if (layerStylesValue !== null && typeof layerStylesValue === "object" && "dropShadow" in layerStylesValue && layerStylesValue.dropShadow !== null && typeof layerStylesValue.dropShadow === "object" && "enabled" in layerStylesValue.dropShadow && typeof layerStylesValue.dropShadow.enabled === "boolean") {
+    return layerStylesValue.dropShadow.enabled;
+  }
+  return false;
+});
+// Pattern match: layerStyles.value.innerShadow.enabled ∈ boolean | undefined → boolean (default false)
+const innerShadowEnabled = computed(() => {
+  const layerStylesValue = layerStyles.value;
+  if (layerStylesValue !== null && typeof layerStylesValue === "object" && "innerShadow" in layerStylesValue && layerStylesValue.innerShadow !== null && typeof layerStylesValue.innerShadow === "object" && "enabled" in layerStylesValue.innerShadow && typeof layerStylesValue.innerShadow.enabled === "boolean") {
+    return layerStylesValue.innerShadow.enabled;
+  }
+  return false;
+});
+// Pattern match: layerStyles.value.outerGlow.enabled ∈ boolean | undefined → boolean (default false)
+const outerGlowEnabled = computed(() => {
+  const layerStylesValue = layerStyles.value;
+  if (layerStylesValue !== null && typeof layerStylesValue === "object" && "outerGlow" in layerStylesValue && layerStylesValue.outerGlow !== null && typeof layerStylesValue.outerGlow === "object" && "enabled" in layerStylesValue.outerGlow && typeof layerStylesValue.outerGlow.enabled === "boolean") {
+    return layerStylesValue.outerGlow.enabled;
+  }
+  return false;
+});
+// Pattern match: layerStyles.value.innerGlow.enabled ∈ boolean | undefined → boolean (default false)
+const innerGlowEnabled = computed(() => {
+  const layerStylesValue = layerStyles.value;
+  if (layerStylesValue !== null && typeof layerStylesValue === "object" && "innerGlow" in layerStylesValue && layerStylesValue.innerGlow !== null && typeof layerStylesValue.innerGlow === "object" && "enabled" in layerStylesValue.innerGlow && typeof layerStylesValue.innerGlow.enabled === "boolean") {
+    return layerStylesValue.innerGlow.enabled;
+  }
+  return false;
+});
+// Pattern match: layerStyles.value.bevelEmboss.enabled ∈ boolean | undefined → boolean (default false)
+const bevelEmbossEnabled = computed(() => {
+  const layerStylesValue = layerStyles.value;
+  if (layerStylesValue !== null && typeof layerStylesValue === "object" && "bevelEmboss" in layerStylesValue && layerStylesValue.bevelEmboss !== null && typeof layerStylesValue.bevelEmboss === "object" && "enabled" in layerStylesValue.bevelEmboss && typeof layerStylesValue.bevelEmboss.enabled === "boolean") {
+    return layerStylesValue.bevelEmboss.enabled;
+  }
+  return false;
+});
+// Pattern match: layerStyles.value.satin.enabled ∈ boolean | undefined → boolean (default false)
+const satinEnabled = computed(() => {
+  const layerStylesValue = layerStyles.value;
+  if (layerStylesValue !== null && typeof layerStylesValue === "object" && "satin" in layerStylesValue && layerStylesValue.satin !== null && typeof layerStylesValue.satin === "object" && "enabled" in layerStylesValue.satin && typeof layerStylesValue.satin.enabled === "boolean") {
+    return layerStylesValue.satin.enabled;
+  }
+  return false;
+});
+// Pattern match: layerStyles.value.colorOverlay.enabled ∈ boolean | undefined → boolean (default false)
+const colorOverlayEnabled = computed(() => {
+  const layerStylesValue = layerStyles.value;
+  if (layerStylesValue !== null && typeof layerStylesValue === "object" && "colorOverlay" in layerStylesValue && layerStylesValue.colorOverlay !== null && typeof layerStylesValue.colorOverlay === "object" && "enabled" in layerStylesValue.colorOverlay && typeof layerStylesValue.colorOverlay.enabled === "boolean") {
+    return layerStylesValue.colorOverlay.enabled;
+  }
+  return false;
+});
+// Pattern match: layerStyles.value.gradientOverlay.enabled ∈ boolean | undefined → boolean (default false)
+const gradientOverlayEnabled = computed(() => {
+  const layerStylesValue = layerStyles.value;
+  if (layerStylesValue !== null && typeof layerStylesValue === "object" && "gradientOverlay" in layerStylesValue && layerStylesValue.gradientOverlay !== null && typeof layerStylesValue.gradientOverlay === "object" && "enabled" in layerStylesValue.gradientOverlay && typeof layerStylesValue.gradientOverlay.enabled === "boolean") {
+    return layerStylesValue.gradientOverlay.enabled;
+  }
+  return false;
+});
+// Pattern match: layerStyles.value.stroke.enabled ∈ boolean | undefined → boolean (default false)
+const strokeEnabled = computed(() => {
+  const layerStylesValue = layerStyles.value;
+  if (layerStylesValue !== null && typeof layerStylesValue === "object" && "stroke" in layerStylesValue && layerStylesValue.stroke !== null && typeof layerStylesValue.stroke === "object" && "enabled" in layerStylesValue.stroke && typeof layerStylesValue.stroke.enabled === "boolean") {
+    return layerStylesValue.stroke.enabled;
+  }
+  return false;
+});
+// Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+const blendingOptionsEnabled = computed(() => {
+  const layerStylesVal = layerStyles.value;
+  return !!(layerStylesVal != null && typeof layerStylesVal === "object" && "blendingOptions" in layerStylesVal && layerStylesVal.blendingOptions != null);
+});
+
+// Computed properties for template v-if checks (explicit pattern matching - no lazy ?.)
+const hasDropShadow = computed(() => {
+  const layerStylesVal = layerStyles.value;
+  return !!(layerStylesVal != null && typeof layerStylesVal === "object" && "dropShadow" in layerStylesVal && layerStylesVal.dropShadow != null);
+});
+const hasInnerShadow = computed(() => {
+  const layerStylesVal = layerStyles.value;
+  return !!(layerStylesVal != null && typeof layerStylesVal === "object" && "innerShadow" in layerStylesVal && layerStylesVal.innerShadow != null);
+});
+const hasOuterGlow = computed(() => {
+  const layerStylesVal = layerStyles.value;
+  return !!(layerStylesVal != null && typeof layerStylesVal === "object" && "outerGlow" in layerStylesVal && layerStylesVal.outerGlow != null);
+});
+const hasInnerGlow = computed(() => {
+  const layerStylesVal = layerStyles.value;
+  return !!(layerStylesVal != null && typeof layerStylesVal === "object" && "innerGlow" in layerStylesVal && layerStylesVal.innerGlow != null);
+});
+const hasBevelEmboss = computed(() => {
+  const layerStylesVal = layerStyles.value;
+  return !!(layerStylesVal != null && typeof layerStylesVal === "object" && "bevelEmboss" in layerStylesVal && layerStylesVal.bevelEmboss != null);
+});
+const hasSatin = computed(() => {
+  const layerStylesVal = layerStyles.value;
+  return !!(layerStylesVal != null && typeof layerStylesVal === "object" && "satin" in layerStylesVal && layerStylesVal.satin != null);
+});
+const hasColorOverlay = computed(() => {
+  const layerStylesVal = layerStyles.value;
+  return !!(layerStylesVal != null && typeof layerStylesVal === "object" && "colorOverlay" in layerStylesVal && layerStylesVal.colorOverlay != null);
+});
+const hasGradientOverlay = computed(() => {
+  const layerStylesVal = layerStyles.value;
+  return !!(layerStylesVal != null && typeof layerStylesVal === "object" && "gradientOverlay" in layerStylesVal && layerStylesVal.gradientOverlay != null);
+});
+const hasStroke = computed(() => {
+  const layerStylesVal = layerStyles.value;
+  return !!(layerStylesVal != null && typeof layerStylesVal === "object" && "stroke" in layerStylesVal && layerStylesVal.stroke != null);
+});
+const hasBlendingOptions = computed(() => {
+  const layerStylesVal = layerStyles.value;
+  return !!(layerStylesVal != null && typeof layerStylesVal === "object" && "blendingOptions" in layerStylesVal && layerStylesVal.blendingOptions != null);
+});
 
 // Actions
 function toggleStyles() {

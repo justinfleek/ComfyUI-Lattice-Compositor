@@ -89,13 +89,13 @@
 </template>
 
 <script setup lang="ts">
-import { useCompositorStore } from "@/stores/compositorStore";
+import { useAnimationStore } from "@/stores/animationStore";
 import { createKeyframe } from "@/types/animation";
 import type { StarShape } from "@/types/shapes";
 
 const props = defineProps<{ shape: StarShape; layerId: string }>();
 const emit = defineEmits(["update"]);
-const store = useCompositorStore();
+const animationStore = useAnimationStore();
 
 function updatePoint(prop: "position", axis: "x" | "y", value: number) {
   const updated = { ...props.shape };
@@ -141,7 +141,7 @@ function toggleKeyframe(
 ) {
   const updated = { ...props.shape };
   const animProp = updated[prop];
-  const frame = store.currentFrame;
+  const frame = animationStore.currentFrame;
 
   const hasKf = animProp.keyframes.some((k) => k.frame === frame);
   if (hasKf) {

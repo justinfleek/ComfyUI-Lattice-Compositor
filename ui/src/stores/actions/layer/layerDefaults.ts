@@ -109,7 +109,7 @@ export function getDefaultLayerData(
         blur: { x: 0, y: 0 },
         lineHeight: 1.2,
         textAlign: "left",
-        pathLayerId: null,
+        pathLayerId: "",
         pathReversed: false,
         pathPerpendicularToPath: true,
         pathForceAlignment: false,
@@ -259,8 +259,13 @@ export function getDefaultLayerData(
 
     case "image":
       return {
-        assetId: null,
+        assetId: "",
+        source: "",
         fit: "contain",
+        cropEnabled: false,
+        cropRect: { x: 0, y: 0, width: 0, height: 0 },
+        sourceType: "file",
+        segmentationMaskId: "",
       } as LayerDataUnion;
 
     case "video":

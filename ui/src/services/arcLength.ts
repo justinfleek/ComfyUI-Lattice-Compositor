@@ -40,6 +40,7 @@
  * ```
  */
 import * as THREE from "three";
+import { safeCoordinateDefault, isFiniteNumber } from "@/utils/typeGuards";
 
 interface Point2D {
   x: number;
@@ -127,9 +128,18 @@ export class ArcLengthParameterizer {
     const point = this.curve.getPointAt(u) as THREE.Vector3;
     const tangent = this.curve.getTangentAt(u) as THREE.Vector3;
 
+    // Type proof: z coordinates ∈ number | undefined → number (coordinate-like, can be negative)
     return {
-      point: { x: point.x, y: point.y, z: point.z || 0 },
-      tangent: { x: tangent.x, y: tangent.y, z: tangent.z || 0 },
+      point: {
+        x: point.x,
+        y: point.y,
+        z: safeCoordinateDefault(point.z, 0, "point.z"),
+      },
+      tangent: {
+        x: tangent.x,
+        y: tangent.y,
+        z: safeCoordinateDefault(tangent.z, 0, "tangent.z"),
+      },
       t: this.distanceToT(distance),
     };
   }
@@ -218,15 +228,20 @@ export function controlPointsToBeziers(
     const p1 = controlPoints[i];
     const p2 = controlPoints[i + 1];
 
-    const h1 = p1.handleOut || { x: p1.x, y: p1.y, z: p1.z || 0 };
-    const h2 = p2.handleIn || { x: p2.x, y: p2.y, z: p2.z || 0 };
+    // Type proof: z coordinates ∈ number | undefined → number (coordinate-like, can be negative)
+    const p1z = safeCoordinateDefault(p1.z, 0, "p1.z");
+    const p2z = safeCoordinateDefault(p2.z, 0, "p2.z");
+    const h1 = p1.handleOut || { x: p1.x, y: p1.y, z: p1z };
+    const h2 = p2.handleIn || { x: p2.x, y: p2.y, z: p2z };
+    const h1z = h1.z !== undefined ? safeCoordinateDefault(h1.z, 0, "h1.z") : p1z;
+    const h2z = h2.z !== undefined ? safeCoordinateDefault(h2.z, 0, "h2.z") : p2z;
 
     beziers.push(
       createBezierCurve(
-        { x: p1.x, y: p1.y, z: p1.z || 0 },
-        { x: h1.x, y: h1.y, z: h1.z || 0 },
-        { x: h2.x, y: h2.y, z: h2.z || 0 },
-        { x: p2.x, y: p2.y, z: p2.z || 0 },
+        { x: p1.x, y: p1.y, z: p1z },
+        { x: h1.x, y: h1.y, z: h1z },
+        { x: h2.x, y: h2.y, z: h2z },
+        { x: p2.x, y: p2.y, z: p2z },
       ),
     );
   }
@@ -328,9 +343,11 @@ export class MultiSegmentParameterizer {
  */
 export function pathCommandsToBezier(
   pathCommands: Array<{ command: string; points: number[] }>,
-): THREE.CubicBezierCurve3 | null {
+): THREE.CubicBezierCurve3 {
   if (!pathCommands || pathCommands.length < 2) {
-    return null;
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const pathCommandsLength = (pathCommands != null && Array.isArray(pathCommands)) ? pathCommands.length : 0;
+    throw new Error(`[ArcLength] Cannot create Bezier curve from path commands: Invalid path commands (${pathCommandsLength} commands, minimum 2 required)`);
   }
 
   let startPoint: Point3D | null = null;
@@ -340,31 +357,68 @@ export function pathCommandsToBezier(
     const coords = cmd.points;
 
     if (command === "M") {
-      startPoint = { x: coords[0], y: coords[1], z: coords[2] || 0 };
+      // Type proof: z coordinate ∈ number | undefined → number (coordinate-like, can be negative)
+      const zCoord = coords[2] !== undefined ? safeCoordinateDefault(coords[2], 0, "coords[2]") : 0;
+      startPoint = { x: coords[0], y: coords[1], z: zCoord };
     } else if (command === "C" && startPoint) {
       // Cubic bezier: startPoint, control1, control2, endPoint
+      // Type proof: z coordinates ∈ number | undefined → number (coordinate-like, can be negative)
+      const c1z = coords[2] !== undefined ? safeCoordinateDefault(coords[2], 0, "coords[2]") : 0;
+      const c2z = coords[5] !== undefined ? safeCoordinateDefault(coords[5], 0, "coords[5]") : 0;
+      const endz = coords[8] !== undefined ? safeCoordinateDefault(coords[8], 0, "coords[8]") : 0;
       return new THREE.CubicBezierCurve3(
         new THREE.Vector3(startPoint.x, startPoint.y, startPoint.z),
-        new THREE.Vector3(coords[0], coords[1], coords[2] || 0),
+        new THREE.Vector3(coords[0], coords[1], c1z),
         new THREE.Vector3(
-          coords[3] || coords[2],
-          coords[4] || coords[3],
-          coords[5] || 0,
+          // Lean4/PureScript/Haskell: Explicit pattern matching on optional array elements
+          // Type proof: coords[i] ∈ number | undefined → number (coordinate-like, can be negative)
+          coords[3] !== undefined && isFiniteNumber(coords[3])
+            ? coords[3]
+            : coords[2] !== undefined && isFiniteNumber(coords[2])
+              ? coords[2]
+              : 0,
+          coords[4] !== undefined && isFiniteNumber(coords[4])
+            ? coords[4]
+            : coords[3] !== undefined && isFiniteNumber(coords[3])
+              ? coords[3]
+              : 0,
+          c2z,
         ),
         new THREE.Vector3(
-          coords[6] || coords[4],
-          coords[7] || coords[5],
-          coords[8] || 0,
+          // Type proof: coords[i] ∈ number | undefined → number (coordinate-like, can be negative)
+          coords[6] !== undefined && isFiniteNumber(coords[6])
+            ? coords[6]
+            : coords[4] !== undefined && isFiniteNumber(coords[4])
+              ? coords[4]
+              : 0,
+          coords[7] !== undefined && isFiniteNumber(coords[7])
+            ? coords[7]
+            : coords[5] !== undefined && isFiniteNumber(coords[5])
+              ? coords[5]
+              : 0,
+          endz,
         ),
       );
     } else if (command === "Q" && startPoint) {
       // Quadratic bezier - convert to cubic for consistency
       // Q: start, control, end -> C: start, (start+2*control)/3, (2*control+end)/3, end
-      const qcp = { x: coords[0], y: coords[1], z: coords[2] || 0 };
+      // Type proof: z coordinates ∈ number | undefined → number (coordinate-like, can be negative)
+      const qcpz = coords[2] !== undefined ? safeCoordinateDefault(coords[2], 0, "coords[2]") : 0;
+      const endz = coords[5] !== undefined ? safeCoordinateDefault(coords[5], 0, "coords[5]") : 0;
+      const qcp = { x: coords[0], y: coords[1], z: qcpz };
       const end = {
-        x: coords[3] || coords[2],
-        y: coords[4] || coords[3],
-        z: coords[5] || 0,
+        // Type proof: coords[i] ∈ number | undefined → number (coordinate-like, can be negative)
+        x: coords[3] !== undefined && isFiniteNumber(coords[3])
+          ? coords[3]
+          : coords[2] !== undefined && isFiniteNumber(coords[2])
+            ? coords[2]
+            : 0,
+        y: coords[4] !== undefined && isFiniteNumber(coords[4])
+          ? coords[4]
+          : coords[3] !== undefined && isFiniteNumber(coords[3])
+            ? coords[3]
+            : 0,
+        z: endz,
       };
 
       const cp1 = {
@@ -387,7 +441,7 @@ export function pathCommandsToBezier(
     }
   }
 
-  return null;
+  throw new Error(`[ArcLength] Cannot create Bezier curve from path commands: No valid cubic bezier curve found (path commands must contain 'M' followed by 'C' commands)`);
 }
 
 export default ArcLengthParameterizer;

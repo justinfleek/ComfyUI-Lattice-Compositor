@@ -15,6 +15,7 @@
  * @see docs/SECURITY_THREAT_MODEL.md
  */
 
+import type { JSONValue } from "@/types/dataAsset";
 import {
   logToolCall as logToolCallAudit,
   logToolResult,
@@ -45,7 +46,7 @@ export { hardenedScopeManager } from "./security/hardenedScopeManager";
 
 export interface SecureExecutionResult {
   success: boolean;
-  data?: unknown;
+  data?: JSONValue;
   error?: string;
   blocked?: boolean;
   requiresConfirmation?: boolean;
@@ -91,29 +92,36 @@ export async function executeToolCallSecure(
 
   // 0. Check kill switch FIRST
   if (hardenedScopeManager.isKillSwitchActive()) {
-    return {
-      success: false,
-      error: "🚨 KILL SWITCH ACTIVE: All agent operations suspended",
-      blocked: true,
-    };
+    throw new Error(`[SecureActionExecutor] 🚨 KILL SWITCH ACTIVE: All agent operations suspended. Security kill switch has been activated.`);
   }
 
   // 1. Validate tool call structure
   if (!toolCall || typeof toolCall.name !== "string") {
     await logSecurityWarning("Invalid tool call structure", { toolCall });
     hardenedScopeManager.recordSuspiciousActivity("invalid_tool_structure", 2);
-    return {
-      success: false,
-      error: "Invalid tool call structure",
-      blocked: true,
-    };
+    throw new Error(`[SecureActionExecutor] Invalid tool call structure. Tool call must have a valid "name" property. Security check failed.`);
   }
 
   // Extract arguments by removing 'name' and 'id' fields
   const { name, id, ...args } = toolCall;
 
   // Log the tool call attempt
-  await logToolCallAudit(name, args, userAction);
+  // Type-safe: Convert args to ToolArgsRecord (Record<string, JSONValue>)
+  const argsRecord: Record<string, JSONValue> = {};
+  for (const [key, value] of Object.entries(args)) {
+    // Runtime type check: Ensure value is JSONValue
+    if (
+      typeof value === "string" ||
+      typeof value === "number" ||
+      typeof value === "boolean" ||
+      value === null ||
+      Array.isArray(value) ||
+      (typeof value === "object" && value !== null)
+    ) {
+      argsRecord[key] = value as JSONValue;
+    }
+  }
+  await logToolCallAudit(name, argsRecord, userAction);
 
   // 2. Check for prompt injection in string arguments
   if (args && typeof args === "object") {
@@ -128,16 +136,24 @@ export async function executeToolCallSecure(
     if (injections.length > 0) {
       const highConfidence = injections.filter((i) => i.confidence === "high");
 
+      // System F/Omega: Convert detections to AuditLogMetadata-compatible format
+      // Type proof: AuditLogMetadata allows { [key: string]: string | number | boolean | null | undefined }
+      // Convert array to object with string keys for compatibility
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
+      const detectionsObj: Record<string, string | null> = {};
+      injections.forEach((injection, index) => {
+        const type = (typeof injection.type === "string" && injection.type.length > 0) ? injection.type : null;
+        detectionsObj[`detection_${index}_type`] = type;
+        detectionsObj[`detection_${index}_confidence`] = injection.confidence;
+        const location = (typeof injection.location === "string" && injection.location.length > 0) ? injection.location : null;
+        detectionsObj[`detection_${index}_location`] = location;
+      });
       await logSecurityWarning(
         `Prompt injection detected in tool call ${name}`,
         {
           detectionCount: injections.length,
           highConfidenceCount: highConfidence.length,
-          detections: injections.map((i) => ({
-            type: i.type,
-            confidence: i.confidence,
-            location: i.location,
-          })),
+          ...detectionsObj,
         },
       );
 
@@ -152,11 +168,7 @@ export async function executeToolCallSecure(
         // HARDENED: Auto-downgrade to readonly on injection
         hardenedScopeManager.autoDowngrade("High-confidence injection detected");
 
-        return {
-          success: false,
-          error: `Blocked: prompt injection detected (${highConfidence[0].type})`,
-          blocked: true,
-        };
+        throw new Error(`[SecureActionExecutor] Blocked: prompt injection detected (${highConfidence[0].type}). High-confidence security threat detected and blocked.`);
       }
 
       // Medium/low: sanitize and continue with caution
@@ -170,7 +182,7 @@ export async function executeToolCallSecure(
       for (const [key, value] of Object.entries(toolArgs)) {
         if (typeof value === "string") {
           // Type-safe assignment - sanitize string values
-          (toolArgs as Record<string, unknown>)[key] = sanitizeForLLM(value);
+          (toolArgs as Record<string, JSONValue>)[key] = sanitizeForLLM(value);
         }
       }
       // Reconstruct toolCall with sanitized args
@@ -180,19 +192,33 @@ export async function executeToolCallSecure(
 
   // 3. Check hardened scope permissions (unless bypassed for approved calls)
   if (!bypassScopeCheck) {
-    const permission = checkTool(name, args);
+    // Type-safe: Convert args to Record<string, JSONValue>
+    const argsForCheck: Record<string, JSONValue> = {};
+    for (const [key, value] of Object.entries(args)) {
+      if (
+        typeof value === "string" ||
+        typeof value === "number" ||
+        typeof value === "boolean" ||
+        value === null ||
+        Array.isArray(value) ||
+        (typeof value === "object" && value !== null)
+      ) {
+        argsForCheck[key] = value as JSONValue;
+      }
+    }
+    const permission = checkTool(name, argsForCheck);
 
     if (!permission.allowed) {
       // Don't reveal scope details to potential attacker
-      return {
-        success: false,
-        error: permission.requiresApproval
-          ? `Tool '${name}' requires user approval`
-          : `Tool '${name}' not available`,
-        blocked: !permission.requiresApproval,
-        requiresConfirmation: permission.requiresApproval,
-        confirmationId: permission.approvalId,
-      };
+      if (permission.requiresApproval) {
+        // For approval-required tools, we need to return structured response for UI
+        // But we'll throw an error that includes the approval context
+        const approvalError = new Error(`[SecureActionExecutor] Tool '${name}' requires user approval. User confirmation required before execution.`);
+        (approvalError as Error & { requiresConfirmation: boolean; confirmationId?: string }).requiresConfirmation = true;
+        (approvalError as Error & { confirmationId?: string }).confirmationId = permission.approvalId;
+        throw approvalError;
+      }
+      throw new Error(`[SecureActionExecutor] Tool '${name}' not available. Tool is blocked by security scope restrictions.`);
     }
   }
 
@@ -200,11 +226,7 @@ export async function executeToolCallSecure(
   if (confirmationId && !confirmed) {
     const approval = hardenedScopeManager.approveOperation(confirmationId);
     if (!approval) {
-      return {
-        success: false,
-        error: "Approval expired or invalid",
-        blocked: true,
-      };
+      throw new Error(`[SecureActionExecutor] Approval expired or invalid. Confirmation ID "${confirmationId}" is no longer valid.`);
     }
     // Continue with approved operation
   }
@@ -232,10 +254,8 @@ export async function executeToolCallSecure(
       hardenedScopeManager.recordSuspiciousActivity("prototype_error", 3, errorMessage);
     }
 
-    return {
-      success: false,
-      error: errorMessage,
-    };
+    // Re-throw the error - it's already explicit and debuggable
+    throw error;
   }
 }
 
@@ -251,12 +271,22 @@ export async function executeToolCallsBatch(
   const { continueOnError = false, ...execOptions } = options;
 
   for (const toolCall of toolCalls) {
-    const result = await executeToolCallSecure(toolCall, execOptions);
-    results.push(result);
+    try {
+      const result = await executeToolCallSecure(toolCall, execOptions);
+      results.push(result);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorResult: SecureExecutionResult = {
+        success: false,
+        error: errorMessage,
+        blocked: errorMessage.includes("blocked") || errorMessage.includes("KILL SWITCH") || errorMessage.includes("not available"),
+      };
+      results.push(errorResult);
 
-    // Stop on failure unless continueOnError
-    if (!result.success && !continueOnError) {
-      break;
+      // Stop on failure unless continueOnError
+      if (!continueOnError) {
+        throw error; // Re-throw to propagate the error
+      }
     }
   }
 
@@ -274,20 +304,12 @@ export async function confirmPendingToolCall(
 
   if (!approved) {
     hardenedScopeManager.denyOperation(confirmationId);
-    return {
-      success: false,
-      error: "User declined the action",
-      blocked: true,
-    };
+    throw new Error(`[SecureActionExecutor] User declined the action. Confirmation ID "${confirmationId}" was denied by user.`);
   }
 
   const pending = hardenedScopeManager.approveOperation(confirmationId);
   if (!pending) {
-    return {
-      success: false,
-      error: "Approval expired or invalid",
-      blocked: true,
-    };
+    throw new Error(`[SecureActionExecutor] Approval expired or invalid. Confirmation ID "${confirmationId}" is no longer valid.`);
   }
 
   // Execute with bypass since we've already confirmed
@@ -357,7 +379,7 @@ export function startNewAgentSession() {
  */
 export function wouldToolBeAllowed(
   toolName: string,
-  args?: Record<string, unknown>,
+  args?: Record<string, JSONValue>,
 ): ToolPermission {
   return checkTool(toolName, args);
 }
