@@ -394,18 +394,18 @@ See [FEATURE_AUDIT.md](FEATURE_AUDIT.md) for complete feature-to-UI mapping.
 
 ---
 
-## Trade Dress Compliance
+## Terminology
 
-Lattice uses alternative terminology to respect Adobe trademarks:
+Lattice uses clear, descriptive terminology:
 
-| Industry Term | Lattice Term |
-|---------------|-----------|
-| Pickwhip | PropertyLink |
-| Graph Editor | CurveEditor |
-| Anchor Point | Origin |
-| Precomp | NestedComp |
-| Solo | Isolate |
-| loopOut | repeatAfter |
+| Concept | Lattice Term |
+|---------|--------------|
+| Property linking | PropertyLink |
+| Animation curves | CurveEditor |
+| Transform origin | Origin |
+| Sub-composition | NestedComp |
+| View single layer | Isolate |
+| Loop animation | repeatAfter |
 
 ---
 
@@ -480,3 +480,4 @@ MIT License — see [LICENSE](LICENSE) for details.
 [Report Bug](https://github.com/justinfleek/lattice-compositor/issues) · [Request Feature](https://github.com/justinfleek/lattice-compositor/issues) · [Discussions](https://github.com/justinfleek/lattice-compositor/discussions)
 
 </div>
+# COmfyUI-Lattice-Compositor
