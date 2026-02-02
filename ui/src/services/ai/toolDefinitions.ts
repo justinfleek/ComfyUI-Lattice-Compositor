@@ -1332,4 +1332,250 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
       },
     },
   },
+
+  // ==========================================================================
+  // COMPASS CONTENT GENERATION (from COMPASS integration)
+  // ==========================================================================
+  {
+    type: "function",
+    function: {
+      name: "generateTextContent",
+      description:
+        "Generate text content (blog posts, social media, ads, emails, sales content). Uses COMPASS text generation engine.",
+      parameters: {
+        type: "object",
+        properties: {
+          contentType: {
+            type: "string",
+            enum: [
+              "blog_post",
+              "blog_outline",
+              "headline",
+              "tweet",
+              "linkedin_post",
+              "facebook_post",
+              "instagram_caption",
+              "youtube_description",
+              "email_subject",
+              "email_body",
+              "ad_copy",
+              "sales_email",
+            ],
+            description: "Type of content to generate",
+          },
+          topic: {
+            type: "string",
+            description: "Topic or prompt for content generation",
+          },
+          platform: {
+            type: "string",
+            enum: ["twitter", "linkedin", "facebook", "instagram", "youtube", "general"],
+            description: "Target platform (for social media content)",
+          },
+          brandVoice: {
+            type: "object",
+            description: "Brand voice guidelines (optional)",
+            properties: {
+              personality: {
+                type: "array",
+                items: { type: "string" },
+              },
+              keyPhrases: {
+                type: "array",
+                items: { type: "string" },
+              },
+            },
+          },
+          maxTokens: {
+            type: "number",
+            description: "Maximum tokens to generate (default: 2000)",
+            minimum: 100,
+            maximum: 4000,
+          },
+        },
+        required: ["contentType", "topic"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "generateSocialMediaPost",
+      description:
+        "Generate social media content optimized for specific platforms. Uses COMPASS social media generation.",
+      parameters: {
+        type: "object",
+        properties: {
+          platform: {
+            type: "string",
+            enum: ["twitter", "linkedin", "facebook", "instagram", "tiktok"],
+            description: "Target platform",
+          },
+          topic: {
+            type: "string",
+            description: "Topic or message for the post",
+          },
+          style: {
+            type: "string",
+            enum: ["numbers", "story", "contrarian", "question", "announcement", "educational"],
+            description: "Content style",
+          },
+          includeHashtags: {
+            type: "boolean",
+            description: "Include hashtags in the post",
+          },
+        },
+        required: ["platform", "topic"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "generateAdCopy",
+      description:
+        "Generate ad copy for Google, Meta, LinkedIn, or other platforms. Uses COMPASS ad copy generation.",
+      parameters: {
+        type: "object",
+        properties: {
+          platform: {
+            type: "string",
+            enum: ["google", "meta", "linkedin", "twitter", "tiktok"],
+            description: "Ad platform",
+          },
+          product: {
+            type: "string",
+            description: "Product or service being advertised",
+          },
+          targetAudience: {
+            type: "string",
+            description: "Target audience description",
+          },
+          adType: {
+            type: "string",
+            enum: ["headline", "description", "primary", "script"],
+            description: "Type of ad copy",
+          },
+        },
+        required: ["platform", "product"],
+      },
+    },
+  },
+  // ==========================================================================
+  // COMPASS VISUAL CONTENT GENERATION
+  // ==========================================================================
+  {
+    type: "function",
+    function: {
+      name: "generateImage",
+      description:
+        "Generate an image using AI. Supports product images, lifestyle images, backgrounds, icons, illustrations, and more. Uses COMPASS visual generation integrated with ComfyUI workflows.",
+      parameters: {
+        type: "object",
+        properties: {
+          contentType: {
+            type: "string",
+            enum: [
+              "product_image",
+              "lifestyle_image",
+              "background",
+              "brand_consistent",
+              "mood_board",
+              "icon",
+              "illustration",
+              "infographic_element",
+              "chart_graph",
+              "qr_code",
+              "barcode",
+              "avatar",
+              "profile_picture",
+              "thumbnail",
+              "ad_creative",
+              "banner",
+              "hero_image",
+              "email_header",
+              "product_mockup",
+              "packaging_mockup",
+              "collage",
+              "meme",
+            ],
+            description: "Type of image to generate",
+          },
+          prompt: {
+            type: "string",
+            description: "Text description of the desired image",
+          },
+          width: {
+            type: "number",
+            description: "Image width in pixels (default: 1024)",
+          },
+          height: {
+            type: "number",
+            description: "Image height in pixels (default: 1024)",
+          },
+          style: {
+            type: "string",
+            description: "Optional style specification",
+          },
+        },
+        required: ["contentType", "prompt"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "generateVideo",
+      description:
+        "Generate a video using AI. Supports text-to-video, product videos, explainer videos, social videos, animated text, and more. Uses COMPASS visual generation integrated with ComfyUI workflows.",
+      parameters: {
+        type: "object",
+        properties: {
+          contentType: {
+            type: "string",
+            enum: [
+              "text_to_video",
+              "product_video",
+              "explainer_video",
+              "social_video_vertical",
+              "ad_video",
+              "animated_text",
+              "kinetic_typography",
+              "logo_animation",
+              "intro_outro",
+              "lower_third",
+              "avatar_video",
+              "presenter_video",
+            ],
+            description: "Type of video to generate",
+          },
+          prompt: {
+            type: "string",
+            description: "Text description of the desired video",
+          },
+          width: {
+            type: "number",
+            description: "Video width in pixels (default: 1024)",
+          },
+          height: {
+            type: "number",
+            description: "Video height in pixels (default: 1024)",
+          },
+          frameCount: {
+            type: "number",
+            description: "Number of frames (default: 81)",
+          },
+          fps: {
+            type: "number",
+            description: "Frames per second (default: 24)",
+          },
+          referenceImage: {
+            type: "string",
+            description: "Optional reference image path for image-to-video generation",
+          },
+        },
+        required: ["contentType", "prompt"],
+      },
+    },
+  },
 ];

@@ -26,6 +26,7 @@ import {
 import { useEffectStore, type EffectStoreAccess } from "@/stores/effectStore";
 import { useLayerStore } from "@/stores/layerStore";
 import { useKeyframeStore, findPropertyByPath } from "@/stores/keyframeStore";
+import { generateKeyframeId } from "@/utils/uuid5";
 import { usePlaybackStore } from "@/stores/playbackStore";
 import { useSelectionStore } from "@/stores/selectionStore";
 import { useAnimationStore, type AnimationStoreAccess } from "@/stores/animationStore";
@@ -83,6 +84,11 @@ import type {
   GetLayerInfoArgs,
   FindLayersArgs,
   GetProjectStateArgs,
+  GenerateTextContentArgs,
+  GenerateSocialMediaPostArgs,
+  GenerateAdCopyArgs,
+  GenerateImageArgs,
+  GenerateVideoArgs,
   ToolArgumentsFor,
 } from "./toolArgumentTypes";
 
@@ -246,6 +252,18 @@ export async function executeToolCall(toolCall: ToolCall): Promise<
       return executeFindLayers(context, args as FindLayersArgs);
     case "getProjectState":
       return executeGetProjectState(context, args as GetProjectStateArgs);
+
+    // COMPASS Content Generation
+    case "generateTextContent":
+      return executeGenerateTextContent(context, args as GenerateTextContentArgs);
+    case "generateSocialMediaPost":
+      return executeGenerateSocialMediaPost(context, args as GenerateSocialMediaPostArgs);
+    case "generateAdCopy":
+      return executeGenerateAdCopy(context, args as GenerateAdCopyArgs);
+    case "generateImage":
+      return executeGenerateImage(context, args as GenerateImageArgs);
+    case "generateVideo":
+      return executeGenerateVideo(context, args as GenerateVideoArgs);
 
     default:
       throw new Error(`[ActionExecutor] Unknown tool: "${name}". Tool name is not recognized.`);
@@ -838,9 +856,16 @@ function executeScaleKeyframeTiming(
     // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
     // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
     if (typeof property === "object" && property !== null && "keyframes" in property && Array.isArray(property.keyframes) && property.keyframes.length > 0) {
-      // Scale each keyframe's frame number
+      // Scale each keyframe's frame number and regenerate IDs
       for (const kf of property.keyframes) {
-        kf.frame = Math.round(kf.frame * scaleFactor);
+        const newFrame = Math.round(kf.frame * scaleFactor);
+        // Regenerate keyframe ID based on new frame number for determinism
+        // Same layer/property/frame/value should always produce same ID
+        const valueStr = typeof kf.value === "object" && kf.value !== null && "x" in kf.value && "y" in kf.value
+          ? `${(kf.value as { x: number; y: number }).x},${(kf.value as { x: number; y: number }).y}${"z" in kf.value ? `,${(kf.value as { x: number; y: number; z?: number }).z}` : ""}`
+          : String(kf.value);
+        kf.id = generateKeyframeId(layerId, propPath, newFrame, valueStr);
+        kf.frame = newFrame;
       }
       // Re-sort keyframes
       property.keyframes.sort((a, b) => a.frame - b.frame);
@@ -2280,6 +2305,221 @@ function executeGetProjectState(
     },
     message: `Project state summary`,
   };
+}
+
+// ============================================================================
+// COMPASS CONTENT GENERATION HANDLERS
+// ============================================================================
+
+async function executeGenerateTextContent(
+  context: ExecutionContext,
+  args: GenerateTextContentArgs,
+): Promise<{ success: boolean; message: string; content?: string }> {
+  const { contentType, topic, platform, brandVoice, maxTokens } = args;
+
+  try {
+    // Call backend text generation API
+    const response = await fetch("/lattice/api/content/generate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        content_type: contentType,
+        topic,
+        platform,
+        brand_voice: brandVoice,
+        max_tokens: maxTokens || 2000,
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ message: "Unknown error" }));
+      return {
+        success: false,
+        message: `Text generation failed: ${error.message || "Unknown error"}`,
+      };
+    }
+
+    const result = await response.json();
+    return {
+      success: true,
+      message: `Generated ${contentType} content`,
+      content: result.text,
+    };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    return {
+      success: false,
+      message: `Text generation error: ${errorMessage}`,
+    };
+  }
+}
+
+async function executeGenerateSocialMediaPost(
+  context: ExecutionContext,
+  args: GenerateSocialMediaPostArgs,
+): Promise<{ success: boolean; message: string; content?: string }> {
+  const { platform, topic, style, includeHashtags } = args;
+
+  try {
+    const response = await fetch("/lattice/api/content/generate-social", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        platform,
+        topic,
+        style: style || "numbers",
+        include_hashtags: includeHashtags !== false,
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ message: "Unknown error" }));
+      return {
+        success: false,
+        message: `Social media generation failed: ${error.message || "Unknown error"}`,
+      };
+    }
+
+    const result = await response.json();
+    return {
+      success: true,
+      message: `Generated ${platform} post`,
+      content: result.text,
+    };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    return {
+      success: false,
+      message: `Social media generation error: ${errorMessage}`,
+    };
+  }
+}
+
+async function executeGenerateAdCopy(
+  context: ExecutionContext,
+  args: GenerateAdCopyArgs,
+): Promise<{ success: boolean; message: string; content?: string }> {
+  const { platform, product, targetAudience, adType } = args;
+
+  try {
+    const response = await fetch("/lattice/api/content/generate-ad", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        platform,
+        product,
+        target_audience: targetAudience,
+        ad_type: adType || "headline",
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ message: "Unknown error" }));
+      return {
+        success: false,
+        message: `Ad copy generation failed: ${error.message || "Unknown error"}`,
+      };
+    }
+
+    const result = await response.json();
+    return {
+      success: true,
+      message: `Generated ${platform} ad copy`,
+      content: result.text,
+    };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    return {
+      success: false,
+      message: `Ad copy generation error: ${errorMessage}`,
+    };
+  }
+}
+
+async function executeGenerateImage(
+  context: ExecutionContext,
+  args: GenerateImageArgs,
+): Promise<{ success: boolean; message: string; imagePath?: string }> {
+  const { contentType, prompt, width, height, style } = args;
+
+  try {
+    const response = await fetch("/lattice/api/content/generate-image", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        content_type: contentType,
+        prompt,
+        width: width || 1024,
+        height: height || 1024,
+        style,
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ message: "Unknown error" }));
+      return {
+        success: false,
+        message: `Image generation failed: ${error.message || "Unknown error"}`,
+      };
+    }
+
+    const result = await response.json();
+    return {
+      success: true,
+      message: `Generated ${contentType} image`,
+      imagePath: result.image_path,
+    };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    return {
+      success: false,
+      message: `Image generation error: ${errorMessage}`,
+    };
+  }
+}
+
+async function executeGenerateVideo(
+  context: ExecutionContext,
+  args: GenerateVideoArgs,
+): Promise<{ success: boolean; message: string; videoPath?: string }> {
+  const { contentType, prompt, width, height, frameCount, fps, referenceImage } = args;
+
+  try {
+    const response = await fetch("/lattice/api/content/generate-video", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        content_type: contentType,
+        prompt,
+        width: width || 1024,
+        height: height || 1024,
+        frame_count: frameCount || 81,
+        fps: fps || 24,
+        reference_image: referenceImage,
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ message: "Unknown error" }));
+      return {
+        success: false,
+        message: `Video generation failed: ${error.message || "Unknown error"}`,
+      };
+    }
+
+    const result = await response.json();
+    return {
+      success: true,
+      message: `Generated ${contentType} video`,
+      videoPath: result.video_path,
+    };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    return {
+      success: false,
+      message: `Video generation error: ${errorMessage}`,
+    };
+  }
 }
 
 // ============================================================================

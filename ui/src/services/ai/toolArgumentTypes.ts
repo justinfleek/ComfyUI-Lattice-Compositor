@@ -384,6 +384,53 @@ export interface GetProjectStateArgs {
 }
 
 // ============================================================================
+// COMPASS CONTENT GENERATION ARGUMENTS
+// ============================================================================
+
+export interface GenerateTextContentArgs {
+  contentType: string;
+  topic: string;
+  platform?: string;
+  brandVoice?: {
+    personality?: string[];
+    keyPhrases?: string[];
+  };
+  maxTokens?: number;
+}
+
+export interface GenerateSocialMediaPostArgs {
+  platform: string;
+  topic: string;
+  style?: string;
+  includeHashtags?: boolean;
+}
+
+export interface GenerateAdCopyArgs {
+  platform: string;
+  product: string;
+  targetAudience?: string;
+  adType?: string;
+}
+
+export interface GenerateImageArgs {
+  contentType: string;
+  prompt: string;
+  width?: number;
+  height?: number;
+  style?: string;
+}
+
+export interface GenerateVideoArgs {
+  contentType: string;
+  prompt: string;
+  width?: number;
+  height?: number;
+  frameCount?: number;
+  fps?: number;
+  referenceImage?: string;
+}
+
+// ============================================================================
 // DISCRIMINATED UNION OF ALL TOOL ARGUMENTS
 // ============================================================================
 
@@ -426,7 +473,12 @@ export type ToolArguments =
   | ({ name: "vectorizeImage" } & VectorizeImageArgs)
   | ({ name: "getLayerInfo" } & GetLayerInfoArgs)
   | ({ name: "findLayers" } & FindLayersArgs)
-  | ({ name: "getProjectState" } & GetProjectStateArgs);
+  | ({ name: "getProjectState" } & GetProjectStateArgs)
+  | ({ name: "generateTextContent" } & GenerateTextContentArgs)
+  | ({ name: "generateSocialMediaPost" } & GenerateSocialMediaPostArgs)
+  | ({ name: "generateAdCopy" } & GenerateAdCopyArgs)
+  | ({ name: "generateImage" } & GenerateImageArgs)
+  | ({ name: "generateVideo" } & GenerateVideoArgs);
 
 /**
  * Extract arguments type from ToolArguments based on tool name
