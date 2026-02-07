@@ -1366,14 +1366,26 @@ function normalizeMFCCCoeff(
   const value = (coeff >= 0 && coeff < mfccFrame.length && typeof mfccFrame[coeff] === "number")
     ? mfccFrame[coeff]
     : 0;
-  return value;
-
+  
+  // Deterministic: Explicit null check for stats before accessing properties
   const stats = analysis.mfccStats;
-  if (!stats) return 0; // No stats available, return 0
+  if (!stats) return value; // No stats available, return raw value
 
-  const min = stats.min[coeff];
-  const max = stats.max[coeff];
+  // Type guard ensures stats exists - TypeScript needs explicit narrowing
+  if (!stats.min || !stats.max) {
+    return value; // Invalid stats structure, return raw value
+  }
+  const minArray = stats.min;
+  const maxArray = stats.max;
+  if (!minArray || !maxArray || typeof minArray[coeff] !== "number" || typeof maxArray[coeff] !== "number") {
+    return value; // Invalid coefficient or array structure, return raw value
+  }
+  const min = minArray[coeff];
+  const max = maxArray[coeff];
   const range = max - min;
+  if (range === 0) {
+    return 0; // Avoid division by zero
+  }
 
   // Normalize to 0-1 using actual min/max from this audio
   return (value - min) / range;

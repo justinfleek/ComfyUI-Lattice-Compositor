@@ -65,3 +65,30 @@ export {
   validateComfyWorkflow,
   validateImageData,
 } from "./comfyOutputValidator";
+
+// Agent Security Framework
+export {
+  agentSandbox,
+  type SandboxState,
+  type SandboxAction,
+  type SandboxDiff,
+} from "./agentSandbox";
+
+export {
+  actionApproval,
+  type ActionPlan,
+  type PlannedAction,
+  type ApprovalDecision,
+} from "./actionApproval";
+
+export {
+  provenanceTracker,
+  type ProvenanceEntry,
+  type ProvenanceQuery,
+} from "./provenanceTracker";
+
+export {
+  agentRollback,
+  type AgentAction,
+  type RollbackPoint,
+} from "./agentRollback";

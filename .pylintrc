@@ -1,0 +1,4 @@
+[MESSAGES CONTROL]
+# Disable indentation warnings since project uses 2-space indentation (configured in ruff.toml)
+# Pylint expects 4-space by default, but Ruff formatter uses 2-space
+disable=bad-indentation

@@ -17,6 +17,7 @@ import { findPropertyByPath, safeFrame } from "./helpers";
 import { useProjectStore } from "../projectStore";
 import { useLayerStore } from "../layerStore";
 import { useAnimationStore } from "../animationStore";
+import { generateKeyframeId } from "@/utils/uuid5";
 
 // ============================================================================
 // KEYFRAME CREATION
@@ -72,8 +73,12 @@ export function addKeyframe<T>(
   property.animated = true;
 
   // Create keyframe with default linear handles (disabled until graph editor enables them)
+  // Deterministic ID generation: same layer/property/frame/value always produces same ID
+  const valueStr = typeof value === "object" && value !== null && "x" in value && "y" in value
+    ? `${(value as { x: number; y: number }).x},${(value as { x: number; y: number }).y}${"z" in value ? `,${(value as { x: number; y: number; z?: number }).z}` : ""}`
+    : String(value);
   const keyframe: Keyframe<T> = {
-    id: `kf_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`,
+    id: generateKeyframeId(layerId, propertyPath, frame, valueStr),
     frame,
     value,
     interpolation: "linear",
@@ -236,18 +241,35 @@ export function updateLayerProperty(
   }
   if (propertyData.keyframes !== undefined) {
     // Ensure keyframes have valid structure
-    property.keyframes = propertyData.keyframes.map((kf) => ({
-      id:
-        kf.id || `kf_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`,
-      frame: kf.frame,
-      value: kf.value,
-      interpolation: kf.interpolation || "linear",
-      inHandle: kf.inHandle || { frame: 0, value: 0, enabled: false },
-      outHandle: kf.outHandle || { frame: 0, value: 0, enabled: false },
-      controlMode: kf.controlMode || "smooth",
-      spatialInTangent: kf.spatialInTangent,
-      spatialOutTangent: kf.spatialOutTangent,
-    }));
+    property.keyframes = propertyData.keyframes.map((kf) => {
+      // ALWAYS regenerate keyframe ID for determinism - same layer/property/frame/value should always produce same ID
+      // Preserving existing IDs breaks determinism if those IDs were non-deterministic
+      // Explicit check: kf.value is PropertyValue (never null/undefined per type system)
+      const valueStr = typeof kf.value === "object" && kf.value !== null && "x" in kf.value && "y" in kf.value
+        ? `${(kf.value as { x: number; y: number }).x},${(kf.value as { x: number; y: number }).y}${"z" in kf.value ? `,${(kf.value as { x: number; y: number; z?: number }).z}` : ""}`
+        : String(kf.value);
+      // Explicit defaults: no lazy || operators
+      // Explicit check: kf.interpolation may be undefined, use explicit conditional
+      const interpolation = (typeof kf.interpolation === "string" && kf.interpolation.length > 0) ? kf.interpolation : "linear";
+      // Explicit check: kf.inHandle may be undefined, use explicit conditional
+      const inHandle = (kf.inHandle !== null && kf.inHandle !== undefined && typeof kf.inHandle === "object") ? kf.inHandle : { frame: 0, value: 0, enabled: false };
+      // Explicit check: kf.outHandle may be undefined, use explicit conditional
+      const outHandle = (kf.outHandle !== null && kf.outHandle !== undefined && typeof kf.outHandle === "object") ? kf.outHandle : { frame: 0, value: 0, enabled: false };
+      // Explicit check: kf.controlMode may be undefined, use explicit conditional
+      const controlMode = (typeof kf.controlMode === "string" && kf.controlMode.length > 0) ? kf.controlMode : "smooth";
+      
+      return {
+        id: generateKeyframeId(layerId, propertyPath, safeFrame(kf.frame, 0), valueStr),
+        frame: safeFrame(kf.frame, 0),
+        value: kf.value,
+        interpolation,
+        inHandle,
+        outHandle,
+        controlMode,
+        spatialInTangent: kf.spatialInTangent,
+        spatialOutTangent: kf.spatialOutTangent,
+      };
+    });
     // Sort keyframes by frame
     property.keyframes.sort((a, b) => a.frame - b.frame);
   }
@@ -324,6 +346,15 @@ export function moveKeyframe(
     );
   }
 
+  // Regenerate keyframe ID based on new frame number for determinism
+  // Same layer/property/frame/value should always produce same ID
+  // Explicit check: keyframe.value is PropertyValue (never null/undefined per type system)
+  // But defensive check for runtime safety
+  const keyframeValue = keyframe.value;
+  const valueStr = typeof keyframeValue === "object" && keyframeValue !== null && "x" in keyframeValue && "y" in keyframeValue
+    ? `${(keyframeValue as { x: number; y: number }).x},${(keyframeValue as { x: number; y: number }).y}${"z" in keyframeValue ? `,${(keyframeValue as { x: number; y: number; z?: number }).z}` : ""}`
+    : String(keyframeValue);
+  keyframe.id = generateKeyframeId(layerId, propertyPath, newFrame, valueStr);
   keyframe.frame = newFrame;
 
   // Re-sort keyframes by frame
@@ -348,7 +379,7 @@ export function moveKeyframe(
  * @see layerEvaluationCache.ts - evaluateLayerCached() calls interpolateProperty
  */
 export function moveKeyframes(
-  keyframes: Array<{
+  keyframesToMove: Array<{
     layerId: string;
     propertyPath: string;
     keyframeId: string;
@@ -368,11 +399,12 @@ export function moveKeyframes(
     {
       layer: Layer;
       property: AnimatableProperty<PropertyValue>;
+      propertyPath: string;
       keyframeIds: Set<string>;
     }
   >();
 
-  for (const kf of keyframes) {
+  for (const kf of keyframesToMove) {
     const layer = projectStore.getActiveCompLayers().find((l) => l.id === kf.layerId);
     if (!layer) continue;
 
@@ -385,6 +417,7 @@ export function moveKeyframes(
       group = {
         layer,
         property,
+        propertyPath: kf.propertyPath,
         keyframeIds: new Set(),
       };
       grouped.set(key, group);
@@ -394,7 +427,7 @@ export function moveKeyframes(
 
   // Process each property group
   const layerIds = new Set<string>();
-  for (const { layer, property, keyframeIds } of grouped.values()) {
+  for (const { layer, property, propertyPath, keyframeIds } of grouped.values()) {
     layerIds.add(layer.id);
 
     // Calculate target frames for all selected keyframes
@@ -445,8 +478,16 @@ export function moveKeyframes(
       return survivingIds.has(kf.id);
     });
 
-    // Apply new frame values
+    // Apply new frame values and regenerate IDs for determinism
     for (const [targetFrame, { kf }] of targetFrameMap) {
+      // Regenerate keyframe ID based on new frame number for determinism
+      // Same layer/property/frame/value should always produce same ID
+      // Explicit check: kf.value is PropertyValue (never null/undefined per type system)
+      const kfValue = kf.value;
+      const valueStr = typeof kfValue === "object" && kfValue !== null && "x" in kfValue && "y" in kfValue
+        ? `${(kfValue as { x: number; y: number }).x},${(kfValue as { x: number; y: number }).y}${"z" in kfValue ? `,${(kfValue as { x: number; y: number; z?: number }).z}` : ""}`
+        : String(kfValue);
+      kf.id = generateKeyframeId(layer.id, propertyPath, targetFrame, valueStr);
       kf.frame = targetFrame;
     }
 
@@ -500,6 +541,13 @@ export function setKeyframeValue(
   }
 
   keyframe.value = newValue;
+  // Regenerate keyframe ID based on new value for determinism
+  // Same layer/property/frame but different value should produce different ID
+  // Explicit check: newValue is PropertyValue (never null/undefined per type system)
+  const valueStr = typeof newValue === "object" && newValue !== null && "x" in newValue && "y" in newValue
+    ? `${(newValue as { x: number; y: number }).x},${(newValue as { x: number; y: number }).y}${"z" in newValue ? `,${(newValue as { x: number; y: number; z?: number }).z}` : ""}`
+    : String(newValue);
+  keyframe.id = generateKeyframeId(layerId, propertyPath, keyframe.frame, valueStr);
   markLayerDirty(layerId);
   projectStore.project.meta.modified = new Date().toISOString();
   projectStore.pushHistory();
@@ -535,6 +583,14 @@ export function updateKeyframe(
         (kf) => kf.id !== existingAtTarget.id,
       );
     }
+    // Regenerate keyframe ID based on new frame number for determinism
+    // Same layer/property/frame/value should always produce same ID
+    // Explicit check: keyframe.value is PropertyValue (never null/undefined per type system)
+    const keyframeValue = keyframe.value;
+    const valueStr = typeof keyframeValue === "object" && keyframeValue !== null && "x" in keyframeValue && "y" in keyframeValue
+      ? `${(keyframeValue as { x: number; y: number }).x},${(keyframeValue as { x: number; y: number }).y}${"z" in keyframeValue ? `,${(keyframeValue as { x: number; y: number; z?: number }).z}` : ""}`
+      : String(keyframeValue);
+    keyframe.id = generateKeyframeId(layerId, propertyPath, updates.frame, valueStr);
     keyframe.frame = updates.frame;
     // Re-sort keyframes by frame
     property.keyframes.sort((a, b) => a.frame - b.frame);
@@ -542,6 +598,16 @@ export function updateKeyframe(
 
   if (updates.value !== undefined) {
     keyframe.value = updates.value;
+    // Regenerate keyframe ID based on new value for determinism
+    // Same layer/property/frame but different value should produce different ID
+    // Explicit check: updates.value is PropertyValue (never null/undefined per type system)
+    const updatesValue = updates.value;
+    const valueStr = typeof updatesValue === "object" && updatesValue !== null && "x" in updatesValue && "y" in updatesValue
+      ? `${(updatesValue as { x: number; y: number }).x},${(updatesValue as { x: number; y: number }).y}${"z" in updatesValue ? `,${(updatesValue as { x: number; y: number; z?: number }).z}` : ""}`
+      : String(updatesValue);
+    // Use updated frame if frame was also changed, otherwise use existing frame
+    const frameForId = updates.frame !== undefined && Number.isFinite(updates.frame) ? updates.frame : keyframe.frame;
+    keyframe.id = generateKeyframeId(layerId, propertyPath, frameForId, valueStr);
   }
 
   markLayerDirty(layerId);

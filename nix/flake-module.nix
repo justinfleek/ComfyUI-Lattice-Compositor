@@ -20,75 +20,77 @@
       };
       
       # Python environment with packages available in nixpkgs
-      pythonEnv = pkgs.python3.withPackages (ps: with ps; [
-        pytest
-        pytest-cov
-        pytest-asyncio
-        aiohttp
-        torch  # PyTorch with CUDA support (when cudaSupport = true)
-        torchvision
-        torchaudio
+      # NOTE: Explicit package references per RFC-001 (no 'with ps;')
+      pythonEnv = pkgs.python3.withPackages (ps: [
+        ps.pytest
+        ps.pytest-cov
+        ps.pytest-asyncio
+        ps.aiohttp
+        ps.torch  # PyTorch with CUDA support (when cudaSupport = true)
+        ps.torchvision
+        ps.torchaudio
         # Core scientific computing
-        numpy
-        pillow
-        scipy
-        sympy
+        ps.numpy
+        ps.pillow
+        ps.scipy
+        ps.sympy
         # Web frameworks
-        fastapi
-        starlette
+        ps.fastapi
+        ps.starlette
         # Utilities
-        click
-        pyyaml
-        requests
-        httpx
+        ps.click
+        ps.pyyaml
+        ps.requests
+        ps.httpx
         # Testing
-        hypothesis
-        coverage
+        ps.hypothesis
+        ps.coverage
         # Code quality
-        ruff
+        ps.ruff
         # Git
-        gitpython
+        ps.gitpython
         # Other common packages
-        pydantic
-        python-dateutil
-        python-dotenv
-        tqdm
-        rich
+        ps.pydantic
+        ps.python-dateutil
+        ps.python-dotenv
+        ps.tqdm
+        ps.rich
         # Audio/video
-        soundfile
-        sounddevice
+        ps.soundfile
+        ps.sounddevice
         # OpenCV (python3Packages.opencv4)
-        opencv4
+        ps.opencv4
         # Additional packages
-        beautifulsoup4
-        lxml
+        ps.beautifulsoup4
+        ps.lxml
         # Network/async
-        anyio
+        ps.anyio
         # ML/AI
-        transformers
-        huggingface-hub
+        ps.transformers
+        ps.huggingface-hub
         # Monitoring
-        psutil
+        ps.psutil
         # Build tools
-        setuptools
-        pip
-        wheel
+        ps.setuptools
+        ps.pip
+        ps.wheel
         # Note: 'build' package might conflict, install via pip if needed
       ]);
     in
     {
       # Dev shell: Python + uv, Bun with comprehensive package set
       # Note: CUDA support enabled via flake.nix nixpkgs.config
+      # NOTE: Explicit package references per RFC-001 (no 'with pkgs;')
       devShells.default = pkgs.mkShell {
-        packages = with pkgs; [
+        packages = [
           pythonEnv
-          uv
-          bun
-          git
+          pkgs.uv
+          pkgs.bun
+          pkgs.git
           # System tools
-          which
-          curl
-          wget
+          pkgs.which
+          pkgs.curl
+          pkgs.wget
         ];
 
         # Install remaining packages via uv (faster than pip)

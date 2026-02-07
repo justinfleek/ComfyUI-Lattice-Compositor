@@ -630,9 +630,11 @@ export class CameraLayer extends BaseLayer {
       props.pathParameter !== undefined &&
       pathFollowingEnabled
     ) {
-      // Update the parameter value directly for the next evaluation
-      this.cameraData.pathFollowing.parameter.value =
-        props.pathParameter as number;
+      // Deterministic: Explicit null check for pathFollowing.parameter
+      const pathFollowing = this.cameraData.pathFollowing;
+      if (pathFollowing && typeof pathFollowing === "object" && "parameter" in pathFollowing && pathFollowing.parameter) {
+        pathFollowing.parameter.value = props.pathParameter as number;
+      }
     }
     // Note: pathPosition audio modifier is applied in applyPathFollowing() where the actual
     // path query happens, ensuring it's applied regardless of evaluation path (legacy or new)

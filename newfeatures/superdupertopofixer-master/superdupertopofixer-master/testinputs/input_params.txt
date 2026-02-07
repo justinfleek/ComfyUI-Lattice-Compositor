@@ -1,0 +1,40 @@
+# input_mesh_file testinputs/one_tet.obj
+input_mesh_file testinputs/2_spheres.obj
+# input_mesh_file ../bubblesim_org/vel_test_org.obj
+
+num_grid_cells 20
+grid_bounding_box_style minmax_cube
+
+verbosity 2
+
+## Run mode
+run_mode fixer
+measure_module_timings 1
+
+##  Algorithm Parameters
+value_giving_mesh_vertices              in_complex_cells_plus_simple_front
+mesh_to_grid_interpolation_method	    average_in_cell
+grid_value_normalization_method		    num_contributing_cells
+spreading_values_on_grid_method         flood_fill_onto_complex_region
+value_taking_mesh_vertices              new_and_front
+grid_to_mesh_interpolation_timing       before_mesh_upkeep
+grid_to_mesh_interpolation_method       trilinear
+
+grid_vertex_resolution_method             fast_marching_method
+marching_cubes_method                     8_octant_method
+
+run_grid_labeler 1
+run_complex_cell_detector 1
+run_value_transferrer 1
+run_state_saver     1
+run_cell_separator 1
+run_multi_label_marching_cuber 1
+run_mesh_upkeeper 0
+
+# run_grid_labeler 0
+# run_complex_cell_detector 0
+# run_value_transferrer 0
+# run_state_saver     0
+# run_cell_separator 0
+# run_multi_label_marching_cuber 0
+# run_mesh_upkeeper 0

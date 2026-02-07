@@ -1,0 +1,75 @@
+{
+  "name": "prism-theme-generator",
+  "displayName": "Prism Theme Generator",
+  "description": "Generate base16 color themes with color wheel, hero color selection, and monitor-specific black balance",
+  "version": "0.1.0",
+  "publisher": "prism-compositor",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Themes",
+    "Other"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-org/ComfyUI-Lattice-Compositor"
+  },
+  "license": "MIT",
+  "icon": "media/icon.png",
+  "activationEvents": [
+    "onCommand:prismTheme.generate"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "prismTheme.generate",
+        "title": "Generate Theme",
+        "category": "Prism Theme"
+      },
+      {
+        "command": "prismTheme.preview",
+        "title": "Preview Theme",
+        "category": "Prism Theme"
+      },
+      {
+        "command": "prismTheme.export",
+        "title": "Export Theme",
+        "category": "Prism Theme"
+      }
+    ],
+    "menus": {
+      "commandPalette": [
+        {
+          "command": "prismTheme.generate",
+          "when": "true"
+        },
+        {
+          "command": "prismTheme.preview",
+          "when": "true"
+        },
+        {
+          "command": "prismTheme.export",
+          "when": "true"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./ && npm run copy-assets",
+    "copy-assets": "node -e \"const fs=require('fs');const path=require('path');const src=path.join(__dirname,'media','themeGenerator.css');const dst=path.join(__dirname,'out','themeGenerator.css');if(fs.existsSync(src)){fs.mkdirSync(path.dirname(dst),{recursive:true});fs.copyFileSync(src,dst);}\"",
+    "watch": "tsc -watch -p ./",
+    "package": "npm run compile && vsce package",
+    "package:zip": "npm run compile && npm run package:create-zip",
+    "package:create-zip": "node scripts/package.js"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.80.0",
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0",
+    "vsce": "^2.15.0"
+  },
+  "dependencies": {}
+}

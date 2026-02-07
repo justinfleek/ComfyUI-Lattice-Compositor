@@ -1,0 +1,11 @@
+{"plugins": [],
+ "package": "importGraph",
+ "options": {},
+ "name": "ImportGraph.Imports",
+ "isModule": true,
+ "importArts":
+ {"ImportGraph.RequiredModules":
+  ["C:\\Users\\justi\\Desktop\\ComfyUI-Lattice-Compositor\\leancomfy\\lean\\patched-deps\\ImportGraph\\.lake\\build\\lib\\lean\\ImportGraph\\RequiredModules.olean",
+   "C:\\Users\\justi\\Desktop\\ComfyUI-Lattice-Compositor\\leancomfy\\lean\\patched-deps\\ImportGraph\\.lake\\build\\lib\\lean\\ImportGraph\\RequiredModules.ir",
+   "C:\\Users\\justi\\Desktop\\ComfyUI-Lattice-Compositor\\leancomfy\\lean\\patched-deps\\ImportGraph\\.lake\\build\\lib\\lean\\ImportGraph\\RequiredModules.olean.server"]},
+ "dynlibs": []}

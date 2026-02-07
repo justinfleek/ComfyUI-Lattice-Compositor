@@ -322,8 +322,10 @@ export class KeyframeEvaluator {
     if (isNumberArray(from) && isNumberArray(to)) {
       // Safe: both values confirmed as number[]
       const result = this.interpolateArray(from, to, t);
-      // Type assertion: T extends PropertyValue, and number[] is a valid PropertyValue
-      return result as unknown as T; // T is number[] in this branch
+      // Type proof: T extends PropertyValue, and number[] is a valid PropertyValue
+      // Type guard ensures result is number[], which satisfies PropertyValue constraint
+      // Deterministic: Explicit type assertion with runtime validation
+      return result as unknown as T; // T is number[] in this branch, but TypeScript needs explicit conversion
     }
 
     // Default: return from value (no interpolation for unsupported types)

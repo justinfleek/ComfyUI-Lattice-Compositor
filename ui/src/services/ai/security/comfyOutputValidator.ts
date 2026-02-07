@@ -140,7 +140,7 @@ export function validateComfyImageOutput(
       message: "Path traversal attempt in ComfyUI subfolder",
       metadata: { subfolder: result.data.subfolder },
     });
-    throw new Error(`[ComfyOutputValidator] Invalid ComfyUI image output: ${result.error.errors.map(e => e.message).join("; ")}`);
+    throw new Error(`[ComfyOutputValidator] Invalid ComfyUI image output: Path traversal detected in subfolder`);
   }
 
   return {

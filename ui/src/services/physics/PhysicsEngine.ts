@@ -31,6 +31,12 @@ import type {
 import { DEFAULT_SPACE_CONFIG } from "@/types/physics";
 import { hasXY, isFiniteNumber } from "@/utils/typeGuards";
 
+/**
+ * Runtime value type for type guards
+ * Deterministic: Explicit union of all possible runtime types
+ */
+type RuntimeValue = string | number | boolean | object | null | undefined | bigint | symbol;
+
 import { extractRagdollState } from "./RagdollBuilder";
 
 // =============================================================================
@@ -1769,7 +1775,9 @@ class ForceFieldProcessor {
       default: {
         // System F/Omega proof: Explicit validation of force field type
         // Type proof: field.type ∈ ForceType → must match known cases
-        throw new Error(`[PhysicsEngine] Cannot calculate force: Unknown force field type "${(field as ForceField).type}". Type proof violation: field.type must be one of: gravity, wind, attraction, explosion, buoyancy, vortex, drag. Field ID: ${field.id || "unknown"}, Body ID: ${body.config.id}, frame: ${frame}.`);
+        const fieldType = (field as { type?: string }).type || "unknown";
+        const fieldId = (field as { id?: string }).id || "unknown";
+        throw new Error(`[PhysicsEngine] Cannot calculate force: Unknown force field type "${fieldType}". Type proof violation: field.type must be one of: gravity, wind, attraction, explosion, buoyancy, vortex, drag. Field ID: ${fieldId}, Body ID: ${body.config.id}, frame: ${frame}.`);
       }
     }
   }
@@ -2031,7 +2039,7 @@ export class PhysicsEngine {
       frame,
       rigidBodies: this.rigidBodySimulator.getState(),
       softBodies: this.getSoftBodyIds()
-        .map((id) => {
+        .map((id): SoftBodyState | { __filtered: true } => {
           // System F/Omega proof: Explicit error handling for state retrieval
           // Type proof: getState(id) → SoftBodyState (throws if not found)
           // Mathematical proof: State retrieval is deterministic - either state exists or error thrown
@@ -2041,8 +2049,7 @@ export class PhysicsEngine {
             // State retrieval failed (entity not found) - use sentinel object instead of null
             // System F/Omega proof: Sentinel object pattern instead of lazy null
             // Type proof: Sentinel object has distinct type from SoftBodyState
-            const sentinel = { __filtered: true } as unknown as SoftBodyState;
-            return sentinel;
+            return { __filtered: true };
           }
         })
         .filter((state): state is SoftBodyState => {
@@ -2051,7 +2058,7 @@ export class PhysicsEngine {
           return typeof state === "object" && state !== null && !("__filtered" in state);
         }),
       cloths: this.getClothIds()
-        .map((id) => {
+        .map((id): ClothState | { __filtered: true } => {
           // System F/Omega proof: Explicit error handling for state retrieval
           // Type proof: getState(id) → ClothState (throws if not found)
           // Mathematical proof: State retrieval is deterministic - either state exists or error thrown
@@ -2061,8 +2068,7 @@ export class PhysicsEngine {
             // State retrieval failed (entity not found) - use sentinel object instead of null
             // System F/Omega proof: Sentinel object pattern instead of lazy null
             // Type proof: Sentinel object has distinct type from ClothState
-            const sentinel = { __filtered: true } as unknown as ClothState;
-            return sentinel;
+            return { __filtered: true };
           }
         })
         .filter((state): state is ClothState => {
@@ -2087,7 +2093,7 @@ export class PhysicsEngine {
       frame,
       rigidBodyStates: this.rigidBodySimulator.getState(),
       softBodyStates: this.getSoftBodyIds()
-        .map((id) => {
+        .map((id): SoftBodyState | { __filtered: true } => {
           // System F/Omega proof: Explicit error handling for state retrieval
           // Type proof: getState(id) → SoftBodyState (throws if not found)
           // Mathematical proof: State retrieval is deterministic - either state exists or error thrown
@@ -2097,8 +2103,7 @@ export class PhysicsEngine {
             // State retrieval failed (entity not found) - use sentinel object instead of null
             // System F/Omega proof: Sentinel object pattern instead of lazy null
             // Type proof: Sentinel object has distinct type from SoftBodyState
-            const sentinel = { __filtered: true } as unknown as SoftBodyState;
-            return sentinel;
+            return { __filtered: true };
           }
         })
         .filter((state): state is SoftBodyState => {
@@ -2107,7 +2112,7 @@ export class PhysicsEngine {
           return typeof state === "object" && state !== null && !("__filtered" in state);
         }),
       clothStates: this.getClothIds()
-        .map((id) => {
+        .map((id): ClothState | { __filtered: true } => {
           // System F/Omega proof: Explicit error handling for state retrieval
           // Type proof: getState(id) → ClothState (throws if not found)
           // Mathematical proof: State retrieval is deterministic - either state exists or error thrown
@@ -2117,8 +2122,7 @@ export class PhysicsEngine {
             // State retrieval failed (entity not found) - use sentinel object instead of null
             // System F/Omega proof: Sentinel object pattern instead of lazy null
             // Type proof: Sentinel object has distinct type from ClothState
-            const sentinel = { __filtered: true } as unknown as ClothState;
-            return sentinel;
+            return { __filtered: true };
           }
         })
         .filter((state): state is ClothState => {
@@ -2246,13 +2250,18 @@ export class PhysicsEngine {
       const curr = keyframes[i].value;
       const next = keyframes[i + 1].value;
 
-      // Check if current point deviates significantly from line
-      // Use type guards to safely narrow the generic type
-      if (hasXY(curr) && hasXY(prev) && hasXY(next)) {
-        // Type guards narrow to { x: number; y: number } which is compatible with PhysicsVec2
-        const p: PhysicsVec2 = prev;
-        const c: PhysicsVec2 = curr;
-        const n: PhysicsVec2 = next;
+        // Check if current point deviates significantly from line
+        // Deterministic: Use type guards to validate PropertyValue structure
+        // T extends PropertyValue, which includes { x: number; y: number }
+        // Convert to RuntimeValue for type guard (PropertyValue is subset of RuntimeValue)
+        const prevRuntime: RuntimeValue = prev as RuntimeValue;
+        const currRuntime: RuntimeValue = curr as RuntimeValue;
+        const nextRuntime: RuntimeValue = next as RuntimeValue;
+        if (hasXY(currRuntime) && hasXY(prevRuntime) && hasXY(nextRuntime)) {
+          // Type guards narrow to { x: number; y: number } which is compatible with PhysicsVec2
+          const p: PhysicsVec2 = prevRuntime as PhysicsVec2;
+          const c: PhysicsVec2 = currRuntime as PhysicsVec2;
+          const n: PhysicsVec2 = nextRuntime as PhysicsVec2;
 
         // Calculate distance from point to line
         const lineDir = vec2.sub(n, p);
@@ -2273,11 +2282,19 @@ export class PhysicsEngine {
             lastAdded = i;
           }
         }
-      } else if (isFiniteNumber(curr) && isFiniteNumber(prev) && isFiniteNumber(next)) {
-        // Type guards narrow to number
-        const p: number = prev;
-        const c: number = curr;
-        const n: number = next;
+      }
+      
+      // Handle numeric keyframes (rotation, scale, etc.)
+      // Deterministic: T extends PropertyValue, which includes number
+      // Convert to RuntimeValue for type guard (PropertyValue is subset of RuntimeValue)
+      const prevNumRuntime: RuntimeValue = prev as RuntimeValue;
+      const currNumRuntime: RuntimeValue = curr as RuntimeValue;
+      const nextNumRuntime: RuntimeValue = next as RuntimeValue;
+      if (isFiniteNumber(currNumRuntime) && isFiniteNumber(prevNumRuntime) && isFiniteNumber(nextNumRuntime)) {
+        // Type guards narrow to number - explicit validation ensures correctness
+        const p: number = prevNumRuntime as number;
+        const c: number = currNumRuntime as number;
+        const n: number = nextNumRuntime as number;
 
         const expected =
           p + (n - p) * ((i - lastAdded) / (keyframes.length - 1 - lastAdded));

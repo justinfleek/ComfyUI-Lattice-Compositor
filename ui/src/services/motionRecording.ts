@@ -12,6 +12,7 @@
  */
 
 import type { Keyframe } from "@/types/project";
+import { generateKeyframeId } from "@/utils/uuid5";
 
 // ============================================================================
 // TYPES
@@ -189,12 +190,16 @@ export function smoothMotionMovingAverage(
  * @param motion - Recorded motion data
  * @param frameRate - Composition frame rate (e.g., 24, 30, 60)
  * @param startFrame - Frame number where animation should start
+ * @param layerId - Optional layer ID for deterministic keyframe ID generation
+ * @param propertyPath - Optional property path for deterministic keyframe ID generation (e.g., "transform.position")
  * @returns Array of keyframes compatible with AnimatableProperty
  */
 export function convertMotionToKeyframes(
   motion: RecordedMotion,
   frameRate: number,
   startFrame: number,
+  layerId?: string,
+  propertyPath?: string,
 ): Array<Keyframe<{ x: number; y: number }>> {
   if (motion.samples.length === 0) {
     return [];
@@ -223,9 +228,16 @@ export function convertMotionToKeyframes(
     // Interpolate position at this time
     const pos = interpolatePositionAtTime(motion.samples, recordedTime);
 
+    // Deterministic ID generation: same layer/property/frame/value always produces same ID
+    const frame = startFrame + f;
+    const valueStr = `${pos.x},${pos.y}`;
+    // Use provided layerId/propertyPath if available, otherwise fallback to motion.pinId
+    const effectiveLayerId = layerId !== undefined ? layerId : motion.pinId;
+    const effectivePropertyPath = propertyPath !== undefined ? propertyPath : `motionRecording.${motion.pinId}`;
+
     keyframes.push({
-      id: `kf_${motion.pinId}_${startFrame + f}`,
-      frame: startFrame + f,
+      id: generateKeyframeId(effectiveLayerId, effectivePropertyPath, frame, valueStr),
+      frame,
       value: { x: pos.x, y: pos.y },
       interpolation: "linear",
       inHandle: { frame: -5, value: 0, enabled: false },

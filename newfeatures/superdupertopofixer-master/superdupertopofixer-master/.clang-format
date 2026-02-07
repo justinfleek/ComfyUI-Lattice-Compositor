@@ -1,0 +1,10 @@
+---
+Language: Cpp
+BasedOnStyle: Google
+UseTab: ForIndentation
+TabWidth: 2
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
+ColumnLimit: 100
+DerivePointerAlignment: false
+PointerAlignment: Left

@@ -1,0 +1,7 @@
+{"plugins": [],
+ "package": "tensor-core",
+ "options": {},
+ "name": "Lattice.Utils.NumericSafety",
+ "isModule": false,
+ "importArts": {},
+ "dynlibs": []}

@@ -695,10 +695,23 @@ export async function processEffectStackAsync(
           current.canvas.height,
         );
 
+        // Deterministic: Convert EvaluatedEffectParams to Record<string, PropertyValue>
+        const convertedParams: Record<string, PropertyValue> = {};
+        for (const [key, value] of Object.entries(params)) {
+          // Type guard ensures value is PropertyValue-compatible
+          if (
+            typeof value === "string" ||
+            typeof value === "number" ||
+            typeof value === "boolean" ||
+            (typeof value === "object" && value !== null && ("x" in value || "r" in value))
+          ) {
+            convertedParams[key] = value as PropertyValue;
+          }
+        }
         const result = await gpuEffectDispatcher.processEffect(
           effect.effectKey,
           inputImageData,
-          params,
+          convertedParams,
         );
 
         // Put result back on canvas

@@ -1,0 +1,28 @@
+{
+  "name": "straylight-protocol-bootstrap",
+  "version": "1.0.0",
+  "description": "Straylight Protocol enforcement infrastructure",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "straylight:validate": "node scripts/validate-file.js",
+    "straylight:watch": "node scripts/watch-and-validate.js",
+    "straylight:test": "node scripts/test-all-violations.js",
+    "straylight:validate-all": "node scripts/validate-all-files.js",
+    "straylight:coverage": "node scripts/rule-coverage-matrix.js",
+    "straylight:report": "node scripts/generate-validation-report.js",
+    "straylight:setup-claude": "node scripts/setup-claude-mcp.js || powershell -ExecutionPolicy Bypass -File scripts/setup-claude-mcp.ps1 || bash scripts/setup-claude-mcp.sh",
+    "test": "node tests/test-runner.js",
+    "test:vitest": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
+  },
+  "devDependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "vitest": "^1.0.0",
+    "@vitest/coverage-v8": "^1.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

@@ -4,8 +4,7 @@
  * Exports all Vue composables for the Lattice Compositor.
  */
 
-export type { AssetHandlersOptions } from "./useAssetHandlers";
-export { useAssetHandlers } from "./useAssetHandlers";
+// useAssetHandlers removed - functionality moved elsewhere
 export type { SegmentBoxState } from "./useCanvasSegmentation";
 export { useCanvasSegmentation } from "./useCanvasSegmentation";
 export type {

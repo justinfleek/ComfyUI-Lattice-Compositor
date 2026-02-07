@@ -1,0 +1,14 @@
+build/
+imgui.ini
+build/
+build*/
+imgui.ini
+sim_results/
+result
+scripts/
+output_ply/
+.cache/
+paper/
+//*.ply
+configs/*/old/
+/**/old/

@@ -462,12 +462,16 @@ export async function importCameraTracking(
         Math.atan(intrinsics.height / (2 * intrinsics.focalLength)) *
         (180 / Math.PI);
 
-      // Create position keyframes
+      // Create camera layer first (needed for deterministic keyframe IDs)
+      const { layer: cameraLayer } = cameraStore.createCameraLayer();
+      cameraLayer.name = `Tracked Camera (${solve.source})`;
+
+      // Create position keyframes with deterministic IDs
       const positionKeyframes = transformedPath.map((pose) =>
-        createKeyframe(pose.frame, pose.position, "linear"),
+        createKeyframe(cameraLayer.id, "transform.position", pose.frame, pose.position, "linear"),
       );
 
-      // Create rotation keyframes (convert quaternion to euler)
+      // Create rotation keyframes (convert quaternion to euler) with deterministic IDs
       const rotationKeyframes = transformedPath.map((pose) => {
         const euler = quaternionToEuler(
           pose.rotation.w,
@@ -475,12 +479,8 @@ export async function importCameraTracking(
           pose.rotation.y,
           pose.rotation.z,
         );
-        return createKeyframe(pose.frame, euler, "linear");
+        return createKeyframe(cameraLayer.id, "transform.rotation", pose.frame, euler, "linear");
       });
-
-      // Create camera layer
-      const { layer: cameraLayer } = cameraStore.createCameraLayer();
-      cameraLayer.name = `Tracked Camera (${solve.source})`;
 
       // Apply keyframed transform
       // Position uses { x, y, z? } - z is optional but we include it for 3D

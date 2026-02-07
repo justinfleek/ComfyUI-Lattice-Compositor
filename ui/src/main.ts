@@ -176,10 +176,9 @@ export async function sendToComfyUI(
   matte: string,
   preview: string,
 ): Promise<boolean> {
+  // Deterministic: Explicit null check for bridge before accessing methods
   const bridge = window.LatticeCompositor;
-  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
-  const bridgeSendOutput = (bridge != null && typeof bridge === "object" && "sendOutput" in bridge && typeof bridge.sendOutput === "function") ? bridge.sendOutput : undefined;
-  if (!bridgeSendOutput) {
+  if (!bridge || typeof bridge !== "object" || !("sendOutput" in bridge) || typeof bridge.sendOutput !== "function") {
     console.warn("[Lattice] sendToComfyUI called before backend bridge ready");
     return false;
   }

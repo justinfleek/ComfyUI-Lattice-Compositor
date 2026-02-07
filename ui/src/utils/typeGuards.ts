@@ -13,7 +13,9 @@ import type { JSONValue } from "@/types/dataAsset";
 
 /**
  * All possible JavaScript values that can be checked at runtime
- * Used as input type for type guards (replaces unknown)
+ * Deterministic: Explicit union of all possible runtime types (no unknown)
+ * Min/Max: Each type has explicit domain (string: any length, number: finite, etc.)
+ * Default: N/A - this is input validation, not default values
  */
 type RuntimeValue = string | number | boolean | object | null | undefined | bigint | symbol;
 
@@ -34,6 +36,7 @@ export function isObject(value: RuntimeValue): value is GenericObject {
 
 /**
  * Check if value is a finite number (not NaN, not Infinity)
+ * Deterministic: Explicitly checks type and finiteness
  */
 export function isFiniteNumber(value: RuntimeValue): value is number {
   return typeof value === "number" && Number.isFinite(value);
@@ -72,16 +75,33 @@ export function isFunction(
   return typeof value === "function";
 }
 
+/**
+ * Check if value is a record-like object (plain object with string keys)
+ * This is a type guard that validates structure at runtime
+ */
+export function isRecordLike(
+  value: RuntimeValue,
+): value is Record<string, JSONValue> {
+  if (!isObject(value)) return false;
+  if (Array.isArray(value)) return false;
+  // Check if it's a plain object (not Date, RegExp, etc.)
+  const proto = Object.getPrototypeOf(value);
+  return proto === null || proto === Object.prototype;
+}
+
 // ============================================================================
 // GEOMETRY TYPE GUARDS
 // ============================================================================
 
 /**
  * Check if value has numeric x and y properties
+ * Deterministic: Explicitly validates object structure and property types
  */
 export function hasXY(value: RuntimeValue): value is { x: number; y: number } {
   if (!isObject(value)) return false;
-  return isFiniteNumber(value.x) && isFiniteNumber(value.y);
+  const xValue = value.x;
+  const yValue = value.y;
+  return isFiniteNumber(xValue) && isFiniteNumber(yValue);
 }
 
 /**

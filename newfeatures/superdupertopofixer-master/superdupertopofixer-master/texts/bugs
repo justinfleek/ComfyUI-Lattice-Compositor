@@ -1,0 +1,3 @@
+000_grid_labeler: TEMPORARILY FIXED --- a degenerate case, where due to SoS degeneracy resolution, the label after the last intersection on a ray is not the global outside; solved by now with grid perturbation
+
+001: a non-manifold edge with material configuration ABAB can have opposites around it assigned wrongly in cell separator (opposites are assigned by matching labels, which only works if orientations, sides, and materials are correctly assigned (which should eb the case), and if materials are uniquely identifyable (which is not the case here))

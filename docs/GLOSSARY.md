@@ -309,19 +309,19 @@ Expression function for procedural random animation.
 
 ---
 
-## Trade Dress Alternatives
+## Lattice Terminology
 
-Lattice uses alternative terminology to respect Adobe trademarks:
+Lattice uses clear, descriptive terminology:
 
-| Industry Term | Lattice Term |
-|---------------|--------------|
-| Anchor Point | Origin |
-| Pickwhip | PropertyLink |
-| Graph Editor | Curve Editor |
-| Precomp | Nested Composition |
-| Adjustment Layer | Effect Layer |
-| Solo | Isolate |
-| loopOut() | repeatAfter() |
+| Concept | Lattice Term |
+|---------|--------------|
+| Transform origin | Origin |
+| Property linking | PropertyLink |
+| Animation curves | Curve Editor |
+| Sub-composition | Nested Composition |
+| Global effects layer | Effect Layer |
+| View single layer | Isolate |
+| Loop animation | repeatAfter() |
 | Null Object | Control Layer |
 
 ---

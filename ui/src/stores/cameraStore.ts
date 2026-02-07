@@ -42,8 +42,15 @@ function framesEqual(a: number, b: number): boolean {
 /**
  * Validate and sanitize frame number input
  */
+/**
+ * Safe frame number with explicit validation
+ * Deterministic: Explicit null check - Number.isFinite ensures frame is finite number
+ */
 function safeFrame(frame: number | undefined | null, fallback = 0): number {
-  return Number.isFinite(frame) ? frame! : fallback;
+  if (frame !== undefined && frame !== null && typeof frame === "number" && Number.isFinite(frame)) {
+    return frame;
+  }
+  return fallback;
 }
 
 // ============================================================================

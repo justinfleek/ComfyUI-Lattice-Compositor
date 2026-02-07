@@ -1,0 +1,21 @@
+[submodule "extern/magnum"]
+	path = extern/magnum
+	url = https://github.com/mosra/magnum.git
+[submodule "extern/corrade"]
+	path = extern/corrade
+	url = https://github.com/mosra/corrade.git
+[submodule "extern/magnum-integration"]
+	path = extern/magnum-integration
+	url = https://github.com/mosra/magnum-integration.git
+[submodule "extern/imgui"]
+	path = extern/imgui
+	url = https://github.com/ocornut/imgui.git
+[submodule "extern/magnum-plugins"]
+	path = extern/magnum-plugins
+	url = https://github.com/mosra/magnum-plugins.git
+[submodule "extern/libigl"]
+	path = extern/libigl
+	url = https://github.com/libigl/libigl.git
+[submodule "extern/frictionfrenzy"]
+	path = extern/frictionfrenzy
+	url = https://git.ista.ac.at/wojtan-group/yi-lu-chen/frictionfrenzy.git

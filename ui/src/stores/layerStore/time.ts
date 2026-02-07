@@ -15,6 +15,7 @@ import { markLayerDirty } from "@/services/layerEvaluationCache";
 import type { TimeStretchOptions } from "./types";
 import { useProjectStore } from "../projectStore";
 import { useAnimationStore } from "../animationStore";
+import { generateKeyframeId } from "@/utils/uuid5";
 
 // ============================================================================
 // INTERNAL TYPES
@@ -170,9 +171,24 @@ export function freezeFrameAtPlayhead(
       );
     }
 
+    // Deterministic ID generation: same layer/property/frame/value always produces same ID
+    const propertyPath = "speedMap";
+    const valueStr = String(sourceTime);
+    const endFrame = (() => {
+      // Type proof: endFrame ∈ ℕ ∪ {undefined} → ℕ
+      const endFrameValue = layer.endFrame;
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const settings = (activeComp != null && typeof activeComp === "object" && "settings" in activeComp && activeComp.settings != null && typeof activeComp.settings === "object") ? activeComp.settings : undefined;
+      const frameCountValue = (settings != null && typeof settings === "object" && "frameCount" in settings && typeof settings.frameCount === "number") ? settings.frameCount : undefined;
+      const endFrameCalc = isFiniteNumber(endFrameValue) && Number.isInteger(endFrameValue) && endFrameValue >= 0
+        ? endFrameValue
+        : (isFiniteNumber(frameCountValue) && Number.isInteger(frameCountValue) && frameCountValue > 0 ? frameCountValue : 81);
+      return endFrameCalc - 1;
+    })();
+    
     data.speedMap.keyframes = [
       {
-        id: `kf_freeze_start_${Date.now()}`,
+        id: generateKeyframeId(layerId, propertyPath, currentFrame, valueStr),
         frame: currentFrame,
         value: sourceTime,
         interpolation: "hold" as const,
@@ -181,18 +197,8 @@ export function freezeFrameAtPlayhead(
         outHandle: { frame: 5, value: 0, enabled: true },
       },
       {
-        id: `kf_freeze_end_${Date.now() + 1}`,
-        frame: (() => {
-          // Type proof: endFrame ∈ ℕ ∪ {undefined} → ℕ
-          const endFrameValue = layer.endFrame;
-          // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
-          const settings = (activeComp != null && typeof activeComp === "object" && "settings" in activeComp && activeComp.settings != null && typeof activeComp.settings === "object") ? activeComp.settings : undefined;
-          const frameCountValue = (settings != null && typeof settings === "object" && "frameCount" in settings && typeof settings.frameCount === "number") ? settings.frameCount : undefined;
-          const endFrame = isFiniteNumber(endFrameValue) && Number.isInteger(endFrameValue) && endFrameValue >= 0
-            ? endFrameValue
-            : (isFiniteNumber(frameCountValue) && Number.isInteger(frameCountValue) && frameCountValue > 0 ? frameCountValue : 81);
-          return endFrame - 1;
-        })(),
+        id: generateKeyframeId(layerId, propertyPath, endFrame, valueStr),
+        frame: endFrame,
         value: sourceTime,
         interpolation: "hold" as const,
         controlMode: "smooth" as const,
@@ -353,9 +359,14 @@ export function enableSpeedMap(
         "number",
       );
       data.speedMap.animated = true;
+      // Deterministic ID generation: same layer/property/frame/value always produces same ID
+      const propertyPath = "speedMap";
+      const startValueStr = String(startSourceTime);
+      const endValueStr = String(endSourceTime);
+      
       data.speedMap.keyframes = [
         {
-          id: `kf_speedmap_start_${Date.now()}`,
+          id: generateKeyframeId(layerId, propertyPath, layerStartFrame, startValueStr),
           frame: layerStartFrame,
           value: startSourceTime,
           interpolation: "linear" as const,
@@ -364,7 +375,7 @@ export function enableSpeedMap(
           outHandle: { frame: 5, value: 0, enabled: true },
         },
         {
-          id: `kf_speedmap_end_${Date.now() + 1}`,
+          id: generateKeyframeId(layerId, propertyPath, layerEndFrame, endValueStr),
           frame: layerEndFrame,
           value: endSourceTime,
           interpolation: "linear" as const,

@@ -1,0 +1,4 @@
+# file: /home/nixos/.nix-profile/lib/python3.13/heapq.py
+# hypothesis_version: 6.150.0
+
+['__main__', 'heapify', 'heappop', 'heappush', 'heappushpop', 'heapreplace', 'merge', 'nlargest', 'nsmallest']

@@ -498,11 +498,19 @@ export class PropertyDriverSystem {
       throw new Error(`[PropertyDriver] Cannot get property source value: Invalid source property path (sourceProperty: ${JSON.stringify(driver.sourceProperty)}). Source property path must be a non-empty string. Driver ID: ${driver.id || "unknown"}, target layer: ${driver.targetLayerId || "unknown"}, target property: ${driver.targetProperty || "unknown"}, source layer: ${driver.sourceLayerId}, frame: ${frame}.`);
     }
     
-    return this.propertyGetter(
+    const result = this.propertyGetter(
       driver.sourceLayerId,
       driver.sourceProperty,
       frame,
     );
+
+    // Handle null return from propertyGetter
+    // PropertyGetter returns number | null - null means property not found
+    if (result === null) {
+      throw new Error(`[PropertyDriver] Property value is null: Layer "${driver.sourceLayerId}" property "${driver.sourceProperty}" at frame ${frame} returned null. Property may not exist or layer may be missing.`);
+    }
+
+    return result;
   }
 
   /**

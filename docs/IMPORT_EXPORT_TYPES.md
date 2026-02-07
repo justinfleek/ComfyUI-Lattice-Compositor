@@ -222,7 +222,7 @@ export interface FullCameraExport {
 - `exportToCameraCtrl(...)` - CameraCtrl format
 - `exportCameraMatrices(...)` - Generic 4x4 matrices
 - `exportCameraJSON(...)` - JSON format
-- `exportToAEScript(...)` - After Effects script
+- `exportToJSX(...)` - JSX automation script
 
 **Import Functions:**
 - `importCameraJSON(json: string): Camera3D[]` - Import camera data from JSON

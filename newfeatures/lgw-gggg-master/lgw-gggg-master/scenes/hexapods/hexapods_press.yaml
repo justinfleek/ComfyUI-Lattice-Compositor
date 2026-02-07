@@ -1,0 +1,62 @@
+scene:
+  seed: 314
+  density: 1010
+  geometry: [
+    {
+      type: "mesh",
+      name: "hexapod_remesh.obj",
+      scale: {
+        type: "gaussian",
+        dimensions: "uniform",
+        mean: 1.0,
+        std: 0.05,
+        clamp: 0.15
+      },
+      base_scale: 0.04,
+      fraction: 3
+    },
+  ]
+  edge_size: 6
+simulation:
+  timestep: 2e-3
+  solver:
+    name: "primal_dual"
+    iterations: 200
+    tolerance: 1e-6
+    non_smooth_force:
+      # name: "only_normal"
+      name: "non_smooth_contact"
+      spring_based_force: true
+      area_based_springs: true
+      spring_k: 1e11
+      spring_damp: 0.0001
+      static_coeff: 0.8
+experiments: [
+  {
+    name: "brownian",
+    duration: 0.2,
+    std: 0.1,
+    seed: 1000
+  },
+  {
+    name: "boundary_scale_search",
+    scale_speed: 0.5,
+    halt: 0.1,
+    decay: 0.5,
+    shrink_threshold: 30000,
+    expand_threshold: 3e+1,
+    iterations: 10,
+  },
+  {
+    name: "static_press",
+    press_fraction: 0.00025,
+    press_iterations: 3,
+    speed_tol: 1e-3,
+    stress_tol: 0.999,
+    decay: 0.5,
+    stress_limit: 3e5,
+    stress_search_factor: 0.3,
+    stress_lower_limit: 5e0,
+  },
+]
+

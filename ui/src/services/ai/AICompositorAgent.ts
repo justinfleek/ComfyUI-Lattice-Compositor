@@ -33,7 +33,7 @@ import {
   logUserConfirmation,
   logVRAMCheck,
 } from "../security/auditLog";
-import { checkRateLimit, recordToolCall } from "../security/rateLimits";
+import { checkRateLimit, recordToolCall } from "../../services/security/rateLimits";
 import { executeToolCall } from "./actionExecutor";
 import {
   getRecommendedSerializationMode,
@@ -48,6 +48,15 @@ import {
   type ToolResult,
 } from "./toolDefinitions";
 import { isFiniteNumber } from "@/utils/typeGuards";
+import type { JSONValue } from "@/types/dataAsset";
+import { createLogger } from "@/utils/logger";
+import { agentSandbox } from "./security/agentSandbox";
+import { actionApproval } from "./security/actionApproval";
+import { provenanceTracker } from "./security/provenanceTracker";
+import { agentRollback } from "./security/agentRollback";
+import { hardenedScopeManager } from "./security/hardenedScopeManager";
+
+const logger = createLogger("AICompositorAgent");
 
 // ============================================================================
 // SECURITY: High-Risk Tool Definitions
@@ -133,6 +142,14 @@ export interface AIAgentState {
   backendCallCount: number;
   /** List of backend tools called this session (for logging) */
   backendCallsThisSession: string[];
+
+  // SECURITY: Agent security framework
+  /** Current session ID */
+  sessionId: string;
+  /** Active sandbox ID (if executing in sandbox) */
+  activeSandboxId: string | null;
+  /** Pending action plan ID (waiting for user approval) */
+  pendingActionPlanId: string | null;
 }
 
 const DEFAULT_CONFIG: AIAgentConfig = {
@@ -162,6 +179,7 @@ export class AICompositorAgent {
 
   constructor(config: Partial<AIAgentConfig> = {}) {
     this.config = { ...DEFAULT_CONFIG, ...config };
+    const sessionId = `agent-session-${Date.now()}`;
     this.state = {
       isProcessing: false,
       currentTask: null,
@@ -171,7 +189,14 @@ export class AICompositorAgent {
       // SECURITY: Initialize backend call tracking
       backendCallCount: 0,
       backendCallsThisSession: [],
+      // SECURITY: Initialize agent security framework
+      sessionId,
+      activeSandboxId: null,
+      pendingActionPlanId: null,
     };
+
+    // Initialize security systems
+    hardenedScopeManager.startNewSession();
   }
 
   /**
@@ -198,9 +223,8 @@ export class AICompositorAgent {
    */
   setConfirmationCallback(callback: ConfirmationCallback | null): void {
     this.confirmationCallback = callback;
-    console.log(
-      "[SECURITY] Confirmation callback",
-      callback ? "registered" : "cleared",
+    logger.info(
+      `[SECURITY] Confirmation callback ${callback ? "registered" : "cleared"}`,
     );
   }
 
@@ -211,6 +235,8 @@ export class AICompositorAgent {
   /**
    * Process a user instruction
    * This is the main entry point for the AI agent
+   *
+   * SECURITY: Enhanced with action plan review and sandbox execution
    */
   async processInstruction(instruction: string): Promise<string> {
     if (this.state.isProcessing) {
@@ -231,6 +257,13 @@ export class AICompositorAgent {
         timestamp: Date.now(),
       });
 
+      // SECURITY: Create sandbox for agent execution
+      const sandbox = agentSandbox.createSandbox(this.state.sessionId);
+      this.state.activeSandboxId = sandbox.id;
+
+      // SECURITY: Create rollback point before agent actions
+      agentRollback.createRollbackPoint(this.state.sessionId);
+
       // SECURITY: Use minimal serialization by default to reduce attack surface
       // Only use full serialization when the request explicitly needs text content
       const serializationMode = getRecommendedSerializationMode(instruction);
@@ -239,18 +272,19 @@ export class AICompositorAgent {
           ? serializeProjectStateMinimal()
           : serializeProjectState();
 
-      console.log(
+      logger.debug(
         `[SECURITY] Using ${serializationMode} serialization for request`,
       );
 
-      // Build the full prompt with context
+      // Build the full prompt with context (enhanced with explainability requirement)
       const contextualPrompt = this.buildContextualPrompt(
         instruction,
         projectState,
       );
 
       // Process with LLM (may involve multiple iterations for tool calls)
-      const response = await this.runAgentLoop(contextualPrompt);
+      // This now requires explainability and creates action plans
+      const response = await this.runAgentLoopWithSecurity(contextualPrompt, instruction);
 
       // Add assistant response to history
       this.addMessage({
@@ -264,6 +298,17 @@ export class AICompositorAgent {
       const errorMessage =
         error instanceof Error ? error.message : "Unknown error";
       this.state.lastError = errorMessage;
+
+      // SECURITY: Rollback sandbox on error
+      if (this.state.activeSandboxId) {
+        try {
+          agentSandbox.rollbackSandbox(this.state.activeSandboxId);
+        } catch (rollbackError) {
+          logger.warn("[SECURITY] Sandbox rollback failed:", rollbackError);
+        }
+        this.state.activeSandboxId = null;
+      }
+
       throw error;
     } finally {
       this.state.isProcessing = false;
@@ -344,6 +389,94 @@ ${instruction}
 6. Provide a clear summary of what you did`;
   }
 
+  /**
+   * Enhanced agent loop with security framework integration
+   * Requires explainability, creates action plans, uses sandbox execution
+   */
+  private async runAgentLoopWithSecurity(
+    initialPrompt: string,
+    userInstruction: string,
+  ): Promise<string> {
+    const currentMessages: Array<{
+      role: string;
+      content: string;
+      tool_calls?: ToolCall[];
+      tool_call_id?: string;
+    }> = [
+      { role: "system", content: SYSTEM_PROMPT },
+      { role: "user", content: initialPrompt },
+    ];
+
+    while (this.state.iterationCount < this.config.maxIterations) {
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const abortController = (this != null && typeof this === "object" && "abortController" in this && this.abortController != null && typeof this.abortController === "object") ? this.abortController : undefined;
+      const abortSignal = (abortController != null && typeof abortController === "object" && "signal" in abortController && abortController.signal != null && typeof abortController.signal === "object") ? abortController.signal : undefined;
+      const signalAborted = (abortSignal != null && typeof abortSignal === "object" && "aborted" in abortSignal && typeof abortSignal.aborted === "boolean" && abortSignal.aborted) ? true : false;
+      if (signalAborted) {
+        throw new Error("Operation cancelled");
+      }
+
+      this.state.iterationCount++;
+
+      // Call LLM (enhanced to require reasoning)
+      const response = await this.callLLMWithReasoning(currentMessages);
+
+      // Check if response contains tool calls
+      if (response.toolCalls && response.toolCalls.length > 0) {
+        // SECURITY: Extract reasoning (required for explainability)
+        const reasoning = response.reasoning || response.content || "No reasoning provided";
+
+        // SECURITY: Create action plan for user review
+        const actionReasonings = response.actionReasonings || response.toolCalls.map(() => reasoning);
+        const actionPlan = actionApproval.createActionPlan(
+          this.state.sessionId,
+          userInstruction,
+          reasoning,
+          response.toolCalls,
+          actionReasonings,
+        );
+
+        this.state.pendingActionPlanId = actionPlan.id;
+
+        // SECURITY: Track provenance
+        const toolCallsForProvenance = response.toolCalls || [];
+        const provenanceId = provenanceTracker.recordDecision(
+          this.state.sessionId,
+          userInstruction,
+          reasoning,
+          toolCallsForProvenance.map((call) => ({
+            id: call.id,
+            name: call.name,
+            arguments: (() => {
+              const { name, id, ...args } = call;
+              return args as Record<string, JSONValue>;
+            })(),
+            reasoning: actionReasonings[toolCallsForProvenance.indexOf(call)] || reasoning,
+          })),
+          [], // Results will be added after execution
+        );
+
+        // SECURITY: Wait for user approval before executing
+        // In production, this would be async - UI would show approval dialog
+        // For now, we'll throw an error that includes the plan ID for UI handling
+        throw new Error(
+          `[AICompositorAgent] Action plan created: ${actionPlan.id}. ` +
+          `User approval required before executing ${actionPlan.actions.length} action(s). ` +
+          `Reasoning: ${reasoning.substring(0, 200)}...`,
+        );
+      }
+
+      // No tool calls - we have the final response
+      return response.content;
+    }
+
+    return "Maximum iterations reached. Please try a simpler request or break it into steps.";
+  }
+
+  /**
+   * Original agent loop (kept for backwards compatibility)
+   * @deprecated Use runAgentLoopWithSecurity instead
+   */
   private async runAgentLoop(initialPrompt: string): Promise<string> {
     const currentMessages: Array<{
       role: string;
@@ -401,6 +534,79 @@ ${instruction}
     return "Maximum iterations reached. Please try a simpler request or break it into steps.";
   }
 
+  /**
+   * Call LLM with explainability requirement
+   * Enhanced to require reasoning for tool calls
+   */
+  private async callLLMWithReasoning(
+    messages: Array<{ role: string; content: string }>,
+  ): Promise<{
+    content: string;
+    toolCalls?: ToolCall[];
+    reasoning?: string;
+    actionReasonings?: string[];
+  }> {
+    // Enhance system prompt to require reasoning
+    const enhancedMessages = [
+      {
+        role: "system",
+        content: `${SYSTEM_PROMPT}
+
+## EXPLAINABILITY REQUIREMENT
+
+Before executing ANY tool calls, you MUST:
+1. Explain WHY you want to perform each action
+2. Provide reasoning for your decision
+3. Explain how each tool call contributes to fulfilling the user's request
+
+Format your response as:
+<reasoning>
+[Your step-by-step reasoning for why these actions are needed]
+</reasoning>
+
+<actions>
+[List of tool calls with individual reasoning]
+</actions>`,
+      },
+      ...messages.slice(1), // Skip original system prompt
+    ];
+
+    const response = await fetch("/lattice/api/ai/agent", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: this.config.model,
+        messages: enhancedMessages,
+        tools: TOOL_DEFINITIONS,
+        max_tokens: this.config.maxTokens,
+        temperature: this.config.temperature,
+      }),
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      signal: (() => {
+        const abortController = (this != null && typeof this === "object" && "abortController" in this && this.abortController != null && typeof this.abortController === "object") ? this.abortController : undefined;
+        return (abortController != null && typeof abortController === "object" && "signal" in abortController && abortController.signal != null) ? abortController.signal : undefined;
+      })(),
+    });
+
+    const result = await response.json();
+
+    if (result.status !== "success") {
+      throw new Error(result.message || "LLM API error");
+    }
+
+    // Extract reasoning from response content
+    const content = result.data.content || "";
+    const reasoningMatch = content.match(/<reasoning>([\s\S]*?)<\/reasoning>/i);
+    const reasoning = reasoningMatch ? reasoningMatch[1].trim() : content.substring(0, 500);
+
+    return {
+      content,
+      toolCalls: result.data.toolCalls,
+      reasoning,
+      actionReasonings: result.data.toolCalls?.map(() => reasoning) || [],
+    };
+  }
+
   private async callLLM(
     messages: Array<{ role: string; content: string }>,
   ): Promise<{
@@ -437,6 +643,127 @@ ${instruction}
   }
 
   /**
+   * Execute approved action plan
+   * This is called AFTER user approves the action plan
+   */
+  async executeApprovedPlan(planId: string): Promise<string> {
+    const plan = actionApproval.getActionPlan(planId);
+    if (!plan) {
+      throw new Error(`[AICompositorAgent] Action plan "${planId}" not found`);
+    }
+
+    if (!actionApproval.isPlanApproved(planId)) {
+      throw new Error(`[AICompositorAgent] Action plan "${planId}" is not approved`);
+    }
+
+    const approvedActions = actionApproval.approvePlan({
+      planId,
+      approved: true,
+    });
+
+    if (approvedActions.length === 0) {
+      throw new Error(`[AICompositorAgent] No approved actions in plan "${planId}"`);
+    }
+
+    // Execute approved actions in sandbox
+    const toolCalls = approvedActions.map((a) => a.toolCall);
+    const results = await this.executeToolCallsInSandbox(toolCalls, approvedActions);
+
+    // Commit sandbox if all actions succeeded
+    if (this.state.activeSandboxId) {
+      const allSucceeded = results.every((r) => r.success);
+      if (allSucceeded) {
+        agentSandbox.commitSandbox(this.state.activeSandboxId);
+        this.state.activeSandboxId = null;
+      }
+    }
+
+    return `Executed ${results.length} approved action(s)`;
+  }
+
+  /**
+   * Execute tool calls in sandbox (for approved action plans)
+   */
+  private async executeToolCallsInSandbox(
+    toolCalls: ToolCall[],
+    plannedActions: Array<{ toolCall: ToolCall; reasoning: string }>,
+  ): Promise<ToolResult[]> {
+    if (!this.state.activeSandboxId) {
+      throw new Error("[AICompositorAgent] No active sandbox for execution");
+    }
+
+    const results: ToolResult[] = [];
+
+    for (let i = 0; i < toolCalls.length; i++) {
+      const call = toolCalls[i];
+      const plannedAction = plannedActions[i];
+      const actionReasoning = plannedAction?.reasoning || "No reasoning provided";
+
+      // Record action before execution
+      const actionId = agentRollback.recordActionBefore(
+        this.state.sessionId,
+        call.name,
+        (() => {
+          const { name, id, ...args } = call;
+          return args;
+        })(),
+        this.state.activeSandboxId,
+        actionReasoning,
+      );
+
+      try {
+        // Execute in sandbox (action executor will handle sandbox mode)
+        const result = await executeToolCall(call, { sandboxId: this.state.activeSandboxId || undefined });
+
+        // Record action after execution
+        agentRollback.recordActionAfter(actionId, true);
+
+        // Record in sandbox
+        agentSandbox.recordAction(
+          this.state.activeSandboxId,
+          call.name,
+          (() => {
+            const { name, id, ...args } = call;
+            return args;
+          })(),
+          result,
+          true,
+          actionReasoning,
+        );
+
+        results.push({
+          toolCallId: call.id,
+          success: true,
+          result,
+        });
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : "Unknown error";
+        agentRollback.recordActionAfter(actionId, false);
+
+        agentSandbox.recordAction(
+          this.state.activeSandboxId,
+          call.name,
+          (() => {
+            const { name, id, ...args } = call;
+            return args;
+          })(),
+          errorMessage,
+          false,
+          actionReasoning,
+        );
+
+        results.push({
+          toolCallId: call.id,
+          success: false,
+          error: errorMessage,
+        });
+      }
+    }
+
+    return results;
+  }
+
+  /**
    * Execute tool calls with security controls.
    *
    * SECURITY:
@@ -444,6 +771,8 @@ ${instruction}
    * - High-risk tools check VRAM before execution
    * - High-risk tools require user confirmation
    * - Rate limiting prevents runaway backend calls
+   *
+   * @deprecated Use executeToolCallsInSandbox for new code
    */
   private async executeToolCalls(toolCalls: ToolCall[]): Promise<ToolResult[]> {
     const results: ToolResult[] = [];
@@ -452,8 +781,22 @@ ${instruction}
       // SECURITY: Log ALL tool calls to persistent audit log
       // Extract arguments by removing 'name' and 'id' fields
       const { name, id, ...args } = call;
-      await logToolCall(name, args);
-      console.log(`[SECURITY] Tool call: ${name}`, args);
+      // Convert args to Record<string, JSONValue> for audit log
+      const argsRecord: Record<string, JSONValue> = {};
+      for (const [key, value] of Object.entries(args)) {
+        if (
+          typeof value === "string" ||
+          typeof value === "number" ||
+          typeof value === "boolean" ||
+          value === null ||
+          Array.isArray(value) ||
+          (typeof value === "object" && value !== null)
+        ) {
+          argsRecord[key] = value as JSONValue;
+        }
+      }
+      await logToolCall(name, argsRecord);
+      logger.debug(`[SECURITY] Tool call: ${name}`, args);
 
       // SECURITY: Check if this is a high-risk backend tool
       const highRiskInfo = HIGH_RISK_BACKEND_TOOLS.get(call.name);
@@ -463,7 +806,7 @@ ${instruction}
         const rateLimitStatus = checkRateLimit(call.name);
         if (!rateLimitStatus.canCall) {
           const errorMsg = `[SECURITY] Rate limit exceeded: ${rateLimitStatus.blockedReason}`;
-          console.warn(errorMsg);
+          logger.warn(errorMsg);
           await logToolResult(call.name, false, errorMsg);
           throw new Error(`[AICompositorAgent] ${errorMsg} Rate limit exceeded for tool "${call.name}".`);
         }
@@ -493,7 +836,7 @@ ${instruction}
               `Required: ~${Math.round(highRiskInfo.vramEstimateMB / 1000)}GB, ` +
               `Available: ~${Math.round(memSummary.available / 1000)}GB. ` +
               `${suggestionsText}`;
-            console.warn(errorMsg);
+            logger.warn(errorMsg);
             await logToolResult(call.name, false, errorMsg);
             throw new Error(`[AICompositorAgent] ${errorMsg} Free GPU memory or reduce VRAM requirements.`);
           }
@@ -505,7 +848,7 @@ ${instruction}
             const errorMsg =
               `[SECURITY] ${call.name} requires user confirmation but no callback is registered. ` +
               `Call setConfirmationCallback() to enable high-risk operations.`;
-            console.warn(errorMsg);
+            logger.warn(errorMsg);
             await logToolResult(call.name, false, errorMsg);
             throw new Error(`[AICompositorAgent] ${errorMsg} Register a confirmation callback before executing high-risk operations.`);
           }
@@ -523,12 +866,12 @@ ${instruction}
           await logUserConfirmation(call.name, confirmed);
 
           if (!confirmed) {
-            console.log(`[SECURITY] User declined ${call.name}`);
+            logger.info(`[SECURITY] User declined ${call.name}`);
             await logToolResult(call.name, false, "User declined confirmation");
             throw new Error(`[AICompositorAgent] Operation cancelled by user: ${highRiskInfo.description}. User declined confirmation for high-risk operation.`);
           }
 
-          console.log(`[SECURITY] User approved ${call.name}`);
+          logger.info(`[SECURITY] User approved ${call.name}`);
         }
 
         // SECURITY: Record to persistent rate limits (this is the source of truth)
@@ -544,7 +887,7 @@ ${instruction}
         const sessionInfo = isFiniteNumber(updatedStatus.maxPerSession) && updatedStatus.maxPerSession > 0
           ? `session: ${updatedStatus.callsThisSession}/${updatedStatus.maxPerSession}`
           : `session: ${updatedStatus.callsThisSession}`;
-        console.log(
+        logger.debug(
           `[SECURITY] Backend call recorded: ${call.name} ` +
             `(today: ${updatedStatus.callsToday}/${updatedStatus.maxPerDay}, ` +
             `${sessionInfo})`,
@@ -554,7 +897,7 @@ ${instruction}
       // Execute the tool
       try {
         const result = await executeToolCall(call);
-        console.log(`[SECURITY] Tool ${call.name} completed successfully`);
+        logger.info(`[SECURITY] Tool ${call.name} completed successfully`);
 
         // Log successful execution to audit log
         await logToolResult(
@@ -571,7 +914,7 @@ ${instruction}
       } catch (error) {
         const errorMsg =
           error instanceof Error ? error.message : "Unknown error";
-        console.error(`[SECURITY] Tool ${call.name} failed:`, errorMsg);
+        logger.error(`[SECURITY] Tool ${call.name} failed:`, errorMsg);
 
         // Log failure to audit log
         await logToolResult(call.name, false, errorMsg);
@@ -593,7 +936,7 @@ ${instruction}
   resetBackendCallLimits(): void {
     this.state.backendCallCount = 0;
     this.state.backendCallsThisSession = [];
-    console.log("[SECURITY] Backend call limits reset");
+    logger.info("[SECURITY] Backend call limits reset");
   }
 
   /**

@@ -1,0 +1,545 @@
+# Movis + Mo.js Suite Feature Analysis
+# Analyzed: 2026-01-26
+# Sources:
+#   - newfeatures/movis-main (Python video editing library)
+#   - newfeatures/mojs-curve-editor-main (JavaScript curve editor)
+#   - newfeatures/mojs-timeline-editor-main (JavaScript timeline editor)
+
+project:
+  name: "Movis + Mo.js Suite"
+  components:
+    movis:
+      source: "newfeatures/movis-main/movis-main"
+      language: "Python"
+      domain: "Video editing / Motion graphics"
+      purpose: "Programmatic video composition with keyframe animation"
+    mojs_curve_editor:
+      source: "newfeatures/mojs-curve-editor-main/mojs-curve-editor-main"
+      language: "JavaScript"
+      domain: "Curve/easing editing"
+      purpose: "Interactive bezier curve editor for easing functions"
+    mojs_timeline_editor:
+      source: "newfeatures/mojs-timeline-editor-main/mojs-timeline-editor-main"
+      language: "JavaScript"
+      domain: "Timeline editing"
+      purpose: "Timeline-based keyframe animation editor"
+
+# =============================================================================
+# MOVIS: VIDEO COMPOSITION LIBRARY
+# =============================================================================
+movis:
+  composition:
+    description: "Core composition management"
+    features:
+      - composition_size: [width, height]
+      - duration: float
+      - frame_rate: float (default 30)
+      - layer_management: "list-based layer stack"
+    lattice: true
+    parity: "FULL"
+
+  layer_item:
+    description: "Layer wrapper with transform and timing"
+    parameters:
+      - position: "vector2d (x, y)"
+      - scale: "vector2d (default 1.0, 1.0)"
+      - rotation: "float degrees"
+      - opacity: "float 0-1"
+      - anchor_point: "vector2d (default 0, 0)"
+      - origin_point: "Direction enum (9 positions)"
+      - blending_mode: "BlendingMode enum"
+      - offset: "float (layer time offset)"
+      - start_time: float
+      - end_time: float
+      - visible: bool
+      - audio: bool
+      - audio_level: float
+    lattice: true
+    parity: "FULL"
+
+  transform:
+    description: "Transform properties"
+    parameters:
+      - position: "[x, y]"
+      - scale: "[sx, sy]"
+      - rotation: "degrees"
+      - opacity: "0-1"
+      - anchor_point: "[ax, ay]"
+      - origin_point: "Direction enum"
+    lattice: true
+    parity: "FULL"
+
+  attribute_system:
+    description: "Animatable property system"
+    features:
+      - init_value: "scalar, vector2d, vector3d, angle, color"
+      - value_type: "AttributeType enum"
+      - range_clipping: "[min, max]"
+      - motion_binding: "Motion object for keyframes"
+      - function_binding: "custom animation functions"
+      - cache_key_generation: "for frame caching"
+    lattice: true
+    parity: "FULL"
+    notes: "Lattice has similar Attribute system with expressions"
+
+  motion_keyframes:
+    description: "Keyframe animation system"
+    features:
+      - keyframe_list: "list of times"
+      - value_list: "list of numpy arrays"
+      - easing_list: "per-keyframe easing functions"
+      - bisect_interpolation: "binary search for current frame"
+    lattice: true
+    parity: "FULL"
+
+  easing:
+    description: "Easing functions"
+    types:
+      - linear: "constant rate"
+      - flat: "no change"
+      - ease_in: "accelerate from rest"
+      - ease_out: "decelerate to rest"
+      - ease_in_out: "accelerate then decelerate"
+      - power_variants: "powers 2-35 for each type"
+    total_presets: 156  # LINEAR + FLAT + 3 types * 34 powers = 4 + 102 = 106, plus some extras
+    lattice: true
+    parity: "PARTIAL"
+    notes: "Lattice has 40+ easings but not power 2-35 range. Consider adding."
+
+  blending_modes:
+    description: "Layer compositing modes"
+    supported:
+      - NORMAL
+      - MULTIPLY
+      - SCREEN
+      - OVERLAY
+      - DARKEN
+      - LIGHTEN
+      - COLOR_DODGE
+      - COLOR_BURN
+      - LINEAR_DODGE
+      - LINEAR_BURN
+      - HARD_LIGHT
+      - SOFT_LIGHT
+      - VIVID_LIGHT
+      - LINEAR_LIGHT
+      - PIN_LIGHT
+      - DIFFERENCE
+      - EXCLUSION
+      - SUBTRACT
+    total: 18
+    lattice: true
+    parity: "FULL"
+
+  matte_modes:
+    description: "Matte/mask modes"
+    supported:
+      - NONE
+      - ALPHA
+      - LUMINANCE
+    lattice: true
+    parity: "FULL"
+
+  origin_points:
+    description: "9-position anchor origin"
+    supported:
+      - TOP_LEFT
+      - TOP_CENTER
+      - TOP_RIGHT
+      - CENTER_LEFT
+      - CENTER
+      - CENTER_RIGHT
+      - BOTTOM_LEFT
+      - BOTTOM_CENTER
+      - BOTTOM_RIGHT
+    lattice: true
+    parity: "FULL"
+
+  effects:
+    blur:
+      gaussian_blur:
+        description: "Gaussian blur with kernel radius"
+        parameters: [radius]
+        animatable: [radius]
+        lattice: true
+        parity: "FULL"
+      glow:
+        description: "Gaussian blur + linear dodge composite"
+        parameters: [radius, strength]
+        animatable: [radius, strength]
+        lattice: true
+        parity: "FULL"
+
+    color:
+      fill_color:
+        description: "Fill image with solid color preserving alpha"
+        parameters: [color]
+        animatable: [color]
+        lattice: true
+        parity: "FULL"
+      hsl_shift:
+        description: "Hue/saturation/luminance adjustment"
+        parameters: [hue, saturation, luminance]
+        animatable: [hue, saturation, luminance]
+        lattice: true
+        parity: "FULL"
+
+    style:
+      drop_shadow:
+        description: "Drop shadow with offset and blur"
+        parameters: [radius, offset, angle, color, opacity]
+        animatable: [radius, offset, angle, color, opacity]
+        lattice: true
+        parity: "FULL"
+
+  layers:
+    drawing:
+      line:
+        description: "Line from start to end with trim"
+        parameters: [size, start, end, color, width, trim_start, trim_end]
+        animatable: [start, end, color, width, trim_start, trim_end]
+        lattice: true
+        parity: "FULL"
+      rectangle:
+        description: "Rectangle with rounded corners"
+        parameters: [size, radius, color, contents]
+        animatable: [size, radius]
+        lattice: true
+        parity: "FULL"
+      ellipse:
+        description: "Ellipse shape"
+        parameters: [size, color, contents]
+        animatable: [size]
+        lattice: true
+        parity: "FULL"
+      text:
+        description: "Text with font styling"
+        parameters: [text, font_size, font_family, font_style, color, contents, line_spacing, text_alignment]
+        animatable: [font_size]
+        features:
+          - timeline_text: "Display different text at different times"
+          - fill_stroke_contents: "Multiple fills and strokes"
+          - text_alignment: "LEFT, CENTER, RIGHT"
+        lattice: true
+        parity: "FULL"
+
+    fill_stroke_properties:
+      fill_property:
+        parameters: [color, opacity]
+      stroke_property:
+        parameters: [color, width, opacity]
+
+# =============================================================================
+# MOJS CURVE EDITOR
+# =============================================================================
+mojs_curve_editor:
+  purpose: "Interactive bezier curve editor for easing functions"
+
+  constants:
+    curve_size: 350
+    curve_percent: "CURVE_SIZE/100"
+    curve_padding: 10
+    resize_negative_offset: 150
+
+  point_system:
+    description: "Control points with handles"
+    point_attributes:
+      - x: "horizontal position"
+      - y: "vertical position (inverted for curves)"
+      - tempX: "temporary drag offset"
+      - tempY: "temporary drag offset"
+      - isSelected: bool
+      - isLockedX: "prevent horizontal movement (endpoints)"
+      - type: "straight | mirrored | asymmetric"
+    handle_attributes:
+      - rotate: "angle in degrees"
+      - radius: "distance from point"
+    lattice: true
+    parity: "FULL"
+    notes: "Lattice curve editor has equivalent point/handle system"
+
+  point_types:
+    straight:
+      description: "No bezier handles (linear segment)"
+    mirrored:
+      description: "Handles mirror rotation AND radius"
+    asymmetric:
+      description: "Handles mirror rotation, independent radius"
+    lattice: true
+    parity: "FULL"
+
+  path_calculation:
+    description: "Generate SVG path from points"
+    format: "M x,y C handle1 handle2 x2,y2..."
+    lattice: true
+    parity: "FULL"
+
+  actions:
+    - POINT_TRANSLATE: "Drag point with offset"
+    - POINT_TRANSLATE_END: "Finalize point position"
+    - POINT_SELECT: "Select point with optional deselect all"
+    - POINT_ADD: "Add point at index"
+    - POINT_DELETE: "Delete selected points"
+    - POINT_CHANGE_TYPE: "Change selected points' type"
+    - POINT_DESELECT_ALL: "Deselect all points"
+    - HANDLE_TRANSLATE: "Drag handle (rotate + radius)"
+    - HANDLE_TRANSLATE_END: "Finalize handle"
+    - POINTS_REMOVE: "Clear all points"
+    - SET_EDITOR_NAME: "Set editor instance name"
+    - SET_ACTIVE: "Set editor active state"
+
+# =============================================================================
+# MOJS TIMELINE EDITOR
+# =============================================================================
+mojs_timeline_editor:
+  purpose: "Timeline-based keyframe animation editor"
+
+  constants:
+    player_height: 40
+    timeline_height: 22
+    min_duration: 40  # 2.5 frames at 60fps
+    spot_selection_gap: 20  # pixels for endpoint selection
+    persist_state: true
+
+  point_system:
+    description: "Animation targets with properties"
+    point_attributes:
+      - id: "unique identifier"
+      - isSelected: bool
+      - isOpen: "expanded in UI"
+      - props: "property animation segments"
+      - currentProps: "current property values"
+
+  segment_system:
+    description: "Animation segment between keyframes"
+    segment_attributes:
+      - index: int
+      - start:
+          time: float
+          value: "scalar or array"
+          connected: "prev | next | none"
+      - end:
+          time: float
+          value: "scalar or array"
+          connected: "prev | next | none"
+      - delay: float
+      - duration: float
+      - easing: "easing function name"
+      - isChanged: bool
+    lattice: true
+    parity: "FULL"
+
+  actions:
+    points:
+      - ADD_POINT: "Add animation target"
+      - SELECT_POINT: "Toggle point selection"
+      - TOGGLE_OPEN_POINT: "Expand/collapse point"
+      - CHANGE_POINT_CURRENT_POSITION: "Drag current values"
+    segments:
+      - ADD_SNAPSHOT: "Add keyframe for all properties"
+      - ADD_PROPERTY_SEGMENT: "Add keyframe for single property"
+      - SHIFT_SEGMENT: "Adjust delay/duration"
+      - UPDATE_SELECTED_SPOT: "Modify keyframe value"
+      - UPDATE_SELECTED_SPOT_CURRENT: "Modify current value"
+      - SET_EASING: "Set segment easing"
+    properties:
+      - ADD_POINT_PROPERTY: "Add property to animate"
+
+  progress:
+    description: "Playback progress 0-1"
+    action: SET_PROGRESS
+
+  panel:
+    description: "UI panel state"
+    features:
+      - ySize: "panel height"
+      - isHidden: "collapsed state"
+      - isTransition: "animating state change"
+
+# =============================================================================
+# GAP ANALYSIS
+# =============================================================================
+gap_analysis:
+  movis_gaps:
+    lattice_lacks: []  # None - Lattice has all movis features
+    notes: |
+      Movis is a programmatic video library. Lattice has:
+      - All layer types and more (particles, 3D, depth, pose)
+      - All transform properties
+      - All blending modes
+      - All effects and many more
+      - Complete keyframe animation system
+      - Expression system (movis has custom functions only)
+
+  mojs_curve_editor_gaps:
+    lattice_lacks: []  # None
+    notes: |
+      Lattice has a complete curve editor with:
+      - Point types (smooth, corner, bezier = mirrored, asymmetric)
+      - Handle manipulation
+      - Path calculation
+      - SVG path output
+
+  mojs_timeline_editor_gaps:
+    lattice_lacks: []  # None
+    notes: |
+      Lattice has a complete timeline editor with:
+      - Layer tracks
+      - Property tracks with keyframes
+      - Segment manipulation
+      - Easing per keyframe
+      - Progress/playhead control
+
+  potential_improvements:
+    easing_power_range:
+      description: "Add power 2-35 easing variants"
+      value: "LOW"
+      notes: "Movis has EASE_IN2 through EASE_IN35. Could be useful for fine control."
+
+# =============================================================================
+# LATTICE-EXCLUSIVE FEATURES
+# =============================================================================
+lattice_exclusive:
+  particles:
+    description: "Full particle simulation system"
+    features:
+      - emitters: "point, line, box, sphere, mesh surface"
+      - forces: "gravity, turbulence, vortex, drag"
+      - behaviors: "flocking, SPH fluid, springs"
+      - rendering: "points, sprites, trails, connections"
+      - audio_reactive: "frequency band modulation"
+      - deterministic: "frame-cached for scrubbing"
+    movis_has: false
+
+  physics_simulation:
+    description: "Rigid/soft body dynamics"
+    features:
+      - rigid_body
+      - soft_body
+      - cloth
+      - collision_detection
+    movis_has: false
+
+  3d_rendering:
+    description: "True 3D support"
+    features:
+      - model_import: "GLTF, OBJ"
+      - point_cloud
+      - pbr_materials
+      - camera_dof
+      - depth_layers
+    movis_has: false
+
+  expression_system:
+    description: "Safe DSL for property linking"
+    features:
+      - property_drivers
+      - audio_reactive_expressions
+      - inter_property_linking
+      - time_expressions
+    movis_has: false
+    notes: "Movis has custom functions, not expressions"
+
+  generative_ai:
+    description: "AI model integration"
+    features:
+      - image_generation: "FLUX, Stable Diffusion"
+      - video_generation: "Wan 2.1, LTX"
+      - depth_estimation
+      - pose_detection
+      - layer_decomposition
+    movis_has: false
+
+  mesh_warp:
+    description: "Mesh-based deformation"
+    features:
+      - pin_deformation
+      - puppet_tool
+      - path_morphing
+    movis_has: false
+
+  audio:
+    description: "Advanced audio features"
+    features:
+      - waveform_visualization
+      - beat_detection
+      - frequency_band_extraction
+    movis_has: false
+    notes: "Movis has audio_level but no audio analysis"
+
+  camera_tracking:
+    description: "Camera tracking data"
+    features:
+      - import_tracking_data
+      - 3d_camera_solve
+      - point_tracking
+    movis_has: false
+
+  depth_flow:
+    description: "2.5D depth parallax"
+    features:
+      - depth_parallax
+      - depth_blur
+      - depth_composition
+    movis_has: false
+
+  shape_modifiers:
+    description: "Advanced shape operations"
+    features:
+      - offset_paths
+      - pucker_bloat
+      - wiggle_paths
+      - zig_zag
+      - twist
+    movis_has: false
+
+# =============================================================================
+# INTEGRATION VALUE
+# =============================================================================
+integration_recommendations:
+  import_movis_projects:
+    value: "LOW"
+    description: |
+      Movis uses Python with numpy/PySide6. Different paradigm than Lattice.
+      Not practical to import movis project files.
+
+  easing_power_variants:
+    value: "LOW"
+    description: |
+      Could add power 2-35 easing variants for fine-tuned control.
+      Low priority - existing easings cover most use cases.
+
+  no_features_to_backport:
+    description: |
+      The movis/mojs suite provides no features that Lattice lacks.
+      All three components (video library, curve editor, timeline editor)
+      have full feature parity with Lattice plus Lattice has extensive
+      additional capabilities.
+
+# =============================================================================
+# VERDICT
+# =============================================================================
+verdict:
+  overall: "LATTICE SUPERIOR"
+
+  summary: |
+    The Movis + Mo.js suite is a well-designed video editing toolkit:
+    - Movis: Python video composition with clean attribute/animation system
+    - Mo.js Curve Editor: Interactive bezier curve editing
+    - Mo.js Timeline Editor: Timeline-based keyframe animation
+
+    Lattice has COMPLETE FEATURE PARITY with all three components
+    AND massive additional capabilities including:
+    - Particle systems with physics
+    - True 3D rendering
+    - AI/generative integration
+    - Expression system
+    - Mesh deformation
+    - Advanced audio analysis
+    - Camera tracking
+    - Depth-based effects
+
+  action_items:
+    - "No features to back-port from movis/mojs suite"
+    - "Consider adding power 2-35 easing variants (low priority)"
+    - "Movis/mojs serve as validation that Lattice design is on par with industry"

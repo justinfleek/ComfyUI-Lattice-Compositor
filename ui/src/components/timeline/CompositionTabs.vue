@@ -99,6 +99,8 @@ import type { CompositionStoreAccess } from "@/stores/compositionStore";
 import { useProjectStore } from "@/stores/projectStore";
 import { useSelectionStore } from "@/stores/selectionStore";
 import type { Composition } from "@/types/project";
+import { generateKeyframeId } from "@/utils/uuid5";
+import { regenerateKeyframeIds } from "@/stores/layerStore/crud";
 
 const emit = defineEmits<{
   (e: "newComposition"): void;
@@ -279,17 +281,8 @@ function duplicateComposition() {
       // Generate new IDs for layer and its properties
       clonedLayer.id = `layer_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
 
-      // Update keyframe IDs if present
-      if (clonedLayer.properties) {
-        for (const prop of clonedLayer.properties) {
-          prop.id = `prop_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
-          if (prop.keyframes) {
-            for (const kf of prop.keyframes) {
-              kf.id = `kf_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
-            }
-          }
-        }
-      }
+      // Regenerate keyframe IDs deterministically (like layer duplication)
+      regenerateKeyframeIds(clonedLayer);
 
       // Add cloned layer to new composition
       newComp.layers.push(clonedLayer);

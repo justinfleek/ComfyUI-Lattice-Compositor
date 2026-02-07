@@ -1,10 +1,13 @@
 # Documentation Index
 
+**Deprecated / archived docs** (one-off audits, migration notes, stale guides) are in [docs/deprecated/](deprecated/README.md). Use INDEX and the links below for current docs.
+
 ## Current Status (2026-01-12)
 
 | Phase | Status | Description | Documentation |
 |-------|--------|-------------|---------------|
 | **Phase 0** | ✅ COMPLETE | 6 critical memory bugs fixed (BUG-243 to BUG-248) | [MASTER_REFACTOR_STATUS.md](MASTER_REFACTOR_STATUS.md#phase-0-critical-bug-fixes-weeks-1-2--complete) |
+| **Phase 0: Ontology Mapping** | ✅ COMPLETE (2025-01-10) | Comprehensive ontology mapping across all layers (0-7) and languages | [ONTOLOGY_MAPPING.md](audit/ONTOLOGY_MAPPING.md) |
 | **Phase 1** | ✅ COMPLETE | Layer store migration (46/46 methods + 3 batch operations) | [PHASE_1_COMPLETE_VERIFICATION.md](PHASE_1_COMPLETE_VERIFICATION.md), [PHASE_1_MIGRATION_AUDIT.md](PHASE_1_MIGRATION_AUDIT.md) |
 | **Phase 2** | ⏳ IN PROGRESS | Method verification complete, state migration in progress (~5%) | [PHASE_2_AUDIT_SUMMARY.md](PHASE_2_AUDIT_SUMMARY.md), [PHASE_2_STATE_MIGRATION_PROGRESS.md](PHASE_2_STATE_MIGRATION_PROGRESS.md) |
 | **Phase 3** | ❌ NOT STARTED | Audio & Effects migration | [MASTER_REFACTOR_STATUS.md](MASTER_REFACTOR_STATUS.md#phase-3-audio--effects-weeks-19-26--not-started) |
@@ -84,6 +87,25 @@
 - [ ] 18 remaining layer methods (27/45 complete - 60%)
 - [ ] splineActions (~15 methods) pending
 - [ ] 60 consumer files updated
+
+---
+
+## Aleph Protocols
+
+**[RFCs](rfc/aleph/README.md)** - Complete aleph protocol specifications
+
+| RFC | Title | Status |
+|-----|-------|--------|
+| [aleph-001](rfc/aleph/aleph-001-standard-nix.md) | Standard Nix | Implemented |
+| [aleph-002](rfc/aleph/aleph-002-lint.md) | Linting | Implemented |
+| [aleph-003](rfc/aleph/aleph-003-prelude.md) | The Prelude | Implemented |
+| [aleph-004](rfc/aleph/aleph-004-typed-unix.md) | Aleph.Script | Implemented |
+| [aleph-005](rfc/aleph/aleph-005-profiles.md) | Nix Profiles | Implemented |
+| [aleph-006](rfc/aleph/aleph-006-safe-bash.md) | Safe Bash | Implemented |
+| [aleph-007](rfc/aleph/aleph-007-formalization.md) | Nix Formalization | Draft |
+| [aleph-008](rfc/aleph/aleph-008-continuity/) | The Continuity Project | Draft |
+
+See also: [Conformance Report](rfc/aleph/conformance-report.md)
 
 ---
 

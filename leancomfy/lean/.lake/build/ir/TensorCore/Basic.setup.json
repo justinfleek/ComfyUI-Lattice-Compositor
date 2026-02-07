@@ -1,0 +1,7 @@
+{"plugins": [],
+ "package": "tensor-core",
+ "options": {},
+ "name": "TensorCore.Basic",
+ "isModule": false,
+ "importArts": {},
+ "dynlibs": []}

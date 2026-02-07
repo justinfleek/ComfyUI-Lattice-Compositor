@@ -1,0 +1,60 @@
+{
+	"GUI": {
+		"Use GUI": true,
+		"Name": "MPM sim",
+		"Size": [ 1000, 1000 ],
+		"Camera position": [ -1.2, -1.4, 1.0 ],
+		"Camera lookat": [ 0.5, 0.5, 0.35 ],
+		"MPM display": [ "ParticleAltitude" ],
+		"Particle scale": 1.0,
+	},
+	"Output": {
+		"Directory": "../../sim_results/cylinder_h06_c6_",
+		"Frequency": 1
+	},
+	"Initial volume": [
+		{
+			"Disabled": false,
+			"Type": "Mesh",
+			"Filename": "cylinder_d05_h06.obj",
+			"Offset": [ 0.75, 0.75, 0.3235 ],
+			"Resolution": [ 128, 128, 128 ]
+		}
+	],
+	"Obstacle": {
+		"Type": "Mesh",
+		"Filename": "silo.obj",
+		"Offset": [ 0.75, 0.75, 0.3235 ],
+		"Resolution": [ 128, 128, 128 ]
+	},
+	"Particles": {
+		"Size": 0.4e-2
+	},
+	// "Geometry grid": {
+	// 	"Resolution": [ 128, 128, 128 ]
+	// },
+	"Physics": {
+		"Size": [ 1.5, 1.5, 1.5 ],
+		"Resolution": [ 128, 128, 128 ],
+		"rho": 1.575e2,
+		"dt": 8.33333333333e-3,
+		"T max": 3.0,
+		"Elasticity": {
+			"Type": "HenckyMeasured",
+			"Filename": "../elasticity/c6_f08_elasticity.txt",
+			"Scale": 1.0
+		},
+		"Plasticity": {
+			"Type": "MeasuredMC",
+			"Filename": "../yields/c6_f08_yield.txt",
+			"Scale": 1.0
+		},
+		"Viscosity": {
+			"eta": 0.0
+		},
+		"Boundaries": {
+			"mu wall": 0.5,
+			"Wall particles": true
+		}
+	}
+}

@@ -104,10 +104,17 @@ export class ParticleGPUPhysics {
       : 10000;  // Sensible default
     
     // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
-    const bounds = (config.bounds !== null && config.bounds !== undefined && typeof config.bounds === "object") ? config.bounds : {
-      min: [-10000, -10000, -10000],
-      max: [10000, 10000, 10000],
-    };
+    // Deterministic: Ensure bounds has correct tuple types [number, number, number]
+    const boundsRaw = (config.bounds !== null && config.bounds !== undefined && typeof config.bounds === "object") ? config.bounds : null;
+    const bounds = boundsRaw !== null
+      ? {
+          min: boundsRaw.min as [number, number, number],
+          max: boundsRaw.max as [number, number, number],
+        }
+      : {
+          min: [-10000, -10000, -10000] as [number, number, number],
+          max: [10000, 10000, 10000] as [number, number, number],
+        };
     const damping = (typeof config.damping === "number" && Number.isFinite(config.damping) && config.damping >= 0 && config.damping <= 1) ? config.damping : 0.99;
     const noiseScale = (typeof config.noiseScale === "number" && Number.isFinite(config.noiseScale) && config.noiseScale >= 0) ? config.noiseScale : 0.005;
     const noiseSpeed = (typeof config.noiseSpeed === "number" && Number.isFinite(config.noiseSpeed) && config.noiseSpeed >= 0) ? config.noiseSpeed : 0.5;

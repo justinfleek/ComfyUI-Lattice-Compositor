@@ -1,0 +1,4 @@
+# file: /home/nixos/.nix-profile/lib/python3.13/struct.py
+# hypothesis_version: 6.150.0
+
+['Struct', 'calcsize', 'error', 'iter_unpack', 'pack', 'pack_into', 'unpack', 'unpack_from']

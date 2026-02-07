@@ -1,0 +1,12 @@
+{"plugins": [],
+ "options": {},
+ "name": "Compass.Tools",
+ "isModule": false,
+ "importArts":
+ {"Compass.Permissions":
+  ["/mnt/c/Users/justi/desktop/compass/leandocs/typed-compass/lean/.lake/build/lib/lean/Compass/Permissions.olean"],
+  "Compass.Core":
+  ["/mnt/c/Users/justi/desktop/compass/leandocs/typed-compass/lean/.lake/build/lib/lean/Compass/Core.olean"],
+  "Compass.Auth":
+  ["/mnt/c/Users/justi/desktop/compass/leandocs/typed-compass/lean/.lake/build/lib/lean/Compass/Auth.olean"]},
+ "dynlibs": []}

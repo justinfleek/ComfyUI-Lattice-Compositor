@@ -26,7 +26,7 @@
  * - Uses VerifiedRenderer (SOA→AOS conversion)
  * - Uses VerifiedWebGPUCompute (GPU acceleration)
  * 
- * Based on Lean4 proofs from leanparticles/PARTICLE_VERIFIED (1).lean
+ * Based on Lean4 proofs from leanparticles/PARTICLE_VERIFIED.lean
  */
 
 import * as THREE from "three";
@@ -1246,9 +1246,12 @@ export class VerifiedGPUParticleSystem {
     // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
     const flockingEnabled = (this.flockingSystem != null && typeof this.flockingSystem === "object" && typeof this.flockingSystem.isEnabled === "function") ? this.flockingSystem.isEnabled() : false;
     const collisionEnabled = (this.collisionSystem != null && typeof this.collisionSystem === "object" && typeof this.collisionSystem.isEnabled === "function") ? this.collisionSystem.isEnabled() : false;
+    // Deterministic: Explicit null check for collisionSystem before calling getConfig
     const needsSpatialHash =
       flockingEnabled ||
       (collisionEnabled &&
+        this.collisionSystem !== null &&
+        this.collisionSystem !== undefined &&
         this.collisionSystem.getConfig().particleCollision);
     if (needsSpatialHash) {
       const positions = Array.from({ length: this.particles.count }, (_, i) => ({

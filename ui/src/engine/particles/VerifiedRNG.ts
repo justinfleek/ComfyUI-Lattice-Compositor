@@ -7,7 +7,7 @@
  * PROVEN DETERMINISTIC: Same seed → same sequence (Lean4 theorem rng_deterministic)
  * PROVEN BOUNDED: Output in [0, 1) (Lean4 theorem rng_normalized_bounds)
  * 
- * Based on Lean4 proofs from leanparticles/PARTICLE_VERIFIED (1).lean
+ * Based on Lean4 proofs from leanparticles/PARTICLE_VERIFIED.lean
  */
 
 import { unit, type UnitInterval, u32, type UInt32 } from "./VerifiedTypes";

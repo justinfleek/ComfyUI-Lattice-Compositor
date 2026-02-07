@@ -18,6 +18,7 @@ import type { KeyframeState } from "./types";
 import { useProjectStore } from "../projectStore";
 import { useAnimationStore } from "../animationStore";
 import { useKeyframeStore } from "./index";
+import { generateKeyframeId } from "@/utils/uuid5";
 
 // ============================================================================
 // KEYFRAME CLIPBOARD (COPY/PASTE)
@@ -192,11 +193,16 @@ export function pasteKeyframes(
     for (const clipKf of clipboardEntry.keyframes) {
       const newFrame = currentFrame + clipKf.frame; // Apply offset from current frame
 
-      // Create new keyframe with fresh ID
+      // Deterministic ID generation: same target layer/property/frame/value always produces same ID
       // Use toRaw to handle Vue reactive proxies before cloning
+      const pastedValue = structuredClone(toRaw(clipKf.value));
+      const valueStr = typeof pastedValue === "object" && pastedValue !== null && "x" in pastedValue && "y" in pastedValue
+        ? `${(pastedValue as { x: number; y: number }).x},${(pastedValue as { x: number; y: number }).y}${"z" in pastedValue ? `,${(pastedValue as { x: number; y: number; z?: number }).z}` : ""}`
+        : String(pastedValue);
+      // Use propPath (determined above) instead of targetPropertyPath which may be undefined
       const newKeyframe: Keyframe<PropertyValue> = {
         ...structuredClone(toRaw(clipKf)),
-        id: `kf_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`,
+        id: generateKeyframeId(targetLayerId, propPath, newFrame, valueStr),
         frame: newFrame,
       };
 

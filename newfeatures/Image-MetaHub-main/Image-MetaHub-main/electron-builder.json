@@ -1,0 +1,64 @@
+{
+  "appId": "com.luqp2.image-metahub",
+  "productName": "Image MetaHub",
+  "directories": {
+    "output": "dist-electron"
+  },
+  "files": [
+    "dist/**/*",
+    "electron.mjs",
+    "preload.js",
+    "services/**/*",
+    "public/icon.ico",
+    "public/logo1.png"
+  ],
+  "win": {
+    "icon": "public/icon.ico",
+    "target": [
+      "nsis",
+      "zip"
+    ],
+    "artifactName": "${productName}-${version}-${os}-${arch}.${ext}"
+  },
+  "mac": {
+    "icon": "public/logo1.png",
+    "target": [
+      {
+        "target": "dmg",
+        "arch": ["x64", "arm64"]
+      }
+    ],
+    "category": "public.app-category.productivity",
+    "entitlements": "build/entitlements.mac.plist",
+    "entitlementsInherit": "build/entitlements.mac.plist",
+    "hardenedRuntime": false,
+    "gatekeeperAssess": false,
+    "identity": null
+  },
+  "linux": {
+    "icon": "public/logo1.png",
+    "target": [
+      {
+        "target": "AppImage",
+        "arch": ["x64"]
+      }
+    ],
+    "category": "Utility",
+    "synopsis": "Local image browser for InvokeAI outputs",
+    "generateUpdatesFilesForAllChannels": true
+  },
+  "nsis": {
+    "oneClick": false,
+    "allowToChangeInstallationDirectory": true,
+    "createDesktopShortcut": true,
+    "createStartMenuShortcut": true,
+    "artifactName": "ImageMetaHub-Setup-${version}.${ext}"
+  },
+  "publish": {
+    "provider": "github",
+    "owner": "LuqP2",
+    "repo": "image-metahub",
+    "releaseType": "release"
+  },
+  "generateUpdatesFilesForAllChannels": true
+}

@@ -15,6 +15,7 @@ import type {
   SequenceLayersOptions,
 } from "./types";
 import { useProjectStore } from "../projectStore";
+import { generateKeyframeId } from "@/utils/uuid5";
 
 // ============================================================================
 // SEQUENCE LAYERS
@@ -157,8 +158,11 @@ export function applyExponentialScale(
       newValue = { x: scaleValue, y: scaleValue, z: currentValue.z };
     }
 
+    // Deterministic ID generation: same layer/property/frame/value always produces same ID
+    const propertyPath = "transform.scale";
+    const valueStr = `${newValue.x},${newValue.y},${newValue.z || 100}`;
     layer.transform.scale.keyframes.push({
-      id: `kf_expscale_${frame}_${Date.now()}_${i}`,
+      id: generateKeyframeId(layerId, propertyPath, frame, valueStr),
       frame,
       value: newValue,
       interpolation: "linear", // Linear between exponential samples gives smooth curve

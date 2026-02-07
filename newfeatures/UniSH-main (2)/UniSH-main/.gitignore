@@ -1,0 +1,50 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual Environments
+venv/
+env/
+ENV/
+.env
+.venv
+
+# IDE
+.idea/
+.vscode/
+*.swp
+.DS_Store
+
+# Project specific outputs and data
+inference_results/
+outputs/
+checkpoints/
+logs/
+data/
+
+# Model weights and external data
+# SMPL models (usually protected by license and shouldn't be committed)
+body_models/
+
+# PyTorch3D/Other compiled extensions
+*.so
+

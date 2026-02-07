@@ -1,0 +1,61 @@
+///////////////// HEADER FILE
+
+#pragma once
+
+#include <Eigen/Core>
+
+#include "Tool.h"
+
+namespace sdtf::viewer::logic {
+;
+
+class VisualizationTool : public Tool {
+ public:
+	VisualizationTool(ViewerInterface* interface);
+
+	virtual ToolResponse cursorCallback(logic::CursorEvent event) override;
+	virtual ToolResponse mouseButtonCallback(logic::MouseButtonEvent event) override;
+	virtual ToolResponse scrollCallback(logic::ScrollEvent event) override;
+	virtual ToolResponse keyCallback(logic::KeyEvent event) override;
+
+	virtual bool isActive() const override;
+
+ private:
+};
+
+}  // namespace sdtf::viewer::logic
+
+
+
+///////////////// SOURCE FILE
+
+#include "VisualizationTool.h"
+
+#include <Eigen/Dense>
+#include <iostream>
+
+#include "include_glfw.h"
+#include "scene/Scene.h"
+
+namespace sdtf::viewer::logic {
+;
+
+VisualizationTool::VisualizationTool(ViewerInterface* interface)
+    : Tool(interface){}
+
+ToolResponse VisualizationTool::cursorCallback(logic::CursorEvent event) {
+	return ToolResponse::None;
+}
+ToolResponse VisualizationTool::mouseButtonCallback(logic::MouseButtonEvent event) {
+	return ToolResponse::None;
+}
+ToolResponse VisualizationTool::scrollCallback(logic::ScrollEvent event) {
+	return ToolResponse::None;
+}
+ToolResponse VisualizationTool::keyCallback(logic::KeyEvent event) {
+	return ToolResponse::None;
+}
+
+bool VisualizationTool::isActive() const { return false; }
+
+}  // namespace sdtf::viewer::logic

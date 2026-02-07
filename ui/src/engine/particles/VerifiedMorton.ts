@@ -4,8 +4,8 @@
  * PROVEN: Roundtrip property (Lean4 theorem morton_roundtrip)
  * PROVEN: Locality preservation - points close in space have close Morton codes
  * 
- * Based on Lean4 proofs from leanparticles/PARTICLE_VERIFIED (1).lean
- * and Haskell implementation from leanparticles/ParticleVerified (1).hs
+ * Based on Lean4 proofs from leanparticles/PARTICLE_VERIFIED.lean
+ * and Haskell implementation from leanparticles/ParticleVerified.hs
  */
 
 import { u32, type UInt32 } from "./VerifiedTypes";

@@ -649,8 +649,10 @@ import { useLayerStore } from "@/stores/layerStore";
 import { useSelectionStore } from "@/stores/selectionStore";
 import { useKeyframeStore } from "@/stores/keyframeStore";
 import { safeNonNegativeDefault } from "@/utils/typeGuards";
-import type { SplineData, AnimatableProperty, Vec3 } from "@/types/project";
+import type { SplineData, AnimatableProperty, Vec3, PropertyValue } from "@/types/project";
 import type { AudioKeyframeStoreAccess, MarkerStoreAccess } from "@/stores";
+import { generateKeyframeId } from "@/utils/uuid5";
+import { markLayerDirty } from "@/services/layerEvaluationCache";
 
 // PhPiano doesn't exist in phosphor-icons, using PhKeyboard as substitute
 const PhPiano = PhKeyboard;
@@ -928,18 +930,23 @@ async function createPathAnimator() {
 
     // Apply keyframes to target layer's position
     if (keyframes.length > 0) {
-      keyframeStore.updateLayerProperty(targetLayer.id, "transform.position", {
+      const propertyPath = "transform.position";
+      keyframeStore.updateLayerProperty(targetLayer.id, propertyPath, {
         ...targetLayer.transform.position,
         animated: true,
-        keyframes: keyframes.map((kf) => ({
-          id: `kf_${Date.now()}_${kf.frame}`,
-          frame: kf.frame,
-          value: kf.value,
-          interpolation: "bezier" as const,
-          inHandle: { frame: -4, value: 0, enabled: true },
-          outHandle: { frame: 4, value: 0, enabled: true },
-          controlMode: "smooth" as const,
-        })),
+        keyframes: keyframes.map((kf) => {
+          // Deterministic ID generation: same layer/property/frame/value always produces same ID
+          const valueStr = `${kf.value.x},${kf.value.y},${kf.value.z}`;
+          return {
+            id: generateKeyframeId(targetLayer.id, propertyPath, kf.frame, valueStr),
+            frame: kf.frame,
+            value: kf.value,
+            interpolation: "bezier" as const,
+            inHandle: { frame: -4, value: 0, enabled: true },
+            outHandle: { frame: 4, value: 0, enabled: true },
+            controlMode: "smooth" as const,
+          };
+        }),
       });
 
       pathAnimResult.value = `Created ${keyframes.length} keyframes on "${targetLayer.name}" following "${splineLayer.name}"`;
@@ -1353,16 +1360,16 @@ function snapToBeats() {
     const layer = layerStore.getLayerById(layerId);
     if (!layer) continue;
 
-    // Check each animated property for keyframes
+    // Check each animated property for keyframes with property paths
     const transform = layer.transform;
-    const animProps = [
-      transform.position,
-      transform.rotation,
-      transform.scale,
-      layer.opacity, // opacity is on layer, not transform
+    const animProps: Array<{ prop: AnimatableProperty<PropertyValue> | undefined; path: string }> = [
+      { prop: transform.position, path: "transform.position" },
+      { prop: transform.rotation, path: "transform.rotation" },
+      { prop: transform.scale, path: "transform.scale" },
+      { prop: layer.opacity, path: "opacity" }, // opacity is on layer, not transform
     ];
 
-    for (const prop of animProps) {
+    for (const { prop, path: propertyPath } of animProps) {
       // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
       if (prop == null || typeof prop !== "object" || !("keyframes" in prop) || prop.keyframes == null || !Array.isArray(prop.keyframes)) continue;
 
@@ -1381,6 +1388,14 @@ function snapToBeats() {
 
         // Only snap if within reasonable distance (10 frames)
         if (minDist <= 10 && kf.frame !== nearestBeat) {
+          // Regenerate keyframe ID based on new frame number for determinism
+          // Same layer/property/frame/value should always produce same ID
+          // Explicit check: kf.value is PropertyValue (never null/undefined per type system)
+          const kfValue = kf.value;
+          const valueStr = typeof kfValue === "object" && kfValue !== null && "x" in kfValue && "y" in kfValue
+            ? `${(kfValue as { x: number; y: number }).x},${(kfValue as { x: number; y: number }).y}${"z" in kfValue ? `,${(kfValue as { x: number; y: number; z?: number }).z}` : ""}`
+            : String(kfValue);
+          kf.id = generateKeyframeId(layerId, propertyPath, nearestBeat, valueStr);
           kf.frame = nearestBeat;
           snappedCount++;
         }
@@ -1389,6 +1404,12 @@ function snapToBeats() {
   }
 
   if (snappedCount > 0) {
+    // Mark layers dirty and push history for undo/redo support
+    for (const layerId of selectedLayers) {
+      markLayerDirty(layerId);
+    }
+    projectStore.project.meta.modified = new Date().toISOString();
+    projectStore.pushHistory();
     console.log(`[Lattice] Snapped ${snappedCount} keyframes to beats`);
   } else {
     console.log("[Lattice] No keyframes were close enough to beats to snap");
@@ -1580,10 +1601,18 @@ async function convertMIDIToKeyframes() {
       interpolation: midiInterpolation.value,
     };
 
+    // Create layer first to get layerId for deterministic keyframe IDs
+    const layer = layerStore.createLayer("null", midiLayerName.value || "MIDI Animation");
+    if (!layer) {
+      midiConvertError.value = "Failed to create layer";
+      return;
+    }
+
+    const propertyPath = "transform.scale";
     const keyframes =
       midiMappingType.value === "controlChange"
-        ? midiCCToKeyframes(loadedMIDIFile.value, config)
-        : midiNotesToKeyframes(loadedMIDIFile.value, config);
+        ? midiCCToKeyframes(loadedMIDIFile.value, config, undefined, layer.id, propertyPath)
+        : midiNotesToKeyframes(loadedMIDIFile.value, config, undefined, layer.id, propertyPath);
 
     if (keyframes.length === 0) {
       midiConvertError.value =
@@ -1591,38 +1620,31 @@ async function convertMIDIToKeyframes() {
       return;
     }
 
-    // Create a null layer with the keyframes
-    const layer = layerStore.createLayer("null", midiLayerName.value || "MIDI Animation");
+    // Apply keyframes to scale.x as a driver property
+    // Keyframes already have deterministic IDs from midiCCToKeyframes/midiNotesToKeyframes
+    layer.transform.scale = {
+      id: `midi_scale_${layer.id}`,
+      name: "Scale",
+      value: { x: midiValueMin.value, y: midiValueMin.value, z: 1 },
+      animated: true,
+      keyframes: keyframes.map((kf) => ({
+        ...kf,
+        value: { x: kf.value, y: kf.value, z: 1 },
+        interpolation: "linear" as const,
+        inHandle: { frame: 0, value: 0, enabled: false },
+        outHandle: { frame: 0, value: 0, enabled: false },
+        controlMode: "smooth" as const,
+      })),
+    } as AnimatableProperty<Vec3>;
 
-    if (layer) {
-      // Apply keyframes to scale.x as a driver property
-      layer.transform.scale = {
-        id: `midi_scale_${Date.now()}`,
-        name: "Scale",
-        value: { x: midiValueMin.value, y: midiValueMin.value, z: 1 },
-        animated: true,
-        keyframes: keyframes.map((kf) => ({
-          id: `kf_${Date.now()}_${kf.frame}`,
-          frame: kf.frame,
-          value: { x: kf.value, y: kf.value, z: 1 },
-          interpolation: "linear" as const,
-          inHandle: { frame: 0, value: 0, enabled: false },
-          outHandle: { frame: 0, value: 0, enabled: false },
-          controlMode: "smooth" as const,
-        })),
-      } as AnimatableProperty<Vec3>;
+    midiConvertResult.value = {
+      layerName: layer.name,
+      keyframeCount: keyframes.length,
+    };
 
-      midiConvertResult.value = {
-        layerName: layer.name,
-        keyframeCount: keyframes.length,
-      };
-
-      console.log(
-        `[Lattice] Created MIDI layer "${layer.name}" with ${keyframes.length} keyframes`,
-      );
-    } else {
-      midiConvertError.value = "Failed to create layer";
-    }
+    console.log(
+      `[Lattice] Created MIDI layer "${layer.name}" with ${keyframes.length} keyframes`,
+    );
   } catch (err) {
     midiConvertError.value =
       err instanceof Error ? err.message : "Unknown error";

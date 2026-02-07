@@ -9,6 +9,7 @@
 
 import type { ToolCall } from "@/services/ai/toolDefinitions";
 import type { JSONValue } from "@/types/dataAsset";
+import { uuid5, UUID5_NAMESPACES } from "./uuid5";
 
 /**
  * All possible JavaScript values that can be validated at runtime
@@ -173,25 +174,15 @@ export function secureRandomInt(max: number): number {
 }
 
 /**
- * Generate a UUID using crypto API with fallback
+ * Generate a deterministic UUID5 for secure operations
+ * Uses deterministic UUID5 instead of random UUID4 for absolute determinism
+ * 
+ * @param name - Unique name for the UUID (e.g., operation type + context)
+ * @param namespace - Optional namespace (default: OID namespace for security)
+ * @returns Deterministic UUID5 string
  */
-export function secureUUID(): string {
-  if (typeof crypto !== "undefined" && crypto.randomUUID) {
-    return crypto.randomUUID();
-  }
-
-  // Fallback using crypto.getRandomValues (RFC 4122 version 4)
-  const array = new Uint8Array(16);
-  crypto.getRandomValues(array);
-
-  // Set version (4) and variant (RFC 4122)
-  array[6] = (array[6] & 0x0f) | 0x40;
-  array[8] = (array[8] & 0x3f) | 0x80;
-
-  const hex = Array.from(array, (b) => b.toString(16).padStart(2, "0")).join(
-    "",
-  );
-  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+export function secureUUID(name: string = `secure-${Date.now()}`, namespace: string = UUID5_NAMESPACES.OID): string {
+  return uuid5(name, namespace);
 }
 
 // ============================================================================

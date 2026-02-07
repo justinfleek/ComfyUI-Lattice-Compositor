@@ -14,7 +14,7 @@ import type { JSONValue } from "@/types/dataAsset";
 
 /**
  * All possible JavaScript values that can be validated at runtime
- * Used as input type for validators (replaces unknown)
+ * Deterministic: Explicit union of all possible runtime types (no unknown)
  */
 type RuntimeValue = string | number | boolean | object | null | undefined | bigint | symbol;
 
@@ -35,6 +35,27 @@ interface CompatibleObject3D {
   // Note: Three.js Object3D.parent can be null - this is API requirement
   parent?: CompatibleObject3D | null;
   dispatchEvent?: (event: { type: string }) => void;
+  matrix?: THREE.Matrix4;
+  matrixWorld?: THREE.Matrix4;
+}
+
+/**
+ * Type guard: Check if value is compatible with Object3D at runtime
+ * Works across multiple Three.js instances where instanceof checks fail
+ * Deterministic: Explicit validation of object structure and property types
+ */
+function isCompatibleObject3D(value: RuntimeValue): value is CompatibleObject3D {
+  if (typeof value !== "object" || value === null) return false;
+  const obj = value as Record<string, RuntimeValue>;
+  const childrenValue = obj.children;
+  const matrixValue = obj.matrix;
+  const matrixWorldValue = obj.matrixWorld;
+  // Check for essential Object3D properties with explicit type validation
+  return (
+    (typeof childrenValue === "undefined" || Array.isArray(childrenValue)) &&
+    (typeof matrixValue === "undefined" || matrixValue instanceof THREE.Matrix4) &&
+    (typeof matrixWorldValue === "undefined" || matrixWorldValue instanceof THREE.Matrix4)
+  );
 }
 
 /** Environment map configuration */
@@ -459,8 +480,11 @@ export class SceneManager {
       if ((typeof obj !== "object" || obj === null) || depth > 50) return;
 
       // Type guard: ensure obj is an object-like structure
-      // Cast to ThreeJSObjectPatch to allow Three.js runtime objects
-      const objAny = obj as unknown as ThreeJSObjectPatch;
+      // Validate structure at runtime before accessing properties
+      if (!isCompatibleObject3D(obj)) {
+        return; // Skip objects that don't match Three.js structure
+      }
+      const objAny = obj as ThreeJSObjectPatch;
       
       // CRITICAL: Ensure children is always an array
       // This fixes "Cannot read properties of undefined (reading 'length')"
@@ -510,7 +534,11 @@ export class SceneManager {
                 } else {
                   // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined/null checks
                   // Pattern match: parent is guaranteed to be object here (not null/undefined)
-                  const parentObj = parentValue as unknown as ThreeJSObjectPatch;
+                  // Type guard ensures compatibility
+                  if (!isCompatibleObject3D(parentValue)) {
+                    return; // Skip if parent doesn't match structure
+                  }
+                  const parentObj = parentValue as ThreeJSObjectPatch;
                   const parentMatrixWorld = parentObj.matrixWorld;
                   const matrixWorld = self.matrixWorld;
                   const matrixValue = self.matrix;
@@ -534,7 +562,11 @@ export class SceneManager {
                   (child.matrixWorldAutoUpdate === true || force === true)
                 ) {
                   // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined checks
-                  const childRecord = child as unknown as ThreeJSObjectPatch;
+                  // Type guard ensures compatibility
+                  if (!isCompatibleObject3D(child)) {
+                    continue; // Skip children that don't match structure
+                  }
+                  const childRecord = child as ThreeJSObjectPatch;
                   const updateFn = childRecord.updateMatrixWorld;
                   if (typeof updateFn === "function") {
                     updateFn.call(childRecord, force);

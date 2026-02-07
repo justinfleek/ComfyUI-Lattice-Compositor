@@ -17,6 +17,9 @@ import type {
 /**
  * Base interface for keyframe store operations.
  * Provides access to project state and layer data.
+ * 
+ * @deprecated This interface is no longer used. All keyframeStore methods now use domain stores directly.
+ * Will be removed in a future cleanup pass.
  */
 export interface KeyframeStoreAccess {
   project: {
@@ -38,6 +41,9 @@ export interface KeyframeStoreAccess {
 /**
  * Extended interface for roving keyframe operations.
  * Same as base but explicitly requires getLayerById.
+ * 
+ * @deprecated This interface is no longer used. All keyframeStore methods now use domain stores directly.
+ * Will be removed in a future cleanup pass.
  */
 export interface RovingKeyframeStoreAccess extends KeyframeStoreAccess {
   getLayerById(id: string): Layer | null;
@@ -46,6 +52,9 @@ export interface RovingKeyframeStoreAccess extends KeyframeStoreAccess {
 /**
  * Extended interface for clipboard operations.
  * Adds clipboard state and current frame access.
+ * 
+ * @deprecated This interface is no longer used. All keyframeStore methods now use domain stores directly.
+ * Will be removed in a future cleanup pass.
  */
 export interface ClipboardKeyframeStoreAccess extends KeyframeStoreAccess {
   clipboard: {
@@ -57,6 +66,9 @@ export interface ClipboardKeyframeStoreAccess extends KeyframeStoreAccess {
 /**
  * Extended interface for velocity operations.
  * Adds FPS access for velocity calculations.
+ * 
+ * @deprecated This interface is no longer used. All keyframeStore methods now use domain stores directly.
+ * Will be removed in a future cleanup pass.
  */
 export interface VelocityStoreAccess extends KeyframeStoreAccess {
   fps: number;
@@ -65,6 +77,9 @@ export interface VelocityStoreAccess extends KeyframeStoreAccess {
 /**
  * Extended interface for expression baking.
  * Adds frame count and property evaluation capability.
+ * 
+ * @deprecated This interface is no longer used. All keyframeStore methods now use domain stores directly.
+ * Will be removed in a future cleanup pass.
  */
 export interface BakeExpressionStoreAccess extends KeyframeStoreAccess {
   fps: number;

@@ -1423,7 +1423,7 @@ function onPropertyUnlink(targetProperty: PropertyPath) {
 }
 
 /**
- * Format rotation value in AE style: 0x+0°
+ * Format rotation value: 0x+0°
  * e.g., 450 degrees = 1x+90°
  */
 function formatRotation(degrees: number): string {

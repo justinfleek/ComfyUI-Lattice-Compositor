@@ -19,14 +19,238 @@
 import type { JSONValue } from "@/types/dataAsset";
 import type { PropertyValue } from "@/types/project";
 import { engineLogger } from "@/utils/logger";
-import { isFiniteNumber } from "@/utils/typeGuards";
+import { isFiniteNumber, isObject } from "@/utils/typeGuards";
 import { type GLSLEngine, getGLSLEngine } from "./glsl/GLSLEngine";
 import { detectGPUTier, type GPUTier } from "./gpuDetection";
-import { webgpuRenderer } from "./webgpuRenderer";
+import {
+  webgpuRenderer,
+  type BlurParams,
+  type ColorCorrectionParams,
+  type RadialBlurParams,
+  type DirectionalBlurParams,
+  type WarpParams,
+  type GlowParams,
+  type LevelsParams,
+} from "./webgpuRenderer";
 
 // ============================================================================
 // TYPES
 // ============================================================================
+
+/**
+ * Runtime value type for type guards
+ * Deterministic: Explicit union of all possible runtime types
+ */
+type RuntimeValue = string | number | boolean | object | null | undefined | bigint | symbol;
+
+// ============================================================================
+// PARAMETER VALIDATION - DETERMINISTIC WITH MIN/MAX/DEFAULT/VERIFICATION
+// ============================================================================
+
+/**
+ * Validate and convert JSONValue to BlurParams
+ * Deterministic: Explicit validation with min/max/default values
+ * Min: radius >= 0, quality must be valid enum
+ * Max: radius <= 1000 (reasonable upper bound)
+ * Default: radius = 10, quality = "medium", direction = "both"
+ */
+function validateBlurParams(params: JSONValue): BlurParams {
+  if (!isObject(params)) {
+    throw new TypeError(`[GPUEffectDispatcher] Invalid blur params: expected object, got ${typeof params}`);
+  }
+  const obj = params as Record<string, JSONValue>;
+  
+  // Deterministic: Validate radius with explicit bounds
+  const radiusValue = obj.radius;
+  const radius = (typeof radiusValue === "number" && Number.isFinite(radiusValue) && radiusValue >= 0 && radiusValue <= 1000)
+    ? radiusValue
+    : 10; // Default: 10
+  
+  // Deterministic: Validate quality enum
+  const qualityValue = obj.quality;
+  const quality = (typeof qualityValue === "string" && ["low", "medium", "high"].includes(qualityValue))
+    ? qualityValue as "low" | "medium" | "high"
+    : "medium"; // Default: "medium"
+  
+  // Deterministic: Validate direction enum (optional)
+  const directionValue = obj.direction;
+  const direction = (typeof directionValue === "string" && ["horizontal", "vertical", "both"].includes(directionValue))
+    ? directionValue as "horizontal" | "vertical" | "both"
+    : "both"; // Default: "both"
+  
+  return { radius, quality, direction };
+}
+
+/**
+ * Validate and convert JSONValue to ColorCorrectionParams
+ * Deterministic: Explicit validation with min/max bounds
+ * Min: brightness/contrast/saturation = -1, hue = -180
+ * Max: brightness/contrast/saturation = 1, hue = 180
+ * Default: all = 0
+ */
+function validateColorCorrectionParams(params: JSONValue): ColorCorrectionParams {
+  if (!isObject(params)) {
+    throw new TypeError(`[GPUEffectDispatcher] Invalid colorCorrection params: expected object, got ${typeof params}`);
+  }
+  const obj = params as Record<string, JSONValue>;
+  
+  const clamp = (value: RuntimeValue, min: number, max: number, defaultVal: number): number => {
+    if (typeof value !== "number" || !Number.isFinite(value)) return defaultVal;
+    return Math.max(min, Math.min(max, value));
+  };
+  
+  return {
+    brightness: clamp(obj.brightness, -1, 1, 0),
+    contrast: clamp(obj.contrast, -1, 1, 0),
+    saturation: clamp(obj.saturation, -1, 1, 0),
+    hue: clamp(obj.hue, -180, 180, 0),
+  };
+}
+
+/**
+ * Validate and convert JSONValue to RadialBlurParams
+ * Deterministic: Explicit validation with min/max/default
+ * Min: centerX/centerY = 0, amount >= 0, samples >= 1
+ * Max: centerX/centerY = 1, amount <= 100, samples <= 256
+ * Default: centerX/centerY = 0.5, amount = 10, samples = 32
+ */
+function validateRadialBlurParams(params: JSONValue): RadialBlurParams {
+  if (!isObject(params)) {
+    throw new TypeError(`[GPUEffectDispatcher] Invalid radialBlur params: expected object, got ${typeof params}`);
+  }
+  const obj = params as Record<string, JSONValue>;
+  
+  const clamp = (value: RuntimeValue, min: number, max: number, defaultVal: number): number => {
+    if (typeof value !== "number" || !Number.isFinite(value)) return defaultVal;
+    return Math.max(min, Math.min(max, value));
+  };
+  
+  return {
+    centerX: clamp(obj.centerX, 0, 1, 0.5),
+    centerY: clamp(obj.centerY, 0, 1, 0.5),
+    amount: clamp(obj.amount, 0, 100, 10),
+    samples: clamp(obj.samples, 1, 256, 32),
+  };
+}
+
+/**
+ * Validate and convert JSONValue to DirectionalBlurParams
+ * Deterministic: Explicit validation with min/max/default
+ * Min: length >= 0, samples >= 1
+ * Max: length <= 1000, samples <= 256
+ * Default: angle = 0, length = 10, samples = 32
+ */
+function validateDirectionalBlurParams(params: JSONValue): DirectionalBlurParams {
+  if (!isObject(params)) {
+    throw new TypeError(`[GPUEffectDispatcher] Invalid directionalBlur params: expected object, got ${typeof params}`);
+  }
+  const obj = params as Record<string, JSONValue>;
+  
+  const clamp = (value: RuntimeValue, min: number, max: number, defaultVal: number): number => {
+    if (typeof value !== "number" || !Number.isFinite(value)) return defaultVal;
+    return Math.max(min, Math.min(max, value));
+  };
+  
+  return {
+    angle: clamp(obj.angle, -360, 360, 0),
+    length: clamp(obj.length, 0, 1000, 10),
+    samples: clamp(obj.samples, 1, 256, 32),
+  };
+}
+
+/**
+ * Validate and convert JSONValue to WarpParams
+ * Deterministic: Explicit validation with min/max/default
+ * Min: bend = -1
+ * Max: bend = 1
+ * Default: style = "bulge", bend = 0, hDistort = 0, vDistort = 0
+ */
+function validateWarpParams(params: JSONValue): WarpParams {
+  if (!isObject(params)) {
+    throw new TypeError(`[GPUEffectDispatcher] Invalid warp params: expected object, got ${typeof params}`);
+  }
+  const obj = params as Record<string, JSONValue>;
+  
+  const clamp = (value: RuntimeValue, min: number, max: number, defaultVal: number): number => {
+    if (typeof value !== "number" || !Number.isFinite(value)) return defaultVal;
+    return Math.max(min, Math.min(max, value));
+  };
+  
+  const styleValue = obj.style;
+  const style = (typeof styleValue === "string" && ["bulge", "wave", "fisheye", "twist"].includes(styleValue))
+    ? styleValue as "bulge" | "wave" | "fisheye" | "twist"
+    : "bulge"; // Default: "bulge"
+  
+  return {
+    style,
+    bend: clamp(obj.bend, -1, 1, 0),
+    hDistort: clamp(obj.hDistort, -1, 1, 0),
+    vDistort: clamp(obj.vDistort, -1, 1, 0),
+  };
+}
+
+/**
+ * Validate and convert JSONValue to GlowParams
+ * Deterministic: Explicit validation with min/max/default
+ * Min: radius >= 0, intensity >= 0, threshold = 0
+ * Max: radius <= 100, intensity <= 10, threshold = 1
+ * Default: radius = 10, intensity = 1, threshold = 0.5
+ */
+function validateGlowParams(params: JSONValue): GlowParams {
+  if (!isObject(params)) {
+    throw new TypeError(`[GPUEffectDispatcher] Invalid glow params: expected object, got ${typeof params}`);
+  }
+  const obj = params as Record<string, JSONValue>;
+  
+  const clamp = (value: RuntimeValue, min: number, max: number, defaultVal: number): number => {
+    if (typeof value !== "number" || !Number.isFinite(value)) return defaultVal;
+    return Math.max(min, Math.min(max, value));
+  };
+  
+  const colorValue = obj.color;
+  let color: { r: number; g: number; b: number } | undefined = undefined;
+  if (typeof colorValue === "object" && colorValue !== null && !Array.isArray(colorValue)) {
+    const colorObj = colorValue as Record<string, JSONValue>;
+    const r = clamp(colorObj.r, 0, 1, 1);
+    const g = clamp(colorObj.g, 0, 1, 1);
+    const b = clamp(colorObj.b, 0, 1, 1);
+    color = { r, g, b };
+  }
+  
+  return {
+    radius: clamp(obj.radius, 0, 100, 10),
+    intensity: clamp(obj.intensity, 0, 10, 1),
+    threshold: clamp(obj.threshold, 0, 1, 0.5),
+    color,
+  };
+}
+
+/**
+ * Validate and convert JSONValue to LevelsParams
+ * Deterministic: Explicit validation with min/max/default
+ * Min: inputBlack/outputBlack = 0, inputWhite/outputWhite = 0, gamma = 0.1
+ * Max: inputBlack/outputBlack = 1, inputWhite/outputWhite = 1, gamma = 10
+ * Default: inputBlack = 0, inputWhite = 1, gamma = 1, outputBlack = 0, outputWhite = 1
+ */
+function validateLevelsParams(params: JSONValue): LevelsParams {
+  if (!isObject(params)) {
+    throw new TypeError(`[GPUEffectDispatcher] Invalid levels params: expected object, got ${typeof params}`);
+  }
+  const obj = params as Record<string, JSONValue>;
+  
+  const clamp = (value: RuntimeValue, min: number, max: number, defaultVal: number): number => {
+    if (typeof value !== "number" || !Number.isFinite(value)) return defaultVal;
+    return Math.max(min, Math.min(max, value));
+  };
+  
+  return {
+    inputBlack: clamp(obj.inputBlack, 0, 1, 0),
+    inputWhite: clamp(obj.inputWhite, 0, 1, 1),
+    gamma: clamp(obj.gamma, 0.1, 10, 1),
+    outputBlack: clamp(obj.outputBlack, 0, 1, 0),
+    outputWhite: clamp(obj.outputWhite, 0, 1, 1),
+  };
+}
 
 export type GPURenderPath = "webgpu" | "webgl2" | "canvas2d";
 
@@ -609,40 +833,43 @@ class GPUEffectDispatcher {
         params: JSONValue,
       ) => Promise<ImageData>
     > = {
-      blur: (input, params) =>
-        webgpuRenderer.blur(input, params as unknown as Parameters<typeof webgpuRenderer.blur>[1]),
-      colorCorrection: (input, params) =>
-        webgpuRenderer.colorCorrection(
-          input,
-          params as unknown as Parameters<typeof webgpuRenderer.colorCorrection>[1],
-        ),
-      radialBlur: (input, params) =>
-        webgpuRenderer.radialBlur(
-          input,
-          params as unknown as Parameters<typeof webgpuRenderer.radialBlur>[1],
-        ),
-      directionalBlur: (input, params) =>
-        webgpuRenderer.directionalBlur(
-          input,
-          params as unknown as Parameters<typeof webgpuRenderer.directionalBlur>[1],
-        ),
+      blur: (input, params) => {
+        // Deterministic: Validate params structure with explicit min/max/default
+        const validatedParams = validateBlurParams(params);
+        return webgpuRenderer.blur(input, validatedParams);
+      },
+      colorCorrection: (input, params) => {
+        // Deterministic: Validate params structure with explicit min/max/default
+        const validatedParams = validateColorCorrectionParams(params);
+        return webgpuRenderer.colorCorrect(input, validatedParams);
+      },
+      radialBlur: (input, params) => {
+        // Deterministic: Validate params structure with explicit min/max/default
+        const validatedParams = validateRadialBlurParams(params);
+        return webgpuRenderer.radialBlur(input, validatedParams);
+      },
+      directionalBlur: (input, params) => {
+        // Deterministic: Validate params structure with explicit min/max/default
+        const validatedParams = validateDirectionalBlurParams(params);
+        return webgpuRenderer.directionalBlur(input, validatedParams);
+      },
       // NOTE: displacement method not yet implemented in WebGPURenderer
       // Pipeline exists (displacementPipeline) but no public method
-      warp: (input, params) =>
-        webgpuRenderer.warp(
-          input,
-          params as unknown as Parameters<typeof webgpuRenderer.warp>[1],
-        ),
-      glow: (input, params) =>
-        webgpuRenderer.glow(
-          input,
-          params as unknown as Parameters<typeof webgpuRenderer.glow>[1],
-        ),
-      levels: (input, params) =>
-        webgpuRenderer.levels(
-          input,
-          params as unknown as Parameters<typeof webgpuRenderer.levels>[1],
-        ),
+      warp: (input, params) => {
+        // Deterministic: Validate params structure with explicit min/max/default
+        const validatedParams = validateWarpParams(params);
+        return webgpuRenderer.warp(input, validatedParams);
+      },
+      glow: (input, params) => {
+        // Deterministic: Validate params structure with explicit min/max/default
+        const validatedParams = validateGlowParams(params);
+        return webgpuRenderer.glow(input, validatedParams);
+      },
+      levels: (input, params) => {
+        // Deterministic: Validate params structure with explicit min/max/default
+        const validatedParams = validateLevelsParams(params);
+        return webgpuRenderer.levels(input, validatedParams);
+      },
     };
 
     const method = methodMap[methodName];
@@ -699,6 +926,12 @@ class GPUEffectDispatcher {
 
   /**
    * Map effect parameters to WebGPU format
+   */
+  /**
+   * Map effect parameters to WebGPU uniform format
+   * Deterministic: Explicit type conversion with validation
+   * Min/Max: All numeric values validated and clamped
+   * Default: Explicit defaults for all optional parameters
    */
   private mapParamsToWebGPU(
     effectKey: string,
@@ -807,12 +1040,23 @@ class GPUEffectDispatcher {
         const glowIntensity = isFiniteNumber(params.intensity) && params.intensity >= 0 ? params.intensity : 1;
         // Type proof: threshold ∈ ℝ ∧ finite(threshold) → threshold ∈ [0, 1]
         const glowThreshold = isFiniteNumber(params.threshold) ? Math.max(0, Math.min(1, params.threshold)) : 0.5;
-        return {
+        // Deterministic: Validate color structure explicitly
+        // For WebGPU uniforms, convert RGB color to vec3 format { x, y, z }
+        const glowResult: Record<string, number | string | { x: number; y: number } | { x: number; y: number; z: number }> = {
           radius: glowRadius,
           intensity: glowIntensity,
           threshold: glowThreshold,
-          color: params.color,
         };
+        const glowColorValue = params.color;
+        if (typeof glowColorValue === "object" && glowColorValue !== null && !Array.isArray(glowColorValue)) {
+          const colorObj = glowColorValue as Record<string, PropertyValue>;
+          const r = isFiniteNumber(colorObj.r) ? Math.max(0, Math.min(1, colorObj.r)) : 1;
+          const g = isFiniteNumber(colorObj.g) ? Math.max(0, Math.min(1, colorObj.g)) : 1;
+          const b = isFiniteNumber(colorObj.b) ? Math.max(0, Math.min(1, colorObj.b)) : 1;
+          // Convert RGB to vec3 format for WebGPU uniforms
+          glowResult.color = { x: r, y: g, z: b };
+        }
+        return glowResult;
 
       case "warp":
       case "turbulent-displace":
@@ -850,12 +1094,38 @@ class GPUEffectDispatcher {
         };
 
       default:
-        return params;
+        // Deterministic: Convert PropertyValue to WebGPU uniform format
+        // Filter and convert only compatible types (number, string, vec2, vec3)
+        const defaultResult: Record<string, number | string | { x: number; y: number } | { x: number; y: number; z: number }> = {};
+        for (const [key, value] of Object.entries(params)) {
+          if (typeof value === "number" && Number.isFinite(value)) {
+            defaultResult[key] = value;
+          } else if (typeof value === "string") {
+            defaultResult[key] = value;
+          } else if (typeof value === "object" && value !== null && !Array.isArray(value)) {
+            const obj = value as Record<string, PropertyValue>;
+            const x = isFiniteNumber(obj.x) ? obj.x : 0;
+            const y = isFiniteNumber(obj.y) ? obj.y : 0;
+            const z = isFiniteNumber(obj.z) ? obj.z : undefined;
+            if (z !== undefined) {
+              defaultResult[key] = { x, y, z };
+            } else {
+              defaultResult[key] = { x, y };
+            }
+          }
+        }
+        return defaultResult;
     }
   }
 
   /**
    * Map effect parameters to GLSL uniforms
+   */
+  /**
+   * Map effect parameters to GLSL uniform format
+   * Deterministic: Explicit type conversion with validation
+   * Min/Max: All numeric values validated and clamped
+   * Default: Explicit defaults for all optional parameters
    */
   private mapParamsToGLSL(
     effectKey: string,
@@ -996,7 +1266,27 @@ class GPUEffectDispatcher {
         };
 
       default:
-        return { ...baseUniforms, ...params };
+        // Deterministic: Convert PropertyValue to GLSL uniform format
+        // Filter and convert only compatible types (number, string, vec2, vec3)
+        const glslResult: Record<string, number | string | { x: number; y: number } | { x: number; y: number; z: number }> = { ...baseUniforms };
+        for (const [key, value] of Object.entries(params)) {
+          if (typeof value === "number" && Number.isFinite(value)) {
+            glslResult[key] = value;
+          } else if (typeof value === "string") {
+            glslResult[key] = value;
+          } else if (typeof value === "object" && value !== null && !Array.isArray(value)) {
+            const obj = value as Record<string, PropertyValue>;
+            const x = isFiniteNumber(obj.x) ? obj.x : 0;
+            const y = isFiniteNumber(obj.y) ? obj.y : 0;
+            const z = isFiniteNumber(obj.z) ? obj.z : undefined;
+            if (z !== undefined) {
+              glslResult[key] = { x, y, z };
+            } else {
+              glslResult[key] = { x, y };
+            }
+          }
+        }
+        return glslResult;
     }
   }
 

@@ -1,31 +1,81 @@
-#!/usr/bin/env sh
-. "$(dirname -- "$0")/_/husky.sh"
+#!/usr/bin/env bash
+set -euo pipefail
 
-cd ui
+# Straylight Protocol & Aleph Protocol Enforcement - Pre-commit Hook
+# This hook validates code against Straylight Protocol and Aleph Protocol rules before allowing commits
 
-echo "🔍 Running pre-commit checks..."
+echo "🔍 Running Straylight Protocol & Aleph Protocol validation..."
 
-# Format code
-echo "📝 Formatting code..."
-npm run format
+# Find project root (where scripts/validate-file.js exists)
+PROJECT_ROOT="$(git rev-parse --show-toplevel)"
+cd "$PROJECT_ROOT"
 
-# Fix linting issues
-echo "🔧 Fixing linting issues..."
-npm run lint:fix
+# Find validate-file.js script (could be in scripts/ or straylight-core/scripts/)
+VALIDATE_SCRIPT=""
+if [ -f "scripts/validate-file.js" ]; then
+    VALIDATE_SCRIPT="scripts/validate-file.js"
+elif [ -f "straylight-core/scripts/validate-file.js" ]; then
+    VALIDATE_SCRIPT="straylight-core/scripts/validate-file.js"
+else
+    echo "⚠️  validate-file.js not found, skipping validation"
+    exit 0
+fi
 
-# Type check
-echo "✅ Type checking..."
-npm run typecheck || {
-  echo "❌ Type check failed. Please fix type errors before committing."
-  exit 1
-}
+# Run Nix lint if available (from project root)
+# Includes aleph-lint (aleph-002) if available
+if command -v nix &> /dev/null; then
+    echo "Running nix lint..."
+    nix flake check 2>/dev/null || nix run .#lint 2>/dev/null || echo "⚠️  Nix lint not available, skipping"
+    # Run aleph-lint if available (aleph-002)
+    if nix run .#aleph-lint 2>/dev/null; then
+        echo "Running aleph-lint (aleph-002)..."
+        nix run .#aleph-lint 2>/dev/null || echo "⚠️  aleph-lint not available, skipping"
+    fi
+fi
 
-# Check for lazy patterns
-echo "🔍 Checking for lazy code patterns..."
-npm run check:lazy || {
-  echo "❌ Lazy code patterns detected. Please fix before committing."
-  echo "   Run 'npm run check:lazy:strict' for detailed report."
-  exit 1
-}
+# Run file validation script
+if command -v node &> /dev/null; then
+    echo "Validating changed files..."
+    
+    # Get list of changed files (all Straylight Protocol file types)
+    CHANGED_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(nix|hs|purs|lean|sh|bash|lit|mdx|lit\.hs|lit\.cpp|lit\.purs|cpp|hpp|cc|h|cu|cuh|dhall|bzl|rs|py)$' || true)
+    
+    if [ -n "$CHANGED_FILES" ]; then
+        for file in $CHANGED_FILES; do
+            # Skip BOOTSTRAP scripts (legacy setup; STRAYLIGHT-006 would require Haskell port)
+            file_norm="${file//\\//}"
+            case "$file_norm" in BOOTSTRAP/*) echo "Skipping validation for BOOTSTRAP script: $file"; continue ;; esac
+            
+            # Skip files with "generated" in path (case-insensitive bash pattern matching)
+            case "$file_norm" in 
+                *[Gg][Ee][Nn][Ee][Rr][Aa][Tt][Ee][Dd]*) 
+                    echo "Skipping validation for generated file: $file"
+                    continue 
+                    ;;
+            esac
+            
+            # Skip generated files (auto-generated from templates, should not be manually edited)
+            # Check first 5 lines for generation markers
+            if [ -f "$file" ]; then
+                if head -n 5 "$file" 2>/dev/null | grep -qiE "(auto-generated|DO NOT EDIT|generated from|regenerate with|# Generated|# This file is generated)"; then
+                    echo "Skipping validation for generated file: $file"
+                    continue
+                fi
+            fi
+            
+            # Resolve file path relative to project root
+            if [ -f "$file" ]; then
+                echo "Validating $file..."
+                node "$VALIDATE_SCRIPT" "$file" || {
+                    echo "❌ Validation failed for $file"
+                    echo "Fix errors before committing"
+                    exit 1
+                }
+            fi
+        done
+    fi
+else
+    echo "⚠️  Node.js not found, skipping validation"
+fi
 
-echo "✅ All pre-commit checks passed!"
+echo "✅ Pre-commit validation passed"

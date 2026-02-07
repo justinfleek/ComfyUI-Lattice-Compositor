@@ -45,6 +45,19 @@ export default defineConfig({
         entryFileNames: "lattice-compositor.js",
         // Manual chunks for heavy dependencies
         manualChunks(id) {
+          // Combine Vue ecosystem with PrimeVue so PrimeVue can access all Vue exports
+          // This ensures all Vue functions are available when PrimeVue needs them
+          if (
+            id.includes("node_modules/vue") ||
+            id.includes("node_modules/pinia") ||
+            id.includes("node_modules/@vue") ||
+            id.includes("node_modules/@vueuse") ||
+            id.includes("node_modules/splitpanes") ||
+            id.includes("node_modules/primevue") ||
+            id.includes("node_modules/primeicons")
+          ) {
+            return "vue-vendor";
+          }
           // Three.js and related 3D libraries
           if (
             id.includes("node_modules/three") ||
@@ -60,23 +73,6 @@ export default defineConfig({
           ) {
             return "export-vendor";
           }
-          // Vue ecosystem
-          if (
-            id.includes("node_modules/vue") ||
-            id.includes("node_modules/pinia") ||
-            id.includes("node_modules/@vue") ||
-            id.includes("node_modules/@vueuse")
-          ) {
-            return "vue-vendor";
-          }
-          // UI components
-          if (
-            id.includes("node_modules/splitpanes") ||
-            id.includes("node_modules/primevue") ||
-            id.includes("node_modules/primeicons")
-          ) {
-            return "ui-vendor";
-          }
           // Security: SES sandbox (must be included, has side effects)
           if (id.includes("node_modules/ses")) {
             return "security-vendor";
@@ -85,12 +81,14 @@ export default defineConfig({
       },
       // Tree shaking configuration
       treeshake: {
-        // Aggressive tree shaking
-        moduleSideEffects: false,
-        // Remove unused properties
-        propertyReadSideEffects: false,
-        // Don't preserve external modules' side effects
-        tryCatchDeoptimization: false,
+        // Preserve Vue exports that PrimeVue needs
+        moduleSideEffects: (id) => {
+          // Preserve side effects for Vue to ensure all exports are available
+          if (id.includes("node_modules/vue")) {
+            return true;
+          }
+          return false;
+        },
       },
     },
     // Minification settings
@@ -160,6 +158,13 @@ export default defineConfig({
     proxy: {
       "/lattice": "http://localhost:8188",
       "/api": "http://localhost:8188",
+    },
+    // SECURITY: Add security headers in development
+    headers: {
+      "X-Content-Type-Options": "nosniff",
+      "X-Frame-Options": "SAMEORIGIN",
+      "X-XSS-Protection": "1; mode=block",
+      "Referrer-Policy": "no-referrer-when-downgrade",
     },
   },
 });

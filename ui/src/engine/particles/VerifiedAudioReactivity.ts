@@ -17,7 +17,7 @@
  *   - audioValue=0: output = base * 0.5
  *   - audioValue=1: output = base * 1.5
  * 
- * Based on Lean4 proofs from leanparticles/PARTICLE_VERIFIED (1).lean
+ * Based on Lean4 proofs from leanparticles/PARTICLE_VERIFIED.lean
  */
 
 import { pos, unit, type Positive, type UnitInterval } from "./VerifiedTypes";

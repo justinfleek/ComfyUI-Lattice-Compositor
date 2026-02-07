@@ -38,8 +38,17 @@ def Tensor.mk? (shape : Shape) (dtype : DType) (data : ByteArray)
 def Tensor.zeros (shape : Shape) (dtype : DType) (hpos : Shape.allPos shape) 
     : Tensor shape dtype :=
   let size := Shape.numel shape * dtype.sizeof
-  let data := ByteArray.mk (Array.mkArray size 0)
-  ⟨data, by simp [ByteArray.size, Array.size_mkArray], hpos⟩
+  let lst := List.replicate size (0 : UInt8)
+  have h_lst_len : lst.length = size := List.length_replicate ..
+  let arr := Array.mk lst
+  have h_arr_size : arr.size = size := by
+    rw [← h_lst_len]
+    rfl
+  let data := ByteArray.mk arr
+  have h : data.size = size := by
+    rw [ByteArray.size]
+    exact h_arr_size
+  ⟨data, h, hpos⟩
 
 /-- Get the shape (compile-time known) -/
 def Tensor.shape (_ : Tensor s d) : Shape := s
@@ -48,6 +57,6 @@ def Tensor.shape (_ : Tensor s d) : Shape := s
 def Tensor.dtype (_ : Tensor s d) : DType := d
 
 /-- Number of elements -/
-def Tensor.numel (t : Tensor s d) : Nat := Shape.numel s
+def Tensor.numel (_ : Tensor s d) : Nat := Shape.numel s
 
 end TensorCore

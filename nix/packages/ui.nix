@@ -15,13 +15,13 @@ bun2nix.mkDerivation {
     filter =
       path: _type:
       let
-        baseName = baseNameOf path;
+        base-name = baseNameOf path;
       in
-      baseName != "node_modules"
-      && baseName != "dist"
-      && baseName != ".git"
-      && baseName != "bun.lock"
-      && baseName != "package-lock.json";
+      base-name != "node_modules"
+      && base-name != "dist"
+      && base-name != ".git"
+      && base-name != "bun.lock"
+      && base-name != "package-lock.json";
   };
 
   # bun2nix v2: fetchBunDeps requires bunNix file
@@ -60,6 +60,6 @@ bun2nix.mkDerivation {
     description = "Lattice Compositor UI";
     homepage = "https://github.com/weyl-ai/lattice-compositor";
     license = lib.licenses.mit;
-    maintainers = with lib.maintainers; [ ];
+    maintainers = [ ];
   };
 }

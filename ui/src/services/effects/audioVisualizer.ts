@@ -468,6 +468,7 @@ function generateWaveformData(
   const halfSamples = Math.floor(samples / 2);
 
   // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+  // Deterministic: Explicit null checks for audioData properties
   const audioDataAmplitudeEnvelope = (audioData != null && typeof audioData === "object" && "amplitudeEnvelope" in audioData && audioData.amplitudeEnvelope != null && Array.isArray(audioData.amplitudeEnvelope)) ? audioData.amplitudeEnvelope : undefined;
   const audioDataFrameCount = (audioData != null && typeof audioData === "object" && "frameCount" in audioData && typeof audioData.frameCount === "number") ? audioData.frameCount : undefined;
   if (audioDataAmplitudeEnvelope != null && audioDataFrameCount != null && frame < audioDataFrameCount) {
@@ -476,10 +477,11 @@ function generateWaveformData(
       const sampleFrame = frame - halfSamples + i;
       if (
         sampleFrame >= 0 &&
-        sampleFrame < audioData.amplitudeEnvelope.length
+        audioDataAmplitudeEnvelope &&
+        sampleFrame < audioDataAmplitudeEnvelope.length
       ) {
         // Convert amplitude (0-1) to waveform (-1 to 1) with oscillation
-        const amp = audioData.amplitudeEnvelope[sampleFrame];
+        const amp = audioDataAmplitudeEnvelope[sampleFrame];
         const oscillation = Math.sin(sampleFrame * 0.5); // Add oscillation
         waveform[i] = amp * oscillation;
       }

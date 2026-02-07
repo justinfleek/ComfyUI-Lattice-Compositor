@@ -12,7 +12,7 @@ dependencies = [
     "numpy>=2.4.0",
     "pillow>=12.1.0",
     "scipy>=1.16.3",
-    "aiohttp>=3.9.0",  # Provided by ComfyUI, but needed for type checking
+    "aiohttp>=3.9.0",  # Route handlers (aiohttp.web); also provided by ComfyUI at runtime
     "torch>=2.0.0",  # Provided by ComfyUI, but needed for type checking
     "torchvision>=0.15.0",  # Provided by ComfyUI, but needed for type checking
     "torchaudio>=2.0.0",  # Provided by ComfyUI, but needed for type checking
@@ -34,6 +34,15 @@ reportGeneralTypeIssues = "warning"
 reportOptionalMemberAccess = "none"
 reportOptionalSubscript = "none"
 stubPath = "src/lattice-stubs"
+# Use project venv so aiohttp and other deps resolve from real install
+venvPath = "."
+venv = ".venv"
+
+[tool.pylint."MESSAGES CONTROL"]
+# Disable indentation warnings since project uses 2-space indentation (configured in ruff.toml)
+# Pylint expects 4-space by default, but Ruff formatter uses 2-space
+# Note: Pylint infers indentation from files, but IDE integration may use different settings
+disable = "bad-indentation"
 
 [dependency-groups]
 dev = [

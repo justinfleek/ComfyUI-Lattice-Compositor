@@ -5,11 +5,10 @@ async function initSES() {
   if (sesReady) return true;
   try {
     await import('./assets/index-DIa_xRYn.js');
-    const g = globalThis;
-    if (!g.lockdown) {
+    if (!globalThis.lockdown) {
       return false;
     }
-    g.lockdown({
+    globalThis.lockdown({
       consoleTaming: "unsafe",
       errorTaming: "unsafe",
       stackFiltering: "verbose",
@@ -17,8 +16,11 @@ async function initSES() {
       localeTaming: "unsafe",
       domainTaming: "unsafe"
     });
-    Compartment = g.Compartment;
-    harden = g.harden;
+    Compartment = globalThis.Compartment !== null && globalThis.Compartment !== void 0 && typeof globalThis.Compartment === "function" ? globalThis.Compartment : null;
+    harden = globalThis.harden !== null && globalThis.harden !== void 0 && typeof globalThis.harden === "function" ? globalThis.harden : null;
+    if (!Compartment || !harden) {
+      return false;
+    }
     sesReady = true;
     return true;
   } catch (e) {
@@ -55,13 +57,13 @@ function createSeededRandom(frame) {
   };
 }
 async function evaluate(req) {
-  if (!sesReady) {
-    const ok = await initSES();
-    if (!ok) {
-      return { id: req.id, success: false, error: "SES not available" };
-    }
-  }
   try {
+    if (!sesReady) {
+      const ok = await initSES();
+      if (!ok) {
+        throw new Error(`[ExpressionWorker] SES not available. Secure Evaluator initialization failed.`);
+      }
+    }
     const frame = typeof req.context.frame === "number" ? req.context.frame : 0;
     const seededRandom = harden(createSeededRandom(frame));
     const globals = {
@@ -99,10 +101,11 @@ async function evaluate(req) {
     }
     return { id: req.id, success: true, result };
   } catch (e) {
+    const errorMessage = e instanceof Error ? e.message : String(e);
     return {
       id: req.id,
       success: false,
-      error: e instanceof Error ? e.message : String(e)
+      error: errorMessage
     };
   }
 }

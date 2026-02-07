@@ -8,6 +8,7 @@
 import { isFiniteNumber } from "@/utils/typeGuards";
 import { interpolateProperty } from "@/services/interpolation";
 import { markLayerDirty } from "@/services/layerEvaluationCache";
+import { generateKeyframeId } from "@/utils/uuid5";
 import type {
   AnimatableControlPoint,
   AnimatableProperty,
@@ -250,13 +251,23 @@ export function addSplinePointKeyframe(
     (k) => k.frame === frame,
   );
 
+  const propertyPath = `spline.${pointId}.${property}`;
+  // Deterministic ID generation: same layer/property/frame/value always produces same ID
+  // Explicit check: animatableProp.value is number (never null/undefined per type system)
+  const valueStr = String(animatableProp.value);
+
   if (existingIdx >= 0) {
-    // Update existing keyframe
-    animatableProp.keyframes[existingIdx].value = animatableProp.value;
+    // Update existing keyframe value and regenerate ID for determinism
+    // Same layer/property/frame but different value should produce different ID
+    const existingKf = animatableProp.keyframes[existingIdx];
+    existingKf.value = animatableProp.value;
+    existingKf.id = generateKeyframeId(layerId, propertyPath, frame, valueStr);
   } else {
-    // Add new keyframe
+    // Add new keyframe with deterministic ID
+    const keyframeId = generateKeyframeId(layerId, propertyPath, frame, valueStr);
+    
     animatableProp.keyframes.push({
-      id: `kf_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`,
+      id: keyframeId,
       frame,
       value: animatableProp.value,
       interpolation: "bezier",

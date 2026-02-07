@@ -1,0 +1,70 @@
+{
+    "Output" : {
+        "_comment": "Optional, default `out`",
+        "Directory": "../../sim_results/bridge_dolosse_f06_",
+		"Frequency": 1
+    },
+
+    "Initial volume" : [
+        {
+            "Type" : "Mesh",
+            "Filename": "bridge.obj",
+            "Offset": [0.0, 0.0, 0.0],
+            "Resolution": [256, 256, 256]
+        }
+    ],
+
+    "Obstacle" : {
+        "Type" : "Mesh",
+        "Filename": "foundation_remesh.obj",
+        "Offset": [0.0, 0.0, -0.0],
+        "Resolution": [256, 256, 256]
+    },
+
+    "Particles" : { 
+        "Size": 4.8e-3
+    },
+ 
+    // "Geometry grid": {
+    //     "Resolution": [128, 128, 128]
+    // },
+
+    "Physics" : {
+        "Size": [2.0, 2.0, 2.0],
+        "Resolution": [160, 160, 160],
+        "rho": 1.093e3,
+        "dt": 8.33333333333e-3,
+        "T max": 5.0,
+        "Elasticity" : {
+            "Type": "HenckyMeasured",
+            "E": 5.5e5,
+            "nu": 0.3,
+            "Filename": "../elasticity/dolos_f06_elasticity.txt",
+            "Scale": 1.0
+        },
+        "Plasticity" : {
+            "Type": "MeasuredMC",
+            "mu": 0.5,
+            "Filename": "../yields/dolos_f06_yield.txt",
+            "Scale": 1.0
+        },
+        "Viscosity" : {
+            "Disabled": true,
+            "eta": 0.0
+        },
+        "Boundaries" : {
+            "mu wall": 0.5,
+            "Wall particles": true
+        }
+    },
+
+    "GUI" : {
+        "Name": "MPM sim",
+        "Size": [1000, 1000],
+        "Camera position": [-1.2, -1.4, 2.3],
+        "Camera lookat": [1.0, 1.0, 1.5],
+        "MPM display": ["ParticleAltitude"],
+        "Particle scale": 1.0
+    }
+
+}

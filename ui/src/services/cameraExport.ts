@@ -158,8 +158,12 @@ function interpolateCamera(
   }
 
   // If only one keyframe or exact match
+  // Deterministic: Explicit null check - if prevKeyframe is null, nextKeyframe must exist
   if (!prevKeyframe) {
-    return applyKeyframe(camera, nextKeyframe!);
+    if (!nextKeyframe) {
+      throw new Error("[CameraExport] nextKeyframe should be defined when prevKeyframe is null");
+    }
+    return applyKeyframe(camera, nextKeyframe);
   }
   if (!nextKeyframe || prevKeyframe.frame === nextKeyframe.frame) {
     return applyKeyframe(camera, prevKeyframe);

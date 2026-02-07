@@ -16,6 +16,7 @@
 
 import type { AnimatableProperty, Keyframe } from "@/types/project";
 import { isFiniteNumber } from "@/utils/typeGuards";
+import { generateKeyframeId } from "@/utils/uuid5";
 
 // ============================================================================
 // Types
@@ -272,7 +273,7 @@ function ticksToSecondsWithTempoMap(
   let totalSeconds = 0;
   let lastTick = 0;
   // Type proof: currentBpm ∈ number | undefined → number
-  const currentBpm = tempoChanges.length > 0 &&
+  let currentBpm = tempoChanges.length > 0 &&
     isFiniteNumber(tempoChanges[0].bpm) && tempoChanges[0].bpm > 0
     ? tempoChanges[0].bpm
     : 120;
@@ -557,11 +558,15 @@ function readString(view: DataView, offset: number, length: number): string {
  * @param midiFile - Parsed MIDI file data
  * @param config - Conversion configuration
  * @param idPrefix - Unique prefix for keyframe IDs (default: hash of config)
+ * @param layerId - Layer ID for deterministic keyframe ID generation (optional, uses prefix if not provided)
+ * @param propertyPath - Property path for deterministic keyframe ID generation (optional, uses prefix if not provided)
  */
 export function midiNotesToKeyframes(
   midiFile: MIDIParsedFile,
   config: MIDIToKeyframeConfig,
   idPrefix?: string,
+  layerId?: string,
+  propertyPath?: string,
 ): Keyframe<number>[] {
   const keyframes: Keyframe<number>[] = [];
   const fps = config.fps;
@@ -604,7 +609,10 @@ export function midiNotesToKeyframes(
   // Sort by time
   notes.sort((a, b) => a.startTime - b.startTime);
 
-  let keyframeId = 0;
+  // Use deterministic ID generation if layerId and propertyPath provided
+  const useDeterministicIds = layerId !== undefined && propertyPath !== undefined;
+  const effectiveLayerId = layerId || `midi_${prefix}`;
+  const effectivePropertyPath = propertyPath || `midi.${prefix}`;
 
   for (const note of notes) {
     const startFrame = Math.round(note.startTime * fps);
@@ -614,9 +622,13 @@ export function midiNotesToKeyframes(
 
     switch (config.mappingType) {
       case "noteOnOff":
-        // Create on/off keyframes
+        // Create on/off keyframes with deterministic IDs
+        const onValueStr = String(config.valueMax);
+        const onKeyframeId = useDeterministicIds
+          ? generateKeyframeId(effectiveLayerId, effectivePropertyPath, startFrame, onValueStr)
+          : `midi_${prefix}_${note.track}_${note.channel}_${note.noteNumber}_on_${startFrame}_${onValueStr}`;
         keyframes.push({
-          id: `midi_${prefix}_${keyframeId++}`,
+          id: onKeyframeId,
           frame: startFrame,
           value: config.valueMax,
           interpolation: config.interpolation || "hold",
@@ -624,8 +636,12 @@ export function midiNotesToKeyframes(
           outHandle: { frame: 0, value: 0, enabled: false },
           controlMode: "smooth" as const,
         });
+        const offValueStr = String(config.valueMin);
+        const offKeyframeId = useDeterministicIds
+          ? generateKeyframeId(effectiveLayerId, effectivePropertyPath, endFrame, offValueStr)
+          : `midi_${prefix}_${note.track}_${note.channel}_${note.noteNumber}_off_${endFrame}_${offValueStr}`;
         keyframes.push({
-          id: `midi_${prefix}_${keyframeId++}`,
+          id: offKeyframeId,
           frame: endFrame,
           value: config.valueMin,
           interpolation: config.interpolation || "hold",
@@ -640,8 +656,12 @@ export function midiNotesToKeyframes(
         value =
           config.valueMin +
           (note.velocity / 127) * (config.valueMax - config.valueMin);
+        const velocityValueStr = String(value);
+        const velocityStartKeyframeId = useDeterministicIds
+          ? generateKeyframeId(effectiveLayerId, effectivePropertyPath, startFrame, velocityValueStr)
+          : `midi_${prefix}_${note.track}_${note.channel}_${note.noteNumber}_vel_${startFrame}_${velocityValueStr}`;
         keyframes.push({
-          id: `midi_${prefix}_${keyframeId++}`,
+          id: velocityStartKeyframeId,
           frame: startFrame,
           value,
           interpolation: config.interpolation || "linear",
@@ -649,8 +669,12 @@ export function midiNotesToKeyframes(
           outHandle: { frame: 0, value: 0, enabled: false },
           controlMode: "smooth" as const,
         });
+        const velocityEndValueStr = String(config.valueMin);
+        const velocityEndKeyframeId = useDeterministicIds
+          ? generateKeyframeId(effectiveLayerId, effectivePropertyPath, endFrame, velocityEndValueStr)
+          : `midi_${prefix}_${note.track}_${note.channel}_${note.noteNumber}_vel_${endFrame}_${velocityEndValueStr}`;
         keyframes.push({
-          id: `midi_${prefix}_${keyframeId++}`,
+          id: velocityEndKeyframeId,
           frame: endFrame,
           value: config.valueMin,
           interpolation: config.interpolation || "linear",
@@ -675,8 +699,12 @@ export function midiNotesToKeyframes(
         value =
           config.valueMin +
           normalizedPitch * (config.valueMax - config.valueMin);
+        const pitchValueStr = String(value);
+        const pitchKeyframeId = useDeterministicIds
+          ? generateKeyframeId(effectiveLayerId, effectivePropertyPath, startFrame, pitchValueStr)
+          : `midi_${prefix}_${note.track}_${note.channel}_${note.noteNumber}_pitch_${startFrame}_${pitchValueStr}`;
         keyframes.push({
-          id: `midi_${prefix}_${keyframeId++}`,
+          id: pitchKeyframeId,
           frame: startFrame,
           value,
           interpolation: config.interpolation || "linear",
@@ -700,11 +728,15 @@ export function midiNotesToKeyframes(
  * @param midiFile - Parsed MIDI file data
  * @param config - Conversion configuration
  * @param idPrefix - Unique prefix for keyframe IDs (default: hash of config)
+ * @param layerId - Layer ID for deterministic keyframe ID generation (optional, uses prefix if not provided)
+ * @param propertyPath - Property path for deterministic keyframe ID generation (optional, uses prefix if not provided)
  */
 export function midiCCToKeyframes(
   midiFile: MIDIParsedFile,
   config: MIDIToKeyframeConfig,
   idPrefix?: string,
+  layerId?: string,
+  propertyPath?: string,
 ): Keyframe<number>[] {
   if (config.ccNumber === undefined) {
     throw new Error("ccNumber is required for controlChange mapping");
@@ -744,15 +776,22 @@ export function midiCCToKeyframes(
   // Sort by time
   ccEvents.sort((a, b) => a.time - b.time);
 
-  let keyframeId = 0;
+  // Use deterministic ID generation if layerId and propertyPath provided
+  const useDeterministicIds = layerId !== undefined && propertyPath !== undefined;
+  const effectiveLayerId = layerId || `midi_${prefix}`;
+  const effectivePropertyPath = propertyPath || `midi.cc.${prefix}`;
 
   for (const cc of ccEvents) {
     const frame = Math.round(cc.time * fps);
     const value =
       config.valueMin + (cc.value / 127) * (config.valueMax - config.valueMin);
+    const valueStr = String(value);
+    const keyframeId = useDeterministicIds
+      ? generateKeyframeId(effectiveLayerId, effectivePropertyPath, frame, valueStr)
+      : `midi_${prefix}_${cc.track}_${cc.channel}_cc${cc.controller}_${frame}_${valueStr}`;
 
     keyframes.push({
-      id: `midi_${prefix}_${keyframeId++}`,
+      id: keyframeId,
       frame,
       value,
       interpolation: config.interpolation || "linear",

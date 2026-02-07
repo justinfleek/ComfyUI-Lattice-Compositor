@@ -1,0 +1,5 @@
+add_library(Triangle STATIC triangle.c)
+target_compile_definitions(Triangle PUBLIC "ANSI_DECLARATORS")
+target_compile_definitions(Triangle PRIVATE "TRILIBRARY")
+target_compile_definitions(Triangle PRIVATE "NO_TIMER")
+target_include_directories(Triangle INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})

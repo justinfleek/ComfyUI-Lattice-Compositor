@@ -943,9 +943,11 @@ function toggleKeyframe(
       updatedKeyframes = prop.keyframes.filter((k) => k.frame !== frame);
       updatedAnimated = updatedKeyframes.length > 0;
     } else {
+      // Deterministic ID generation: same layer/property/frame/value always produces same ID
+      const propertyPath = propName; // Custom properties use their name as path
       updatedKeyframes = [
         ...prop.keyframes,
-        createKeyframe(frame, prop.value, "linear"),
+        createKeyframe(props.layer.id, propertyPath, frame, prop.value, "linear"),
       ];
       updatedAnimated = true;
     }
@@ -986,9 +988,11 @@ function togglePathKeyframe(propName: string) {
       updatedKeyframes = prop.keyframes.filter((k) => k.frame !== frame);
       updatedAnimated = updatedKeyframes.length > 0;
     } else {
+      // Deterministic ID generation: same layer/property/frame/value always produces same ID
+      const propertyPath = propName; // Custom properties use their name as path
       updatedKeyframes = [
         ...prop.keyframes,
-        createKeyframe(frame, prop.value, "linear"),
+        createKeyframe(props.layer.id, propertyPath, frame, prop.value, "linear"),
       ];
       updatedAnimated = true;
     }
@@ -1077,8 +1081,10 @@ function toggleVec3Keyframe(propName: string, dataKey: string) {
     animProp.keyframes = animProp.keyframes.filter((k) => k.frame !== frame);
     animProp.animated = animProp.keyframes.length > 0;
   } else {
+    // Deterministic ID generation: same layer/property/frame/value always produces same ID
+    const propertyPath = dataKey; // Use dataKey as property path
     animProp.keyframes.push(
-      createKeyframe(frame, { ...animProp.value }, "linear"),
+      createKeyframe(props.layer.id, propertyPath, frame, { ...animProp.value }, "linear"),
     );
     animProp.animated = true;
   }

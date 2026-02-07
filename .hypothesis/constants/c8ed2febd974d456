@@ -1,0 +1,4 @@
+# file: /home/nixos/.nix-profile/lib/python3.13/email/iterators.py
+# hypothesis_version: 6.150.0
+
+[' [%s]', 'body_line_iterator', 'text', 'walk']

@@ -63,6 +63,17 @@ export interface AuditLogEntry {
   userAction?: string;
   /** Additional context */
   metadata?: AuditLogMetadata;
+  /** Provenance tracking fields */
+  /** Provenance ID (links to provenance tracker) */
+  provenanceId?: string;
+  /** User instruction that led to this action */
+  userInstruction?: string;
+  /** Agent reasoning for this action */
+  agentReasoning?: string;
+  /** Sandbox ID (if executed in sandbox) */
+  sandboxId?: string;
+  /** Action plan ID (if part of an action plan) */
+  actionPlanId?: string;
 }
 
 export interface AuditLogQuery {

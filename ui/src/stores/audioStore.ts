@@ -149,7 +149,7 @@ export const useAudioStore = defineStore("audio", {
             beats.push(frame / fps);
           }
         }
-        return beats.length > 0 ? beats : undefined;
+        return beats;
       },
     /** Get BPM for audio */
     getBPM:

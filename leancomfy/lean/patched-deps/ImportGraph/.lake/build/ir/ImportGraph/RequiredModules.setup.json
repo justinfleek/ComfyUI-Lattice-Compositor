@@ -1,0 +1,11 @@
+{"plugins": [],
+ "package": "importGraph",
+ "options": {},
+ "name": "ImportGraph.RequiredModules",
+ "isModule": true,
+ "importArts":
+ {"Batteries.Data.NameSet":
+  ["C:\\Users\\justi\\Desktop\\ComfyUI-Lattice-Compositor\\leancomfy\\lean\\.lake\\packages\\batteries\\.lake\\build\\lib\\lean\\Batteries\\Data\\NameSet.olean",
+   "C:\\Users\\justi\\Desktop\\ComfyUI-Lattice-Compositor\\leancomfy\\lean\\.lake\\packages\\batteries\\.lake\\build\\lib\\lean\\Batteries\\Data\\NameSet.ir",
+   "C:\\Users\\justi\\Desktop\\ComfyUI-Lattice-Compositor\\leancomfy\\lean\\.lake\\packages\\batteries\\.lake\\build\\lib\\lean\\Batteries\\Data\\NameSet.olean.server"]},
+ "dynlibs": []}

@@ -49,7 +49,7 @@ export const MAX_FRAME_COUNT = 100000;
 export const ColorSpaceSchema = z.enum([
   "sRGB",
   "linear-sRGB",
-  "Adobe-RGB",
+  "Wide-Gamut-RGB",
   "Display-P3",
   "ProPhoto-RGB",
   "ACEScg",

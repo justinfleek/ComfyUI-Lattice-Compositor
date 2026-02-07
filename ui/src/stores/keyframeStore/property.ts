@@ -11,6 +11,7 @@ import { findPropertyByPath } from "./helpers";
 import { useProjectStore } from "../projectStore";
 import { useAnimationStore } from "../animationStore";
 import { useLayerStore } from "../layerStore";
+import { generateKeyframeId } from "@/utils/uuid5";
 
 // ============================================================================
 // PROPERTY ANIMATION STATE
@@ -42,6 +43,13 @@ export function setPropertyValue(
     );
     if (existingKf) {
       existingKf.value = value;
+      // Regenerate keyframe ID based on new value for determinism
+      // Same layer/property/frame but different value should produce different ID
+      // Explicit check: value is PropertyValue (never null/undefined per type system)
+      const valueStr = typeof value === "object" && value !== null && "x" in value && "y" in value
+        ? `${(value as { x: number; y: number }).x},${(value as { x: number; y: number }).y}${"z" in value ? `,${(value as { x: number; y: number; z?: number }).z}` : ""}`
+        : String(value);
+      existingKf.id = generateKeyframeId(layerId, propertyPath, existingKf.frame, valueStr);
     }
   }
 
@@ -82,8 +90,12 @@ export function setPropertyAnimated(
       const currentFrameValue = (comp != null && typeof comp === "object" && "currentFrame" in comp && typeof comp.currentFrame === "number") ? comp.currentFrame : undefined;
       const frame = isFiniteNumber(currentFrameValue) && Number.isInteger(currentFrameValue) && currentFrameValue >= 0 ? currentFrameValue : 0;
 
+      // Deterministic ID generation: same layer/property/frame/value always produces same ID
+      const valueStr = typeof property.value === "object" && property.value !== null && "x" in property.value && "y" in property.value
+        ? `${(property.value as { x: number; y: number }).x},${(property.value as { x: number; y: number }).y}${"z" in property.value ? `,${(property.value as { x: number; y: number; z?: number }).z}` : ""}`
+        : String(property.value);
       const keyframe: Keyframe<PropertyValue> = {
-        id: `kf_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`,
+        id: generateKeyframeId(layerId, propertyPath, frame, valueStr),
         frame,
         value: property.value,
         interpolation: "linear",

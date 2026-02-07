@@ -11,11 +11,9 @@ import { isFiniteNumber } from "@/utils/typeGuards";
 import { toRaw } from "vue";
 import type {
   AnimatableProperty,
-  LayerDataUnion,
   Keyframe,
   Layer,
   PropertyValue,
-  SplineData,
   TextData,
 } from "@/types/project";
 import { createAnimatableProperty, createDefaultTransform } from "@/types/project";
@@ -26,6 +24,12 @@ import { useProjectStore } from "../projectStore";
 import { getDefaultLayerData } from "../actions/layer/layerDefaults";
 import type { DeleteLayerOptions } from "./types";
 import { getLayerById } from "./hierarchy";
+import { generateKeyframeId, generateLayerId } from "@/utils/uuid5";
+import type { EffectInstance } from "@/types/effects";
+import type { TextAnimator } from "@/types/project";
+import type { LayerMask } from "@/types/masks";
+import type { AnimatableControlPoint, SplineData } from "@/types/spline";
+import { safeFrame } from "@/stores/keyframeStore/helpers";
 
 // ============================================================================
 // LAYER CREATION
@@ -181,9 +185,9 @@ export function deleteLayer(
     // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
     const followPath = (layer != null && typeof layer === "object" && "followPath" in layer && layer.followPath != null && typeof layer.followPath === "object") ? layer.followPath : undefined;
     const followPathLayerId = (followPath != null && typeof followPath === "object" && "pathLayerId" in followPath && typeof followPath.pathLayerId === "string") ? followPath.pathLayerId : undefined;
-    if (followPathLayerId === layerId) {
-      layer.followPath.enabled = false;
-      layer.followPath.pathLayerId = "";
+    if (followPathLayerId === layerId && followPath) {
+      followPath.enabled = false;
+      followPath.pathLayerId = "";
     }
     if (
       layer.type === "text" &&
@@ -260,7 +264,7 @@ export function updateLayer(
  */
 export function updateLayerData(
   layerId: string,
-  dataUpdates: Partial<LayerDataUnion & { physics?: import("@/types/physics").PhysicsLayerData }>,
+  dataUpdates: Partial<Layer["data"] & { physics?: import("@/types/physics").PhysicsLayerData }>,
 ): void {
   const projectStore = useProjectStore();
   const layer = projectStore.getActiveCompLayers().find((l: Layer) => l.id === layerId);
@@ -283,45 +287,223 @@ export function updateLayerData(
 
 /**
  * Regenerate all keyframe IDs in a layer to avoid conflicts
+ * Uses correct property paths for deterministic ID generation
  * @internal
  */
 export function regenerateKeyframeIds(layer: Layer): void {
   if (layer.transform) {
-    const transformProps: Array<AnimatableProperty<PropertyValue> | undefined> = [
-      layer.transform.position,
-      layer.transform.origin,
-      layer.transform.anchorPoint,
-      layer.transform.scale,
-      layer.transform.positionX,
-      layer.transform.positionY,
-      layer.transform.positionZ,
-      layer.transform.scaleX,
-      layer.transform.scaleY,
-      layer.transform.scaleZ,
-      layer.transform.rotation,
-      layer.transform.orientation,
-      layer.transform.rotationX,
-      layer.transform.rotationY,
-      layer.transform.rotationZ,
+    const transformProps: Array<{ prop: AnimatableProperty<PropertyValue> | undefined; path: string }> = [
+      { prop: layer.transform.position, path: "transform.position" },
+      { prop: layer.transform.origin, path: "transform.origin" },
+      { prop: layer.transform.anchorPoint, path: "transform.anchorPoint" },
+      { prop: layer.transform.scale, path: "transform.scale" },
+      { prop: layer.transform.positionX, path: "transform.positionX" },
+      { prop: layer.transform.positionY, path: "transform.positionY" },
+      { prop: layer.transform.positionZ, path: "transform.positionZ" },
+      { prop: layer.transform.scaleX, path: "transform.scaleX" },
+      { prop: layer.transform.scaleY, path: "transform.scaleY" },
+      { prop: layer.transform.scaleZ, path: "transform.scaleZ" },
+      { prop: layer.transform.rotation, path: "transform.rotation" },
+      { prop: layer.transform.orientation, path: "transform.orientation" },
+      { prop: layer.transform.rotationX, path: "transform.rotationX" },
+      { prop: layer.transform.rotationY, path: "transform.rotationY" },
+      { prop: layer.transform.rotationZ, path: "transform.rotationZ" },
     ];
 
-    for (const prop of transformProps) {
+    for (const { prop, path } of transformProps) {
       // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
       if (prop != null && typeof prop === "object" && "keyframes" in prop && prop.keyframes != null && Array.isArray(prop.keyframes)) {
-        prop.keyframes = prop.keyframes.map((kf: Keyframe<PropertyValue>) => ({
-          ...kf,
-          id: crypto.randomUUID(),
-        }));
+        prop.keyframes = prop.keyframes.map((kf: Keyframe<PropertyValue>) => {
+          const valueStr = typeof kf.value === "object" && kf.value !== null && "x" in kf.value && "y" in kf.value
+            ? `${(kf.value as { x: number; y: number }).x},${(kf.value as { x: number; y: number }).y}${"z" in kf.value ? `,${(kf.value as { x: number; y: number; z?: number }).z}` : ""}`
+            : String(kf.value);
+          return {
+            ...kf,
+            id: generateKeyframeId(layer.id, path, safeFrame(kf.frame, 0), valueStr),
+          };
+        });
       }
     }
   }
   if (layer.properties) {
     for (const prop of layer.properties) {
       if (prop.keyframes) {
-        prop.keyframes = prop.keyframes.map((kf: Keyframe<PropertyValue>) => ({
-          ...kf,
-          id: crypto.randomUUID(),
-        }));
+        // Explicit check: prop.name and prop.id may be undefined, use fallback
+        const propName = prop.name;
+        const propId = prop.id;
+        const propertyPath = (typeof propName === "string" && propName.length > 0) ? propName : ((typeof propId === "string" && propId.length > 0) ? propId : "property");
+        prop.keyframes = prop.keyframes.map((kf: Keyframe<PropertyValue>) => {
+          const valueStr = typeof kf.value === "object" && kf.value !== null && "x" in kf.value && "y" in kf.value
+            ? `${(kf.value as { x: number; y: number }).x},${(kf.value as { x: number; y: number }).y}${"z" in kf.value ? `,${(kf.value as { x: number; y: number; z?: number }).z}` : ""}`
+            : String(kf.value);
+          return {
+            ...kf,
+            id: generateKeyframeId(layer.id, propertyPath, safeFrame(kf.frame, 0), valueStr),
+          };
+        });
+      }
+    }
+  }
+
+  // Regenerate keyframe IDs for effect parameters
+  if (layer.effects && Array.isArray(layer.effects)) {
+    for (const effect of layer.effects) {
+      if (effect.parameters) {
+        for (const [paramKey, param] of Object.entries(effect.parameters)) {
+          if (param && param.keyframes && Array.isArray(param.keyframes) && param.keyframes.length > 0) {
+            const propertyPath = `effects.${effect.id}.${paramKey}`;
+            param.keyframes = param.keyframes.map((kf: Keyframe<PropertyValue>) => {
+              const valueStr = typeof kf.value === "object" && kf.value !== null && "x" in kf.value && "y" in kf.value
+                ? `${(kf.value as { x: number; y: number }).x},${(kf.value as { x: number; y: number }).y}${"z" in kf.value ? `,${(kf.value as { x: number; y: number; z?: number }).z}` : ""}`
+                : String(kf.value);
+              return {
+                ...kf,
+                id: generateKeyframeId(layer.id, propertyPath, safeFrame(kf.frame, 0), valueStr),
+              };
+            });
+          }
+        }
+      }
+    }
+  }
+
+  // Regenerate keyframe IDs for text animators
+  if (layer.type === "text" && layer.data) {
+    const textData = layer.data as TextData;
+    if (textData.animators && Array.isArray(textData.animators)) {
+      for (const animator of textData.animators) {
+        // Range selector properties
+        if (animator.rangeSelector) {
+          const rangeProps: Array<{ prop: AnimatableProperty<number>; path: string }> = [
+            { prop: animator.rangeSelector.start, path: `textAnimator.${animator.id}.rangeSelector.start` },
+            { prop: animator.rangeSelector.end, path: `textAnimator.${animator.id}.rangeSelector.end` },
+            { prop: animator.rangeSelector.offset, path: `textAnimator.${animator.id}.rangeSelector.offset` },
+          ];
+
+          for (const { prop, path } of rangeProps) {
+            if (prop && prop.keyframes && Array.isArray(prop.keyframes) && prop.keyframes.length > 0) {
+              prop.keyframes = prop.keyframes.map((kf: Keyframe<number>) => {
+                // Explicit check: kf.value is number (never null/undefined per type system)
+                const valueStr = String(kf.value);
+                return {
+                  ...kf,
+                  id: generateKeyframeId(layer.id, path, safeFrame(kf.frame, 0), valueStr),
+                };
+              });
+            }
+          }
+        }
+
+        // Animator properties
+        if (animator.properties) {
+          for (const [propertyName, property] of Object.entries(animator.properties)) {
+            if (property && property.keyframes && Array.isArray(property.keyframes) && property.keyframes.length > 0) {
+              const propertyPath = `textAnimator.${animator.id}.${propertyName}`;
+              // Text animator properties can be PropertyValue (number, Vec2, Vec3, etc.)
+              property.keyframes = property.keyframes.map((kf) => {
+                const valueStr = typeof kf.value === "object" && kf.value !== null && "x" in kf.value && "y" in kf.value
+                  ? `${(kf.value as { x: number; y: number }).x},${(kf.value as { x: number; y: number }).y}${"z" in kf.value ? `,${(kf.value as { x: number; y: number; z?: number }).z}` : ""}`
+                  : String(kf.value);
+                return {
+                  ...kf,
+                  id: generateKeyframeId(layer.id, propertyPath, safeFrame(kf.frame, 0), valueStr),
+                };
+              });
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // Regenerate keyframe IDs for mask properties
+  if (layer.masks && Array.isArray(layer.masks)) {
+    for (const mask of layer.masks) {
+      // Mask opacity, feather, expansion are PropertyValue (number)
+      const maskProps: Array<{ prop: AnimatableProperty<number>; path: string }> = [
+        { prop: mask.opacity, path: `masks.${mask.id}.opacity` },
+        { prop: mask.feather, path: `masks.${mask.id}.feather` },
+        { prop: mask.expansion, path: `masks.${mask.id}.expansion` },
+      ];
+
+      // Optional feather properties
+      if (mask.featherX) {
+        maskProps.push({ prop: mask.featherX, path: `masks.${mask.id}.featherX` });
+      }
+      if (mask.featherY) {
+        maskProps.push({ prop: mask.featherY, path: `masks.${mask.id}.featherY` });
+      }
+
+      // Handle numeric mask properties (opacity, feather, expansion)
+      for (const { prop, path } of maskProps) {
+        if (prop && prop.keyframes && Array.isArray(prop.keyframes) && prop.keyframes.length > 0) {
+          prop.keyframes = prop.keyframes.map((kf: Keyframe<number>) => {
+            // Explicit check: kf.value is number (never null/undefined per type system)
+            const valueStr = String(kf.value);
+            return {
+              ...kf,
+              id: generateKeyframeId(layer.id, path, safeFrame(kf.frame, 0), valueStr),
+            };
+          });
+        }
+      }
+
+      // Handle mask path separately (MaskPath type, not PropertyValue)
+      if (mask.path && mask.path.keyframes && Array.isArray(mask.path.keyframes) && mask.path.keyframes.length > 0) {
+        mask.path.keyframes = mask.path.keyframes.map((kf) => {
+          const valueStr = typeof kf.value === "object" && kf.value !== null && "vertices" in kf.value
+            ? JSON.stringify(kf.value) // Mask path is complex object, use JSON string
+            : String(kf.value);
+          return {
+            ...kf,
+            id: generateKeyframeId(layer.id, `masks.${mask.id}.path`, safeFrame(kf.frame, 0), valueStr),
+          };
+        });
+      }
+    }
+  }
+
+  // Regenerate keyframe IDs for spline control point properties
+  if (layer.type === "spline" && layer.data) {
+    const splineData = layer.data as SplineData;
+    if (splineData.animatedControlPoints && Array.isArray(splineData.animatedControlPoints)) {
+      for (const point of splineData.animatedControlPoints) {
+        const pointProps: Array<{ prop: AnimatableProperty<number>; path: string }> = [
+          { prop: point.x, path: `spline.${point.id}.x` },
+          { prop: point.y, path: `spline.${point.id}.y` },
+        ];
+
+        // Optional depth property
+        if (point.depth) {
+          pointProps.push({ prop: point.depth, path: `spline.${point.id}.depth` });
+        }
+
+        // Optional handle properties
+        if (point.handleIn) {
+          pointProps.push(
+            { prop: point.handleIn.x, path: `spline.${point.id}.handleIn.x` },
+            { prop: point.handleIn.y, path: `spline.${point.id}.handleIn.y` },
+          );
+        }
+        if (point.handleOut) {
+          pointProps.push(
+            { prop: point.handleOut.x, path: `spline.${point.id}.handleOut.x` },
+            { prop: point.handleOut.y, path: `spline.${point.id}.handleOut.y` },
+          );
+        }
+
+        for (const { prop, path } of pointProps) {
+          if (prop && prop.keyframes && Array.isArray(prop.keyframes) && prop.keyframes.length > 0) {
+            prop.keyframes = prop.keyframes.map((kf: Keyframe<number>) => {
+              // Explicit check: kf.value is number (never null/undefined per type system)
+              const valueStr = String(kf.value);
+              return {
+                ...kf,
+                id: generateKeyframeId(layer.id, path, safeFrame(kf.frame, 0), valueStr),
+              };
+            });
+          }
+        }
       }
     }
   }
@@ -347,8 +529,9 @@ export function duplicateLayer(
   // Deep clone the layer - use toRaw to handle Vue reactive proxies
   const duplicate: Layer = structuredClone(toRaw(original));
 
-  // Generate new IDs
-  duplicate.id = crypto.randomUUID();
+  // Generate new IDs deterministically based on original + copy index
+  const copyIndex = layers.filter((l: Layer) => l.name.startsWith(`${original.name} Copy`)).length;
+  duplicate.id = generateLayerId(`${original.name} Copy`, original.parentId, copyIndex);
   duplicate.name = `${original.name} Copy`;
 
   // Generate new keyframe IDs to avoid conflicts

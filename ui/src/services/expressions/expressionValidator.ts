@@ -93,20 +93,20 @@ function extractExpressions(
     expr: PropertyExpression | undefined,
     location: string,
   ) {
-    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
-    const exprEnabled = (expr != null && typeof expr === "object" && "enabled" in expr && typeof expr.enabled === "boolean" && expr.enabled) ? true : false;
-    if (!exprEnabled) return;
+    // Type guard: expr must be defined and enabled
+    if (expr === null || expr === undefined) return;
+    if (typeof expr !== "object") return;
+    if (!("enabled" in expr) || typeof expr.enabled !== "boolean" || !expr.enabled) return;
 
     // Only custom type has user code - presets/functions are safe (hardcoded)
-    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
-    const params = (expr != null && typeof expr === "object" && "params" in expr && expr.params != null && typeof expr.params === "object") ? expr.params : undefined;
-    const code = (params != null && typeof params === "object" && "code" in params && typeof params.code === "string") ? params.code : undefined;
-    if (
-      expr.type === "custom" &&
-      code != null
-    ) {
-      expressions.push({ location, code });
-    }
+    // Type guard: check for custom type and valid code
+    if (expr.type !== "custom") return;
+    const params = ("params" in expr && expr.params !== null && typeof expr.params === "object") ? expr.params : undefined;
+    if (params === undefined) return;
+    const code = ("code" in params && typeof params.code === "string") ? params.code : undefined;
+    if (code === undefined) return;
+
+    expressions.push({ location, code });
   }
 
   // Helper to check animatable property

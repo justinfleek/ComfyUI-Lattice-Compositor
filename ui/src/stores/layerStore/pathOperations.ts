@@ -9,6 +9,7 @@ import type { ControlPoint, Keyframe, SplineData } from "@/types/project";
 import { markLayerDirty } from "@/services/layerEvaluationCache";
 import { storeLogger } from "@/utils/logger";
 import { useProjectStore } from "../projectStore";
+import { generateKeyframeId } from "@/utils/uuid5";
 
 // ============================================================================
 // COPY PATH TO POSITION
@@ -158,15 +159,19 @@ export function copyPathToPosition(
     const inInfluence = (frame - prevFrame) * 0.33;
     const outInfluence = (nextFrame - frame) * 0.33;
 
+    // Type proof: depth ∈ ℝ ∪ {undefined} → z ∈ ℝ
+    const depthValue = point.depth;
+    const z = isFiniteNumber(depthValue) ? depthValue : 0;
+    const value = { x: point.x, y: point.y, z: z };
+    
+    // Deterministic ID generation: same layer/property/frame/value always produces same ID
+    const propertyPath = "transform.position";
+    const valueStr = `${value.x},${value.y},${value.z}`;
+    
     const keyframe: (typeof keyframes)[0] = {
-      id: `kf_${Date.now()}_${i}`,
+      id: generateKeyframeId(targetLayerId, propertyPath, frame, valueStr),
       frame,
-      // Type proof: depth ∈ ℝ ∪ {undefined} → z ∈ ℝ
-      value: (() => {
-        const depthValue = point.depth;
-        const z = isFiniteNumber(depthValue) ? depthValue : 0;
-        return { x: point.x, y: point.y, z: z };
-      })(),
+      value,
       interpolation,
       inHandle: { frame: -inInfluence, value: 0, enabled: true },
       outHandle: { frame: outInfluence, value: 0, enabled: true },

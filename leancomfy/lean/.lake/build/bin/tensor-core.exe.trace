@@ -1,0 +1,28 @@
+{"synthetic": false,
+ "schemaVersion": "2025-09-10",
+ "outputs": "86a4bb0a58ec62f7.exe",
+ "log":
+ [{"message":
+   ".> c:\\Users\\justi\\.elan\\toolchains\\leanprover--lean4---v4.27.0-rc1\\bin\\clang.exe -o C:\\Users\\justi\\Desktop\\ComfyUI-Lattice-Compositor\\leancomfy\\lean\\.lake\\build\\bin\\tensor-core.exe @C:\\Users\\justi\\Desktop\\ComfyUI-Lattice-Compositor\\leancomfy\\lean\\.lake\\build\\bin\\tensor-core.exe.rsp",
+   "level": "trace"}],
+ "inputs":
+ [["linkObjs",
+   [["C:\\Users\\justi\\Desktop\\ComfyUI-Lattice-Compositor\\leancomfy\\lean\\.lake\\build\\ir\\Main.c.o.noexport",
+     "f9e34dbd81cd4155"],
+    ["C:\\Users\\justi\\Desktop\\ComfyUI-Lattice-Compositor\\leancomfy\\lean\\.lake\\build\\ir\\TensorCore\\Basic.c.o.noexport",
+     "c8324e81b8512854"],
+    ["C:\\Users\\justi\\Desktop\\ComfyUI-Lattice-Compositor\\leancomfy\\lean\\.lake\\build\\ir\\TensorCore\\Tensor.c.o.noexport",
+     "44d5fea0691e4053"],
+    ["C:\\Users\\justi\\Desktop\\ComfyUI-Lattice-Compositor\\leancomfy\\lean\\.lake\\build\\ir\\TensorCore\\Ops.c.o.noexport",
+     "29935038ef09a7c4"],
+    ["C:\\Users\\justi\\Desktop\\ComfyUI-Lattice-Compositor\\leancomfy\\lean\\.lake\\build\\ir\\TensorCore\\Graph.c.o.noexport",
+     "e60502cbf376e710"],
+    ["C:\\Users\\justi\\Desktop\\ComfyUI-Lattice-Compositor\\leancomfy\\lean\\.lake\\build\\ir\\TensorCore\\FFI.c.o.noexport",
+     "d3fabd2a7201d171"]]],
+  ["linkLibs", "00000000000006bb"],
+  ["Lean 4.27.0, commit 2fcce7258eeb6e324366bc25f9058293b04b7547",
+   "6f43b597efea5d4c"],
+  ["traceArgs: #[-Wl,--whole-archive, -lleanmanifest, -Wl,--no-whole-archive]",
+   "d9dc93f51f923c09"],
+  ["x86_64-w64-windows-gnu", "360db333d006d911"]],
+ "depHash": "f1a17296221d6080"}

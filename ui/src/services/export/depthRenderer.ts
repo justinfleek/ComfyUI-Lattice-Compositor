@@ -8,6 +8,7 @@ import { isFiniteNumber, safeCoordinateDefault } from "@/utils/typeGuards";
 import type { Camera3D } from "@/types/camera";
 import type { DepthMapFormat } from "@/types/export";
 import type { Layer } from "@/types/project";
+import type { Keyframe as AnimKeyframe } from "@/types/animation";
 import type { LatticeEngine } from "@/engine/LatticeEngine";
 import type { BaseLayer } from "@/engine/layers/BaseLayer";
 import type { ExportedParticle } from "@/engine/particles/types";
@@ -165,9 +166,21 @@ function getLayerDepth(layer: Layer, frame: number): number {
 
   // Check for animated position
   if (position.keyframes && position.keyframes.length > 0) {
-    // Interpolate keyframes
+    // Extract z values from keyframes for interpolation
+    // Deterministic: Convert Keyframe<{x, y, z?}>[] to Keyframe[] with z values
+    const zKeyframes: Keyframe[] = position.keyframes.map((kf) => {
+      const value = typeof kf.value === "object" && kf.value !== null && "z" in kf.value
+        ? (kf.value as { z?: number }).z ?? 0
+        : 0;
+      return {
+        frame: kf.frame,
+        value: value,
+      };
+    });
+    
+    // Interpolate z coordinate
     // Type proof: interpolated z coordinate ∈ number (interpolateValue throws if no keyframes)
-    const interpolatedZ = interpolateValue(position.keyframes, frame, 2);
+    const interpolatedZ = interpolateValue(zKeyframes, frame);
     return safeCoordinateDefault(interpolatedZ, 0, "interpolated z coordinate");
   }
 
@@ -568,7 +581,23 @@ function interpolateValue(
 
   if (prev.frame === next.frame) {
     const value = prev.value;
-    return index !== undefined && Array.isArray(value) ? value[index] : value;
+    // Deterministic: Explicit type check - value can be number or number[]
+    if (index !== undefined && Array.isArray(value)) {
+      // Type proof: index ∈ ℕ ∧ value ∈ number[] → value[index] ∈ number ∪ {undefined}
+      const arrayValue = value[index];
+      if (arrayValue === undefined) {
+        throw new Error(`[DepthRenderer] Array index ${index} out of bounds for keyframe value at frame ${prev.frame}. Array length: ${value.length}`);
+      }
+      if (typeof arrayValue !== "number" || !Number.isFinite(arrayValue)) {
+        throw new Error(`[DepthRenderer] Invalid array value at index ${index} for keyframe at frame ${prev.frame}. Expected finite number, got ${typeof arrayValue}`);
+      }
+      return arrayValue;
+    }
+    // Type proof: value ∈ number (when index is undefined or value is not array)
+    if (typeof value !== "number" || !Number.isFinite(value)) {
+      throw new Error(`[DepthRenderer] Invalid keyframe value at frame ${prev.frame}. Expected finite number, got ${typeof value}`);
+    }
+    return value;
   }
 
   // Linear interpolation
@@ -719,12 +748,12 @@ export function depthToImageData(
   
   // Handle Uint8Array/Uint16Array/Float32Array input (legacy API)
   const depthData = input as Uint8Array | Uint16Array | Float32Array;
-  const w = width!;
-  const h = height!;
-
-  if (!w || !h) {
+  // Deterministic: Explicit null checks before using width/height
+  if (width === undefined || height === undefined || !Number.isFinite(width) || !Number.isFinite(height)) {
     throw new Error('Width and height required when passing typed array');
   }
+  const w = width;
+  const h = height;
 
   const imageData = new ImageData(w, h);
   const is16bit = depthData instanceof Uint16Array;
@@ -793,13 +822,19 @@ export function applyColormap(
   
   // Handle legacy API: (Uint8Array | Uint16Array, width, height, colormap)
   const depthData = input as Uint8Array | Uint16Array;
-  const w = colormapOrWidth as number;
-  const h = height!;
-  const cmap = colormap!;
-  
-  if (!w || !h || !cmap) {
-    throw new Error('Width, height, and colormap required when passing Uint8Array/Uint16Array');
+  // Deterministic: Explicit null checks before using parameters
+  if (typeof colormapOrWidth !== "number" || !Number.isFinite(colormapOrWidth)) {
+    throw new Error('Width must be a finite number when passing Uint8Array/Uint16Array');
   }
+  if (height === undefined || !Number.isFinite(height)) {
+    throw new Error('Height required when passing Uint8Array/Uint16Array');
+  }
+  if (colormap === undefined) {
+    throw new Error('Colormap required when passing Uint8Array/Uint16Array');
+  }
+  const w = colormapOrWidth;
+  const h = height;
+  const cmap = colormap;
   
   const imageData = new ImageData(w, h);
   const is16bit = depthData instanceof Uint16Array;

@@ -4,7 +4,7 @@
  * PROVEN: Memory never exceeds budget (Lean4 theorem memory_bounded)
  * PROVEN: Memory usage is strictly less than VRAM (Lean4 theorem memory_strict_bound)
  * 
- * Based on Lean4 proofs from leanparticles/PARTICLE_VERIFIED (1).lean
+ * Based on Lean4 proofs from leanparticles/PARTICLE_VERIFIED.lean
  */
 
 import { ParticleBuffer } from "./VerifiedParticleBuffer";

@@ -27,6 +27,7 @@ import type { JSONValue } from "@/types/dataAsset";
 import { assertDefined } from "@/utils/typeGuards";
 import { logAuditEntry, logSecurityWarning } from "../../security/auditLog";
 import type { ToolCall } from "../toolDefinitions";
+import { uuid5, UUID5_NAMESPACES } from "@/utils/uuid5";
 
 // ============================================================================
 // TYPES
@@ -120,8 +121,8 @@ const RATE_LIMITS: Record<ScopeLevel, number> = {
   full: 10,
 };
 
-/** Signing key (in production, this would come from secure storage) */
-const SIGNING_KEY = "lattice-scope-v1-" + (typeof crypto !== "undefined" ? crypto.randomUUID() : Date.now());
+/** Signing key (deterministic based on application namespace) */
+const SIGNING_KEY = "lattice-scope-v1-" + uuid5("lattice-scope-signing-key", UUID5_NAMESPACES.OID);
 
 // ============================================================================
 // TOOL CLASSIFICATIONS
@@ -844,10 +845,10 @@ class HardenedScopeManager {
   // ==========================================================================
 
   private generateSecureId(): string {
-    if (typeof crypto !== "undefined" && crypto.randomUUID) {
-      return crypto.randomUUID();
-    }
-    return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    // Generate deterministic UUID5 for security IDs based on session context
+    const sessionId = this.session.id;
+    const timestamp = Date.now();
+    return uuid5(`secure-id-${sessionId}-${timestamp}`, UUID5_NAMESPACES.OID);
   }
 
   private signGrant(grant: ScopeGrant): string {

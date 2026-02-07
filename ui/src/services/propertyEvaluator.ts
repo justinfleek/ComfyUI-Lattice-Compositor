@@ -139,18 +139,27 @@ export function getScalarPropertyValue(
   const component = parts[parts.length - 1];
 
   if (Array.isArray(result)) {
-    // Type proof: result[0/1/2] ∈ ℝ ∪ {undefined} → ℝ | null
+    // Type proof: result[0/1/2] ∈ ℝ ∪ {undefined} → ℝ
     if (component === "x") {
       const xValue = result[0];
-      return typeof xValue === "number" && isFiniteNumber(xValue) ? xValue : null;
+      if (typeof xValue === "number" && isFiniteNumber(xValue)) {
+        return xValue;
+      }
+      throw new Error(`[PropertyEvaluator] Cannot get scalar property value: Property "${propertyPath}" at frame ${frame} for layer "${layerId}" has invalid x component`);
     }
     if (component === "y") {
       const yValue = result[1];
-      return typeof yValue === "number" && isFiniteNumber(yValue) ? yValue : null;
+      if (typeof yValue === "number" && isFiniteNumber(yValue)) {
+        return yValue;
+      }
+      throw new Error(`[PropertyEvaluator] Cannot get scalar property value: Property "${propertyPath}" at frame ${frame} for layer "${layerId}" has invalid y component`);
     }
     if (component === "z") {
       const zValue = result[2];
-      return typeof zValue === "number" && isFiniteNumber(zValue) ? zValue : null;
+      if (typeof zValue === "number" && isFiniteNumber(zValue)) {
+        return zValue;
+      }
+      throw new Error(`[PropertyEvaluator] Cannot get scalar property value: Property "${propertyPath}" at frame ${frame} for layer "${layerId}" has invalid z component`);
     }
     // Return first component by default for vectors
     const firstValue = result[0];

@@ -197,7 +197,9 @@ function toggleKeyframe(prop: "width" | "opacity" | "dashOffset") {
   if (hasKf) {
     animProp.keyframes = animProp.keyframes.filter((k) => k.frame !== frame);
   } else {
-    animProp.keyframes.push(createKeyframe(frame, animProp.value, "linear"));
+    // Deterministic ID generation: use layerId and property path
+    const propertyPath = `gradientStroke.${prop}`;
+    animProp.keyframes.push(createKeyframe(props.layerId, propertyPath, frame, animProp.value, "linear"));
   }
   animProp.animated = animProp.keyframes.length > 0;
   emit("update", updated);

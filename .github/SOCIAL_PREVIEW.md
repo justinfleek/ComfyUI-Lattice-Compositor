@@ -65,7 +65,7 @@ Split view showing "Before AI" vs "After Lattice"
 ## Tools for Creation
 - Figma (recommended)
 - Canva
-- Adobe Photoshop/Illustrator
+- Photopea (free online)
 - GIMP
 
 ## Quick Canva Template

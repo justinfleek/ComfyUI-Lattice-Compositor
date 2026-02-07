@@ -1,0 +1,1751 @@
+openapi: 3.1.0
+info:
+  title: weyl render api
+  version: 2.0.0
+  license:
+    name: Proprietary
+    url: https://weyl.ai/legal/license
+  description: |
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    ## // the street finds its own uses for things
+    generative media at the speed of thought. images and video from the edge,
+    served hot off Blackwell tensor cores.
+    ```bash
+    curl -X POST "https://sync.render.weyl.ai/video/wan/default/i2v?format=720p" \
+      -H "Authorization: Bearer $TOKEN" \
+      -H "Content-Type: application/json" \
+      -d '{"prompt":"she turns to look at the camera","image":"https://..."}' \
+      -o output.mp4
+    ```
+    you POST. you get bytes. the `Content-Location` header points to the CDN.
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    ## // service tiers
+    **`sync.render.weyl.ai`** — dedicated bare metal, SLA-backed.
+    you POST, you get bytes. no queue. 503 if capacity is exhausted.
+    WebSocket available for streaming intermediate frames.
+    **`async.render.weyl.ai`** — queue-backed, CDN-arbitraged pricing.
+    POST returns 202 with job ID. poll, SSE, or WebSocket for progress.
+    equal quality, lower cost, higher latency.
+    **`cdn.render.weyl.ai`** — immutable asset delivery.
+    every generated asset gets a permanent URL. cache-forever semantics.
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    ## // URL anatomy
+    ```
+    /{modality}/{family}/{model}/{task}?format=...&backend=...
+         │         │       │       │
+         │         │       │       └─ operation: t2i, i2i, t2v, i2v, edit
+         │         │       └───────── variant: schnell, dev, default, base
+         │         └───────────────── backbone: flux, wan, qwen, sdxl, ltx
+         └─────────────────────────── output: video, image
+    ```
+    the path encodes *what* you want. query params tune *how*.
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    ## // tasks
+    | task   | requires            | produces | description                |
+    |--------|---------------------|----------|----------------------------|
+    | `t2v`  | prompt              | video    | text to video              |
+    | `i2v`  | prompt + image      | video    | animate a still            |
+    | `t2i`  | prompt              | image    | text to image              |
+    | `i2i`  | prompt + image      | image    | transform / style transfer |
+    | `edit` | prompt + image + mask | image  | inpaint / outpaint         |
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    ## // model families
+    each family is a distinct transformer backbone with its own characteristics.
+    | family   | modality | default backend | status       | notes                              |
+    |----------|----------|-----------------|--------------|-------------------------------------|
+    | `flux`   | image    | nunchaku        | **active**   | FLUX.2 — 32B, Mistral-3 encoder    |
+    | `zimage` | image    | nunchaku        | **active**   | Z-Image Turbo — sub-second, 6B     |
+    | `wan`    | video    | torch           | coming soon  | WAN 2.2 — MoE, high quality i2v    |
+    | `qwen`   | image    | nunchaku        | coming soon  | Qwen-Image — superior editing      |
+    | `sdxl`   | image    | tensorrt        | coming soon  | SDXL 1.0 — huge LoRA ecosystem     |
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    ## // models by family
+    ### active
+    **flux** (image) — Black Forest Labs
+    | model      | tasks    | params | notes                                    |
+    |------------|----------|--------|------------------------------------------|
+    | `dev2`     | t2i, i2i | 32B    | FLUX.2 Dev — Mistral-3 24B text encoder  |
+    | `dev`      | t2i, i2i | 12B    | FLUX.1 Dev — T5-XXL encoder              |
+    | `schnell`  | t2i, i2i | 12B    | FLUX.1 Schnell — 4 steps, fastest        |
+    **zimage** (image) — Alibaba Tongyi Lab
+    | model      | tasks | params | notes                                    |
+    |------------|-------|--------|------------------------------------------|
+    | `turbo`    | t2i   | 6B     | sub-second generation, Apache-2.0       |
+    ### coming soon
+    **wan** (video)
+    | model     | tasks | notes                                      |
+    |-----------|-------|--------------------------------------------|
+    | `default` | i2v   | WAN 2.2 MoE — 14B×2 experts, NVFP4         |
+    **qwen** (image)
+    | model      | tasks         | notes                              |
+    |------------|---------------|------------------------------------|
+    | `edit`     | t2i, i2i, edit| Qwen-Image-Edit-2509, multi-image  |
+    **sdxl** (image)
+    | model     | tasks         | notes                              |
+    |-----------|---------------|------------------------------------|
+    | `base`    | t2i, i2i, edit| SDXL 1.0                           |
+    | `lcm`     | t2i, i2i      | latent consistency, 4-6 steps      |
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    ## // backends
+    three inference backends, each with different tradeoffs:
+    | backend    | stack                | notes                        |
+    |------------|----------------------|------------------------------|
+    | `nunchaku` | NVFP4 on Blackwell   | fastest, 4-bit quantized     |
+    | `torch`    | diffusers + CUDA     | flexible, full precision     |
+    | `tensorrt` | TRT-LLM + ModelOpt   | NVIDIA-optimized, production |
+    backend defaults by family. override with `?backend=` when alternatives exist.
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    ## // tuning (the secret menu)
+    defaults are tuned for good results. power users can override.
+    ### samplers
+    | sampler      | speed  | quality   | notes                              |
+    |--------------|--------|-----------|-------------------------------------|
+    | `euler`      | fast   | good      | default for most models            |
+    | `res_2m`     | 1×     | better    | RES4LYF multistep, general use     |
+    | `res_3s`     | 3×     | superior  | RES4LYF substep, final renders     |
+    | `res_2m_sde` | 1×     | enhanced  | SDE variant, organic textures      |
+    | `uni_pc`     | fast   | good      | avoid on z-image                   |
+    ### schedulers
+    | scheduler      | notes                                                |
+    |----------------|------------------------------------------------------|
+    | `simple`       | fast iteration                                       |
+    | `beta`         | good default for FLUX, z-image                       |
+    | `exponential`  | quality-focused                                      |
+    | `karras`       | classic, reliable                                    |
+    | `bong_tangent` | bidirectional denoising, best for WAN/FLUX quality   |
+    | `beta57`       | modified beta (α=0.5, β=0.7), good with LoRAs        |
+    ### guidance
+    | model       | short prompts | detailed prompts | photorealism | creative |
+    |-------------|---------------|------------------|--------------|----------|
+    | flux/dev2   | 3.5–4.0       | 1.0–1.5          | 1.5–2.0      | 1.0      |
+    | flux/dev    | 3.5–4.0       | 1.0–1.5          | 2.6–3.0      | 1.0      |
+    | flux/schnell| 3.5           | 3.5              | 3.5          | 3.5      |
+    | zimage/turbo| —             | —                | —            | —        |
+    *z-image uses CFG 1.0 regardless of guidance (official docs say 0.0, we found 1.0 works)*
+    ### noise (SDE samplers)
+    | type              | best for                        |
+    |-------------------|---------------------------------|
+    | `gaussian`        | general use (default)           |
+    | `perlin`          | organic looks, photography      |
+    | `brownian`        | natural textures                |
+    | `fractal`         | creative variations             |
+    ### eta (noise injection)
+    | value | effect                |
+    |-------|-----------------------|
+    | 0.3   | subtle variation      |
+    | 0.5   | balanced (default)    |
+    | 0.7   | high detail           |
+    | 1.0   | maximum variation     |
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    ## // formats
+    **video formats**
+    | format          | dimensions | aspect |
+    |-----------------|------------|--------|
+    | `720p`          | 1280×720   | 16:9   |
+    | `720p-portrait` | 720×1280   | 9:16   |
+    | `480p`          | 832×480    | ~16:9  |
+    | `480p-portrait` | 480×832    | ~9:16  |
+    | `square`        | 640×640    | 1:1    |
+    **image formats**
+    | format           | dimensions | aspect |
+    |------------------|------------|--------|
+    | `1024`           | 1024×1024  | 1:1    |
+    | `512`            | 512×512    | 1:1    |
+    | `portrait`       | 768×1024   | 3:4    |
+    | `portrait-wide`  | 576×1024   | 9:16   |
+    | `landscape`      | 1024×768   | 4:3    |
+    | `landscape-wide` | 1024×576   | 16:9   |
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    ## // HTTP semantics
+    **sync tier**
+    | code  | meaning                                            |
+    |-------|----------------------------------------------------|
+    | `200` | done — bytes in body, CDN URL in `Content-Location`|
+    | `503` | capacity exhausted — `Retry-After` header set      |
+    **async tier**
+    | code  | meaning                                            |
+    |-------|----------------------------------------------------|
+    | `202` | accepted — job ID in body, poll or subscribe       |
+    | `303` | complete — `Location` points to CDN                |
+    | `429` | queue full — `Retry-After` header set              |
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    ## // model aliasing
+    HuggingFace model IDs are accepted as family/model shorthand:
+    ```
+    /image/black-forest-labs/FLUX.1-schnell/t2i
+    ```
+    resolves to `/image/flux/schnell/t2i`. check `/models/aliases` for the full map.
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    ## // WebSocket
+    both tiers support WebSocket for streaming:
+    **sync** — `wss://sync.render.weyl.ai/ws`
+    submit jobs, receive intermediate frames in real-time.
+    for latency-critical applications (live preview, interactive tools).
+    **async** — `wss://async.render.weyl.ai/ws`
+    multiplexed job submission and progress. batch workflows.
+    same queue semantics, just over a persistent connection.
+    flatbuffers protocol coming for the truly unhinged.
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+x-tagGroups:
+  - name: Sync
+    tags: [sync-video, sync-image]
+  - name: Async
+    tags: [async-queue, async-jobs]
+  - name: Streaming
+    tags: [websocket, sse]
+  - name: Infrastructure
+    tags: [models, uploads]
+
+servers:
+  - url: https://sync.render.weyl.ai
+    description: synchronous generation (SLA tier)
+  - url: https://async.render.weyl.ai
+    description: queue-backed generation
+  - url: https://api.render.weyl.ai
+    description: control plane (models, uploads)
+  - url: https://cdn.render.weyl.ai
+    description: immutable asset delivery
+
+security:
+  - bearer: []
+
+tags:
+  - name: sync-video
+    x-displayName: sync / video
+    description: |
+      synchronous video generation. dedicated capacity, SLA-backed.
+      POST and receive bytes. 503 if capacity unavailable.
+  - name: sync-image
+    x-displayName: sync / image
+    description: |
+      synchronous image generation. dedicated capacity, SLA-backed.
+      POST and receive bytes. 503 if capacity unavailable.
+  - name: async-queue
+    x-displayName: async / submit
+    description: |
+      queue job submission. returns 202 with job ID.
+      poll `/jobs/{id}`, subscribe to SSE, or use WebSocket.
+  - name: async-jobs
+    x-displayName: async / jobs
+    description: |
+      job status and management. poll, cancel, retrieve outputs.
+  - name: websocket
+    x-displayName: websocket
+    description: |
+      WebSocket endpoints for both tiers. streaming frames, batch submission.
+  - name: sse
+    x-displayName: sse
+    description: |
+      server-sent events for job progress.
+  - name: models
+    x-displayName: models
+    description: |
+      model discovery and capability matrix.
+  - name: uploads
+    x-displayName: uploads
+    description: |
+      presigned uploads for source images.
+components:
+  securitySchemes:
+    bearer:
+      type: http
+      scheme: bearer
+      bearerFormat: opaque
+      description: |
+        API key from [console.weyl.ai](https://console.weyl.ai).
+        `Authorization: Bearer <token>`
+  parameters:
+    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    # path parameters
+    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    Modality:
+      name: modality
+      in: path
+      required: true
+      description: output type
+      schema:
+        type: string
+        enum: [video, image]
+
+    Family:
+      name: family
+      in: path
+      required: true
+      description: |
+        model family (backbone). also accepts HuggingFace org/model format.
+      schema:
+        type: string
+      examples:
+        wan:
+          value: wan
+          summary: WAN video models
+        flux:
+          value: flux
+          summary: FLUX.1 image models
+        hf_alias:
+          value: black-forest-labs/FLUX.1-schnell
+          summary: HuggingFace ID (resolves to flux/schnell)
+
+    Model:
+      name: model
+      in: path
+      required: true
+      description: model variant within family
+      schema:
+        type: string
+      examples:
+        default:
+          value: default
+        schnell:
+          value: schnell
+        dev:
+          value: dev
+
+    Task:
+      name: task
+      in: path
+      required: true
+      description: operation to perform
+      schema:
+        $ref: '#/components/schemas/TaskId'
+
+    JobId:
+      name: id
+      in: path
+      required: true
+      description: job identifier
+      schema:
+        $ref: '#/components/schemas/JobId'
+
+    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    # query parameters
+    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    VideoFormat:
+      name: format
+      in: query
+      description: output dimensions
+      schema:
+        $ref: '#/components/schemas/VideoFormatId'
+
+    ImageFormat:
+      name: format
+      in: query
+      description: output dimensions
+      schema:
+        $ref: '#/components/schemas/ImageFormatId'
+
+    Backend:
+      name: backend
+      in: query
+      description: |
+        inference backend override. defaults by family:
+        - flux/qwen/sana → nunchaku
+        - sdxl/sd3/sd35 → tensorrt
+        - wan/ltx → torch
+      schema:
+        $ref: '#/components/schemas/BackendId'
+
+  schemas:
+    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    # identifiers
+    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    JobId:
+      type: string
+      pattern: '^j_[a-zA-Z0-9]{12,}$'
+      description: job identifier
+      example: j_7Xy9kL2mN4pQ
+
+    AssetId:
+      type: string
+      pattern: '^a_[a-zA-Z0-9]{12,}$'
+      description: asset identifier
+      example: a_3Rt5uV7wX9yZ
+
+    RequestId:
+      type: string
+      pattern: '^req_[a-zA-Z0-9]+$'
+      description: request trace ID
+      example: req_abc123xyz
+
+    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    # enums
+    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    TaskId:
+      type: string
+      enum: [t2v, i2v, t2i, i2i, edit]
+      description: generation task
+      x-enumDescriptions:
+        t2v: text to video
+        i2v: image to video (animate still)
+        t2i: text to image
+        i2i: image to image (transform)
+        edit: inpaint / outpaint
+
+    VideoFormatId:
+      type: string
+      enum: [720p, 720p-portrait, 480p, 480p-portrait, square]
+      default: 720p
+      description: video output dimensions
+      x-enumDescriptions:
+        720p: 1280×720 landscape (16:9)
+        720p-portrait: 720×1280 portrait (9:16)
+        480p: 832×480 wide
+        480p-portrait: 480×832 tall
+        square: 640×640 (1:1)
+
+    ImageFormatId:
+      type: string
+      enum: ['1024', '512', portrait, portrait-wide, landscape, landscape-wide]
+      default: '1024'
+      description: image output dimensions
+      x-enumDescriptions:
+        '1024': 1024×1024 square
+        '512': 512×512 square (fast)
+        portrait: 768×1024 (3:4)
+        portrait-wide: 576×1024 (9:16)
+        landscape: 1024×768 (4:3)
+        landscape-wide: 1024×576 (16:9)
+
+    BackendId:
+      type: string
+      enum: [nunchaku, torch, tensorrt]
+      description: inference backend
+      x-enumDescriptions:
+        nunchaku: NVFP4 on Blackwell — fastest, 4-bit quantized
+        torch: diffusers + CUDA — flexible, full precision
+        tensorrt: TRT-LLM + ModelOpt — NVIDIA-optimized
+
+    JobStatus:
+      type: string
+      enum: [queued, running, complete, error, cancelled]
+      description: job lifecycle state
+
+    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    # primitives
+    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    Prompt:
+      type: string
+      minLength: 1
+      maxLength: 4000
+      description: generation prompt
+
+    NegativePrompt:
+      type: string
+      maxLength: 2000
+      description: what to avoid in generation
+
+    ImageRef:
+      description: |
+        image reference: HTTPS URL, asset URL, or base64 data URI.
+        for images >1MB, use `/uploads` for a stable asset URL.
+      oneOf:
+        - type: string
+          format: uri
+          pattern: '^https://'
+          description: HTTPS URL
+        - type: string
+          pattern: '^data:image/(png|jpeg|jpg|webp);base64,'
+          description: base64 data URI
+
+    Seed:
+      type: integer
+      minimum: 0
+      maximum: 4294967295
+      description: random seed for reproducibility
+
+    Progress:
+      type: number
+      minimum: 0
+      maximum: 1
+      description: completion progress (0.0 to 1.0)
+
+    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    # request bodies
+    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    VideoGenerateRequest:
+      type: object
+      required: [prompt]
+      additionalProperties: true
+      description: |
+        video generation request. `image` required for i2v tasks.
+        additional parameters accepted for power users (see tuning docs).
+      properties:
+        prompt:
+          $ref: '#/components/schemas/Prompt'
+        image:
+          $ref: '#/components/schemas/ImageRef'
+          description: source image (required for i2v)
+        negative_prompt:
+          $ref: '#/components/schemas/NegativePrompt'
+        duration:
+          type: number
+          minimum: 0.5
+          maximum: 10
+          default: 2
+          description: video length in seconds
+        steps:
+          type: integer
+          minimum: 1
+          maximum: 50
+          description: |
+            inference steps. model-specific defaults:
+            - wan/default: 28-32 (standard), 20 (with RES4LYF)
+        cfg:
+          type: number
+          minimum: 0
+          maximum: 20
+          description: |
+            classifier-free guidance. model-specific:
+            - wan/default: 6-8 (>8 causes color instability)
+        seed:
+          $ref: '#/components/schemas/Seed'
+        # ─── power user options (secret menu) ───
+        sampler:
+          type: string
+          description: |
+            sampling algorithm override.
+            - uni_pc (default for WAN, fast)
+            - euler (general purpose)
+            - res_2m (RES4LYF, way better detail than uni_pc)
+            - res_3s (best quality, slower)
+        scheduler:
+          type: string
+          description: |
+            noise schedule override.
+            - simple (fast, use with lightning LoRAs)
+            - bong_tangent (bidirectional, best quality for WAN)
+        shift:
+          type: number
+          description: timestep shift (-1 = use model default)
+        motion_strength:
+          type: number
+          minimum: 0
+          maximum: 1
+          description: amount of motion (model-dependent)
+        # ─── lightning/distilled mode ───
+        lightning:
+          type: boolean
+          default: false
+          description: |
+            use LightX2V distilled weights (WAN only).
+            reduces to 4+4 split workflow, requires shift=5, cfg=1.0
+    ImageGenerateRequest:
+      type: object
+      required: [prompt]
+      additionalProperties: true
+      description: |
+        image generation request.
+        - t2i: just `prompt`
+        - i2i: `prompt` + `image` + optional `strength`
+        - edit: `prompt` + `image` + `mask`
+        additional parameters accepted for power users (see tuning docs).
+      properties:
+        prompt:
+          $ref: '#/components/schemas/Prompt'
+        image:
+          $ref: '#/components/schemas/ImageRef'
+          description: source image (for i2i, edit)
+        mask:
+          $ref: '#/components/schemas/ImageRef'
+          description: inpainting mask (for edit). white=change, black=keep.
+        negative_prompt:
+          $ref: '#/components/schemas/NegativePrompt'
+        strength:
+          type: number
+          minimum: 0
+          maximum: 1
+          default: 0.8
+          description: transformation strength (for i2i)
+        steps:
+          type: integer
+          minimum: 1
+          maximum: 150
+          description: inference steps (model-specific defaults apply)
+        guidance:
+          type: number
+          minimum: 0
+          maximum: 30
+          description: |
+            prompt adherence. model-specific:
+            - flux/dev2: 3.5 (short prompts), 1.0-1.5 (detailed)
+            - flux/dev: 2.6-3.5
+            - flux/schnell: 3.5
+            - zimage/turbo: ignored (uses CFG 1.0 internally)
+        cfg:
+          type: number
+          minimum: 0
+          maximum: 20
+          default: 1.0
+          description: classifier-free guidance scale
+        count:
+          type: integer
+          minimum: 1
+          maximum: 4
+          default: 1
+          description: number of images to generate
+        seed:
+          $ref: '#/components/schemas/Seed'
+        # ─── power user options (secret menu) ───
+        sampler:
+          type: string
+          description: |
+            sampling algorithm override.
+            - euler (default, fast)
+            - res_2m (RES4LYF multistep, better quality)
+            - res_3s (RES4LYF substep, best quality, 3× slower)
+            - res_2m_sde, res_3s_sde (SDE variants, organic textures)
+        scheduler:
+          type: string
+          description: |
+            noise schedule override.
+            - simple (fast)
+            - beta (default for FLUX/z-image)
+            - exponential (quality)
+            - karras (classic)
+            - bong_tangent (bidirectional, best quality)
+            - beta57 (modified beta, good with LoRAs)
+        noise_type:
+          type: string
+          enum: [gaussian, perlin, brownian, fractal]
+          description: noise distribution for SDE samplers
+        eta:
+          type: number
+          minimum: 0
+          maximum: 2.0
+          description: |
+            noise injection strength (SDE samplers).
+            0.3=subtle, 0.5=balanced, 0.7=high detail, 1.0=max
+        clip_skip:
+          type: integer
+          minimum: 0
+          maximum: 12
+          description: CLIP layer skip (SDXL family)
+        lora:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                description: LoRA identifier, HuggingFace ID, or URL
+              weight:
+                type: number
+                default: 1.0
+                description: LoRA strength (negative values invert effect)
+          description: LoRA adapters to apply
+        # ─── detail enhancement ───
+        detail_amount:
+          type: number
+          minimum: -5.0
+          maximum: 5.0
+          description: detail daemon enhancement (0.1-1.0 recommended)
+        detail_start:
+          type: number
+          minimum: 0
+          maximum: 1
+          description: detail enhancement start point in denoising
+        detail_end:
+          type: number
+          minimum: 0
+          maximum: 1
+          description: detail enhancement end point in denoising
+
+    AsyncJobRequest:
+      type: object
+      required: [modality, family, model, task, prompt]
+      additionalProperties: true
+      description: |
+        queue a generation job. embeds the full generation request
+        plus queue-specific options.
+      properties:
+        # ─── routing ───
+        modality:
+          type: string
+          enum: [video, image]
+        family:
+          type: string
+        model:
+          type: string
+        task:
+          $ref: '#/components/schemas/TaskId'
+        format:
+          type: string
+        backend:
+          $ref: '#/components/schemas/BackendId'
+        # ─── generation params ───
+        prompt:
+          $ref: '#/components/schemas/Prompt'
+        image:
+          $ref: '#/components/schemas/ImageRef'
+        mask:
+          $ref: '#/components/schemas/ImageRef'
+        negative_prompt:
+          $ref: '#/components/schemas/NegativePrompt'
+        seed:
+          $ref: '#/components/schemas/Seed'
+        duration:
+          type: number
+        steps:
+          type: integer
+        guidance:
+          type: number
+        strength:
+          type: number
+        count:
+          type: integer
+        # ─── queue options ───
+        priority:
+          type: string
+          enum: [normal, low, high]
+          default: normal
+          description: queue priority (high requires upgraded plan)
+        webhook:
+          type: string
+          format: uri
+          description: POST callback URL on completion
+        ttl:
+          type: integer
+          minimum: 60
+          maximum: 86400
+          description: max seconds in queue before auto-cancel
+        idempotency_key:
+          type: string
+          maxLength: 64
+          description: client-provided key for request deduplication
+
+    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    # response bodies
+    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    Job:
+      type: object
+      required: [id, status, created_at]
+      properties:
+        id:
+          $ref: '#/components/schemas/JobId'
+        status:
+          $ref: '#/components/schemas/JobStatus'
+        position:
+          type: integer
+          minimum: 0
+          description: queue position (when status=queued)
+        progress:
+          $ref: '#/components/schemas/Progress'
+        eta_seconds:
+          type: integer
+          description: estimated seconds to completion
+        output:
+          type: string
+          format: uri
+          description: CDN URL (when complete)
+        outputs:
+          type: array
+          items:
+            type: string
+            format: uri
+          description: multiple outputs (when count > 1)
+        seed:
+          $ref: '#/components/schemas/Seed'
+          description: seed used (for reproducibility)
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+            retriable:
+              type: boolean
+        created_at:
+          type: string
+          format: date-time
+        started_at:
+          type: string
+          format: date-time
+        completed_at:
+          type: string
+          format: date-time
+        request:
+          type: object
+          description: original request (for debugging)
+
+    JobCreated:
+      type: object
+      required: [id, status, position]
+      properties:
+        id:
+          $ref: '#/components/schemas/JobId'
+        status:
+          type: string
+          const: queued
+        position:
+          type: integer
+        eta_seconds:
+          type: integer
+        events_url:
+          type: string
+          format: uri
+          description: SSE endpoint for this job
+
+    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    # uploads
+    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    CreateUploadRequest:
+      type: object
+      required: [content_type, bytes]
+      properties:
+        content_type:
+          type: string
+          enum: [image/png, image/jpeg, image/webp]
+        bytes:
+          type: integer
+          minimum: 1
+          maximum: 52428800
+          description: file size in bytes (max 50MB)
+
+    CreateUploadResponse:
+      type: object
+      required: [upload_url, asset_url]
+      properties:
+        upload_url:
+          type: string
+          format: uri
+          description: PUT bytes here (expires in 1 hour)
+        asset_url:
+          type: string
+          format: uri
+          description: use in generation requests after upload completes
+
+    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    # models discovery
+    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    ModelCapability:
+      type: object
+      required: [family, model, modality, tasks, formats, backends, status]
+      properties:
+        family:
+          type: string
+        model:
+          type: string
+        modality:
+          type: string
+          enum: [video, image]
+        tasks:
+          type: array
+          items:
+            $ref: '#/components/schemas/TaskId'
+        formats:
+          type: array
+          items:
+            type: string
+        backends:
+          type: array
+          items:
+            $ref: '#/components/schemas/BackendId'
+        default_backend:
+          $ref: '#/components/schemas/BackendId'
+        status:
+          type: string
+          enum: [active, preview, coming_soon, deprecated]
+          description: |
+            - active: production ready
+            - preview: available but may change
+            - coming_soon: announced, not yet available
+            - deprecated: will be removed
+        aliases:
+          type: array
+          items:
+            type: string
+          description: HuggingFace IDs that resolve to this model
+        presets:
+          type: object
+          description: recommended configurations
+          properties:
+            fast:
+              $ref: '#/components/schemas/ModelPreset'
+            standard:
+              $ref: '#/components/schemas/ModelPreset'
+            quality:
+              $ref: '#/components/schemas/ModelPreset'
+        notes:
+          type: string
+          description: model-specific guidance
+
+    ModelPreset:
+      type: object
+      description: preset configuration for a model
+      properties:
+        sampler:
+          type: string
+        scheduler:
+          type: string
+        steps:
+          type: integer
+        cfg:
+          type: number
+        guidance:
+          type: number
+        notes:
+          type: string
+
+    ModelsResponse:
+      type: object
+      required: [video, image]
+      properties:
+        video:
+          type: array
+          items:
+            $ref: '#/components/schemas/ModelCapability'
+        image:
+          type: array
+          items:
+            $ref: '#/components/schemas/ModelCapability'
+
+    AliasesResponse:
+      type: object
+      additionalProperties:
+        type: object
+        properties:
+          family:
+            type: string
+          model:
+            type: string
+      description: |
+        map of HuggingFace IDs to family/model.
+        e.g. `{"black-forest-labs/FLUX.1-schnell": {"family": "flux", "model": "schnell"}}`
+    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    # errors
+    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    Error:
+      type: object
+      required: [error, message]
+      properties:
+        error:
+          type: string
+          description: machine-readable error code
+        message:
+          type: string
+          description: human-readable message
+        request_id:
+          $ref: '#/components/schemas/RequestId'
+        details:
+          type: object
+          additionalProperties: true
+          description: additional context
+
+  responses:
+    SyncVideoGenerated:
+      description: |
+        video generation complete. body contains MP4 bytes.
+        `Content-Location` points to permanent CDN URL.
+      headers:
+        Content-Location:
+          schema:
+            type: string
+            format: uri
+          description: permanent CDN URL
+        X-Weyl-Request-Id:
+          schema:
+            $ref: '#/components/schemas/RequestId'
+        X-Weyl-Seed:
+          schema:
+            type: integer
+          description: seed used
+        X-Weyl-Duration-Ms:
+          schema:
+            type: integer
+          description: generation time in milliseconds
+      content:
+        video/mp4:
+          schema:
+            type: string
+            format: binary
+
+    SyncImageGenerated:
+      description: |
+        image generation complete. body contains image bytes.
+        `Content-Location` points to permanent CDN URL.
+      headers:
+        Content-Location:
+          schema:
+            type: string
+            format: uri
+          description: permanent CDN URL
+        X-Weyl-Request-Id:
+          schema:
+            $ref: '#/components/schemas/RequestId'
+        X-Weyl-Seed:
+          schema:
+            type: integer
+          description: seed used
+        X-Weyl-Duration-Ms:
+          schema:
+            type: integer
+          description: generation time in milliseconds
+      content:
+        image/webp:
+          schema:
+            type: string
+            format: binary
+        image/png:
+          schema:
+            type: string
+            format: binary
+
+    AsyncJobAccepted:
+      description: |
+        job accepted and queued. poll `/jobs/{id}` or subscribe to SSE.
+      headers:
+        Location:
+          schema:
+            type: string
+            format: uri
+          description: job status URL
+        Link:
+          schema:
+            type: string
+          description: SSE endpoint
+          example: </jobs/j_abc123/events>; rel="monitor"
+        X-Weyl-Request-Id:
+          schema:
+            $ref: '#/components/schemas/RequestId'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/JobCreated'
+
+    AsyncJobComplete:
+      description: |
+        job complete. `Location` points to CDN.
+      headers:
+        Location:
+          schema:
+            type: string
+            format: uri
+          description: CDN URL for output
+
+    CapacityExhausted:
+      description: |
+        sync tier capacity exhausted. retry after delay or use async tier.
+      headers:
+        Retry-After:
+          schema:
+            type: integer
+          description: seconds to wait
+        Link:
+          schema:
+            type: string
+          description: async endpoint
+          example: <https://async.render.weyl.ai>; rel="alternate"
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: capacity_exhausted
+            message: sync tier at capacity, retry in 30s or use async
+
+    QueueFull:
+      description: |
+        async queue full. retry after delay.
+      headers:
+        Retry-After:
+          schema:
+            type: integer
+          description: seconds to wait
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: queue_full
+            message: queue depth exceeded, retry in 60s
+
+    ValidationError:
+      description: request validation failed
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: validation_error
+            message: "image required for i2v task"
+            details:
+              field: image
+              constraint: required
+
+    Unauthorized:
+      description: authentication failed
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: unauthorized
+            message: invalid or expired token
+
+    NotFound:
+      description: resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    Conflict:
+      description: conflict (e.g., job already running)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+paths:
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  # SYNC TIER
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  /video/{family}/{model}/{task}:
+    post:
+      operationId: syncGenerateVideo
+      tags: [sync-video]
+      servers:
+        - url: https://sync.render.weyl.ai
+      summary: generate video (sync)
+      description: |
+        synchronous video generation on dedicated capacity.
+        POST your request, receive MP4 bytes directly.
+        `Content-Location` header contains permanent CDN URL.
+        503 if capacity exhausted — use async tier instead.
+      parameters:
+        - $ref: '#/components/parameters/Family'
+        - $ref: '#/components/parameters/Model'
+        - $ref: '#/components/parameters/Task'
+        - $ref: '#/components/parameters/VideoFormat'
+        - $ref: '#/components/parameters/Backend'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VideoGenerateRequest'
+            examples:
+              i2v_basic:
+                summary: basic i2v
+                value:
+                  prompt: she turns slowly to face the camera
+                  image: https://example.com/portrait.jpg
+              i2v_detailed:
+                summary: i2v with options
+                value:
+                  prompt: camera pushes in, dramatic lighting, film grain
+                  image: https://cdn.render.weyl.ai/a/xyz123
+                  duration: 3
+                  steps: 30
+                  seed: 42
+                  motion_strength: 0.7
+      responses:
+        '200':
+          $ref: '#/components/responses/SyncVideoGenerated'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '503':
+          $ref: '#/components/responses/CapacityExhausted'
+
+  /image/{family}/{model}/{task}:
+    post:
+      operationId: syncGenerateImage
+      tags: [sync-image]
+      servers:
+        - url: https://sync.render.weyl.ai
+      summary: generate image (sync)
+      description: |
+        synchronous image generation on dedicated capacity.
+        POST your request, receive image bytes directly.
+        `Content-Location` header contains permanent CDN URL.
+        503 if capacity exhausted — use async tier instead.
+      parameters:
+        - $ref: '#/components/parameters/Family'
+        - $ref: '#/components/parameters/Model'
+        - $ref: '#/components/parameters/Task'
+        - $ref: '#/components/parameters/ImageFormat'
+        - $ref: '#/components/parameters/Backend'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ImageGenerateRequest'
+            examples:
+              t2i_simple:
+                summary: text to image
+                value:
+                  prompt: neon-lit alley in the rain, cyberpunk, film noir
+              t2i_detailed:
+                summary: t2i with options
+                value:
+                  prompt: portrait of a woman, rembrandt lighting, medium format film
+                  steps: 30
+                  guidance: 7.5
+                  seed: 12345
+              i2i_transform:
+                summary: image to image
+                value:
+                  prompt: convert to anime style, studio ghibli
+                  image: https://example.com/photo.jpg
+                  strength: 0.7
+              edit_inpaint:
+                summary: inpainting
+                value:
+                  prompt: add a glowing neon sign
+                  image: https://example.com/alley.jpg
+                  mask: https://example.com/mask.png
+      responses:
+        '200':
+          $ref: '#/components/responses/SyncImageGenerated'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '503':
+          $ref: '#/components/responses/CapacityExhausted'
+
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  # ASYNC TIER
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  /queue:
+    post:
+      operationId: asyncEnqueue
+      tags: [async-queue]
+      servers:
+        - url: https://async.render.weyl.ai
+      summary: queue generation job
+      description: |
+        submit a job to the async queue. returns 202 with job ID.
+        **retrieval options:**
+        - poll `GET /jobs/{id}`
+        - subscribe to SSE at `/jobs/{id}/events`
+        - use WebSocket at `/ws` for batch workflows
+        **queue behavior:**
+        - 429 if queue depth exceeded (check `Retry-After`)
+        - jobs auto-cancel after `ttl` seconds in queue
+        - `idempotency_key` prevents duplicate submissions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AsyncJobRequest'
+            examples:
+              video:
+                summary: queue video generation
+                value:
+                  modality: video
+                  family: wan
+                  model: default
+                  task: i2v
+                  format: 720p
+                  prompt: she turns to face the camera
+                  image: https://example.com/portrait.jpg
+              image_batch:
+                summary: queue image batch
+                value:
+                  modality: image
+                  family: flux
+                  model: schnell
+                  task: t2i
+                  format: '1024'
+                  prompt: cyberpunk street scene
+                  count: 4
+                  webhook: https://myapp.com/webhooks/weyl
+              with_idempotency:
+                summary: with idempotency key
+                value:
+                  modality: image
+                  family: flux
+                  model: dev
+                  task: t2i
+                  prompt: portrait, soft lighting
+                  idempotency_key: user_123_request_456
+      responses:
+        '202':
+          $ref: '#/components/responses/AsyncJobAccepted'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/QueueFull'
+
+  /jobs/{id}:
+    get:
+      operationId: asyncGetJob
+      tags: [async-jobs]
+      servers:
+        - url: https://async.render.weyl.ai
+      summary: get job status
+      description: |
+        retrieve current job status. when complete, returns 303 redirect to CDN.
+      parameters:
+        - $ref: '#/components/parameters/JobId'
+      responses:
+        '200':
+          description: job status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Job'
+        '303':
+          $ref: '#/components/responses/AsyncJobComplete'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      operationId: asyncCancelJob
+      tags: [async-jobs]
+      servers:
+        - url: https://async.render.weyl.ai
+      summary: cancel job
+      description: |
+        cancel a queued job. returns 409 if job already running or complete.
+      parameters:
+        - $ref: '#/components/parameters/JobId'
+      responses:
+        '204':
+          description: cancelled
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /jobs/{id}/events:
+    get:
+      operationId: asyncSubscribeJob
+      tags: [sse]
+      servers:
+        - url: https://async.render.weyl.ai
+      summary: subscribe to job (SSE)
+      description: |
+        server-sent events stream for job progress.
+        **events:**
+        | event      | payload                                |
+        |------------|----------------------------------------|
+        | `position` | `{"position": 3, "eta_seconds": 45}`   |
+        | `started`  | `{}`                                   |
+        | `progress` | `{"progress": 0.5, "step": 15}`        |
+        | `preview`  | `{"frame": "data:image/jpeg;base64,"}` |
+        | `complete` | `{"output": "https://cdn..."}`         |
+        | `error`    | `{"code": "...", "message": "..."}`    |
+        client should close connection after `complete` or `error`.
+      parameters:
+        - $ref: '#/components/parameters/JobId'
+      responses:
+        '200':
+          description: event stream
+          content:
+            text/event-stream:
+              schema:
+                type: string
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  # WEBSOCKET
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  /ws:
+    get:
+      operationId: syncWebSocket
+      tags: [websocket]
+      servers:
+        - url: wss://sync.render.weyl.ai
+      summary: sync tier WebSocket
+      description: |
+        WebSocket endpoint for sync tier. streaming intermediate frames,
+        real-time preview during generation.
+        **protocol (JSON):**
+        *client → server:*
+        ```json
+        {
+          "type": "generate",
+          "id": "client_req_1",
+          "modality": "video",
+          "family": "wan",
+          "model": "default",
+          "task": "i2v",
+          "request": { "prompt": "...", "image": "..." }
+        }
+        ```
+        *server → client:*
+        ```json
+        {"type": "ack", "id": "client_req_1", "job_id": "j_abc123"}
+        {"type": "started", "job_id": "j_abc123"}
+        {"type": "progress", "job_id": "j_abc123", "progress": 0.25}
+        {"type": "frame", "job_id": "j_abc123", "frame": "data:image/jpeg;base64,..."}
+        {"type": "complete", "job_id": "j_abc123", "output": "https://cdn..."}
+        ```
+        flatbuffers protocol available at `/ws/fb` for the latency-obsessed.
+      responses:
+        '101':
+          description: switching protocols (WebSocket upgrade)
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  # INFRASTRUCTURE
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  /models:
+    get:
+      operationId: listModels
+      tags: [models]
+      servers:
+        - url: https://api.render.weyl.ai
+      summary: list available models
+      description: |
+        discover available models, tasks, formats, and backends.
+        use this to validate requests client-side or build dynamic UIs.
+      responses:
+        '200':
+          description: capability matrix
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModelsResponse'
+              example:
+                video:
+                  - family: wan
+                    model: default
+                    modality: video
+                    tasks: [i2v]
+                    formats: [720p, 720p-portrait, 480p, 480p-portrait, square]
+                    backends: [torch, nunchaku]
+                    default_backend: torch
+                    status: coming_soon
+                    aliases: [Wan-AI/Wan2.1-I2V-14B-480P]
+                    presets:
+                      fast:
+                        sampler: euler
+                        scheduler: simple
+                        steps: 8
+                        cfg: 1.0
+                        notes: requires lightning LoRAs, shift=5
+                      standard:
+                        sampler: uni_pc
+                        scheduler: beta
+                        steps: 28
+                        cfg: 7.0
+                      quality:
+                        sampler: res_2m
+                        scheduler: bong_tangent
+                        steps: 20
+                        cfg: 7.0
+                        notes: way better detail than uni_pc
+                    notes: "MoE architecture (14B×2). CFG >8 causes color instability."
+                image:
+                  - family: flux
+                    model: dev2
+                    modality: image
+                    tasks: [t2i, i2i]
+                    formats: ['1024', '512', portrait, portrait-wide, landscape, landscape-wide]
+                    backends: [nunchaku, torch]
+                    default_backend: nunchaku
+                    status: active
+                    aliases: [black-forest-labs/FLUX.2-dev]
+                    presets:
+                      fast:
+                        sampler: euler
+                        scheduler: simple
+                        steps: 20
+                        cfg: 1.0
+                        guidance: 2.5
+                      standard:
+                        sampler: euler
+                        scheduler: beta
+                        steps: 25
+                        cfg: 1.0
+                        guidance: 3.5
+                      quality:
+                        sampler: res_3s
+                        scheduler: exponential
+                        steps: 35
+                        cfg: 1.0
+                        guidance: 3.5
+                    notes: "32B params, Mistral-3 24B text encoder. guidance 3.5-4.0 for short prompts, 1.0-1.5 for detailed."
+                  - family: flux
+                    model: dev
+                    modality: image
+                    tasks: [t2i, i2i]
+                    formats: ['1024', '512', portrait, portrait-wide, landscape, landscape-wide]
+                    backends: [nunchaku, torch]
+                    default_backend: nunchaku
+                    status: active
+                    aliases: [black-forest-labs/FLUX.1-dev]
+                    presets:
+                      standard:
+                        sampler: euler
+                        scheduler: beta
+                        steps: 25
+                        cfg: 1.0
+                        guidance: 3.5
+                      photorealism:
+                        sampler: res_2m
+                        scheduler: bong_tangent
+                        steps: 25
+                        cfg: 1.0
+                        guidance: 2.8
+                        notes: use with anti_blur LoRA
+                    notes: "12B params. If blurry: increase steps to 40-50, lower guidance to 2.6-3.0, or use Anti-Blur LoRA."
+                  - family: flux
+                    model: schnell
+                    modality: image
+                    tasks: [t2i, i2i]
+                    formats: ['1024', '512', portrait, portrait-wide, landscape, landscape-wide]
+                    backends: [nunchaku, torch]
+                    default_backend: nunchaku
+                    status: active
+                    aliases: [black-forest-labs/FLUX.1-schnell]
+                    presets:
+                      standard:
+                        sampler: euler
+                        scheduler: beta
+                        steps: 4
+                        cfg: 1.0
+                        guidance: 3.5
+                    notes: "4-step distilled. Fastest FLUX variant."
+                  - family: zimage
+                    model: turbo
+                    modality: image
+                    tasks: [t2i]
+                    formats: ['1024', '512', portrait, landscape]
+                    backends: [nunchaku]
+                    default_backend: nunchaku
+                    status: active
+                    aliases: [Comfy-Org/z_image_turbo]
+                    presets:
+                      fast:
+                        sampler: euler
+                        scheduler: simple
+                        steps: 5
+                        cfg: 1.0
+                      standard:
+                        sampler: euler
+                        scheduler: beta
+                        steps: 8
+                        cfg: 1.0
+                      quality:
+                        sampler: res_2m
+                        scheduler: bong_tangent
+                        steps: 10
+                        cfg: 1.0
+                    notes: "6B params, sub-second generation. Apache-2.0. Avoid uni_pc/heun samplers. CFG 1.0 (not 0.0 despite official docs)."
+                  - family: qwen
+                    model: edit
+                    modality: image
+                    tasks: [t2i, i2i, edit]
+                    formats: ['1024', '512', portrait, landscape]
+                    backends: [nunchaku]
+                    default_backend: nunchaku
+                    status: coming_soon
+                    aliases: [Comfy-Org/Qwen-Image-Edit_ComfyUI]
+                    presets:
+                      fast:
+                        sampler: euler
+                        steps: 4
+                        cfg: 1.0
+                        notes: requires 4-step lightning LoRA
+                      standard:
+                        sampler: euler
+                        steps: 8
+                        cfg: 1.0
+                        notes: requires 8-step lightning LoRA
+                      quality:
+                        sampler: euler
+                        steps: 20
+                        cfg: 1.0
+                    notes: "Multi-image input (1-3 images). Bilingual (EN/CN). Superior identity preservation."
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /models/aliases:
+    get:
+      operationId: listAliases
+      tags: [models]
+      servers:
+        - url: https://api.render.weyl.ai
+      summary: list model aliases
+      description: |
+        map of HuggingFace model IDs to weyl family/model.
+      responses:
+        '200':
+          description: alias map
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AliasesResponse'
+              example:
+                black-forest-labs/FLUX.2-dev:
+                  family: flux
+                  model: dev2
+                black-forest-labs/FLUX.1-schnell:
+                  family: flux
+                  model: schnell
+                black-forest-labs/FLUX.1-dev:
+                  family: flux
+                  model: dev
+                Comfy-Org/z_image_turbo:
+                  family: zimage
+                  model: turbo
+                Wan-AI/Wan2.1-I2V-14B-480P:
+                  family: wan
+                  model: default
+                Comfy-Org/Qwen-Image-Edit_ComfyUI:
+                  family: qwen
+                  model: edit
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /models/loras:
+    get:
+      operationId: listLoras
+      tags: [models]
+      servers:
+        - url: https://api.render.weyl.ai
+      summary: list available LoRAs
+      description: |
+        curated LoRAs available for use. pass the `id` in your request's `lora` array.
+      responses:
+        '200':
+          description: available LoRAs
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  loras:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        name:
+                          type: string
+                        families:
+                          type: array
+                          items:
+                            type: string
+                        effect:
+                          type: string
+                        recommended_weight:
+                          type: array
+                          items:
+                            type: number
+                        source:
+                          type: string
+              example:
+                loras:
+                  - id: anti_blur
+                    name: Anti-Blur (Shakker Labs)
+                    families: [flux]
+                    effect: deep DoF, reduces background blur
+                    recommended_weight: [0.7, 0.85]
+                    source: https://huggingface.co/Shakker-Labs/FLUX.1-dev-LoRA-AntiBlur
+                  - id: amateur_snapshot
+                    name: Amateur Snapshot
+                    families: [flux]
+                    effect: reduces plastic/blurred look, cellphone aesthetic
+                    recommended_weight: [0.8, 1.0]
+                    source: https://huggingface.co/ClownsharkBatwing/CSBW_Style
+                  - id: hands_v2
+                    name: Hands V2
+                    families: [flux]
+                    effect: improved hand realism and anatomy
+                    recommended_weight: [0.4, 0.8]
+                    source: civitai
+                  - id: qwen_lightning_4step
+                    name: Qwen Lightning 4-Step V2
+                    families: [qwen]
+                    effect: 4-step distillation, reduced saturation vs V1
+                    recommended_weight: [1.0]
+                    source: https://github.com/ModelTC/Qwen-Image-Lightning
+                  - id: qwen_lightning_8step
+                    name: Qwen Lightning 8-Step
+                    families: [qwen]
+                    effect: 8-step distillation, recommended balance
+                    recommended_weight: [1.0]
+                    source: https://github.com/ModelTC/Qwen-Image-Lightning
+                  - id: wan_lightx2v_high
+                    name: WAN LightX2V High Noise
+                    families: [wan]
+                    effect: 4+4 split acceleration (high noise expert)
+                    recommended_weight: [0.8, 1.0]
+                    source: https://huggingface.co/Kijai/WanVideo_comfy/tree/main/Wan22-Lightning
+                  - id: wan_lightx2v_low
+                    name: WAN LightX2V Low Noise
+                    families: [wan]
+                    effect: 4+4 split acceleration (low noise expert)
+                    recommended_weight: [0.8, 1.0]
+                    source: https://huggingface.co/Kijai/WanVideo_comfy/tree/main/Wan22-Lightning
+                  - id: sdxl_sameface_fix
+                    name: Same Face Fix
+                    families: [sdxl]
+                    effect: reduces sameface syndrome
+                    recommended_weight: [-0.55]
+                    source: civitai
+                  - id: sdxl_dmd2_4step
+                    name: DMD2 4-Step
+                    families: [sdxl]
+                    effect: 4-step distillation
+                    recommended_weight: [1.0]
+                    source: civitai
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /uploads:
+    post:
+      operationId: createUpload
+      tags: [uploads]
+      servers:
+        - url: https://api.render.weyl.ai
+      summary: get presigned upload URL
+      description: |
+        request a presigned URL for uploading source images.
+        use for large images (>1MB) or when you need stable asset URLs.
+        1. POST here with content type and size
+        2. PUT your bytes to `upload_url`
+        3. Use `asset_url` in generation requests
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUploadRequest'
+            examples:
+              png:
+                summary: upload PNG
+                value:
+                  content_type: image/png
+                  bytes: 4194304
+      responses:
+        '200':
+          description: presigned URLs
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateUploadResponse'
+              example:
+                upload_url: https://uploads.render.weyl.ai/presigned/abc123?X-Amz-...
+                asset_url: https://cdn.render.weyl.ai/a/abc123
+        '401':
+          $ref: '#/components/responses/Unauthorized'

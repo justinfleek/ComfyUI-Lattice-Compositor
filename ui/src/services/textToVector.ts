@@ -670,7 +670,7 @@ export async function textToVectorFromUrl(
 
   // Get per-character paths
   const characters: CharacterVectorGroup[] = [];
-  let x = opts.x;
+  let xPos = opts.x;
 
   for (let i = 0; i < text.length; i++) {
     const char = text[i];
@@ -681,7 +681,7 @@ export async function textToVectorFromUrl(
     }
 
     // Get path for this character
-    const charPath = glyph.getPath(x, opts.y, fontSize);
+    const charPath = glyph.getPath(xPos, opts.y, fontSize);
     const paths = commandsToBezierPaths(charPath.commands);
 
     // Get bounding box
@@ -709,14 +709,14 @@ export async function textToVectorFromUrl(
     });
 
     // Advance position for next character
-    x += advanceWidth + opts.letterSpacing;
+    xPos += advanceWidth + opts.letterSpacing;
 
     // Apply kerning if available and enabled
     if (opts.kerning && i < text.length - 1) {
       const nextGlyph = font.charToGlyph(text[i + 1]);
       if (nextGlyph) {
         const kerning = font.getKerningValue(glyph, nextGlyph);
-        x += kerning * (fontSize / font.unitsPerEm);
+        xPos += kerning * (fontSize / font.unitsPerEm);
       }
     }
   }

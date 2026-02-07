@@ -153,7 +153,7 @@ export function createAnimatableProperty<T>(
 }
 
 /**
- * Create a default keyframe
+ * Create a default keyframe with deterministic ID generation
  * 
  * BEZIER HANDLE DEFAULTS:
  * - inHandle: { frame: -5, value: 0, enabled: true }
@@ -168,9 +168,16 @@ export function createAnimatableProperty<T>(
  * These defaults were chosen to provide reasonable ease-in/ease-out
  * behavior without requiring manual handle adjustment for most animations.
  * 
+ * @param layerId - Layer ID for deterministic keyframe ID generation
+ * @param propertyPath - Property path for deterministic keyframe ID generation
+ * @param frame - Frame number (must be finite)
+ * @param value - Keyframe value
+ * @param interpolation - Interpolation type (default: "linear")
  * @throws Error if frame is NaN or Infinity (prevents silent interpolation failures)
  */
 export function createKeyframe<T>(
+  layerId: string,
+  propertyPath: string,
   frame: number,
   value: T,
   interpolation: InterpolationType = "linear",
@@ -183,8 +190,16 @@ export function createKeyframe<T>(
     );
   }
 
+  // Deterministic ID generation: same layer/property/frame/value always produces same ID
+  const valueStr = typeof value === "object" && value !== null && "x" in value && "y" in value
+    ? `${(value as { x: number; y: number }).x},${(value as { x: number; y: number }).y}${"z" in value ? `,${(value as { x: number; y: number; z?: number }).z}` : ""}`
+    : String(value);
+  
+  // Import here to avoid circular dependency
+  const { generateKeyframeId } = require("@/utils/uuid5");
+  
   return {
-    id: `kf_${frame}_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+    id: generateKeyframeId(layerId, propertyPath, frame, valueStr),
     frame,
     value,
     interpolation,

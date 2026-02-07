@@ -4,7 +4,7 @@
     "useDefineForClassFields": true,
     "module": "ESNext",
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
-    "types": ["@webgpu/types", "ses"],
+    "types": ["@webgpu/types", "ses", "vite/client"],
     "skipLibCheck": true,
 
     "moduleResolution": "bundler",

@@ -37,14 +37,20 @@ export class GeneratedLayer extends BaseLayer {
     // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??/?.
     const data = layerData.data as Partial<GeneratedLayerData> | undefined;
     const generationType = (data !== null && data !== undefined && typeof data === "object" && "generationType" in data && typeof data.generationType === "string" && data.generationType.length > 0) ? data.generationType : "depth";
-    const sourceLayerId = (data !== null && data !== undefined && typeof data === "object" && "sourceLayerId" in data) ? data.sourceLayerId : null;
+    // Deterministic: Explicit type conversion - ensure string | null (not undefined)
+    const sourceLayerIdRaw = (data !== null && data !== undefined && typeof data === "object" && "sourceLayerId" in data) ? data.sourceLayerId : undefined;
+    const sourceLayerId = sourceLayerIdRaw === undefined || sourceLayerIdRaw === null ? null : sourceLayerIdRaw;
     const model = (data !== null && data !== undefined && typeof data === "object" && "model" in data && typeof data.model === "string" && data.model.length > 0) ? data.model : "depth-anything-v2";
     const parameters = (data !== null && data !== undefined && typeof data === "object" && "parameters" in data && typeof data.parameters === "object" && data.parameters !== null) ? data.parameters : {};
-    const generatedAssetId = (data !== null && data !== undefined && typeof data === "object" && "generatedAssetId" in data) ? data.generatedAssetId : null;
+    const generatedAssetIdRaw = (data !== null && data !== undefined && typeof data === "object" && "generatedAssetId" in data) ? data.generatedAssetId : undefined;
+    const generatedAssetId = generatedAssetIdRaw === undefined || generatedAssetIdRaw === null ? null : generatedAssetIdRaw;
     const status = (data !== null && data !== undefined && typeof data === "object" && "status" in data && typeof data.status === "string" && data.status.length > 0) ? data.status : "pending";
     const autoRegenerate = (data !== null && data !== undefined && typeof data === "object" && "autoRegenerate" in data && typeof data.autoRegenerate === "boolean") ? data.autoRegenerate : false;
-    const lastGenerated = (data !== null && data !== undefined && typeof data === "object" && "lastGenerated" in data) ? data.lastGenerated : undefined;
-    const errorMessage = (data !== null && data !== undefined && typeof data === "object" && "errorMessage" in data) ? data.errorMessage : undefined;
+    // Deterministic: Explicit type conversion - handle string | null | undefined → string | undefined
+    const lastGeneratedRaw = (data !== null && data !== undefined && typeof data === "object" && "lastGenerated" in data) ? data.lastGenerated : undefined;
+    const lastGenerated = lastGeneratedRaw === null || lastGeneratedRaw === undefined ? undefined : lastGeneratedRaw;
+    const errorMessageRaw = (data !== null && data !== undefined && typeof data === "object" && "errorMessage" in data) ? data.errorMessage : undefined;
+    const errorMessage = errorMessageRaw === null || errorMessageRaw === undefined ? undefined : errorMessageRaw;
     return {
       generationType,
       sourceLayerId,

@@ -170,13 +170,15 @@ export class ParticleFrameCacheSystem {
    * Restore particle state from a cached frame
    * @returns The cached frame data if restore succeeded, null if cache miss or version mismatch
    */
-  restoreFromCache(frame: number): ParticleFrameCache {
+  restoreFromCache(frame: number): ParticleFrameCache | null {
     const cached = this.frameCache.get(frame);
     if (!cached) {
-      throw new Error(`[ParticleFrameCache] Cache miss: Frame ${frame} not found in particle cache`);
+      // Cache miss - frame not in cache
+      return null;
     }
     if (cached.version !== this.cacheVersion) {
-      throw new Error(`[ParticleFrameCache] Cache version mismatch: Frame ${frame} has version ${cached.version}, expected ${this.cacheVersion}`);
+      // Version mismatch - cache was invalidated
+      return null;
     }
     return cached;
   }

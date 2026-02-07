@@ -1,0 +1,4 @@
+# file: /home/nixos/.nix-profile/lib/python3.13/asyncio/format_helpers.py
+# hypothesis_version: 6.150.0
+
+['()', '({})', ', ', '__name__', '__qualname__']

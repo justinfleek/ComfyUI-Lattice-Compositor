@@ -472,6 +472,7 @@ import {
 import { useAnimationStore } from "@/stores/animationStore";
 import { useLayerStore } from "@/stores/layerStore";
 import { useProjectStore } from "@/stores/projectStore";
+import { generateKeyframeId } from "@/utils/uuid5";
 import type {
   AnimatableProperty,
   Layer,
@@ -768,10 +769,15 @@ function toggleKeyframe(propName: string, dataKey: string) {
       updatedAnimated = updatedKeyframes.length > 0;
     } else {
       // Add keyframe at current frame
+      // Deterministic ID generation: same layer/property/frame/value always produces same ID
+      const valueStr = typeof prop.value === "object" && prop.value !== null && "x" in prop.value && "y" in prop.value
+        ? `${(prop.value as { x: number; y: number }).x},${(prop.value as { x: number; y: number }).y}${"z" in prop.value ? `,${(prop.value as { x: number; y: number; z?: number }).z}` : ""}`
+        : String(prop.value);
+      const propertyPath = propName; // Custom properties use their name as path
       updatedKeyframes = [
         ...prop.keyframes,
         {
-          id: `kf_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+          id: generateKeyframeId(props.layer.id, propertyPath, frame, valueStr),
           frame,
           value: prop.value,
           interpolation: "linear" as const,
@@ -1234,8 +1240,11 @@ function toggleEffectKeyframe(effectId: string, propName: string) {
     prop.keyframes = prop.keyframes.filter((k) => k.frame !== frame);
     prop.animated = prop.keyframes.length > 0;
   } else {
+    // Deterministic ID generation: same layer/effect/property/frame/value always produces same ID
+    const valueStr = String(prop.value);
+    const propertyPath = `pathEffects.${effectId}.${propName}`;
     prop.keyframes.push({
-      id: `kf_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+      id: generateKeyframeId(props.layer.id, propertyPath, frame, valueStr),
       frame,
       value: prop.value,
       interpolation: "linear" as const,

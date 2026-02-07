@@ -490,8 +490,15 @@ export const useTextAnimatorStore = defineStore("textAnimator", {
           if (props.fillColor) {
             const hex = getAnimatableValue(props.fillColor, frame) as string;
             const rgba = hexToRgbaObject(hex);
-            if (!transforms[i].fillColor) transforms[i].fillColor = { r: 0, g: 0, b: 0, a: 255 };
-            const fc = transforms[i].fillColor!;
+            // Deterministic: Explicit null check before accessing fillColor
+            if (!transforms[i].fillColor) {
+              transforms[i].fillColor = { r: 0, g: 0, b: 0, a: 255 };
+            }
+            const fillColor = transforms[i].fillColor;
+            if (!fillColor) {
+              throw new Error("[TextAnimatorStore] fillColor should be defined after initialization check");
+            }
+            const fc = fillColor;
             fc.r += rgba.r * influence;
             fc.g += rgba.g * influence;
             fc.b += rgba.b * influence;

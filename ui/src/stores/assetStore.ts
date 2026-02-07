@@ -903,11 +903,21 @@ export const useAssetStore = defineStore("assets", {
 
     /**
      * Get particle texture config for GPU particles
+     * Returns internal texture config format for GPU particle rendering
      */
-    getParticleTextureConfig(sheetId: string): ParticleSpriteConfig | null {
-      return spriteSheetService.getParticleTextureConfig(
-        sheetId,
-      ) as ParticleSpriteConfig | null;
+    getParticleTextureConfig(sheetId: string): {
+      diffuseMap: string;
+      spriteSheetColumns: number;
+      spriteSheetRows: number;
+      animateSprite: boolean;
+      spriteFrameRate: number;
+      randomStartFrame: boolean;
+    } | null {
+      try {
+        return spriteSheetService.getParticleTextureConfig(sheetId);
+      } catch {
+        return null;
+      }
     },
 
     /**

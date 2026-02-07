@@ -77,7 +77,7 @@ export interface TextData {
 }
 
 // ============================================================
-// TEXT ANIMATOR (Per-character animation like AE)
+// TEXT ANIMATOR (Per-character animation)
 // ============================================================
 
 export interface TextAnimator {

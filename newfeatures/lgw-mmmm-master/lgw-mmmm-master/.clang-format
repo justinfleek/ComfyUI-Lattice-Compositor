@@ -1,0 +1,16 @@
+BasedOnStyle: Chromium
+TabWidth: 4
+IndentWidth: 4
+UseTab: "Never"
+IndentAccessModifiers: false
+# BreakBeforeBraces: Linux
+IndentCaseLabels: false
+Language: Cpp
+AccessModifierOffset: -4
+AllowAllArgumentsOnNextLine: true
+BinPackArguments: true
+BinPackParameters: true
+# LambdaBodyIndentation: LBI_OuterScope
+AlignAfterOpenBracket: BlockIndent
+# AlignConsecutiveAssignments: Consecutive
+# AlignConsecutiveDeclarations: Consecutive

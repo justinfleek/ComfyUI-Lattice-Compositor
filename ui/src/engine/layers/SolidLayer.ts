@@ -301,7 +301,7 @@ export class SolidLayer extends BaseLayer {
     // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
     const animatedColor = this.animatedColor;
     const animatedColorAnimated = (animatedColor != null && typeof animatedColor === "object" && "animated" in animatedColor && typeof animatedColor.animated === "boolean" && animatedColor.animated) ? true : false;
-    if (animatedColorAnimated && !this.shadowCatcher) {
+    if (animatedColorAnimated && animatedColor && !this.shadowCatcher) {
       const color = this.evaluator.evaluate(animatedColor, frame);
       if ("color" in this.material) {
         (

@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Curve Editor</title>
+</head>
+<body>
+
+  <div class="el" id="js-el"></div>
+  <div class="el2" id="js-el2"></div>
+  <div class="shadow" id="js-shadow"></div>
+  <style>
+    body, html {
+      margin:  0;
+      padding: 0;
+      background: #FFF5E4;
+      /*background: $c-purple;*/
+    }
+
+    .el {
+      position: absolute;
+      left: 10%;
+      top: 80%;
+      width: 100px;
+      height: 100px;
+      margin-left: -50px;
+      margin-top: -50px;
+      background: #572B53;
+      border-radius: 3px;
+      z-index: 1;
+    }
+
+    .el2 {
+      position: absolute;
+      left: 10%;
+      top: 80%;
+      width: 50px;
+      height: 50px;
+      margin-left: -25px;
+      margin-top: -50px;
+      background: #3A0839;
+      background: #230323;
+      /*background: #FF512F;*/
+      border-radius: 3px;
+      z-index: 1;
+      /*transform-origin: center bottom;*/
+    }
+
+    .shadow {
+      position: absolute;
+      left: 10%;
+      top: 80%;
+      width: 80px;
+      height: 7px;
+      margin-left: -40px;
+      margin-top: 45px;
+      background: #333;
+      opacity: .25;
+      border-radius: 50%;
+      z-index: 0;
+      /*transform-origin: center bottom;*/
+    }
+  </style>
+
+  <script src="../node_modules/@mojs/core/build/mo.js" charset="utf-8"></script>
+  <script src="../node_modules/@mojs/player/build/mojs-player.js" charset="utf-8"></script>
+  <script src="build/mojs-curve-editor.js" charset="utf-8"></script>
+
+  <script>
+    var curveEditor = new MojsCurveEditor({
+      name: 'some name',
+      startPath: 'M0, 50 C0, 50 8.857444030665526, 10.092762422806425 47.714285714285715, 20 C61.55713283389225, 23.52947818753174 63.32900551466363, 59.75358052881853 75, 75 C86.67099448533637, 90.24641947118145 100, 50 100, 50 '
+      // onChange(path) { console.log(path); },
+      // isHiddenOnMin: true
+    });
+  </script>
+
+</body>
+</html>

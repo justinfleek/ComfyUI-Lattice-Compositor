@@ -9,7 +9,6 @@ import { useProjectStore } from "@/stores/projectStore";
 import { useMarkerStore } from "@/stores/markerStore";
 import type { MarkerStoreAccess } from "@/stores/markerStore";
 import type { AnimationStoreAccess } from "@/stores/animationStore/types";
-import type { KeyframeStoreAccess } from "@/stores/keyframeStore/types";
 import type { AnimatableProperty } from "@/types/animation";
 import type { LayerTransform } from "@/types/transform";
 import type { ImageLayerData, VideoData, ModelLayerData, SolidLayerData } from "@/types/layerData";
@@ -287,51 +286,6 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
         meta: projectStore.project.meta,
       },
       pushHistory: () => projectStore.pushHistory(),
-    };
-  }
-
-  // Helper to create KeyframeStoreAccess for keyframe operations
-  function getKeyframeStoreAccess(): KeyframeStoreAccess {
-    const activeComp = projectStore.getActiveComp();
-    return {
-      project: {
-        composition: {
-          // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
-          width: (() => {
-            if (activeComp !== null && typeof activeComp === "object" && "settings" in activeComp) {
-              const settings = activeComp.settings;
-              if (settings !== null && typeof settings === "object" && "width" in settings && typeof settings.width === "number") {
-                return settings.width;
-              }
-            }
-            return projectStore.project.composition.width;
-          })(),
-          height: (() => {
-            if (activeComp !== null && typeof activeComp === "object" && "settings" in activeComp) {
-              const settings = activeComp.settings;
-              if (settings !== null && typeof settings === "object" && "height" in settings && typeof settings.height === "number") {
-                return settings.height;
-              }
-            }
-            return projectStore.project.composition.height;
-          })(),
-        },
-        meta: projectStore.project.meta,
-      },
-      getActiveComp: () => activeComp ? {
-        currentFrame: activeComp.currentFrame,
-        layers: activeComp.layers,
-        settings: activeComp.settings,
-      } : null,
-      getActiveCompLayers: () => projectStore.getActiveCompLayers(),
-      getLayerById: (id: string) => {
-        const layers = projectStore.getActiveCompLayers();
-        return layers.find(l => l.id === id) || null;
-      },
-      pushHistory: () => projectStore.pushHistory(),
-      get fps() {
-        return projectStore.getFps();
-      },
     };
   }
 
@@ -996,10 +950,12 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
 
   function zoomViewerIn() {
     viewerZoom.value = Math.min(viewerZoom.value * 1.25, 8);
-    if (threeCanvasRef.value) {
-      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
-      if (threeCanvasRef.value !== null && typeof threeCanvasRef.value === "object" && "setZoom" in threeCanvasRef.value && typeof threeCanvasRef.value.setZoom === "function") {
-        threeCanvasRef.value.setZoom(viewerZoom.value);
+    // Deterministic: Explicit type narrowing with proper type guard
+    const canvas = threeCanvasRef.value;
+    if (canvas !== null && canvas !== undefined && typeof canvas === "object" && "setZoom" in canvas) {
+      const setZoom = (canvas as unknown as { setZoom: (value: number) => void }).setZoom;
+      if (typeof setZoom === "function") {
+        setZoom(viewerZoom.value);
       }
     }
     const percent = Math.round(viewerZoom.value * 100);
@@ -1008,10 +964,12 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
 
   function zoomViewerOut() {
     viewerZoom.value = Math.max(viewerZoom.value / 1.25, 0.1);
-    if (threeCanvasRef.value) {
-      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
-      if (threeCanvasRef.value !== null && typeof threeCanvasRef.value === "object" && "setZoom" in threeCanvasRef.value && typeof threeCanvasRef.value.setZoom === "function") {
-        threeCanvasRef.value.setZoom(viewerZoom.value);
+    // Deterministic: Explicit type narrowing with proper type guard
+    const canvas = threeCanvasRef.value;
+    if (canvas !== null && canvas !== undefined && typeof canvas === "object" && "setZoom" in canvas) {
+      const setZoom = (canvas as unknown as { setZoom: (value: number) => void }).setZoom;
+      if (typeof setZoom === "function") {
+        setZoom(viewerZoom.value);
       }
     }
     const percent = Math.round(viewerZoom.value * 100);
@@ -1021,10 +979,12 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
   function zoomViewerToFit() {
     viewerZoom.value = 1;
     viewZoom.value = "fit";
-    if (threeCanvasRef.value) {
-      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
-      if (threeCanvasRef.value !== null && typeof threeCanvasRef.value === "object" && "fitToView" in threeCanvasRef.value && typeof threeCanvasRef.value.fitToView === "function") {
-        threeCanvasRef.value.fitToView();
+    // Deterministic: Explicit type narrowing with proper type guard
+    const canvas = threeCanvasRef.value;
+    if (canvas !== null && canvas !== undefined && typeof canvas === "object" && "fitToView" in canvas) {
+      const fitToView = (canvas as unknown as { fitToView: () => void }).fitToView;
+      if (typeof fitToView === "function") {
+        fitToView();
       }
     }
   }
@@ -1032,10 +992,12 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
   function zoomViewerTo100() {
     viewerZoom.value = 1;
     viewZoom.value = "100";
-    if (threeCanvasRef.value) {
-      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
-      if (threeCanvasRef.value !== null && typeof threeCanvasRef.value === "object" && "setZoom" in threeCanvasRef.value && typeof threeCanvasRef.value.setZoom === "function") {
-        threeCanvasRef.value.setZoom(1);
+    // Deterministic: Explicit type narrowing with proper type guard
+    const canvas = threeCanvasRef.value;
+    if (canvas !== null && canvas !== undefined && typeof canvas === "object" && "setZoom" in canvas) {
+      const setZoom = (canvas as unknown as { setZoom: (value: number) => void }).setZoom;
+      if (typeof setZoom === "function") {
+        setZoom(1);
       }
     }
   }

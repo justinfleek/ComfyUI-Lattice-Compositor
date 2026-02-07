@@ -12,6 +12,7 @@ import type { ClipboardKeyframe, Layer } from "@/types/project";
 import { storeLogger } from "@/utils/logger";
 import { useSelectionStore } from "../selectionStore";
 import { useProjectStore } from "../projectStore";
+import { generateLayerId } from "@/utils/uuid5";
 import { deleteLayer, regenerateKeyframeIds } from "./crud";
 import type { LayerState } from "./types";
 
@@ -97,7 +98,8 @@ export function pasteLayers(
 
   for (const clipboardLayer of state.clipboard.layers) {
     const newLayer: Layer = structuredClone(clipboardLayer);
-    newLayer.id = crypto.randomUUID();
+    const copyIndex = layers.filter((l: Layer) => l.name.startsWith(`${clipboardLayer.name} Copy`)).length;
+    newLayer.id = generateLayerId(`${clipboardLayer.name} Copy`, null, copyIndex);
     newLayer.name = `${clipboardLayer.name} Copy`;
     regenerateKeyframeIds(newLayer);
     newLayer.parentId = null;

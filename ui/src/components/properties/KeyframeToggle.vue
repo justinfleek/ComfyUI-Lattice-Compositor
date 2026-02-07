@@ -17,6 +17,7 @@
 import { computed } from "vue";
 import { useExpressionEditor } from "@/composables/useExpressionEditor";
 import { useAnimationStore } from "@/stores/animationStore";
+import { addKeyframe as addKeyframeToStore, removeKeyframe as removeKeyframeFromStore } from "@/stores/keyframeStore/crud";
 import type {
   AnimatableProperty,
   BezierHandle,
@@ -43,7 +44,8 @@ const expressionEditor = useExpressionEditor();
 // Check if there's a keyframe at current frame
 const hasKeyframeAtCurrentFrame = computed(() => {
   if (!props.property.animated) return false;
-  return props.property.keyframes.some((k) => k.frame === animationStore.currentFrame);
+  const currentFrame = animationStore.currentFrame;
+  return props.property.keyframes.some((k) => k.frame === currentFrame);
 });
 
 // Check if property has an expression
@@ -57,8 +59,9 @@ const hasExpression = computed(() => {
 // Get the keyframe at current frame (if exists)
 const keyframeAtCurrentFrame = computed(() => {
   if (!props.property.animated) return null;
+  const currentFrame = animationStore.currentFrame;
   return (
-    props.property.keyframes.find((k) => k.frame === animationStore.currentFrame) || null
+    props.property.keyframes.find((k) => k.frame === currentFrame) || null
   );
 });
 
@@ -115,27 +118,18 @@ function toggleKeyframe(): void {
 }
 
 function addKeyframe(): void {
-  const defaultHandle: BezierHandle = { frame: 0, value: 0, enabled: false };
-
-  const newKeyframe: Keyframe = {
-    id: `kf_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`,
-    frame: animationStore.getCurrentFrame(store),
-    value: props.property.value,
-    interpolation: "linear",
-    inHandle: { ...defaultHandle },
-    outHandle: { ...defaultHandle },
-    controlMode: "smooth",
-  };
-
-  // Enable animation if not already
-  if (!props.property.animated) {
-    props.property.animated = true;
-    emit("animationToggled", true);
-  }
-
-  // Add keyframe and sort by frame
-  props.property.keyframes.push(newKeyframe);
-  props.property.keyframes.sort((a, b) => a.frame - b.frame);
+  // Use keyframeStore.addKeyframe for deterministic ID generation
+  // This ensures consistency with the rest of the system
+  const frame = animationStore.currentFrame;
+  const propertyPath = props.propertyPath || props.property.name;
+  
+  // Use store function for deterministic ID generation
+  const newKeyframe = addKeyframeToStore(
+    props.layerId,
+    propertyPath,
+    props.property.value,
+    frame,
+  );
 
   emit("keyframeAdded", newKeyframe);
 }
@@ -144,17 +138,14 @@ function removeKeyframe(): void {
   const keyframe = keyframeAtCurrentFrame.value;
   if (!keyframe) return;
 
-  const index = props.property.keyframes.findIndex((k) => k.id === keyframe.id);
-  if (index >= 0) {
-    props.property.keyframes.splice(index, 1);
-    emit("keyframeRemoved", keyframe.id);
-  }
+  // Use keyframeStore.removeKeyframe for consistency
+  const propertyPath = props.propertyPath || props.property.name;
+  
+  removeKeyframeFromStore(props.layerId, propertyPath, keyframe.id);
+  
+  emit("keyframeRemoved", keyframe.id);
 
-  // If no keyframes left, disable animation
-  if (props.property.keyframes.length === 0) {
-    props.property.animated = false;
-    emit("animationToggled", false);
-  }
+  // Note: removeKeyframeFromStore handles animation flag and history
 }
 </script>
 

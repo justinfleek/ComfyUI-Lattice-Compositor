@@ -162,8 +162,11 @@ export function createTestAnimatedProperty<T>(
   }
   
   // Use production createKeyframe helper - preserves exact handle defaults
+  // Deterministic: Provide layerId and propertyPath for keyframe ID generation
+  const testLayerId = 'test-layer';
+  const testPropertyPath = `transform.${name}`;
   const fullKeyframes: Keyframe<T>[] = keyframes.map((kf) => 
-    createKeyframe(kf.frame, kf.value, 'linear')
+    createKeyframe(testLayerId, testPropertyPath, kf.frame, kf.value, 'linear')
   );
   
   const baseProp = createAnimatableProperty(name, keyframes[0].value, type);
@@ -188,12 +191,19 @@ export function createTestAnimatedProperty<T>(
  * 
  * @see createKeyframe in @/types/animation.ts lines 158-180
  */
+/**
+ * Create a test keyframe with default layer/property IDs
+ * Deterministic: Uses test IDs for consistent keyframe ID generation
+ */
 export function createTestKeyframe<T>(
   frame: number,
   value: T,
   interpolation: 'linear' | 'bezier' | 'hold' = 'linear'
 ): Keyframe<T> {
-  return createKeyframe(frame, value, interpolation);
+  // Use test IDs for deterministic keyframe ID generation
+  const testLayerId = 'test-layer';
+  const testPropertyPath = 'test.property';
+  return createKeyframe(testLayerId, testPropertyPath, frame, value, interpolation);
 }
 
 // ============================================================================

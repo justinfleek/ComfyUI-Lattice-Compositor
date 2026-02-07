@@ -1,0 +1,8 @@
+{"plugins": [],
+ "options": {},
+ "name": "Compass.Jobs",
+ "isModule": false,
+ "importArts":
+ {"Compass.Core":
+  ["/mnt/c/Users/justi/desktop/compass/leandocs/typed-compass/lean/.lake/build/lib/lean/Compass/Core.olean"]},
+ "dynlibs": []}

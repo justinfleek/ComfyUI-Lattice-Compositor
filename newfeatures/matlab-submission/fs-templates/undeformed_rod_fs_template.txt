@@ -1,0 +1,37 @@
+annotation { "Feature Type Name" : "%FEATURE_NAME%" }
+export const %VAR_NAME% = defineFeature(function(context is Context, id is Id, definition is map)
+    precondition
+    {
+    }
+    {
+        var queries = makeArray(%M%);
+        var fullqueries = makeArray(%M%);
+        %S_DEF%
+        %R1_DEF%
+        %R2_DEF%
+        %AX_DEF%
+        for (var i = 0; i != %M%; i += 1)
+        {
+            var origin is Vector = vector(0.0,0.0,s[i]) * %UNIT%;
+            var P is Plane = plane(origin, vector(0.0,0.0,1.0) * %UNIT%, vector(1.0,0.0,0.0) * %UNIT%);
+            var sketch = newSketchOnPlane(context, id + ("sketch"~i), { "sketchPlane" : P });
+            skEllipse(sketch, "ellipse"~i, {
+                    "center" : vector(0, 0) * %UNIT%,
+                    "majorRadius" : r1[i] * %UNIT%,
+                    "minorRadius" : r2[i] * %UNIT%,
+                    "majorAxis" : normalize(ax[i])
+            });
+            skSolve(sketch);
+            queries[i] = qCreatedBy(id + ("sketch"~i), EntityType.FACE);
+            fullqueries[i] = qCreatedBy(id + ("sketch"~i));
+        }
+        debug(context,queries);
+        
+        opLoft(context, id + "loft", {
+                "profileSubqueries" : queries
+        });
+        opDeleteBodies(context, id + "deleteSketches", {
+                "entities" : qUnion(fullqueries)
+        });
+    });
+

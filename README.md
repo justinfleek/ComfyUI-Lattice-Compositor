@@ -480,4 +480,3 @@ MIT License — see [LICENSE](LICENSE) for details.
 [Report Bug](https://github.com/justinfleek/lattice-compositor/issues) · [Request Feature](https://github.com/justinfleek/lattice-compositor/issues) · [Discussions](https://github.com/justinfleek/lattice-compositor/discussions)
 
 </div>
-# COmfyUI-Lattice-Compositor

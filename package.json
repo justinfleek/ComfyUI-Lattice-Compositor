@@ -2,8 +2,25 @@
   "name": "lattice-compositor",
   "version": "1.0.0",
   "private": true,
+  "type": "module",
   "scripts": {
-    "prepare": "husky install"
+    "prepare": "husky install",
+    "build": "cd ui && npm install && npm run build",
+    "build:check": "cd ui && npm run build:check",
+    "install": "pip install -r requirements.txt",
+    "init-db": "node scripts/init-database.js",
+    "mcp-server": "node scripts/mcp-server.js",
+    "straylight:validate": "node scripts/validate-file.js",
+    "straylight:validate-all": "node scripts/validate-all-files.js",
+    "straylight:watch": "node scripts/watch-and-validate.js",
+    "straylight:test": "node scripts/test-all-violations.js",
+    "straylight:report": "node scripts/generate-validation-report.js",
+    "straylight:coverage": "node scripts/rule-coverage-matrix.js",
+    "straylight:mcp": "node .claude/straylight-mcp.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.25.3",
+    "duckdb": "^1.0.0"
   },
   "devDependencies": {
     "husky": "^9.0.0"

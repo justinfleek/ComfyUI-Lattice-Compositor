@@ -848,7 +848,9 @@ export class LatticeEngine {
       compositionWidth,
       compositionHeight,
     };
-    this.emit("resize", resizeData as unknown as JSONValue);
+    // Type proof: Record<string, number> is a valid JSONValue
+    // No type assertion needed - Record<string, number> satisfies JSONValue constraint
+    this.emit("resize", resizeData);
   }
 
   /**
@@ -1655,7 +1657,11 @@ export class LatticeEngine {
     const { imageData, width, height } = this.captureFrame();
 
     const canvas = new OffscreenCanvas(width, height);
-    const ctx = canvas.getContext("2d")!;
+    // Deterministic: Explicit null check for getContext - "2d" should always succeed but we verify
+    const ctx = canvas.getContext("2d");
+    if (!ctx) {
+      throw new Error("[LatticeEngine] Failed to get 2d context from OffscreenCanvas");
+    }
     ctx.putImageData(imageData, 0, 0);
 
     return canvas.convertToBlob({

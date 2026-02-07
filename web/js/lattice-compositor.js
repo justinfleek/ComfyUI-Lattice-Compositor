@@ -1,5 +1,4 @@
 import { d as defineStore, a as defineComponent, o as onMounted, r as resolveComponent, c as createBlock, b as openBlock, e as createApp, f as createPinia } from './lattice-vue-vendor.js';
-/* empty css                  */
 
 const useThemeStore = defineStore("theme", {
   state: () => ({
@@ -138,6 +137,7 @@ class CanvasPool {
 }
 const canvasPool = new CanvasPool();
 
+const __vite_import_meta_env__ = {"BASE_URL": "/", "DEV": false, "MODE": "production", "PROD": true, "SSR": false};
 const LOG_LEVELS = {
   debug: 0,
   info: 1,
@@ -145,8 +145,10 @@ const LOG_LEVELS = {
   error: 3,
   none: 4
 };
+const importMetaEnv = import.meta != null && typeof import.meta === "object" && "env" in import.meta && __vite_import_meta_env__ != null && typeof (__vite_import_meta_env__) === "object" ? __vite_import_meta_env__ : void 0;
+const envDev = importMetaEnv != null && typeof importMetaEnv === "object" && "DEV" in importMetaEnv && typeof importMetaEnv.DEV === "boolean" && importMetaEnv.DEV ? true : false;
 const config = {
-  level: "warn",
+  level: envDev ? "debug" : "warn",
   prefix: "[Lattice]"};
 function shouldLog(level) {
   return LOG_LEVELS[level] >= LOG_LEVELS[config.level];
@@ -218,6 +220,7 @@ function createLogger(context) {
     },
     /**
      * Log a table (useful for arrays/objects)
+     * Accepts any serializable data structure
      */
     table(data) {
       if (shouldLog("debug")) {
@@ -242,6 +245,38 @@ function createLogger(context) {
 }
 const engineLogger = createLogger("Engine");
 const renderLogger = createLogger("Render");
+
+function isObject(value) {
+  return typeof value === "object" && value !== null;
+}
+function isFiniteNumber(value) {
+  return typeof value === "number" && Number.isFinite(value);
+}
+function isArray(value) {
+  return Array.isArray(value);
+}
+function hasXY(value) {
+  if (!isObject(value)) return false;
+  const xValue = value.x;
+  const yValue = value.y;
+  return isFiniteNumber(xValue) && isFiniteNumber(yValue);
+}
+function isRGBColor(value) {
+  if (!isObject(value)) return false;
+  return isFiniteNumber(value.r) && isFiniteNumber(value.g) && isFiniteNumber(value.b) && value.r >= 0 && value.r <= 255 && value.g >= 0 && value.g <= 255 && value.b >= 0 && value.b <= 255;
+}
+function isRGBAColor(value) {
+  if (!isRGBColor(value)) return false;
+  if (!isObject(value)) return false;
+  if (!("a" in value)) return false;
+  const aValue = value.a;
+  return isFiniteNumber(aValue) && aValue >= 0 && aValue <= 1;
+}
+function assertDefined(value, message) {
+  if (value === null || value === void 0) {
+    throw new TypeError(message);
+  }
+}
 
 const BLUR_COMPUTE_SHADER = (
   /* wgsl */
@@ -864,6 +899,14 @@ class WebGPURenderer {
       layout: device.createPipelineLayout({ bindGroupLayouts: [layout] }),
       compute: { module, entryPoint: "main" }
     });
+    assertDefined(this.blurModule, "blurModule must exist after createShaderModules");
+    assertDefined(this.colorModule, "colorModule must exist after createShaderModules");
+    assertDefined(this.radialBlurModule, "radialBlurModule must exist after createShaderModules");
+    assertDefined(this.directionalBlurModule, "directionalBlurModule must exist after createShaderModules");
+    assertDefined(this.warpModule, "warpModule must exist after createShaderModules");
+    assertDefined(this.glowModule, "glowModule must exist after createShaderModules");
+    assertDefined(this.levelsModule, "levelsModule must exist after createShaderModules");
+    assertDefined(this.displacementModule, "displacementModule must exist after createShaderModules");
     this.blurPipeline = createPipeline(this.blurModule, standardLayout);
     this.colorPipeline = createPipeline(this.colorModule, standardLayout);
     this.radialBlurPipeline = createPipeline(
@@ -910,6 +953,7 @@ class WebGPURenderer {
     }
   }
   async blurWebGPU(source, params) {
+    assertDefined(this.capabilities.device, "device must exist when WebGPU is available");
     const device = this.capabilities.device;
     const imageData = this.toImageData(source);
     const { width, height } = imageData;
@@ -942,6 +986,7 @@ class WebGPURenderer {
       height
     ]);
     paramsBuffer.unmap();
+    assertDefined(this.blurBindGroupLayout, "blurBindGroupLayout must exist after createPipelines");
     const bindGroup = device.createBindGroup({
       layout: this.blurBindGroupLayout,
       entries: [
@@ -950,6 +995,7 @@ class WebGPURenderer {
         { binding: 2, resource: { buffer: paramsBuffer } }
       ]
     });
+    assertDefined(this.blurPipeline, "blurPipeline must exist after createPipelines");
     const commandEncoder = device.createCommandEncoder();
     const passEncoder = commandEncoder.beginComputePass();
     passEncoder.setPipeline(this.blurPipeline);
@@ -1004,6 +1050,7 @@ class WebGPURenderer {
     }
   }
   async colorCorrectWebGPU(source, params) {
+    assertDefined(this.capabilities.device, "device must exist when WebGPU is available");
     const device = this.capabilities.device;
     const imageData = this.toImageData(source);
     const { width, height } = imageData;
@@ -1035,6 +1082,7 @@ class WebGPURenderer {
       params.hue
     ]);
     paramsBuffer.unmap();
+    assertDefined(this.colorBindGroupLayout, "colorBindGroupLayout must exist after createPipelines");
     const bindGroup = device.createBindGroup({
       layout: this.colorBindGroupLayout,
       entries: [
@@ -1043,6 +1091,7 @@ class WebGPURenderer {
         { binding: 2, resource: { buffer: paramsBuffer } }
       ]
     });
+    assertDefined(this.colorPipeline, "colorPipeline must exist after createPipelines");
     const commandEncoder = device.createCommandEncoder();
     const passEncoder = commandEncoder.beginComputePass();
     passEncoder.setPipeline(this.colorPipeline);
@@ -1107,11 +1156,14 @@ class WebGPURenderer {
     if (!this.capabilities.available || !this.radialBlurPipeline) {
       return this.radialBlurCanvas2D(source, params);
     }
+    const samples = isFiniteNumber(params.samples) && params.samples > 0 ? Math.floor(params.samples) : 32;
+    assertDefined(this.radialBlurPipeline, "radialBlurPipeline must exist when available");
+    assertDefined(this.radialBlurBindGroupLayout, "radialBlurBindGroupLayout must exist after createPipelines");
     return this.runStandardCompute(
       source,
       this.radialBlurPipeline,
       this.radialBlurBindGroupLayout,
-      [params.centerX, params.centerY, params.amount, params.samples ?? 32]
+      [params.centerX, params.centerY, params.amount, samples]
     );
   }
   radialBlurCanvas2D(source, params) {
@@ -1120,7 +1172,7 @@ class WebGPURenderer {
     const output = new Uint8ClampedArray(data.length);
     const centerX = params.centerX * width;
     const centerY = params.centerY * height;
-    const samples = params.samples ?? 32;
+    const samples = isFiniteNumber(params.samples) && params.samples > 0 ? Math.floor(params.samples) : 32;
     for (let y = 0; y < height; y++) {
       for (let x = 0; x < width; x++) {
         const dx = x - centerX;
@@ -1154,6 +1206,8 @@ class WebGPURenderer {
     if (!this.capabilities.available || !this.directionalBlurPipeline) {
       return this.directionalBlurCanvas2D(source, params);
     }
+    assertDefined(this.directionalBlurPipeline, "directionalBlurPipeline must exist when available");
+    assertDefined(this.directionalBlurBindGroupLayout, "directionalBlurBindGroupLayout must exist after createPipelines");
     return this.runStandardCompute(
       source,
       this.directionalBlurPipeline,
@@ -1161,7 +1215,11 @@ class WebGPURenderer {
       [
         params.angle,
         params.length,
-        params.samples ?? 32,
+        // Type proof: samples ∈ number | undefined → number
+        (() => {
+          const samples = isFiniteNumber(params.samples) && params.samples > 0 ? Math.floor(params.samples) : 32;
+          return samples;
+        })(),
         0
         // padding
       ]
@@ -1174,7 +1232,7 @@ class WebGPURenderer {
     const angleRad = params.angle * Math.PI / 180;
     const dirX = Math.cos(angleRad) * params.length;
     const dirY = Math.sin(angleRad) * params.length;
-    const samples = params.samples ?? 32;
+    const samples = isFiniteNumber(params.samples) && params.samples > 0 ? Math.floor(params.samples) : 32;
     for (let y = 0; y < height; y++) {
       for (let x = 0; x < width; x++) {
         let r = 0, g = 0, b = 0, a = 0;
@@ -1207,17 +1265,22 @@ class WebGPURenderer {
     if (!this.capabilities.available || !this.warpPipeline) {
       return this.warpCanvas2D(source, params);
     }
-    const styleMap = { bulge: 0, wave: 1, fisheye: 2, twist: 3 };
+    const styleMap = {
+      bulge: 0,
+      wave: 1,
+      fisheye: 2,
+      twist: 3
+    };
+    const styleIndex = typeof params.style === "string" && params.style in styleMap ? styleMap[params.style] : 0;
+    const hDistort = isFiniteNumber(params.hDistort) ? params.hDistort : 0;
+    const vDistort = isFiniteNumber(params.vDistort) ? params.vDistort : 0;
+    assertDefined(this.warpPipeline, "warpPipeline must exist when available");
+    assertDefined(this.warpBindGroupLayout, "warpBindGroupLayout must exist after createPipelines");
     return this.runStandardCompute(
       source,
       this.warpPipeline,
       this.warpBindGroupLayout,
-      [
-        styleMap[params.style] ?? 0,
-        params.bend,
-        params.hDistort ?? 0,
-        params.vDistort ?? 0
-      ]
+      [styleIndex, params.bend, hDistort, vDistort]
     );
   }
   warpCanvas2D(source, _params) {
@@ -1231,19 +1294,32 @@ class WebGPURenderer {
     if (!this.capabilities.available || !this.glowPipeline) {
       return this.glowCanvas2D(source, params);
     }
-    this.toImageData(source);
+    assertDefined(this.capabilities.device, "device must exist when WebGPU is available");
+    this.capabilities.device;
+    const imageData = this.toImageData(source);
+    const { width, height } = imageData;
+    const threshold = isFiniteNumber(params.threshold) ? Math.max(0, Math.min(1, params.threshold)) : 0.5;
+    const paramsColor = params != null && typeof params === "object" && "color" in params && params.color != null && typeof params.color === "object" ? params.color : void 0;
+    const colorRValue = paramsColor != null && typeof paramsColor === "object" && "r" in paramsColor && typeof paramsColor.r === "number" ? paramsColor.r : void 0;
+    const colorR = isFiniteNumber(colorRValue) ? Math.max(0, Math.min(1, colorRValue)) : 1;
+    const colorGValue = paramsColor != null && typeof paramsColor === "object" && "g" in paramsColor && typeof paramsColor.g === "number" ? paramsColor.g : void 0;
+    const colorG = isFiniteNumber(colorGValue) ? Math.max(0, Math.min(1, colorGValue)) : 1;
+    const colorBValue = paramsColor != null && typeof paramsColor === "object" && "b" in paramsColor && typeof paramsColor.b === "number" ? paramsColor.b : void 0;
+    const colorB = isFiniteNumber(colorBValue) ? Math.max(0, Math.min(1, colorBValue)) : 1;
     const paramsData = new Float32Array([
       params.radius,
       params.intensity,
-      params.threshold ?? 0.5,
+      threshold,
       0,
       // padding
-      params.color?.r ?? 1,
-      params.color?.g ?? 1,
-      params.color?.b ?? 1,
+      colorR,
+      colorG,
+      colorB,
       1
       // alpha
     ]);
+    assertDefined(this.glowPipeline, "glowPipeline must exist when available");
+    assertDefined(this.glowBindGroupLayout, "glowBindGroupLayout must exist after createPipelines");
     return this.runStandardComputeWithParams(
       source,
       this.glowPipeline,
@@ -1261,6 +1337,8 @@ class WebGPURenderer {
     if (!this.capabilities.available || !this.levelsPipeline) {
       return this.levelsCanvas2D(source, params);
     }
+    assertDefined(this.levelsPipeline, "levelsPipeline must exist when available");
+    assertDefined(this.levelsBindGroupLayout, "levelsBindGroupLayout must exist after createPipelines");
     return this.runStandardComputeWithParams(
       source,
       this.levelsPipeline,
@@ -1313,6 +1391,7 @@ class WebGPURenderer {
    * Run a standard compute shader with arbitrary params buffer
    */
   async runStandardComputeWithParams(source, pipeline, layout, paramsData) {
+    assertDefined(this.capabilities.device, "device must exist when WebGPU is available");
     const device = this.capabilities.device;
     const imageData = this.toImageData(source);
     const { width, height } = imageData;
@@ -1386,6 +1465,9 @@ class WebGPURenderer {
       return source;
     }
     const ctx = source.getContext("2d");
+    if (!ctx) {
+      throw new TypeError("Failed to get 2d context from HTMLCanvasElement");
+    }
     return ctx.getImageData(0, 0, source.width, source.height);
   }
   /**
@@ -1441,6 +1523,96 @@ function validateFps(fps, fallback = DEFAULT_FPS) {
     return fallback;
   }
   return Math.max(MIN_FPS, Math.min(MAX_FPS, fps));
+}
+
+function isJSONAsset(asset) {
+  return asset.type === "json" || asset.type === "mgjson";
+}
+function isCSVAsset(asset) {
+  return asset.type === "csv" || asset.type === "tsv";
+}
+
+const dataAssets = /* @__PURE__ */ new Map();
+function getDataAsset(name) {
+  return dataAssets.get(name) || null;
+}
+function createFootageAccessor(name) {
+  const asset = getDataAsset(name);
+  if (!asset) {
+    throw new Error(`[DataImport] Data asset not found: ${name}`);
+  }
+  if (isJSONAsset(asset)) {
+    return createJSONAccessor(asset);
+  } else if (isCSVAsset(asset)) {
+    return createCSVAccessor(asset);
+  }
+  throw new Error(`[DataImport] Unsupported asset type for data asset "${name}"`);
+}
+function createJSONAccessor(asset) {
+  return {
+    name: asset.name,
+    type: asset.type,
+    sourceData: asset.sourceData
+  };
+}
+function createCSVAccessor(asset) {
+  const sourceData = asset.rows.map((row) => {
+    const obj = {};
+    asset.headers.forEach((header, index) => {
+      const value = row[index];
+      const numValue = parseFloat(value);
+      if (Number.isNaN(numValue)) {
+        if (value.toLowerCase() === "true") {
+          obj[header] = true;
+        } else if (value.toLowerCase() === "false") {
+          obj[header] = false;
+        } else if (value === "" || value.toLowerCase() === "null") {
+          obj[header] = null;
+        } else {
+          obj[header] = value;
+        }
+      } else {
+        obj[header] = numValue;
+      }
+    });
+    return obj;
+  });
+  return {
+    name: asset.name,
+    type: asset.type,
+    sourceData,
+    dataValue: (coords) => {
+      const [rowIndex, colRef] = coords;
+      let colIndex;
+      if (typeof colRef === "string") {
+        colIndex = asset.headers.indexOf(colRef);
+        if (colIndex === -1) {
+          console.warn(`[DataImport] Column not found: ${colRef}`);
+          return "";
+        }
+      } else {
+        colIndex = colRef;
+      }
+      if (rowIndex === 0) {
+        return asset.headers[colIndex] || "";
+      }
+      const dataRowIndex = rowIndex - 1;
+      if (dataRowIndex < 0 || dataRowIndex >= asset.rows.length) {
+        console.warn(`[DataImport] Row index out of bounds: ${rowIndex}`);
+        return "";
+      }
+      if (colIndex < 0 || colIndex >= asset.numColumns) {
+        console.warn(`[DataImport] Column index out of bounds: ${colIndex}`);
+        return "";
+      }
+      const value = asset.rows[dataRowIndex][colIndex];
+      const numValue = parseFloat(value);
+      return Number.isNaN(numValue) ? value : numValue;
+    },
+    numRows: () => asset.numRows,
+    numColumns: () => asset.numColumns,
+    headers: () => [...asset.headers]
+  };
 }
 
 const PI = Math.PI;
@@ -1552,6 +1724,32 @@ function getEasing(name) {
     return easings[name];
   }
   return easings.linear;
+}
+
+function ensureFinite(value, fallback) {
+  if (typeof value !== "number") return fallback;
+  if (!Number.isFinite(value)) return fallback;
+  return value;
+}
+function clamp(value, min, max) {
+  if (Number.isNaN(value)) return min;
+  if (value < min) return min;
+  if (value > max) return max;
+  return value;
+}
+function clamp01(value) {
+  return clamp(value, 0, 1);
+}
+function safeLerp(a, b, t) {
+  const safeA = ensureFinite(a, 0);
+  const safeB = ensureFinite(b, 0);
+  const safeT = clamp01(ensureFinite(t, 0));
+  const diff = safeB - safeA;
+  if (!Number.isFinite(diff)) {
+    const result = safeA * (1 - safeT) + safeB * safeT;
+    return ensureFinite(result, safeA);
+  }
+  return safeA + diff * safeT;
 }
 
 function normalizeT(t) {
@@ -1760,7 +1958,7 @@ const EASING_FUNCTIONS = {
 };
 
 function jitter(ctx, frequency = 5, amplitude = 50, octaves = 1, amplitudeMultiplier = 0.5, time) {
-  const t = ctx.time;
+  const t = isFiniteNumber(time) ? time : ctx.time;
   const { value } = ctx;
   if (!Number.isFinite(octaves) || octaves < 1) {
     octaves = 1;
@@ -1889,7 +2087,10 @@ function repeatAfter(ctx, type = "cycle", numKeyframes = 0) {
         return value + velocity * elapsed;
       }
       if (Array.isArray(velocity) && Array.isArray(value)) {
-        return value.map((v, i) => v + (velocity[i] ?? 0) * elapsed);
+        return value.map((v, i) => {
+          const vel = isFiniteNumber(velocity[i]) ? velocity[i] : 0;
+          return v + vel * elapsed;
+        });
       }
       console.warn(
         "[Expressions] Type mismatch between value and velocity in repeatAfter"
@@ -1940,7 +2141,10 @@ function repeatBefore(ctx, type = "cycle", numKeyframes = 0) {
         return value - velocity * elapsed;
       }
       if (Array.isArray(velocity) && Array.isArray(value)) {
-        return value.map((v, i) => v - (velocity[i] ?? 0) * elapsed);
+        return value.map((v, i) => {
+          const vel = isFiniteNumber(velocity[i]) ? velocity[i] : 0;
+          return v - vel * elapsed;
+        });
       }
       console.warn(
         "[Expressions] Type mismatch between value and velocity in repeatBefore"
@@ -1972,18 +2176,20 @@ function toArray(value) {
 }
 function fromArray(arr, originalValue) {
   if (typeof originalValue === "number") {
-    return arr[0] ?? 0;
+    return isFiniteNumber(arr[0]) ? arr[0] : 0;
   }
   if (Array.isArray(originalValue)) {
     return arr;
   }
   if (typeof originalValue === "object" && originalValue !== null && "x" in originalValue) {
+    const x = isFiniteNumber(arr[0]) ? arr[0] : 0;
+    const y = isFiniteNumber(arr[1]) ? arr[1] : 0;
     const result = {
-      x: arr[0] ?? 0,
-      y: arr[1] ?? 0
+      x,
+      y
     };
     if ("z" in originalValue && originalValue.z !== void 0) {
-      result.z = arr[2] ?? 0;
+      result.z = isFiniteNumber(arr[2]) ? arr[2] : 0;
     }
     return result;
   }
@@ -1995,7 +2201,7 @@ function inertia(ctx, amplitude = 0.1, frequency = 2, decay = 2) {
   const safeFrequency = Number.isFinite(frequency) ? frequency : 2;
   const safeDecay = Number.isFinite(decay) ? Math.max(1e-3, decay) : 2;
   if (keyframes.length === 0) return value;
-  const fps = ctx.fps ?? 16;
+  const fps = isFiniteNumber(ctx.fps) && ctx.fps > 0 ? ctx.fps : 16;
   const currentFrame = time * fps;
   let nearestKey = null;
   for (let i = keyframes.length - 1; i >= 0; i--) {
@@ -2011,7 +2217,7 @@ function inertia(ctx, amplitude = 0.1, frequency = 2, decay = 2) {
   const valueArr = toArray(value);
   const velocityArr = toArray(velocity);
   const resultArr = valueArr.map((v, i) => {
-    const componentVel = velocityArr[i] ?? 0;
+    const componentVel = isFiniteNumber(velocityArr[i]) ? velocityArr[i] : 0;
     const oscillation = componentVel * safeAmplitude * Math.sin(safeFrequency * t * 2 * Math.PI) / Math.exp(safeDecay * t);
     return v + oscillation;
   });
@@ -2022,7 +2228,7 @@ function bounce(ctx, elasticity = 0.7, gravity = 4e3) {
   const safeElasticity = Number.isFinite(elasticity) ? Math.max(0, Math.min(1, elasticity)) : 0.7;
   const safeGravity = Number.isFinite(gravity) && gravity > 0 ? gravity : 4e3;
   if (keyframes.length === 0) return value;
-  const fps = ctx.fps ?? 16;
+  const fps = isFiniteNumber(ctx.fps) && ctx.fps > 0 ? ctx.fps : 16;
   const currentFrame = time * fps;
   let lastKey = null;
   for (let i = keyframes.length - 1; i >= 0; i--) {
@@ -2060,7 +2266,7 @@ function elastic(ctx, amplitude = 1, period = 0.3) {
   const safeAmplitude = Number.isFinite(amplitude) ? amplitude : 1;
   const safePeriod = Number.isFinite(period) && period > 0 ? period : 0.3;
   if (keyframes.length === 0) return value;
-  const fps = ctx.fps ?? 16;
+  const fps = isFiniteNumber(ctx.fps) && ctx.fps > 0 ? ctx.fps : 16;
   const currentFrame = time * fps;
   let lastKey = null;
   for (let i = keyframes.length - 1; i >= 0; i--) {
@@ -2196,7 +2402,9 @@ function createExpressionCompartment(ctx) {
       const arrB = Array.isArray(b) ? b : [b];
       let sum = 0;
       for (let i = 0; i < Math.max(arrA.length, arrB.length); i++) {
-        const diff = (arrA[i] ?? 0) - (arrB[i] ?? 0);
+        const valA = isFiniteNumber(arrA[i]) ? arrA[i] : 0;
+        const valB = isFiniteNumber(arrB[i]) ? arrB[i] : 0;
+        const diff = valA - valB;
         sum += diff * diff;
       }
       return Math.sqrt(sum);
@@ -2209,7 +2417,9 @@ function createExpressionCompartment(ctx) {
       const len = Math.max(arrA.length, arrB.length);
       const result = [];
       for (let i = 0; i < len; i++) {
-        result.push((arrA[i] ?? 0) + (arrB[i] ?? 0));
+        const valA = isFiniteNumber(arrA[i]) ? arrA[i] : 0;
+        const valB = isFiniteNumber(arrB[i]) ? arrB[i] : 0;
+        result.push(valA + valB);
       }
       return result;
     },
@@ -2221,7 +2431,9 @@ function createExpressionCompartment(ctx) {
       const len = Math.max(arrA.length, arrB.length);
       const result = [];
       for (let i = 0; i < len; i++) {
-        result.push((arrA[i] ?? 0) - (arrB[i] ?? 0));
+        const valA = isFiniteNumber(arrA[i]) ? arrA[i] : 0;
+        const valB = isFiniteNumber(arrB[i]) ? arrB[i] : 0;
+        result.push(valA - valB);
       }
       return result;
     },
@@ -2239,7 +2451,9 @@ function createExpressionCompartment(ctx) {
       const len = Math.max(arrA.length, arrB.length);
       const result = [];
       for (let i = 0; i < len; i++) {
-        result.push((arrA[i] ?? 0) * (arrB[i] ?? 0));
+        const valA = isFiniteNumber(arrA[i]) ? arrA[i] : 0;
+        const valB = isFiniteNumber(arrB[i]) ? arrB[i] : 0;
+        result.push(valA * valB);
       }
       return result;
     },
@@ -2259,13 +2473,14 @@ function createExpressionCompartment(ctx) {
       const len = Math.max(arrA.length, arrB.length);
       const result = [];
       for (let i = 0; i < len; i++) {
-        const divisor = arrB[i] ?? 1;
-        result.push(divisor !== 0 ? (arrA[i] ?? 0) / divisor : 0);
+        const valA = isFiniteNumber(arrA[i]) ? arrA[i] : 0;
+        const divisor = isFiniteNumber(arrB[i]) ? arrB[i] : 1;
+        result.push(divisor !== 0 ? valA / divisor : 0);
       }
       return result;
     }
   });
-  const compartment = new Compartment({
+  const globalsObj = {
     // Safe Math
     Math: safeMath,
     // Safe Number utilities
@@ -2319,7 +2534,8 @@ function createExpressionCompartment(ctx) {
     process: void 0,
     Deno: void 0,
     Bun: void 0
-  });
+  };
+  const compartment = new Compartment(globalsObj);
   return compartment;
 }
 function evaluateInSES(code, ctx) {
@@ -2353,7 +2569,10 @@ function evaluateInSES(code, ctx) {
     ).join("\n") : code;
     const wrappedCode = `(function() { ${processedCode} })()`;
     const result = compartment.evaluate(wrappedCode);
-    return result;
+    if (typeof result === "string" || typeof result === "number" || Array.isArray(result)) {
+      return result;
+    }
+    return String(result);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     console.warn("[SES] Expression error:", message);
@@ -2853,9 +3072,9 @@ function prepareMorphPaths(source, target, config = {}) {
         break;
       }
       case "resample": {
-        const count = cfg.resampleCount ?? Math.max(sourceCount, targetCount);
-        preparedSource = resamplePath(preparedSource, count);
-        preparedTarget = resamplePath(preparedTarget, count);
+        const resampleCount = isFiniteNumber(cfg.resampleCount) && cfg.resampleCount >= 2 ? cfg.resampleCount : Math.max(sourceCount, targetCount);
+        preparedSource = resamplePath(preparedSource, resampleCount);
+        preparedTarget = resamplePath(preparedTarget, resampleCount);
         break;
       }
     }
@@ -2913,6 +3132,11 @@ function morphPaths(source, target, t) {
   }
   return { vertices, closed: source.closed };
 }
+function isBezierVertex(value) {
+  if (typeof value !== "object" || value === null) return false;
+  const v = value;
+  return typeof v.point === "object" && v.point !== null && typeof v.point.x === "number" && typeof v.point.y === "number";
+}
 function isBezierPath(value) {
   if (typeof value !== "object" || value === null) {
     return false;
@@ -2922,38 +3146,11 @@ function isBezierPath(value) {
     return false;
   }
   if (obj.vertices.length > 0) {
-    const v = obj.vertices[0];
-    if (typeof v !== "object" || v === null) return false;
-    if (typeof v.point?.x !== "number") return false;
-    if (typeof v.point?.y !== "number") return false;
+    if (!isBezierVertex(obj.vertices[0])) {
+      return false;
+    }
   }
   return true;
-}
-
-function ensureFinite(value, fallback) {
-  if (typeof value !== "number") return fallback;
-  if (!Number.isFinite(value)) return fallback;
-  return value;
-}
-function clamp(value, min, max) {
-  if (Number.isNaN(value)) return min;
-  if (value < min) return min;
-  if (value > max) return max;
-  return value;
-}
-function clamp01(value) {
-  return clamp(value, 0, 1);
-}
-function safeLerp(a, b, t) {
-  const safeA = ensureFinite(a, 0);
-  const safeB = ensureFinite(b, 0);
-  const safeT = clamp01(ensureFinite(t, 0));
-  const diff = safeB - safeA;
-  if (!Number.isFinite(diff)) {
-    const result = safeA * (1 - safeT) + safeB * safeT;
-    return ensureFinite(result, safeA);
-  }
-  return safeA + diff * safeT;
 }
 
 class BezierCache {
@@ -3077,7 +3274,9 @@ function interpolateProperty(property, frame, fps = 16, layerId = "", compDurati
       }
     }
   }
-  if (property.expression?.enabled) {
+  const propertyExpression = property != null && typeof property === "object" && "expression" in property && property.expression != null && typeof property.expression === "object" ? property.expression : void 0;
+  const expressionEnabled = propertyExpression != null && typeof propertyExpression === "object" && "enabled" in propertyExpression && typeof propertyExpression.enabled === "boolean" && propertyExpression.enabled ? true : false;
+  if (expressionEnabled) {
     value = applyPropertyExpression(
       property,
       value,
@@ -3095,22 +3294,50 @@ function applyPropertyExpression(property, value, frame, fps, layerId, compDurat
   const safeFps = validateFps(fps, 16);
   const time = frame / safeFps;
   const velocity = calculateVelocity(property, frame, safeFps);
-  const duration = compDuration ?? 81 / safeFps;
+  const duration = compDuration !== void 0 && Number.isFinite(compDuration) && compDuration > 0 ? compDuration : 81 / safeFps;
   const frameCount = Math.round(duration * safeFps);
   const ctx = {
+    // Time
     time,
     frame,
     fps: safeFps,
     duration,
+    // Composition - defaults when not available from caller
+    compWidth: 1920,
+    compHeight: 1080,
+    // Layer info
+    layerId,
     layerIndex: 0,
     layerName: "",
     inPoint: 0,
     outPoint: frameCount,
+    // Property
+    propertyName: property.name,
     value,
     velocity,
     numKeys: property.keyframes.length,
-    // Type assertion: expressions only work with numeric keyframes (number or number[])
-    keyframes: property.keyframes};
+    keyframes: property.keyframes,
+    // Expression controls - empty when not using expression controls
+    params: {},
+    // Layer property access - no-op when called from basic interpolation
+    getLayerProperty: () => null,
+    // Data-driven animation
+    footage: createFootageAccessor,
+    // Layer transform - defaults for thisLayer access
+    layerTransform: {
+      position: [0, 0, 0],
+      rotation: [0, 0, 0],
+      scale: [100, 100, 100],
+      opacity: 100,
+      origin: [0, 0, 0]
+    },
+    // Effects - empty when not available
+    layerEffects: [],
+    // All layers - empty when not available
+    allLayers: [],
+    // Effect parameter access - no-op when not available
+    getLayerEffectParam: () => null
+  };
   const expression = {
     type: expr.type,
     name: expr.name,
@@ -3725,12 +3952,9 @@ class WebGLBlurContext {
     gl.shaderSource(shader, source);
     gl.compileShader(shader);
     if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-      console.warn(
-        "[WebGLBlur] Shader compile failed:",
-        gl.getShaderInfoLog(shader)
-      );
+      const infoLog = gl.getShaderInfoLog(shader);
       gl.deleteShader(shader);
-      return null;
+      throw new Error(`[WebGLBlur] Shader compile failed: ${infoLog || "Unknown error"}`);
     }
     return shader;
   }
@@ -3740,8 +3964,10 @@ class WebGLBlurContext {
   blur(input, radiusX, radiusY) {
     const { width, height } = input;
     if (!this.init(width, height)) {
-      return null;
+      throw new Error(`[WebGLBlur] Failed to initialize WebGL context for blur (${width}x${height})`);
     }
+    assertDefined(this.gl, "gl must exist after successful init()");
+    assertDefined(this.program, "program must exist after successful init()");
     const gl = this.gl;
     const program = this.program;
     gl.useProgram(program);
@@ -4369,8 +4595,9 @@ function createBlurStack(size) {
   const first = { r: 0, g: 0, b: 0, a: 0, next: null };
   let current = first;
   for (let i = 1; i < size; i++) {
-    current.next = { r: 0, g: 0, b: 0, a: 0, next: null };
-    current = current.next;
+    const newNode = { r: 0, g: 0, b: 0, a: 0, next: null };
+    current.next = newNode;
+    current = newNode;
   }
   current.next = first;
   return first;
@@ -4431,6 +4658,7 @@ function stackBlurHorizontal(pixels, width, height, radius) {
         bOutSum += pb;
         aOutSum += pa;
       }
+      assertDefined(stackIn.next, "stackIn.next must exist in circular blur stack");
       stackIn = stackIn.next;
     }
     for (let i = 1; i <= radius; i++) {
@@ -4453,12 +4681,15 @@ function stackBlurHorizontal(pixels, width, height, radius) {
       gInSum += pg2;
       bInSum += pb2;
       aInSum += pa2;
+      assertDefined(stackIn.next, "stackIn.next must exist in circular blur stack");
       stackIn = stackIn.next;
     }
     let stackStart = stack;
     for (let i = 0; i < radius; i++) {
+      assertDefined(stackStart.next, "stackStart.next must exist in circular blur stack");
       stackStart = stackStart.next;
     }
+    assertDefined(stackStart.next, "stackStart.next must exist in circular blur stack");
     stackOut = stackStart.next;
     for (let x = 0; x < width; x++) {
       const pOffset = (yOffset + x) * 4;
@@ -4488,6 +4719,7 @@ function stackBlurHorizontal(pixels, width, height, radius) {
       gSum += gInSum;
       bSum += bInSum;
       aSum += aInSum;
+      assertDefined(stackStart.next, "stackStart.next must exist in circular blur stack");
       stackStart = stackStart.next;
       rOutSum += stackOut.r;
       gOutSum += stackOut.g;
@@ -4497,6 +4729,7 @@ function stackBlurHorizontal(pixels, width, height, radius) {
       gInSum -= stackOut.g;
       bInSum -= stackOut.b;
       aInSum -= stackOut.a;
+      assertDefined(stackOut.next, "stackOut.next must exist in circular blur stack");
       stackOut = stackOut.next;
     }
   }
@@ -4538,6 +4771,7 @@ function stackBlurVertical(pixels, width, height, radius) {
         bOutSum += pb;
         aOutSum += pa;
       }
+      assertDefined(stackIn.next, "stackIn.next must exist in circular blur stack");
       stackIn = stackIn.next;
     }
     for (let i = 1; i <= radius; i++) {
@@ -4560,12 +4794,15 @@ function stackBlurVertical(pixels, width, height, radius) {
       gInSum += pg2;
       bInSum += pb2;
       aInSum += pa2;
+      assertDefined(stackIn.next, "stackIn.next must exist in circular blur stack");
       stackIn = stackIn.next;
     }
     let stackStart = stack;
     for (let i = 0; i < radius; i++) {
+      assertDefined(stackStart.next, "stackStart.next must exist in circular blur stack");
       stackStart = stackStart.next;
     }
+    assertDefined(stackStart.next, "stackStart.next must exist in circular blur stack");
     stackOut = stackStart.next;
     for (let y = 0; y < height; y++) {
       const pOffset = (y * width + x) * 4;
@@ -4595,6 +4832,7 @@ function stackBlurVertical(pixels, width, height, radius) {
       gSum += gInSum;
       bSum += bInSum;
       aSum += aInSum;
+      assertDefined(stackStart.next, "stackStart.next must exist in circular blur stack");
       stackStart = stackStart.next;
       rOutSum += stackOut.r;
       gOutSum += stackOut.g;
@@ -4604,6 +4842,7 @@ function stackBlurVertical(pixels, width, height, radius) {
       gInSum -= stackOut.g;
       bInSum -= stackOut.b;
       aInSum -= stackOut.a;
+      assertDefined(stackOut.next, "stackOut.next must exist in circular blur stack");
       stackOut = stackOut.next;
     }
   }
@@ -4627,10 +4866,11 @@ async function ensureWebGPUInitialized() {
 }
 ensureWebGPUInitialized();
 function gaussianBlurRenderer(input, params) {
-  const blurrinessRaw = params.blurriness ?? 10;
-  const blurriness = Number.isFinite(blurrinessRaw) ? Math.max(0, blurrinessRaw) : 0;
-  const dimensions = params.blur_dimensions ?? "both";
-  const useGpu = params.use_gpu !== false;
+  const blurrinessValue = params.blurriness;
+  const blurriness = isFiniteNumber(blurrinessValue) && blurrinessValue >= 0 ? blurrinessValue : 10;
+  const dimensionsValue = params.blur_dimensions;
+  const dimensions = typeof dimensionsValue === "string" ? dimensionsValue : "both";
+  const useGpu = typeof params.use_gpu === "boolean" ? params.use_gpu : true;
   if (blurriness <= 0) {
     return input;
   }
@@ -4670,10 +4910,11 @@ function gaussianBlurRenderer(input, params) {
   return output;
 }
 function directionalBlurRenderer(input, params) {
-  const directionRaw = params.direction ?? 0;
-  const direction = Number.isFinite(directionRaw) ? directionRaw * Math.PI / 180 : 0;
-  const blurLengthRaw = params.blur_length ?? 10;
-  const blurLength = Number.isFinite(blurLengthRaw) ? Math.max(0, Math.min(500, blurLengthRaw)) : 0;
+  const directionValue = params.direction;
+  const directionDeg = isFiniteNumber(directionValue) ? Math.max(0, Math.min(360, directionValue)) : 0;
+  const direction = directionDeg * Math.PI / 180;
+  const blurLengthValue = params.blur_length;
+  const blurLength = isFiniteNumber(blurLengthValue) ? Math.max(0, Math.min(500, blurLengthValue)) : 10;
   if (blurLength <= 0) {
     return input;
   }
@@ -4714,15 +4955,21 @@ function directionalBlurRenderer(input, params) {
   return output;
 }
 function radialBlurRenderer(input, params) {
-  const type = params.type ?? "spin";
-  const amountRaw = params.amount ?? 10;
-  const amount = Number.isFinite(amountRaw) ? Math.max(0, Math.min(100, amountRaw)) : 0;
-  const center = params.center;
-  const centerXRaw = center?.x ?? (params.center_x ?? 50) / 100;
-  const centerYRaw = center?.y ?? (params.center_y ?? 50) / 100;
-  const centerX = Number.isFinite(centerXRaw) ? centerXRaw : 0.5;
-  const centerY = Number.isFinite(centerYRaw) ? centerYRaw : 0.5;
-  const antialiasing = params.antialiasing ?? params.quality ?? "high";
+  const typeValue = params.type;
+  const type = typeof typeValue === "string" ? typeValue : "spin";
+  const amountValue = params.amount;
+  const amount = isFiniteNumber(amountValue) ? Math.max(0, Math.min(100, amountValue)) : 10;
+  const center = hasXY(params.center) ? params.center : void 0;
+  const centerXParamValue = params.center_x;
+  const centerXParam = isFiniteNumber(centerXParamValue) ? Math.max(0, Math.min(100, centerXParamValue)) : 50;
+  const centerYParamValue = params.center_y;
+  const centerYParam = isFiniteNumber(centerYParamValue) ? Math.max(0, Math.min(100, centerYParamValue)) : 50;
+  const centerXRaw = center !== void 0 ? center.x : centerXParam / 100;
+  const centerX = isFiniteNumber(centerXRaw) ? Math.max(0, Math.min(1, centerXRaw)) : 0.5;
+  const centerYRaw = center !== void 0 ? center.y : centerYParam / 100;
+  const centerY = isFiniteNumber(centerYRaw) ? Math.max(0, Math.min(1, centerYRaw)) : 0.5;
+  const antialiasingValue = params.antialiasing !== void 0 ? params.antialiasing : params.quality;
+  const antialiasing = typeof antialiasingValue === "string" ? antialiasingValue : "high";
   const quality = antialiasing === "low" ? "draft" : antialiasing === "medium" ? "good" : "best";
   if (amount <= 0) {
     return input;
@@ -4797,10 +5044,12 @@ function radialBlurRenderer(input, params) {
   return output;
 }
 function boxBlurRenderer(input, params) {
-  const radiusRaw = Math.round(params.blur_radius ?? params.radius ?? 5);
-  const radius = Number.isFinite(radiusRaw) ? Math.max(0, Math.min(100, radiusRaw)) : 0;
-  const iterationsRaw = params.iterations ?? 1;
-  const iterations = Number.isFinite(iterationsRaw) ? Math.max(1, Math.min(5, iterationsRaw)) : 1;
+  const radiusValue = params.blur_radius !== void 0 ? params.blur_radius : params.radius;
+  const radiusRaw = isFiniteNumber(radiusValue) ? Math.round(radiusValue) : 5;
+  const radius = Math.max(0, Math.min(100, radiusRaw));
+  const iterationsValue = params.iterations;
+  const iterationsRaw = isFiniteNumber(iterationsValue) && Number.isInteger(iterationsValue) ? iterationsValue : 1;
+  const iterations = Math.max(1, Math.min(5, iterationsRaw));
   if (radius <= 0) {
     return input;
   }
@@ -4855,12 +5104,13 @@ function boxBlurRenderer(input, params) {
   return current;
 }
 function sharpenRenderer(input, params) {
-  const amountRaw = (params.sharpen_amount ?? params.amount ?? 50) / 100;
-  const amount = Number.isFinite(amountRaw) ? amountRaw : 0;
-  const radiusRaw = params.radius ?? 1;
-  const radius = Number.isFinite(radiusRaw) ? Math.max(1, Math.min(100, radiusRaw)) : 1;
-  const thresholdRaw = params.threshold ?? 0;
-  const threshold = Number.isFinite(thresholdRaw) ? Math.max(0, Math.min(255, thresholdRaw)) : 0;
+  const sharpenAmountValue = params.sharpen_amount !== void 0 ? params.sharpen_amount : params.amount;
+  const sharpenAmount = isFiniteNumber(sharpenAmountValue) ? Math.max(0, Math.min(100, sharpenAmountValue)) : 50;
+  const amount = sharpenAmount / 100;
+  const radiusValue = params.radius;
+  const radius = isFiniteNumber(radiusValue) ? Math.max(1, Math.min(100, radiusValue)) : 1;
+  const thresholdValue = params.threshold;
+  const threshold = isFiniteNumber(thresholdValue) ? Math.max(0, Math.min(255, thresholdValue)) : 0;
   if (amount <= 0) {
     return input;
   }
@@ -5232,36 +5482,41 @@ let cachedLensDirtWidth = 0;
 let cachedLensDirtHeight = 0;
 let cachedLensDirtScale = 0;
 function cinematicBloomRenderer(input, params) {
-  const intensity = Math.max(0, Math.min(10, params.intensity ?? 1));
-  const threshold = Math.max(0, Math.min(1, params.threshold ?? 0.8));
-  const radius = Math.max(0, Math.min(200, params.radius ?? 50));
-  const falloffMode = params.falloff_mode ?? "inverse_square";
-  const falloffExponent = Math.max(
-    1,
-    Math.min(4, params.falloff_exponent ?? 2)
-  );
-  const radiusR = Math.max(0, Math.min(2, params.radius_r ?? 1)) * radius;
-  const radiusG = Math.max(0, Math.min(2, params.radius_g ?? 1)) * radius;
-  const radiusB = Math.max(0, Math.min(2, params.radius_b ?? 1)) * radius;
-  const tonemap = params.tonemap ?? "aces";
-  const exposure = Math.max(-5, Math.min(5, params.exposure ?? 0));
-  const chromaticAberration = Math.max(
-    0,
-    Math.min(20, params.chromatic_aberration ?? 0)
-  );
-  const lensDirtEnabled = params.lens_dirt_enabled ?? false;
-  const lensDirtIntensity = Math.max(
-    0,
-    Math.min(1, params.lens_dirt_intensity ?? 0.5)
-  );
-  const lensDirtScale = Math.max(0.5, Math.min(2, params.lens_dirt_scale ?? 1));
-  const blendMode = params.blend_mode ?? "add";
+  const intensityValue = params.intensity;
+  const intensity = isFiniteNumber(intensityValue) ? Math.max(0, Math.min(10, intensityValue)) : 1;
+  const thresholdValue = params.threshold;
+  const threshold = isFiniteNumber(thresholdValue) ? Math.max(0, Math.min(1, thresholdValue)) : 0.8;
+  const radiusValue = params.radius;
+  const radius = isFiniteNumber(radiusValue) ? Math.max(0, Math.min(200, radiusValue)) : 50;
+  const falloffModeValue = params.falloff_mode;
+  const falloffMode = typeof falloffModeValue === "string" ? falloffModeValue : "inverse_square";
+  const falloffExponentValue = params.falloff_exponent;
+  const falloffExponent = isFiniteNumber(falloffExponentValue) ? Math.max(1, Math.min(4, falloffExponentValue)) : 2;
+  const radiusRValue = params.radius_r;
+  const radiusR = (isFiniteNumber(radiusRValue) ? Math.max(0, Math.min(2, radiusRValue)) : 1) * radius;
+  const radiusGValue = params.radius_g;
+  const radiusG = (isFiniteNumber(radiusGValue) ? Math.max(0, Math.min(2, radiusGValue)) : 1) * radius;
+  const radiusBValue = params.radius_b;
+  const radiusB = (isFiniteNumber(radiusBValue) ? Math.max(0, Math.min(2, radiusBValue)) : 1) * radius;
+  const tonemapValue = params.tonemap;
+  const tonemap = typeof tonemapValue === "string" ? tonemapValue : "aces";
+  const exposureValue = params.exposure;
+  const exposure = isFiniteNumber(exposureValue) ? Math.max(-5, Math.min(5, exposureValue)) : 0;
+  const chromaticAberrationValue = params.chromatic_aberration;
+  const chromaticAberration = isFiniteNumber(chromaticAberrationValue) ? Math.max(0, Math.min(20, chromaticAberrationValue)) : 0;
+  const lensDirtEnabled = typeof params.lens_dirt_enabled === "boolean" ? params.lens_dirt_enabled : false;
+  const lensDirtIntensityValue = params.lens_dirt_intensity;
+  const lensDirtIntensity = isFiniteNumber(lensDirtIntensityValue) ? Math.max(0, Math.min(1, lensDirtIntensityValue)) : 0.5;
+  const lensDirtScaleValue = params.lens_dirt_scale;
+  const lensDirtScale = isFiniteNumber(lensDirtScaleValue) ? Math.max(0.5, Math.min(2, lensDirtScaleValue)) : 1;
+  const blendModeValue = params.blend_mode;
+  const blendMode = typeof blendModeValue === "string" ? blendModeValue : "add";
   if (intensity <= 0 || radius <= 0) {
     return input;
   }
   const { width, height } = input.canvas;
   const sourceCanvas = params._sourceCanvas;
-  const sourceCtx = sourceCanvas?.getContext("2d");
+  const sourceCtx = sourceCanvas != null && typeof sourceCanvas === "object" && typeof sourceCanvas.getContext === "function" ? sourceCanvas.getContext("2d") : void 0;
   let originalData = sourceCtx ? sourceCtx.getImageData(0, 0, width, height) : input.ctx.getImageData(0, 0, width, height);
   if (chromaticAberration > 0) {
     originalData = applyChromaticAberration(originalData, chromaticAberration);
@@ -5298,9 +5553,14 @@ function cinematicBloomRenderer(input, params) {
   return output;
 }
 function glowRenderer$1(input, params) {
-  const threshold = (params.glow_threshold ?? 50) / 100;
-  const radius = params.glow_radius ?? 25;
-  const intensity = (params.glow_intensity ?? 100) / 100;
+  const thresholdValue = params.glow_threshold;
+  const thresholdRaw = isFiniteNumber(thresholdValue) ? Math.max(0, Math.min(100, thresholdValue)) : 50;
+  const threshold = thresholdRaw / 100;
+  const radiusValue = params.glow_radius;
+  const radius = isFiniteNumber(radiusValue) && radiusValue >= 0 ? radiusValue : 25;
+  const intensityValue = params.glow_intensity;
+  const intensityRaw = isFiniteNumber(intensityValue) && intensityValue >= 0 ? intensityValue : 100;
+  const intensity = intensityRaw / 100;
   if (intensity <= 0 || radius <= 0) {
     return input;
   }
@@ -5329,24 +5589,24 @@ function registerCinematicBloomEffects() {
 }
 
 function liftGammaGainRenderer(input, params) {
-  const liftRRaw = params.lift_red ?? 0;
-  const liftGRaw = params.lift_green ?? 0;
-  const liftBRaw = params.lift_blue ?? 0;
-  const liftR = Number.isFinite(liftRRaw) ? Math.max(-1, Math.min(1, liftRRaw)) : 0;
-  const liftG = Number.isFinite(liftGRaw) ? Math.max(-1, Math.min(1, liftGRaw)) : 0;
-  const liftB = Number.isFinite(liftBRaw) ? Math.max(-1, Math.min(1, liftBRaw)) : 0;
-  const gammaRRaw = params.gamma_red ?? 1;
-  const gammaGRaw = params.gamma_green ?? 1;
-  const gammaBRaw = params.gamma_blue ?? 1;
-  const gammaR = Number.isFinite(gammaRRaw) ? Math.max(0.1, Math.min(4, gammaRRaw)) : 1;
-  const gammaG = Number.isFinite(gammaGRaw) ? Math.max(0.1, Math.min(4, gammaGRaw)) : 1;
-  const gammaB = Number.isFinite(gammaBRaw) ? Math.max(0.1, Math.min(4, gammaBRaw)) : 1;
-  const gainRRaw = params.gain_red ?? 1;
-  const gainGRaw = params.gain_green ?? 1;
-  const gainBRaw = params.gain_blue ?? 1;
-  const gainR = Number.isFinite(gainRRaw) ? Math.max(0, Math.min(4, gainRRaw)) : 1;
-  const gainG = Number.isFinite(gainGRaw) ? Math.max(0, Math.min(4, gainGRaw)) : 1;
-  const gainB = Number.isFinite(gainBRaw) ? Math.max(0, Math.min(4, gainBRaw)) : 1;
+  const liftRValue = params.lift_red;
+  const liftR = isFiniteNumber(liftRValue) ? Math.max(-1, Math.min(1, liftRValue)) : 0;
+  const liftGValue = params.lift_green;
+  const liftG = isFiniteNumber(liftGValue) ? Math.max(-1, Math.min(1, liftGValue)) : 0;
+  const liftBValue = params.lift_blue;
+  const liftB = isFiniteNumber(liftBValue) ? Math.max(-1, Math.min(1, liftBValue)) : 0;
+  const gammaRValue = params.gamma_red;
+  const gammaR = isFiniteNumber(gammaRValue) && gammaRValue > 0 ? Math.max(0.1, Math.min(4, gammaRValue)) : 1;
+  const gammaGValue = params.gamma_green;
+  const gammaG = isFiniteNumber(gammaGValue) && gammaGValue > 0 ? Math.max(0.1, Math.min(4, gammaGValue)) : 1;
+  const gammaBValue = params.gamma_blue;
+  const gammaB = isFiniteNumber(gammaBValue) && gammaBValue > 0 ? Math.max(0.1, Math.min(4, gammaBValue)) : 1;
+  const gainRValue = params.gain_red;
+  const gainR = isFiniteNumber(gainRValue) ? Math.max(0, Math.min(4, gainRValue)) : 1;
+  const gainGValue = params.gain_green;
+  const gainG = isFiniteNumber(gainGValue) ? Math.max(0, Math.min(4, gainGValue)) : 1;
+  const gainBValue = params.gain_blue;
+  const gainB = isFiniteNumber(gainBValue) ? Math.max(0, Math.min(4, gainBValue)) : 1;
   if (liftR === 0 && liftG === 0 && liftB === 0 && gammaR === 1 && gammaG === 1 && gammaB === 1 && gainR === 1 && gainG === 1 && gainB === 1) {
     return input;
   }
@@ -5389,25 +5649,31 @@ function liftGammaGainRenderer(input, params) {
   return output;
 }
 function hslSecondaryRenderer(input, params) {
-  const safeNum = (val, def, min, max) => {
-    const num = typeof val === "number" && Number.isFinite(val) ? val : def;
-    if (min !== void 0 && max !== void 0)
-      return Math.max(min, Math.min(max, num));
-    return num;
-  };
-  const hueCenter = safeNum(params.hue_center, 0, 0, 360);
-  const hueWidth = safeNum(params.hue_width, 30, 0, 180);
-  const hueFalloff = safeNum(params.hue_falloff, 10, 0, 90);
-  const satMin = safeNum(params.sat_min, 0, 0, 100) / 100;
-  const satMax = safeNum(params.sat_max, 100, 0, 100) / 100;
-  const satFalloff = safeNum(params.sat_falloff, 10, 0, 50) / 100;
-  const lumMin = safeNum(params.lum_min, 0, 0, 100) / 100;
-  const lumMax = safeNum(params.lum_max, 100, 0, 100) / 100;
-  const lumFalloff = safeNum(params.lum_falloff, 10, 0, 50) / 100;
-  const hueShift = safeNum(params.hue_shift, 0, -180, 180);
-  const satAdjust = safeNum(params.sat_adjust, 0, -100, 100) / 100;
-  const lumAdjust = safeNum(params.lum_adjust, 0, -100, 100) / 100;
-  const showMask = params.show_mask ?? false;
+  const hueCenterValue = params.hue_center;
+  const hueCenter = isFiniteNumber(hueCenterValue) ? Math.max(0, Math.min(360, hueCenterValue)) : 0;
+  const hueWidthValue = params.hue_width;
+  const hueWidth = isFiniteNumber(hueWidthValue) ? Math.max(0, Math.min(180, hueWidthValue)) : 30;
+  const hueFalloffValue = params.hue_falloff;
+  const hueFalloff = isFiniteNumber(hueFalloffValue) ? Math.max(0, Math.min(90, hueFalloffValue)) : 10;
+  const satMinValue = params.sat_min;
+  const satMin = isFiniteNumber(satMinValue) ? Math.max(0, Math.min(100, satMinValue)) / 100 : 0;
+  const satMaxValue = params.sat_max;
+  const satMax = isFiniteNumber(satMaxValue) ? Math.max(0, Math.min(100, satMaxValue)) / 100 : 1;
+  const satFalloffValue = params.sat_falloff;
+  const satFalloff = isFiniteNumber(satFalloffValue) ? Math.max(0, Math.min(50, satFalloffValue)) / 100 : 0.1;
+  const lumMinValue = params.lum_min;
+  const lumMin = isFiniteNumber(lumMinValue) ? Math.max(0, Math.min(100, lumMinValue)) / 100 : 0;
+  const lumMaxValue = params.lum_max;
+  const lumMax = isFiniteNumber(lumMaxValue) ? Math.max(0, Math.min(100, lumMaxValue)) / 100 : 1;
+  const lumFalloffValue = params.lum_falloff;
+  const lumFalloff = isFiniteNumber(lumFalloffValue) ? Math.max(0, Math.min(50, lumFalloffValue)) / 100 : 0.1;
+  const hueShiftValue = params.hue_shift;
+  const hueShift = isFiniteNumber(hueShiftValue) ? Math.max(-180, Math.min(180, hueShiftValue)) : 0;
+  const satAdjustValue = params.sat_adjust;
+  const satAdjust = isFiniteNumber(satAdjustValue) ? Math.max(-100, Math.min(100, satAdjustValue)) / 100 : 0;
+  const lumAdjustValue = params.lum_adjust;
+  const lumAdjust = isFiniteNumber(lumAdjustValue) ? Math.max(-100, Math.min(100, lumAdjustValue)) / 100 : 0;
+  const showMask = typeof params.show_mask === "boolean" ? params.show_mask : false;
   if (!showMask && hueShift === 0 && satAdjust === 0 && lumAdjust === 0) {
     return input;
   }
@@ -5510,11 +5776,16 @@ function hslSecondaryRenderer(input, params) {
   return output;
 }
 function hueVsCurvesRenderer(input, params) {
-  const hueVsHue = params.hue_vs_hue ?? [];
-  const hueVsSat = params.hue_vs_sat ?? [];
-  const hueVsLum = params.hue_vs_lum ?? [];
-  const lumVsSat = params.lum_vs_sat ?? [];
-  const satVsSat = params.sat_vs_sat ?? [];
+  const hueVsHueRaw = params.hue_vs_hue;
+  const hueVsHue = isArray(hueVsHueRaw) ? hueVsHueRaw.filter((point) => hasXY(point)) : [];
+  const hueVsSatRaw = params.hue_vs_sat;
+  const hueVsSat = isArray(hueVsSatRaw) ? hueVsSatRaw.filter((point) => hasXY(point)) : [];
+  const hueVsLumRaw = params.hue_vs_lum;
+  const hueVsLum = isArray(hueVsLumRaw) ? hueVsLumRaw.filter((point) => hasXY(point)) : [];
+  const lumVsSatRaw = params.lum_vs_sat;
+  const lumVsSat = isArray(lumVsSatRaw) ? lumVsSatRaw.filter((point) => hasXY(point)) : [];
+  const satVsSatRaw = params.sat_vs_sat;
+  const satVsSat = isArray(satVsSatRaw) ? satVsSatRaw.filter((point) => hasXY(point)) : [];
   if (hueVsHue.length === 0 && hueVsSat.length === 0 && hueVsLum.length === 0 && lumVsSat.length === 0 && satVsSat.length === 0) {
     return input;
   }
@@ -5646,10 +5917,11 @@ function colorMatchRenderer(input, params) {
   const refHistB = params.reference_histogram_b;
   const refPixelsRaw = params.reference_pixels;
   const refPixels = typeof refPixelsRaw === "number" && Number.isFinite(refPixelsRaw) && refPixelsRaw > 0 ? refPixelsRaw : 0;
-  const strengthRaw = (params.strength ?? 100) / 100;
-  const strength = Number.isFinite(strengthRaw) ? Math.max(0, Math.min(1, strengthRaw)) : 0;
-  const matchLuminance = params.match_luminance ?? true;
-  const matchColor = params.match_color ?? true;
+  const strengthValue = params.strength;
+  const strengthRaw = isFiniteNumber(strengthValue) ? Math.max(0, Math.min(100, strengthValue)) / 100 : 1;
+  const strength = Math.max(0, Math.min(1, strengthRaw));
+  const matchLuminance = typeof params.match_luminance === "boolean" ? params.match_luminance : true;
+  const matchColor = typeof params.match_color === "boolean" ? params.match_color : true;
   if (!refHistR || !refHistG || !refHistB || refPixels <= 0 || strength === 0) {
     return input;
   }
@@ -5754,11 +6026,11 @@ function registerColorGradingEffects() {
 }
 
 function brightnessContrastRenderer(input, params) {
-  const rawBrightness = params.brightness ?? 0;
-  const brightness = Number.isFinite(rawBrightness) ? rawBrightness / 100 : 0;
-  const rawContrast = params.contrast ?? 0;
-  const contrast = Number.isFinite(rawContrast) ? rawContrast / 100 : 0;
-  const useLegacy = params.use_legacy ?? false;
+  const brightnessValue = params.brightness;
+  const brightness = isFiniteNumber(brightnessValue) ? Math.max(-150, Math.min(150, brightnessValue)) / 100 : 0;
+  const contrastValue = params.contrast;
+  const contrast = isFiniteNumber(contrastValue) ? Math.max(-100, Math.min(100, contrastValue)) / 100 : 0;
+  const useLegacy = typeof params.use_legacy === "boolean" ? params.use_legacy : false;
   if (brightness === 0 && contrast === 0) {
     return input;
   }
@@ -5836,13 +6108,13 @@ function hslToRgb(h, s, l) {
   return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
 }
 function hueSaturationRenderer(input, params) {
-  const rawHue = params.master_hue ?? 0;
-  const hueShift = Number.isFinite(rawHue) ? rawHue / 360 : 0;
-  const rawSat = params.master_saturation ?? 0;
-  const saturationShift = Number.isFinite(rawSat) ? rawSat / 100 : 0;
-  const rawLight = params.master_lightness ?? 0;
-  const lightnessShift = Number.isFinite(rawLight) ? rawLight / 100 : 0;
-  const colorize = params.colorize ?? false;
+  const hueValue = params.master_hue;
+  const hueShift = isFiniteNumber(hueValue) ? Math.max(-180, Math.min(180, hueValue)) / 360 : 0;
+  const satValue = params.master_saturation;
+  const saturationShift = isFiniteNumber(satValue) ? Math.max(-100, Math.min(100, satValue)) / 100 : 0;
+  const lightValue = params.master_lightness;
+  const lightnessShift = isFiniteNumber(lightValue) ? Math.max(-100, Math.min(100, lightValue)) / 100 : 0;
+  const colorize = typeof params.colorize === "boolean" ? params.colorize : false;
   if (hueShift === 0 && saturationShift === 0 && lightnessShift === 0 && !colorize) {
     return input;
   }
@@ -5879,16 +6151,16 @@ function hueSaturationRenderer(input, params) {
   return output;
 }
 function levelsRenderer(input, params) {
-  const rawInputBlack = params.input_black ?? 0;
-  const inputBlack = Number.isFinite(rawInputBlack) ? rawInputBlack : 0;
-  const rawInputWhite = params.input_white ?? 255;
-  const inputWhite = Number.isFinite(rawInputWhite) ? rawInputWhite : 255;
-  const rawGamma = params.gamma ?? 1;
-  const gamma = Number.isFinite(rawGamma) && rawGamma > 0 ? rawGamma : 1;
-  const rawOutputBlack = params.output_black ?? 0;
-  const outputBlack = Number.isFinite(rawOutputBlack) ? rawOutputBlack : 0;
-  const rawOutputWhite = params.output_white ?? 255;
-  const outputWhite = Number.isFinite(rawOutputWhite) ? rawOutputWhite : 255;
+  const inputBlackValue = params.input_black;
+  const inputBlack = isFiniteNumber(inputBlackValue) ? Math.max(0, Math.min(255, inputBlackValue)) : 0;
+  const inputWhiteValue = params.input_white;
+  const inputWhite = isFiniteNumber(inputWhiteValue) ? Math.max(0, Math.min(255, inputWhiteValue)) : 255;
+  const gammaValue = params.gamma;
+  const gamma = isFiniteNumber(gammaValue) && gammaValue > 0 ? Math.max(0.01, Math.min(10, gammaValue)) : 1;
+  const outputBlackValue = params.output_black;
+  const outputBlack = isFiniteNumber(outputBlackValue) ? Math.max(0, Math.min(255, outputBlackValue)) : 0;
+  const outputWhiteValue = params.output_white;
+  const outputWhite = isFiniteNumber(outputWhiteValue) ? Math.max(0, Math.min(255, outputWhiteValue)) : 255;
   if (inputBlack === 0 && inputWhite === 255 && gamma === 1 && outputBlack === 0 && outputWhite === 255) {
     return input;
   }
@@ -5919,11 +6191,16 @@ function levelsRenderer(input, params) {
   output.ctx.putImageData(imageData, 0, 0);
   return output;
 }
+function isColorObject(value) {
+  return typeof value === "object" && value !== null && "r" in value && "g" in value && "b" in value && typeof value.r === "number" && typeof value.g === "number" && typeof value.b === "number";
+}
 function tintRenderer(input, params) {
-  const blackColor = params.map_black_to ?? { r: 0, g: 0, b: 0 };
-  const whiteColor = params.map_white_to ?? { r: 255, g: 255, b: 255 };
-  const rawAmount = params.amount_to_tint ?? 100;
-  const amount = Number.isFinite(rawAmount) ? rawAmount / 100 : 1;
+  const rawBlackColor = params.map_black_to;
+  const rawWhiteColor = params.map_white_to;
+  const blackColor = isColorObject(rawBlackColor) ? rawBlackColor : { r: 0, g: 0, b: 0 };
+  const whiteColor = isColorObject(rawWhiteColor) ? rawWhiteColor : { r: 255, g: 255, b: 255 };
+  const amountValue = params.amount_to_tint;
+  const amount = isFiniteNumber(amountValue) ? Math.max(0, Math.min(100, amountValue)) / 100 : 1;
   if (amount === 0) {
     return input;
   }
@@ -6013,32 +6290,32 @@ function curvesRenderer(input, params) {
   const greenCurve = params.green_curve;
   const blueCurve = params.blue_curve;
   const alphaCurve = params.alpha_curve;
-  const rawBlend = params.blend_with_original ?? 100;
-  const blend = Number.isFinite(rawBlend) ? rawBlend / 100 : 1;
+  const blendValue = params.blend_with_original;
+  const blend = isFiniteNumber(blendValue) ? Math.max(0, Math.min(100, blendValue)) / 100 : 1;
   const hasCurves = masterCurve || redCurve || greenCurve || blueCurve || alphaCurve;
   if (!hasCurves || blend === 0) {
     return input;
   }
   const masterLUT = buildCurveLUT(
-    masterCurve ?? [
+    masterCurve !== void 0 ? masterCurve : [
       { x: 0, y: 0 },
       { x: 255, y: 255 }
     ]
   );
   const redLUT = buildCurveLUT(
-    redCurve ?? [
+    redCurve !== void 0 ? redCurve : [
       { x: 0, y: 0 },
       { x: 255, y: 255 }
     ]
   );
   const greenLUT = buildCurveLUT(
-    greenCurve ?? [
+    greenCurve !== void 0 ? greenCurve : [
       { x: 0, y: 0 },
       { x: 255, y: 255 }
     ]
   );
   const blueLUT = buildCurveLUT(
-    blueCurve ?? [
+    blueCurve !== void 0 ? blueCurve : [
       { x: 0, y: 0 },
       { x: 255, y: 255 }
     ]
@@ -6078,22 +6355,29 @@ function curvesRenderer(input, params) {
   return output;
 }
 function glowRenderer(input, params, frame) {
-  const rawThreshold = params.glow_threshold ?? 128;
-  const threshold = Number.isFinite(rawThreshold) ? rawThreshold : 128;
-  const rawRadius = params.glow_radius ?? 20;
-  const radius = Number.isFinite(rawRadius) ? Math.max(0, rawRadius) : 20;
-  const rawIntensity = params.glow_intensity ?? 100;
-  const validIntensity = Number.isFinite(rawIntensity) ? rawIntensity : 100;
+  const thresholdValue = params.glow_threshold;
+  const threshold = isFiniteNumber(thresholdValue) ? thresholdValue : 128;
+  const radiusValue = params.glow_radius;
+  const radius = isFiniteNumber(radiusValue) ? Math.max(0, radiusValue) : 20;
+  const intensityValue = params.glow_intensity;
+  const validIntensity = isFiniteNumber(intensityValue) ? Math.max(0, Math.min(500, intensityValue)) : 100;
   const intensity = validIntensity <= 10 ? validIntensity : validIntensity / 100;
-  const composite = params.composite_original ?? "on-top";
-  const operation = params.glow_operation ?? (composite === "on-top" ? "add" : "lighten");
-  const glowColors = params.glow_colors ?? "original";
-  const colorA = params.color_a ?? { r: 255, g: 255, b: 255};
-  const colorB = params.color_b ?? { r: 255, g: 128, b: 0};
-  const colorLooping = params.color_looping ?? "none";
-  const rawLoopSpeed = params.color_looping_speed ?? 1;
-  const colorLoopingSpeed = Number.isFinite(rawLoopSpeed) ? rawLoopSpeed : 1;
-  const glowDimensions = params.glow_dimensions ?? "both";
+  const compositeValue = params.composite_original;
+  const composite = typeof compositeValue === "string" ? compositeValue : "on-top";
+  const operationValue = params.glow_operation;
+  const operation = typeof operationValue === "string" ? operationValue : composite === "on-top" ? "add" : "lighten";
+  const glowColorsValue = params.glow_colors;
+  const glowColors = typeof glowColorsValue === "string" ? glowColorsValue : "original";
+  const rawColorA = params.color_a;
+  const rawColorB = params.color_b;
+  const colorA = isColorObject(rawColorA) ? rawColorA : { r: 255, g: 255, b: 255, a: 1 };
+  const colorB = isColorObject(rawColorB) ? rawColorB : { r: 255, g: 128, b: 0, a: 1 };
+  const colorLoopingValue = params.color_looping;
+  const colorLooping = typeof colorLoopingValue === "string" ? colorLoopingValue : "none";
+  const rawLoopSpeed = params.color_looping_speed;
+  const colorLoopingSpeed = isFiniteNumber(rawLoopSpeed) && rawLoopSpeed > 0 ? rawLoopSpeed : 1;
+  const glowDimensionsValue = params.glow_dimensions;
+  const glowDimensions = typeof glowDimensionsValue === "string" ? glowDimensionsValue : "both";
   if (intensity === 0 || radius === 0) {
     return input;
   }
@@ -6101,7 +6385,8 @@ function glowRenderer(input, params, frame) {
   const output = createMatchingCanvas(input.canvas);
   let colorBlend = 0;
   if (colorLooping !== "none" && frame !== void 0) {
-    const fps = Number.isFinite(params._fps) && params._fps > 0 ? params._fps : 16;
+    const fpsRaw = params._fps;
+    const fps = fpsRaw !== void 0 && fpsRaw !== null && typeof fpsRaw === "number" && Number.isFinite(fpsRaw) && fpsRaw > 0 ? fpsRaw : 16;
     const time = frame / fps;
     const cycle = time * colorLoopingSpeed % 1;
     switch (colorLooping) {
@@ -6118,16 +6403,18 @@ function glowRenderer(input, params, frame) {
         colorBlend = 0;
     }
   }
-  const effectiveColor = glowColors === "ab" ? {
+  const effectiveColor = glowColors === "ab" && isColorObject(colorA) && isColorObject(colorB) ? {
     r: colorA.r + (colorB.r - colorA.r) * colorBlend,
     g: colorA.g + (colorB.g - colorA.g) * colorBlend,
-    b: colorA.b + (colorB.b - colorA.b) * colorBlend} : null;
+    b: colorA.b + (colorB.b - colorA.b) * colorBlend,
+    a: (typeof colorA.a === "number" ? colorA.a : 1) + ((typeof colorB.a === "number" ? colorB.a : 1) - (typeof colorA.a === "number" ? colorA.a : 1)) * colorBlend
+  } : null;
   const sourceCanvas = params._sourceCanvas;
   const thresholdCanvas = document.createElement("canvas");
   thresholdCanvas.width = width;
   thresholdCanvas.height = height;
   const thresholdCtx = thresholdCanvas.getContext("2d");
-  const sourceCtx = sourceCanvas?.getContext("2d");
+  const sourceCtx = sourceCanvas != null && typeof sourceCanvas === "object" && typeof sourceCanvas.getContext === "function" ? sourceCanvas.getContext("2d") : void 0;
   const inputData = sourceCtx ? sourceCtx.getImageData(0, 0, width, height) : input.ctx.getImageData(0, 0, width, height);
   const thresholdData = thresholdCtx.createImageData(width, height);
   for (let i = 0; i < inputData.data.length; i += 4) {
@@ -6223,17 +6510,20 @@ function glowRenderer(input, params, frame) {
   return output;
 }
 function dropShadowRenderer(input, params) {
-  const shadowColor = params.shadow_color ?? { r: 0, g: 0, b: 0};
-  const rawOpacity = params.opacity ?? 50;
-  const opacity = Number.isFinite(rawOpacity) ? rawOpacity / 100 : 0.5;
-  const rawDirection = params.direction ?? 135;
-  const direction = Number.isFinite(rawDirection) ? rawDirection * Math.PI / 180 : 135 * Math.PI / 180;
-  const rawDistance = params.distance ?? 5;
-  const distance = Number.isFinite(rawDistance) ? rawDistance : 5;
-  const rawSoftness = params.softness ?? 5;
-  const softness = Number.isFinite(rawSoftness) ? rawSoftness : 5;
-  const shadowOnly = params.shadow_only ?? false;
+  const rawShadowColor = params.shadow_color;
+  const shadowColor = isColorObject(rawShadowColor) ? rawShadowColor : { r: 0, g: 0, b: 0};
+  const opacityValue = params.opacity;
+  const opacity = isFiniteNumber(opacityValue) ? Math.max(0, Math.min(100, opacityValue)) / 100 : 0.5;
+  const directionValue = params.direction;
+  const directionDeg = isFiniteNumber(directionValue) ? Math.max(0, Math.min(360, directionValue)) : 135;
+  const direction = directionDeg * Math.PI / 180;
+  const rawDistance = params.distance;
+  const distance = isFiniteNumber(rawDistance) && rawDistance >= 0 ? rawDistance : 5;
+  const rawSoftness = params.softness;
+  const softness = isFiniteNumber(rawSoftness) && rawSoftness >= 0 ? rawSoftness : 5;
+  const shadowOnly = typeof params.shadow_only === "boolean" ? params.shadow_only : false;
   const output = createMatchingCanvas(input.canvas);
+  const { width, height } = input.canvas;
   const offsetX = Math.cos(direction) * distance;
   const offsetY = Math.sin(direction) * distance;
   output.ctx.shadowColor = `rgba(${shadowColor.r}, ${shadowColor.g}, ${shadowColor.b}, ${opacity})`;
@@ -6252,8 +6542,8 @@ function dropShadowRenderer(input, params) {
 }
 function colorBalanceRenderer(input, params) {
   const safeDiv100 = (val, def) => {
-    const raw = val ?? def;
-    return Number.isFinite(raw) ? raw / 100 : def / 100;
+    const raw = isFiniteNumber(val) ? val : def;
+    return raw / 100;
   };
   const shadowR = safeDiv100(params.shadow_red, 0);
   const shadowG = safeDiv100(params.shadow_green, 0);
@@ -6264,7 +6554,7 @@ function colorBalanceRenderer(input, params) {
   const highlightR = safeDiv100(params.highlight_red, 0);
   const highlightG = safeDiv100(params.highlight_green, 0);
   const highlightB = safeDiv100(params.highlight_blue, 0);
-  const preserveLuminosity = params.preserve_luminosity ?? true;
+  const preserveLuminosity = typeof params.preserve_luminosity === "boolean" ? params.preserve_luminosity : true;
   if (shadowR === 0 && shadowG === 0 && shadowB === 0 && midtoneR === 0 && midtoneG === 0 && midtoneB === 0 && highlightR === 0 && highlightG === 0 && highlightB === 0) {
     return input;
   }
@@ -6307,12 +6597,12 @@ function colorBalanceRenderer(input, params) {
   return output;
 }
 function exposureRenderer(input, params) {
-  const rawExposure = params.exposure ?? 0;
-  const exposure = Number.isFinite(rawExposure) ? rawExposure : 0;
-  const rawOffset = params.offset ?? 0;
-  const offset = Number.isFinite(rawOffset) ? rawOffset : 0;
-  const rawGamma = params.gamma ?? 1;
-  const gamma = Number.isFinite(rawGamma) && rawGamma > 0 ? rawGamma : 1;
+  const rawExposure = params.exposure;
+  const exposure = isFiniteNumber(rawExposure) ? rawExposure : 0;
+  const rawOffset = params.offset;
+  const offset = isFiniteNumber(rawOffset) ? rawOffset : 0;
+  const rawGamma = params.gamma;
+  const gamma = isFiniteNumber(rawGamma) && rawGamma > 0 ? rawGamma : 1;
   if (exposure === 0 && offset === 0 && gamma === 1) {
     return input;
   }
@@ -6344,10 +6634,10 @@ function exposureRenderer(input, params) {
   return output;
 }
 function vibranceRenderer(input, params) {
-  const rawVibrance = params.vibrance ?? 0;
-  const vibrance = Number.isFinite(rawVibrance) ? rawVibrance / 100 : 0;
-  const rawSaturation = params.saturation ?? 0;
-  const saturation = Number.isFinite(rawSaturation) ? rawSaturation / 100 : 0;
+  const vibranceValue = typeof params.vibrance === "number" ? params.vibrance : 0;
+  const vibrance = Math.max(-100, Math.min(100, isFiniteNumber(vibranceValue) ? vibranceValue : 0)) / 100;
+  const saturationValue = typeof params.saturation === "number" ? params.saturation : 0;
+  const saturation = Math.max(-100, Math.min(100, isFiniteNumber(saturationValue) ? saturationValue : 0)) / 100;
   if (vibrance === 0 && saturation === 0) {
     return input;
   }
@@ -6387,9 +6677,10 @@ function vibranceRenderer(input, params) {
   return output;
 }
 function invertRenderer(input, params) {
-  const rawBlend = params.blend ?? 100;
-  const blend = Number.isFinite(rawBlend) ? rawBlend / 100 : 1;
-  const channel = params.channel ?? "rgb";
+  const rawBlend = params.blend;
+  const blend = isFiniteNumber(rawBlend) ? Math.max(0, Math.min(100, rawBlend)) / 100 : 1;
+  const channelValue = params.channel;
+  const channel = typeof channelValue === "string" ? channelValue : "rgb";
   if (blend === 0) {
     return input;
   }
@@ -6447,8 +6738,8 @@ function invertRenderer(input, params) {
   return output;
 }
 function posterizeRenderer(input, params) {
-  const rawLevels = params.levels ?? 6;
-  const levels = Number.isFinite(rawLevels) ? Math.max(2, Math.min(256, rawLevels)) : 6;
+  const rawLevels = params.levels;
+  const levels = isFiniteNumber(rawLevels) && Number.isInteger(rawLevels) ? Math.max(2, Math.min(256, rawLevels)) : 6;
   if (levels === 256) {
     return input;
   }
@@ -6475,8 +6766,8 @@ function posterizeRenderer(input, params) {
   return output;
 }
 function thresholdRenderer(input, params) {
-  const rawThreshold = params.threshold ?? 128;
-  const threshold = Number.isFinite(rawThreshold) ? rawThreshold : 128;
+  const thresholdValue = params.threshold;
+  const threshold = isFiniteNumber(thresholdValue) ? thresholdValue : 128;
   const output = createMatchingCanvas(input.canvas);
   const imageData = input.ctx.getImageData(
     0,
@@ -6499,14 +6790,14 @@ function thresholdRenderer(input, params) {
   return output;
 }
 function vignetteRenderer(input, params) {
-  const rawAmount = params.amount ?? 0;
-  const amount = Number.isFinite(rawAmount) ? rawAmount / 100 : 0;
-  const rawMidpoint = params.midpoint ?? 50;
-  const midpoint = Number.isFinite(rawMidpoint) ? rawMidpoint / 100 : 0.5;
-  const rawRoundness = params.roundness ?? 0;
-  const roundness = Number.isFinite(rawRoundness) ? rawRoundness / 100 : 0;
-  const rawFeather = params.feather ?? 50;
-  const feather = Number.isFinite(rawFeather) ? rawFeather / 100 : 0.5;
+  const rawAmount = params.amount;
+  const amount = isFiniteNumber(rawAmount) ? Math.max(-100, Math.min(100, rawAmount)) / 100 : 0;
+  const rawMidpoint = params.midpoint;
+  const midpoint = isFiniteNumber(rawMidpoint) ? Math.max(0, Math.min(100, rawMidpoint)) / 100 : 0.5;
+  const rawRoundness = params.roundness;
+  const roundness = isFiniteNumber(rawRoundness) ? Math.max(-100, Math.min(100, rawRoundness)) / 100 : 0;
+  const rawFeather = params.feather;
+  const feather = isFiniteNumber(rawFeather) ? Math.max(0, Math.min(100, rawFeather)) / 100 : 0.5;
   if (amount === 0) {
     return input;
   }
@@ -6564,10 +6855,18 @@ function parseCubeLUT(content) {
       size = parseInt(trimmed.split(/\s+/)[1], 10);
     } else if (trimmed.startsWith("DOMAIN_MIN")) {
       const parts = trimmed.split(/\s+/).slice(1).map(Number);
-      domainMin = [parts[0] ?? 0, parts[1] ?? 0, parts[2] ?? 0];
+      domainMin = [
+        isFiniteNumber(parts[0]) ? parts[0] : 0,
+        isFiniteNumber(parts[1]) ? parts[1] : 0,
+        isFiniteNumber(parts[2]) ? parts[2] : 0
+      ];
     } else if (trimmed.startsWith("DOMAIN_MAX")) {
       const parts = trimmed.split(/\s+/).slice(1).map(Number);
-      domainMax = [parts[0] ?? 1, parts[1] ?? 1, parts[2] ?? 1];
+      domainMax = [
+        isFiniteNumber(parts[0]) ? parts[0] : 1,
+        isFiniteNumber(parts[1]) ? parts[1] : 1,
+        isFiniteNumber(parts[2]) ? parts[2] : 1
+      ];
     } else if (/^[\d.\-e]+\s+[\d.\-e]+\s+[\d.\-e]+/.test(trimmed)) {
       dataLines.push(trimmed);
     }
@@ -6578,9 +6877,9 @@ function parseCubeLUT(content) {
   const data = new Float32Array(size * size * size * 3);
   for (let i = 0; i < dataLines.length && i < size * size * size; i++) {
     const parts = dataLines[i].split(/\s+/).map(Number);
-    data[i * 3] = parts[0] ?? 0;
-    data[i * 3 + 1] = parts[1] ?? 0;
-    data[i * 3 + 2] = parts[2] ?? 0;
+    data[i * 3] = isFiniteNumber(parts[0]) ? parts[0] : 0;
+    data[i * 3 + 1] = isFiniteNumber(parts[1]) ? parts[1] : 0;
+    data[i * 3 + 2] = isFiniteNumber(parts[2]) ? parts[2] : 0;
   }
   return { title, size, domainMin, domainMax, data };
 }
@@ -6601,7 +6900,8 @@ function sampleLUT3D(lut, r, g, b) {
   const bFrac = bIdx - b0;
   const getLUT = (ri, gi, bi, channel) => {
     const idx = ((bi * size + gi) * size + ri) * 3 + channel;
-    return lut.data[idx] ?? 0;
+    const value = lut.data[idx];
+    return isFiniteNumber(value) ? value : 0;
   };
   const result = [0, 0, 0];
   for (let c = 0; c < 3; c++) {
@@ -6625,8 +6925,8 @@ function sampleLUT3D(lut, r, g, b) {
 }
 function lutRenderer(input, params) {
   const lutData = params.lutData;
-  const rawIntensity = params.intensity ?? 100;
-  const intensity = Number.isFinite(rawIntensity) ? rawIntensity / 100 : 1;
+  const intensityValue = params.intensity;
+  const intensity = isFiniteNumber(intensityValue) ? Math.max(0, Math.min(100, intensityValue)) / 100 : 1;
   if (!lutData || intensity === 0) {
     return input;
   }
@@ -6788,28 +7088,27 @@ class SimplexNoise {
     return g[0] * x + g[1] * y;
   }
 }
-function safeNum(val, def, min, max) {
-  const num = typeof val === "number" && Number.isFinite(val) ? val : def;
-  if (min !== void 0 && max !== void 0) {
-    return Math.max(min, Math.min(max, num));
-  }
-  if (min !== void 0) return Math.max(min, num);
-  if (max !== void 0) return Math.min(max, num);
-  return num;
-}
 function transformRenderer(input, params) {
-  const anchorPoint = params.anchor_point ?? { x: 0.5, y: 0.5 };
-  const position = params.position ?? { x: 0.5, y: 0.5 };
-  const anchorX_norm = safeNum(anchorPoint.x, 0.5, 0, 1);
-  const anchorY_norm = safeNum(anchorPoint.y, 0.5, 0, 1);
-  const posX_norm = safeNum(position.x, 0.5, 0, 1);
-  const posY_norm = safeNum(position.y, 0.5, 0, 1);
-  const scaleWidth = safeNum(params.scale_width, 100, 0.01, 1e4) / 100;
-  const scaleHeight = safeNum(params.scale_height, 100, 0.01, 1e4) / 100;
-  const skew = safeNum(params.skew, 0, -85, 85) * Math.PI / 180;
-  const skewAxis = safeNum(params.skew_axis, 0, -360, 360) * Math.PI / 180;
-  const rotation = safeNum(params.rotation, 0) * Math.PI / 180;
-  const opacity = safeNum(params.opacity, 100, 0, 100) / 100;
+  const rawAnchorPoint = params.anchor_point;
+  const rawPosition = params.position;
+  const anchorPoint = hasXY(rawAnchorPoint) ? rawAnchorPoint : { x: 0.5, y: 0.5 };
+  const position = hasXY(rawPosition) ? rawPosition : { x: 0.5, y: 0.5 };
+  const anchorX_norm = isFiniteNumber(anchorPoint.x) ? Math.max(0, Math.min(1, anchorPoint.x)) : 0.5;
+  const anchorY_norm = isFiniteNumber(anchorPoint.y) ? Math.max(0, Math.min(1, anchorPoint.y)) : 0.5;
+  const posX_norm = isFiniteNumber(position.x) ? Math.max(0, Math.min(1, position.x)) : 0.5;
+  const posY_norm = isFiniteNumber(position.y) ? Math.max(0, Math.min(1, position.y)) : 0.5;
+  const scaleWidthValue = params.scale_width;
+  const scaleWidth = isFiniteNumber(scaleWidthValue) ? Math.max(0.01, Math.min(1e4, scaleWidthValue)) / 100 : 1;
+  const scaleHeightValue = params.scale_height;
+  const scaleHeight = isFiniteNumber(scaleHeightValue) ? Math.max(0.01, Math.min(1e4, scaleHeightValue)) / 100 : 1;
+  const skewValue = params.skew;
+  const skew = isFiniteNumber(skewValue) ? Math.max(-85, Math.min(85, skewValue)) * Math.PI / 180 : 0;
+  const skewAxisValue = params.skew_axis;
+  const skewAxis = isFiniteNumber(skewAxisValue) ? Math.max(-360, Math.min(360, skewAxisValue)) * Math.PI / 180 : 0;
+  const rotationValue = params.rotation;
+  const rotation = isFiniteNumber(rotationValue) ? rotationValue * Math.PI / 180 : 0;
+  const opacityValue = params.opacity;
+  const opacity = isFiniteNumber(opacityValue) ? Math.max(0, Math.min(100, opacityValue)) / 100 : 1;
   const { width, height } = input.canvas;
   const output = createMatchingCanvas(input.canvas);
   const anchorX = anchorX_norm * width;
@@ -6832,10 +7131,14 @@ function transformRenderer(input, params) {
   return output;
 }
 function warpRenderer(input, params) {
-  const warpStyle = params.warp_style ?? "arc";
-  const bend = safeNum(params.bend, 0, -100, 100) / 100;
-  const hDistort = safeNum(params.horizontal_distortion, 0, -100, 100) / 100;
-  const vDistort = safeNum(params.vertical_distortion, 0, -100, 100) / 100;
+  const warpStyleValue = params.warp_style;
+  const warpStyle = typeof warpStyleValue === "string" ? warpStyleValue : "arc";
+  const bendValue = params.bend;
+  const bend = isFiniteNumber(bendValue) ? Math.max(-100, Math.min(100, bendValue)) / 100 : 0;
+  const hDistortValue = params.horizontal_distortion;
+  const hDistort = isFiniteNumber(hDistortValue) ? Math.max(-100, Math.min(100, hDistortValue)) / 100 : 0;
+  const vDistortValue = params.vertical_distortion;
+  const vDistort = isFiniteNumber(vDistortValue) ? Math.max(-100, Math.min(100, vDistortValue)) / 100 : 0;
   if (bend === 0 && hDistort === 0 && vDistort === 0) {
     return input;
   }
@@ -7032,14 +7335,22 @@ function applyMapBehavior(x, y, targetWidth, targetHeight, mapWidth, mapHeight, 
   }
 }
 function displacementMapRenderer(input, params) {
-  const mapType = params.map_type ?? "layer";
-  const mapBehavior = params.displacement_map_behavior ?? "stretch";
-  const useHorizontal = params.use_for_horizontal ?? "red";
-  const useVertical = params.use_for_vertical ?? "green";
-  const maxHorizontal = safeNum(params.max_horizontal, 0, -4e3, 4e3);
-  const maxVertical = safeNum(params.max_vertical, 0, -4e3, 4e3);
-  const wrapMode = params.edge_behavior ?? "off";
-  const mapScale = safeNum(params.map_scale, 1, 0.1, 10);
+  const mapTypeValue = params.map_type;
+  const mapType = typeof mapTypeValue === "string" ? mapTypeValue : "layer";
+  const mapBehaviorValue = params.displacement_map_behavior;
+  const mapBehavior = typeof mapBehaviorValue === "string" ? mapBehaviorValue : "stretch";
+  const useHorizontalValue = params.use_for_horizontal;
+  const useHorizontal = typeof useHorizontalValue === "string" ? useHorizontalValue : "red";
+  const useVerticalValue = params.use_for_vertical;
+  const useVertical = typeof useVerticalValue === "string" ? useVerticalValue : "green";
+  const maxHorizontalValue = params.max_horizontal;
+  const maxHorizontal = isFiniteNumber(maxHorizontalValue) ? Math.max(-4e3, Math.min(4e3, maxHorizontalValue)) : 0;
+  const maxVerticalValue = params.max_vertical;
+  const maxVertical = isFiniteNumber(maxVerticalValue) ? Math.max(-4e3, Math.min(4e3, maxVerticalValue)) : 0;
+  const wrapModeValue = params.edge_behavior;
+  const wrapMode = typeof wrapModeValue === "string" ? wrapModeValue : "off";
+  const mapScaleValue = params.map_scale;
+  const mapScale = isFiniteNumber(mapScaleValue) ? Math.max(0.1, Math.min(10, mapScaleValue)) : 1;
   const mapLayerCanvas = params._mapLayerCanvas;
   if ((useHorizontal === "off" || maxHorizontal === 0) && (useVertical === "off" || maxVertical === 0)) {
     return input;
@@ -7168,21 +7479,31 @@ function displacementMapRenderer(input, params) {
   return output;
 }
 function turbulentDisplaceRenderer(input, params) {
-  const displacementType = params.displacement ?? "turbulent";
-  const amount = safeNum(params.amount, 50, 0, 1e3);
-  const size = safeNum(params.size, 100, 1, 1e3);
-  const complexityRaw = safeNum(params.complexity, 3, 1, 10);
+  const displacementTypeValue = params.displacement;
+  const displacementType = typeof displacementTypeValue === "string" ? displacementTypeValue : "turbulent";
+  const amountValue = params.amount;
+  const amount = isFiniteNumber(amountValue) ? Math.max(0, Math.min(1e3, amountValue)) : 50;
+  const sizeValue = params.size;
+  const size = isFiniteNumber(sizeValue) ? Math.max(1, Math.min(1e3, sizeValue)) : 100;
+  const complexityValue = params.complexity;
+  const complexityRaw = isFiniteNumber(complexityValue) ? Math.max(1, Math.min(10, complexityValue)) : 3;
   const complexity = Math.floor(complexityRaw);
-  const evolutionDeg = safeNum(params.evolution, 0);
-  const cycleEvolution = params.cycle_evolution ?? false;
-  const cycleRevolutions = safeNum(params.cycle_revolutions, 1, 1, 100);
-  const randomSeed = safeNum(params.random_seed, 0, 0, 99999);
-  const offsetRaw = params.offset ?? { x: 0, y: 0 };
-  const offset = {
-    x: safeNum(offsetRaw.x, 0),
-    y: safeNum(offsetRaw.y, 0)
-  };
-  const pinning = params.pinning ?? "none";
+  const evolutionValue = params.evolution;
+  const evolutionDeg = isFiniteNumber(evolutionValue) ? evolutionValue : 0;
+  const cycleEvolution = typeof params.cycle_evolution === "boolean" ? params.cycle_evolution : false;
+  const cycleRevolutionsValue = params.cycle_revolutions;
+  const cycleRevolutions = isFiniteNumber(cycleRevolutionsValue) && Number.isInteger(cycleRevolutionsValue) ? Math.max(1, Math.min(100, cycleRevolutionsValue)) : 1;
+  const randomSeedValue = params.random_seed;
+  const randomSeed = isFiniteNumber(randomSeedValue) && Number.isInteger(randomSeedValue) ? Math.max(0, Math.min(99999, randomSeedValue)) : 0;
+  const rawOffset = params.offset;
+  const offsetRaw = hasXY(rawOffset) ? rawOffset : { x: 0, y: 0 };
+  const offsetXValue = offsetRaw.x;
+  const offsetX = isFiniteNumber(offsetXValue) ? offsetXValue : 0;
+  const offsetYValue = offsetRaw.y;
+  const offsetY = isFiniteNumber(offsetYValue) ? offsetYValue : 0;
+  const offset = { x: offsetX, y: offsetY };
+  const pinningValue = params.pinning;
+  const pinning = typeof pinningValue === "string" ? pinningValue : "none";
   if (amount === 0) {
     return input;
   }
@@ -7372,16 +7693,23 @@ function turbulentDisplaceRenderer(input, params) {
   return output;
 }
 function rippleDistortRenderer(input, params) {
-  const centerRaw = params.center ?? { x: 0.5, y: 0.5 };
-  const center = {
-    x: safeNum(centerRaw.x, 0.5, 0, 1),
-    y: safeNum(centerRaw.y, 0.5, 0, 1)
-  };
-  const radius = safeNum(params.radius, 200, 0, 1e4);
-  const wavelength = safeNum(params.wavelength, 50, 1, 1e3);
-  const amplitude = safeNum(params.amplitude, 20, 0, 1e3);
-  const phaseDeg = safeNum(params.phase, 0);
-  const decay = safeNum(params.decay, 50, 0, 100) / 100;
+  const rawCenter = params.center;
+  const centerRaw = hasXY(rawCenter) ? rawCenter : { x: 0.5, y: 0.5 };
+  const centerXValue = centerRaw.x;
+  const centerX = isFiniteNumber(centerXValue) ? Math.max(0, Math.min(1, centerXValue)) : 0.5;
+  const centerYValue = centerRaw.y;
+  const centerY = isFiniteNumber(centerYValue) ? Math.max(0, Math.min(1, centerYValue)) : 0.5;
+  const center = { x: centerX, y: centerY };
+  const radiusValue = params.radius;
+  const radius = isFiniteNumber(radiusValue) ? Math.max(0, Math.min(1e4, radiusValue)) : 200;
+  const wavelengthValue = params.wavelength;
+  const wavelength = isFiniteNumber(wavelengthValue) ? Math.max(1, Math.min(1e3, wavelengthValue)) : 50;
+  const amplitudeValue = params.amplitude;
+  const amplitude = isFiniteNumber(amplitudeValue) ? Math.max(0, Math.min(1e3, amplitudeValue)) : 20;
+  const phaseValue = params.phase;
+  const phaseDeg = isFiniteNumber(phaseValue) ? phaseValue : 0;
+  const decayValue = params.decay;
+  const decay = isFiniteNumber(decayValue) ? Math.max(0, Math.min(100, decayValue)) / 100 : 0.5;
   if (amplitude === 0) {
     return input;
   }
@@ -7391,13 +7719,13 @@ function rippleDistortRenderer(input, params) {
   const src = inputData.data;
   const outputData = output.ctx.createImageData(width, height);
   const dst = outputData.data;
-  const centerX = center.x * width;
-  const centerY = center.y * height;
+  const centerXPixels = center.x * width;
+  const centerYPixels = center.y * height;
   const phase = phaseDeg * Math.PI / 180;
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
-      const dx = x - centerX;
-      const dy = y - centerY;
+      const dx = x - centerXPixels;
+      const dy = y - centerYPixels;
       const dist = Math.sqrt(dx * dx + dy * dy);
       let srcX = x;
       let srcY = y;
@@ -7494,16 +7822,27 @@ class NoiseTileCache {
     return `${width}:${height}:${scale}:${octave}:${quantizedSeed}`;
   }
   /**
-   * Get cached noise tile or null if not found/expired
+   * Get cached noise tile
+   * 
+   * System F/Omega proof: Explicit validation of cache entry existence and validity
+   * Type proof: width, height, scale, octave, seed ∈ number → Float32Array (non-nullable)
+   * Mathematical proof: Cache entry must exist and be valid (not expired) to retrieve tile
+   * Pattern proof: Missing or expired cache entry is an explicit failure condition, not a lazy null return
    */
   get(width, height, scale, octave, seed) {
     const key = this.makeKey(width, height, scale, octave, seed);
     const entry = this.cache.get(key);
-    if (!entry) return null;
+    if (!entry) {
+      throw new Error(
+        `[GenerateRenderer] Cannot get cached noise tile: Entry not found in cache. Key: ${key}, cache size: ${this.cache.size}. Noise tile must be generated and cached before retrieval. Wrap in try/catch if "cache miss" is an expected state.`
+      );
+    }
     const now = Date.now();
     if (now - entry.timestamp > this.maxAgeMs) {
       this.cache.delete(key);
-      return null;
+      throw new Error(
+        `[GenerateRenderer] Cannot get cached noise tile: Entry expired. Key: ${key}, age: ${now - entry.timestamp}ms, maxAge: ${this.maxAgeMs}ms. Cache entry has expired and been removed. Wrap in try/catch if "cache expired" is an expected state.`
+      );
     }
     this.cache.delete(key);
     this.cache.set(key, { ...entry, timestamp: now });
@@ -7543,20 +7882,21 @@ class NoiseTileCache {
 }
 const noiseTileCache = new NoiseTileCache();
 function fillRenderer(input, params) {
-  const color = params.color ?? { r: 255, g: 0, b: 0, a: 1 };
-  const rawOpacity = params.opacity ?? 100;
-  const opacity = Number.isFinite(rawOpacity) ? rawOpacity / 100 : 1;
-  const invert = params.invert ?? false;
+  const rawColor = params.color;
+  const color = isRGBAColor(rawColor) ? rawColor : { r: 255, g: 0, b: 0, a: 1 };
+  const opacityValue = params.opacity;
+  const opacity = isFiniteNumber(opacityValue) ? Math.max(0, Math.min(100, opacityValue)) / 100 : 1;
+  const invert = typeof params.invert === "boolean" ? params.invert : false;
   const { width, height } = input.canvas;
   const output = createMatchingCanvas(input.canvas);
   const inputData = input.ctx.getImageData(0, 0, width, height);
   const outputData = output.ctx.createImageData(width, height);
   const src = inputData.data;
   const dst = outputData.data;
-  const r = color.r ?? 255;
-  const g = color.g ?? 0;
-  const b = color.b ?? 0;
-  const a = (color.a ?? 1) * 255 * opacity;
+  const r = color.r;
+  const g = color.g;
+  const b = color.b;
+  const a = color.a * 255 * opacity;
   for (let i = 0; i < src.length; i += 4) {
     const srcAlpha = src[i + 3] / 255;
     if (invert) {
@@ -7580,13 +7920,20 @@ function fillRenderer(input, params) {
   return output;
 }
 function gradientRampRenderer(input, params) {
-  const startPoint = params.start_of_ramp ?? { x: 0, y: 0.5 };
-  const startColor = params.start_color ?? { r: 0, g: 0, b: 0, a: 1 };
-  const endPoint = params.end_of_ramp ?? { x: 1, y: 0.5 };
-  const endColor = params.end_color ?? { r: 255, g: 255, b: 255, a: 1 };
-  const rampShape = params.ramp_shape ?? "linear";
-  const scatter = (params.ramp_scatter ?? 0) / 100;
-  const blend = (params.blend_with_original ?? 0) / 100;
+  const rawStartPoint = params.start_of_ramp;
+  const rawStartColor = params.start_color;
+  const rawEndPoint = params.end_of_ramp;
+  const rawEndColor = params.end_color;
+  const startPoint = hasXY(rawStartPoint) ? rawStartPoint : { x: 0, y: 0.5 };
+  const startColor = isRGBAColor(rawStartColor) ? rawStartColor : { r: 0, g: 0, b: 0, a: 1 };
+  const endPoint = hasXY(rawEndPoint) ? rawEndPoint : { x: 1, y: 0.5 };
+  const endColor = isRGBAColor(rawEndColor) ? rawEndColor : { r: 255, g: 255, b: 255, a: 1 };
+  const rampShapeValue = params.ramp_shape;
+  const rampShape = typeof rampShapeValue === "string" ? rampShapeValue : "linear";
+  const scatterValue = params.ramp_scatter;
+  const scatter = isFiniteNumber(scatterValue) ? Math.max(0, Math.min(100, scatterValue)) / 100 : 0;
+  const blendValue = params.blend_with_original;
+  const blend = isFiniteNumber(blendValue) ? Math.max(0, Math.min(100, blendValue)) / 100 : 0;
   const { width, height } = input.canvas;
   const output = createMatchingCanvas(input.canvas);
   let gradient;
@@ -7605,8 +7952,10 @@ function gradientRampRenderer(input, params) {
       endPoint.y * height
     );
   }
-  const startRgba = `rgba(${startColor.r}, ${startColor.g}, ${startColor.b}, ${startColor.a ?? 1})`;
-  const endRgba = `rgba(${endColor.r}, ${endColor.g}, ${endColor.b}, ${endColor.a ?? 1})`;
+  const startColorA = isFiniteNumber(startColor.a) ? startColor.a : 1;
+  const startRgba = `rgba(${startColor.r}, ${startColor.g}, ${startColor.b}, ${startColorA})`;
+  const endColorA = isFiniteNumber(endColor.a) ? endColor.a : 1;
+  const endRgba = `rgba(${endColor.r}, ${endColor.g}, ${endColor.b}, ${endColorA})`;
   gradient.addColorStop(0, startRgba);
   gradient.addColorStop(1, endRgba);
   output.ctx.fillStyle = gradient;
@@ -7615,7 +7964,8 @@ function gradientRampRenderer(input, params) {
     const outputData = output.ctx.getImageData(0, 0, width, height);
     const dst = outputData.data;
     const scatterAmount = scatter * 25;
-    const frame = params._frame ?? 0;
+    const frameValue = params._frame;
+    const frame = isFiniteNumber(frameValue) && Number.isInteger(frameValue) && frameValue >= 0 ? frameValue : 0;
     const seededRandom = (seed) => {
       let t = seed + 1831565813;
       t = Math.imul(t ^ t >>> 15, t | 1);
@@ -7677,13 +8027,20 @@ function getOctaveTile(width, height, scale, octave, seed, frequency, isTurbulen
   return tile;
 }
 function fractalNoiseRenderer(input, params) {
-  const fractalType = params.fractal_type ?? "basic";
-  const invert = params.invert ?? false;
-  const contrast = (params.contrast ?? 100) / 100;
-  const brightness = (params.brightness ?? 0) / 100;
-  const scale = params.scale ?? 100;
-  const complexity = Math.max(1, Math.min(20, params.complexity ?? 6));
-  const evolution = (params.evolution ?? 0) * Math.PI / 180;
+  const rawFractalType = params.fractal_type;
+  const fractalType = typeof rawFractalType === "string" ? rawFractalType : "basic";
+  const invert = typeof params.invert === "boolean" ? params.invert : false;
+  const contrastValue = params.contrast;
+  const contrast = isFiniteNumber(contrastValue) ? Math.max(0, Math.min(100, contrastValue)) / 100 : 1;
+  const brightnessValue = params.brightness;
+  const brightness = isFiniteNumber(brightnessValue) ? brightnessValue / 100 : 0;
+  const scaleValue = params.scale;
+  const scale = isFiniteNumber(scaleValue) && scaleValue > 0 ? scaleValue : 100;
+  const complexityValue = params.complexity;
+  const complexityRaw = isFiniteNumber(complexityValue) && Number.isInteger(complexityValue) ? complexityValue : 6;
+  const complexity = Math.max(1, Math.min(20, complexityRaw));
+  const evolutionValue = params.evolution;
+  const evolution = isFiniteNumber(evolutionValue) ? evolutionValue * Math.PI / 180 : 0;
   const { width, height } = input.canvas;
   const output = createMatchingCanvas(input.canvas);
   const outputData = output.ctx.createImageData(width, height);
@@ -7729,11 +8086,14 @@ function fractalNoiseRenderer(input, params) {
   return output;
 }
 function addGrainRenderer(input, params, frame) {
-  const intensity = params.intensity ?? 0.5;
-  const size = params.size ?? 1;
-  const softness = params.softness ?? 0;
-  const animate = params.animate ?? true;
-  const colorGrain = params.color ?? false;
+  const intensityValue = params.intensity;
+  const intensity = isFiniteNumber(intensityValue) ? Math.max(0, Math.min(1, intensityValue)) : 0.5;
+  const sizeValue = params.size;
+  const size = isFiniteNumber(sizeValue) && sizeValue > 0 ? sizeValue : 1;
+  const softnessValue = params.softness;
+  const softness = isFiniteNumber(softnessValue) ? Math.max(0, Math.min(1, softnessValue)) : 0;
+  const animate = typeof params.animate === "boolean" ? params.animate : true;
+  const colorGrain = typeof params.color === "boolean" ? params.color : false;
   if (intensity === 0) {
     return input;
   }
@@ -7749,7 +8109,9 @@ function addGrainRenderer(input, params, frame) {
   const grainCtx = grainCanvas.getContext("2d");
   const grainData = grainCtx.createImageData(grainWidth, grainHeight);
   const grain = grainData.data;
-  const seed = animate ? (frame ?? 0) * 12345 : 42;
+  const frameValue = frame;
+  const validFrame = isFiniteNumber(frameValue) && Number.isInteger(frameValue) && frameValue >= 0 ? frameValue : 0;
+  const seed = animate ? validFrame * 12345 : 42;
   let rngState = seed;
   const seededRandom = () => {
     rngState = rngState * 1103515245 + 12345 & 2147483647;
@@ -7791,20 +8153,33 @@ function addGrainRenderer(input, params, frame) {
   return output;
 }
 function radioWavesRenderer(input, params) {
-  const center = params.center ?? { x: 0.5, y: 0.5 };
-  const frequency = Math.max(1, params.frequency ?? 4);
-  const expansion = (params.expansion ?? 50) / 100;
-  const waveWidth = Math.max(1, params.wave_width ?? 20);
-  const strokeColor = params.stroke_color ?? { r: 255, g: 255, b: 255, a: 1 };
-  const backgroundColor = params.background_color ?? {
+  const rawCenter = params.center;
+  const rawStrokeColor = params.stroke_color;
+  const rawBackgroundColor = params.background_color;
+  const center = hasXY(rawCenter) ? rawCenter : { x: 0.5, y: 0.5 };
+  const frequencyValue = params.frequency;
+  const frequencyRaw = isFiniteNumber(frequencyValue) && frequencyValue > 0 ? frequencyValue : 4;
+  const frequency = Math.max(1, frequencyRaw);
+  const expansionValue = params.expansion;
+  const expansionRaw = isFiniteNumber(expansionValue) ? Math.max(0, Math.min(100, expansionValue)) : 50;
+  const expansion = expansionRaw / 100;
+  const waveWidthValue = params.wave_width;
+  const waveWidthRaw = isFiniteNumber(waveWidthValue) && waveWidthValue > 0 ? waveWidthValue : 20;
+  const waveWidth = Math.max(1, waveWidthRaw);
+  const strokeColor = isRGBAColor(rawStrokeColor) ? rawStrokeColor : { r: 255, g: 255, b: 255, a: 1 };
+  const backgroundColor = isRGBAColor(rawBackgroundColor) ? rawBackgroundColor : {
     r: 128,
     g: 128,
     b: 128,
     a: 1
   };
-  const fadeStart = (params.fade_start ?? 0) / 100;
-  const fadeEnd = (params.fade_end ?? 100) / 100;
-  const invert = params.invert ?? false;
+  const fadeStartValue = params.fade_start;
+  const fadeStartRaw = isFiniteNumber(fadeStartValue) ? Math.max(0, Math.min(100, fadeStartValue)) : 0;
+  const fadeStart = fadeStartRaw / 100;
+  const fadeEndValue = params.fade_end;
+  const fadeEndRaw = isFiniteNumber(fadeEndValue) ? Math.max(0, Math.min(100, fadeEndValue)) : 100;
+  const fadeEnd = fadeEndRaw / 100;
+  const invert = typeof params.invert === "boolean" ? params.invert : false;
   const { width, height } = input.canvas;
   const output = createMatchingCanvas(input.canvas);
   const outputData = output.ctx.createImageData(width, height);
@@ -7849,7 +8224,7 @@ function radioWavesRenderer(input, params) {
         backgroundColor.b * (1 - waveValue) + strokeColor.b * waveValue
       );
       dst[i + 3] = Math.round(
-        ((backgroundColor.a ?? 1) * (1 - waveValue) + (strokeColor.a ?? 1) * waveValue) * 255
+        ((isFiniteNumber(backgroundColor.a) ? backgroundColor.a : 1) * (1 - waveValue) + (isFiniteNumber(strokeColor.a) ? strokeColor.a : 1) * waveValue) * 255
       );
     }
   }
@@ -7857,14 +8232,22 @@ function radioWavesRenderer(input, params) {
   return output;
 }
 function ellipseRenderer(input, params) {
-  const center = params.center ?? { x: 0.5, y: 0.5 };
-  const ellipseWidth = params.ellipse_width ?? 200;
-  const ellipseHeight = params.ellipse_height ?? 200;
-  const softness = (params.softness ?? 0) / 100;
-  const strokeWidth = params.stroke_width ?? 0;
-  const strokeColor = params.stroke_color ?? { r: 255, g: 255, b: 255, a: 1 };
-  const backgroundColor = params.background_color ?? { r: 0, g: 0, b: 0, a: 1 };
-  const invertShape = params.invert ?? false;
+  const rawCenter = params.center;
+  const rawStrokeColor = params.stroke_color;
+  const rawBackgroundColor = params.background_color;
+  const center = hasXY(rawCenter) ? rawCenter : { x: 0.5, y: 0.5 };
+  const ellipseWidthValue = params.ellipse_width;
+  const ellipseWidth = isFiniteNumber(ellipseWidthValue) && ellipseWidthValue >= 0 ? ellipseWidthValue : 200;
+  const ellipseHeightValue = params.ellipse_height;
+  const ellipseHeight = isFiniteNumber(ellipseHeightValue) && ellipseHeightValue >= 0 ? ellipseHeightValue : 200;
+  const softnessValue = params.softness;
+  const softnessRaw = isFiniteNumber(softnessValue) ? Math.max(0, Math.min(100, softnessValue)) : 0;
+  const softness = softnessRaw / 100;
+  const strokeWidthValue = params.stroke_width;
+  const strokeWidth = isFiniteNumber(strokeWidthValue) && strokeWidthValue >= 0 ? strokeWidthValue : 0;
+  const strokeColor = isRGBAColor(rawStrokeColor) ? rawStrokeColor : { r: 255, g: 255, b: 255, a: 1 };
+  const backgroundColor = isRGBAColor(rawBackgroundColor) ? rawBackgroundColor : { r: 0, g: 0, b: 0, a: 1 };
+  const invertShape = typeof params.invert === "boolean" ? params.invert : false;
   const { width, height } = input.canvas;
   const output = createMatchingCanvas(input.canvas);
   const outputData = output.ctx.createImageData(width, height);
@@ -7926,7 +8309,7 @@ function ellipseRenderer(input, params) {
         backgroundColor.b * (1 - shapeValue) + strokeColor.b * shapeValue
       );
       dst[i + 3] = Math.round(
-        ((backgroundColor.a ?? 1) * (1 - shapeValue) + (strokeColor.a ?? 1) * shapeValue) * 255
+        ((isFiniteNumber(backgroundColor.a) ? backgroundColor.a : 1) * (1 - shapeValue) + (isFiniteNumber(strokeColor.a) ? strokeColor.a : 1) * shapeValue) * 255
       );
     }
   }
@@ -8287,9 +8670,12 @@ function hashCanvas(canvas) {
   return samples.join(",");
 }
 function getOrGenerateMesh(effectId, inputCanvas, params, pins) {
-  const triangleCount = params.triangle_count ?? 200;
-  const expansion = params.expansion ?? 3;
-  const alphaThreshold = params.alpha_threshold ?? 128;
+  const triangleCountValue = params.triangle_count;
+  const triangleCount = isFiniteNumber(triangleCountValue) && Number.isInteger(triangleCountValue) && triangleCountValue > 0 ? triangleCountValue : 200;
+  const expansionValue = params.expansion;
+  const expansion = isFiniteNumber(expansionValue) && expansionValue > 0 ? expansionValue : 3;
+  const alphaThresholdValue = params.alpha_threshold;
+  const alphaThreshold = isFiniteNumber(alphaThresholdValue) && Number.isInteger(alphaThresholdValue) && alphaThresholdValue >= 0 && alphaThresholdValue <= 255 ? alphaThresholdValue : 128;
   const inputHash = hashCanvas(inputCanvas);
   const cached = meshCaches.get(effectId);
   if (cached && cached.inputHash === inputHash && cached.params.triangleCount === triangleCount && cached.params.expansion === expansion && cached.params.alphaThreshold === alphaThreshold) {
@@ -8326,8 +8712,10 @@ function calculatePinWeights(mesh, pins, params) {
   if (pins.length === 0) {
     return new Float32Array(0);
   }
-  const falloffMethod = params.pin_falloff ?? "inverse-distance";
-  const falloffPower = params.falloff_power ?? 2;
+  const falloffMethodValue = params.pin_falloff;
+  const falloffMethod = typeof falloffMethodValue === "string" ? falloffMethodValue : "inverse-distance";
+  const falloffPowerValue = params.falloff_power;
+  const falloffPower = isFiniteNumber(falloffPowerValue) && falloffPowerValue > 0 ? falloffPowerValue : 2;
   const weights = new Float32Array(mesh.vertexCount * pins.length);
   for (let v = 0; v < mesh.vertexCount; v++) {
     const vx = mesh.vertices[v * 2];
@@ -8607,7 +8995,7 @@ function renderMeshWireframe(ctx, vertices, triangles, _vertexCount, triangleCou
 }
 function renderPins(ctx, pins, frame) {
   for (const pin of pins) {
-    const { position, rotation} = evaluatePinAtFrame(pin, frame);
+    const { position, rotation, scale } = evaluatePinAtFrame(pin, frame);
     let color;
     switch (pin.type) {
       case "position":
@@ -8657,16 +9045,20 @@ function renderPins(ctx, pins, frame) {
 }
 function meshDeformRenderer(input, params) {
   const effectInstance = params._effectInstance;
-  const frame = params._frame ?? 0;
-  const showMesh = params.show_mesh ?? false;
-  const showPins = params.show_pins ?? true;
-  const pins = effectInstance?.pins ?? [];
+  const frameValue = params._frame;
+  const frame = isFiniteNumber(frameValue) && Number.isInteger(frameValue) && frameValue >= 0 ? frameValue : 0;
+  const showMesh = typeof params.show_mesh === "boolean" ? params.show_mesh : false;
+  const showPins = typeof params.show_pins === "boolean" ? params.show_pins : true;
+  const isMeshDeformInstance = (inst) => inst !== void 0 && inst.effectKey === "mesh-deform" && "pins" in inst;
+  const pinsValue = isMeshDeformInstance(effectInstance) ? effectInstance.pins : void 0;
+  const pins = Array.isArray(pinsValue) ? pinsValue : [];
   if (pins.length === 0) {
     if (showMesh || showPins) {
       const output2 = createMatchingCanvas(input.canvas);
       output2.ctx.drawImage(input.canvas, 0, 0);
       if (showMesh) {
-        const effectId2 = effectInstance?.id ?? "temp";
+        const effectIdValue2 = effectInstance != null && typeof effectInstance === "object" && "id" in effectInstance && typeof effectInstance.id === "string" ? effectInstance.id : void 0;
+        const effectId2 = typeof effectIdValue2 === "string" ? effectIdValue2 : "temp";
         const { mesh: mesh2 } = getOrGenerateMesh(effectId2, input.canvas, params, []);
         renderMeshWireframe(
           output2.ctx,
@@ -8680,7 +9072,8 @@ function meshDeformRenderer(input, params) {
     }
     return input;
   }
-  const effectId = effectInstance?.id ?? `temp-${Date.now()}`;
+  const effectIdValue = effectInstance != null && typeof effectInstance === "object" && "id" in effectInstance && typeof effectInstance.id === "string" ? effectInstance.id : void 0;
+  const effectId = typeof effectIdValue === "string" ? effectIdValue : `temp-${Date.now()}`;
   const { mesh, weights } = getOrGenerateMesh(
     effectId,
     input.canvas,
@@ -8688,7 +9081,7 @@ function meshDeformRenderer(input, params) {
     pins
   );
   const deformedVertices = deformMesh(mesh, pins, weights, frame);
-  const enableOverlap = params.enable_overlap ?? false;
+  const enableOverlap = typeof params.enable_overlap === "boolean" ? params.enable_overlap : false;
   const output = createMatchingCanvas(input.canvas);
   renderDeformedMesh(
     output.ctx,
@@ -8804,13 +9197,15 @@ class SeededRandom {
 }
 
 function pixelSortRenderer(input, params) {
-  const direction = params.direction ?? "horizontal";
-  const rawThreshold = params.threshold ?? 0.25;
-  const threshold = Number.isFinite(rawThreshold) ? rawThreshold : 0.25;
-  const rawSmoothing = params.smoothing ?? 0.1;
-  const smoothing = Number.isFinite(rawSmoothing) ? rawSmoothing : 0.1;
-  const sortBy = params.sort_by ?? "saturation";
-  const reverse = params.reverse ?? false;
+  const directionValue = params.direction;
+  const direction = typeof directionValue === "string" ? directionValue : "horizontal";
+  const thresholdValue = params.threshold;
+  const threshold = isFiniteNumber(thresholdValue) ? Math.max(0, Math.min(1, thresholdValue)) : 0.25;
+  const smoothingValue = params.smoothing;
+  const smoothing = isFiniteNumber(smoothingValue) ? Math.max(0, Math.min(1, smoothingValue)) : 0.1;
+  const sortByValue = params.sort_by;
+  const sortBy = typeof sortByValue === "string" ? sortByValue : "saturation";
+  const reverse = typeof params.reverse === "boolean" ? params.reverse : false;
   const output = createMatchingCanvas(input.canvas);
   const { width, height } = input.canvas;
   const imageData = input.ctx.getImageData(0, 0, width, height);
@@ -8894,21 +9289,24 @@ function pixelSortRenderer(input, params) {
   return output;
 }
 function glitchRenderer(input, params, frame) {
-  const rawGlitchAmount = params.glitch_amount ?? 5;
-  const glitchAmount = Number.isFinite(rawGlitchAmount) ? rawGlitchAmount : 5;
-  const colorOffset = params.color_offset ?? true;
-  const rawBlockSize = params.block_size ?? 8;
-  const blockSize = Number.isFinite(rawBlockSize) ? Math.max(1, rawBlockSize) : 8;
-  const rawSeed = params.seed ?? 12345;
-  const seed = Number.isFinite(rawSeed) ? rawSeed : 12345;
-  const scanlines = params.scanlines ?? true;
+  const glitchAmountValue = params.glitch_amount;
+  const glitchAmount = isFiniteNumber(glitchAmountValue) && glitchAmountValue >= 0 ? glitchAmountValue : 5;
+  const colorOffset = typeof params.color_offset === "boolean" ? params.color_offset : true;
+  const blockSizeValue = params.block_size;
+  const blockSizeRaw = isFiniteNumber(blockSizeValue) && blockSizeValue >= 1 ? blockSizeValue : 8;
+  const blockSize = Math.max(1, blockSizeRaw);
+  const seedValue = params.seed;
+  const seed = isFiniteNumber(seedValue) && Number.isInteger(seedValue) && seedValue >= 0 ? seedValue : 12345;
+  const scanlines = typeof params.scanlines === "boolean" ? params.scanlines : true;
   if (glitchAmount === 0) return input;
   const output = createMatchingCanvas(input.canvas);
   const { width, height } = input.canvas;
   output.ctx.drawImage(input.canvas, 0, 0);
   const imageData = output.ctx.getImageData(0, 0, width, height);
   const data = imageData.data;
-  const rng = new SeededRandom(seed + (frame ?? 0));
+  const frameValue = frame;
+  const validFrame = isFiniteNumber(frameValue) && Number.isInteger(frameValue) && frameValue >= 0 ? frameValue : 0;
+  const rng = new SeededRandom(seed + validFrame);
   const numBlocks = Math.floor(glitchAmount * 3);
   for (let b = 0; b < numBlocks; b++) {
     const y = Math.floor(rng.next() * height);
@@ -8967,17 +9365,23 @@ function glitchRenderer(input, params, frame) {
   return output;
 }
 function vhsRenderer(input, params, frame) {
-  const tracking = params.tracking ?? 0.5;
-  const noise = params.noise ?? 0.3;
-  const colorBleed = params.color_bleed ?? 3;
-  const jitter = params.jitter ?? 0.5;
-  const rollingBands = params.rolling_bands ?? true;
+  const trackingValue = params.tracking;
+  const tracking = isFiniteNumber(trackingValue) ? Math.max(0, Math.min(1, trackingValue)) : 0.5;
+  const noiseValue = params.noise;
+  const noise = isFiniteNumber(noiseValue) ? Math.max(0, Math.min(1, noiseValue)) : 0.3;
+  const colorBleedValue = params.color_bleed;
+  const colorBleed = isFiniteNumber(colorBleedValue) && colorBleedValue >= 0 ? colorBleedValue : 3;
+  const jitterValue = params.jitter;
+  const jitter = isFiniteNumber(jitterValue) ? Math.max(0, Math.min(1, jitterValue)) : 0.5;
+  const rollingBands = typeof params.rolling_bands === "boolean" ? params.rolling_bands : true;
   const output = createMatchingCanvas(input.canvas);
   const { width, height } = input.canvas;
   output.ctx.drawImage(input.canvas, 0, 0);
   const imageData = output.ctx.getImageData(0, 0, width, height);
   const data = imageData.data;
-  const rng = new SeededRandom(12345 + (frame ?? 0));
+  const frameValue = frame;
+  const validFrame = isFiniteNumber(frameValue) && Number.isInteger(frameValue) && frameValue >= 0 ? frameValue : 0;
+  const rng = new SeededRandom(12345 + validFrame);
   if (colorBleed > 0) {
     for (let y = 0; y < height; y++) {
       for (let x = colorBleed; x < width; x++) {
@@ -9057,13 +9461,20 @@ function vhsRenderer(input, params, frame) {
   return output;
 }
 function rgbSplitRenderer(input, params) {
-  const redOffsetX = params.red_offset_x ?? 5;
-  const redOffsetY = params.red_offset_y ?? 0;
-  const greenOffsetX = params.green_offset_x ?? 0;
-  const greenOffsetY = params.green_offset_y ?? 0;
-  const blueOffsetX = params.blue_offset_x ?? -5;
-  const blueOffsetY = params.blue_offset_y ?? 0;
-  const blendMode = params.blend_mode ?? "screen";
+  const redOffsetXValue = params.red_offset_x;
+  const redOffsetX = isFiniteNumber(redOffsetXValue) ? redOffsetXValue : 5;
+  const redOffsetYValue = params.red_offset_y;
+  const redOffsetY = isFiniteNumber(redOffsetYValue) ? redOffsetYValue : 0;
+  const greenOffsetXValue = params.green_offset_x;
+  const greenOffsetX = isFiniteNumber(greenOffsetXValue) ? greenOffsetXValue : 0;
+  const greenOffsetYValue = params.green_offset_y;
+  const greenOffsetY = isFiniteNumber(greenOffsetYValue) ? greenOffsetYValue : 0;
+  const blueOffsetXValue = params.blue_offset_x;
+  const blueOffsetX = isFiniteNumber(blueOffsetXValue) ? blueOffsetXValue : -5;
+  const blueOffsetYValue = params.blue_offset_y;
+  const blueOffsetY = isFiniteNumber(blueOffsetYValue) ? blueOffsetYValue : 0;
+  const blendModeValue = params.blend_mode;
+  const blendMode = typeof blendModeValue === "string" ? blendModeValue : "screen";
   if (redOffsetX === 0 && redOffsetY === 0 && greenOffsetX === 0 && greenOffsetY === 0 && blueOffsetX === 0 && blueOffsetY === 0) {
     return input;
   }
@@ -9107,11 +9518,15 @@ function rgbSplitRenderer(input, params) {
   return output;
 }
 function scanlinesRenderer(input, params, frame) {
-  const lineWidth = params.line_width ?? 2;
-  const lineSpacing = params.line_spacing ?? 2;
-  const opacity = params.opacity ?? 0.3;
-  const direction = params.direction ?? "horizontal";
-  const animate = params.animate ?? false;
+  const lineWidthValue = params.line_width;
+  const lineWidth = isFiniteNumber(lineWidthValue) ? Math.max(1, Math.min(20, lineWidthValue)) : 2;
+  const lineSpacingValue = params.line_spacing;
+  const lineSpacing = isFiniteNumber(lineSpacingValue) ? Math.max(1, Math.min(20, lineSpacingValue)) : 2;
+  const opacityValue = params.opacity;
+  const opacity = isFiniteNumber(opacityValue) ? Math.max(0, Math.min(1, opacityValue)) : 0.3;
+  const directionValue = params.direction;
+  const direction = typeof directionValue === "string" ? directionValue : "horizontal";
+  const animate = typeof params.animate === "boolean" ? params.animate : false;
   const output = createMatchingCanvas(input.canvas);
   const { width, height } = input.canvas;
   output.ctx.drawImage(input.canvas, 0, 0);
@@ -9140,8 +9555,12 @@ function scanlinesRenderer(input, params, frame) {
   return output;
 }
 function halftoneRenderer(input, params) {
-  const dotSize = Math.max(2, params.dot_size ?? 6);
-  const colorMode = params.color_mode ?? "grayscale";
+  const dotSizeValue = params.dot_size;
+  const dotSizeRaw = isFiniteNumber(dotSizeValue) && dotSizeValue >= 2 ? dotSizeValue : 6;
+  const dotSize = Math.max(2, dotSizeRaw);
+  params.angle;
+  const colorModeValue = params.color_mode;
+  const colorMode = typeof colorModeValue === "string" ? colorModeValue : "grayscale";
   const output = createMatchingCanvas(input.canvas);
   const { width, height } = input.canvas;
   const inputData = input.ctx.getImageData(0, 0, width, height);
@@ -9225,9 +9644,14 @@ function halftoneRenderer(input, params) {
   return output;
 }
 function ditherRenderer(input, params) {
-  const method = params.method ?? "ordered";
-  const levels = Math.max(2, Math.min(256, params.levels ?? 4));
-  const matrixSize = params.matrix_size ?? 4;
+  const methodValue = params.method;
+  const method = typeof methodValue === "string" ? methodValue : "ordered";
+  const levelsValue = params.levels;
+  const levelsRaw = isFiniteNumber(levelsValue) && Number.isInteger(levelsValue) ? levelsValue : 4;
+  const levels = Math.max(2, Math.min(256, levelsRaw));
+  const matrixSizeValue = params.matrix_size;
+  const matrixSizeRaw = isFiniteNumber(matrixSizeValue) && Number.isInteger(matrixSizeValue) && matrixSizeValue > 0 ? matrixSizeValue : 4;
+  const matrixSize = matrixSizeRaw;
   const output = createMatchingCanvas(input.canvas);
   const { width, height } = input.canvas;
   const imageData = input.ctx.getImageData(0, 0, width, height);
@@ -9332,14 +9756,26 @@ function ditherRenderer(input, params) {
   return output;
 }
 function rippleRenderer(input, params, frame) {
-  const amplitude = params.amplitude ?? 10;
-  const wavelength = params.wavelength ?? 50;
-  let phase = params.phase ?? 0;
-  const centerX = (params.center_x ?? 50) / 100;
-  const centerY = (params.center_y ?? 50) / 100;
-  const decay = params.decay ?? 0.5;
-  if (frame !== void 0 && params.animate !== false) {
-    phase = (phase + frame * 5) % 360;
+  const amplitudeValue = params.amplitude;
+  const amplitude = isFiniteNumber(amplitudeValue) ? Math.max(0, Math.min(50, amplitudeValue)) : 10;
+  const wavelengthValue = params.wavelength;
+  const wavelength = isFiniteNumber(wavelengthValue) ? Math.max(10, Math.min(200, wavelengthValue)) : 50;
+  const phaseValue = params.phase;
+  let phase = isFiniteNumber(phaseValue) ? Math.max(0, Math.min(360, phaseValue)) : 0;
+  const centerXValue = params.center_x;
+  const centerXRaw = isFiniteNumber(centerXValue) ? Math.max(0, Math.min(100, centerXValue)) : 50;
+  const centerX = centerXRaw / 100;
+  const centerYValue = params.center_y;
+  const centerYRaw = isFiniteNumber(centerYValue) ? Math.max(0, Math.min(100, centerYValue)) : 50;
+  const centerY = centerYRaw / 100;
+  const decayValue = params.decay;
+  const decay = isFiniteNumber(decayValue) ? Math.max(0, Math.min(1, decayValue)) : 0.5;
+  const animateValue = params.animate;
+  const animate = typeof animateValue === "boolean" ? animateValue : false;
+  const frameValue = frame;
+  const validFrame = isFiniteNumber(frameValue) && Number.isInteger(frameValue) && frameValue >= 0 ? frameValue : 0;
+  if (validFrame !== void 0 && animate) {
+    phase = (phase + validFrame * 5) % 360;
   }
   const phaseRad = phase * Math.PI / 180;
   if (amplitude === 0) return input;
@@ -9376,9 +9812,14 @@ function rippleRenderer(input, params, frame) {
   return output;
 }
 function embossRenderer(input, params) {
-  const direction = (params.direction ?? 135) * Math.PI / 180;
-  const height = Math.max(1, params.height ?? 3);
-  const amount = params.amount ?? 100;
+  const directionValue = params.direction;
+  const directionDeg = isFiniteNumber(directionValue) ? Math.max(0, Math.min(360, directionValue)) : 135;
+  const direction = directionDeg * Math.PI / 180;
+  const heightValue = params.height;
+  const heightRaw = isFiniteNumber(heightValue) && heightValue >= 1 ? heightValue : 3;
+  const height = Math.max(1, heightRaw);
+  const amountValue = params.amount;
+  const amount = isFiniteNumber(amountValue) && amountValue >= 0 ? amountValue : 100;
   const output = createMatchingCanvas(input.canvas);
   const { width, height: h } = input.canvas;
   const inputData = input.ctx.getImageData(0, 0, width, h);
@@ -9408,8 +9849,10 @@ function embossRenderer(input, params) {
   return output;
 }
 function findEdgesRenderer(input, params) {
-  const invert = params.invert ?? false;
-  const blend = (params.blend_with_original ?? 0) / 100;
+  const invert = typeof params.invert === "boolean" ? params.invert : false;
+  const blendValue = params.blend_with_original;
+  const blendRaw = isFiniteNumber(blendValue) ? Math.max(0, Math.min(100, blendValue)) : 0;
+  const blend = blendRaw / 100;
   const output = createMatchingCanvas(input.canvas);
   const { width, height } = input.canvas;
   const inputData = input.ctx.getImageData(0, 0, width, height);
@@ -9454,9 +9897,13 @@ function findEdgesRenderer(input, params) {
   return output;
 }
 function mosaicRenderer(input, params) {
-  const hBlocks = Math.max(2, params.horizontal_blocks ?? 10);
-  const vBlocks = Math.max(2, params.vertical_blocks ?? 10);
-  const sharp = params.sharp_corners ?? true;
+  const hBlocksValue = params.horizontal_blocks;
+  const hBlocksRaw = isFiniteNumber(hBlocksValue) && Number.isInteger(hBlocksValue) && hBlocksValue >= 2 ? hBlocksValue : 10;
+  const hBlocks = Math.max(2, hBlocksRaw);
+  const vBlocksValue = params.vertical_blocks;
+  const vBlocksRaw = isFiniteNumber(vBlocksValue) && Number.isInteger(vBlocksValue) && vBlocksValue >= 2 ? vBlocksValue : 10;
+  const vBlocks = Math.max(2, vBlocksRaw);
+  const sharp = typeof params.sharp_corners === "boolean" ? params.sharp_corners : true;
   const output = createMatchingCanvas(input.canvas);
   const { width, height } = input.canvas;
   const inputData = input.ctx.getImageData(0, 0, width, height);
@@ -9545,9 +9992,18 @@ class TimeEffectFrameBuffer {
   }
   /**
    * Get the closest frame to the target
+   * 
+   * System F/Omega proof: Explicit validation of buffer state
+   * Type proof: targetFrame ∈ number → { imageData: ImageData; frame: number } (non-nullable)
+   * Mathematical proof: Buffer must contain at least one frame to find closest
+   * Pattern proof: Empty buffer is an explicit failure condition, not a lazy null return
    */
   getClosest(targetFrame) {
-    if (this.buffer.length === 0) return null;
+    if (this.buffer.length === 0) {
+      throw new Error(
+        `[TimeRenderer] Cannot get closest frame: Buffer is empty. Target frame: ${targetFrame}. Time renderer buffer must contain at least one frame before finding closest. Wrap in try/catch if "buffer empty" is an expected state.`
+      );
+    }
     let closest = this.buffer[0];
     let minDist = Math.abs(closest.frame - targetFrame);
     for (const entry of this.buffer) {
@@ -9567,9 +10023,10 @@ class TimeEffectFrameBuffer {
     const results = [];
     for (let i = 1; i <= numEchoes; i++) {
       const targetFrame = Math.round(currentFrame + echoTimeFrames * i);
-      const entry = this.getClosest(targetFrame);
-      if (entry) {
+      try {
+        const entry = this.getClosest(targetFrame);
         results.push({ ...entry, echoIndex: i });
+      } catch (error) {
       }
     }
     return results;
@@ -9616,18 +10073,26 @@ function getFrameBuffer(layerId) {
   return buffer;
 }
 function echoRenderer(input, params) {
-  const frame = params._frame ?? 0;
-  const fps = Number.isFinite(params._fps) && params._fps > 0 ? params._fps : 16;
-  const rawEchoTime = params.echo_time ?? -1 / fps;
-  const echoTime = Number.isFinite(rawEchoTime) ? rawEchoTime : -1 / fps;
-  const rawNumEchoes = params.number_of_echoes ?? 8;
-  const numEchoes = Number.isFinite(rawNumEchoes) ? Math.max(1, Math.min(50, rawNumEchoes)) : 8;
-  const rawIntensity = params.starting_intensity ?? 1;
-  const startingIntensity = Number.isFinite(rawIntensity) ? Math.max(0, Math.min(1, rawIntensity)) : 1;
-  const rawDecay = params.decay ?? 0.5;
-  const decay = Number.isFinite(rawDecay) ? Math.max(0, Math.min(1, rawDecay)) : 0.5;
-  const operator = params.echo_operator ?? "add";
-  const layerId = params._layerId ?? "default";
+  const frameValue = params._frame;
+  const frame = isFiniteNumber(frameValue) && Number.isInteger(frameValue) && frameValue >= 0 ? frameValue : 0;
+  const fpsValue = params._fps;
+  const fps = isFiniteNumber(fpsValue) && fpsValue > 0 ? fpsValue : 16;
+  const echoTimeValue = params.echo_time;
+  const echoTimeRaw = isFiniteNumber(echoTimeValue) ? echoTimeValue : -1 / fps;
+  const echoTime = echoTimeRaw;
+  const numEchoesValue = params.number_of_echoes;
+  const numEchoesRaw = isFiniteNumber(numEchoesValue) && Number.isInteger(numEchoesValue) ? numEchoesValue : 8;
+  const numEchoes = Math.max(1, Math.min(50, numEchoesRaw));
+  const startingIntensityValue = params.starting_intensity;
+  const startingIntensityRaw = isFiniteNumber(startingIntensityValue) ? startingIntensityValue : 1;
+  const startingIntensity = Math.max(0, Math.min(1, startingIntensityRaw));
+  const decayValue = params.decay;
+  const decayRaw = isFiniteNumber(decayValue) ? decayValue : 0.5;
+  const decay = Math.max(0, Math.min(1, decayRaw));
+  const operatorValue = params.echo_operator;
+  const operator = typeof operatorValue === "string" ? operatorValue : "add";
+  const layerIdValue = params._layerId;
+  const layerId = typeof layerIdValue === "string" ? layerIdValue : "default";
   const echoTimeFrames = echoTime * fps;
   const buffer = getFrameBuffer(layerId);
   buffer.store(frame, input.canvas);
@@ -9647,7 +10112,8 @@ function echoRenderer(input, params) {
     intensities.push(startingIntensity * (1 - decay) ** i);
   }
   for (const echoData of echoFrames) {
-    const intensity = intensities[echoData.echoIndex - 1] ?? 0;
+    const intensityValue = intensities[echoData.echoIndex - 1];
+    const intensity = isFiniteNumber(intensityValue) ? intensityValue : 0;
     if (intensity <= 1e-3) continue;
     const tempCanvas = document.createElement("canvas");
     tempCanvas.width = width;
@@ -9700,11 +10166,15 @@ function echoRenderer(input, params) {
   return output;
 }
 function posterizeTimeRenderer(input, params) {
-  const rawTargetFps = params.frame_rate ?? 12;
-  const targetFps = Number.isFinite(rawTargetFps) ? Math.max(1, Math.min(60, rawTargetFps)) : 12;
-  const frame = params._frame ?? 0;
-  const fps = Number.isFinite(params._fps) && params._fps > 0 ? params._fps : 16;
-  const layerId = params._layerId ?? "default";
+  const targetFpsValue = params.frame_rate;
+  const targetFpsRaw = isFiniteNumber(targetFpsValue) && targetFpsValue > 0 ? targetFpsValue : 12;
+  const targetFps = Math.max(1, Math.min(60, targetFpsRaw));
+  const frameValue = params._frame;
+  const frame = isFiniteNumber(frameValue) && Number.isInteger(frameValue) && frameValue >= 0 ? frameValue : 0;
+  const fpsValue = params._fps;
+  const fps = isFiniteNumber(fpsValue) && fpsValue > 0 ? fpsValue : 16;
+  const layerIdValue = params._layerId;
+  const layerId = typeof layerIdValue === "string" ? layerIdValue : "default";
   const frameRatio = fps / targetFps;
   const posterizedFrame = Math.floor(frame / frameRatio) * frameRatio;
   const buffer = getFrameBuffer(layerId);
@@ -9714,6 +10184,7 @@ function posterizeTimeRenderer(input, params) {
   }
   const heldFrame = buffer.getClosest(posterizedFrame);
   if (heldFrame) {
+    const { width, height } = input.canvas;
     const output = createMatchingCanvas(input.canvas);
     output.ctx.putImageData(heldFrame.imageData, 0, 0);
     return output;
@@ -9767,15 +10238,18 @@ function generateTimeDisplacementMap(width, height, mapType, scale) {
   return map;
 }
 function timeDisplacementRenderer(input, params) {
-  const rawMaxDisplacement = params.max_displacement ?? 10;
-  const maxDisplacement = Number.isFinite(rawMaxDisplacement) ? rawMaxDisplacement : 10;
-  const mapType = params.map_type ?? "gradient-h";
-  const rawMapScale = params.map_scale ?? 1;
-  const mapScale = Number.isFinite(rawMapScale) ? rawMapScale : 1;
-  const rawBias = params.time_offset_bias ?? 0;
-  const bias = Number.isFinite(rawBias) ? rawBias : 0;
-  const frame = params._frame ?? 0;
-  const layerId = params._layerId ?? "default";
+  const maxDisplacementValue = params.max_displacement;
+  const maxDisplacement = isFiniteNumber(maxDisplacementValue) && maxDisplacementValue >= 0 ? maxDisplacementValue : 10;
+  const mapTypeValue = params.map_type;
+  const mapType = typeof mapTypeValue === "string" ? mapTypeValue : "gradient-h";
+  const mapScaleValue = params.map_scale;
+  const mapScale = isFiniteNumber(mapScaleValue) && mapScaleValue > 0 ? mapScaleValue : 1;
+  const biasValue = params.time_offset_bias;
+  const bias = isFiniteNumber(biasValue) ? biasValue : 0;
+  const frameValue = params._frame;
+  const frame = isFiniteNumber(frameValue) && Number.isInteger(frameValue) && frameValue >= 0 ? frameValue : 0;
+  const layerIdValue = params._layerId;
+  const layerId = typeof layerIdValue === "string" ? layerIdValue : "default";
   if (maxDisplacement === 0) {
     return input;
   }
@@ -9814,14 +10288,19 @@ function timeDisplacementRenderer(input, params) {
 }
 const frozenFrames = /* @__PURE__ */ new Map();
 function freezeFrameRenderer(input, params) {
-  const freezeAtFrame = Math.max(0, Math.round(params.freeze_at_frame ?? 0));
-  const frame = params._frame ?? 0;
-  const layerId = params._layerId ?? "default";
+  const freezeAtFrameValue = params.freeze_at_frame;
+  const freezeAtFrameRaw = isFiniteNumber(freezeAtFrameValue) && Number.isInteger(freezeAtFrameValue) ? freezeAtFrameValue : 0;
+  const freezeAtFrame = Math.max(0, Math.round(freezeAtFrameRaw));
+  const frameValue = params._frame;
+  const frame = isFiniteNumber(frameValue) && Number.isInteger(frameValue) && frameValue >= 0 ? frameValue : 0;
+  const layerIdValue = params._layerId;
+  const layerId = typeof layerIdValue === "string" ? layerIdValue : "default";
   const cacheKey = `${layerId}_freeze`;
   const buffer = getFrameBuffer(layerId);
   buffer.store(frame, input.canvas);
   const cached = frozenFrames.get(cacheKey);
   if (cached && cached.frame === freezeAtFrame) {
+    const { width, height } = input.canvas;
     const output = createMatchingCanvas(input.canvas);
     output.ctx.putImageData(cached.imageData, 0, 0);
     return output;
@@ -9838,6 +10317,7 @@ function freezeFrameRenderer(input, params) {
       frame: freezeAtFrame,
       imageData: frozenImageData
     });
+    const { width, height } = input.canvas;
     const output = createMatchingCanvas(input.canvas);
     output.ctx.putImageData(frozenImageData, 0, 0);
     return output;
@@ -9919,8 +10399,10 @@ async function mountApp(container) {
     el = container;
   }
   if (!el) {
-    console.error("[Lattice] mountApp failed: container not found");
-    return null;
+    const containerDesc = typeof container === "string" ? `selector "${container}"` : "HTMLElement";
+    throw new Error(
+      `[Lattice] Cannot mount app: Container element not found. Container: ${containerDesc}, document.getElementById/querySelector returned null. Container element must exist in DOM before mounting application. Wrap in try/catch if "container not found" is an expected state.`
+    );
   }
   await initializeSecuritySandbox();
   initializeEffectsOnce();
@@ -9952,7 +10434,7 @@ function unmountApp() {
 }
 async function sendToComfyUI(matte, preview) {
   const bridge = window.LatticeCompositor;
-  if (!bridge?.sendOutput) {
+  if (!bridge || typeof bridge !== "object" || !("sendOutput" in bridge) || typeof bridge.sendOutput !== "function") {
     console.warn("[Lattice] sendToComfyUI called before backend bridge ready");
     return false;
   }

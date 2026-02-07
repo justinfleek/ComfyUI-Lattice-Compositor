@@ -1,0 +1,116 @@
+# Aleph-005: Nix Profiles Enforcement
+
+## Description
+CRITICAL: Enforces Aleph-005 (Nix Profiles) usage. ALL Nix invocations MUST use appropriate profiles (nix-dev, nix-ci, nix-prod) for their context.
+
+## Globs
+**/*.nix, **/flake.nix, **/.github/workflows/*.yml
+
+## Rules
+
+### Before Invoking Nix
+1. Read: `docs/rfc/aleph/aleph-005-profiles.md`
+2. Use: Appropriate profile for context
+3. Verify: Profile settings match use case
+
+### Profile Definitions
+
+#### nix-dev (Development)
+**Purpose:** Rapid iteration, no eval cache
+
+```bash
+# ✅ OK (development)
+nix-dev build .#my-package
+nix-dev shell .#my-shell
+```
+
+**Settings:**
+- `--no-eval-cache` (always fresh evaluation)
+- Fast feedback for new files/changes
+- Verbose output for debugging
+
+#### nix-ci (CI/Continuous Integration)
+**Purpose:** Reproducible, cached evaluation
+
+```bash
+# ✅ OK (CI)
+nix-ci build .#my-package
+nix-ci test .#my-tests
+```
+
+**Settings:**
+- Eval cache enabled (same commit = same eval)
+- Reproducible builds
+- Minimal output
+
+#### nix-prod (Production)
+**Purpose:** Production builds, maximum caching
+
+```bash
+# ✅ OK (production)
+nix-prod build .#my-package
+nix-prod copy-to-store .#my-package
+```
+
+**Settings:**
+- Eval cache enabled
+- Maximum caching
+- Binary cache usage
+
+### Profile Usage Rules
+
+#### Development Context
+```bash
+# ❌ ERROR (using nix directly in development)
+nix build .#my-package
+
+# ✅ OK (using nix-dev)
+nix-dev build .#my-package
+```
+
+#### CI Context
+```yaml
+# ❌ ERROR (using nix directly in CI)
+- run: nix build .#my-package
+
+# ✅ OK (using nix-ci)
+- run: nix-ci build .#my-package
+```
+
+#### Production Context
+```bash
+# ❌ ERROR (using nix directly in production)
+nix build .#my-package
+
+# ✅ OK (using nix-prod)
+nix-prod build .#my-package
+```
+
+### Profile Scripts
+
+All profiles MUST be available as scripts:
+
+```nix
+# ✅ OK (profile scripts registered)
+packages = {
+  nix-dev = mkProfileScript "dev";
+  nix-ci = mkProfileScript "ci";
+  nix-prod = mkProfileScript "prod";
+};
+```
+
+### Validation
+
+ALWAYS use appropriate profile:
+- Development: `nix-dev`
+- CI: `nix-ci`
+- Production: `nix-prod`
+- Verify profile scripts exist in flake
+- Check CI workflows use `nix-ci`
+
+## Examples
+
+Study these reference implementations:
+- Profile scripts: `nix/scripts/nix-dev.hs`, `nix/scripts/nix-ci.hs`
+- Profile module: `nix/modules/flake/profiles.nix`
+- CI workflows: `.github/workflows/*.yml`

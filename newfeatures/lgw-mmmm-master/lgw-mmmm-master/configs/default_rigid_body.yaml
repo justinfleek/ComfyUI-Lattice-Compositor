@@ -1,0 +1,15 @@
+timestep: 0.01
+solver:
+  name: "primal_dual"
+  iterations: 50
+  tolerance: 1e-4
+  non_smooth_force:
+    name: "non_smooth_contact"
+    spring_based_force: true
+    area_based_springs: true
+    spring_k: 1e11
+    spring_damp: 0.01
+    restitution: 0.0
+    static_coeff: 0.2
+gravity: [0, 0, -9.81]
+      

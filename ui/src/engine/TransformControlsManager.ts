@@ -28,9 +28,30 @@ import type { SceneManager } from "./core/SceneManager";
  * These properties exist at runtime but may not pass instanceof checks
  */
 interface CompatibleObject3D {
-  children?: THREE.Object3D[];
+  children?: CompatibleObject3D[];
   matrix?: THREE.Matrix4;
   matrixWorld?: THREE.Matrix4;
+}
+
+/**
+ * Type guard: Check if value is compatible with Object3D at runtime
+ * Works across multiple Three.js instances where instanceof checks fail
+ * Deterministic: Explicit validation of object structure and property types
+ */
+type RuntimeValue = string | number | boolean | object | null | undefined | bigint | symbol;
+
+function isCompatibleObject3D(value: RuntimeValue): value is CompatibleObject3D {
+  if (typeof value !== "object" || value === null) return false;
+  const obj = value as Record<string, RuntimeValue>;
+  const childrenValue = obj.children;
+  const matrixValue = obj.matrix;
+  const matrixWorldValue = obj.matrixWorld;
+  // Check for essential Object3D properties with explicit type validation
+  return (
+    (typeof childrenValue === "undefined" || Array.isArray(childrenValue)) &&
+    (typeof matrixValue === "undefined" || matrixValue instanceof THREE.Matrix4) &&
+    (typeof matrixWorldValue === "undefined" || matrixWorldValue instanceof THREE.Matrix4)
+  );
 }
 
 /**
@@ -79,13 +100,13 @@ export class TransformControlsManager {
    * This is needed to prevent crashes when TransformControls or other objects
    * from different Three.js instances are added to the scene.
    */
-  private ensureObjectChildren(obj: THREE.Object3D, depth = 0): void {
+  private ensureObjectChildren(obj: CompatibleObject3D, depth = 0): void {
     if (!obj || depth > 50) return;
 
     // Type-safe access for compatibility objects
     // CompatibleObject3D interface defined at top of file
-    // Runtime check: properties exist at runtime but may not be in TypeScript types
-    const compatObj = obj as THREE.Object3D & CompatibleObject3D;
+    // Deterministic: Interface ensures all properties are properly typed
+    const compatObj = obj;
 
     // Ensure children is an array
     if (compatObj.children === undefined || compatObj.children === null) {
@@ -132,15 +153,19 @@ export class TransformControlsManager {
       // Ensure all gizmo objects have proper children arrays
       // (fixes multi-Three.js instance issues)
       // TransformControls extends Object3D internally but TypeScript types may not reflect this
-      // System F/Omega: Use `as unknown as` for intentional conversions when runtime supports it
-      this.ensureObjectChildren(
-        this.transformControls as unknown as THREE.Object3D,
-      );
+      // Use type guard to validate at runtime instead of type assertion
+      if (!isCompatibleObject3D(this.transformControls)) {
+        throw new Error("[TransformControlsManager] TransformControls is not compatible with Object3D");
+      }
+      // Type guard ensures compatibility - use CompatibleObject3D interface
+      const compatObj = this.transformControls as CompatibleObject3D;
+      this.ensureObjectChildren(compatObj);
 
       // Add to scene (TransformControls extends Object3D internally)
-      this.deps.scene.addUIElement(
-        this.transformControls as unknown as THREE.Object3D,
-      );
+      // Type guard ensures compatibility - convert to THREE.Object3D for addUIElement
+      // Deterministic: Type guard validated structure, safe to convert
+      const threeObj = compatObj as THREE.Object3D;
+      this.deps.scene.addUIElement(threeObj);
     } catch (e) {
       console.error("[TransformControlsManager] Failed to initialize:", e);
       this.transformControls = null;
@@ -151,13 +176,22 @@ export class TransformControlsManager {
     let isDragging = false;
 
     // Disable orbit/pan during transform and track dragging state
-    this.transformControls.addEventListener(
-      "dragging-changed",
-      (event: { value: boolean }) => {
+    // Deterministic: Explicit type validation for event value
+    // TransformControls library's addEventListener uses unknown internally, but we validate explicitly
+    // We accept the library's callback signature but immediately validate and narrow the type
+    this.transformControls.addEventListener("dragging-changed", ((event: { value: RuntimeValue }): void => {
+      // Explicit validation: value must be boolean
+      // Deterministic: Runtime check ensures type safety with explicit type narrowing
+      // Min/Max: boolean has exactly 2 values (true/false), no range needed
+      // Default: N/A - value comes from library, we validate it
+      if (typeof event.value === "boolean") {
         isDragging = event.value;
         this.deps.emit("transform-dragging", { dragging: event.value });
-      },
-    );
+      } else {
+        // Deterministic: Explicit error for invalid types with verification details
+        throw new TypeError(`[TransformControlsManager] Invalid dragging-changed event value: expected boolean, got ${typeof event.value} (${String(event.value)}). Verification: event.value type=${typeof event.value}, value=${JSON.stringify(event.value)}`);
+      }
+    }) as Parameters<typeof this.transformControls.addEventListener>[1]);
 
     // Handle transform changes - ONLY when actually dragging
     this.transformControls.addEventListener("change", () => {
@@ -173,17 +207,19 @@ export class TransformControlsManager {
       // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
       const getLayerData = (layer != null && typeof layer === "object" && typeof layer.getLayerData === "function") ? layer.getLayerData : undefined;
       const layerData = getLayerData != null ? getLayerData() : undefined;
-      const transform = (layerData != null && typeof layerData === "object" && "transform" in layerData && layerData.transform != null && typeof layerData.transform === "object") ? layerData.transform : undefined;
-      const anchorPoint = (transform != null && typeof transform === "object" && "anchorPoint" in transform && transform.anchorPoint != null && typeof transform.anchorPoint === "object") ? transform.anchorPoint : undefined;
+      const layerTransform = (layerData != null && typeof layerData === "object" && "transform" in layerData && layerData.transform != null && typeof layerData.transform === "object") ? layerData.transform : undefined;
+      const anchorPoint = (layerTransform != null && typeof layerTransform === "object" && "anchorPoint" in layerTransform && layerTransform.anchorPoint != null && typeof layerTransform.anchorPoint === "object") ? layerTransform.anchorPoint : undefined;
       const anchorPointValue = (anchorPoint != null && typeof anchorPoint === "object" && "value" in anchorPoint && anchorPoint.value != null && typeof anchorPoint.value === "object") ? anchorPoint.value : undefined;
       // Type-safe access - anchorPoint.value is { x: number; y: number; z?: number }
-      const anchorX = (typeof anchorPointValue === "object" && anchorPointValue !== null && "x" in anchorPointValue) ? anchorPointValue.x : 0;
-      const anchorY = (typeof anchorPointValue === "object" && anchorPointValue !== null && "y" in anchorPointValue) ? anchorPointValue.y : 0;
-      const anchorZ = (typeof anchorPointValue === "object" && anchorPointValue !== null && "z" in anchorPointValue) ? anchorPointValue.z : 0;
+      // Deterministic: Explicit default values (0) for missing properties
+      const anchorX = (typeof anchorPointValue === "object" && anchorPointValue !== null && "x" in anchorPointValue && typeof anchorPointValue.x === "number" && Number.isFinite(anchorPointValue.x)) ? anchorPointValue.x : 0;
+      const anchorY = (typeof anchorPointValue === "object" && anchorPointValue !== null && "y" in anchorPointValue && typeof anchorPointValue.y === "number" && Number.isFinite(anchorPointValue.y)) ? anchorPointValue.y : 0;
+      const anchorZ = (typeof anchorPointValue === "object" && anchorPointValue !== null && "z" in anchorPointValue && typeof anchorPointValue.z === "number" && Number.isFinite(anchorPointValue.z)) ? anchorPointValue.z : 0;
 
       // Convert 3D position back to layer position by adding anchor point back
       // The 3D object position is offset by anchor point in applyTransform()
-      const transform: LayerTransformUpdate = {
+      // Deterministic: All values explicitly validated and defaulted
+      const transformUpdate: LayerTransformUpdate = {
         position: {
           x: object.position.x + anchorX,
           y: -object.position.y + anchorY, // Y is negated in 3D space
@@ -200,10 +236,10 @@ export class TransformControlsManager {
       };
 
       // Also set rotation for 2D layers
-      transform.rotation = transform.rotationZ;
+      transformUpdate.rotation = transformUpdate.rotationZ;
 
       if (this.onTransformChange) {
-        this.onTransformChange(this.selectedLayerId, transform);
+        this.onTransformChange(this.selectedLayerId, transformUpdate);
       }
     });
 

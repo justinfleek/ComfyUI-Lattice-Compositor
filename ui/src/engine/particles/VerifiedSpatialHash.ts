@@ -6,7 +6,7 @@
  * 
  * PROVEN: 27-cell query bound (Lean4 theorem query_bound)
  * 
- * Based on Lean4 proofs from leanparticles/PARTICLE_VERIFIED (1).lean
+ * Based on Lean4 proofs from leanparticles/PARTICLE_VERIFIED.lean
  */
 
 import { pos, type Positive } from "./VerifiedTypes";

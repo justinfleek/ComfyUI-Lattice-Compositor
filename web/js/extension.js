@@ -22,9 +22,23 @@ function getExtensionBase() {
   const scripts = document.querySelectorAll('script[type="module"]');
   for (const script of scripts) {
     const match = script.src?.match(/\/extensions\/([^/]+)\/js\/extension\.js/);
-    if (match) return `/extensions/${match[1]}`;
+    if (match) {
+      console.log("[Lattice] Detected extension path:", `/extensions/${match[1]}`);
+      return `/extensions/${match[1]}`;
+    }
   }
-  return "/extensions/weyl-compositor";
+  // Fallback: try to detect from current script location
+  const currentScript = document.currentScript;
+  if (currentScript?.src) {
+    const match = currentScript.src.match(/\/extensions\/([^/]+)\//);
+    if (match) {
+      console.log("[Lattice] Detected extension path from currentScript:", `/extensions/${match[1]}`);
+      return `/extensions/${match[1]}`;
+    }
+  }
+  // Last resort: use the actual extension name
+  console.warn("[Lattice] Could not detect extension path, using fallback: ComfyUI-Lattice-Compositor");
+  return "/extensions/ComfyUI-Lattice-Compositor";
 }
 
 function handleInputsReady(event) {
@@ -140,7 +154,7 @@ async function renderCompositor(el, base) {
     const vendorChunks = [
       "lattice-vue-vendor.js",
       "lattice-three-vendor.js",
-      "lattice-ui-vendor.js",
+      // lattice-ui-vendor.js is no longer needed - Vue and PrimeVue are combined in vue-vendor
     ];
     vendorChunks.forEach((chunk) => {
       const href = `${base}/js/${chunk}`;

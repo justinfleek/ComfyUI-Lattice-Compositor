@@ -7,7 +7,7 @@
  * Performance: Same as raw numbers after JIT optimization
  * Safety: Impossible to create invalid state through public API
  * 
- * Based on Lean4 proofs from leanparticles/PARTICLE_VERIFIED (1).lean
+ * Based on Lean4 proofs from leanparticles/PARTICLE_VERIFIED.lean
  * 
  * @author Weyl.ai
  */

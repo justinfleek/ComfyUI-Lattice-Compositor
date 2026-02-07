@@ -1,0 +1,151 @@
+# Aleph-008: Continuity Project Enforcement
+
+## Description
+CRITICAL: Enforces Aleph-008 (Continuity Project) architecture. ALL builds SHOULD use Dhall build language, typed toolchains, and R2 storage where applicable.
+
+## Globs
+**/*.dhall, **/BUILD.dhall, **/*.nix, **/flake.nix
+
+## Rules
+
+### Before Writing Builds
+1. Read: `docs/rfc/aleph/aleph-008-continuity/README.md`
+2. Read: `docs/rfc/aleph/aleph-008-continuity/armitage.md`
+3. Use: Dhall for build definitions (where applicable)
+4. Use: Typed toolchains (where applicable)
+5. Use: R2 storage (where applicable)
+
+### Dhall Build Language
+
+#### Use BUILD.dhall for Build Definitions
+
+```dhall
+-- ✅ OK (Dhall build definition)
+let DICE = https://straylight.cx/dice/v1.dhall sha256:abc...
+let Rust = https://straylight.cx/rules/rust/v1.dhall sha256:123...
+
+let my-lib = Rust.library
+    { name = "my-lib"
+    , srcs = [ "src/lib.rs", "src/core.rs" ]
+    , deps = [ ":dep1", ":dep2" ]
+    , toolchain = toolchains.native-rust
+    }
+
+in { my-lib }
+```
+
+**Requirements:**
+- System Fomega (typed, higher-kinded)
+- Total (guaranteed termination)
+- Content-addressed imports
+- Hermetic (no IO, no escape)
+
+#### No Globs
+
+```dhall
+-- ❌ ERROR (using globs)
+srcs = glob "src/**/*.rs"
+
+-- ✅ OK (explicit file list)
+srcs =
+    [ "src/lib.rs"
+    , "src/core/mod.rs"
+    , "src/core/store.rs"
+    ]
+```
+
+### Typed Toolchains
+
+#### Use Typed Toolchain Definitions
+
+```dhall
+-- ✅ OK (typed toolchain)
+let toolchain =
+    { compiler = Compiler.Rustc
+        { version = v "1.80.0"
+        , artifact = sha256:def...
+        }
+    , host = Triple.x86_64-linux-gnu
+    , target = Triple.x86_64-linux-gnu
+    , flags = [ Flag.TargetCpu Cpu.native ]
+    }
+```
+
+**Requirements:**
+- Explicit compiler version
+- Explicit host/target triples
+- Typed flags (not strings)
+- Composable toolchain definitions
+
+### Target Types
+
+#### Use Typed Target Definitions
+
+```dhall
+-- ✅ OK (typed target)
+let target =
+    { arch = Arch.x86_64
+    , os = OS.linux
+    , cpu = Cpu.generic
+    , triple = "x86_64-unknown-linux-gnu"
+    }
+```
+
+### R2 Storage
+
+#### Use R2 for Content-Addressed Storage
+
+```nix
+# ✅ OK (R2 storage integration)
+finalAttrs: {
+  pname = "my-package";
+  version = "1.0.0";
+  # Artifacts stored in R2
+  # Attestations in git
+}
+```
+
+**Requirements:**
+- R2 for bytes (content-addressed)
+- Git for attestations (small)
+- ed25519 for signing
+- SSH for transport
+
+### Armitage Integration
+
+#### Use Armitage for Nix Compatibility
+
+```nix
+# ✅ OK (Armitage witness proxy)
+# Armitage forces CA-derivations through daemon
+# Witnesses all fetches into R2
+# Records attestations with coeffect discharge proofs
+```
+
+**Requirements:**
+- Witness proxy for fetches
+- Coeffect checker (Lean4)
+- Attestation recording
+- Nix daemon compatibility
+
+### Validation
+
+ALWAYS use Continuity Project architecture where applicable:
+- Use Dhall for new build definitions
+- Use typed toolchains
+- Plan R2 storage integration
+- Document Armitage usage
+
+## Examples
+
+Study these reference implementations:
+- Dhall schemas: `docs/rfc/aleph/aleph-008-continuity/dhall/`
+- Toolchain definitions: `docs/rfc/aleph/aleph-008-continuity/prelude/Toolchain.dhall`
+- Armitage docs: `docs/rfc/aleph/aleph-008-continuity/armitage.md`
+
+## Notes
+
+- Continuity Project components may require infrastructure setup
+- Dhall build language is optional but recommended for new builds
+- R2 storage integration requires Cloudflare R2 account
+- Armitage requires custom Nix fork or compatibility layer

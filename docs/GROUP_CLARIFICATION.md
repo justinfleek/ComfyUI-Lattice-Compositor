@@ -60,7 +60,7 @@ interface ShapeGroup {
 
 ### 3. **NestedComp** (`type: "nestedComp"` layer)
 
-**What it is:** A layer that references another composition (like After Effects precomps).
+**What it is:** A layer that references another composition (a precomp/sub-composition).
 
 **Location:** `ui/src/engine/layers/NestedCompLayer.ts`
 

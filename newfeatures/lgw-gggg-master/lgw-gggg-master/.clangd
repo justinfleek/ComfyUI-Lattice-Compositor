@@ -1,0 +1,4 @@
+CompileFlags:
+  Remove: [-fopenmp=libomp]
+  Add: ["-Wall", "-Wextra"]
+

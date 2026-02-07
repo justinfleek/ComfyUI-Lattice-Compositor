@@ -1402,9 +1402,9 @@ export class MotionEngine {
     // Apply camera shake if enabled (deterministic via seed)
     // Audio modifier modulates shake intensity (applied ONCE, not twice)
     // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
-    const shake = (cameraData != null && typeof cameraData === "object" && "shake" in cameraData && cameraData.shake != null && typeof cameraData.shake === "object") ? cameraData.shake : undefined;
-    if (shake != null && typeof shake === "object" && "enabled" in shake && shake.enabled) {
-      const shakeData = shake;
+    const shakeConfig = (cameraData != null && typeof cameraData === "object" && "shake" in cameraData && cameraData.shake != null && typeof cameraData.shake === "object") ? cameraData.shake : undefined;
+    if (shakeConfig != null && typeof shakeConfig === "object" && "enabled" in shakeConfig && shakeConfig.enabled) {
+      const shakeData = shakeConfig;
 
       // Calculate effective intensity with audio modifier
       let effectiveIntensity = shakeData.intensity;

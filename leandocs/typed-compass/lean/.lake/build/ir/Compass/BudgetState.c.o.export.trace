@@ -1,0 +1,16 @@
+{"synthetic": false,
+ "schemaVersion": "2025-09-10",
+ "outputs": "e33e9a576fd9888d.o",
+ "log":
+ [{"message":
+   ".> gcc -c -o /mnt/c/Users/justi/desktop/compass/leandocs/typed-compass/lean/.lake/build/ir/Compass/BudgetState.c.o.export /mnt/c/Users/justi/desktop/compass/leandocs/typed-compass/lean/.lake/build/ir/Compass/BudgetState.c -I /nix/store/hgrr6brn6gxwrzz2z8yca82r0mhhm08r-lean4-4.26.0/include -fstack-clash-protection -fwrapv -fPIC -fvisibility=hidden -Wno-unused-command-line-argument -O3 -DNDEBUG -DLEAN_EXPORTING",
+   "level": "trace"}],
+ "inputs":
+ [["Compass.BudgetState:c",
+   [["/mnt/c/Users/justi/desktop/compass/leandocs/typed-compass/lean/.lake/build/ir/Compass/BudgetState.c",
+     "74f67f3318af3180"],
+    ["Lean 4.26.0, commit v4.26.0", "f25d5b1fa5c93256"]]],
+  ["Lean 4.26.0, commit v4.26.0", "f25d5b1fa5c93256"],
+  ["traceArgs: #[-O3, -DNDEBUG, -DLEAN_EXPORTING]", "c1efb66122fb2b9a"],
+  ["", "21c42906adea99f5"]],
+ "depHash": "8fb364cf5a55b8df"}

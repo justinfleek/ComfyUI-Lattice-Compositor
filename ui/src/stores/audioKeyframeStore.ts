@@ -18,6 +18,7 @@ import type { AnimatableProperty, Keyframe, Layer } from "@/types/project";
 import { storeLogger } from "@/utils/logger";
 import { useAudioStore } from "@/stores/audioStore";
 import { useProjectStore } from "@/stores/projectStore";
+import { generateKeyframeId } from "@/utils/uuid5";
 
 // ============================================================================
 // TYPES
@@ -179,24 +180,32 @@ function applySmoothing(values: number[], factor: number): number[] {
 
 /**
  * Create an animatable property with keyframes at every frame
+ * Uses deterministic UUID5 IDs based on layerId and property name
  */
-function createAmplitudeProperty(
+export function createAmplitudeProperty(
   name: string,
   amplitudes: number[],
   scale: number,
+  layerId: string,
 ): AnimatableProperty<number> {
-  const id = `prop_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
+  // Deterministic property ID based on layer and property name
+  const propertyPath = `audioAmplitude.${name}`;
+  const id = `prop_audio_${layerId}_${name}`;
   const safeScale = Number.isFinite(scale) ? scale : 100;
 
-  const keyframes: Keyframe<number>[] = amplitudes.map((amp, frame) => ({
-    id: `kf_${id}_${frame}`,
-    frame,
-    value: Number.isFinite(amp) ? amp * safeScale : 0,
-    interpolation: "linear" as const,
-    inHandle: { frame: 0, value: 0, enabled: false },
-    outHandle: { frame: 0, value: 0, enabled: false },
-    controlMode: "smooth" as const,
-  }));
+  const keyframes: Keyframe<number>[] = amplitudes.map((amp, frame) => {
+    const value = Number.isFinite(amp) ? amp * safeScale : 0;
+    const valueStr = String(value);
+    return {
+      id: generateKeyframeId(layerId, propertyPath, frame, valueStr),
+      frame,
+      value,
+      interpolation: "linear" as const,
+      inHandle: { frame: 0, value: 0, enabled: false },
+      outHandle: { frame: 0, value: 0, enabled: false },
+      controlMode: "smooth" as const,
+    };
+  });
 
   return {
     id,
@@ -262,14 +271,7 @@ export const useAudioKeyframeStore = defineStore("audioKeyframe", {
       const compCurrentFrameValue = (activeComp != null && typeof activeComp === "object" && "currentFrame" in activeComp && typeof activeComp.currentFrame === "number") ? activeComp.currentFrame : undefined;
       const frame = isFiniteNumber(compCurrentFrameValue) && Number.isInteger(compCurrentFrameValue) && compCurrentFrameValue >= 0 ? compCurrentFrameValue : 0;
       const amplitude = audioStore.getFeatureAtFrame({
-        project: projectStore.project,
-        pathAnimators: this.pathAnimators,
-        createLayer: () => {
-          throw new Error("Not implemented");
-        },
-        getActiveCompLayers: () => projectStore.getActiveCompLayers(),
         getActiveComp: () => projectStore.getActiveComp(),
-        pushHistory: () => projectStore.pushHistory(),
       }, "amplitude", frame);
       const isBeat = audioStore.isBeatAtFrame(frame);
 
@@ -340,18 +342,21 @@ export const useAudioKeyframeStore = defineStore("audioKeyframe", {
         "Both Channels",
         channelData.both,
         amplitudeScale,
+        layer.id,
       );
 
       const leftChannelProperty = createAmplitudeProperty(
         "Left Channel",
         channelData.left,
         amplitudeScale,
+        layer.id,
       );
 
       const rightChannelProperty = createAmplitudeProperty(
         "Right Channel",
         channelData.right,
         amplitudeScale,
+        layer.id,
       );
 
       layer.properties.push(bothChannelsProperty);
@@ -485,7 +490,7 @@ export const useAudioKeyframeStore = defineStore("audioKeyframe", {
         if (!rawData || rawData.length === 0) continue;
 
         const data = smoothing > 0 ? applySmoothing(rawData, smoothing) : rawData;
-        const property = createAmplitudeProperty(bandNames[bandKey], data, scale);
+        const property = createAmplitudeProperty(bandNames[bandKey], data, scale, layer.id);
 
         layer.properties.push(property);
         propertyIds[bandKey] = property.id;
@@ -557,16 +562,19 @@ export const useAudioKeyframeStore = defineStore("audioKeyframe", {
         "Amplitude - Both",
         channelData.both,
         scale,
+        layer.id,
       );
       const leftProp = createAmplitudeProperty(
         "Amplitude - Left",
         channelData.left,
         scale,
+        layer.id,
       );
       const rightProp = createAmplitudeProperty(
         "Amplitude - Right",
         channelData.right,
         scale,
+        layer.id,
       );
 
       layer.properties.push(bothProp, leftProp, rightProp);
@@ -598,7 +606,7 @@ export const useAudioKeyframeStore = defineStore("audioKeyframe", {
         if (!rawData || rawData.length === 0) continue;
 
         const data = smoothing > 0 ? applySmoothing(rawData, smoothing) : rawData;
-        const prop = createAmplitudeProperty(bandNames[bandKey], data, scale);
+        const prop = createAmplitudeProperty(bandNames[bandKey], data, scale, layer.id);
         layer.properties.push(prop);
         result.bands[bandKey] = prop.id;
       }
@@ -616,6 +624,7 @@ export const useAudioKeyframeStore = defineStore("audioKeyframe", {
             ? applySmoothing(normalizedCentroid, smoothing)
             : normalizedCentroid,
           scale,
+          layer.id,
         );
         layer.properties.push(centroidProp);
         result.spectral.centroid = centroidProp.id;
@@ -629,6 +638,7 @@ export const useAudioKeyframeStore = defineStore("audioKeyframe", {
             ? applySmoothing(spectralFlux, smoothing)
             : spectralFlux,
           scale,
+          layer.id,
         );
         layer.properties.push(fluxProp);
         result.spectral.flux = fluxProp.id;
@@ -645,6 +655,7 @@ export const useAudioKeyframeStore = defineStore("audioKeyframe", {
             ? applySmoothing(normalizedRolloff, smoothing)
             : normalizedRolloff,
           scale,
+          layer.id,
         );
         layer.properties.push(rolloffProp);
         result.spectral.rolloff = rolloffProp.id;
@@ -658,6 +669,7 @@ export const useAudioKeyframeStore = defineStore("audioKeyframe", {
             ? applySmoothing(spectralFlatness, smoothing)
             : spectralFlatness,
           scale,
+          layer.id,
         );
         layer.properties.push(flatnessProp);
         result.spectral.flatness = flatnessProp.id;
@@ -672,6 +684,7 @@ export const useAudioKeyframeStore = defineStore("audioKeyframe", {
             ? applySmoothing(rmsEnergy, smoothing)
             : rmsEnergy,
           scale,
+          layer.id,
         );
         layer.properties.push(rmsProp);
         result.dynamics.rms = rmsProp.id;
@@ -685,6 +698,7 @@ export const useAudioKeyframeStore = defineStore("audioKeyframe", {
             ? applySmoothing(zeroCrossingRate, smoothing)
             : zeroCrossingRate,
           scale,
+          layer.id,
         );
         layer.properties.push(zcrProp);
         result.dynamics.zeroCrossing = zcrProp.id;

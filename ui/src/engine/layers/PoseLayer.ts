@@ -285,7 +285,12 @@ export class PoseLayer extends BaseLayer {
     this.canvas = document.createElement("canvas");
     this.canvas.width = this.compWidth;
     this.canvas.height = this.compHeight;
-    this.ctx = this.canvas.getContext("2d")!;
+    // Deterministic: Explicit null check for getContext - "2d" should always succeed but we verify
+    const ctx = this.canvas.getContext("2d");
+    if (!ctx) {
+      throw new Error("[PoseLayer] Failed to get 2d context from HTMLCanvasElement");
+    }
+    this.ctx = ctx;
 
     // Create Three.js texture and mesh
     this.texture = new THREE.CanvasTexture(this.canvas);

@@ -54,7 +54,6 @@ export function jumpToNextKeyframe(
       : [];
 
   const nextFrame = useKeyframeStore().findNextKeyframeFrame(
-    store,
     store.currentFrame,
     layerIds,
   );
@@ -80,7 +79,6 @@ export function jumpToPrevKeyframe(
       : [];
 
   const prevFrame = useKeyframeStore().findPrevKeyframeFrame(
-    store,
     store.currentFrame,
     layerIds,
   );

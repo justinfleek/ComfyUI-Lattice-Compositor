@@ -21,6 +21,7 @@
 
 import type { AnimatableProperty } from "@/types/project";
 import { interpolateProperty } from "./interpolation";
+import { generateKeyframeId } from "@/utils/uuid5";
 
 /**
  * Result of Timewarp evaluation
@@ -289,6 +290,7 @@ export function mapKeyframesToTimewarp(
  */
 export function createSpeedRampPreset(
   preset: "slow-fast" | "fast-slow" | "slow-fast-slow" | "impact" | "rewind",
+  layerId: string,
   layerStartFrame: number,
   layerDuration: number,
   fps: number = 16,
@@ -296,9 +298,10 @@ export function createSpeedRampPreset(
   const midFrame = layerStartFrame + layerDuration / 2;
   const endFrame = layerStartFrame + layerDuration;
   const impactFrame = layerStartFrame + layerDuration * 0.3;
+  const propertyPath = "timewarp.speed";
 
   const baseProperty: AnimatableProperty<number> = {
-    id: `prop_timewarp_speed_${Date.now()}`,
+    id: `prop_timewarp_speed_${layerId}`,
     name: "Timewarp Speed",
     value: 100,
     type: "number",
@@ -311,7 +314,7 @@ export function createSpeedRampPreset(
       // Start slow, end fast
       baseProperty.keyframes = [
         {
-          id: `kf_${Date.now()}_1`,
+          id: generateKeyframeId(layerId, propertyPath, layerStartFrame, "25"),
           frame: layerStartFrame,
           value: 25,
           interpolation: "bezier",
@@ -320,7 +323,7 @@ export function createSpeedRampPreset(
           outHandle: { frame: 10, value: 20, enabled: true },
         },
         {
-          id: `kf_${Date.now()}_2`,
+          id: generateKeyframeId(layerId, propertyPath, endFrame, "200"),
           frame: endFrame,
           value: 200,
           interpolation: "bezier",
@@ -335,7 +338,7 @@ export function createSpeedRampPreset(
       // Start fast, end slow
       baseProperty.keyframes = [
         {
-          id: `kf_${Date.now()}_1`,
+          id: generateKeyframeId(layerId, propertyPath, layerStartFrame, "200"),
           frame: layerStartFrame,
           value: 200,
           interpolation: "bezier",
@@ -344,7 +347,7 @@ export function createSpeedRampPreset(
           outHandle: { frame: 10, value: -20, enabled: true },
         },
         {
-          id: `kf_${Date.now()}_2`,
+          id: generateKeyframeId(layerId, propertyPath, endFrame, "25"),
           frame: endFrame,
           value: 25,
           interpolation: "bezier",
@@ -359,7 +362,7 @@ export function createSpeedRampPreset(
       // Slow at edges, fast in middle
       baseProperty.keyframes = [
         {
-          id: `kf_${Date.now()}_1`,
+          id: generateKeyframeId(layerId, propertyPath, layerStartFrame, "25"),
           frame: layerStartFrame,
           value: 25,
           interpolation: "bezier",
@@ -368,7 +371,7 @@ export function createSpeedRampPreset(
           outHandle: { frame: 10, value: 0, enabled: true },
         },
         {
-          id: `kf_${Date.now()}_2`,
+          id: generateKeyframeId(layerId, propertyPath, midFrame, "200"),
           frame: midFrame,
           value: 200,
           interpolation: "bezier",
@@ -377,7 +380,7 @@ export function createSpeedRampPreset(
           outHandle: { frame: 10, value: 0, enabled: true },
         },
         {
-          id: `kf_${Date.now()}_3`,
+          id: generateKeyframeId(layerId, propertyPath, endFrame, "25"),
           frame: endFrame,
           value: 25,
           interpolation: "bezier",
@@ -390,9 +393,11 @@ export function createSpeedRampPreset(
 
     case "impact":
       // Normal -> super slow at impact -> normal
+      const impactStartFrame = impactFrame - fps * 0.1;
+      const impactEndFrame = impactFrame + fps * 0.3;
       baseProperty.keyframes = [
         {
-          id: `kf_${Date.now()}_1`,
+          id: generateKeyframeId(layerId, propertyPath, layerStartFrame, "100"),
           frame: layerStartFrame,
           value: 100,
           interpolation: "bezier",
@@ -401,8 +406,8 @@ export function createSpeedRampPreset(
           outHandle: { frame: 5, value: 0, enabled: true },
         },
         {
-          id: `kf_${Date.now()}_2`,
-          frame: impactFrame - fps * 0.1,
+          id: generateKeyframeId(layerId, propertyPath, impactStartFrame, "100"),
+          frame: impactStartFrame,
           value: 100,
           interpolation: "bezier",
           controlMode: "smooth",
@@ -410,7 +415,7 @@ export function createSpeedRampPreset(
           outHandle: { frame: 3, value: -30, enabled: true },
         },
         {
-          id: `kf_${Date.now()}_3`,
+          id: generateKeyframeId(layerId, propertyPath, impactFrame, "10"),
           frame: impactFrame,
           value: 10,
           interpolation: "bezier",
@@ -419,8 +424,8 @@ export function createSpeedRampPreset(
           outHandle: { frame: 3, value: 30, enabled: true },
         },
         {
-          id: `kf_${Date.now()}_4`,
-          frame: impactFrame + fps * 0.3,
+          id: generateKeyframeId(layerId, propertyPath, impactEndFrame, "100"),
+          frame: impactEndFrame,
           value: 100,
           interpolation: "bezier",
           controlMode: "smooth",
@@ -432,9 +437,11 @@ export function createSpeedRampPreset(
 
     case "rewind":
       // Normal -> reverse -> normal
+      const rewindStartFrame = layerStartFrame + layerDuration * 0.3;
+      const rewindEndFrame = layerStartFrame + layerDuration * 0.7;
       baseProperty.keyframes = [
         {
-          id: `kf_${Date.now()}_1`,
+          id: generateKeyframeId(layerId, propertyPath, layerStartFrame, "100"),
           frame: layerStartFrame,
           value: 100,
           interpolation: "bezier",
@@ -443,8 +450,8 @@ export function createSpeedRampPreset(
           outHandle: { frame: 5, value: 0, enabled: true },
         },
         {
-          id: `kf_${Date.now()}_2`,
-          frame: layerStartFrame + layerDuration * 0.3,
+          id: generateKeyframeId(layerId, propertyPath, rewindStartFrame, "100"),
+          frame: rewindStartFrame,
           value: 100,
           interpolation: "bezier",
           controlMode: "smooth",
@@ -452,7 +459,7 @@ export function createSpeedRampPreset(
           outHandle: { frame: 3, value: -50, enabled: true },
         },
         {
-          id: `kf_${Date.now()}_3`,
+          id: generateKeyframeId(layerId, propertyPath, midFrame, "-150"),
           frame: midFrame,
           value: -150, // Reverse at 1.5x speed
           interpolation: "bezier",
@@ -461,8 +468,8 @@ export function createSpeedRampPreset(
           outHandle: { frame: 3, value: 50, enabled: true },
         },
         {
-          id: `kf_${Date.now()}_4`,
-          frame: layerStartFrame + layerDuration * 0.7,
+          id: generateKeyframeId(layerId, propertyPath, rewindEndFrame, "100"),
+          frame: rewindEndFrame,
           value: 100,
           interpolation: "bezier",
           controlMode: "smooth",

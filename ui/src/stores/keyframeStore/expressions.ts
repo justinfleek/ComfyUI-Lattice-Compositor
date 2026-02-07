@@ -13,6 +13,7 @@ import { useLayerStore } from "@/stores/layerStore";
 import { useProjectStore } from "../projectStore";
 import { findPropertyByPath } from "./helpers";
 import { evaluatePropertyAtFrame } from "./evaluation";
+import { generateKeyframeId } from "@/utils/uuid5";
 
 // ============================================================================
 // EXPRESSION METHODS
@@ -299,8 +300,13 @@ export function convertExpressionToKeyframes(
         keyframeValue = value;
       }
 
+      // Deterministic ID generation: same layer/property/frame/value always produces same ID
+      // Explicit check: keyframeValue is PropertyValue (never null/undefined per type system)
+      const valueStr = typeof keyframeValue === "object" && keyframeValue !== null && "x" in keyframeValue && "y" in keyframeValue
+        ? `${(keyframeValue as { x: number; y: number }).x},${(keyframeValue as { x: number; y: number }).y}${"z" in keyframeValue ? `,${(keyframeValue as { x: number; y: number; z?: number }).z}` : ""}`
+        : String(keyframeValue);
       const keyframe: Keyframe<PropertyValue> = {
-        id: `kf_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`,
+        id: generateKeyframeId(layerId, propertyPath, frame, valueStr),
         frame,
         value: keyframeValue,
         interpolation: "linear",

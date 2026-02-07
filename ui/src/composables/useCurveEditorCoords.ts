@@ -174,13 +174,16 @@ export function getKeyframeDisplayValue(
 ): number {
   if (!selection) return 0;
   const value = selection.keyframe.value;
-  return typeof value === "number"
-    ? value
-    : typeof value === "object"
-      // Lean4/PureScript/Haskell: Explicit pattern matching on optional property
-      // Type proof: value.x ∈ number | undefined → number (coordinate-like, can be negative)
-      ? (value.x !== undefined && isFiniteNumber(value.x) ? value.x : 0)
-      : 0;
+  // Deterministic: Explicit type narrowing - check for coordinate-like objects with x property
+  if (typeof value === "number") {
+    return value;
+  }
+  if (typeof value === "object" && value !== null && "x" in value) {
+    // Type proof: value has x property (coordinate-like object)
+    const xValue = (value as { x: number; y: number; z?: number }).x;
+    return isFiniteNumber(xValue) ? xValue : 0;
+  }
+  return 0;
 }
 
 // ============================================================

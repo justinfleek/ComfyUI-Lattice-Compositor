@@ -53,7 +53,10 @@ import json
 import logging
 import tempfile
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
+
+# JSON-compatible value types
+JSONValue = str | int | float | bool | None | list | dict
 
 
 if TYPE_CHECKING:
@@ -353,7 +356,7 @@ class StemSeparator:
     audio_data: bytes,
     stems_to_return: list[str] | None = None,
     progress_callback: callable | None = None,
-  ) -> dict[str, Any]:
+  ) -> dict[str, JSONValue]:
     """
     Separate audio into stems.
 
@@ -440,7 +443,7 @@ def get_separator(model_name: str = "htdemucs") -> StemSeparator:
   return _separator
 
 
-def get_available_models() -> list[dict[str, Any]]:
+def get_available_models() -> list[dict[str, JSONValue]]:
   """Get list of available Demucs models."""
   return [
     {
@@ -455,7 +458,7 @@ def get_available_models() -> list[dict[str, Any]]:
   ]
 
 
-def get_attribution() -> dict[str, Any]:
+def get_attribution() -> dict[str, JSONValue]:
   """Get attribution information."""
   return {
     "message": "Audio stem separation powered by:",

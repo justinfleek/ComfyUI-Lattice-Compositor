@@ -836,6 +836,9 @@ import { useAnimationStore } from "@/stores/animationStore";
 import { useKeyframeStore } from "@/stores/keyframeStore";
 import { useLayerStore } from "@/stores/layerStore";
 import { useProjectStore } from "@/stores/projectStore";
+import { generateKeyframeId } from "@/utils/uuid5";
+import { safeFrame } from "@/stores/keyframeStore/helpers";
+import type { Keyframe, PropertyValue } from "@/types/animation";
 import type {
   TextAnimator,
   TextAnimatorPresetType,
@@ -940,10 +943,65 @@ function duplicateAnimator(animatorId: string) {
   duplicated.id = `animator_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
   duplicated.name = `${source.name} (Copy)`;
 
+  // Regenerate keyframe IDs for all animator properties to avoid conflicts
+  regenerateTextAnimatorKeyframeIds(props.layer.id, duplicated);
+
   const currentAnimators = [...animators.value, duplicated];
   layerStore.updateLayerData(props.layer.id, { animators: currentAnimators });
   expandedAnimators.value.add(duplicated.id);
   emit("update");
+}
+
+// ============================================================================
+// HELPER: Regenerate keyframe IDs for text animator properties
+// ============================================================================
+
+/**
+ * Regenerate all keyframe IDs in a text animator to avoid conflicts when duplicating
+ * Uses correct property paths for deterministic ID generation:
+ * - Range selector: textAnimator.${animatorId}.rangeSelector.start|end|offset
+ * - Properties: textAnimator.${animatorId}.${propertyName}
+ */
+function regenerateTextAnimatorKeyframeIds(layerId: string, animator: TextAnimator): void {
+  // Regenerate keyframe IDs for range selector properties
+  if (animator.rangeSelector) {
+    const rangeProps: Array<{ prop: AnimatableProperty<number>; path: string }> = [
+      { prop: animator.rangeSelector.start, path: `textAnimator.${animator.id}.rangeSelector.start` },
+      { prop: animator.rangeSelector.end, path: `textAnimator.${animator.id}.rangeSelector.end` },
+      { prop: animator.rangeSelector.offset, path: `textAnimator.${animator.id}.rangeSelector.offset` },
+    ];
+
+    for (const { prop, path } of rangeProps) {
+      if (prop && prop.keyframes && Array.isArray(prop.keyframes) && prop.keyframes.length > 0) {
+        prop.keyframes = prop.keyframes.map((kf: Keyframe<number>) => {
+          // Explicit check: kf.value is number (never null/undefined per type system)
+          const valueStr = String(kf.value);
+          return {
+            ...kf,
+            id: generateKeyframeId(layerId, path, safeFrame(kf.frame, 0), valueStr),
+          };
+        });
+      }
+    }
+  }
+
+  // Regenerate keyframe IDs for animator properties
+  if (animator.properties) {
+    for (const [propertyName, property] of Object.entries(animator.properties)) {
+      if (property && property.keyframes && Array.isArray(property.keyframes) && property.keyframes.length > 0) {
+        const propertyPath = `textAnimator.${animator.id}.${propertyName}`;
+        property.keyframes = property.keyframes.map((kf: Keyframe<PropertyValue>) => {
+          const valueStr = typeof kf.value === "object" && kf.value !== null && "x" in kf.value && "y" in kf.value
+            ? `${(kf.value as { x: number; y: number }).x},${(kf.value as { x: number; y: number }).y}`
+            : String(kf.value);
+          return {
+            ...kf,
+            id: generateKeyframeId(layerId, propertyPath, safeFrame(kf.frame, 0), valueStr),
+          };
+        });
+      }
+    }
+  }
 }
 
 function toggleAnimatorEnabled(animatorId: string) {

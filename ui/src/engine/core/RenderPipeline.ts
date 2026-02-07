@@ -325,7 +325,12 @@ export class RenderPipeline {
 
     // Create capture canvas
     this.captureCanvas = new OffscreenCanvas(scaledWidth, scaledHeight);
-    this.captureCtx = this.captureCanvas.getContext("2d")!;
+    // Deterministic: Explicit null check for getContext - "2d" should always succeed but we verify
+    const ctx = this.captureCanvas.getContext("2d");
+    if (!ctx) {
+      throw new Error("[RenderPipeline] Failed to get 2d context from OffscreenCanvas");
+    }
+    this.captureCtx = ctx;
 
     // Create depth material
     this.depthMaterial = this.createDepthMaterial();

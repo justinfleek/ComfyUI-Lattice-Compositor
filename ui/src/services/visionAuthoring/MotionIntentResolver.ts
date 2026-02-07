@@ -521,15 +521,15 @@ export class MotionIntentResolver {
               content:
                 SYSTEM_PROMPT +
                 "\n\nUser request: " +
-                (typeof content === "string"
-                  ? content
-                  : JSON.stringify(content)),
+                (typeof prompt === "string"
+                  ? prompt
+                  : JSON.stringify(prompt)),
             },
           ],
         }),
       });
 
-      const result = await response.json();
+      const result: { status?: string; message?: string; data?: { content?: Array<{ text?: string }> } } = await response.json();
 
       if (result.status !== "success") {
         throw new Error(
@@ -538,9 +538,15 @@ export class MotionIntentResolver {
       }
 
       // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
-      const content = (result.data != null && typeof result.data === "object" && "content" in result.data && Array.isArray(result.data.content)) ? result.data.content : undefined;
-      const firstContent = (content != null && content.length > 0) ? content[0] : undefined;
+      const resultContent = (result.data != null && typeof result.data === "object" && "content" in result.data && Array.isArray(result.data.content)) ? result.data.content : undefined;
+      const firstContent = (resultContent != null && resultContent.length > 0) ? resultContent[0] : undefined;
       const responseContent = (firstContent != null && typeof firstContent === "object" && "text" in firstContent && typeof firstContent.text === "string") ? firstContent.text : undefined;
+
+      // Type guard: responseContent must be a string
+      if (responseContent === undefined) {
+        logger.warn("Anthropic API returned no content, falling back to rules");
+        return this.resolveWithRules(prompt, context);
+      }
 
       return this.parseAIResponse(responseContent, prompt);
     } catch (error) {

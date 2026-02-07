@@ -1,0 +1,66 @@
+annotation { "Feature Type Name" : "%FEATURE_NAME%" }
+export const %VAR_NAME% = defineFeature(function(context is Context, id is Id, definition is map)
+    precondition
+    {
+    }
+    {
+        var queries1 = makeArray(%M%);
+        var queries2 = makeArray(%M%);
+        var fullqueries = makeArray(%M%);
+        %S_DEF%
+        %P_DEF%
+        for (var i = 0; i != %M%; i += 1)
+        {
+            var origin is Vector = vector(0.0,0.0,s[i]) * %UNIT%;
+            var P is Plane = plane(origin, vector(0.0,0.0,1.0) * %UNIT%, vector(1.0,0.0,0.0) * %UNIT%);
+            
+            var sketch1 = newSketchOnPlane(context, id + ("sketch1"~i), { "sketchPlane" : P });
+            skLineSegment(sketch1, "line1"~i, {
+                    "start" : (p[i] - vector(%XTOL%, 0.0)) * %UNIT%,
+                    "end" : vector(%XMAX%, p[i][1]) * %UNIT%
+            });
+            skSolve(sketch1);
+            queries1[i] = qCreatedBy(id + ("sketch1"~i), EntityType.EDGE);
+            
+            var sketch2 = newSketchOnPlane(context, id + ("sketch2"~i), { "sketchPlane" : P });
+            skLineSegment(sketch2, "line2"~i, {
+                    "start" : (-p[i] + vector(%XTOL%, 0.0)) * %UNIT%,
+                    "end" : vector(-%XMAX%, -p[i][1]) * %UNIT%
+            });
+            skSolve(sketch2);
+            queries2[i] = qCreatedBy(id + ("sketch2"~i), EntityType.EDGE);
+            
+            fullqueries[i] = qUnion([qCreatedBy(id + ("sketch1"~i)), qCreatedBy(id + ("sketch2"~i))]);
+        }
+        
+        opLoft(context, id + "loft1a", {
+                "profileSubqueries" : [queries1[0],queries1[1]],
+                "bodyType" : ToolBodyType.SURFACE
+        });
+        opLoft(context, id + "loft1", {
+                "profileSubqueries" : subArray(queries1,1,%M%-1),
+                "bodyType" : ToolBodyType.SURFACE
+        });
+        opLoft(context, id + "loft1b", {
+                "profileSubqueries" : [queries1[%M%-2],queries1[%M%-1]],
+                "bodyType" : ToolBodyType.SURFACE
+        });
+
+        opLoft(context, id + "loft2a", {
+                "profileSubqueries" : [queries2[0],queries2[1]],
+                "bodyType" : ToolBodyType.SURFACE
+        });
+        opLoft(context, id + "loft2", {
+                "profileSubqueries" : subArray(queries2,1,%M%-1),
+                "bodyType" : ToolBodyType.SURFACE
+        });
+        opLoft(context, id + "loft2b", {
+                "profileSubqueries" : [queries2[%M%-2],queries2[%M%-1]],
+                "bodyType" : ToolBodyType.SURFACE
+        });
+
+        opDeleteBodies(context, id + "deleteSketches", {
+                "entities" : qUnion(fullqueries)
+        });
+    });
+

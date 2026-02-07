@@ -11,7 +11,7 @@
  * 
  * Formula: x(t+dt) = 2x(t) - x(t-dt) + a(t)*dt²
  * 
- * Based on Lean4 proofs from leanparticles/PARTICLE_VERIFIED (1).lean
+ * Based on Lean4 proofs from leanparticles/PARTICLE_VERIFIED.lean
  */
 
 import { finite, pos, type Positive } from "./VerifiedTypes";

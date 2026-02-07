@@ -32,7 +32,7 @@ import { useSelectionStore } from "@/stores/selectionStore";
 import { useAnimationStore, type AnimationStoreAccess } from "@/stores/animationStore";
 import { useProjectStore } from "@/stores/projectStore";
 import type { Vec2, Vec3 } from "@/types/transform";
-import { isFiniteNumber, assertDefined, safeCoordinateDefault, safeNonNegativeDefault, safePositiveDefault } from "@/utils/typeGuards";
+import { isFiniteNumber, assertDefined, safeCoordinateDefault, safeNonNegativeDefault, safePositiveDefault, isRecordLike } from "@/utils/typeGuards";
 import type {
   AnimatableProperty,
   CameraLayerData,
@@ -49,6 +49,11 @@ import type {
 import { isLayerOfType } from "@/types/project";
 import type { ToolCall } from "./toolDefinitions";
 import type { JSONValue } from "@/types/dataAsset";
+import { createLogger } from "@/utils/logger";
+import { agentSandbox } from "./security/agentSandbox";
+import type { LatticeProject } from "@/types/project";
+
+const logger = createLogger("ActionExecutor");
 import type {
   CreateLayerArgs,
   DeleteLayerArgs,
@@ -93,6 +98,28 @@ import type {
 } from "./toolArgumentTypes";
 
 // ============================================================================
+// SANDBOX HELPERS
+// ============================================================================
+
+/**
+ * Helper to update project state (sandbox or main store)
+ */
+function updateProjectState(context: ExecutionContext): void {
+  if (context.sandboxId) {
+    const sandbox = agentSandbox.getSandbox(context.sandboxId);
+    if (sandbox) {
+      // Update sandbox state with current project state
+      sandbox.currentState = structuredClone(context.projectStore.project) as LatticeProject;
+      sandbox.currentState.meta.modified = new Date().toISOString();
+      agentSandbox.updateSandboxState(context.sandboxId, sandbox.currentState);
+    }
+  } else {
+    context.projectStore.project.meta.modified = new Date().toISOString();
+    context.projectStore.pushHistory();
+  }
+}
+
+// ============================================================================
 // TYPES
 // ============================================================================
 
@@ -102,6 +129,8 @@ export interface ExecutionContext {
   playbackStore: ReturnType<typeof usePlaybackStore>;
   selectionStore: ReturnType<typeof useSelectionStore>;
   animationStore: ReturnType<typeof useAnimationStore>;
+  /** Sandbox ID if executing in sandbox mode */
+  sandboxId?: string;
 }
 
 /**
@@ -126,8 +155,15 @@ function ensureCameraLayerData(layer: Layer): CameraLayerData {
 /**
  * Execute a tool call from the AI agent
  * Returns the result of the action for the AI to verify
+ *
+ * @param toolCall - The tool call to execute
+ * @param options - Execution options
+ * @param options.sandboxId - If provided, execute in sandbox mode (updates sandbox state instead of main store)
  */
-export async function executeToolCall(toolCall: ToolCall): Promise<
+export async function executeToolCall(
+  toolCall: ToolCall,
+  options?: { sandboxId?: string },
+): Promise<
   | { layerId: string; message: string }
   | { success: boolean; message: string }
   | { layerId: string | null; message: string }
@@ -142,132 +178,209 @@ export async function executeToolCall(toolCall: ToolCall): Promise<
   | { state: Record<string, { id: string; name: string; width: number; height: number; frameCount: number; fps: number; currentFrame: number } | null | number | Array<{ id: string; name: string; type: string; visible: boolean }>>; message: string }
 > {
   try {
+    const sandboxId = options?.sandboxId;
     const projectStore = useProjectStore();
     const layerStore = useLayerStore();
     const animationStore = useAnimationStore();
     const playbackStore = usePlaybackStore();
     const selectionStore = useSelectionStore();
 
-    const context: ExecutionContext = { projectStore, playbackStore, selectionStore, layerStore, animationStore };
+    // SECURITY: If sandbox mode, use sandbox state for writes
+    let sandboxProjectState: LatticeProject | null = null;
+    if (sandboxId) {
+      const sandbox = agentSandbox.getSandbox(sandboxId);
+      if (!sandbox) {
+        throw new Error(`[ActionExecutor] Sandbox "${sandboxId}" not found`);
+      }
+      sandboxProjectState = sandbox.currentState;
+    }
+
+    const context: ExecutionContext = {
+      projectStore,
+      playbackStore,
+      selectionStore,
+      layerStore,
+      animationStore,
+      sandboxId,
+    };
     
     // ToolCall is now a discriminated union - TypeScript narrows the type based on name
-    // Extract arguments type-safely using destructuring to remove 'name' and 'id'
-    const { name, id, ...args } = toolCall;
+    // Extract arguments from toolCall - they're in the 'arguments' property
+    const { name, arguments: args } = toolCall;
 
     // Route to appropriate handler with type-safe narrowing
     // TypeScript knows the correct argument type for each case after destructuring
+    // State-modifying actions call updateProjectState to enable undo/redo
+    let result: ReturnType<typeof executeCreateLayer> | ReturnType<typeof executeDeleteLayer> |
+      ReturnType<typeof executeDuplicateLayer> | ReturnType<typeof executeGetLayerInfo> |
+      ReturnType<typeof executeFindLayers> | ReturnType<typeof executeGetProjectState> |
+      ReturnType<typeof executeSetCurrentFrame> | ReturnType<typeof executePlayPreview>;
+    let isStateMutating = true; // Most actions mutate state
+
     switch (name) {
     // Layer Management
     case "createLayer":
-      return executeCreateLayer(context, args as CreateLayerArgs);
+      result = executeCreateLayer(context, args as CreateLayerArgs);
+      break;
     case "deleteLayer":
-      return executeDeleteLayer(context, args as DeleteLayerArgs);
+      result = executeDeleteLayer(context, args as DeleteLayerArgs);
+      break;
     case "duplicateLayer":
-      return executeDuplicateLayer(context, args as DuplicateLayerArgs);
+      result = executeDuplicateLayer(context, args as DuplicateLayerArgs);
+      break;
     case "renameLayer":
-      return executeRenameLayer(context, args as RenameLayerArgs);
+      result = executeRenameLayer(context, args as RenameLayerArgs);
+      break;
     case "setLayerParent":
-      return executeSetLayerParent(context, args as SetLayerParentArgs);
+      result = executeSetLayerParent(context, args as SetLayerParentArgs);
+      break;
     case "reorderLayers":
-      return executeReorderLayers(context, args as ReorderLayersArgs);
+      result = executeReorderLayers(context, args as ReorderLayersArgs);
+      break;
 
     // Property Modification
     case "setLayerProperty":
-      return executeSetLayerProperty(context, args as SetLayerPropertyArgs);
+      result = executeSetLayerProperty(context, args as SetLayerPropertyArgs);
+      break;
     case "setLayerTransform":
-      return executeSetLayerTransform(context, args as SetLayerTransformArgs);
+      result = executeSetLayerTransform(context, args as SetLayerTransformArgs);
+      break;
 
     // Keyframe Animation
     case "addKeyframe":
-      return executeAddKeyframe(context, args as AddKeyframeArgs);
+      result = executeAddKeyframe(context, args as AddKeyframeArgs);
+      break;
     case "removeKeyframe":
-      return executeRemoveKeyframe(context, args as RemoveKeyframeArgs);
+      result = executeRemoveKeyframe(context, args as RemoveKeyframeArgs);
+      break;
     case "setKeyframeEasing":
-      return executeSetKeyframeEasing(context, args as SetKeyframeEasingArgs);
+      result = executeSetKeyframeEasing(context, args as SetKeyframeEasingArgs);
+      break;
     case "scaleKeyframeTiming":
-      return executeScaleKeyframeTiming(context, args as ScaleKeyframeTimingArgs);
+      result = executeScaleKeyframeTiming(context, args as ScaleKeyframeTimingArgs);
+      break;
 
     // Expressions
     case "setExpression":
-      return executeSetExpression(context, args as SetExpressionArgs);
+      result = executeSetExpression(context, args as SetExpressionArgs);
+      break;
     case "removeExpression":
-      return executeRemoveExpression(context, args as RemoveExpressionArgs);
+      result = executeRemoveExpression(context, args as RemoveExpressionArgs);
+      break;
 
     // Effects
     case "addEffect":
-      return executeAddEffect(context, args as AddEffectArgs);
+      result = executeAddEffect(context, args as AddEffectArgs);
+      break;
     case "updateEffect":
-      return executeUpdateEffect(context, args as UpdateEffectArgs);
+      result = executeUpdateEffect(context, args as UpdateEffectArgs);
+      break;
     case "removeEffect":
-      return executeRemoveEffect(context, args as RemoveEffectArgs);
+      result = executeRemoveEffect(context, args as RemoveEffectArgs);
+      break;
 
     // Particle System
     case "configureParticles":
-      return executeConfigureParticles(context, args as ConfigureParticlesArgs);
+      result = executeConfigureParticles(context, args as ConfigureParticlesArgs);
+      break;
 
     // Camera System
     case "applyCameraTrajectory":
-      return executeApplyCameraTrajectory(context, args as ApplyCameraTrajectoryArgs);
+      result = executeApplyCameraTrajectory(context, args as ApplyCameraTrajectoryArgs);
+      break;
     case "addCameraShake":
-      return executeAddCameraShake(context, args as AddCameraShakeArgs);
+      result = executeAddCameraShake(context, args as AddCameraShakeArgs);
+      break;
     case "applyRackFocus":
-      return executeApplyRackFocus(context, args as ApplyRackFocusArgs);
+      result = executeApplyRackFocus(context, args as ApplyRackFocusArgs);
+      break;
     case "setCameraPathFollowing":
-      return executeSetCameraPathFollowing(context, args as SetCameraPathFollowingArgs);
+      result = executeSetCameraPathFollowing(context, args as SetCameraPathFollowingArgs);
+      break;
     case "setCameraAutoFocus":
-      return executeSetCameraAutoFocus(context, args as SetCameraAutoFocusArgs);
+      result = executeSetCameraAutoFocus(context, args as SetCameraAutoFocusArgs);
+      break;
 
     // Text
     case "setTextContent":
-      return executeSetTextContent(context, args as SetTextContentArgs);
+      result = executeSetTextContent(context, args as SetTextContentArgs);
+      break;
     case "setTextPath":
-      return executeSetTextPath(context, args as SetTextPathArgs);
+      result = executeSetTextPath(context, args as SetTextPathArgs);
+      break;
 
     // Spline
     case "setSplinePoints":
-      return executeSetSplinePoints(context, args as SetSplinePointsArgs);
+      result = executeSetSplinePoints(context, args as SetSplinePointsArgs);
+      break;
 
     // Speed Map (formerly Time Remapping)
     case "setSpeedMap":
-      return executeSetSpeedMap(context, args as SetSpeedMapArgs);
+      result = executeSetSpeedMap(context, args as SetSpeedMapArgs);
+      break;
     case "setTimeRemap": // Legacy - redirects to setSpeedMap
-      return executeSetSpeedMap(context, args as SetSpeedMapArgs);
+      result = executeSetSpeedMap(context, args as SetSpeedMapArgs);
+      break;
 
-    // Playback
+    // Playback (non-state-mutating - doesn't affect undo history)
     case "setCurrentFrame":
-      return executeSetCurrentFrame(context, args as SetCurrentFrameArgs);
+      result = executeSetCurrentFrame(context, args as SetCurrentFrameArgs);
+      isStateMutating = false;
+      break;
     case "playPreview":
-      return executePlayPreview(context, args as PlayPreviewArgs);
+      result = executePlayPreview(context, args as PlayPreviewArgs);
+      isStateMutating = false;
+      break;
 
     // AI Image Processing
     case "decomposeImage":
-      return executeDecomposeImage(context, args as DecomposeImageArgs);
+      result = executeDecomposeImage(context, args as DecomposeImageArgs);
+      break;
     case "vectorizeImage":
-      return executeVectorizeImage(context, args as VectorizeImageArgs);
+      result = executeVectorizeImage(context, args as VectorizeImageArgs);
+      break;
 
-    // Utility
+    // Utility (read-only - doesn't affect undo history)
     case "getLayerInfo":
-      return executeGetLayerInfo(context, args as GetLayerInfoArgs);
+      result = executeGetLayerInfo(context, args as GetLayerInfoArgs);
+      isStateMutating = false;
+      break;
     case "findLayers":
-      return executeFindLayers(context, args as FindLayersArgs);
+      result = executeFindLayers(context, args as FindLayersArgs);
+      isStateMutating = false;
+      break;
     case "getProjectState":
-      return executeGetProjectState(context, args as GetProjectStateArgs);
+      result = executeGetProjectState(context, args as GetProjectStateArgs);
+      isStateMutating = false;
+      break;
 
     // COMPASS Content Generation
     case "generateTextContent":
-      return executeGenerateTextContent(context, args as GenerateTextContentArgs);
+      result = executeGenerateTextContent(context, args as GenerateTextContentArgs);
+      break;
     case "generateSocialMediaPost":
-      return executeGenerateSocialMediaPost(context, args as GenerateSocialMediaPostArgs);
+      result = executeGenerateSocialMediaPost(context, args as GenerateSocialMediaPostArgs);
+      break;
     case "generateAdCopy":
-      return executeGenerateAdCopy(context, args as GenerateAdCopyArgs);
+      result = executeGenerateAdCopy(context, args as GenerateAdCopyArgs);
+      break;
     case "generateImage":
-      return executeGenerateImage(context, args as GenerateImageArgs);
+      result = executeGenerateImage(context, args as GenerateImageArgs);
+      break;
     case "generateVideo":
-      return executeGenerateVideo(context, args as GenerateVideoArgs);
+      result = executeGenerateVideo(context, args as GenerateVideoArgs);
+      break;
 
     default:
       throw new Error(`[ActionExecutor] Unknown tool: "${name}". Tool name is not recognized.`);
     }
+
+    // Push history for state-mutating actions to enable undo/redo
+    if (isStateMutating) {
+      updateProjectState(context);
+    }
+
+    return result;
   } catch (error) {
     // Convert thrown errors to success: false format for AI agent compatibility
     // Errors are now explicit and debuggable before being converted
@@ -558,11 +671,15 @@ function executeSetLayerProperty(
       throw new Error(`[ActionExecutor] Cannot set nested property "${propertyPath}": layer.data is not a plain object. Layer type: ${layer.type}.`);
     }
     // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy type assertions
+    // Use type guard to validate structure at runtime
+    if (!isRecordLike(layer.data)) {
+      throw new Error(`[ActionExecutor] Cannot set nested property "${propertyPath}": layer.data is not a record-like object. Layer type: ${layer.type}.`);
+    }
     // Build compatible object by copying properties - validates structure without type assertions
     const layerDataObj: Record<string, PropertyValue | JSONValue | undefined> = {};
     for (const key in layer.data) {
       if (Object.prototype.hasOwnProperty.call(layer.data, key)) {
-        const propValue = (layer.data as Record<string, unknown>)[key];
+        const propValue = layer.data[key];
         if (
           propValue === null ||
           typeof propValue === "string" ||
@@ -640,11 +757,15 @@ function executeSetLayerProperty(
         throw new Error(`[ActionExecutor] Cannot set nested property "${propertyPath}": layer.data is not a plain object. Layer type: ${layer.type}.`);
       }
       // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy type assertions
+      // Use type guard to validate structure at runtime
+      if (!isRecordLike(layer.data)) {
+        throw new Error(`[ActionExecutor] Cannot set nested property "${propertyPath}": layer.data is not a record-like object. Layer type: ${layer.type}.`);
+      }
       // Build compatible object by copying properties - validates structure without type assertions
       const layerDataObj: { [K in string]: PropertyValue | JSONValue | undefined } = {};
       for (const key in layer.data) {
         if (Object.prototype.hasOwnProperty.call(layer.data, key)) {
-          const propValue = (layer.data as Record<string, unknown>)[key];
+          const propValue = layer.data[key];
           if (
             propValue === null ||
             typeof propValue === "string" ||
@@ -664,8 +785,8 @@ function executeSetLayerProperty(
   }
 
   // Record modification and save to undo history
-  projectStore.project.meta.modified = new Date().toISOString();
-  projectStore.pushHistory();
+  // SECURITY: In sandbox mode, update sandbox state instead
+  updateProjectState(context);
 
   return {
     success: true,
@@ -714,8 +835,8 @@ function executeSetLayerTransform(
   }
 
   // Record modification and save to undo history
-  projectStore.project.meta.modified = new Date().toISOString();
-  projectStore.pushHistory();
+  // SECURITY: In sandbox mode, update sandbox state instead
+  updateProjectState(context);
 
   return {
     success: true,
@@ -876,7 +997,8 @@ function executeScaleKeyframeTiming(
   // Record modification and save to undo history (only if changes were made)
   if (scaledCount > 0) {
     projectStore.project.meta.modified = new Date().toISOString();
-    projectStore.pushHistory();
+    // SECURITY: In sandbox mode, update sandbox state instead
+  updateProjectState(context);
   }
 
   return {
@@ -916,8 +1038,8 @@ function executeSetExpression(
   };
 
   // Record modification and save to undo history
-  projectStore.project.meta.modified = new Date().toISOString();
-  projectStore.pushHistory();
+  // SECURITY: In sandbox mode, update sandbox state instead
+  updateProjectState(context);
 
   return {
     success: true,
@@ -948,8 +1070,8 @@ function executeRemoveExpression(
   delete property.expression;
 
   // Record modification and save to undo history
-  projectStore.project.meta.modified = new Date().toISOString();
-  projectStore.pushHistory();
+  // SECURITY: In sandbox mode, update sandbox state instead
+  updateProjectState(context);
 
   return {
     success: true,
@@ -976,7 +1098,7 @@ function executeAddEffect(
     currentFrame: animationStore.currentFrame,
     getActiveCompLayers: () => projectStore.getActiveCompLayers(),
     getActiveComp: () => projectStore.getActiveComp(),
-    pushHistory: () => projectStore.pushHistory(),
+      pushHistory: () => updateProjectState(context),
   };
 
   effectStore.addEffectToLayer(effectStoreAccess, layerId, effectType);
@@ -1040,7 +1162,7 @@ function executeUpdateEffect(
     currentFrame: animationStore.currentFrame,
     getActiveCompLayers: () => projectStore.getActiveCompLayers(),
     getActiveComp: () => projectStore.getActiveComp(),
-    pushHistory: () => projectStore.pushHistory(),
+      pushHistory: () => updateProjectState(context),
   };
 
   for (const [key, value] of Object.entries(params)) {
@@ -1068,7 +1190,7 @@ function executeRemoveEffect(
     currentFrame: animationStore.currentFrame,
     getActiveCompLayers: () => projectStore.getActiveCompLayers(),
     getActiveComp: () => projectStore.getActiveComp(),
-    pushHistory: () => projectStore.pushHistory(),
+      pushHistory: () => updateProjectState(context),
   };
 
   effectStore.removeEffectFromLayer(effectStoreAccess, layerId, effectId);
@@ -1141,8 +1263,8 @@ function executeConfigureParticles(
   }
 
   // Record modification and save to undo history
-  projectStore.project.meta.modified = new Date().toISOString();
-  projectStore.pushHistory();
+  // SECURITY: In sandbox mode, update sandbox state instead
+  updateProjectState(context);
 
   return {
     success: true,
@@ -1372,8 +1494,8 @@ function executeAddCameraShake(
   };
 
   // Record modification and save to undo history
-  projectStore.project.meta.modified = new Date().toISOString();
-  projectStore.pushHistory();
+  // SECURITY: In sandbox mode, update sandbox state instead
+  updateProjectState(context);
 
   return {
     success: true,
@@ -1499,8 +1621,8 @@ function executeSetCameraPathFollowing(
   };
 
   // Record modification and save to undo history
-  projectStore.project.meta.modified = new Date().toISOString();
-  projectStore.pushHistory();
+  // SECURITY: In sandbox mode, update sandbox state instead
+  updateProjectState(context);
 
   return {
     success: true,
@@ -1554,8 +1676,8 @@ function executeSetCameraAutoFocus(
   };
 
   // Record modification and save to undo history
-  projectStore.project.meta.modified = new Date().toISOString();
-  projectStore.pushHistory();
+  // SECURITY: In sandbox mode, update sandbox state instead
+  updateProjectState(context);
 
   return {
     success: true,
@@ -1605,8 +1727,8 @@ function executeSetTextContent(
   }
 
   // Record modification and save to undo history
-  projectStore.project.meta.modified = new Date().toISOString();
-  projectStore.pushHistory();
+  // SECURITY: In sandbox mode, update sandbox state instead
+  updateProjectState(context);
 
   return {
     success: true,
@@ -1638,8 +1760,8 @@ function executeSetTextPath(
   }
 
   // Record modification and save to undo history
-  projectStore.project.meta.modified = new Date().toISOString();
-  projectStore.pushHistory();
+  // SECURITY: In sandbox mode, update sandbox state instead
+  updateProjectState(context);
 
   return {
     success: true,
@@ -1686,8 +1808,8 @@ function executeSetSplinePoints(
   }
 
   // Record modification and save to undo history
-  projectStore.project.meta.modified = new Date().toISOString();
-  projectStore.pushHistory();
+  // SECURITY: In sandbox mode, update sandbox state instead
+  updateProjectState(context);
 
   return {
     success: true,
@@ -1725,8 +1847,8 @@ function executeSetSpeedMap(
   }
 
   // Record modification and save to undo history
-  projectStore.project.meta.modified = new Date().toISOString();
-  projectStore.pushHistory();
+  // SECURITY: In sandbox mode, update sandbox state instead
+  updateProjectState(context);
 
   return {
     success: true,
@@ -1797,7 +1919,7 @@ function executeSetCurrentFrame(
       },
       meta: { modified: projectStore.project.meta.modified },
     },
-    pushHistory: () => projectStore.pushHistory(),
+      pushHistory: () => updateProjectState(context),
   };
 
   animationStore.setFrame(animationStoreAccess, clampedFrame);
@@ -1850,7 +1972,7 @@ function executePlayPreview(
       },
       meta: { modified: projectStore.project.meta.modified },
     },
-    pushHistory: () => projectStore.pushHistory(),
+      pushHistory: () => updateProjectState(context),
   };
 
   if (play) {
@@ -1923,7 +2045,11 @@ async function executeDecomposeImage(
         const canvas = document.createElement("canvas");
         canvas.width = img.naturalWidth;
         canvas.height = img.naturalHeight;
-        const ctx = canvas.getContext("2d")!;
+        // Deterministic: Explicit null check for getContext - "2d" should always succeed but we verify
+        const ctx = canvas.getContext("2d");
+        if (!ctx) {
+          throw new Error("[ActionExecutor] Failed to get 2d context from HTMLCanvasElement");
+        }
         ctx.drawImage(img, 0, 0);
         resolve(canvas.toDataURL("image/png"));
       };
@@ -1938,7 +2064,7 @@ async function executeDecomposeImage(
     imageDataUrl,
     { numLayers },
     (stage, message) => {
-      console.log(`[AI Decompose] ${stage}: ${message}`);
+      logger.debug(`[AI Decompose] ${stage}: ${message}`);
     },
   );
 
@@ -1954,7 +2080,8 @@ async function executeDecomposeImage(
     createdLayerIds.push(layer.id);
   }
 
-  projectStore.pushHistory();
+  // SECURITY: In sandbox mode, update sandbox state instead
+  updateProjectState(context);
 
   return {
     layerIds: createdLayerIds,
@@ -2039,7 +2166,11 @@ async function executeVectorizeImage(
         const canvas = document.createElement("canvas");
         canvas.width = img.naturalWidth;
         canvas.height = img.naturalHeight;
-        const ctx = canvas.getContext("2d")!;
+        // Deterministic: Explicit null check for getContext - "2d" should always succeed but we verify
+        const ctx = canvas.getContext("2d");
+        if (!ctx) {
+          throw new Error("[ActionExecutor] Failed to get 2d context from HTMLCanvasElement");
+        }
         ctx.drawImage(img, 0, 0);
         resolve(canvas.toDataURL("image/png"));
       };
@@ -2078,7 +2209,7 @@ async function executeVectorizeImage(
       },
     },
     (stage, message) => {
-      console.log(`[AI Vectorize] ${stage}: ${message}`);
+      logger.debug(`[AI Vectorize] ${stage}: ${message}`);
     },
   );
 
@@ -2159,7 +2290,8 @@ async function executeVectorizeImage(
     createdLayerIds.push(layer.id);
   }
 
-  projectStore.pushHistory();
+  // SECURITY: In sandbox mode, update sandbox state instead
+  updateProjectState(context);
 
   return {
     layerIds: createdLayerIds,

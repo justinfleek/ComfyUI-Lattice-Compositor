@@ -2,7 +2,6 @@
  * Image Trace Service
  *
  * Vectorizes raster images into bezier paths.
- * Similar to Adobe Illustrator's Image Trace feature.
  *
  * Uses Potrace-inspired algorithm for bitmap tracing.
  */

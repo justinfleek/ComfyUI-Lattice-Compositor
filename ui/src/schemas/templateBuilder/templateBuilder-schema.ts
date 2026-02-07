@@ -400,7 +400,7 @@ export const TemplateFontSchema = z.object({
   style: nonEmptyString(MAX_FONT_STYLE_LENGTH),
   embedded: z.boolean(),
   data: base64OrDataUrl.optional(),
-  source: z.enum(["google", "adobe", "local", "system"]).optional(),
+  source: z.enum(["google", "cloud", "local", "system"]).optional(),
 }).strict().refine(
   (data) => {
     // If embedded is true, data must be present

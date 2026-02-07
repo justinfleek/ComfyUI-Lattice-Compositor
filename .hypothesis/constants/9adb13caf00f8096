@@ -1,0 +1,4 @@
+# file: /home/nixos/.nix-profile/lib/python3.13/genericpath.py
+# hypothesis_version: 6.150.0
+
+['ALLOW_MISSING', 'commonprefix', 'exists', 'getatime', 'getctime', 'getmtime', 'getsize', 'isdevdrive', 'isdir', 'isfile', 'isjunction', 'islink', 'lexists', 'samefile', 'sameopenfile', 'samestat']

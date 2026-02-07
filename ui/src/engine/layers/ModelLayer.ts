@@ -960,8 +960,8 @@ export class ModelLayer extends BaseLayer {
       if (data.animation !== undefined) {
         // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
         // Pattern match: modelData.animation ∈ ModelAnimation | undefined → ModelAnimation (create if missing)
-        const existingAnimation = (typeof this.modelData.animation === "object" && this.modelData.animation !== null) ? this.modelData.animation : undefined;
-        if (existingAnimation === undefined) {
+        // Deterministic: Ensure animation object exists before accessing properties
+        if (!this.modelData.animation) {
           this.modelData.animation = {
             clips: [],
             time: {
@@ -977,27 +977,36 @@ export class ModelLayer extends BaseLayer {
             autoPlay: false,
           };
         }
-        // Merge animation data - explicit property assignment for type safety
+        // Deterministic: Type guard ensures animation is defined after check
+        const animation = this.modelData.animation;
+        if (!animation) {
+          throw new Error("[ModelLayer] Animation should be defined after initialization check");
+        }
         if (data.animation.clips !== undefined) {
-          this.modelData.animation!.clips = data.animation.clips;
+          animation.clips = data.animation.clips;
         }
         if (data.animation.activeClip !== undefined) {
-          this.modelData.animation!.activeClip = data.animation.activeClip;
+          animation.activeClip = data.animation.activeClip;
         }
         if (data.animation.time !== undefined) {
-          this.modelData.animation!.time = data.animation.time;
+          animation.time = data.animation.time;
         }
         if (data.animation.speed !== undefined) {
-          this.modelData.animation!.speed = data.animation.speed;
+          animation.speed = data.animation.speed;
         }
         if (data.animation.loop !== undefined) {
-          this.modelData.animation!.loop = data.animation.loop;
+          animation.loop = data.animation.loop;
         }
         if (data.animation.autoPlay !== undefined) {
-          this.modelData.animation!.autoPlay = data.animation.autoPlay;
+          animation.autoPlay = data.animation.autoPlay;
         }
+        // Deterministic: Explicit null check before calling playAnimation
         if (data.animation.activeClip) {
-          this.playAnimation(data.animation.activeClip);
+          // Type guard ensures animation is defined
+          const activeAnimation = this.modelData.animation;
+          if (activeAnimation) {
+            this.playAnimation(data.animation.activeClip);
+          }
         }
       }
     }

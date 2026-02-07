@@ -84,9 +84,9 @@ def addInput (g : Graph) (shape : Shape) (dtype : DType) : Graph × Node :=
 def connect (g : Graph) 
     (srcNode : Node) (srcPort : Nat) 
     (dstNode : Node) (dstPort : Nat)
-    (h : srcNode.outputShapes.get? srcPort = dstNode.inputShapes.get? dstPort)
+    (h : srcNode.outputShapes[srcPort]? = dstNode.inputShapes[dstPort]?)
     : Graph :=
-  match srcNode.outputShapes.get? srcPort with
+  match srcNode.outputShapes[srcPort]? with
   | some (shape, dtype) =>
     let edge : Edge shape dtype := {
       srcNode := srcNode.id

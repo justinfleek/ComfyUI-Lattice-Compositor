@@ -55,14 +55,19 @@ import io
 import json
 import logging
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
+
+# JSON-compatible value types
+JSONValue = str | int | float | bool | None | list | dict
 
 import numpy as np
 
 
 if TYPE_CHECKING:
-  import torch
+    import torch
 
+# Pylint: Disable indentation warnings - project uses 2-space indentation (see ruff.toml)
+# pylint: disable=bad-indentation
 
 logger = logging.getLogger("lattice.frame_interpolation")
 
@@ -172,11 +177,14 @@ class FrameInterpolator:
         self._model = self._load_fallback_model()
 
       if self._model is not None:
-        self._model.to(self.device)
-        self._model.eval()
+        # Type guard: PyTorch models have these methods
+        if hasattr(self._model, "to"):
+          self._model.to(self.device)  # type: ignore[attr-defined]
+        if hasattr(self._model, "eval"):
+          self._model.eval()  # type: ignore[attr-defined]
 
-        if self.fp16:
-          self._model.half()
+        if self.fp16 and hasattr(self._model, "half"):
+          self._model.half()  # type: ignore[attr-defined]
 
         self._model_loaded = True
         logger.info(f"RIFE model loaded on {self.device}")
@@ -446,7 +454,7 @@ def get_interpolator(model_name: str = "rife-v4.6") -> FrameInterpolator:
   return _interpolator
 
 
-def get_available_models() -> list[dict[str, Any]]:
+def get_available_models() -> list[dict[str, JSONValue]]:
   """Get list of available RIFE models."""
   return [
     {
@@ -460,7 +468,7 @@ def get_available_models() -> list[dict[str, Any]]:
   ]
 
 
-def get_attribution() -> dict[str, Any]:
+def get_attribution() -> dict[str, JSONValue]:
   """Get attribution information."""
   return {
     "message": "Frame interpolation powered by:",
@@ -700,6 +708,7 @@ try:
       frames_b64 = data.get("frames")
       slowdown = data.get("slowdown", 2.0)
       model_name = data.get("model", "rife-v4.6")
+      ensemble = data.get("ensemble", False)
 
       if not frames_b64 or len(frames_b64) < 2:
         return web.json_response(
@@ -726,7 +735,7 @@ try:
       interpolator = get_interpolator(model_name)
 
       result_frames = await loop.run_in_executor(
-        None, lambda: interpolator.interpolate_sequence(frames, factor, loop=False)
+        None, lambda: interpolator.interpolate_sequence(frames, factor, ensemble=ensemble)
       )
 
       # Encode results

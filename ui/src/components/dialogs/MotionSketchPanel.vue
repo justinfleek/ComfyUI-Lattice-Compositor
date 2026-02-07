@@ -344,12 +344,14 @@ function applyMotion() {
   const smoothed = smoothMotion(recordedMotion.value, smoothing.value);
   const fps = projectStore.getFps();
   const startFrame = animationStore.currentFrame;
-  const keyframes = convertMotionToKeyframes(smoothed, fps, startFrame);
+  const propertyPath = "transform.position";
+  // Generate keyframes with correct layerId and propertyPath for deterministic IDs
+  const keyframes = convertMotionToKeyframes(smoothed, fps, startFrame, layerId, propertyPath);
   const simplified = simplifyKeyframes(keyframes, simplifyTolerance.value);
 
-  // Apply keyframes to layer position
+  // Apply keyframes to layer position (IDs already correct, but addKeyframe will replace existing keyframes at same frame)
   simplified.forEach((kf) => {
-    keyframeStore.addKeyframe(layerId, "transform.position", kf.value, kf.frame);
+    keyframeStore.addKeyframe(layerId, propertyPath, kf.value, kf.frame);
   });
 
   emit("apply", simplified);

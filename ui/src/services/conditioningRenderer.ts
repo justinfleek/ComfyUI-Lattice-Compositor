@@ -702,9 +702,16 @@ export class ConditioningRenderer {
     if (this.canvas instanceof OffscreenCanvas) {
       return this.canvas.convertToBlob({ type, quality });
     } else {
-      return new Promise((resolve) => {
+      return new Promise((resolve, reject) => {
         (this.canvas as HTMLCanvasElement).toBlob(
-          (blob: Blob | null) => resolve(blob!),
+          (blob: Blob | null) => {
+            // Deterministic: Explicit null check - toBlob can return null if canvas is empty
+            if (!blob) {
+              reject(new Error("[ConditioningRenderer] Failed to create blob from canvas"));
+              return;
+            }
+            resolve(blob);
+          },
           type,
           quality,
         );

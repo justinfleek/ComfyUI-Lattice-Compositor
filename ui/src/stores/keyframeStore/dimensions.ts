@@ -49,7 +49,7 @@ export function linkPositionDimensionsAction(
   const layer = projectStore.getActiveCompLayers().find((l) => l.id === layerId);
   if (!layer) return false;
 
-  linkPositionDimensions(layer.transform);
+  linkPositionDimensions(layer.transform, layerId);
 
   markLayerDirty(layerId);
   projectStore.project.meta.modified = new Date().toISOString();
@@ -87,7 +87,7 @@ export function linkScaleDimensionsAction(
   const layer = projectStore.getActiveCompLayers().find((l) => l.id === layerId);
   if (!layer) return false;
 
-  linkScaleDimensions(layer.transform);
+  linkScaleDimensions(layer.transform, layerId);
 
   markLayerDirty(layerId);
   projectStore.project.meta.modified = new Date().toISOString();

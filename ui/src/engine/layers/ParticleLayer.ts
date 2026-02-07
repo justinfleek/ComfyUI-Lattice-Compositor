@@ -603,8 +603,13 @@ export class ParticleLayer extends BaseLayer {
     const flocking = (data != null && typeof data === "object" && "flocking" in data && data.flocking != null && typeof data.flocking === "object") ? data.flocking : undefined;
     if (flocking != null && typeof flocking === "object" && "enabled" in flocking && flocking.enabled) {
       // Helper to validate numeric params (NaN would corrupt flocking behavior)
-      const safeNum = (val: number | undefined, def: number) =>
-        Number.isFinite(val) ? val! : def;
+      // Deterministic: Explicit null check - Number.isFinite ensures val is finite number
+      const safeNum = (val: number | undefined, def: number): number => {
+        if (val !== undefined && typeof val === "number" && Number.isFinite(val)) {
+          return val;
+        }
+        return def;
+      };
 
       config.flocking = {
         enabled: true,
@@ -1350,6 +1355,10 @@ export class ParticleLayer extends BaseLayer {
     const speedMap = (particleData != null && typeof particleData === "object" && "speedMap" in particleData && particleData.speedMap != null && typeof particleData.speedMap === "object") ? particleData.speedMap : undefined;
     const speedMapAnimated = (speedMap != null && typeof speedMap === "object" && "animated" in speedMap && speedMap.animated === true) ? speedMap.animated : false;
     if (speedMapEnabled && speedMapAnimated) {
+      // Deterministic: Explicit null check - speedMapAnimated ensures speedMap exists
+      if (!speedMap) {
+        throw new Error("[ParticleLayer] speedMap should be defined when speedMapAnimated is true");
+      }
       const remappedTime = this.particleEvaluator.evaluate(
         speedMap,
         compositionFrame,

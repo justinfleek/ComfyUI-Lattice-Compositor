@@ -1,0 +1,73 @@
+{
+
+    "Output": {
+        "_comment": "Optional, default `out`",
+        "Directory": "../../sim_results/castle_spheres_f06_",
+        "Frequency": 1
+    },
+
+    "Initial volume": [
+        {
+            "Type": "Mesh",
+            "Filename": "castle.obj",
+            "Offset": [0.0, 0.0, 0.0],
+            "Resolution": [512, 512, 512]
+        },
+        {
+            "Type": "Mesh",
+            "Filename": "ball.obj",
+            "Offset": [0.0, 0.0, 0.0],
+            "Resolution": [128, 128, 128],
+            "Velocity": [-2.97651747, 0, 2.8014282]
+        }
+    ],
+
+    "Particles": {
+        "_comment": "Size for the sampling, the lower the more",
+        "Size": 3.78e-3
+    },
+
+    "Geometry grid": {
+        "_comment": "Grid resolution, used for initial volume and surface reconstruction",
+        "Resolution": [128, 128, 128]
+    },
+
+    "Physics": {
+        "Size": [4.0, 4.0, 4.0],
+        "Resolution": [406, 406, 406],
+        "rho": 1.575e2,
+        "dt": 8.33333333333e-3,
+        "T max": 5.0,
+        "Elasticity": {
+            "Type": "HenckyMeasured",
+            "E": 5.5e5,
+            "nu": 0.3,
+            "Filename": "../elasticity/spheres_f06_elasticity.txt",
+            "Scale": 1.0
+        },
+        "Plasticity": {
+            "Type": "MeasuredMC",
+            "mu": 0.5,
+            "Filename": "../yields/spheres_f06_hertzian_yield.txt",
+            "Scale": 1.0
+        },
+        "Viscosity": {
+            "Disabled": true,
+            "eta": 0.0
+        },
+        "Boundaries": {
+            "mu wall": 0.5,
+            "Wall particles": true
+        }
+    },
+
+    "GUI": {
+        "Name": "MPM sim",
+        "Size": [1000, 1000],
+        "Camera position": [-1.2, -1.4, 1.0],
+        "Camera lookat": [0.5, 0.5, 0.35],
+        "MPM display": ["ParticleSpeed"],
+        "_comment": "Optional, default to 1.Particle scale",
+        "Particle scale": 1.0
+    },
+}

@@ -304,7 +304,7 @@ export interface TemplateFont {
   style: string;
   embedded: boolean;
   data?: string; // Base64 encoded font file if embedded
-  source?: "google" | "adobe" | "local" | "system";
+  source?: "google" | "cloud" | "local" | "system";
 }
 
 // ============================================================

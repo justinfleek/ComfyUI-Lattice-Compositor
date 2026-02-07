@@ -24,6 +24,12 @@ import { evaluateSimpleExpression } from "./expressions/sesEvaluator";
 import type { ExpressionContext } from "./expressions/types";
 import { SeededRandom } from "./particleSystem";
 import { isFiniteNumber } from "@/utils/typeGuards";
+import { generateKeyframeId, uuid5, UUID5_NAMESPACES } from "@/utils/uuid5";
+
+// Helper function to generate IDs for text animator presets
+function generateId(): string {
+  return uuid5(UUID5_NAMESPACES.OID, `text-animator-${Date.now()}-${Math.random()}`);
+}
 
 /**
  * Create a base ExpressionContext with default values for text animator use.
@@ -82,16 +88,28 @@ function createTextAnimatorBaseContext(
 // UTILITY FUNCTIONS
 // ============================================================================
 
-function generateId(): string {
-  return `animator_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+/**
+ * Generate deterministic ID for text animator properties
+ * Uses UUID5 based on layerId and property name for absolute determinism
+ */
+function generateAnimatorPropertyId(layerId: string, propertyName: string): string {
+  // Use UUID5 namespace for text animator properties
+  return generateKeyframeId(layerId, `textAnimator.${propertyName}`, 0, propertyName);
 }
 
 function createAnimatableProp<T>(
   value: T,
   name: string,
+  layerId?: string,
+  animatorId?: string,
 ): AnimatableProperty<T> {
+  // Use deterministic ID if layerId and animatorId provided, otherwise use property name-based ID
+  const id = layerId && animatorId
+    ? generateAnimatorPropertyId(layerId, `${animatorId}.${name}`)
+    : `prop_textAnimator_${name}_${animatorId || "default"}`;
+  
   return {
-    id: generateId(),
+    id,
     name,
     type:
       typeof value === "number"
@@ -221,10 +239,15 @@ export const DEFAULT_ANIMATOR_PROPERTIES: TextAnimatorProperties = {};
 // CREATE ANIMATOR
 // ============================================================================
 
-export function createTextAnimator(name?: string): TextAnimator {
+export function createTextAnimator(name?: string, layerId?: string): TextAnimator {
+  // Generate deterministic animator ID if layerId provided
+  const animatorId = layerId && name
+    ? generateAnimatorPropertyId(layerId, `animator.${name}`)
+    : `animator_${name || "default"}_${Date.now()}`;
+  
   // Deep copy range selector to avoid shared references
   return {
-    id: generateId(),
+    id: animatorId,
     name: name || "Animator 1",
     enabled: true,
     rangeSelector: {
@@ -540,27 +563,41 @@ export const TEXT_ANIMATOR_PRESETS: Record<
 // HELPER: Create animatable property with keyframes
 // ============================================================================
 
-function createAnimatablePropWithKeyframes<T>(
+export function createAnimatablePropWithKeyframes<T>(
   value: T,
   name: string,
   keyframes: Array<{ frame: number; value: T }>,
   type: "number" | "color" | "position" | "enum" | "vector3" = "number",
+  layerId?: string,
+  animatorId?: string,
 ): AnimatableProperty<T> {
+  // Use deterministic ID if layerId and animatorId provided
+  const propId = layerId && animatorId
+    ? generateAnimatorPropertyId(layerId, `${animatorId}.${name}`)
+    : `prop_textAnimator_${name}_${animatorId || "default"}`;
+  
+  const propertyPath = layerId && animatorId ? `textAnimator.${animatorId}.${name}` : `textAnimator.${name}`;
+  
   return {
-    id: generateId(),
+    id: propId,
     name,
     type,
     value,
     animated: keyframes.length > 0,
-    keyframes: keyframes.map((kf) => ({
-      id: generateId(),
-      frame: kf.frame,
-      value: kf.value,
-      interpolation: "bezier" as const,
-      inHandle: { frame: -5, value: 0, enabled: true },
-      outHandle: { frame: 5, value: 0, enabled: true },
-      controlMode: "smooth" as const,
-    })),
+    keyframes: keyframes.map((kf) => {
+      const valueStr = typeof kf.value === "object" && kf.value !== null && "x" in kf.value && "y" in kf.value
+        ? `${(kf.value as { x: number; y: number }).x},${(kf.value as { x: number; y: number }).y}${"z" in kf.value ? `,${(kf.value as { x: number; y: number; z?: number }).z}` : ""}`
+        : String(kf.value);
+      return {
+        id: layerId ? generateKeyframeId(layerId, propertyPath, kf.frame, valueStr) : `kf_${propId}_${kf.frame}_${valueStr}`,
+        frame: kf.frame,
+        value: kf.value,
+        interpolation: "bezier" as const,
+        inHandle: { frame: -5, value: 0, enabled: true },
+        outHandle: { frame: 5, value: 0, enabled: true },
+        controlMode: "smooth" as const,
+      };
+    }),
   };
 }
 

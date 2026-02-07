@@ -5,7 +5,7 @@
  * Extracted from layerActions.ts createLayer() to reduce file size.
  */
 
-import type { LayerDataUnion, LayerType, SplineData } from "@/types/project";
+import type { AnyLayerData, LayerType, SplineData } from "@/types/project";
 import { createAnimatableProperty } from "@/types/project";
 import {
   createDefaultFill,
@@ -81,14 +81,14 @@ import type {
  * Get default layer data for a specific layer type.
  * Returns properly typed data for each layer type.
  *
- * NOTE: The `as LayerDataUnion` casts are necessary because TypeScript
+ * NOTE: The `as AnyLayerData` casts are necessary because TypeScript
  * cannot narrow union types in switch statements. Each branch returns
  * a properly structured object that satisfies the specific layer data type.
  */
 export function getDefaultLayerData(
   type: LayerType,
   context: CompositionContext,
-): LayerDataUnion {
+): AnyLayerData {
   switch (type) {
     case "text": {
       const data: TextData = {
@@ -158,10 +158,11 @@ export function getDefaultLayerData(
         showGuide: true,
         guideColor: "#00FFFF",
         guideDashPattern: [10, 5],
-      } as LayerDataUnion;
+      } as AnyLayerData;
 
-    case "particles":
-      return {
+    case "particles": {
+      // ParticleLayerData from types/particles.ts
+      const particleData: ParticleLayerData = {
         systemConfig: {
           maxParticles: 1000,
           gravity: 0,
@@ -178,22 +179,45 @@ export function getDefaultLayerData(
             name: "Emitter 1",
             x: context.width / 2,
             y: context.height / 2,
-            emitterType: "point",
+            direction: 270, // Emit upward
+            spread: 45,
+            speed: 100,
+            speedVariance: 20,
+            size: 5,
+            sizeVariance: 2,
+            color: [255, 255, 255],
             emissionRate: 50,
+            initialBurst: 0,
+            particleLifetime: 2.0,
+            lifetimeVariance: 0.5,
+            enabled: true,
+            burstOnBeat: false,
             burstCount: 0,
-            burstInterval: 0,
-            lifetime: { min: 1, max: 3 },
-            speed: { min: 50, max: 100 },
-            direction: { min: 0, max: 360 },
-            spread: 360,
-            size: { min: 5, max: 10 },
-            sizeOverLife: { start: 1, end: 0.5 },
-            color: { r: 255, g: 255, b: 255, a: 255 },
-            colorOverLife: null,
-            opacity: { min: 1, max: 1 },
-            opacityOverLife: { start: 1, end: 0 },
-            rotation: { min: 0, max: 0 },
-            angularVelocity: { min: 0, max: 0 },
+            shape: "point",
+            shapeRadius: 0,
+            shapeWidth: 100,
+            shapeHeight: 100,
+            shapeDepth: 0,
+            shapeInnerRadius: 0,
+            emitFromEdge: false,
+            emitFromVolume: false,
+            splinePath: null,
+            sprite: {
+              enabled: false,
+              imageUrl: null,
+              imageData: null,
+              isSheet: false,
+              columns: 1,
+              rows: 1,
+              totalFrames: 1,
+              frameRate: 30,
+              playMode: "loop",
+              billboard: true,
+              rotationEnabled: false,
+              rotationSpeed: 0,
+              rotationSpeedVariance: 0,
+              alignToVelocity: false,
+            },
           },
         ],
         gravityWells: [],
@@ -210,11 +234,21 @@ export function getDefaultLayerData(
           motionBlur: false,
           motionBlurStrength: 0.5,
           motionBlurSamples: 5,
+          connections: {
+            enabled: false,
+            maxDistance: 100,
+            maxConnections: 3,
+            lineWidth: 1,
+            lineOpacity: 0.5,
+            fadeByDistance: true,
+          },
         },
         audioMappings: [],
         exportEnabled: false,
         exportFormat: "wan-move",
-      } as LayerDataUnion;
+      };
+      return particleData;
+    }
 
     case "depthflow":
       return {
@@ -236,7 +270,7 @@ export function getDefaultLayerData(
           edgeDilation: 0,
           inpaintEdges: false,
         },
-      } as LayerDataUnion;
+      } as AnyLayerData;
 
     case "light":
       return {
@@ -249,13 +283,13 @@ export function getDefaultLayerData(
         castShadows: false,
         shadowDarkness: 100,
         shadowDiffusion: 0,
-      } as LayerDataUnion;
+      } as AnyLayerData;
 
     case "camera":
       return {
         cameraId: null,
         isActiveCamera: false,
-      } as LayerDataUnion;
+      } as AnyLayerData;
 
     case "image":
       return {
@@ -266,7 +300,7 @@ export function getDefaultLayerData(
         cropRect: { x: 0, y: 0, width: 0, height: 0 },
         sourceType: "file",
         segmentationMaskId: "",
-      } as LayerDataUnion;
+      } as AnyLayerData;
 
     case "video":
       return {
@@ -274,7 +308,7 @@ export function getDefaultLayerData(
         loop: false,
         startTime: 0,
         speed: 1.0,
-      } as LayerDataUnion;
+      } as AnyLayerData;
 
     case "shape": {
       const data = createDefaultShapeLayerData();
@@ -286,17 +320,17 @@ export function getDefaultLayerData(
         createDefaultStroke(),
       ];
       data.contents = [defaultGroup];
-      return data as LayerDataUnion;
+      return data as AnyLayerData;
     }
 
     case "nestedComp":
       return {
         compositionId: null,
-        speedMap: null,
+        speedMap: undefined,
         speedMapEnabled: false,
-        timeRemap: null,
+        timeRemap: undefined,
         timeRemapEnabled: false,
-      } as LayerDataUnion;
+      } as AnyLayerData;
 
     case "matte":
       return {
@@ -307,7 +341,7 @@ export function getDefaultLayerData(
         expansion: 0,
         sourceLayerId: null,
         previewMode: "matte" as const,
-      } as LayerDataUnion;
+      } as AnyLayerData;
 
     case "model":
       return {
@@ -322,7 +356,7 @@ export function getDefaultLayerData(
         showBoundingBox: false,
         showSkeleton: false,
         envMapIntensity: 1.0,
-      } as LayerDataUnion;
+      } as AnyLayerData;
 
     case "pointcloud":
       return {
@@ -341,7 +375,7 @@ export function getDefaultLayerData(
         depthWrite: true,
         showBoundingBox: false,
         pointBudget: 1000000,
-      } as LayerDataUnion;
+      } as AnyLayerData;
 
     case "control":
       return {
@@ -350,7 +384,7 @@ export function getDefaultLayerData(
         showIcon: true,
         iconShape: "crosshair" as const,
         iconColor: "#ffcc00",
-      } as LayerDataUnion;
+      } as AnyLayerData;
 
     case "pose":
       return {
@@ -373,7 +407,7 @@ export function getDefaultLayerData(
         customKeypointColor: "#FF0000",
         selectedKeypoint: -1,
         selectedPose: 0,
-      } as LayerDataUnion;
+      } as AnyLayerData;
 
     case "depth":
       return {
@@ -394,7 +428,7 @@ export function getDefaultLayerData(
         ),
         meshResolution: 128,
         wireframe: false,
-      } as LayerDataUnion;
+      } as AnyLayerData;
 
     case "normal":
       return {
@@ -410,7 +444,7 @@ export function getDefaultLayerData(
         lightDirection: { x: 0.5, y: 0.5, z: 1.0 },
         lightIntensity: 1.0,
         ambientIntensity: 0.2,
-      } as LayerDataUnion;
+      } as AnyLayerData;
 
     case "audio":
       return {
@@ -425,18 +459,15 @@ export function getDefaultLayerData(
         showWaveform: true,
         waveformColor: "#4a90d9",
         exposeFeatures: true,
-      } as LayerDataUnion;
+      } as AnyLayerData;
 
     case "generated":
       return {
-        generationType: "depth" as const,
-        sourceLayerId: null,
-        model: "depth-anything-v2",
+        sourceLayerId: "", // Must be set to a valid layer ID
+        mapType: "depth" as const,
+        modelId: "depth-anything-v2",
         parameters: {},
-        generatedAssetId: null,
-        status: "pending" as const,
-        autoRegenerate: false,
-      } as LayerDataUnion;
+      } as AnyLayerData;
 
     case "group":
       return {
@@ -444,7 +475,7 @@ export function getDefaultLayerData(
         color: null,
         passThrough: true,
         isolate: false,
-      } as LayerDataUnion;
+      } as AnyLayerData;
 
     case "particle":
       // Legacy particle layer (backwards compatibility)
@@ -457,7 +488,7 @@ export function getDefaultLayerData(
         gravity: -9.8,
         color: "#ffffff",
         size: 5,
-      } as LayerDataUnion;
+      } as AnyLayerData;
 
     case "adjustment":
     case "effectLayer":
@@ -465,7 +496,7 @@ export function getDefaultLayerData(
         color: "#808080",
         effectLayer: true,
         adjustmentLayer: true,
-      } as LayerDataUnion;
+      } as AnyLayerData;
 
     default:
       throw new Error(

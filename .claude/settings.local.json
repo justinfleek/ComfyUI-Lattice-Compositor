@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ln:*)",
+      "Bash(for file in /mnt/c/Users/justi/desktop/comfyui-lattice-compositor/ui/src/stores/*.ts)",
+      "Bash(sort:*)",
+      "Bash(scripts/check-formal-escapes.sh:*)",
+      "Bash(bash scripts/check-banned-patterns.sh:*)",
+      "Bash(for dir in ui/src/services/*/)",
+      "Bash(do basename:*)",
+      "Bash(for dir in leancomfy/purescript/Lattice/Services/*/)"
+    ]
+  }
+}

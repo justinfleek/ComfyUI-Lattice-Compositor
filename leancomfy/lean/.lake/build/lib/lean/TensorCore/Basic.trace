@@ -1,0 +1,28 @@
+{"synthetic": false,
+ "schemaVersion": "2025-09-10",
+ "outputs":
+ {"o": ["faba15dcb68dfe02.olean"],
+  "i": "daf3809fe6560313.ilean",
+  "c": "4679568757847bbd.c"},
+ "log":
+ [{"message":
+   ".> LEAN_PATH=C:\\Users\\justi\\Desktop\\ComfyUI-Lattice-Compositor\\leancomfy\\lean\\.lake\\packages\\Cli\\.lake\\build\\lib\\lean;C:\\Users\\justi\\Desktop\\ComfyUI-Lattice-Compositor\\leancomfy\\lean\\patched-deps\\ImportGraph\\.lake\\build\\lib\\lean;C:\\Users\\justi\\Desktop\\ComfyUI-Lattice-Compositor\\leancomfy\\lean\\.lake\\packages\\LeanSearchClient\\.lake\\build\\lib\\lean;C:\\Users\\justi\\Desktop\\ComfyUI-Lattice-Compositor\\leancomfy\\lean\\.lake\\packages\\plausible\\.lake\\build\\lib\\lean;C:\\Users\\justi\\Desktop\\ComfyUI-Lattice-Compositor\\leancomfy\\lean\\.lake\\packages\\leanblas\\.lake\\build\\lib\\lean;C:\\Users\\justi\\Desktop\\ComfyUI-Lattice-Compositor\\leancomfy\\lean\\patched-deps\\Qq\\.lake\\build\\lib\\lean;C:\\Users\\justi\\Desktop\\ComfyUI-Lattice-Compositor\\leancomfy\\lean\\patched-deps\\aesop\\.lake\\build\\lib\\lean;C:\\Users\\justi\\Desktop\\ComfyUI-Lattice-Compositor\\leancomfy\\lean\\.lake\\packages\\mathlib\\.lake\\build\\lib\\lean;C:\\Users\\justi\\Desktop\\ComfyUI-Lattice-Compositor\\leancomfy\\lean\\.lake\\packages\\scilean\\.lake\\build\\lib\\lean;C:\\Users\\justi\\Desktop\\ComfyUI-Lattice-Compositor\\leancomfy\\lean\\.lake\\packages\\batteries\\.lake\\build\\lib\\lean;C:\\Users\\justi\\Desktop\\ComfyUI-Lattice-Compositor\\leancomfy\\lean\\.lake\\build\\lib\\lean c:\\Users\\justi\\.elan\\toolchains\\leanprover--lean4---v4.27.0-rc1\\bin\\lean.exe C:\\Users\\justi\\Desktop\\ComfyUI-Lattice-Compositor\\leancomfy\\lean\\TensorCore\\Basic.lean -o C:\\Users\\justi\\Desktop\\ComfyUI-Lattice-Compositor\\leancomfy\\lean\\.lake\\build\\lib\\lean\\TensorCore\\Basic.olean -i C:\\Users\\justi\\Desktop\\ComfyUI-Lattice-Compositor\\leancomfy\\lean\\.lake\\build\\lib\\lean\\TensorCore\\Basic.ilean -c C:\\Users\\justi\\Desktop\\ComfyUI-Lattice-Compositor\\leancomfy\\lean\\.lake\\build\\ir\\TensorCore\\Basic.c --setup C:\\Users\\justi\\Desktop\\ComfyUI-Lattice-Compositor\\leancomfy\\lean\\.lake\\build\\ir\\TensorCore\\Basic.setup.json --json",
+   "level": "trace"}],
+ "inputs":
+ [["TensorCore.Basic:deps",
+   [["deps",
+     [["«tensor-core»/TensorCore:extraDep",
+       [["@«tensor-core»:extraDep", "00000000000006bb"]]],
+      ["imports", "00000000000006bb"]]],
+    ["libs",
+     [["import dynlibs", "00000000000006bb"],
+      ["package external libraries", "00000000000006bb"],
+      ["module dynlibs", "00000000000006bb"],
+      ["module plugins", "00000000000006bb"]]]]],
+  ["Lean 4.27.0, commit 2fcce7258eeb6e324366bc25f9058293b04b7547",
+   "6f43b597efea5d4c"],
+  ["C:\\Users\\justi\\Desktop\\ComfyUI-Lattice-Compositor\\leancomfy\\lean\\TensorCore\\Basic.lean",
+   "bd59eb09e665ed17"],
+  ["options", "00000000000006bb"],
+  ["Module.leanArgs: #[]", "00000000000006bb"]],
+ "depHash": "d57d169aa86012a7"}

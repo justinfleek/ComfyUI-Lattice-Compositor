@@ -1,0 +1,4 @@
+# file: /home/nixos/.nix-profile/lib/python3.13/asyncio/futures.py
+# hypothesis_version: 6.150.0
+
+['Future', 'Result is not ready.', 'exception', 'future', 'isfuture', 'message', 'source_traceback', 'wrap_future']

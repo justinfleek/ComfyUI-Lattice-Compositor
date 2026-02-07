@@ -16,6 +16,7 @@ import type {
 } from "@/types/project";
 // Use the same ControlPoint type (they should be identical)
 import { createLogger } from "@/utils/logger";
+import { generateKeyframeId } from "@/utils/uuid5";
 import type {
   CameraMotionIntent,
   ControlPoint,
@@ -617,12 +618,16 @@ export class MotionIntentTranslator {
   ): KeyframeBatch {
     const handles = getEasingHandles(easing, endFrame - startFrame);
 
+    // Deterministic ID generation: same layer/property/frame/value always produces same ID
+    const startValueStr = String(startValue);
+    const endValueStr = String(endValue);
+    
     return {
       layerId,
       propertyPath,
       keyframes: [
         {
-          id: `kf_${layerId}_${propertyPath}_0`,
+          id: generateKeyframeId(layerId, propertyPath, startFrame, startValueStr),
           frame: startFrame,
           value: startValue,
           interpolation: easing === "linear" ? "linear" : "bezier",
@@ -630,7 +635,7 @@ export class MotionIntentTranslator {
           controlMode: "smooth",
         },
         {
-          id: `kf_${layerId}_${propertyPath}_1`,
+          id: generateKeyframeId(layerId, propertyPath, endFrame, endValueStr),
           frame: endFrame,
           value: endValue,
           interpolation: "linear",
@@ -700,8 +705,10 @@ export class MotionIntentTranslator {
           value = centerValue;
       }
 
+      // Deterministic ID generation: same layer/property/frame/value always produces same ID
+      const valueStr = String(value);
       keyframes.push({
-        id: `kf_${layerId}_${propertyPath}_${i}`,
+        id: generateKeyframeId(layerId, propertyPath, frame, valueStr),
         frame,
         value,
         interpolation: "bezier",
@@ -775,10 +782,14 @@ export class MotionIntentTranslator {
         // Deterministic "random" based on seed, axis, and frame
         const noise = this.deterministicNoise(seed, axis, frame) * amplitude;
 
+        // Deterministic ID generation: same layer/property/frame/value always produces same ID
+        const propertyPath = `transform.position.${axis}`;
+        const value = baseValue + noise;
+        const valueStr = String(value);
         axisKeyframes.push({
-          id: `kf_${layerId}_handheld_${axis}_${i}`,
+          id: generateKeyframeId(layerId, propertyPath, frame, valueStr),
           frame,
-          value: baseValue + noise,
+          value,
           interpolation: "bezier",
           inHandle: { frame: -1, value: 0, enabled: true },
           outHandle: { frame: 1, value: 0, enabled: true },
@@ -816,10 +827,16 @@ export class MotionIntentTranslator {
       const frame = Math.round((i / numKeyframes) * duration);
       const angle = (i / numKeyframes) * Math.PI * 2;
 
+      // Deterministic ID generation: same layer/property/frame/value always produces same ID
+      const xValue = center.x + Math.cos(angle) * radius;
+      const zValue = center.z + Math.sin(angle) * radius;
+      const xValueStr = String(xValue);
+      const zValueStr = String(zValue);
+      
       xKeyframes.push({
-        id: `kf_${layerId}_orbit_x_${i}`,
+        id: generateKeyframeId(layerId, "transform.position.x", frame, xValueStr),
         frame,
-        value: center.x + Math.cos(angle) * radius,
+        value: xValue,
         interpolation: "bezier",
         inHandle: {
           frame: (-duration / numKeyframes) * 0.3,
@@ -835,9 +852,9 @@ export class MotionIntentTranslator {
       });
 
       zKeyframes.push({
-        id: `kf_${layerId}_orbit_z_${i}`,
+        id: generateKeyframeId(layerId, "transform.position.z", frame, zValueStr),
         frame,
-        value: center.z + Math.sin(angle) * radius,
+        value: zValue,
         interpolation: "bezier",
         inHandle: {
           frame: (-duration / numKeyframes) * 0.3,

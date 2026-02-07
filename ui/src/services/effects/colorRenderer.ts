@@ -790,9 +790,9 @@ export function glowRenderer(
   let colorBlend = 0; // 0 = Color A, 1 = Color B
   if (colorLooping !== "none" && frame !== undefined) {
     // Use injected FPS from context, fallback to 16 (WAN standard)
-    // Validate fps (nullish coalescing doesn't catch NaN)
-    const fps =
-      Number.isFinite(params._fps) && params._fps > 0 ? params._fps : 16;
+    // Deterministic: Explicit null check for _fps before using
+    const fpsRaw = params._fps;
+    const fps = (fpsRaw !== undefined && fpsRaw !== null && typeof fpsRaw === "number" && Number.isFinite(fpsRaw) && fpsRaw > 0) ? fpsRaw : 16;
     const time = frame / fps;
     const cycle = (time * colorLoopingSpeed) % 1;
 

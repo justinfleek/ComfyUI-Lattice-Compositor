@@ -154,7 +154,12 @@ export class ShapeLayer extends BaseLayer {
 
     // Create canvas for rendering
     this.canvas = new OffscreenCanvas(this.canvasWidth, this.canvasHeight);
-    this.ctx = this.canvas.getContext("2d")!;
+    // Deterministic: Explicit null check for getContext - "2d" should always succeed but we verify
+    const ctx = this.canvas.getContext("2d");
+    if (!ctx) {
+      throw new Error("[ShapeLayer] Failed to get 2d context from OffscreenCanvas");
+    }
+    this.ctx = ctx;
 
     // Create texture
     this.texture = new THREE.CanvasTexture(this.canvas);
@@ -205,14 +210,22 @@ export class ShapeLayer extends BaseLayer {
 
     // Recreate canvas with validated dimensions
     this.canvas = new OffscreenCanvas(validWidth, validHeight);
-    this.ctx = this.canvas.getContext("2d")!;
+    // Deterministic: Explicit null check for getContext - "2d" should always succeed but we verify
+    const ctx = this.canvas.getContext("2d");
+    if (!ctx) {
+      throw new Error("[ShapeLayer] Failed to get 2d context from OffscreenCanvas");
+    }
+    this.ctx = ctx;
 
     // Update texture
-    // THREE.CanvasTexture.image accepts HTMLCanvasElement | OffscreenCanvas,
-    // but TypeScript types may not include OffscreenCanvas - cast is safe here
-    // as THREE.js runtime supports OffscreenCanvas
-    // System F/Omega: Use `as unknown as` for intentional conversions when runtime supports it
-    this.texture.image = this.canvas as unknown as HTMLCanvasElement;
+    // THREE.CanvasTexture.image accepts HTMLCanvasElement | OffscreenCanvas at runtime
+    // Deterministic: Explicit type check - OffscreenCanvas and HTMLCanvasElement are both valid
+    if (this.canvas && (this.canvas.constructor.name === "OffscreenCanvas" || this.canvas instanceof HTMLCanvasElement)) {
+      // Type guard ensures canvas is compatible with texture.image
+      this.texture.image = this.canvas as HTMLCanvasElement | OffscreenCanvas;
+    } else {
+      throw new Error("[ShapeLayer] Canvas is not compatible with CanvasTexture.image");
+    }
     this.texture.needsUpdate = true;
 
     // Update mesh geometry

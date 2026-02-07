@@ -14,8 +14,11 @@
  */
 
 import type { JSONValue } from "@/types/dataAsset";
+import { createLogger } from "@/utils/logger";
 import { logAuditEntry } from "../../security/auditLog";
 import type { ToolCall } from "../toolDefinitions";
+
+const logger = createLogger("ScopeManager");
 
 // ============================================================================
 // TYPES
@@ -314,7 +317,7 @@ export class ScopeManager {
    */
   constructor(scope: AgentScope = SCOPE_PRESETS.readonly) {
     this.currentScope = scope;
-    console.log(`[ScopeManager] Initialized with scope: ${scope.name}`);
+    logger.info(`[ScopeManager] Initialized with scope: ${scope.name}`);
   }
 
   /**
@@ -331,7 +334,7 @@ export class ScopeManager {
   setScope(scope: AgentScope): void {
     const oldScope = this.currentScope.name;
     this.currentScope = scope;
-    console.log(`[ScopeManager] Scope changed: ${oldScope} -> ${scope.name}`);
+    logger.info(`[ScopeManager] Scope changed: ${oldScope} -> ${scope.name}`);
 
     // Log scope change for audit
     logAuditEntry({
@@ -349,7 +352,7 @@ export class ScopeManager {
   setScopePreset(presetName: keyof typeof SCOPE_PRESETS): void {
     const preset = SCOPE_PRESETS[presetName];
     if (!preset) {
-      console.error(`[ScopeManager] Unknown scope preset: ${presetName}`);
+      logger.error(`[ScopeManager] Unknown scope preset: ${presetName}`);
       return;
     }
     this.setScope(preset);
@@ -676,8 +679,8 @@ export function requestScopeElevation(
   targetScope: keyof typeof SCOPE_PRESETS,
   reason: string,
 ): { requiresConsent: true; targetScope: string; reason: string } {
-  console.log(`[ScopeManager] Scope elevation requested: ${scopeManager.getScope().name} -> ${targetScope}`);
-  console.log(`[ScopeManager] Reason: ${reason}`);
+  logger.info(`[ScopeManager] Scope elevation requested: ${scopeManager.getScope().name} -> ${targetScope}`);
+  logger.debug(`[ScopeManager] Reason: ${reason}`);
 
   return {
     requiresConsent: true,

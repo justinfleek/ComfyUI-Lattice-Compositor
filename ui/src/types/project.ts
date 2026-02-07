@@ -251,7 +251,7 @@ export interface Composition {
 export type ColorSpace =
   | "sRGB"
   | "linear-sRGB"
-  | "Adobe-RGB"
+  | "Wide-Gamut-RGB"
   | "Display-P3"
   | "ProPhoto-RGB"
   | "ACEScg"
@@ -1281,6 +1281,8 @@ export interface PoseLayerData {
   selectedKeypoint: number;
   /** Selected pose index for editing (-1 = none) */
   selectedPose: number;
+  /** Animation - keypoints can be animated */
+  animatedKeypoints?: Record<string, AnimatableProperty<Vec2>>;
 }
 
 /**

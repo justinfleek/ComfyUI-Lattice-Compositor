@@ -1152,8 +1152,9 @@ interface VideoFrameCallbackMetadata {
 /**
  * Extended HTMLVideoElement with requestVideoFrameCallback API
  * This API is not yet in TypeScript DOM types but is available in modern browsers
+ * Deterministic: Use intersection type instead of interface extension to avoid conflicts
  */
-interface HTMLVideoElementWithFrameCallback extends HTMLVideoElement {
+type HTMLVideoElementWithFrameCallback = HTMLVideoElement & {
   requestVideoFrameCallback(
     callback: (
       now: DOMHighResTimeStamp,
@@ -1161,7 +1162,7 @@ interface HTMLVideoElementWithFrameCallback extends HTMLVideoElement {
     ) => void,
   ): number;
   cancelVideoFrameCallback(handle: number): void;
-}
+};
 
 /**
  * Type guard to check if video element supports requestVideoFrameCallback

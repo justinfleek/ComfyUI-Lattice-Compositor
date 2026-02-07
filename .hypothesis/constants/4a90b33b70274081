@@ -1,0 +1,4 @@
+# file: /home/nixos/.nix-profile/lib/python3.13/importlib/resources/_common.py
+# hypothesis_version: 6.150.0
+
+['__name__', 'get_resource_reader', 'wrapper']

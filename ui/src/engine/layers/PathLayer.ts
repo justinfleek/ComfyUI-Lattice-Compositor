@@ -26,6 +26,7 @@ import type {
   EvaluatedControlPoint,
   Layer,
   PathLayerData,
+  PropertyValue,
 } from "@/types/project";
 import { BaseLayer } from "./BaseLayer";
 
@@ -650,11 +651,34 @@ export class PathLayer extends BaseLayer {
     // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy type assertions
     // Pattern match: props.controlPoints ∈ PropertyValue | undefined → EvaluatedControlPoint[]
     if (props.controlPoints !== undefined && Array.isArray(props.controlPoints)) {
-      const points = props.controlPoints as unknown as EvaluatedControlPoint[];
-      const pointsHash = this.computePointsHash(points);
-      if (pointsHash !== this.lastPointsHash) {
-        this.buildPathFromEvaluatedPoints(points);
-        this.lastPointsHash = pointsHash;
+      // Type guard: Validate array elements match EvaluatedControlPoint structure
+      // Deterministic: Explicit validation of all required properties with type checks
+      // PropertyValue includes objects, so we validate structure explicitly
+      const isValidEvaluatedControlPoint = (item: PropertyValue): item is EvaluatedControlPoint => {
+        if (typeof item !== "object" || item === null || Array.isArray(item)) return false;
+        // PropertyValue includes { x: number; y: number } objects, validate EvaluatedControlPoint structure
+        const obj = item as Record<string, PropertyValue>;
+        const idValue = obj.id;
+        const xValue = obj.x;
+        const yValue = obj.y;
+        const depthValue = obj.depth;
+        return (
+          typeof idValue === "string" &&
+          typeof xValue === "number" &&
+          typeof yValue === "number" &&
+          typeof depthValue === "number" &&
+          Number.isFinite(xValue) &&
+          Number.isFinite(yValue) &&
+          Number.isFinite(depthValue)
+        );
+      };
+      const points = props.controlPoints.filter(isValidEvaluatedControlPoint);
+      if (points.length === props.controlPoints.length) {
+        const pointsHash = this.computePointsHash(points);
+        if (pointsHash !== this.lastPointsHash) {
+          this.buildPathFromEvaluatedPoints(points);
+          this.lastPointsHash = pointsHash;
+        }
       }
     }
   }

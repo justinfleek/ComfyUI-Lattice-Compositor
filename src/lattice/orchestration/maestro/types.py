@@ -8,7 +8,7 @@ to ensure immutability and enable content-addressing.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Optional
 
 
 @dataclass(frozen=True)
@@ -22,8 +22,8 @@ class RoutingRequest:
     request_id: str  # UUID5 from request content
     session_id: str  # Session ID for context
     user_input: str  # User's intent text
-    context: dict[str, Any] = field(default_factory=dict)  # Optional context
-    metadata: dict[str, str] = field(default_factory=dict)  # Optional metadata
+    context: dict[str, str | int | float | bool | None] = field(default_factory=dict)
+    metadata: dict[str, str] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -51,7 +51,7 @@ class UserContext:
     """
 
     session_id: str
-    user_id: str | None = None
-    brand_id: str | None = None
+    user_id: Optional[str] = None
+    brand_id: Optional[str] = None
     recent_intents: tuple[str, ...] = field(default_factory=tuple)
-    preferences: dict[str, Any] = field(default_factory=dict)
+    preferences: dict[str, str | int | float | bool | None] = field(default_factory=dict)

@@ -1,4 +1,5 @@
-import type { JSONValue, RuntimeValue, SESCompartment } from "@/types/ses-ambient";
+import type { RuntimeValue, SESCompartment, SESGlobalsValue } from "@/types/ses-ambient";
+import type { JSONValue } from "@/types/dataAsset";
 import { isFiniteNumber } from "@/utils/typeGuards";
 
 /**
@@ -331,10 +332,9 @@ export function createExpressionCompartment(
   });
 
   // Create the compartment with safe globals only
-  // System F/Omega: Type assertion needed - SES Compartment accepts functions/objects at runtime
-  // but TypeScript type definition only allows JSONValue. This is safe because SES handles
-  // these values correctly at runtime (harden() ensures immutability).
-  const compartment = new Compartment({
+  // Deterministic: SES Compartment accepts JSONValue OR functions (functions are hardened)
+  // Type definition updated to match runtime behavior - no type assertion needed
+  const globalsObj: Record<PropertyKey, SESGlobalsValue> = {
     // Safe Math
     Math: safeMath,
 
@@ -399,7 +399,9 @@ export function createExpressionCompartment(
     process: undefined,
     Deno: undefined,
     Bun: undefined,
-  } as unknown as Record<PropertyKey, JSONValue>);
+  };
+  
+  const compartment = new Compartment(globalsObj);
 
   return compartment;
 }
@@ -585,42 +587,41 @@ export function evaluateSimpleExpression(
     }
 
     // Create compartment with minimal globals
-    // System F/Omega: Type assertion needed - SES Compartment accepts functions/objects at runtime
-    // but TypeScript type definition only allows JSONValue. This is safe because SES handles
-    // these values correctly at runtime (harden() ensures immutability).
-    const compartment = new Compartment(
-      harden({
-        Math: safeMath,
-        isNaN: Number.isNaN,
-        isFinite: Number.isFinite,
-        Infinity,
-        NaN,
-        undefined,
-        // Deterministic seeded random function
-        random: seededRandom,
-        // Spread safe context values
-        ...safeContext,
+    // Deterministic: SES Compartment accepts JSONValue OR functions (functions are hardened)
+    // Type definition updated to match runtime behavior - no type assertion needed
+    const minimalGlobals: Record<PropertyKey, SESGlobalsValue> = harden({
+      Math: safeMath,
+      isNaN: Number.isNaN,
+      isFinite: Number.isFinite,
+      Infinity,
+      NaN,
+      undefined,
+      // Deterministic seeded random function
+      random: seededRandom,
+      // Spread safe context values
+      ...safeContext,
 
-        // SECURITY: Explicitly block dangerous intrinsics
-        Function: undefined,
-        eval: undefined,
-        globalThis: undefined,
-        window: undefined,
-        document: undefined,
-        setTimeout: undefined,
-        setInterval: undefined,
-        setImmediate: undefined,
-        fetch: undefined,
-        XMLHttpRequest: undefined,
-        WebSocket: undefined,
-        Worker: undefined,
-        importScripts: undefined,
-        require: undefined,
-        process: undefined,
-        Deno: undefined,
-        Bun: undefined,
-      }) as unknown as Record<PropertyKey, JSONValue>,
-    );
+      // SECURITY: Explicitly block dangerous intrinsics
+      Function: undefined,
+      eval: undefined,
+      globalThis: undefined,
+      window: undefined,
+      document: undefined,
+      setTimeout: undefined,
+      setInterval: undefined,
+      setImmediate: undefined,
+      fetch: undefined,
+      XMLHttpRequest: undefined,
+      WebSocket: undefined,
+      Worker: undefined,
+      importScripts: undefined,
+      require: undefined,
+      process: undefined,
+      Deno: undefined,
+      Bun: undefined,
+    });
+    
+    const compartment = new Compartment(minimalGlobals);
 
     // Evaluate expression (auto-return single expression)
     const trimmedExpr = expr.trim();

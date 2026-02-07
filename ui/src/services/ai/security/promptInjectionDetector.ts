@@ -22,7 +22,10 @@
  * @see docs/SECURITY_THREAT_MODEL.md
  */
 
+import { createLogger } from "@/utils/logger";
 import { logAuditEntry } from "../../security/auditLog";
+
+const logger = createLogger("PromptInjectionDetector");
 import type { Layer } from "@/types/project";
 import type { JSONValue } from "@/types/dataAsset";
 
@@ -922,8 +925,8 @@ function logInjectionDetection(
   result: InjectionDetectionResult,
   context?: { fieldName?: string; layerName?: string; source?: string },
 ): void {
-  console.warn(
-    `[Security] Prompt injection detected:`,
+    logger.warn(
+      `[Security] Prompt injection detected:`,
     {
       type: result.type,
       confidence: result.confidence,

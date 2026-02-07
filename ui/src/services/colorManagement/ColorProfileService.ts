@@ -5,7 +5,7 @@
  *
  * Features:
  * - ICC profile parsing and embedding
- * - Color space conversions (sRGB, Adobe RGB, Display P3, ProPhoto RGB)
+ * - Color space conversions (sRGB, Wide-Gamut RGB, Display P3, ProPhoto RGB)
  * - Linear RGB workflow support
  * - Working color space setting
  * - View transforms for preview
@@ -23,7 +23,7 @@ const logger = createLogger("ColorProfile");
 export type ColorSpace =
   | "sRGB"
   | "linear-sRGB"
-  | "Adobe-RGB"
+  | "Wide-Gamut-RGB"
   | "Display-P3"
   | "ProPhoto-RGB"
   | "ACEScg"
@@ -114,8 +114,8 @@ export const COLOR_SPACES: Record<ColorSpace, ColorSpaceInfo> = {
       blue: [0.15, 0.06],
     },
   },
-  "Adobe-RGB": {
-    name: "Adobe RGB (1998)",
+  "Wide-Gamut-RGB": {
+    name: "Wide-Gamut RGB (1998)",
     description: "Wide gamut for print",
     gamut: "wide",
     gamma: 2.2,
@@ -311,15 +311,15 @@ const XYZ_TO_P3: Matrix3x3 = [
   [0.0358458, -0.0761724, 0.9568845],
 ];
 
-// Adobe RGB to XYZ (D65)
-const ADOBERGB_TO_XYZ: Matrix3x3 = [
+// Wide-Gamut RGB to XYZ (D65)
+const WIDEGAMUT_TO_XYZ: Matrix3x3 = [
   [0.5767309, 0.185554, 0.1881852],
   [0.2973769, 0.6273491, 0.0752741],
   [0.0270343, 0.0706872, 0.9911085],
 ];
 
-// XYZ to Adobe RGB (D65)
-const XYZ_TO_ADOBERGB: Matrix3x3 = [
+// XYZ to Wide-Gamut RGB (D65)
+const XYZ_TO_WIDEGAMUT: Matrix3x3 = [
   [2.041369, -0.5649464, -0.3446944],
   [-0.969266, 1.8760108, 0.041556],
   [0.0134474, -0.1183897, 1.0154096],
@@ -358,8 +358,8 @@ export function rgbToXYZ(rgb: RGB, colorSpace: ColorSpace): XYZ {
       return matrixMultiply(SRGB_TO_XYZ, linear);
     case "Display-P3":
       return matrixMultiply(P3_TO_XYZ, linear);
-    case "Adobe-RGB":
-      return matrixMultiply(ADOBERGB_TO_XYZ, linear);
+    case "Wide-Gamut-RGB":
+      return matrixMultiply(WIDEGAMUT_TO_XYZ, linear);
     default:
       // Default to sRGB matrix
       return matrixMultiply(SRGB_TO_XYZ, linear);
@@ -382,8 +382,8 @@ export function xyzToRGB(xyz: XYZ, colorSpace: ColorSpace): RGB {
     case "Display-P3":
       linear = matrixMultiply(XYZ_TO_P3, xyz);
       break;
-    case "Adobe-RGB":
-      linear = matrixMultiply(XYZ_TO_ADOBERGB, xyz);
+    case "Wide-Gamut-RGB":
+      linear = matrixMultiply(XYZ_TO_WIDEGAMUT, xyz);
       break;
     default:
       linear = matrixMultiply(XYZ_TO_SRGB, xyz);
@@ -511,10 +511,10 @@ export function parseICCProfile(data: ArrayBuffer): ICCProfile {
       } else if (nameLower.includes("display p3") || nameLower.includes("p3")) {
         colorSpace = "Display-P3";
       } else if (
-        nameLower.includes("adobe rgb") ||
-        nameLower.includes("adobergb")
+        nameLower.includes("wide-gamut rgb") ||
+        nameLower.includes("widegamut")
       ) {
-        colorSpace = "Adobe-RGB";
+        colorSpace = "Wide-Gamut-RGB";
       } else if (nameLower.includes("prophoto")) {
         colorSpace = "ProPhoto-RGB";
       } else {
@@ -732,7 +732,7 @@ export class ColorProfileService {
     const workingColorSpace = (settingsWorkingColorSpace != null &&
       (settingsWorkingColorSpace === "sRGB" ||
         settingsWorkingColorSpace === "linear-sRGB" ||
-        settingsWorkingColorSpace === "Adobe-RGB" ||
+        settingsWorkingColorSpace === "Wide-Gamut-RGB" ||
         settingsWorkingColorSpace === "Display-P3" ||
         settingsWorkingColorSpace === "ProPhoto-RGB" ||
         settingsWorkingColorSpace === "ACEScg" ||
@@ -756,7 +756,7 @@ export class ColorProfileService {
       (settingsExportColorSpace === "source" ||
         settingsExportColorSpace === "sRGB" ||
         settingsExportColorSpace === "linear-sRGB" ||
-        settingsExportColorSpace === "Adobe-RGB" ||
+        settingsExportColorSpace === "Wide-Gamut-RGB" ||
         settingsExportColorSpace === "Display-P3" ||
         settingsExportColorSpace === "ProPhoto-RGB" ||
         settingsExportColorSpace === "ACEScg" ||

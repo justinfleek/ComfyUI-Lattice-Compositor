@@ -1423,16 +1423,11 @@ export class LayerManager {
     // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy null returns
     // Pattern match: getSourceCanvas() returns HTMLCanvasElement (throws error if not found, never null)
     // Note: getSourceCanvas is protected, so we use a type guard with proper interface
-    interface LayerWithSourceCanvas {
-      getSourceCanvas(): HTMLCanvasElement;
-    }
-    
-    // Type guard: Check if layer has getSourceCanvas method (even if protected)
-    // We use a type assertion to access the protected method since we've verified it exists
+    type LayerWithSourceCanvas = BaseLayer & { getSourceCanvas(): HTMLCanvasElement };
     const layerWithMethod = layer as BaseLayer & { getSourceCanvas?: () => HTMLCanvasElement };
     if (typeof layerWithMethod.getSourceCanvas === "function") {
-      // Call the protected method via type assertion (we've verified it exists)
-      const sourceCanvas = (layer as unknown as { getSourceCanvas: () => HTMLCanvasElement }).getSourceCanvas();
+      // Type guard ensures method exists - use proper type instead of interface
+      const sourceCanvas = (layer as unknown as LayerWithSourceCanvas).getSourceCanvas();
       
       // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy truthy checks
       if (typeof sourceCanvas === "object" && sourceCanvas !== null) {

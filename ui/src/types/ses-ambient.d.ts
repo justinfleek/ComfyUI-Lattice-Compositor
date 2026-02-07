@@ -13,15 +13,22 @@ import type { JSONValue } from "./dataAsset";
  */
 export type RuntimeValue = string | number | boolean | object | null | undefined | bigint | symbol;
 
+/**
+ * SES Compartment globals type
+ * Deterministic: Explicit union of allowed types
+ * SES accepts JSONValue OR functions (functions are hardened at runtime)
+ */
+export type SESGlobalsValue = JSONValue | ((...args: JSONValue[]) => JSONValue) | Record<string, SESGlobalsValue>;
+
 export interface SESCompartment {
-  globalThis: Record<PropertyKey, JSONValue>;
+  globalThis: Record<PropertyKey, SESGlobalsValue>;
   name: string;
   evaluate(code: string, options?: Record<string, JSONValue>): RuntimeValue;
 }
 
 export interface SESCompartmentConstructor {
   new (
-    globals?: Record<PropertyKey, JSONValue>,
+    globals?: Record<PropertyKey, SESGlobalsValue>,
     modules?: Record<string, JSONValue>,
     options?: Record<string, JSONValue>,
   ): SESCompartment;

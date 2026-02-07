@@ -124,6 +124,9 @@ function isCacheValid(entry: CacheEntry, layerId: string): boolean {
 
 /**
  * Get cached evaluation result if valid
+ *
+ * Returns null on cache miss - callers should handle this by computing the value.
+ * This is the expected behavior for a cache - miss means "compute it yourself".
  */
 export function getCachedEvaluation(
   layerId: string,
@@ -138,7 +141,8 @@ export function getCachedEvaluation(
     return entry.evaluatedLayer;
   }
 
-  throw new Error(`[LayerEvaluationCache] Cache miss for layer "${layerId}" at frame ${frame}`);
+  // Cache miss - return null so caller can compute the value
+  return null;
 }
 
 /**

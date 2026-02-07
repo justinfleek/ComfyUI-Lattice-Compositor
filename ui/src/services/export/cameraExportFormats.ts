@@ -105,10 +105,16 @@ export function interpolateCameraAtFrame(
     return isFiniteNumber(focusValue) && focusValue > 0 ? focusValue : camera.depthOfField.focusDistance;
   };
 
+  // Interpolate
+  // Type proof: frame ∈ ℕ ∪ {undefined} → ℕ
   // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
-  const prevFrame = (prev != null && typeof prev === "object" && "frame" in prev && typeof prev.frame === "number") ? prev.frame : undefined;
-  const nextFrame = (next != null && typeof next === "object" && "frame" in next && typeof next.frame === "number") ? next.frame : undefined;
-  if (prevFrame != null && nextFrame != null && prevFrame === nextFrame) {
+  const prevFrameValue = (prev != null && typeof prev === "object" && "frame" in prev && typeof prev.frame === "number") ? prev.frame : undefined;
+  const prevFrame = isFiniteNumber(prevFrameValue) && Number.isInteger(prevFrameValue) && prevFrameValue >= 0 ? prevFrameValue : 0;
+  const nextFrameValue = (next != null && typeof next === "object" && "frame" in next && typeof next.frame === "number") ? next.frame : undefined;
+  const nextFrame = isFiniteNumber(nextFrameValue) && Number.isInteger(nextFrameValue) && nextFrameValue >= 0 ? nextFrameValue : prevFrame;
+  
+  // Early return if frames are identical
+  if (prevFrame === nextFrame) {
     return {
       position: getPos(prev),
       rotation: getOri(prev),
@@ -117,14 +123,6 @@ export function interpolateCameraAtFrame(
       focusDistance: getFocusDist(prev),
     };
   }
-
-  // Interpolate
-  // Type proof: frame ∈ ℕ ∪ {undefined} → ℕ
-  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
-  const prevFrameValue = (prev != null && typeof prev === "object" && "frame" in prev && typeof prev.frame === "number") ? prev.frame : undefined;
-  const prevFrame = isFiniteNumber(prevFrameValue) && Number.isInteger(prevFrameValue) && prevFrameValue >= 0 ? prevFrameValue : 0;
-  const nextFrameValue = (next != null && typeof next === "object" && "frame" in next && typeof next.frame === "number") ? next.frame : undefined;
-  const nextFrame = isFiniteNumber(nextFrameValue) && Number.isInteger(nextFrameValue) && nextFrameValue >= 0 ? nextFrameValue : prevFrame;
   const t = nextFrame === prevFrame ? 0 : (frame - prevFrame) / (nextFrame - prevFrame);
 
   const prevPos = getPos(prev);

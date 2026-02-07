@@ -1,0 +1,146 @@
+# Aleph-003: The Prelude Enforcement
+
+## Description
+CRITICAL: Enforces Aleph-003 (The Prelude) usage. ALL Nix code MUST use prelude functions, platform/stdenv/toolchain definitions, and lisp-case naming.
+
+## Globs
+**/*.nix
+
+## Rules
+
+### Before Writing Nix Code
+1. Read: `docs/rfc/aleph/aleph-003-prelude.md`
+2. Use: Prelude functions instead of lib functions where available
+3. Use: Prelude platform/stdenv/toolchain definitions
+
+### Prelude Functions
+
+Use prelude functions instead of lib functions:
+
+```nix
+# ❌ ERROR (using lib directly)
+{ lib, ... }:
+lib.map (x: x * 2) [1 2 3]
+
+# ✅ OK (using prelude)
+{ prelude, ... }:
+inherit (prelude) map;
+map (x: x * 2) [1 2 3]
+```
+
+**Available Prelude Functions:**
+- Core: `id`, `const`, `flip`, `compose`, `pipe`
+- Lists: `map`, `filter`, `fold`, `head`, `tail`
+- Maybe: `maybe`, `from-maybe`, `is-just`
+- Either: `left`, `right`, `either`
+
+### Platform Definitions
+
+Use prelude platform definitions:
+
+```nix
+# ❌ ERROR (hardcoded)
+system = "x86_64-linux";
+
+# ✅ OK (using prelude)
+{ prelude, ... }:
+inherit (prelude) platform;
+system = platform.linux-x86-64;
+```
+
+**Available Platforms:**
+- `platform.linux-x86-64`
+- `platform.linux-sbsa` (ARM64 datacenter)
+- `platform.linux-aarch64` (ARM64 consumer/embedded)
+- `platform.darwin-aarch64` (Apple Silicon)
+- `platform.darwin-x86-64` (Intel Mac)
+
+### Stdenv Configuration
+
+Use prelude stdenv definitions:
+
+```nix
+# ❌ ERROR (using pkgs.stdenv directly)
+{ pkgs, ... }:
+pkgs.stdenv.mkDerivation { }
+
+# ✅ OK (using prelude stdenv)
+{ prelude, ... }:
+prelude.stdenv.default { }
+```
+
+**Available Stdenvs:**
+- `prelude.stdenv.default` (Clang + glibc + dynamic)
+- `prelude.stdenv.static` (Clang + musl + static)
+- `prelude.stdenv.debug` (with debug info)
+
+### Toolchain Definitions
+
+Use prelude toolchain definitions:
+
+```nix
+# ❌ ERROR (hardcoded toolchain)
+{ pkgs, ... }:
+pkgs.llvmPackages_18.clang
+
+# ✅ OK (using prelude toolchain)
+{ prelude, ... }:
+prelude.toolchain.clang-18
+```
+
+### Language Pinning
+
+Use prelude language versions:
+
+```nix
+# ❌ ERROR (using pkgs.python3 directly)
+{ pkgs, ... }:
+pkgs.python3
+
+# ✅ OK (using prelude language)
+{ prelude, ... }:
+prelude.languages.python
+```
+
+### GPU Targets
+
+Use prelude GPU target definitions:
+
+```nix
+# ❌ ERROR (hardcoded CUDA)
+{ pkgs, ... }:
+pkgs.cudaPackages.cudnn
+
+# ✅ OK (using prelude GPU)
+{ prelude, ... }:
+prelude.gpu.cudnn
+```
+
+### Naming Convention
+
+Prelude enforces lisp-case everywhere:
+
+```nix
+# ❌ ERROR (camelCase)
+myPackageName
+configValue
+
+# ✅ OK (lisp-case)
+my-package-name
+config-value
+```
+
+### Validation
+
+ALWAYS use prelude functions and definitions:
+- Run `nix flake check`
+- Verify prelude usage in all packages
+- Check platform/stdenv/toolchain usage
+
+## Examples
+
+Study these reference implementations:
+- Prelude functions: `nix/prelude/functions/`
+- Platform definitions: `nix/prelude/platform.nix`
+- Stdenv definitions: `nix/prelude/stdenv.nix`
+- Toolchain definitions: `nix/prelude/toolchain.nix`

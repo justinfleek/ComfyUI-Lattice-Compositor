@@ -43,6 +43,9 @@ import type {
   Layer,
 } from "@/types/project";
 import { storeLogger } from "@/utils/logger";
+import { generateKeyframeId } from "@/utils/uuid5";
+import { safeFrame } from "@/stores/keyframeStore/helpers";
+import type { Keyframe, PropertyValue } from "@/types/animation";
 
 // ============================================================================
 // STORE ACCESS INTERFACES
@@ -249,8 +252,11 @@ export const useEffectStore = defineStore("effect", {
       param.animated = animated;
 
       if (animated && (!param.keyframes || param.keyframes.length === 0)) {
+        // Deterministic ID generation: same layer/effect/param/frame/value always produces same ID
+        const propertyPath = `effects.${effectId}.${paramKey}`;
+        const valueStr = String(param.value);
         param.keyframes = [{
-          id: `kf_${Date.now()}`,
+          id: generateKeyframeId(layerId, propertyPath, store.currentFrame, valueStr),
           frame: store.currentFrame,
           value: param.value,
           interpolation: "linear" as InterpolationType,
@@ -308,6 +314,9 @@ export const useEffectStore = defineStore("effect", {
       const duplicate: EffectInstance = structuredClone(effect);
       duplicate.id = `effect_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
       duplicate.name = `${effect.name} Copy`;
+
+      // Regenerate keyframe IDs for all effect parameters to avoid conflicts
+      regenerateEffectKeyframeIds(layerId, duplicate);
 
       const index = layer.effects.findIndex((e) => e.id === effectId);
       layer.effects.splice(index + 1, 0, duplicate);
@@ -776,5 +785,32 @@ export const useEffectStore = defineStore("effect", {
     },
   },
 });
+
+// ============================================================================
+// HELPER: Regenerate keyframe IDs for effect parameters
+// ============================================================================
+
+/**
+ * Regenerate all keyframe IDs in an effect's parameters to avoid conflicts when duplicating
+ * Uses correct property paths for deterministic ID generation: effects.${effectId}.${paramKey}
+ */
+function regenerateEffectKeyframeIds(layerId: string, effect: EffectInstance): void {
+  if (!effect.parameters) return;
+
+  for (const [paramKey, param] of Object.entries(effect.parameters)) {
+    if (param && param.keyframes && Array.isArray(param.keyframes) && param.keyframes.length > 0) {
+      const propertyPath = `effects.${effect.id}.${paramKey}`;
+      param.keyframes = param.keyframes.map((kf: Keyframe<PropertyValue>) => {
+        const valueStr = typeof kf.value === "object" && kf.value !== null && "x" in kf.value && "y" in kf.value
+          ? `${(kf.value as { x: number; y: number }).x},${(kf.value as { x: number; y: number }).y}${"z" in kf.value ? `,${(kf.value as { x: number; y: number; z?: number }).z}` : ""}`
+          : String(kf.value);
+        return {
+          ...kf,
+          id: generateKeyframeId(layerId, propertyPath, safeFrame(kf.frame, 0), valueStr),
+        };
+      });
+    }
+  }
+}
 
 export type EffectStoreType = ReturnType<typeof useEffectStore>;

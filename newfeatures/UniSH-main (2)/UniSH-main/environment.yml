@@ -1,0 +1,14 @@
+name: unish
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.10
+  - pip
+  - git
+  - ninja
+  - mesalib
+  - libgl-devel
+  - libegl-devel
+  - gxx_linux-64=11.*
+  - ffmpeg

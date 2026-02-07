@@ -85,6 +85,7 @@ import type {
   TextData,
 } from "@/types/project";
 import { KeyframeEvaluator } from "../animation/KeyframeEvaluator";
+import type { PropertyValue } from "@/types/animation";
 import type { ResourceManager } from "../core/ResourceManager";
 import { BaseLayer } from "./BaseLayer";
 
@@ -1254,10 +1255,11 @@ export class TextLayer extends BaseLayer {
     // System F/Omega: CharacterTransform[] is not in PropertyValue union, but KeyframeEvaluator
     // can handle it via generic constraint. Type assertion needed for type system compatibility.
     // Type proof: characterTransforms.value ∈ CharacterTransform[] (runtime validated)
+    // Deterministic: Explicit type conversion with unknown intermediate
     const transforms = this.textEvaluator.evaluate(
-      this.characterTransforms as AnimatableProperty<PropertyValue>,
+      this.characterTransforms as unknown as AnimatableProperty<PropertyValue>,
       frame,
-    ) as CharacterTransform[];
+    ) as unknown as CharacterTransform[];
 
     for (
       let i = 0;

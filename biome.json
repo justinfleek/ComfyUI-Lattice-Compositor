@@ -28,14 +28,14 @@
         "noNonNullAssertion": "error"
       },
       "suspicious": {
-        "noExplicitAny": "warn",
+        "noExplicitAny": "error",
         "noControlCharactersInRegex": "off",
         "noExportsInTest": "off",
         "useAdjacentOverloadSignatures": "off",
         "noDuplicateClassMembers": "off",
         "useIterableCallbackReturn": "off",
         "noAssignInExpressions": "off",
-        "noImplicitAnyLet": "warn",
+        "noImplicitAnyLet": "error",
         "noDuplicateElseIf": "off"
       },
       "complexity": {

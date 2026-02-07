@@ -15,6 +15,7 @@ import * as THREE from "three";
 import { RectAreaLightHelper } from "three/addons/helpers/RectAreaLightHelper.js";
 import { RectAreaLightUniformsLib } from "three/addons/lights/RectAreaLightUniformsLib.js";
 import type { AnimatableProperty, Layer } from "@/types/project";
+import { createAnimatableProperty } from "@/types/animation";
 import { layerLogger } from "@/utils/logger";
 import type { JSONValue } from "@/types/dataAsset";
 import { BaseLayer } from "./BaseLayer";
@@ -452,16 +453,13 @@ export class LightLayer extends BaseLayer {
     const poiTargetType = poiTargetTypeValue === "position" || poiTargetTypeValue === "layer"
       ? poiTargetTypeValue
       : "position";
-    const poiPosition = ("position" in pointOfInterestData && typeof pointOfInterestData.position === "object" && pointOfInterestData.position !== null)
+    // Deterministic: Create proper AnimatableProperty for poiPosition
+    const poiPositionRaw = ("position" in pointOfInterestData && typeof pointOfInterestData.position === "object" && pointOfInterestData.position !== null && "type" in pointOfInterestData.position)
       ? pointOfInterestData.position
-      : {
-          id: "poi_pos",
-          name: "POI Position",
-          type: "vector3",
-          value: { x: 0, y: 0, z: 0 },
-          animated: false,
-          keyframes: [],
-        };
+      : null;
+    const poiPosition = poiPositionRaw !== null
+      ? (poiPositionRaw as AnimatableProperty<{ x: number; y: number; z: number }>)
+      : createAnimatableProperty("POI Position", { x: 0, y: 0, z: 0 }, "vector3");
     const poiTargetLayerId = ("targetLayerId" in pointOfInterestData && typeof pointOfInterestData.targetLayerId === "string")
       ? pointOfInterestData.targetLayerId
       : "";
@@ -493,29 +491,23 @@ export class LightLayer extends BaseLayer {
     const pathSplineLayerId = ("splineLayerId" in pathFollowingData && typeof pathFollowingData.splineLayerId === "string")
       ? pathFollowingData.splineLayerId
       : "";
-    const pathProgress = ("progress" in pathFollowingData && typeof pathFollowingData.progress === "object" && pathFollowingData.progress !== null)
+    // Deterministic: Create proper AnimatableProperty for pathProgress
+    const pathProgressRaw = ("progress" in pathFollowingData && typeof pathFollowingData.progress === "object" && pathFollowingData.progress !== null && "type" in pathFollowingData.progress)
       ? pathFollowingData.progress
-      : {
-          id: "path_progress",
-          name: "Path Progress",
-          type: "number",
-          value: 0,
-          animated: false,
-          keyframes: [],
-        };
+      : null;
+    const pathProgress = pathProgressRaw !== null
+      ? (pathProgressRaw as AnimatableProperty<number>)
+      : createAnimatableProperty("Path Progress", 0, "number");
     const pathAutoOrient = ("autoOrient" in pathFollowingData && typeof pathFollowingData.autoOrient === "boolean")
       ? pathFollowingData.autoOrient
       : true;
-    const pathBankAngle = ("bankAngle" in pathFollowingData && typeof pathFollowingData.bankAngle === "object" && pathFollowingData.bankAngle !== null)
+    // Deterministic: Create proper AnimatableProperty for pathBankAngle
+    const pathBankAngleRaw = ("bankAngle" in pathFollowingData && typeof pathFollowingData.bankAngle === "object" && pathFollowingData.bankAngle !== null && "type" in pathFollowingData.bankAngle)
       ? pathFollowingData.bankAngle
-      : {
-          id: "bank_angle",
-          name: "Bank Angle",
-          type: "number",
-          value: 0,
-          animated: false,
-          keyframes: [],
-        };
+      : null;
+    const pathBankAngle = pathBankAngleRaw !== null
+      ? (pathBankAngleRaw as AnimatableProperty<number>)
+      : createAnimatableProperty("Bank Angle", 0, "number");
     
     // Pattern match: shadow ∈ object | undefined → ShadowConfig
     const shadowData = (typeof data === "object" && data !== null && "shadow" in data && typeof data.shadow === "object" && data.shadow !== null)
@@ -578,19 +570,23 @@ export class LightLayer extends BaseLayer {
       ? lightLinkingData.layers
       : [];
     
-    // Pattern match: animated properties ∈ object | undefined → AnimatableProperty | {}
-    const animatedIntensity = (typeof data === "object" && data !== null && "animatedIntensity" in data && typeof data.animatedIntensity === "object" && data.animatedIntensity !== null)
-      ? data.animatedIntensity
-      : {};
-    const animatedConeAngle = (typeof data === "object" && data !== null && "animatedConeAngle" in data && typeof data.animatedConeAngle === "object" && data.animatedConeAngle !== null)
-      ? data.animatedConeAngle
-      : {};
-    const animatedColor = (typeof data === "object" && data !== null && "animatedColor" in data && typeof data.animatedColor === "object" && data.animatedColor !== null)
+    // Deterministic: Create proper AnimatableProperty defaults instead of empty objects
+    const animatedIntensity = (typeof data === "object" && data !== null && "animatedIntensity" in data && typeof data.animatedIntensity === "object" && data.animatedIntensity !== null && "type" in data.animatedIntensity)
+      ? data.animatedIntensity as AnimatableProperty<number>
+      : createAnimatableProperty("Intensity", intensity, "number");
+    const animatedConeAngle = (typeof data === "object" && data !== null && "animatedConeAngle" in data && typeof data.animatedConeAngle === "object" && data.animatedConeAngle !== null && "type" in data.animatedConeAngle)
+      ? data.animatedConeAngle as AnimatableProperty<number>
+      : createAnimatableProperty("Cone Angle", coneAngle, "number");
+    // Deterministic: animatedColor is AnimatableProperty<string> (hex color string)
+    const animatedColorRaw = (typeof data === "object" && data !== null && "animatedColor" in data && typeof data.animatedColor === "object" && data.animatedColor !== null && "type" in data.animatedColor)
       ? data.animatedColor
-      : {};
-    const animatedColorTemperature = (typeof data === "object" && data !== null && "animatedColorTemperature" in data && typeof data.animatedColorTemperature === "object" && data.animatedColorTemperature !== null)
-      ? data.animatedColorTemperature
-      : {};
+      : null;
+    const animatedColor = animatedColorRaw !== null
+      ? (animatedColorRaw as AnimatableProperty<string>)
+      : createAnimatableProperty("Color", color, "color");
+    const animatedColorTemperature = (typeof data === "object" && data !== null && "animatedColorTemperature" in data && typeof data.animatedColorTemperature === "object" && data.animatedColorTemperature !== null && "type" in data.animatedColorTemperature)
+      ? data.animatedColorTemperature as AnimatableProperty<number>
+      : createAnimatableProperty("Color Temperature", colorTemperature, "number");
 
     return {
       lightType,
@@ -1308,11 +1304,12 @@ export class LightLayer extends BaseLayer {
 
     // Animated intensity
     // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    // Deterministic: Explicit null check before accessing animatedIntensity
     const animatedIntensity = (this.lightData != null && typeof this.lightData === "object" && "animatedIntensity" in this.lightData && this.lightData.animatedIntensity != null && typeof this.lightData.animatedIntensity === "object") ? this.lightData.animatedIntensity : undefined;
     const animatedIntensityAnimated = (animatedIntensity != null && typeof animatedIntensity === "object" && "animated" in animatedIntensity && typeof animatedIntensity.animated === "boolean" && animatedIntensity.animated) ? true : false;
-    if (animatedIntensityAnimated) {
+    if (animatedIntensityAnimated && animatedIntensity) {
       const intensity = this.evaluator.evaluate(
-        this.lightData.animatedIntensity,
+        animatedIntensity,
         frame,
       );
       this.light.intensity = intensity / 100;
@@ -1323,10 +1320,11 @@ export class LightLayer extends BaseLayer {
     const animatedConeAngleAnimated = (animatedConeAngle != null && typeof animatedConeAngle === "object" && "animated" in animatedConeAngle && typeof animatedConeAngle.animated === "boolean" && animatedConeAngle.animated) ? true : false;
     if (
       animatedConeAngleAnimated &&
+      animatedConeAngle &&
       this.light instanceof THREE.SpotLight
     ) {
       const angle = this.evaluator.evaluate(
-        this.lightData.animatedConeAngle,
+        animatedConeAngle,
         frame,
       );
       this.light.angle = THREE.MathUtils.degToRad(angle / 2);
@@ -1338,9 +1336,9 @@ export class LightLayer extends BaseLayer {
     // Animated color
     const animatedColor = (this.lightData != null && typeof this.lightData === "object" && "animatedColor" in this.lightData && this.lightData.animatedColor != null && typeof this.lightData.animatedColor === "object") ? this.lightData.animatedColor : undefined;
     const animatedColorAnimated = (animatedColor != null && typeof animatedColor === "object" && "animated" in animatedColor && typeof animatedColor.animated === "boolean" && animatedColor.animated) ? true : false;
-    if (animatedColorAnimated) {
+    if (animatedColorAnimated && animatedColor) {
       const color = this.evaluator.evaluate(
-        this.lightData.animatedColor,
+        animatedColor,
         frame,
       );
       this.light.color.set(color);
@@ -1351,10 +1349,11 @@ export class LightLayer extends BaseLayer {
     const animatedColorTemperatureAnimated = (animatedColorTemperature != null && typeof animatedColorTemperature === "object" && "animated" in animatedColorTemperature && typeof animatedColorTemperature.animated === "boolean" && animatedColorTemperature.animated) ? true : false;
     if (
       animatedColorTemperatureAnimated &&
+      animatedColorTemperature &&
       this.lightData.useColorTemperature
     ) {
       const kelvin = this.evaluator.evaluate(
-        this.lightData.animatedColorTemperature,
+        animatedColorTemperature,
         frame,
       );
       const rgb = kelvinToRGB(kelvin);

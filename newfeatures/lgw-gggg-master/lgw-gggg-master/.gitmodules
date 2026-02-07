@@ -1,0 +1,31 @@
+[submodule "extern/ImGuiFileDialog"]
+	path = extern/ImGuiFileDialog
+	url = https://github.com/aiekick/ImGuiFileDialog.git
+[submodule "extern/ImGuizmo"]
+	path = extern/ImGuizmo
+	url = https://github.com/CedricGuillemet/ImGuizmo.git
+[submodule "extern/cnpy"]
+	path = extern/cnpy
+	url = https://git.ista.ac.at/wojtan-group/yi-lu-chen/cnpy.git
+	branch = libzip-fixed
+[submodule "extern/magnum"]
+	path = extern/magnum
+	url = https://github.com/mosra/magnum.git
+[submodule "extern/magnum-integration"]
+	path = extern/magnum-integration
+	url = https://github.com/mosra/magnum-integration.git
+[submodule "extern/magnum-plugins"]
+	path = extern/magnum-plugins
+	url = https://github.com/mosra/magnum-plugins.git
+[submodule "extern/corrade"]
+	path = extern/corrade
+	url = https://github.com/mosra/corrade.git
+[submodule "extern/imgui"]
+	path = extern/imgui
+	url = https://github.com/ocornut/imgui.git
+[submodule "extern/yaml-cpp"]
+	path = extern/yaml-cpp
+	url = https://github.com/jbeder/yaml-cpp.git
+[submodule "extern/frictionfrenzy"]
+	path = extern/frictionfrenzy
+	url = https://git.ista.ac.at/wojtan-group/yi-lu-chen/frictionfrenzy.git

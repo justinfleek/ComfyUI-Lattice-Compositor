@@ -100,7 +100,7 @@ export class VerifiedWebGPUCompute {
   
   // SOA buffers (matching ParticleBuffer layout)
   // PROVEN: memory_bounded theorem guarantees maxP * particleBytes ≤ vramBytes - fixedBytes
-  // See: leanparticles/PARTICLE_VERIFIED (1).lean, Section 11
+  // See: leanparticles/PARTICLE_VERIFIED.lean, Section 11
   // Definite assignment: createBuffers() called synchronously in constructor
   private posXBuffer!: GPUBuffer;
   private posYBuffer!: GPUBuffer;

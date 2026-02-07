@@ -1,0 +1,28 @@
+{"synthetic": false,
+ "schemaVersion": "2025-09-10",
+ "outputs":
+ {"o": ["7299853efcb7a4f1.olean"],
+  "i": "00f2b02f5214dc23.ilean",
+  "c": "74f67f3318af3180.c"},
+ "log":
+ [{"message":
+   ".> LEAN_PATH=/mnt/c/Users/justi/desktop/compass/leandocs/typed-compass/lean/.lake/packages/Cli/.lake/build/lib/lean:/mnt/c/Users/justi/desktop/compass/leandocs/typed-compass/lean/.lake/packages/Qq/.lake/build/lib/lean:/mnt/c/Users/justi/desktop/compass/leandocs/typed-compass/lean/.lake/packages/proofwidgets/.lake/build/lib/lean:/mnt/c/Users/justi/desktop/compass/leandocs/typed-compass/lean/.lake/packages/importGraph/.lake/build/lib/lean:/mnt/c/Users/justi/desktop/compass/leandocs/typed-compass/lean/.lake/packages/LeanSearchClient/.lake/build/lib/lean:/mnt/c/Users/justi/desktop/compass/leandocs/typed-compass/lean/.lake/packages/plausible/.lake/build/lib/lean:/mnt/c/Users/justi/desktop/compass/leandocs/typed-compass/lean/.lake/packages/batteries/.lake/build/lib/lean:/mnt/c/Users/justi/desktop/compass/leandocs/typed-compass/lean/.lake/packages/mathlib/.lake/build/lib/lean:/mnt/c/Users/justi/desktop/compass/leandocs/typed-compass/lean/.lake/packages/aesop/.lake/build/lib/lean:/mnt/c/Users/justi/desktop/compass/leandocs/typed-compass/lean/.lake/build/lib/lean /nix/store/hgrr6brn6gxwrzz2z8yca82r0mhhm08r-lean4-4.26.0/bin/lean /mnt/c/Users/justi/desktop/compass/leandocs/typed-compass/lean/Compass/BudgetState.lean -o /mnt/c/Users/justi/desktop/compass/leandocs/typed-compass/lean/.lake/build/lib/lean/Compass/BudgetState.olean -i /mnt/c/Users/justi/desktop/compass/leandocs/typed-compass/lean/.lake/build/lib/lean/Compass/BudgetState.ilean -c /mnt/c/Users/justi/desktop/compass/leandocs/typed-compass/lean/.lake/build/ir/Compass/BudgetState.c --setup /mnt/c/Users/justi/desktop/compass/leandocs/typed-compass/lean/.lake/build/ir/Compass/BudgetState.setup.json --json",
+   "level": "trace"}],
+ "inputs":
+ [["Compass.BudgetState:deps",
+   [["deps",
+     [["compass/Compass:extraDep", [["@compass:extraDep", "00000000000006bb"]]],
+      ["imports",
+       [["Compass.Core transitive imports (legacy)", "00000000000006bb"],
+        ["Compass.Core:importAllArts", "6b980823b57b1433"]]]]],
+    ["libs",
+     [["import dynlibs", "00000000000006bb"],
+      ["package external libraries", "00000000000006bb"],
+      ["module dynlibs", "00000000000006bb"],
+      ["module plugins", "00000000000006bb"]]]]],
+  ["Lean 4.26.0, commit v4.26.0", "f25d5b1fa5c93256"],
+  ["/mnt/c/Users/justi/desktop/compass/leandocs/typed-compass/lean/Compass/BudgetState.lean",
+   "9e2e45039121e7cd"],
+  ["options", "00000000000006bb"],
+  ["Module.leanArgs: #[]", "00000000000006bb"]],
+ "depHash": "0e3fed8683079b4f"}

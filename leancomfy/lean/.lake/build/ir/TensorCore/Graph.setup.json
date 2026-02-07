@@ -1,0 +1,13 @@
+{"plugins": [],
+ "package": "tensor-core",
+ "options": {},
+ "name": "TensorCore.Graph",
+ "isModule": false,
+ "importArts":
+ {"TensorCore.Tensor":
+  ["C:\\Users\\justi\\Desktop\\ComfyUI-Lattice-Compositor\\leancomfy\\lean\\.lake\\build\\lib\\lean\\TensorCore\\Tensor.olean"],
+  "TensorCore.Ops":
+  ["C:\\Users\\justi\\Desktop\\ComfyUI-Lattice-Compositor\\leancomfy\\lean\\.lake\\build\\lib\\lean\\TensorCore\\Ops.olean"],
+  "TensorCore.Basic":
+  ["C:\\Users\\justi\\Desktop\\ComfyUI-Lattice-Compositor\\leancomfy\\lean\\.lake\\build\\lib\\lean\\TensorCore\\Basic.olean"]},
+ "dynlibs": []}

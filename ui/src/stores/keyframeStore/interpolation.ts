@@ -141,7 +141,8 @@ export function setKeyframeHandleWithMode(
     }
   } else {
     // Respect existing control mode
-    const mode = keyframe.controlMode || "smooth";
+    // Explicit check: controlMode is ControlMode (required field, but defensive check for runtime safety)
+    const mode = (typeof keyframe.controlMode === "string" && (keyframe.controlMode === "symmetric" || keyframe.controlMode === "smooth" || keyframe.controlMode === "corner")) ? keyframe.controlMode : "smooth";
 
     if (handleType === "in") {
       keyframe.inHandle = { ...handle };

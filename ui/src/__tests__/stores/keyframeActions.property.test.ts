@@ -9,8 +9,12 @@
 import { describe, expect, beforeEach, it } from "vitest";
 import { test } from "@fast-check/vitest";
 import * as fc from "fast-check";
+import { setActivePinia, createPinia } from "pinia";
 import { moveKeyframes, moveKeyframe, addKeyframe, clearKeyframes } from "@/stores/keyframeStore/crud";
-import type { KeyframeStoreAccess as KeyframeStore } from "@/stores/keyframeStore/types";
+import { useProjectStore } from "@/stores/projectStore";
+import { useAnimationStore } from "@/stores/animationStore";
+import { useCompositionStore } from "@/stores/compositionStore";
+import { useLayerStore } from "@/stores/layerStore";
 import {
   separatePositionDimensions,
   linkPositionDimensions,
@@ -136,56 +140,29 @@ function createMockLayer(
   return layer;
 }
 
-function createMockStore(layers: Layer[]): KeyframeStore {
-  const comp: Composition = {
-    id: "main",
-    name: "Main Comp",
-    settings: {
-      width: 1920,
-      height: 1080,
-      frameCount: 300,
-      fps: 30,
-      duration: 10,
-      backgroundColor: "#000000",
-      autoResizeToContent: false,
-      frameBlendingEnabled: false,
-    },
-    layers,
-    currentFrame: 0,
-    isNestedComp: false,
-    markers: [],
-  };
+function setupTestStores(layers: Layer[]): void {
+  setActivePinia(createPinia());
+  const projectStore = useProjectStore();
+  const animationStore = useAnimationStore();
+  const compositionStore = useCompositionStore();
+  const layerStore = useLayerStore();
 
-  return {
-    project: {
-      id: "test-project",
-      name: "Test Project",
-      version: "1.0.0",
-      composition: { width: 1024, height: 1024 },
-      meta: {
-        created: new Date().toISOString(),
-        modified: new Date().toISOString(),
-        author: "test",
-        description: "Test project",
-      },
-      assets: [],
-      compositions: [comp],
-      activeCompositionId: "main",
-    },
-    currentFrame: 0,
-    selectedLayerIds: [],
-    fps: comp.settings.fps,
-    getActiveComp() {
-      return comp;
-    },
-    getActiveCompLayers() {
-      return layers;
-    },
-    getLayerById(id: string) {
-      return layers.find((l) => l.id === id) || null;
-    },
-    pushHistory() {},
-  } as KeyframeStore;
+  // Create test composition
+  compositionStore.createComposition("Test Comp", {
+    width: 1920,
+    height: 1080,
+    fps: 30,
+    frameCount: 300,
+  });
+
+  // Add layers to composition
+  const comp = projectStore.getActiveComp();
+  if (comp) {
+    comp.layers = layers;
+  }
+
+  // Set current frame
+  animationStore.setFrame(0);
 }
 
 // ============================================================================
@@ -207,7 +184,7 @@ describe("moveKeyframes Property Tests", () => {
       fc.pre(minFrame + delta >= 0);
 
       const layer = createMockLayer("layer1", keyframes);
-      const store = createMockStore([layer]);
+      setupTestStores([layer]);
 
       // Record original relative positions
       const originalRelatives: number[] = [];
@@ -223,7 +200,7 @@ describe("moveKeyframes Property Tests", () => {
       }));
 
       // Move all keyframes
-      moveKeyframes(store, keyframesToMove, delta);
+      moveKeyframes(keyframesToMove, delta);
 
       // Get updated keyframes
       const updatedKeyframes = layer.transform.position.keyframes;
@@ -253,7 +230,7 @@ describe("moveKeyframes Property Tests", () => {
       fc.pre(minFrame + delta < 0);
 
       const layer = createMockLayer("layer1", keyframes);
-      const store = createMockStore([layer]);
+      setupTestStores([layer]);
 
       const keyframesToMove = keyframes.map((kf) => ({
         layerId: "layer1",
@@ -261,7 +238,7 @@ describe("moveKeyframes Property Tests", () => {
         keyframeId: kf.id,
       }));
 
-      moveKeyframes(store, keyframesToMove, delta);
+      moveKeyframes(keyframesToMove, delta);
 
       const updatedKeyframes = layer.transform.position.keyframes;
 
@@ -288,7 +265,7 @@ describe("moveKeyframes Property Tests", () => {
       fc.pre(new Set(inputFrames).size === inputFrames.length);
 
       const layer = createMockLayer("layer1", keyframes);
-      const store = createMockStore([layer]);
+      setupTestStores([layer]);
 
       // Record original values by keyframe ID (not position, since order/presence can change after collisions)
       const originalValuesById = new Map<string, { x: number; y: number; z: number }>();
@@ -330,7 +307,7 @@ describe("moveKeyframes Property Tests", () => {
       fc.pre(keyframes.length >= 1);
 
       const layer = createMockLayer("layer1", keyframes);
-      const store = createMockStore([layer]);
+      setupTestStores([layer]);
 
       const keyframesToMove = keyframes.map((kf) => ({
         layerId: "layer1",
@@ -338,7 +315,7 @@ describe("moveKeyframes Property Tests", () => {
         keyframeId: kf.id,
       }));
 
-      moveKeyframes(store, keyframesToMove, delta);
+      moveKeyframes(keyframesToMove, delta);
 
       const updatedKeyframes = layer.transform.position.keyframes;
 
@@ -357,7 +334,7 @@ describe("moveKeyframes Property Tests", () => {
       fc.pre(keyframes.length >= 2);
 
       const layer = createMockLayer("layer1", keyframes);
-      const store = createMockStore([layer]);
+      setupTestStores([layer]);
 
       const keyframesToMove = keyframes.map((kf) => ({
         layerId: "layer1",
@@ -365,7 +342,7 @@ describe("moveKeyframes Property Tests", () => {
         keyframeId: kf.id,
       }));
 
-      moveKeyframes(store, keyframesToMove, delta);
+      moveKeyframes(keyframesToMove, delta);
 
       const updatedKeyframes = layer.transform.position.keyframes;
 
@@ -381,7 +358,7 @@ describe("moveKeyframes Property Tests", () => {
       fc.pre(keyframes.length >= 1);
 
       const layer = createMockLayer("layer1", keyframes);
-      const store = createMockStore([layer]);
+      setupTestStores([layer]);
 
       // Record original frames
       const originalFrames = keyframes.map((kf) => kf.frame);
@@ -426,7 +403,7 @@ describe("moveKeyframes Property Tests", () => {
       const expectCollisions = uniqueTargetFrames.size < targetFrames.length;
 
       const layer = createMockLayer("layer1", keyframes);
-      const store = createMockStore([layer]);
+      setupTestStores([layer]);
 
       const keyframesToMove = keyframes.map((kf) => ({
         layerId: "layer1",
@@ -434,7 +411,7 @@ describe("moveKeyframes Property Tests", () => {
         keyframeId: kf.id,
       }));
 
-      moveKeyframes(store, keyframesToMove, delta);
+      moveKeyframes(keyframesToMove, delta);
 
       if (expectCollisions) {
         // When collisions occur, count should equal number of unique target frames
@@ -462,7 +439,7 @@ describe("moveKeyframes Property Tests", () => {
       const expectedCollisions = clampsToZero.length > 1;
 
       const layer = createMockLayer("layer1", keyframes);
-      const store = createMockStore([layer]);
+      setupTestStores([layer]);
 
       const keyframesToMove = keyframes.map((kf) => ({
         layerId: "layer1",
@@ -508,9 +485,16 @@ describe("Dimension Separation Property Tests", () => {
         expect(layer.transform.positionX).toBeDefined();
         expect(layer.transform.positionY).toBeDefined();
         expect(layer.transform.positionZ).toBeDefined();
-        expect(layer.transform.positionX!.value).toBe(currentValue.x);
-        expect(layer.transform.positionY!.value).toBe(currentValue.y);
-        expect(layer.transform.positionZ!.value).toBe(currentValue.z);
+        // Deterministic: Use values after toBeDefined() checks - explicit null check
+        const positionX = layer.transform.positionX;
+        const positionY = layer.transform.positionY;
+        const positionZ = layer.transform.positionZ;
+        if (!positionX || !positionY || !positionZ) {
+          throw new Error("Position dimensions should be defined after separation");
+        }
+        expect(positionX.value).toBe(currentValue.x);
+        expect(positionY.value).toBe(currentValue.y);
+        expect(positionZ.value).toBe(currentValue.z);
       }
     );
 
@@ -526,16 +510,23 @@ describe("Dimension Separation Property Tests", () => {
         separatePositionDimensions(layer.transform);
 
         // Each dimension should have the same number of keyframes
-        expect(layer.transform.positionX!.keyframes.length).toBe(originalKeyframeCount);
-        expect(layer.transform.positionY!.keyframes.length).toBe(originalKeyframeCount);
-        expect(layer.transform.positionZ!.keyframes.length).toBe(originalKeyframeCount);
+        // Deterministic: Explicit null checks after separation
+        const positionX = layer.transform.positionX;
+        const positionY = layer.transform.positionY;
+        const positionZ = layer.transform.positionZ;
+        if (!positionX || !positionY || !positionZ) {
+          throw new Error("Position dimensions should be defined after separation");
+        }
+        expect(positionX.keyframes.length).toBe(originalKeyframeCount);
+        expect(positionY.keyframes.length).toBe(originalKeyframeCount);
+        expect(positionZ.keyframes.length).toBe(originalKeyframeCount);
 
         // Verify keyframe values are correctly extracted
         for (let i = 0; i < originalKeyframeCount; i++) {
           const original = keyframes[i];
-          expect(layer.transform.positionX!.keyframes[i].value).toBe(original.value.x);
-          expect(layer.transform.positionY!.keyframes[i].value).toBe(original.value.y);
-          expect(layer.transform.positionZ!.keyframes[i].value).toBe(original.value.z);
+          expect(positionX.keyframes[i].value).toBe(original.value.x);
+          expect(positionY.keyframes[i].value).toBe(original.value.y);
+          expect(positionZ.keyframes[i].value).toBe(original.value.z);
         }
       }
     );
@@ -603,9 +594,16 @@ describe("Dimension Separation Property Tests", () => {
         expect(layer.transform.scaleX).toBeDefined();
         expect(layer.transform.scaleY).toBeDefined();
         expect(layer.transform.scaleZ).toBeDefined();
-        expect(layer.transform.scaleX!.value).toBe(currentValue.x);
-        expect(layer.transform.scaleY!.value).toBe(currentValue.y);
-        expect(layer.transform.scaleZ!.value).toBe(currentValue.z);
+        // Deterministic: Use values after toBeDefined() checks - explicit null check
+        const scaleX = layer.transform.scaleX;
+        const scaleY = layer.transform.scaleY;
+        const scaleZ = layer.transform.scaleZ;
+        if (!scaleX || !scaleY || !scaleZ) {
+          throw new Error("Scale dimensions should be defined after separation");
+        }
+        expect(scaleX.value).toBe(currentValue.x);
+        expect(scaleY.value).toBe(currentValue.y);
+        expect(scaleZ.value).toBe(currentValue.z);
       }
     );
 
@@ -674,8 +672,14 @@ describe("Dimension Separation Property Tests", () => {
 
         expect(layer.transform.separateDimensions?.position).toBe(true);
         expect(layer.transform.separateDimensions?.scale).toBe(true);
-        expect(layer.transform.positionX!.value).toBe(positionValue.x);
-        expect(layer.transform.scaleX!.value).toBe(scaleValue.x);
+        // Deterministic: Explicit null checks after separation
+        const positionX = layer.transform.positionX;
+        const scaleX = layer.transform.scaleX;
+        if (!positionX || !scaleX) {
+          throw new Error("Position and scale dimensions should be defined after separation");
+        }
+        expect(positionX.value).toBe(positionValue.x);
+        expect(scaleX.value).toBe(scaleValue.x);
       }
     );
   });

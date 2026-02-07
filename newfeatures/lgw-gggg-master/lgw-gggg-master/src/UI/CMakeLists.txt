@@ -1,0 +1,24 @@
+add_library(__hg_GUI STATIC
+	SimulationSceneCLI.h
+    SimulationSceneCLI.cpp
+    SimulationScene.h
+    SimulationScene.cpp
+	ImGUIMenu/Object.h
+	ImGUIMenu/Object.cpp
+	ImGUIMenu/Scene.h
+	ImGUIMenu/Scene.cpp
+	ImGUIMenu/Dynamics.h
+	ImGUIMenu/Dynamics.cpp
+	ImGUIMenu/RigidWorld.h
+	ImGUIMenu/RigidWorld.cpp
+	ImGUIMenu/Solver/Solver.h
+	ImGUIMenu/Solver/Solver.cpp
+	ImGUIMenu/Solver/PrimalDual/NonSmoothForce.h
+	ImGUIMenu/Solver/PrimalDual/NonSmoothForce.cpp
+)
+target_link_libraries(__hg_GUI
+    Eigen3::Eigen
+    MagnumIntegration::ImGui
+	__hg_Experiments
+	FrictionFrenzy::FrictionFrenzy
+)

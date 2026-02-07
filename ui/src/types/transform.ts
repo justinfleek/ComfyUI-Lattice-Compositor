@@ -7,6 +7,7 @@
 import { isFiniteNumber } from "@/utils/typeGuards";
 import type { AnimatableProperty } from "./animation";
 import { createAnimatableProperty } from "./animation";
+import { generateKeyframeId } from "@/utils/uuid5";
 
 // ============================================================
 // VECTOR TYPES
@@ -331,8 +332,10 @@ export function separatePositionDimensions(transform: LayerTransform): void {
 /**
  * Link position dimensions back into a combined property.
  * Merges keyframes from X, Y, Z into the combined position property.
+ * @param transform - The transform to link dimensions for
+ * @param layerId - Optional layer ID for deterministic keyframe ID generation
  */
-export function linkPositionDimensions(transform: LayerTransform): void {
+export function linkPositionDimensions(transform: LayerTransform, layerId?: string): void {
   if (!transform.positionX || !transform.positionY) return;
 
   const posX = transform.positionX;
@@ -407,8 +410,14 @@ export function linkPositionDimensions(transform: LayerTransform): void {
     // Use the first available keyframe as template for handles/interpolation
     const templateKf = xKf || yKf || zKf;
 
+    // Deterministic ID generation: same layer/property/frame/value always produces same ID
+    const propertyPath = "transform.position";
+    const valueStr = `${xVal},${yVal},${zVal}`;
+    const effectiveLayerId = layerId || "merged";
+    const mergedId = generateKeyframeId(effectiveLayerId, propertyPath, frame, valueStr);
+    
     transform.position.keyframes.push({
-      id: `kf_pos_${frame}_${Date.now()}`,
+      id: mergedId,
       frame,
       value: { x: xVal, y: yVal, z: zVal },
       // Pattern match: templateKf.interpolation ∈ string | undefined → string (default "linear")
@@ -511,8 +520,10 @@ export function separateScaleDimensions(transform: LayerTransform): void {
 
 /**
  * Link scale dimensions back into a combined property.
+ * @param transform - The transform to link dimensions for
+ * @param layerId - Optional layer ID for deterministic keyframe ID generation
  */
-export function linkScaleDimensions(transform: LayerTransform): void {
+export function linkScaleDimensions(transform: LayerTransform, layerId?: string): void {
   if (!transform.scaleX || !transform.scaleY) return;
 
   const scaleX = transform.scaleX;
@@ -587,8 +598,14 @@ export function linkScaleDimensions(transform: LayerTransform): void {
 
     const templateKf = xKf || yKf || zKf;
 
+    // Deterministic ID generation: same layer/property/frame/value always produces same ID
+    const propertyPath = "transform.scale";
+    const valueStr = `${xVal},${yVal},${zVal}`;
+    const effectiveLayerId = layerId || "merged";
+    const mergedId = generateKeyframeId(effectiveLayerId, propertyPath, frame, valueStr);
+    
     transform.scale.keyframes.push({
-      id: `kf_scale_${frame}_${Date.now()}`,
+      id: mergedId,
       frame,
       value: { x: xVal, y: yVal, z: zVal },
       // Pattern match: templateKf.interpolation ∈ string | undefined → string (default "linear")

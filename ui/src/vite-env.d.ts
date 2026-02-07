@@ -3,9 +3,7 @@
 import type { DefineComponent } from "vue";
 
 declare module "*.vue" {
-  // Vue component type declaration - allows any component structure
-  // This is intentionally permissive to match Vue's flexible component system
-  const component: DefineComponent<any, any, any>;
+  const component: DefineComponent<Record<string, unknown>, Record<string, unknown>, unknown>;
   export default component;
 }
 

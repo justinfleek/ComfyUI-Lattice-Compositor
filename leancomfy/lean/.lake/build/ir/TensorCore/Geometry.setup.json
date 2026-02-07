@@ -1,0 +1,9 @@
+{"plugins": [],
+ "package": "tensor-core",
+ "options": {},
+ "name": "TensorCore.Geometry",
+ "isModule": false,
+ "importArts":
+ {"TensorCore.Basic":
+  ["C:\\Users\\justi\\Desktop\\ComfyUI-Lattice-Compositor\\leancomfy\\lean\\.lake\\build\\lib\\lean\\TensorCore\\Basic.olean"]},
+ "dynlibs": []}

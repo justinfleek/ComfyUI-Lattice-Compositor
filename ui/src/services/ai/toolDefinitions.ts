@@ -51,6 +51,17 @@ export interface ToolResult {
   error?: string;
 }
 
+export type ToolParameterProperty = {
+  type?: string;
+  enum?: readonly string[];
+  properties?: Record<string, ToolParameterProperty>;
+  items?: ToolParameterProperty;
+  description?: string;
+  nullable?: boolean;
+  minimum?: number;
+  maximum?: number;
+};
+
 export interface ToolDefinition {
   type: "function";
   function: {
@@ -58,16 +69,18 @@ export interface ToolDefinition {
     description: string;
     parameters: {
       type: "object";
-      properties: Record<string, {
-        type?: string;
-        enum?: readonly string[];
-        properties?: Record<string, { type: string }>;
-        description?: string;
-        nullable?: boolean;
-      }>;
+      properties: Record<string, ToolParameterProperty>;
       required?: string[];
     };
   };
+  /** SECURITY: Scope level required to use this tool */
+  requiredScope?: "readonly" | "limited" | "standard" | "full";
+  /** SECURITY: Whether this tool requires explicit user approval */
+  requiresApproval?: boolean;
+  /** SECURITY: Explainability requirement - agent must explain why this tool is needed */
+  requiresReasoning?: boolean;
+  /** SECURITY: Risk level for this tool */
+  riskLevel?: "low" | "medium" | "high" | "critical";
 }
 
 // ============================================================================
@@ -131,6 +144,9 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
         required: ["type"],
       },
     },
+    requiredScope: "limited",
+    requiresReasoning: true,
+    riskLevel: "low",
   },
   {
     type: "function",
@@ -148,6 +164,10 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
         required: ["layerId"],
       },
     },
+    requiredScope: "standard",
+    requiresApproval: true,
+    requiresReasoning: true,
+    riskLevel: "medium",
   },
   {
     type: "function",
@@ -1207,6 +1227,10 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
         required: ["sourceLayerId"],
       },
     },
+    requiredScope: "full",
+    requiresApproval: true,
+    requiresReasoning: true,
+    riskLevel: "critical",
   },
   {
     type: "function",
@@ -1279,6 +1303,10 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
         required: ["sourceLayerId"],
       },
     },
+    requiredScope: "full",
+    requiresApproval: true,
+    requiresReasoning: true,
+    riskLevel: "critical",
   },
 
   // ==========================================================================
@@ -1331,6 +1359,9 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
         properties: {},
       },
     },
+    requiredScope: "readonly",
+    requiresReasoning: false,
+    riskLevel: "low",
   },
 
   // ==========================================================================

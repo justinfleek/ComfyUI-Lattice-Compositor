@@ -33,7 +33,9 @@ export class NormalLayer extends BaseLayer {
   private extractNormalData(layerData: Layer): NormalLayerData {
     // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??/?.
     const data = layerData.data as Partial<NormalLayerData> | undefined;
-    const assetId = (data !== null && data !== undefined && typeof data === "object" && "assetId" in data) ? data.assetId : null;
+    // Deterministic: Explicit type conversion - ensure string | null (not undefined)
+    const assetIdRaw = (data !== null && data !== undefined && typeof data === "object" && "assetId" in data) ? data.assetId : undefined;
+    const assetId = assetIdRaw === undefined || assetIdRaw === null ? null : assetIdRaw;
     const visualizationMode = (data !== null && data !== undefined && typeof data === "object" && "visualizationMode" in data && typeof data.visualizationMode === "string" && data.visualizationMode.length > 0) ? data.visualizationMode : "rgb";
     const format = (data !== null && data !== undefined && typeof data === "object" && "format" in data && typeof data.format === "string" && data.format.length > 0) ? data.format : "opengl";
     const flipX = (data !== null && data !== undefined && typeof data === "object" && "flipX" in data && typeof data.flipX === "boolean") ? data.flipX : false;

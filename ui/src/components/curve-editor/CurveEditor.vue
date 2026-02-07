@@ -78,7 +78,7 @@
                   class="keyframe-marker"
                   :class="{
                     selected: isKeyframeSelected(prop.id, kfIndex),
-                    hovered: (hoveredKeyframe != null && typeof hoveredKeyframe === "object" && "propId" in hoveredKeyframe && hoveredKeyframe.propId === prop.id && "index" in hoveredKeyframe && hoveredKeyframe.index === kfIndex)
+                    hovered: isKeyframeHovered(prop.id, kfIndex)
                   }"
                   @mousedown.stop="onKeyframeMouseDown(prop.id, kfIndex, $event)"
                 >
@@ -903,6 +903,17 @@ function updateHoveredKeyframe(x: number, y: number): void {
       }
     }
   }
+}
+
+function isKeyframeHovered(propId: string, index: number): boolean {
+  return (
+    hoveredKeyframe.value != null &&
+    typeof hoveredKeyframe.value === "object" &&
+    "propId" in hoveredKeyframe.value &&
+    hoveredKeyframe.value.propId === propId &&
+    "index" in hoveredKeyframe.value &&
+    hoveredKeyframe.value.index === index
+  );
 }
 
 function onKeyframeMouseDown(

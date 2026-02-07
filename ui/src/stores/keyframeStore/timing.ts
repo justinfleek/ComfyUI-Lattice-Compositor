@@ -13,6 +13,7 @@ import { findPropertyByPath } from "./helpers";
 import { findSurroundingKeyframes } from "./query";
 import { useProjectStore } from "../projectStore";
 import { useLayerStore } from "../layerStore";
+import { generateKeyframeId } from "@/utils/uuid5";
 
 // ============================================================================
 // KEYFRAME TIMING SCALE
@@ -61,10 +62,19 @@ export function scaleKeyframeTiming(
     // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
     const propertyKeyframes = (property != null && typeof property === "object" && "keyframes" in property && property.keyframes != null && Array.isArray(property.keyframes)) ? property.keyframes : undefined;
     if (propertyKeyframes != null && propertyKeyframes.length > 0) {
-      // Scale each keyframe's frame number relative to anchor
+      // Scale each keyframe's frame number relative to anchor and regenerate IDs
       for (const kf of propertyKeyframes) {
         const relativeFrame = kf.frame - anchorFrame;
-        kf.frame = Math.round(anchorFrame + relativeFrame * scaleFactor);
+        const newFrame = Math.round(anchorFrame + relativeFrame * scaleFactor);
+        // Regenerate keyframe ID based on new frame number for determinism
+        // Same layer/property/frame/value should always produce same ID
+        // Explicit check: kf.value is PropertyValue (never null/undefined per type system)
+        const kfValue = kf.value;
+        const valueStr = typeof kfValue === "object" && kfValue !== null && "x" in kfValue && "y" in kfValue
+          ? `${(kfValue as { x: number; y: number }).x},${(kfValue as { x: number; y: number }).y}${"z" in kfValue ? `,${(kfValue as { x: number; y: number; z?: number }).z}` : ""}`
+          : String(kfValue);
+        kf.id = generateKeyframeId(layerId, propPath, newFrame, valueStr);
+        kf.frame = newFrame;
       }
       // Re-sort keyframes to maintain order
       propertyKeyframes.sort((a, b) => a.frame - b.frame);
@@ -118,9 +128,18 @@ export function timeReverseKeyframes(
       const values = propertyKeyframes.map((kf) => kf.value);
       // Reverse the values
       values.reverse();
-      // Assign reversed values back to keyframes (frames stay same)
+      // Assign reversed values back to keyframes and regenerate IDs (frames stay same, values change)
       for (let i = 0; i < propertyKeyframes.length; i++) {
-        propertyKeyframes[i].value = values[i];
+        const kf = propertyKeyframes[i];
+        kf.value = values[i];
+        // Regenerate keyframe ID based on new value for determinism
+        // Same layer/property/frame but different value should produce different ID
+        // Explicit check: kf.value is PropertyValue (never null/undefined per type system)
+        const kfValue = kf.value;
+        const valueStr = typeof kfValue === "object" && kfValue !== null && "x" in kfValue && "y" in kfValue
+          ? `${(kfValue as { x: number; y: number }).x},${(kfValue as { x: number; y: number }).y}${"z" in kfValue ? `,${(kfValue as { x: number; y: number; z?: number }).z}` : ""}`
+          : String(kfValue);
+        kf.id = generateKeyframeId(layerId, propPath, kf.frame, valueStr);
       }
       reversedCount += propertyKeyframes.length;
     }
@@ -150,7 +169,7 @@ export function timeReverseKeyframes(
 export function insertKeyframeOnPath(
   layerId: string,
   frame: number,
-): string {
+): string | null {
   const layerStore = useLayerStore();
   const layer = layerStore.getLayerById(layerId);
   if (!layer) {
@@ -256,12 +275,21 @@ export function applyRovingToPosition(
     );
 
     if (result.success) {
-      // Update keyframe frames in place
+      // Update keyframe frames and regenerate IDs for determinism
       result.keyframes.forEach((newKf, index) => {
         // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
         const positionPropKeyframes = (positionProp != null && typeof positionProp === "object" && "keyframes" in positionProp && positionProp.keyframes != null && Array.isArray(positionProp.keyframes)) ? positionProp.keyframes : undefined;
         if (positionPropKeyframes != null && index >= 0 && index < positionPropKeyframes.length) {
-          positionPropKeyframes[index].frame = newKf.frame;
+          const kf = positionPropKeyframes[index];
+          // Regenerate keyframe ID based on new frame number for determinism
+          // Same layer/property/frame/value should always produce same ID
+          // Explicit check: kf.value is PropertyValue (never null/undefined per type system)
+          const kfValue = kf.value;
+          const valueStr = typeof kfValue === "object" && kfValue !== null && "x" in kfValue && "y" in kfValue
+            ? `${(kfValue as { x: number; y: number }).x},${(kfValue as { x: number; y: number }).y}${"z" in kfValue ? `,${(kfValue as { x: number; y: number; z?: number }).z}` : ""}`
+            : String(kfValue);
+          kf.id = generateKeyframeId(layerId, "transform.position", newKf.frame, valueStr);
+          kf.frame = newKf.frame;
         }
       });
 

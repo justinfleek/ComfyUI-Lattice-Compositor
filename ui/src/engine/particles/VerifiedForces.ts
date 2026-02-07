@@ -7,7 +7,7 @@
  * - Drag opposes velocity: F·v ≤ 0 (Lean4 theorem drag_opposes_velocity)
  * - Falloff functions: 0 ≤ result ≤ 1 (Lean4 theorem falloff_in_unit_interval)
  * 
- * Based on Lean4 proofs from leanparticles/PARTICLE_VERIFIED (1).lean
+ * Based on Lean4 proofs from leanparticles/PARTICLE_VERIFIED.lean
  */
 
 import { finite, pos, nneg, type Positive, type NonNegative } from "./VerifiedTypes";
