@@ -1,4 +1,0 @@
-# file: /home/nixos/.nix-profile/lib/python3.13/email/__init__.py
-# hypothesis_version: 6.150.0
-
-['base64mime', 'charset', 'encoders', 'errors', 'feedparser', 'generator', 'header', 'iterators', 'message', 'message_from_bytes', 'message_from_file', 'message_from_string', 'mime', 'parser', 'quoprimime', 'utils']

@@ -1,4 +1,0 @@
-# file: /home/nixos/.nix-profile/lib/python3.13/urllib/error.py
-# hypothesis_version: 6.150.0
-
-['<HTTPError %s: %r>', '<urlopen error %s>', 'ContentTooShortError', 'HTTP Error %s: %s', 'HTTPError', 'URLError']

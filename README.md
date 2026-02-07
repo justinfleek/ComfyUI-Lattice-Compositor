@@ -86,9 +86,8 @@ Lattice is a **professional-grade motion graphics compositor** built for the **C
 
 | Metric | Value |
 |--------|-------|
-| **Lines of Code** | 265,000+ |
-| **Source Files** | 493 |
-| **Tests Passing** | 1,777 / 1,786 (99.5%) |
+| **Lines of Code** | 290,000+ |
+| **Tests Passing** | 4,275+ |
 | **TypeScript Errors** | 0 |
 | **Build Warnings** | 0 |
 | **Layer Types** | 17 |
@@ -96,8 +95,8 @@ Lattice is a **professional-grade motion graphics compositor** built for the **C
 | **Easing Functions** | 35 |
 | **Camera Presets** | 22 |
 | **Particle Presets** | 24 |
-| **Vue Components** | 146 |
-| **Services** | 80+ |
+
+See [PROJECT_STATUS.md](PROJECT_STATUS.md) for detailed status and [PRD.md](PRD.md) for product requirements.
 
 ---
 
@@ -368,14 +367,15 @@ For AI video generation, every frame must be **reproducible**. Lattice guarantee
 
 | Document | Description |
 |----------|-------------|
-| [FEATURE_AUDIT.md](FEATURE_AUDIT.md) | All features mapped to UI access |
+| [PRD.md](PRD.md) | Product requirements |
 | [PROJECT_STATUS.md](PROJECT_STATUS.md) | Current status and roadmap |
+| [INSTALL.md](INSTALL.md) | Detailed installation guide |
+| [SECURITY_ASSESSMENT.md](SECURITY_ASSESSMENT.md) | Security analysis |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | System architecture |
-| [docs/SERVICE_API_REFERENCE.md](docs/SERVICE_API_REFERENCE.md) | Service API reference (181 services) |
+| [docs/SERVICE_API_REFERENCE.md](docs/SERVICE_API_REFERENCE.md) | Service API reference |
 | [docs/EFFECT_PARAMETERS.md](docs/EFFECT_PARAMETERS.md) | Effect parameters reference |
-| [docs/GLOSSARY.md](docs/GLOSSARY.md) | 100+ term definitions |
 
-See `docs/` folder for additional technical documents.
+See `docs/` folder for technical documents and `_archived/` for historical documentation.
 
 ---
 

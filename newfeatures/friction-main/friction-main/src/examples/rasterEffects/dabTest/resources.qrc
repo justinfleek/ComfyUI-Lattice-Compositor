@@ -1,5 +1,0 @@
-<RCC>
-    <qresource prefix="/shaders">
-        <file>normal.frag</file>
-    </qresource>
-</RCC>

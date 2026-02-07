@@ -1,3 +1,0 @@
-[submodule "KittenEngine/KittenEngine/KittenGpuLBVH"]
-	path = KittenEngine/KittenEngine/KittenGpuLBVH
-	url = https://github.com/jerry060599/KittenGpuLBVH

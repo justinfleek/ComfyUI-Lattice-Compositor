@@ -1,4 +1,0 @@
-This is an experiment in using Lean 4 as a general purpose programming language.
-
-* Sample Output
-  [[./examples/trace.png]]

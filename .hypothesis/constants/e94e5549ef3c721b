@@ -1,4 +1,0 @@
-# file: /home/nixos/.nix-profile/lib/python3.13/contextvars.py
-# hypothesis_version: 6.150.0
-
-['Context', 'ContextVar', 'Token', 'copy_context']

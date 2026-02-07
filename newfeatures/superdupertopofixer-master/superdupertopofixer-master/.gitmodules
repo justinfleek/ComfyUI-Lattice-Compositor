@@ -1,7 +1,0 @@
-[submodule "src/utilities/imgui"]
-	path = src/utilities/imgui
-	url = https://github.com/ocornut/imgui.git
-[submodule "abseil-cpp"]
-	path = abseil-cpp
-	url = https://github.com/abseil/abseil-cpp.git
-

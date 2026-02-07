@@ -1,4 +1,0 @@
-# file: /home/nixos/.nix-profile/lib/python3.13/unittest/loader.py
-# hypothesis_version: 6.150.0
-
-['.', '..', 'ModuleSkipped', '[_a-z]\\w*\\.py$', '__file__', '__init__.py', '__path__', 'load_tests', 'runTest', 'test', 'test*.py']

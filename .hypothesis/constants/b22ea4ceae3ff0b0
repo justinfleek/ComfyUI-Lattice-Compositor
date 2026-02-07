@@ -1,4 +1,0 @@
-# file: /home/nixos/.nix-profile/lib/python3.13/asyncio/timeouts.py
-# hypothesis_version: 6.150.0
-
-['Timeout', 'active', 'created', 'expired', 'expiring', 'finished', 'timeout', 'timeout_at']

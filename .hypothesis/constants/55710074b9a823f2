@@ -1,4 +1,0 @@
-# file: /home/nixos/.nix-profile/lib/python3.13/abc.py
-# hypothesis_version: 6.150.0
-
-['__abstractmethods__', '__isabstractmethod__', 'abc']
