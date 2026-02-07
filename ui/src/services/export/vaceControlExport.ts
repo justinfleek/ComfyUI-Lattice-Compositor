@@ -625,8 +625,8 @@ export function createPathFollower(
       ? [
           Math.max(1, Math.min(10000, options.size[0])),
           Math.max(1, Math.min(10000, options.size[1])),
-        ]
-      : [20, 20];
+        ] as [number, number]
+      : [20, 20] as [number, number];
 
   // Type proof: fillColor ∈ string | undefined → string
   const fillColor =

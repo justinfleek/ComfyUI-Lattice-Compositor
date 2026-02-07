@@ -384,10 +384,12 @@ function applyPropertyExpression<T>(
   };
 
   // Convert PropertyExpression to Expression format
+  // PropertyExpression.type is "preset" | "custom", Expression.type adds "function"
+  // Map "custom" to "custom", "preset" to "preset" (no mapping needed for existing values)
   const expression: Expression = {
-    type: expr.type as "preset" | "function" | "custom",
+    type: expr.type === "custom" ? "custom" : "preset",
     name: expr.name,
-    params: expr.params as Record<string, JSONValue>,
+    params: expr.params,
     enabled: expr.enabled,
   };
 
@@ -630,8 +632,12 @@ function interpolateValue<T>(v1: T, v2: T, t: number): T {
   }
 
   // BezierPath (path morphing)
-  if (isBezierPath(v1) && isBezierPath(v2)) {
-    return interpolatePath(v1 as BezierPath, v2 as BezierPath, t) as T;
+  // Type narrowing: Check if values are bezier paths before interpolation
+  // Cast to RuntimeValue for type guard check since T is unconstrained generic
+  const rv1 = v1 as import("@/types/ses-ambient").RuntimeValue;
+  const rv2 = v2 as import("@/types/ses-ambient").RuntimeValue;
+  if (isBezierPath(rv1) && isBezierPath(rv2)) {
+    return interpolatePath(rv1, rv2, t) as T;
   }
 
   // Default: no interpolation, return first value until t >= 0.5

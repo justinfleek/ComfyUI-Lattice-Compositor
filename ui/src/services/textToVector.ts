@@ -643,7 +643,7 @@ export async function textToVectorFromUrl(
     ? options.letterSpacing
     : 0;
   const letterSpacing = isFiniteNumber(letterSpacingRaw) && letterSpacingRaw > 0
-    ? options.letterSpacing
+    ? letterSpacingRaw
     : 0;
 
   const opts = {

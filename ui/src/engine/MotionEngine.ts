@@ -673,9 +673,9 @@ export class MotionEngine {
 
     // Evaluate audio
     // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy null
-    // Pattern match: audioAnalysis ∈ AudioAnalysis | null | undefined → AudioAnalysis | {} (use empty object sentinel instead of null)
+    // Pattern match: audioAnalysis ∈ AudioAnalysis | null | undefined → AudioAnalysis | null
     const hasAudioAnalysis = typeof audioAnalysis === "object" && audioAnalysis !== null;
-    const evaluatedAudio = this.evaluateAudio(frame, hasAudioAnalysis ? audioAnalysis : {} as AudioAnalysis);
+    const evaluatedAudio = this.evaluateAudio(frame, hasAudioAnalysis ? audioAnalysis : null);
 
     // Evaluate particle layers through deterministic simulation
     const particleSnapshots = this.evaluateParticleLayers(
@@ -1162,9 +1162,10 @@ export class MotionEngine {
 
     // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy logical OR/truthy checks
     // Pattern match: Verify cameraLayer is defined after find operations
+    // Return null when no camera found - this is valid (not all compositions have cameras)
     const hasCameraLayerValid = typeof cameraLayer === "object" && cameraLayer !== null;
     if (!hasCameraLayerValid) {
-      throw new Error(`[MotionEngine] Cannot evaluate camera: Camera layer with id "${activeCameraId}" not found`);
+      return null;
     }
     
     // Pattern match: cameraLayer is guaranteed to be Layer here (after type guard check)

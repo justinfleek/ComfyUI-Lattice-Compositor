@@ -93,9 +93,13 @@ export function findPropertyByPath(
       if (layer.type === "spline" && layer.data) {
         const splineData = layer.data as import("@/types/spline").SplineData;
         // Support both warpPins and deprecated puppetPins
-        const pins = (splineData !== null && typeof splineData === "object" && pinsKey in splineData && Array.isArray((splineData as Record<string, unknown>)[pinsKey])) 
-          ? (splineData as Record<string, import("@/types/meshWarp").WarpPin[]>)[pinsKey]
-          : undefined;
+        // Type-safe property access: check for specific known properties
+        let pins: import("@/types/meshWarp").WarpPin[] | undefined;
+        if (pinsKey === "warpPins" && splineData.warpPins !== undefined && Array.isArray(splineData.warpPins)) {
+          pins = splineData.warpPins;
+        } else if (pinsKey === "puppetPins" && splineData.puppetPins !== undefined && Array.isArray(splineData.puppetPins)) {
+          pins = splineData.puppetPins;
+        }
         
         if (pins) {
           const pin = pins.find((p) => p.id === pinId);
@@ -119,11 +123,12 @@ export function findPropertyByPath(
       const keypointId = parts[1];
       
       if (layer.type === "pose" && layer.data) {
-        const poseData = layer.data as import("@/engine/layers/PoseLayer").PoseLayerData;
-        const animatedKeypoints = (poseData !== null && typeof poseData === "object" && "animatedKeypoints" in poseData && poseData.animatedKeypoints !== null && typeof poseData.animatedKeypoints === "object")
-          ? poseData.animatedKeypoints as Record<string, AnimatableProperty<import("@/types/project").Vec2>>
+        // Type-safe access: layer.data must have animatedKeypoints for pose layers
+        const layerData = layer.data;
+        const animatedKeypoints = (layerData !== null && typeof layerData === "object" && "animatedKeypoints" in layerData && layerData.animatedKeypoints !== null && typeof layerData.animatedKeypoints === "object")
+          ? layerData.animatedKeypoints as Record<string, AnimatableProperty<import("@/types/project").Vec2>>
           : undefined;
-        
+
         if (animatedKeypoints && keypointId in animatedKeypoints) {
           return animatedKeypoints[keypointId] as AnimatableProperty<PropertyValue>;
         }

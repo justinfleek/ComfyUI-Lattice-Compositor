@@ -1019,62 +1019,104 @@ export function getFeatureAtFrame(
 
   switch (feature) {
     case "amplitude": {
-      // Type proof: amplitudeEnvelope[frame] ∈ ℝ ∪ {undefined} → ℝ
-      const amplitudeValue = analysis.amplitudeEnvelope[clampedFrame];
+      // Type guard: ensure array exists before accessing
+      const amplitudeArray = analysis.amplitudeEnvelope;
+      if (!Array.isArray(amplitudeArray)) {
+        return 0;
+      }
+      const amplitudeValue = amplitudeArray[clampedFrame];
       return isFiniteNumber(amplitudeValue) && amplitudeValue >= 0 ? amplitudeValue : 0;
     }
 
     case "rms": {
-      // Type proof: rmsEnergy[frame] ∈ ℝ ∪ {undefined} → ℝ
-      const rmsValue = analysis.rmsEnergy[clampedFrame];
+      // Type guard: ensure array exists before accessing
+      const rmsArray = analysis.rmsEnergy;
+      if (!Array.isArray(rmsArray)) {
+        return 0;
+      }
+      const rmsValue = rmsArray[clampedFrame];
       return isFiniteNumber(rmsValue) && rmsValue >= 0 ? rmsValue : 0;
     }
 
     case "spectralCentroid": {
-      // Type proof: spectralCentroid[frame] ∈ ℝ ∪ {undefined} → ℝ
-      const centroidValue = analysis.spectralCentroid[clampedFrame];
+      // Type guard: ensure array exists before accessing
+      const centroidArray = analysis.spectralCentroid;
+      if (!Array.isArray(centroidArray)) {
+        return 0;
+      }
+      const centroidValue = centroidArray[clampedFrame];
       return isFiniteNumber(centroidValue) && centroidValue >= 0 ? centroidValue : 0;
     }
 
     case "sub": {
-      // Type proof: frequencyBands.sub[frame] ∈ ℝ ∪ {undefined} → ℝ
-      const subValue = analysis.frequencyBands.sub[clampedFrame];
+      // Type guard: ensure frequencyBands and sub array exist
+      const freqBands = analysis.frequencyBands;
+      if (typeof freqBands !== "object" || freqBands === null || !Array.isArray(freqBands.sub)) {
+        return 0;
+      }
+      const subValue = freqBands.sub[clampedFrame];
       return isFiniteNumber(subValue) && subValue >= 0 ? subValue : 0;
     }
 
     case "bass": {
-      // Type proof: frequencyBands.bass[frame] ∈ ℝ ∪ {undefined} → ℝ
-      const bassValue = analysis.frequencyBands.bass[clampedFrame];
+      // Type guard: ensure frequencyBands and bass array exist
+      const freqBands = analysis.frequencyBands;
+      if (typeof freqBands !== "object" || freqBands === null || !Array.isArray(freqBands.bass)) {
+        return 0;
+      }
+      const bassValue = freqBands.bass[clampedFrame];
       return isFiniteNumber(bassValue) && bassValue >= 0 ? bassValue : 0;
     }
 
     case "lowMid": {
-      // Type proof: frequencyBands.lowMid[frame] ∈ ℝ ∪ {undefined} → ℝ
-      const lowMidValue = analysis.frequencyBands.lowMid[clampedFrame];
+      // Type guard: ensure frequencyBands and lowMid array exist
+      const freqBands = analysis.frequencyBands;
+      if (typeof freqBands !== "object" || freqBands === null || !Array.isArray(freqBands.lowMid)) {
+        return 0;
+      }
+      const lowMidValue = freqBands.lowMid[clampedFrame];
       return isFiniteNumber(lowMidValue) && lowMidValue >= 0 ? lowMidValue : 0;
     }
 
     case "mid": {
-      // Type proof: frequencyBands.mid[frame] ∈ ℝ ∪ {undefined} → ℝ
-      const midValue = analysis.frequencyBands.mid[clampedFrame];
+      // Type guard: ensure frequencyBands and mid array exist
+      const freqBands = analysis.frequencyBands;
+      if (typeof freqBands !== "object" || freqBands === null || !Array.isArray(freqBands.mid)) {
+        return 0;
+      }
+      const midValue = freqBands.mid[clampedFrame];
       return isFiniteNumber(midValue) && midValue >= 0 ? midValue : 0;
     }
 
     case "highMid": {
-      // Type proof: frequencyBands.highMid[frame] ∈ ℝ ∪ {undefined} → ℝ
-      const highMidValue = analysis.frequencyBands.highMid[clampedFrame];
+      // Type guard: ensure frequencyBands and highMid array exist
+      const freqBands = analysis.frequencyBands;
+      if (typeof freqBands !== "object" || freqBands === null || !Array.isArray(freqBands.highMid)) {
+        return 0;
+      }
+      const highMidValue = freqBands.highMid[clampedFrame];
       return isFiniteNumber(highMidValue) && highMidValue >= 0 ? highMidValue : 0;
     }
 
     case "high": {
-      // Type proof: frequencyBands.high[frame] ∈ ℝ ∪ {undefined} → ℝ
-      const highValue = analysis.frequencyBands.high[clampedFrame];
+      // Type guard: ensure frequencyBands and high array exist
+      const freqBands = analysis.frequencyBands;
+      if (typeof freqBands !== "object" || freqBands === null || !Array.isArray(freqBands.high)) {
+        return 0;
+      }
+      const highValue = freqBands.high[clampedFrame];
       return isFiniteNumber(highValue) && highValue >= 0 ? highValue : 0;
     }
 
-    case "onsets":
+    case "onsets": {
+      // Type guard: ensure onsets array exists
+      const onsetsArray = analysis.onsets;
+      if (!Array.isArray(onsetsArray)) {
+        return 0;
+      }
       // Return 1 if this frame is an onset, 0 otherwise
-      return analysis.onsets.includes(clampedFrame) ? 1 : 0;
+      return onsetsArray.includes(clampedFrame) ? 1 : 0;
+    }
 
     // Enhanced features
     case "spectralFlux": {

@@ -194,9 +194,10 @@ export class JointSystem {
     // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
     const jointMotor = (joint != null && typeof joint === "object" && "motor" in joint && joint.motor != null && typeof joint.motor === "object") ? joint.motor : undefined;
     const motorEnabled = (jointMotor != null && typeof jointMotor === "object" && "enabled" in jointMotor && typeof jointMotor.enabled === "boolean" && jointMotor.enabled) ? true : false;
-    if (motorEnabled) {
+    if (motorEnabled && jointMotor !== undefined) {
       const relativeAngle = bodyB.angle - bodyA.angle;
-      let targetAngularVelocity = jointMotor.speed;
+      const motorSpeed = (typeof jointMotor.speed === "number") ? jointMotor.speed : 0;
+      let targetAngularVelocity = motorSpeed;
 
       const motorTargetAngle = (jointMotor != null && typeof jointMotor === "object" && "targetAngle" in jointMotor && typeof jointMotor.targetAngle === "number") ? jointMotor.targetAngle : undefined;
       if (motorTargetAngle !== undefined) {

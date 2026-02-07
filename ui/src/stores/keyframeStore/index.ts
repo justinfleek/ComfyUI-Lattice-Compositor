@@ -29,6 +29,7 @@ export type {
   VelocitySettings,
   KeyframeSelection,
   KeyframeState,
+  KeyframeStoreAccess,
 } from "./types";
 
 // Helpers (re-export for consumers)

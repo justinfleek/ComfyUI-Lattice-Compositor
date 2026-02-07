@@ -572,12 +572,14 @@ export const useProjectStore = defineStore("project", {
 
         let project = parseResult.data;
 
-        if (needsMigration(project)) {
+        // Cast to Record for migration functions that accept union type
+        const projectForMigration = project as unknown as Record<string, JSONValue>;
+        if (needsMigration(projectForMigration)) {
           // Type proof: schemaVersion ∈ ℕ ∪ {undefined} → ℕ
           const schemaVersionValue = project.schemaVersion;
           const oldVersion = isFiniteNumber(schemaVersionValue) && Number.isInteger(schemaVersionValue) && schemaVersionValue >= 1 ? schemaVersionValue : 1;
           storeLogger.info(`Migrating project from schema v${oldVersion} to v${CURRENT_SCHEMA_VERSION}`);
-          const migrationResult = migrateProject(project);
+          const migrationResult = migrateProject(projectForMigration);
           if (migrationResult.success && migrationResult.project) {
             project = migrationResult.project as LatticeProject;
           } else {
@@ -676,12 +678,14 @@ export const useProjectStore = defineStore("project", {
         if (result.status === "success" && result.project) {
           let project = result.project;
 
-          if (needsMigration(project)) {
+          // Cast to Record for migration functions that accept union type
+          const projectForMigration = project as unknown as Record<string, JSONValue>;
+          if (needsMigration(projectForMigration)) {
             // Type proof: schemaVersion ∈ ℕ ∪ {undefined} → ℕ
           const schemaVersionValue = project.schemaVersion;
           const oldVersion = isFiniteNumber(schemaVersionValue) && Number.isInteger(schemaVersionValue) && schemaVersionValue >= 1 ? schemaVersionValue : 1;
             storeLogger.info(`Migrating project from schema v${oldVersion} to v${CURRENT_SCHEMA_VERSION}`);
-            const migrationResult = migrateProject(project);
+            const migrationResult = migrateProject(projectForMigration);
             if (migrationResult.success && migrationResult.project) {
               project = migrationResult.project as LatticeProject;
             } else {
@@ -815,7 +819,7 @@ export const useProjectStore = defineStore("project", {
 
       if (removedCount > 0) {
         store.project.meta.modified = new Date().toISOString();
-        this.pushHistory(store);
+        this.pushHistory();
         storeLogger.info(`Removed ${removedCount} unused assets:`, removedNames);
       }
 
@@ -850,24 +854,23 @@ export const useProjectStore = defineStore("project", {
       const folder = zip.folder(folderName);
       if (!folder) throw new Error("Failed to create ZIP folder");
 
-      const usedIds = includeUnused ? undefined : findUsedAssetIds(store);
+      const usedIds = includeUnused ? null : findUsedAssetIds(store);
       const assets = store.project.assets;
       const assetsFolder = folder.folder("assets");
+      if (assetsFolder === null) throw new Error("Failed to create assets ZIP folder");
       const assetManifest: Record<string, string> = {};
 
       for (const [assetId, asset] of Object.entries(assets)) {
-        if (usedIds && !usedIds.has(assetId)) continue;
+        if (usedIds !== null && !usedIds.has(assetId)) continue;
 
-        const filename = asset.filename || `${assetId}.${getExtensionForAsset(asset)}`;
+        const filename = asset.filename ? asset.filename : `${assetId}.${getExtensionForAsset(asset)}`;
         assetManifest[assetId] = `assets/${filename}`;
 
         if (asset.data) {
-          // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
-          const assetsFolderVal = assetsFolder;
           if (asset.data.startsWith("data:")) {
             const base64Data = asset.data.split(",")[1];
-            if (base64Data && assetsFolderVal != null && typeof assetsFolderVal === "object" && typeof assetsFolderVal.file === "function") {
-              assetsFolderVal.file(filename, base64Data, { base64: true });
+            if (base64Data) {
+              assetsFolder.file(filename, base64Data, { base64: true });
             }
           } else if (asset.data.startsWith("blob:") || asset.data.startsWith("http")) {
             const urlValidation = validateURL(asset.data, "fetch");
@@ -876,18 +879,15 @@ export const useProjectStore = defineStore("project", {
               continue;
             }
             try {
-              const response = await fetch(urlValidation.sanitized || asset.data);
+              const sanitizedUrl = urlValidation.sanitized ? urlValidation.sanitized : asset.data;
+              const response = await fetch(sanitizedUrl);
               const blob = await response.blob();
-              if (assetsFolderVal != null && typeof assetsFolderVal === "object" && typeof assetsFolderVal.file === "function") {
-                assetsFolderVal.file(filename, blob);
-              }
+              assetsFolder.file(filename, blob);
             } catch (e) {
               storeLogger.warn(`Failed to fetch asset ${assetId}:`, e);
             }
           } else {
-            if (assetsFolderVal != null && typeof assetsFolderVal === "object" && typeof assetsFolderVal.file === "function") {
-              assetsFolderVal.file(filename, asset.data, { base64: true });
-            }
+            assetsFolder.file(filename, asset.data, { base64: true });
           }
         }
       }

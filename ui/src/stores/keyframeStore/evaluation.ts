@@ -108,9 +108,10 @@ export function getPropertyValueAtFrame(
         duration,
       );
   }
-  return parts[0] === "opacity"
-    ? interpolateProperty(layer.opacity, frame, fps, layerId, duration)
-    : null;
+  if (parts[0] === "opacity") {
+    return interpolateProperty(layer.opacity, frame, fps, layerId, duration);
+  }
+  throw new Error(`[KeyframeStore] Cannot get property value at frame: Unknown property path "${propertyPath}" on layer "${layerId}"`);
 }
 
 /**

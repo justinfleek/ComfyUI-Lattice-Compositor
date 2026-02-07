@@ -110,8 +110,8 @@ export interface GenerativeFlowParams {
   riverTurbulence?: number;
 
   // Morph
-  morphSource?: "circle" | "grid" | "text" | "custom";
-  morphTarget?: "circle" | "grid" | "text" | "custom";
+  morphSource?: "circle" | "grid" | "text" | "custom" | "random";
+  morphTarget?: "circle" | "grid" | "text" | "custom" | "random";
   morphEasing?: "linear" | "ease-in" | "ease-out" | "ease-in-out";
 
   // Swarm

@@ -45,7 +45,7 @@ import type {
 import { storeLogger } from "@/utils/logger";
 import { generateKeyframeId } from "@/utils/uuid5";
 import { safeFrame } from "@/stores/keyframeStore/helpers";
-import type { Keyframe, PropertyValue } from "@/types/animation";
+import type { Keyframe } from "@/types/animation";
 
 // ============================================================================
 // STORE ACCESS INTERFACES
@@ -447,13 +447,26 @@ export const useEffectStore = defineStore("effect", {
         return;
       }
 
-      // Type-safe property access: use type assertion for dynamic property access
-      const styleRecord = style as Record<string, PropertyValue | JSONValue | { value: PropertyValue | JSONValue }>;
-      const prop = styleRecord[property as string];
-      if (prop && typeof prop === "object" && prop !== null && "value" in prop) {
-        (prop as { value: PropertyValue | JSONValue }).value = value;
+      // Guard: "enabled" is a boolean, not a style object - cannot update properties on it
+      if (typeof style === "boolean") {
+        storeLogger.warn("updateStyleProperty: Cannot update properties on boolean style", { layerId, styleType });
+        return;
+      }
+
+      // Type-safe dynamic property access on style objects
+      // Style is now narrowed to be an object (not boolean) - use Object.prototype for safe access
+      const propertyKey = property as string;
+      if (propertyKey in style) {
+        // Access property via Object.getOwnPropertyDescriptor for type-safe dynamic access
+        const styleObj = style as object;
+        const prop = (styleObj as Record<string, PropertyValue | JSONValue | { value: PropertyValue | JSONValue }>)[propertyKey];
+        if (prop && typeof prop === "object" && prop !== null && "value" in prop) {
+          (prop as { value: PropertyValue | JSONValue }).value = value;
+        } else {
+          (styleObj as Record<string, PropertyValue | JSONValue>)[propertyKey] = value;
+        }
       } else {
-        styleRecord[property as string] = value;
+        storeLogger.warn("updateStyleProperty: Property not found on style", { layerId, styleType, property });
       }
 
       markLayerDirty(layerId);

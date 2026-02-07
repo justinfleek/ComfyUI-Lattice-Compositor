@@ -489,16 +489,21 @@ export function scaleMat4(s: Vec3): Mat4 {
   const EXTREME_MIN = 0.001;
   const EXTREME_MAX = 1000;
   
-  const extremeValues = [
-    { axis: 'x', value: s.x },
-    { axis: 'y', value: s.y },
-    { axis: 'z', value: s.z },
-  ].filter(({ value }) => value !== 0 && (Math.abs(value) < EXTREME_MIN || Math.abs(value) > EXTREME_MAX));
-  
-  if (extremeValues.length > 0) {
+  const extremeAxes: Array<string> = [];
+  if (s.x !== 0 && (Math.abs(s.x) < EXTREME_MIN || Math.abs(s.x) > EXTREME_MAX)) {
+    extremeAxes.push(`x=${s.x}`);
+  }
+  if (s.y !== 0 && (Math.abs(s.y) < EXTREME_MIN || Math.abs(s.y) > EXTREME_MAX)) {
+    extremeAxes.push(`y=${s.y}`);
+  }
+  if (s.z !== 0 && (Math.abs(s.z) < EXTREME_MIN || Math.abs(s.z) > EXTREME_MAX)) {
+    extremeAxes.push(`z=${s.z}`);
+  }
+
+  if (extremeAxes.length > 0) {
     math3dWarn('SCALE_OUT_OF_RANGE',
-      `Extreme scale values detected - this may be unintentional`,
-      { scale: s, extremeValues }
+      `Extreme scale values detected - this may be unintentional: ${extremeAxes.join(", ")}`,
+      { scale: s }
     );
   }
   

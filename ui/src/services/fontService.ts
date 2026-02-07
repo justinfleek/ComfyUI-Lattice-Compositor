@@ -151,6 +151,9 @@ class FontService {
       // Type proof: After guard, window has queryLocalFonts method
       // This will prompt for permission
       const windowWithFonts = window as WindowWithFontAccess;
+      if (typeof windowWithFonts.queryLocalFonts !== "function") {
+        return; // Font access API not available
+      }
       const fonts = await windowWithFonts.queryLocalFonts();
 
       // Group by family, keep one entry per family

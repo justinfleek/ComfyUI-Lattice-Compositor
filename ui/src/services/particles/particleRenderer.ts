@@ -388,6 +388,8 @@ export function renderSprite(
     return;
   }
 
+  // emitter is guaranteed non-null here because spriteEnabled check above requires emitter.sprite
+  if (emitter === undefined) return;
   const sprite = emitter.sprite;
   const image = sprite.imageData || spriteCache.get(particle.emitterId);
   if (!image) {

@@ -676,7 +676,7 @@ export class SpriteSheetService {
     const sheet = this.sheets.get(sheetId);
     // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
     const sheetTexture = (sheet != null && typeof sheet === "object" && "texture" in sheet && sheet.texture != null) ? sheet.texture : undefined;
-    if (!sheetTexture || !material.map) return;
+    if (!sheetTexture || !material.map || sheet === undefined) return;
 
     const frame = sheet.frames[frameIndex];
     if (!frame) return;

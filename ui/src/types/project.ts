@@ -22,7 +22,7 @@ import type { ShapeLayerData } from "./shapes";
 import type { PathLayerData, SplineData } from "./spline";
 import type { TemplateConfig } from "./templateBuilder";
 import type { TextData } from "./text";
-import type { LayerTransform, Vec3 } from "./transform";
+import type { LayerTransform, Vec2, Vec3 } from "./transform";
 import type { JSONValue } from "./dataAsset";
 
 // Animation types (extracted to animation.ts)
@@ -745,6 +745,12 @@ export type LayerDataMap = {
  * Use for generic layer data operations where the specific layer type is unknown.
  */
 export type AnyLayerData = LayerDataMap[keyof LayerDataMap];
+
+/**
+ * Alias for AnyLayerData - Union of all possible layer data types.
+ * @deprecated Use AnyLayerData instead
+ */
+export type LayerDataUnion = AnyLayerData;
 
 /**
  * Type guard to check if a layer has specific data type

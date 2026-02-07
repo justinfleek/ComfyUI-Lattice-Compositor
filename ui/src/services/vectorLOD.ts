@@ -393,11 +393,12 @@ export class VectorLODService {
     // Skip LOD for simple paths
     if (pointCount < 50) return false;
 
-    // Use LOD during playback
-    if (context.isPlaying && splineData.lod.mode !== "zoom") return true;
+    // Use LOD during playback (splineData.lod is guaranteed by lodEnabled check above)
+    const lodMode = splineData.lod?.mode;
+    if (context.isPlaying && lodMode !== "zoom") return true;
 
     // Use LOD when zoomed out
-    if (context.zoom < 0.5 && splineData.lod.mode !== "playback") return true;
+    if (context.zoom < 0.5 && lodMode !== "playback") return true;
 
     return false;
   }

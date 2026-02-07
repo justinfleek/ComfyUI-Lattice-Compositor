@@ -800,10 +800,13 @@ export async function generateFromLayer(
     }
 
     // Get source layer image
+    // Type proof: resolution ∈ string | number | boolean | undefined → number
+    const resolutionValue = options.resolution;
+    const resolution = typeof resolutionValue === "number" && Number.isFinite(resolutionValue) && resolutionValue > 0 ? resolutionValue : 512;
     const sourceImage = await renderLayerToImage(
       sourceLayerId,
       frame,
-      options.resolution || 512,
+      resolution,
     );
 
     // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.

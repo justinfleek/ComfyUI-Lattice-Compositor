@@ -356,41 +356,44 @@ self.onmessage = async (event: MessageEvent<WorkerMessage>) => {
   const { type, id, payload } = event.data;
 
   try {
-    let result: JSONValue;
+    // Result can be various types (ImageData, arrays, objects) - use unknown
+    // WorkerResponse already has result?: T with T = unknown
+    let result: unknown;
 
     switch (type) {
-      case "PARTICLE_STEP":
-        result = stepParticles(payload as ParticleStepPayload);
+      case "PARTICLE_STEP": {
+        const stepPayload = payload as unknown as ParticleStepPayload;
+        result = stepParticles(stepPayload);
         break;
+      }
 
       case "BEZIER_EVALUATE": {
-        const { points, t } = payload as BezierEvaluatePayload;
-        result = evaluateBezier(points, t);
+        const evalPayload = payload as unknown as BezierEvaluatePayload;
+        result = evaluateBezier(evalPayload.points, evalPayload.t);
         break;
       }
 
       case "BEZIER_ARC_LENGTH": {
-        const { points, samples } = payload as BezierArcLengthPayload;
-        result = computeArcLengthTable(points, samples);
+        const arcPayload = payload as unknown as BezierArcLengthPayload;
+        result = computeArcLengthTable(arcPayload.points, arcPayload.samples);
         break;
       }
 
       case "IMAGE_BLUR": {
-        const { imageData, radius } = payload as ImageBlurPayload;
-        result = boxBlur(imageData, radius);
+        const blurPayload = payload as unknown as ImageBlurPayload;
+        result = boxBlur(blurPayload.imageData, blurPayload.radius);
         break;
       }
 
       case "IMAGE_THRESHOLD": {
-        const { imageData, threshold: thresh } =
-          payload as ImageThresholdPayload;
-        result = threshold(imageData, thresh);
+        const threshPayload = payload as unknown as ImageThresholdPayload;
+        result = threshold(threshPayload.imageData, threshPayload.threshold);
         break;
       }
 
       case "COMPUTE_HASH": {
-        const { data } = payload as ComputeHashPayload;
-        result = await computeHash(data);
+        const hashPayload = payload as unknown as ComputeHashPayload;
+        result = await computeHash(hashPayload.data);
         break;
       }
 

@@ -353,8 +353,10 @@ export function getSelectedLayer(): Layer {
     throw new Error(`[LayerStore] Cannot get selected layer: Expected exactly 1 selected layer, found ${selectionStore.selectedLayerIds.length}`);
   }
   const layers = projectStore.getActiveCompLayers();
-  return (
-    layers.find((l: Layer) => l.id === selectionStore.selectedLayerIds[0]) ||
-    null
-  );
+  const selectedId = selectionStore.selectedLayerIds[0];
+  const layer = layers.find((l: Layer) => l.id === selectedId);
+  if (layer === null || layer === undefined) {
+    throw new Error(`[LayerStore] Cannot get selected layer: Layer with ID "${selectedId}" not found in active composition`);
+  }
+  return layer;
 }

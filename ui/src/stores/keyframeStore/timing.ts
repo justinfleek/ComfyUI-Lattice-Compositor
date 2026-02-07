@@ -270,9 +270,9 @@ export function applyRovingToPosition(
   // Import and apply roving
   // Note: Using dynamic import to avoid circular dependency
   import("@/services/rovingKeyframes").then(({ applyRovingKeyframes }) => {
-    const result = applyRovingKeyframes(
-      positionProp.keyframes as Keyframe<number[]>[],
-    );
+    // Position keyframes can be {x, y, z?} or number[] - applyRovingKeyframes accepts both via PositionValue
+    const positionKeyframes = positionProp.keyframes as Keyframe<import("@/services/rovingKeyframes").PositionValue>[];
+    const result = applyRovingKeyframes(positionKeyframes);
 
     if (result.success) {
       // Update keyframe frames and regenerate IDs for determinism

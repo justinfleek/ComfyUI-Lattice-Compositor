@@ -326,6 +326,9 @@ export function moveKeyframe(
     return;
   }
 
+  // Clamp frame to valid range (>= 0)
+  const clampedFrame = Math.max(0, Math.round(newFrame));
+
   const layer = projectStore.getActiveCompLayers().find((l) => l.id === layerId);
   if (!layer) return;
 
@@ -337,7 +340,7 @@ export function moveKeyframe(
 
   // Check if there's already a keyframe at the target frame
   const existingAtTarget = property.keyframes.find(
-    (kf) => kf.frame === newFrame && kf.id !== keyframeId,
+    (kf) => kf.frame === clampedFrame && kf.id !== keyframeId,
   );
   if (existingAtTarget) {
     // Remove the existing keyframe at target
@@ -354,8 +357,8 @@ export function moveKeyframe(
   const valueStr = typeof keyframeValue === "object" && keyframeValue !== null && "x" in keyframeValue && "y" in keyframeValue
     ? `${(keyframeValue as { x: number; y: number }).x},${(keyframeValue as { x: number; y: number }).y}${"z" in keyframeValue ? `,${(keyframeValue as { x: number; y: number; z?: number }).z}` : ""}`
     : String(keyframeValue);
-  keyframe.id = generateKeyframeId(layerId, propertyPath, newFrame, valueStr);
-  keyframe.frame = newFrame;
+  keyframe.id = generateKeyframeId(layerId, propertyPath, clampedFrame, valueStr);
+  keyframe.frame = clampedFrame;
 
   // Re-sort keyframes by frame
   property.keyframes.sort((a, b) => a.frame - b.frame);

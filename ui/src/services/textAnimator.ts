@@ -1015,7 +1015,7 @@ export function calculateCompleteCharacterInfluence(
   // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
   const wigglySelector = (animator != null && typeof animator === "object" && "wigglySelector" in animator && animator.wigglySelector != null && typeof animator.wigglySelector === "object") ? animator.wigglySelector : undefined;
   const wigglyEnabled = (wigglySelector != null && typeof wigglySelector === "object" && "enabled" in wigglySelector && typeof wigglySelector.enabled === "boolean" && wigglySelector.enabled) ? true : false;
-  if (wigglyEnabled) {
+  if (wigglyEnabled && wigglySelector !== undefined) {
     const wigglyInfluence = calculateWigglyInfluence(
       charIndex,
       totalChars,
@@ -1034,7 +1034,7 @@ export function calculateCompleteCharacterInfluence(
   // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
   const expressionSelector = (animator != null && typeof animator === "object" && "expressionSelector" in animator && animator.expressionSelector != null && typeof animator.expressionSelector === "object") ? animator.expressionSelector : undefined;
   const expressionEnabled = (expressionSelector != null && typeof expressionSelector === "object" && "enabled" in expressionSelector && typeof expressionSelector.enabled === "boolean" && expressionSelector.enabled) ? true : false;
-  if (expressionEnabled) {
+  if (expressionEnabled && expressionSelector !== undefined) {
     influence = calculateExpressionInfluence(
       charIndex,
       totalChars,

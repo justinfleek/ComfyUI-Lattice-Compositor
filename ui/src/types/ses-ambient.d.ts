@@ -34,7 +34,7 @@ export interface SESCompartmentConstructor {
   ): SESCompartment;
 }
 
-type HardenFunction = <T>(value: T) => T;
+export type HardenFunction = <T>(value: T) => T;
 
 declare global {
   interface Window {

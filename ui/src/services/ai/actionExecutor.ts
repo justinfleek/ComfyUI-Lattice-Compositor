@@ -103,6 +103,7 @@ import type {
 
 /**
  * Helper to update project state (sandbox or main store)
+ * Note: Store actions already call pushHistory() - this only handles sandbox mode
  */
 function updateProjectState(context: ExecutionContext): void {
   if (context.sandboxId) {
@@ -113,10 +114,9 @@ function updateProjectState(context: ExecutionContext): void {
       sandbox.currentState.meta.modified = new Date().toISOString();
       agentSandbox.updateSandboxState(context.sandboxId, sandbox.currentState);
     }
-  } else {
-    context.projectStore.project.meta.modified = new Date().toISOString();
-    context.projectStore.pushHistory();
   }
+  // Note: pushHistory() is NOT called here - store actions already handle history
+  // Adding it here would create duplicate history entries and break undo/redo
 }
 
 // ============================================================================
@@ -204,171 +204,169 @@ export async function executeToolCall(
       sandboxId,
     };
     
-    // ToolCall is now a discriminated union - TypeScript narrows the type based on name
-    // Extract arguments from toolCall - they're in the 'arguments' property
-    const { name, arguments: args } = toolCall;
+    // ToolCall is a discriminated union - TypeScript narrows the type based on name
+    // The args are spread directly on toolCall (not nested under 'arguments')
+    const { name } = toolCall;
 
     // Route to appropriate handler with type-safe narrowing
-    // TypeScript knows the correct argument type for each case after destructuring
+    // TypeScript knows the correct argument type for each case
     // State-modifying actions call updateProjectState to enable undo/redo
-    let result: ReturnType<typeof executeCreateLayer> | ReturnType<typeof executeDeleteLayer> |
-      ReturnType<typeof executeDuplicateLayer> | ReturnType<typeof executeGetLayerInfo> |
-      ReturnType<typeof executeFindLayers> | ReturnType<typeof executeGetProjectState> |
-      ReturnType<typeof executeSetCurrentFrame> | ReturnType<typeof executePlayPreview>;
+    // Result type matches the function's return type union - handlers return various shapes
+    let result: Awaited<ReturnType<typeof executeToolCall>>;
     let isStateMutating = true; // Most actions mutate state
 
     switch (name) {
     // Layer Management
     case "createLayer":
-      result = executeCreateLayer(context, args as CreateLayerArgs);
+      result = executeCreateLayer(context, toolCall);
       break;
     case "deleteLayer":
-      result = executeDeleteLayer(context, args as DeleteLayerArgs);
+      result = executeDeleteLayer(context, toolCall);
       break;
     case "duplicateLayer":
-      result = executeDuplicateLayer(context, args as DuplicateLayerArgs);
+      result = executeDuplicateLayer(context, toolCall);
       break;
     case "renameLayer":
-      result = executeRenameLayer(context, args as RenameLayerArgs);
+      result = executeRenameLayer(context, toolCall);
       break;
     case "setLayerParent":
-      result = executeSetLayerParent(context, args as SetLayerParentArgs);
+      result = executeSetLayerParent(context, toolCall);
       break;
     case "reorderLayers":
-      result = executeReorderLayers(context, args as ReorderLayersArgs);
+      result = executeReorderLayers(context, toolCall);
       break;
 
     // Property Modification
     case "setLayerProperty":
-      result = executeSetLayerProperty(context, args as SetLayerPropertyArgs);
+      result = executeSetLayerProperty(context, toolCall);
       break;
     case "setLayerTransform":
-      result = executeSetLayerTransform(context, args as SetLayerTransformArgs);
+      result = executeSetLayerTransform(context, toolCall);
       break;
 
     // Keyframe Animation
     case "addKeyframe":
-      result = executeAddKeyframe(context, args as AddKeyframeArgs);
+      result = executeAddKeyframe(context, toolCall);
       break;
     case "removeKeyframe":
-      result = executeRemoveKeyframe(context, args as RemoveKeyframeArgs);
+      result = executeRemoveKeyframe(context, toolCall);
       break;
     case "setKeyframeEasing":
-      result = executeSetKeyframeEasing(context, args as SetKeyframeEasingArgs);
+      result = executeSetKeyframeEasing(context, toolCall);
       break;
     case "scaleKeyframeTiming":
-      result = executeScaleKeyframeTiming(context, args as ScaleKeyframeTimingArgs);
+      result = executeScaleKeyframeTiming(context, toolCall);
       break;
 
     // Expressions
     case "setExpression":
-      result = executeSetExpression(context, args as SetExpressionArgs);
+      result = executeSetExpression(context, toolCall);
       break;
     case "removeExpression":
-      result = executeRemoveExpression(context, args as RemoveExpressionArgs);
+      result = executeRemoveExpression(context, toolCall);
       break;
 
     // Effects
     case "addEffect":
-      result = executeAddEffect(context, args as AddEffectArgs);
+      result = executeAddEffect(context, toolCall);
       break;
     case "updateEffect":
-      result = executeUpdateEffect(context, args as UpdateEffectArgs);
+      result = executeUpdateEffect(context, toolCall);
       break;
     case "removeEffect":
-      result = executeRemoveEffect(context, args as RemoveEffectArgs);
+      result = executeRemoveEffect(context, toolCall);
       break;
 
     // Particle System
     case "configureParticles":
-      result = executeConfigureParticles(context, args as ConfigureParticlesArgs);
+      result = executeConfigureParticles(context, toolCall);
       break;
 
     // Camera System
     case "applyCameraTrajectory":
-      result = executeApplyCameraTrajectory(context, args as ApplyCameraTrajectoryArgs);
+      result = executeApplyCameraTrajectory(context, toolCall);
       break;
     case "addCameraShake":
-      result = executeAddCameraShake(context, args as AddCameraShakeArgs);
+      result = executeAddCameraShake(context, toolCall);
       break;
     case "applyRackFocus":
-      result = executeApplyRackFocus(context, args as ApplyRackFocusArgs);
+      result = executeApplyRackFocus(context, toolCall);
       break;
     case "setCameraPathFollowing":
-      result = executeSetCameraPathFollowing(context, args as SetCameraPathFollowingArgs);
+      result = executeSetCameraPathFollowing(context, toolCall);
       break;
     case "setCameraAutoFocus":
-      result = executeSetCameraAutoFocus(context, args as SetCameraAutoFocusArgs);
+      result = executeSetCameraAutoFocus(context, toolCall);
       break;
 
     // Text
     case "setTextContent":
-      result = executeSetTextContent(context, args as SetTextContentArgs);
+      result = executeSetTextContent(context, toolCall);
       break;
     case "setTextPath":
-      result = executeSetTextPath(context, args as SetTextPathArgs);
+      result = executeSetTextPath(context, toolCall);
       break;
 
     // Spline
     case "setSplinePoints":
-      result = executeSetSplinePoints(context, args as SetSplinePointsArgs);
+      result = executeSetSplinePoints(context, toolCall);
       break;
 
     // Speed Map (formerly Time Remapping)
     case "setSpeedMap":
-      result = executeSetSpeedMap(context, args as SetSpeedMapArgs);
+      result = executeSetSpeedMap(context, toolCall);
       break;
     case "setTimeRemap": // Legacy - redirects to setSpeedMap
-      result = executeSetSpeedMap(context, args as SetSpeedMapArgs);
+      result = executeSetSpeedMap(context, toolCall);
       break;
 
     // Playback (non-state-mutating - doesn't affect undo history)
     case "setCurrentFrame":
-      result = executeSetCurrentFrame(context, args as SetCurrentFrameArgs);
+      result = executeSetCurrentFrame(context, toolCall);
       isStateMutating = false;
       break;
     case "playPreview":
-      result = executePlayPreview(context, args as PlayPreviewArgs);
+      result = executePlayPreview(context, toolCall);
       isStateMutating = false;
       break;
 
-    // AI Image Processing
+    // AI Image Processing (async)
     case "decomposeImage":
-      result = executeDecomposeImage(context, args as DecomposeImageArgs);
+      result = await executeDecomposeImage(context, toolCall);
       break;
     case "vectorizeImage":
-      result = executeVectorizeImage(context, args as VectorizeImageArgs);
+      result = await executeVectorizeImage(context, toolCall);
       break;
 
     // Utility (read-only - doesn't affect undo history)
     case "getLayerInfo":
-      result = executeGetLayerInfo(context, args as GetLayerInfoArgs);
+      result = executeGetLayerInfo(context, toolCall);
       isStateMutating = false;
       break;
     case "findLayers":
-      result = executeFindLayers(context, args as FindLayersArgs);
+      result = executeFindLayers(context, toolCall);
       isStateMutating = false;
       break;
     case "getProjectState":
-      result = executeGetProjectState(context, args as GetProjectStateArgs);
+      result = executeGetProjectState(context, toolCall);
       isStateMutating = false;
       break;
 
-    // COMPASS Content Generation
+    // COMPASS Content Generation (async)
     case "generateTextContent":
-      result = executeGenerateTextContent(context, args as GenerateTextContentArgs);
+      result = await executeGenerateTextContent(context, toolCall);
       break;
     case "generateSocialMediaPost":
-      result = executeGenerateSocialMediaPost(context, args as GenerateSocialMediaPostArgs);
+      result = await executeGenerateSocialMediaPost(context, toolCall);
       break;
     case "generateAdCopy":
-      result = executeGenerateAdCopy(context, args as GenerateAdCopyArgs);
+      result = await executeGenerateAdCopy(context, toolCall);
       break;
     case "generateImage":
-      result = executeGenerateImage(context, args as GenerateImageArgs);
+      result = await executeGenerateImage(context, toolCall);
       break;
     case "generateVideo":
-      result = executeGenerateVideo(context, args as GenerateVideoArgs);
+      result = await executeGenerateVideo(context, toolCall);
       break;
 
     default:
@@ -785,6 +783,9 @@ function executeSetLayerProperty(
   }
 
   // Record modification and save to undo history
+  // This function modifies layer state directly (not through store actions),
+  // so we must call pushHistory() explicitly for undo/redo support
+  context.projectStore.pushHistory();
   // SECURITY: In sandbox mode, update sandbox state instead
   updateProjectState(context);
 
@@ -835,6 +836,9 @@ function executeSetLayerTransform(
   }
 
   // Record modification and save to undo history
+  // This function modifies layer state directly (not through store actions),
+  // so we must call pushHistory() explicitly for undo/redo support
+  context.projectStore.pushHistory();
   // SECURITY: In sandbox mode, update sandbox state instead
   updateProjectState(context);
 
@@ -1038,6 +1042,9 @@ function executeSetExpression(
   };
 
   // Record modification and save to undo history
+  // This function modifies layer state directly (not through store actions),
+  // so we must call pushHistory() explicitly for undo/redo support
+  context.projectStore.pushHistory();
   // SECURITY: In sandbox mode, update sandbox state instead
   updateProjectState(context);
 
@@ -1070,6 +1077,9 @@ function executeRemoveExpression(
   delete property.expression;
 
   // Record modification and save to undo history
+  // This function modifies layer state directly (not through store actions),
+  // so we must call pushHistory() explicitly for undo/redo support
+  context.projectStore.pushHistory();
   // SECURITY: In sandbox mode, update sandbox state instead
   updateProjectState(context);
 

@@ -3221,9 +3221,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
         // Verify keyframes removed
         // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??/?.
         const afterReset = layerStore.getLayerById(layer!.id)!;
-        const keyframes = afterReset.transform.position.keyframes;
-        const keyframesLength = (keyframes !== null && keyframes !== undefined && Array.isArray(keyframes)) ? keyframes.length : 0;
-        expect(keyframesLength).toBe(0);
+        const remainingKeyframes = afterReset.transform.position.keyframes;
+        const remainingKeyframesLength = (remainingKeyframes !== null && remainingKeyframes !== undefined && Array.isArray(remainingKeyframes)) ? remainingKeyframes.length : 0;
+        expect(remainingKeyframesLength).toBe(0);
         expect(afterReset.transform.position.value.x).toBe(640);
       });
 

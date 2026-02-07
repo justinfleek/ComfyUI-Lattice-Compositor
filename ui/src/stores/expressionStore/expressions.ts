@@ -11,15 +11,15 @@ import type { ExpressionStoreAccess } from "./types";
 
 /**
  * Set a property expression
+ * Note: store parameter kept for API compatibility but keyframeStore uses its own state
  */
 export function setPropertyExpression(
-  store: ExpressionStoreAccess,
+  _store: ExpressionStoreAccess,
   layerId: string,
   propertyPath: string,
   expression: PropertyExpression,
 ): boolean {
   return useKeyframeStore().setPropertyExpression(
-    store,
     layerId,
     propertyPath,
     expression,
@@ -30,14 +30,13 @@ export function setPropertyExpression(
  * Enable expression on a property
  */
 export function enablePropertyExpression(
-  store: ExpressionStoreAccess,
+  _store: ExpressionStoreAccess,
   layerId: string,
   propertyPath: string,
   expressionName: string = "custom",
   params: Record<string, number | string | boolean> = {},
 ): boolean {
   return useKeyframeStore().enablePropertyExpression(
-    store,
     layerId,
     propertyPath,
     expressionName,
@@ -49,12 +48,11 @@ export function enablePropertyExpression(
  * Disable expression on a property
  */
 export function disablePropertyExpression(
-  store: ExpressionStoreAccess,
+  _store: ExpressionStoreAccess,
   layerId: string,
   propertyPath: string,
 ): boolean {
   return useKeyframeStore().disablePropertyExpression(
-    store,
     layerId,
     propertyPath,
   );
@@ -64,12 +62,11 @@ export function disablePropertyExpression(
  * Toggle expression enabled state
  */
 export function togglePropertyExpression(
-  store: ExpressionStoreAccess,
+  _store: ExpressionStoreAccess,
   layerId: string,
   propertyPath: string,
 ): boolean {
   return useKeyframeStore().togglePropertyExpression(
-    store,
     layerId,
     propertyPath,
   );
@@ -79,12 +76,11 @@ export function togglePropertyExpression(
  * Remove expression from property
  */
 export function removePropertyExpression(
-  store: ExpressionStoreAccess,
+  _store: ExpressionStoreAccess,
   layerId: string,
   propertyPath: string,
 ): boolean {
   return useKeyframeStore().removePropertyExpression(
-    store,
     layerId,
     propertyPath,
   );
@@ -94,35 +90,34 @@ export function removePropertyExpression(
  * Get expression for a property
  */
 export function getPropertyExpression(
-  store: ExpressionStoreAccess,
+  _store: ExpressionStoreAccess,
   layerId: string,
   propertyPath: string,
 ): PropertyExpression | undefined {
-  return useKeyframeStore().getPropertyExpression(store, layerId, propertyPath);
+  return useKeyframeStore().getPropertyExpression(layerId, propertyPath);
 }
 
 /**
  * Check if property has an expression
  */
 export function hasPropertyExpression(
-  store: ExpressionStoreAccess,
+  _store: ExpressionStoreAccess,
   layerId: string,
   propertyPath: string,
 ): boolean {
-  return useKeyframeStore().hasPropertyExpression(store, layerId, propertyPath);
+  return useKeyframeStore().hasPropertyExpression(layerId, propertyPath);
 }
 
 /**
  * Update expression parameters
  */
 export function updateExpressionParams(
-  store: ExpressionStoreAccess,
+  _store: ExpressionStoreAccess,
   layerId: string,
   propertyPath: string,
   params: Record<string, number | string | boolean>,
 ): boolean {
   return useKeyframeStore().updateExpressionParams(
-    store,
     layerId,
     propertyPath,
     params,
@@ -133,11 +128,11 @@ export function updateExpressionParams(
  * Check if a property has a bakeable expression
  */
 export function canBakeExpression(
-  store: ExpressionStoreAccess,
+  _store: ExpressionStoreAccess,
   layerId: string,
   propertyPath: string,
 ): boolean {
-  return useKeyframeStore().canBakeExpression(store, layerId, propertyPath);
+  return useKeyframeStore().canBakeExpression(layerId, propertyPath);
 }
 
 /**
@@ -145,7 +140,7 @@ export function canBakeExpression(
  * Cross-domain: calls keyframeStore to create keyframes
  */
 export function convertExpressionToKeyframes(
-  store: ExpressionStoreAccess,
+  _store: ExpressionStoreAccess,
   layerId: string,
   propertyPath: string,
   startFrame?: number,
@@ -153,7 +148,6 @@ export function convertExpressionToKeyframes(
   sampleRate?: number,
 ): number {
   return useKeyframeStore().convertExpressionToKeyframes(
-    store,
     layerId,
     propertyPath,
     startFrame,

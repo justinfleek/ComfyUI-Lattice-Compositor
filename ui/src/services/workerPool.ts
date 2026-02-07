@@ -23,9 +23,21 @@ import { isFiniteNumber } from "@/utils/typeGuards";
 // TYPES
 // ============================================================================
 
+/**
+ * All possible worker result types
+ * Workers return: particle results, bezier points, arc lengths, image data, hashes
+ */
+type WorkerResult =
+  | ParticleStepResult  // From PARTICLE_STEP
+  | { x: number; y: number }  // From BEZIER_EVALUATE
+  | number[]  // From BEZIER_ARC_LENGTH
+  | ImageData  // From IMAGE_BLUR, IMAGE_THRESHOLD
+  | string;  // From COMPUTE_HASH
+
 interface PendingTask {
   id: string;
-  resolve: (result: JSONValue) => void;
+  // Workers return various structured types defined by WorkerResult union
+  resolve: (result: WorkerResult) => void;
   reject: (error: Error) => void;
   timestamp: number;
 }
@@ -54,7 +66,7 @@ export class WorkerPool {
   private pendingTasks: Map<string, PendingTask> = new Map();
   private taskQueue: Array<{
     message: WorkerMessage;
-    resolve: (r: JSONValue) => void;
+    resolve: (r: WorkerResult) => void;
     reject: (e: Error) => void;
   }> = [];
   private nextTaskId = 0;
@@ -137,9 +149,11 @@ export class WorkerPool {
       this.pendingTasks.delete(response.id);
 
       if (response.success) {
-        pending.resolve(response.result);
+        // response.result is typed from worker - cast to proper union type
+        pending.resolve(response.result as WorkerResult);
       } else {
-        pending.reject(new Error(response.error || "Unknown worker error"));
+        const errorMessage = response.error ? response.error : "Worker error occurred";
+        pending.reject(new Error(errorMessage));
       }
     }
 
@@ -214,7 +228,7 @@ export class WorkerPool {
   private dispatchToWorker(
     state: WorkerState,
     message: WorkerMessage,
-    resolve: (r: JSONValue) => void,
+    resolve: (r: WorkerResult) => void,
     reject: (e: Error) => void,
   ): void {
     state.busy = true;
@@ -248,18 +262,21 @@ export class WorkerPool {
 
   /**
    * Execute a task on a worker
+   * Workers use structured clone algorithm which supports more than JSONValue
    */
-  private execute<T extends JSONValue>(type: WorkerMessageType, payload: JSONValue): Promise<T> {
+  private execute<T>(type: WorkerMessageType, payload: unknown): Promise<T> {
     return new Promise((resolve, reject) => {
       if (this.isDisposed) {
         reject(new Error("WorkerPool has been disposed"));
         return;
       }
 
+      // Cast payload to JSONValue for WorkerMessage type compatibility
+      // Workers actually support structured clone algorithm (more than JSONValue)
       const message: WorkerMessage = {
         type,
         id: `task_${this.nextTaskId++}`,
-        payload,
+        payload: payload as JSONValue,
       };
 
       const worker = this.getAvailableWorker();
@@ -267,14 +284,14 @@ export class WorkerPool {
         this.dispatchToWorker(
           worker,
           message,
-          resolve as (r: JSONValue) => void,
+          resolve as (r: WorkerResult) => void,
           reject,
         );
       } else {
         // Queue the task
         this.taskQueue.push({
           message,
-          resolve: resolve as (r: JSONValue) => void,
+          resolve: resolve as (r: WorkerResult) => void,
           reject,
         });
       }

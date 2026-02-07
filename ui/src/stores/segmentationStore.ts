@@ -200,17 +200,21 @@ export const useSegmentationStore = defineStore("segmentation", {
         // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
         const resultMasks = (result != null && typeof result === "object" && "masks" in result && result.masks != null && Array.isArray(result.masks)) ? result.masks : undefined;
         const masksLength = resultMasks != null ? resultMasks.length : 0;
-        if (result.status !== "success" || masksLength === 0) {
+        if (result.status !== "success" || masksLength === 0 || resultMasks === undefined) {
           throw new Error(`[SegmentationStore] Segmentation by point failed: ${result.message || "No masks returned"}`);
         }
 
         const mask = resultMasks[0];
-        return this.createLayerFromMask(
+        const layer = await this.createLayerFromMask(
           projectStore.sourceImage,
           mask,
           options.layerName,
           options.positionAtCenter,
         );
+        if (layer === null) {
+          throw new Error("[SegmentationStore] Failed to create layer from mask: createLayerFromMask returned null");
+        }
+        return layer;
       } catch (err) {
         if (err instanceof Error && err.message.startsWith("[SegmentationStore]")) {
           throw err;
@@ -235,17 +239,21 @@ export const useSegmentationStore = defineStore("segmentation", {
         // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
         const resultMasks = (result != null && typeof result === "object" && "masks" in result && result.masks != null && Array.isArray(result.masks)) ? result.masks : undefined;
         const masksLength = resultMasks != null ? resultMasks.length : 0;
-        if (result.status !== "success" || masksLength === 0) {
+        if (result.status !== "success" || masksLength === 0 || resultMasks === undefined) {
           throw new Error(`[SegmentationStore] Segmentation by multiple points failed: ${result.message || "No masks returned"}`);
         }
 
         const mask = resultMasks[0];
-        return this.createLayerFromMask(
+        const layer = await this.createLayerFromMask(
           projectStore.sourceImage,
           mask,
           options.layerName,
           options.positionAtCenter,
         );
+        if (layer === null) {
+          throw new Error("[SegmentationStore] Failed to create layer from mask: createLayerFromMask returned null");
+        }
+        return layer;
       } catch (err) {
         if (err instanceof Error && err.message.startsWith("[SegmentationStore]")) {
           throw err;
@@ -269,17 +277,21 @@ export const useSegmentationStore = defineStore("segmentation", {
         // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
         const resultMasks = (result != null && typeof result === "object" && "masks" in result && result.masks != null && Array.isArray(result.masks)) ? result.masks : undefined;
         const masksLength = resultMasks != null ? resultMasks.length : 0;
-        if (result.status !== "success" || masksLength === 0) {
+        if (result.status !== "success" || masksLength === 0 || resultMasks === undefined) {
           throw new Error(`[SegmentationStore] Segmentation by box failed: ${result.message || "No masks returned"}`);
         }
 
         const mask = resultMasks[0];
-        return this.createLayerFromMask(
+        const layer = await this.createLayerFromMask(
           projectStore.sourceImage,
           mask,
           options.layerName,
           options.positionAtCenter,
         );
+        if (layer === null) {
+          throw new Error("[SegmentationStore] Failed to create layer from mask: createLayerFromMask returned null");
+        }
+        return layer;
       } catch (err) {
         if (err instanceof Error && err.message.startsWith("[SegmentationStore]")) {
           throw err;
@@ -307,7 +319,7 @@ export const useSegmentationStore = defineStore("segmentation", {
         // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
         const resultMasks = (result != null && typeof result === "object" && "masks" in result && result.masks != null && Array.isArray(result.masks)) ? result.masks : undefined;
         const masksLength = resultMasks != null ? resultMasks.length : 0;
-        if (result.status !== "success" || masksLength === 0) {
+        if (result.status !== "success" || masksLength === 0 || resultMasks === undefined) {
           storeLogger.warn("Auto segmentation returned no masks:", result.message);
           return [];
         }

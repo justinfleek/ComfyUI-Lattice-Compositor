@@ -61,11 +61,11 @@ interface LegacyComposition {
  * Versioned project structure for migration
  * Extends LatticeProject with version metadata and legacy format support
  */
-export interface VersionedProject extends Omit<import("@/types/project").LatticeProject, "compositions"> {
+export interface VersionedProject extends Omit<import("@/types/project").LatticeProject, "compositions" | "version" | "schemaVersion"> {
   /** Project schema version */
   schemaVersion: number;
   /** Project file format version (semantic) */
-  version: string;
+  version: "1.0.0" | string;
   /** Compositions - may be array (v1) or record (v2+) */
   compositions: Record<string, import("@/types/project").Composition> | LegacyComposition[];
 }
@@ -128,7 +128,7 @@ const migrations: Migration[] = [
               // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
               const layerTransform = (layer != null && typeof layer === "object" && "transform" in layer && layer.transform != null && typeof layer.transform === "object") ? layer.transform : undefined;
               const anchorPoint = (layerTransform != null && typeof layerTransform === "object" && "anchorPoint" in layerTransform && layerTransform.anchorPoint !== undefined) ? layerTransform.anchorPoint : undefined;
-              if (anchorPoint !== undefined) {
+              if (anchorPoint !== undefined && layerTransform !== undefined) {
                 layerTransform.origin = anchorPoint;
                 delete layerTransform.anchorPoint;
               }
@@ -146,12 +146,12 @@ const migrations: Migration[] = [
               // Rename timeRemap to speedMap for video layers
               const layerData = (layer != null && typeof layer === "object" && "data" in layer && layer.data != null && typeof layer.data === "object") ? layer.data : undefined;
               const timeRemapEnabled = (layerData != null && typeof layerData === "object" && "timeRemapEnabled" in layerData && layerData.timeRemapEnabled !== undefined) ? layerData.timeRemapEnabled : undefined;
-              if (timeRemapEnabled !== undefined) {
+              if (timeRemapEnabled !== undefined && layerData !== undefined) {
                 layerData.speedMapEnabled = timeRemapEnabled;
                 delete layerData.timeRemapEnabled;
               }
               const timeRemap = (layerData != null && typeof layerData === "object" && "timeRemap" in layerData && layerData.timeRemap !== undefined) ? layerData.timeRemap : undefined;
-              if (timeRemap !== undefined) {
+              if (timeRemap !== undefined && layerData !== undefined) {
                 layerData.speedMap = timeRemap;
                 delete layerData.timeRemap;
               }
@@ -246,7 +246,7 @@ export function migrateProject(
       success: true,
       fromVersion,
       toVersion,
-      project,
+      project: project as VersionedProject,
       warnings: [],
       changes: [],
     };
@@ -267,7 +267,7 @@ export function migrateProject(
     const path = getMigrationPath(fromVersion, toVersion);
 
     // Apply migrations in sequence
-    let migrated = project;
+    let migrated = project as VersionedProject;
     for (const migration of path) {
       logger.info(
         `Migrating from v${migration.from} to v${migration.to}: ${migration.description}`,
@@ -301,15 +301,15 @@ export function migrateProject(
 
 /**
  * Stamp project with current version
+ * Returns a project with version metadata added
  */
 export function stampProjectVersion(
   project: Record<string, JSONValue>,
-): VersionedProject {
+): Record<string, JSONValue> & { schemaVersion: number; version: string } {
   return {
     ...project,
     schemaVersion: CURRENT_SCHEMA_VERSION,
     version: "1.0.0", // Semantic version for display
-    lastModified: new Date().toISOString(),
   };
 }
 

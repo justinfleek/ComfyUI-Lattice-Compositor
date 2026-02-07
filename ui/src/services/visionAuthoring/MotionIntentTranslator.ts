@@ -118,6 +118,7 @@ function getEasingHandles(easing: EasingType, duration: number): BezierHandles {
 
 /**
  * Particle config for AI-generated particle layers
+ * Index signature allows compatibility with NewLayerConfig
  */
 interface ParticleBaseConfig {
   emissionRate: number;
@@ -127,6 +128,8 @@ interface ParticleBaseConfig {
   speed?: number;
   speedVariance?: number;
   gravity?: number;
+  initialBurst?: number;
+  [key: string]: number | undefined;
 }
 
 // ============================================================================
@@ -356,10 +359,10 @@ export class MotionIntentTranslator {
           1,
           intent.smoothness,
         ),
-        // Type proof: type ∈ string | undefined → string
+        // Type proof: type ∈ "corner" | "smooth" | "symmetric" → "corner" | "smooth" | "symmetric"
         type: (() => {
           const typeValue = p.type;
-          return typeof typeValue === "string" && (typeValue === "smooth" || typeValue === "corner" || typeValue === "auto") ? typeValue : "smooth";
+          return typeValue === "smooth" || typeValue === "corner" || typeValue === "symmetric" ? typeValue : "smooth";
         })(),
       }),
     );

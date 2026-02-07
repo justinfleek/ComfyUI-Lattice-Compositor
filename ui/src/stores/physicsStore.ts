@@ -199,12 +199,12 @@ export const usePhysicsStore = defineStore("physics", {
       // Type proof: position.x/y ∈ ℝ ∪ {undefined} → ℝ
       // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
       const transform = layer.transform;
-      const position = (transform != null && typeof transform === "object" && "position" in transform && transform.position != null && typeof transform.position === "object" && "value" in transform.position && transform.position.value != null && typeof transform.position.value === "object") ? transform.position.value : undefined;
-      const positionXValue = (position != null && "x" in position && typeof position.x === "number") ? position.x : undefined;
+      const positionValue = (transform != null && typeof transform === "object" && "position" in transform && transform.position != null && typeof transform.position === "object" && "value" in transform.position && transform.position.value != null && typeof transform.position.value === "object") ? transform.position.value : undefined;
+      const positionXValue = (positionValue != null && "x" in positionValue && typeof positionValue.x === "number") ? positionValue.x : undefined;
       const positionX = isFiniteNumber(positionXValue) ? positionXValue : 0;
-      const positionYValue = (position != null && "y" in position && typeof position.y === "number") ? position.y : undefined;
+      const positionYValue = (positionValue != null && "y" in positionValue && typeof positionValue.y === "number") ? positionValue.y : undefined;
       const positionY = isFiniteNumber(positionYValue) ? positionYValue : 0;
-      const position = {
+      const initialPosition = {
         x: positionX,
         y: positionY,
       };
@@ -214,10 +214,11 @@ export const usePhysicsStore = defineStore("physics", {
       const bodyConfig =
         (shape != null && typeof shape === "object" && "type" in shape && shape.type === "circle")
           ? createCircleBody(layerId, layerId, {
-              position,
+              position: initialPosition,
               // Type proof: radius ∈ ℝ ∧ finite(radius) → radius ∈ ℝ₊
               radius: (() => {
-                const radiusValue = config.shape.radius;
+                // shape is already verified as object with type=circle at this point
+                const radiusValue = (shape != null && typeof shape === "object" && "radius" in shape && typeof shape.radius === "number") ? shape.radius : undefined;
                 return isFiniteNumber(radiusValue) && radiusValue > 0 ? radiusValue : 50;
               })(),
               // Type proof: mass ∈ ℝ ∧ finite(mass) → mass ∈ ℝ₊
@@ -228,7 +229,7 @@ export const usePhysicsStore = defineStore("physics", {
               isStatic: config.type === "static",
             })
           : createBoxBody(layerId, layerId, {
-              position,
+              position: initialPosition,
               // Type proof: width, height ∈ ℝ ∧ finite(width/height) → width/height ∈ ℝ₊
               width: (() => {
                 // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.

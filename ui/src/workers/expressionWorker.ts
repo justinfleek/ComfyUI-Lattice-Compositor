@@ -111,13 +111,17 @@ async function evaluate(req: EvalRequest): Promise<EvalResponse> {
     }
 
     const frame = typeof req.context.frame === "number" ? req.context.frame : 0;
+    // harden is guaranteed non-null here because sesReady is only true after initSES succeeds
+    if (harden === null) {
+      throw new Error("[ExpressionWorker] harden not available");
+    }
     const seededRandom = harden(createSeededRandom(frame));
 
     // Build compartment globals from context
-    // Type for SES compartment globals (primitives only for security)
-    interface SESGlobals {
-      [key: string]: number | string | boolean | (() => number) | typeof Math | undefined;
-    }
+    // Type for SES compartment globals - allows primitives and math functions
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    type SESGlobalValue = number | string | boolean | ((...args: any[]) => any) | undefined;
+    type SESGlobals = Record<string, SESGlobalValue>;
 
     const globals: SESGlobals = {
       ...safeMath,
@@ -155,6 +159,11 @@ async function evaluate(req: EvalRequest): Promise<EvalResponse> {
       }
     }
 
+    // Compartment is guaranteed non-null here because we checked in initSES
+    // and sesReady is only true if both Compartment and harden are available
+    if (Compartment === null || harden === null) {
+      throw new Error("[ExpressionWorker] SES not properly initialized");
+    }
     const compartment = new Compartment(harden(globals));
     const result = compartment.evaluate(req.code);
 

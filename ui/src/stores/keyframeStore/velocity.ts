@@ -125,16 +125,18 @@ export function getKeyframeVelocity(
   // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
   const inHandle = (keyframe != null && typeof keyframe === "object" && "inHandle" in keyframe && keyframe.inHandle != null && typeof keyframe.inHandle === "object") ? keyframe.inHandle : undefined;
   const inHandleEnabled = (inHandle != null && typeof inHandle === "object" && "enabled" in inHandle && typeof inHandle.enabled === "boolean" && inHandle.enabled) ? true : false;
+  const inHandleFrameForInfluence = (inHandle != null && "frame" in inHandle && typeof inHandle.frame === "number") ? inHandle.frame : 0;
   const inInfluence =
     inHandleEnabled && inDuration > 0
-      ? (Math.abs(inHandle.frame) / inDuration) * 100
+      ? (Math.abs(inHandleFrameForInfluence) / inDuration) * 100
       : 33.33;
 
   const outHandle = (keyframe != null && typeof keyframe === "object" && "outHandle" in keyframe && keyframe.outHandle != null && typeof keyframe.outHandle === "object") ? keyframe.outHandle : undefined;
   const outHandleEnabled = (outHandle != null && typeof outHandle === "object" && "enabled" in outHandle && typeof outHandle.enabled === "boolean" && outHandle.enabled) ? true : false;
+  const outHandleFrameForInfluence = (outHandle != null && "frame" in outHandle && typeof outHandle.frame === "number") ? outHandle.frame : 0;
   const outInfluence =
     outHandleEnabled && outDuration > 0
-      ? (outHandle.frame / outDuration) * 100
+      ? (outHandleFrameForInfluence / outDuration) * 100
       : 33.33;
 
   // Convert value offset back to velocity (validate fps)
@@ -143,17 +145,19 @@ export function getKeyframeVelocity(
   const inHandleFrameValue = (inHandle != null && typeof inHandle === "object" && "frame" in inHandle && typeof inHandle.frame === "number") ? inHandle.frame : undefined;
   const inHandleFrameRaw = isFiniteNumber(inHandleFrameValue) ? inHandleFrameValue : 0;
   const inHandleFrame = Math.abs(inHandleFrameRaw);
+  const inHandleValueForVelocity = (inHandle != null && "value" in inHandle && typeof inHandle.value === "number") ? inHandle.value : 0;
   const inVelocity =
     inHandleEnabled && inHandleFrame > 0
-      ? (-inHandle.value / inHandleFrame) * fps
+      ? (-inHandleValueForVelocity / inHandleFrame) * fps
       : 0;
 
   // Type proof: outHandle?.frame ∈ ℝ ∪ {undefined} → ℝ
   const outHandleFrameValue = (outHandle != null && typeof outHandle === "object" && "frame" in outHandle && typeof outHandle.frame === "number") ? outHandle.frame : undefined;
   const outHandleFrame = isFiniteNumber(outHandleFrameValue) ? outHandleFrameValue : 0;
+  const outHandleValueForVelocity = (outHandle != null && "value" in outHandle && typeof outHandle.value === "number") ? outHandle.value : 0;
   const outVelocity =
     outHandleEnabled && outHandleFrame !== 0
-      ? (outHandle.value / outHandleFrame) * fps
+      ? (outHandleValueForVelocity / outHandleFrame) * fps
       : 0;
 
   return {

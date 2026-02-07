@@ -41,21 +41,18 @@ export async function detectGPUTier(): Promise<GPUTier> {
       });
 
       if (adapter) {
-        // Extended GPUAdapter interface for adapter.info property
-        // GPUAdapter.info exists in newer WebGPU spec but may not be in TypeScript types
-        interface GPUAdapterWithInfo extends GPUAdapter {
-          info?: {
-            device?: string;
-            description?: string;
-            vendor?: string;
-          };
+        // GPUAdapter.info exists in newer WebGPU spec - define shape without extending
+        interface GPUAdapterInfoLike {
+          device?: string;
+          description?: string;
+          vendor?: string;
         }
 
         // Get adapter info - method varies by browser version
         let deviceName = "";
         if ("info" in adapter) {
-          // Type-safe access to adapter info
-          const adapterWithInfo = adapter as GPUAdapterWithInfo;
+          // Type-safe access to adapter info - treat as unknown object and narrow
+          const adapterWithInfo = adapter as { info?: GPUAdapterInfoLike };
           // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
           const adapterInfo = (adapterWithInfo != null && typeof adapterWithInfo === "object" && "info" in adapterWithInfo && adapterWithInfo.info != null && typeof adapterWithInfo.info === "object") ? adapterWithInfo.info : undefined;
           const infoDevice = (adapterInfo != null && typeof adapterInfo === "object" && "device" in adapterInfo && typeof adapterInfo.device === "string") ? adapterInfo.device : undefined;
