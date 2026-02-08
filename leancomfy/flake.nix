@@ -66,7 +66,7 @@
             outputHashMode = "recursive";
             # To get this hash: run `nix build .#lake-deps` with lib.fakeHash,
             # then copy the "got:" hash from the error message
-            outputHash = "sha256-cch9WodLW7Vx144LsdGFxt9bAGhjiUbnHmcoez/sEkw=";
+            outputHash = "sha256-1OCk7b5ft5IxAa68kKKoRe80Q3g6SypbbGJBbgVu0+4=";
 
             buildPhase = ''
               export HOME=$TMPDIR

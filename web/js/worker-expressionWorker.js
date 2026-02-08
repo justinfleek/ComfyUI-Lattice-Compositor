@@ -65,6 +65,9 @@ async function evaluate(req) {
       }
     }
     const frame = typeof req.context.frame === "number" ? req.context.frame : 0;
+    if (harden === null) {
+      throw new Error("[ExpressionWorker] harden not available");
+    }
     const seededRandom = harden(createSeededRandom(frame));
     const globals = {
       ...safeMath,
@@ -93,6 +96,9 @@ async function evaluate(req) {
       if (typeof value === "number" || typeof value === "string" || typeof value === "boolean") {
         globals[key] = value;
       }
+    }
+    if (Compartment === null || harden === null) {
+      throw new Error("[ExpressionWorker] SES not properly initialized");
     }
     const compartment = new Compartment(harden(globals));
     const result = compartment.evaluate(req.code);

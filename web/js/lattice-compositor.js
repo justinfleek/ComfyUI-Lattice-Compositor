@@ -3339,7 +3339,7 @@ function applyPropertyExpression(property, value, frame, fps, layerId, compDurat
     getLayerEffectParam: () => null
   };
   const expression = {
-    type: expr.type,
+    type: expr.type === "custom" ? "custom" : "preset",
     name: expr.name,
     params: expr.params,
     enabled: expr.enabled
@@ -3451,8 +3451,10 @@ function interpolateValue(v1, v2, t) {
   if (typeof v1 === "string" && typeof v2 === "string" && v1.startsWith("#") && v2.startsWith("#")) {
     return interpolateColor(v1, v2, t);
   }
-  if (isBezierPath(v1) && isBezierPath(v2)) {
-    return interpolatePath(v1, v2, t);
+  const rv1 = v1;
+  const rv2 = v2;
+  if (isBezierPath(rv1) && isBezierPath(rv2)) {
+    return interpolatePath(rv1, rv2, t);
   }
   return t < 0.5 ? v1 : v2;
 }

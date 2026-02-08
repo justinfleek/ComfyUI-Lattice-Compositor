@@ -27,7 +27,24 @@
       "Bash(git push:*)",
       "Bash(git rm:*)",
       "Bash(git reset:*)",
-      "Bash(npm test:*)"
+      "Bash(npm test:*)",
+      "Bash(wc:*)",
+      "Bash(lake build:*)",
+      "Bash(nix develop:*)",
+      "Bash(git diff:*)",
+      "Bash(node:*)",
+      "Bash(nix log:*)",
+      "Bash(nix flake show:*)",
+      "Bash(git -C /mnt/c/Users/justi/desktop/comfyui-lattice-compositor/leancomfy/lean submodule status)",
+      "Bash(git -C /mnt/c/Users/justi/desktop/comfyui-lattice-compositor submodule status:*)",
+      "Bash(nix flake update:*)",
+      "Bash(git -C /mnt/c/Users/justi/desktop/comfyui-lattice-compositor ls-files --error-unmatch leancomfy/lean/patched-deps/aesop/lakefile.lean)",
+      "Bash(exec:*)",
+      "Bash(nix:*)",
+      "Bash(command -v:*)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(/bin/bash -c \"echo test\")",
+      "Bash(/bin/bash -c 'echo test')"
     ]
   }
 }
