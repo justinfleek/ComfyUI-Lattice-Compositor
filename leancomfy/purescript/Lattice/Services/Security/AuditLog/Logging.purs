@@ -18,6 +18,7 @@ module Lattice.Services.Security.AuditLog.Logging
   ) where
 
 import Prelude
+import Data.Functor (void)
 import Effect (Effect)
 import Effect.Aff (Aff, attempt, launchAff_)
 import Effect.Class (liftEffect)
@@ -26,6 +27,7 @@ import Data.Argonaut.Core (Json, stringify)
 import Data.Argonaut.Encode (encodeJson)
 import Data.Either (Either(..))
 import Data.Maybe (Maybe(..))
+import Data.Array as Array
 import Data.String (toLower, contains, Pattern(..))
 import Data.Tuple (Tuple(..))
 import Foreign.Object (Object)
@@ -90,7 +92,7 @@ logAuditEntry entry = do
     Left err -> liftEffect $ warn ("[SECURITY AUDIT] Failed to log: " <> show err)
     Right _ -> pure unit
 
-  launchAff_ pruneOldEntries
+  liftEffect $ launchAff_ (void pruneOldEntries)
 
 --------------------------------------------------------------------------------
 -- Specialized Logging
@@ -206,12 +208,10 @@ sanitizeArguments :: Object Json -> Object Json
 sanitizeArguments args = Obj.mapWithKey sanitizeArg args
   where
     sensitiveKeys = ["password", "secret", "token", "key", "apikey", "auth"]
-    isSensitive k = anyMatch (\s -> contains (Pattern s) (toLower k)) sensitiveKeys
+    isSensitive k = Array.any (\s -> contains (Pattern s) (toLower k)) sensitiveKeys
     sanitizeArg key val
       | isSensitive key = encodeJson "[REDACTED]"
       | otherwise = val
-    anyMatch _ [] = false
-    anyMatch p (x : xs) = if p x then true else anyMatch p xs
 
 pruneOldEntries :: Aff Int
 pruneOldEntries = do

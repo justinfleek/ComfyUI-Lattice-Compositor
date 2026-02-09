@@ -9,6 +9,7 @@ module Lattice.Services.Export.DepthRenderer.Types
     DepthRenderOptions
   , DepthRenderResult
   , DepthMetadata
+  , Vec3
     -- * Format Types
   , DepthMapFormat(..)
   , DepthFormatSpec

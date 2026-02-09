@@ -19,6 +19,7 @@ module Lattice.Services.Export.CameraExport.Formats.Common
 
 import Prelude
 import Data.Array (foldl)
+import Data.Int (toNumber) as Data.Int
 import Data.Maybe (Maybe(..), fromMaybe)
 
 import Lattice.Services.Export.CameraExport.Types

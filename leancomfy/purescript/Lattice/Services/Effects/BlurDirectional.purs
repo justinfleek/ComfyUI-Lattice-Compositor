@@ -26,15 +26,16 @@ module Lattice.Services.Effects.BlurDirectional
   , sharpenKernel
   , normalizeAngle
   , distance2D
+  , sharpenWithThreshold
   ) where
 
 import Prelude
 
-import Data.Array (replicate)
+import Data.Array (range, replicate)
 import Data.Int (floor, toNumber)
 import Data.Number (abs, atan2, cos, pi, sin, sqrt) as Number
 import Data.Tuple (Tuple(..))
-import Math (max, min)
+import Math (max, min) as Math
 
 --------------------------------------------------------------------------------
 -- Types
@@ -212,8 +213,8 @@ sharpenKernel params =
       centerWeight = 1.0 + amount * (1.0 - blurWeight)
       mkRow i = map (\j ->
         if i == center && j == center then centerWeight else neighborWeight
-        ) (0 .. (size - 1))
-  in map mkRow (0 .. (size - 1))
+        ) (range 0 (size - 1))
+  in map mkRow (range 0 (size - 1))
 
 -- | Apply sharpen threshold
 sharpenWithThreshold :: SharpenParams -> Number -> Number -> Number

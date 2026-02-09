@@ -48,9 +48,10 @@ module Lattice.Services.Audio.SignalProcessing
 import Prelude
 
 import Data.Array (filter, foldl, length, mapWithIndex, range, sortBy, (!!))
-import Data.Maybe (fromMaybe)
+import Data.Maybe (Maybe(..), fromMaybe)
+import Data.Ord (abs) as Ord
 import Data.Tuple (Tuple(..))
-import Math (abs, cos, exp, log, max, min, pi, sin, sqrt)
+import Math (cos, exp, log, pi, sin, sqrt) as Math
 
 --------------------------------------------------------------------------------
 -- Window Functions
@@ -62,7 +63,7 @@ import Math (abs, cos, exp, log, max, min, pi, sin, sqrt)
 hanningCoeff :: Int -> Int -> Number
 hanningCoeff i n
   | n <= 1 = 1.0
-  | otherwise = 0.5 * (1.0 - cos (2.0 * pi * toNumber i / toNumber (n - 1)))
+  | otherwise = 0.5 * (1.0 - Math.cos (2.0 * Math.pi * toNumber i / toNumber (n - 1)))
 
 -- | Apply Hanning window to array of samples.
 applyHanningWindow :: Array Number -> Array Number
@@ -79,19 +80,18 @@ applyHanningWindow samples =
 -- | X(k) = Σ x(n) * e^(-j2πkn/N)
 -- | |X(k)| = sqrt(real² + imag²) / N
 computeBinMagnitude :: Array Number -> Int -> Number
-computeBinMagnitude samples k
-  | n == 0 = 0.0
-  | otherwise =
-      let angleCoeff = 2.0 * pi * toNumber k / toNumber n
+computeBinMagnitude samples k =
+  let n = length samples
+  in if n == 0 then 0.0
+     else
+      let angleCoeff = 2.0 * Math.pi * toNumber k / toNumber n
           result = foldlWithIndex (\acc t sample ->
             let angle = angleCoeff * toNumber t
-                r = acc.real + sample * cos angle
-                i = acc.imag - sample * sin angle
+                r = acc.real + sample * Math.cos angle
+                i = acc.imag - sample * Math.sin angle
             in { real: r, imag: i }
           ) { real: 0.0, imag: 0.0 } samples
-      in sqrt (result.real * result.real + result.imag * result.imag) / toNumber n
-  where
-    n = length samples
+      in Math.sqrt (result.real * result.real + result.imag * result.imag) / toNumber n
 
 -- | Compute magnitude spectrum using simple DFT (first half).
 simpleDFT :: Array Number -> Array Number
@@ -150,8 +150,8 @@ spectralFlatness magnitudes =
   in if n == 0 then 0.0
      else
        let nf = toNumber n
-           logSum = foldl (\acc m -> acc + log m) 0.0 nonZero
-           geometricMean = exp (logSum / nf)
+           logSum = foldl (\acc m -> acc + Math.log m) 0.0 nonZero
+           geometricMean = Math.exp (logSum / nf)
            arithmeticMean = foldl (+) 0.0 nonZero / nf
        in if arithmeticMean > 0.0 then geometricMean / arithmeticMean else 0.0
 
@@ -181,19 +181,19 @@ zeroCrossingRate samples
 -- |
 -- | mel = 2595 * log10(1 + hz/700)
 hzToMel :: Number -> Number
-hzToMel hz = 2595.0 * log (1.0 + hz / 700.0) / log 10.0
+hzToMel hz = 2595.0 * Math.log (1.0 + hz / 700.0) / Math.log 10.0
 
 -- | Convert Mel scale to frequency in Hz.
 -- |
 -- | hz = 700 * (10^(mel/2595) - 1)
 melToHz :: Number -> Number
-melToHz mel = 700.0 * (exp (mel / 2595.0 * log 10.0) - 1.0)
+melToHz mel = 700.0 * (Math.exp (mel / 2595.0 * Math.log 10.0) - 1.0)
 
 -- | Convert MIDI note number to frequency in Hz.
 -- |
 -- | f = 440 * 2^((midi - 69) / 12)
 midiToHz :: Number -> Number
-midiToHz midi = 440.0 * exp ((midi - 69.0) / 12.0 * log 2.0)
+midiToHz midi = 440.0 * Math.exp ((midi - 69.0) / 12.0 * Math.log 2.0)
 
 -- | Convert frequency in Hz to MIDI note number.
 -- |
@@ -201,7 +201,7 @@ midiToHz midi = 440.0 * exp ((midi - 69.0) / 12.0 * log 2.0)
 hzToMidi :: Number -> Number
 hzToMidi hz
   | hz <= 0.0 = 0.0
-  | otherwise = 69.0 + 12.0 * log (hz / 440.0) / log 2.0
+  | otherwise = 69.0 + 12.0 * Math.log (hz / 440.0) / Math.log 2.0
 
 -- | Get pitch class (0-11) from frequency.
 -- |
@@ -226,8 +226,8 @@ dctCoeff logMelEnergies c
       let n = length logMelEnergies
           nf = toNumber n
       in foldlWithIndex (\acc m energy ->
-           let angle = pi * toNumber c * (toNumber m + 0.5) / nf
-           in acc + energy * cos angle
+           let angle = Math.pi * toNumber c * (toNumber m + 0.5) / nf
+           in acc + energy * Math.cos angle
          ) 0.0 logMelEnergies
 
 -- | Compute MFCC coefficients from log mel energies.
@@ -255,7 +255,7 @@ applyFeatureCurve value curve =
   in case curve of
        CurveLinear      -> clamped
        CurveExponential -> clamped * clamped
-       CurveLogarithmic -> sqrt clamped
+       CurveLogarithmic -> Math.sqrt clamped
        CurveSmoothstep  -> clamped * clamped * (3.0 - 2.0 * clamped)
 
 --------------------------------------------------------------------------------
@@ -316,7 +316,7 @@ calculateAdaptiveThreshold flux windowSize sensitivityFactor =
                sumVal = foldl (+) 0.0 window
                mean = sumVal / nf
                sqDiffSum = foldl (\acc v -> acc + (v - mean) * (v - mean)) 0.0 window
-               std = sqrt (sqDiffSum / nf)
+               std = Math.sqrt (sqDiffSum / nf)
            in mean + sensitivityFactor * std
 
 --------------------------------------------------------------------------------
@@ -344,13 +344,16 @@ enforceMinPeakDistance peaks minDistance =
   in foldl addPeak [] sorted
   where
     addPeak filtered (Tuple idx val) =
-      let conflict = filter (\(Tuple pi _) -> abs (pi - idx) < minDistance) filtered
+      let conflict = filter (\(Tuple pi _) -> Ord.abs (pi - idx) < minDistance) filtered
       in case conflict of
            [] -> filtered <> [Tuple idx val]
-           (Tuple prevIdx prevVal):_ ->
-             if val > prevVal
-             then filter (\(Tuple pi _) -> pi /= prevIdx) filtered <> [Tuple idx val]
-             else filtered
+           _ ->
+             case conflict !! 0 of
+               Just (Tuple prevIdx prevVal) ->
+                 if val > prevVal
+                 then filter (\(Tuple pi _) -> pi /= prevIdx) filtered <> [Tuple idx val]
+                 else filtered
+               Nothing -> filtered
 
 --------------------------------------------------------------------------------
 -- Chroma Features

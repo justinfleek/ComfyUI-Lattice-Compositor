@@ -23,9 +23,10 @@ module Lattice.Services.Particles.Turbulence
 
 import Prelude
 
-import Data.Array (foldl)
+import Data.Array (foldl, mapWithIndex)
+import Data.Int (toNumber)
 import Data.Tuple (Tuple(..), fst, snd)
-import Math (max, sqrt)
+import Math (max, pow, sqrt)
 
 --------------------------------------------------------------------------------
 -- Types
@@ -148,10 +149,9 @@ multiOctaveNoise persistence octaves =
   foldl combine (Tuple 0.0 0.0) (withAmplitude octaves)
   where
     withAmplitude :: Array (Tuple Number Number) -> Array { noise :: Tuple Number Number, amp :: Number }
-    withAmplitude = go 1.0
-      where
-        go _ [] = []
-        go amp (n : rest) = { noise: n, amp } : go (amp * persistence) rest
+    withAmplitude octaveArr =
+      let indexed = mapWithIndex (\i n -> { noise: n, amp: pow persistence (toNumber i) }) octaveArr
+      in indexed
 
     combine :: Tuple Number Number -> { noise :: Tuple Number Number, amp :: Number } -> Tuple Number Number
     combine (Tuple accX accY) { noise: Tuple nx ny, amp } =

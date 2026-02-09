@@ -112,16 +112,15 @@ safePeriod p = if isFiniteNum p && p > 0.0 then p else defaultPeriod
 -- |
 -- | Returns: Oscillation offset to add to value
 inertiaOscillation :: Number -> Number -> Number -> Number -> Number -> Number
-inertiaOscillation velocity amplitude frequency decay t
-  | t <= 0.0 = 0.0
-  | decayFactor == 0.0 = 0.0
-  | otherwise = velocity * safeAmp * Math.sin phase / decayFactor
-  where
-    safeAmp = safeAmplitude amplitude
-    safeFreq = safeFrequency frequency
-    safeDec = safeDecay decay
-    phase = safeFreq * t * 2.0 * Math.pi
-    decayFactor = Math.exp (safeDec * t)
+inertiaOscillation velocity amplitude frequency decay t =
+  let safeAmp = safeAmplitude amplitude
+      safeFreq = safeFrequency frequency
+      safeDec = safeDecay decay
+      phase = safeFreq * t * 2.0 * Math.pi
+      df = Math.exp (safeDec * t)
+  in if t <= 0.0 then 0.0
+     else if df == 0.0 then 0.0
+     else velocity * safeAmp * Math.sin phase / df
 
 -- | Apply inertia to a scalar value
 inertiaScalar :: Number -> Number -> Number -> Number -> Number -> Number -> Number
@@ -153,16 +152,17 @@ bouncePhysics t elasticity gravity
     safeG = safeGravity gravity
 
     -- Calculate which bounce we're in (tail-recursive)
-    findBounce :: Int -> Number -> Number -> { time :: Number, height :: Number }
-    findBounce 0 bounceTime height = { time: bounceTime, height }
-    findBounce n bounceTime height
-      | bounceTime <= 0.0 = { time: bounceTime, height }
-      | bounceTime < bounceDuration * 2.0 = { time: bounceTime, height }
-      | otherwise = findBounce (n - 1) newTime newHeight
-      where
-        bounceDuration = Math.sqrt (2.0 * height / safeG)
-        newTime = bounceTime - bounceDuration * 2.0
-        newHeight = height * safeE * safeE
+    findBounce nRemaining bounceTime height =
+      let bounceDur = Math.sqrt (2.0 * height / safeG)
+          newTime = bounceTime - bounceDur * 2.0
+          newHeight = height * safeE * safeE
+      in if nRemaining <= 0
+         then { time: bounceTime, height }
+         else if bounceTime <= 0.0
+         then { time: bounceTime, height }
+         else if bounceTime < bounceDur * 2.0
+         then { time: bounceTime, height }
+         else findBounce (nRemaining - 1) newTime newHeight
 
     bounceResult = findBounce maxBounces t 1.0
     bounceTime = bounceResult.time

@@ -16,6 +16,7 @@ module Lattice.Services.RenderQueue.Manager.Callbacks
 import Prelude
 import Effect (Effect)
 import Effect.Ref as Ref
+import Data.Maybe (Maybe(..))
 
 import Lattice.Services.RenderQueue.Types
   ( RenderJobProgress

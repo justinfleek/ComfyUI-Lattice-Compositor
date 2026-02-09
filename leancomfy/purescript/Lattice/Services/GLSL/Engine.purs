@@ -21,6 +21,7 @@ module Lattice.Services.GLSL.Engine
   , setShader
     -- * Rendering
   , render
+  , CanvasElement
   , renderWithUniforms
     -- * Uniforms
   , setUniforms

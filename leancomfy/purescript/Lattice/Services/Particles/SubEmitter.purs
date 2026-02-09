@@ -26,7 +26,6 @@ import Prelude
 
 import Data.Int (round, toNumber)
 import Data.Tuple (Tuple(..))
-import Math (max)
 
 --------------------------------------------------------------------------------
 -- Types

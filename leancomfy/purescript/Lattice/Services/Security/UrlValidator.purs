@@ -28,6 +28,7 @@ module Lattice.Services.Security.UrlValidator
 
 import Prelude
 import Data.Array (any, elem, filter, mapMaybe)
+import Data.Array as Array
 import Data.Either (Either(..))
 import Data.Foldable (foldl)
 import Data.Map (Map)
@@ -299,9 +300,8 @@ mkWarning url proto warn =
 findBlockedProtocol :: String -> Maybe String
 findBlockedProtocol url =
   let lowUrl = toLower url
-  in case filter (\p -> startsWith p lowUrl) blockedProtocols of
-    [] -> Nothing
-    (p : _) -> Just p
+      matched = filter (\p -> startsWith p lowUrl) blockedProtocols
+  in Array.head matched
 
 -- | Extract protocol from URL
 extractProtocol :: String -> String

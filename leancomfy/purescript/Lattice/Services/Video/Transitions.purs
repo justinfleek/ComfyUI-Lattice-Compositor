@@ -12,6 +12,7 @@ module Lattice.Services.Video.Transitions
   , TransitionConfig
   , TransitionState
   , TransitionPresets
+  , CanvasElement
     -- * Easing Functions (Pure)
   , applyEasing
   , easeIn
@@ -36,12 +37,15 @@ module Lattice.Services.Video.Transitions
   , getAllModes
   , getModeName
   , defaultPresets
+    -- * Parsing
+  , stringToBlendMode
   ) where
 
 import Prelude
 import Effect (Effect)
 import Data.Maybe (Maybe(..))
 import Data.Int (toNumber)
+import Data.Tuple (Tuple(..))
 import Data.Generic.Rep (class Generic)
 import Data.Show.Generic (genericShow)
 import Foreign.Object (Object)
@@ -337,18 +341,18 @@ stringToBlendMode = case _ of
 -- | Default transition presets
 defaultPresets :: TransitionPresets
 defaultPresets = Obj.fromFoldable
-  [ { key: "fade", value: fadePreset }
-  , { key: "flash-fade", value: flashFadePreset }
-  , { key: "dark-fade", value: darkFadePreset }
-  , { key: "dreamy", value: dreamyPreset }
-  , { key: "dramatic", value: dramaticPreset }
-  , { key: "soft-cut", value: softCutPreset }
-  , { key: "dissolve", value: dissolvePreset }
-  , { key: "wipe-left", value: wipeLeftPreset }
-  , { key: "wipe-right", value: wipeRightPreset }
-  , { key: "iris-reveal", value: irisRevealPreset }
-  , { key: "iris-close", value: irisClosePreset }
-  , { key: "clock-wipe", value: clockWipePreset }
+  [ Tuple "fade" fadePreset
+  , Tuple "flash-fade" flashFadePreset
+  , Tuple "dark-fade" darkFadePreset
+  , Tuple "dreamy" dreamyPreset
+  , Tuple "dramatic" dramaticPreset
+  , Tuple "soft-cut" softCutPreset
+  , Tuple "dissolve" dissolvePreset
+  , Tuple "wipe-left" wipeLeftPreset
+  , Tuple "wipe-right" wipeRightPreset
+  , Tuple "iris-reveal" irisRevealPreset
+  , Tuple "iris-close" irisClosePreset
+  , Tuple "clock-wipe" clockWipePreset
   ]
 
 fadePreset :: TransitionConfig

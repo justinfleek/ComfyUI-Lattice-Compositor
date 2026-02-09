@@ -15,14 +15,15 @@ import Effect (Effect)
 import Effect.Aff (Aff, launchAff_)
 import Effect.Class (liftEffect)
 import Effect.Ref as Ref
-import Data.Array (filter, sortBy, head)
-import Data.Int (toNumber)
+import Data.Array (filter, sortBy, head, fromFoldable) as Array
+import Data.Int (floor, toNumber)
 import Data.Map as Map
 import Data.Maybe (Maybe(..), isNothing)
 import Data.Ord (comparing)
 
 import Lattice.Services.RenderQueue.Types
   ( RenderJob
+  , RenderJobProgress
   , RenderJobStatus(..)
   , RenderedFrame
   )
@@ -45,11 +46,11 @@ processNextJob mgr = do
   state <- liftEffect $ Ref.read mgr.state
   when (state.isRunning && not state.isPaused && isNothing state.activeJobId) $ do
     -- Find next pending job
-    let jobs = Map.values state.jobs
-        pendingJobs = filter isPendingOrPaused jobs
-        sortedJobs = sortBy (comparing _.priority) pendingJobs
+    let jobs = Array.fromFoldable (Map.values state.jobs)
+        pendingJobs = Array.filter isPendingOrPaused jobs
+        sortedJobs = Array.sortBy (comparing _.priority) pendingJobs
 
-    case head sortedJobs of
+    case Array.head sortedJobs of
       Nothing -> do
         -- No more jobs - queue is empty
         liftEffect $ Ref.modify_ (\s -> s { isRunning = false }) mgr.state
@@ -147,13 +148,15 @@ renderLoop mgr jobId renderer = do
             -- Update progress
             let newFrame = currentFrame + 1
                 framesComplete = newFrame - job.startFrame
-                totalFrames = job.endFrame - job.startFrame + 1
-                percentComplete = toNumber framesComplete / toNumber totalFrames * 100.0
+                totalFrames' = job.endFrame - job.startFrame + 1
+                pct = if totalFrames' > 0
+                  then floor (toNumber framesComplete / toNumber totalFrames' * 100.0)
+                  else 0
 
                 updatedProgress = job.progress
                   { currentFrame = newFrame
-                  , framesComplete = framesComplete
-                  , percentComplete = percentComplete
+                  , totalFrames = totalFrames'
+                  , percentage = pct
                   }
                 updatedJob = job { progress = updatedProgress }
 
@@ -181,7 +184,7 @@ getFramesInternal mgr jobId = do
     Nothing -> pure []
 
 -- | Notify progress (internal)
-notifyProgressInternal :: RenderQueueManager -> String -> _ -> Effect Unit
+notifyProgressInternal :: RenderQueueManager -> String -> RenderJobProgress -> Effect Unit
 notifyProgressInternal mgr jobId progress = do
   maybeCb <- Ref.read mgr.onProgressCb
   case maybeCb of

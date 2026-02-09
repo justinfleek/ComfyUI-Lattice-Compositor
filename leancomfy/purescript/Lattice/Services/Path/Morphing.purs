@@ -94,12 +94,13 @@ clonePath path =
 
 -- | Calculate total travel distance for a given rotation offset.
 calculateTravelDistance :: BezierPath -> BezierPath -> Int -> Boolean -> Number
-calculateTravelDistance source target rotationOffset reversed
-  | length source.vertices == 0 || n /= length target.vertices = 0.0
-  | otherwise = go 0 0.0
+calculateTravelDistance source target rotationOffset reversed =
+  let n = length source.vertices
+  in if length source.vertices == 0 || n /= length target.vertices
+     then 0.0
+     else go n 0 0.0
   where
-    n = length source.vertices
-    go i acc
+    go n i acc
       | i >= n = acc
       | otherwise =
           let srcIdx = i
@@ -109,7 +110,7 @@ calculateTravelDistance source target rotationOffset reversed
               srcPoint = fromMaybe zeroPoint (map _.point (source.vertices !! srcIdx))
               tgtPoint = fromMaybe zeroPoint (map _.point (target.vertices !! tgtIdx))
               dist = pointDistance srcPoint tgtPoint
-          in go (i + 1) (acc + dist)
+          in go n (i + 1) (acc + dist)
 
 -- | Find optimal rotation offset to minimize travel distance.
 findOptimalRotation :: BezierPath -> BezierPath -> { offset :: Int, reversed :: Boolean }
@@ -185,30 +186,30 @@ findLongestSegment lengths
 
 -- | Subdivide a segment at parameter t.
 subdivideSegmentAt :: BezierPath -> Int -> Number -> BezierPath
-subdivideSegmentAt path segmentIndex t
-  | length path.vertices == 0 || segmentIndex >= n = path
-  | otherwise = fromMaybe path do
-      v0 <- path.vertices !! segmentIndex
-      let nextIdx = (segmentIndex + 1) `mod` n
-      v1 <- path.vertices !! nextIdx
-      let p0 = v0.point
-          p1 = outHandleAbsolute v0
-          p2 = inHandleAbsolute v1
-          p3 = v1.point
-          result = splitCubicBezier p0 p1 p2 p3 t
-          v0' = v0 { outHandle = subPoints result.left.p1 result.left.p0 }
-          newVertex =
-            { point: clonePoint result.left.p3
-            , inHandle: subPoints result.left.p2 result.left.p3
-            , outHandle: subPoints result.right.p1 result.right.p0
-            }
-          v1' = v1 { inHandle = subPoints result.right.p2 result.right.p3 }
-          before = take segmentIndex path.vertices
-          after = drop (nextIdx + 1) path.vertices
-          newVertices = before <> [v0', newVertex, v1'] <> after
-      pure { vertices: newVertices, closed: path.closed }
-  where
-    n = length path.vertices
+subdivideSegmentAt path segmentIndex t =
+  let n = length path.vertices
+  in if length path.vertices == 0 || segmentIndex >= n
+     then path
+     else fromMaybe path do
+       v0 <- path.vertices !! segmentIndex
+       let nextIdx = (segmentIndex + 1) `mod` n
+       v1 <- path.vertices !! nextIdx
+       let p0 = v0.point
+           p1 = outHandleAbsolute v0
+           p2 = inHandleAbsolute v1
+           p3 = v1.point
+           result = splitCubicBezier p0 p1 p2 p3 t
+           v0' = v0 { outHandle = subPoints result.left.p1 result.left.p0 }
+           newVertex =
+             { point: clonePoint result.left.p3
+             , inHandle: subPoints result.left.p2 result.left.p3
+             , outHandle: subPoints result.right.p1 result.right.p0
+             }
+           v1' = v1 { inHandle = subPoints result.right.p2 result.right.p3 }
+           before = take segmentIndex path.vertices
+           after = drop (nextIdx + 1) path.vertices
+           newVertices = before <> [v0', newVertex, v1'] <> after
+       pure { vertices: newVertices, closed: path.closed }
 
 -- | Subdivide a path to have a specific number of vertices.
 subdivideToVertexCount :: BezierPath -> Int -> BezierPath
@@ -249,33 +250,34 @@ getPointAtArcLength path targetLength segmentLengths
 resamplePath :: BezierPath -> Int -> BezierPath
 resamplePath path vertexCount
   | vertexCount < 2 || length path.vertices == 0 = clonePath path
-  | totalLength == 0.0 = clonePath path
   | otherwise =
-      { vertices: mapRange 0 vertexCount makeVertex
-      , closed: path.closed
-      }
-  where
-    segmentLengths = getSegmentLengths path 10
-    totalLength = foldl (+) 0.0 segmentLengths
-    spacing = totalLength / (if path.closed then toNumber vertexCount else toNumber (vertexCount - 1))
+      let segmentLengths = getSegmentLengths path 10
+          totalLength = foldl (+) 0.0 segmentLengths
+      in if totalLength == 0.0
+         then clonePath path
+         else
+           let spacing = totalLength / (if path.closed then toNumber vertexCount else toNumber (vertexCount - 1))
 
-    mapRange start end f
-      | start >= end = []
-      | otherwise = [f start] <> mapRange (start + 1) end f
+               mapRange start end f
+                 | start >= end = []
+                 | otherwise = [f start] <> mapRange (start + 1) end f
 
-    makeVertex i =
-      let targetLength = toNumber i * spacing
-          point = getPointAtArcLength path targetLength segmentLengths
-          prevLength = Math.max 0.0 (targetLength - spacing * 0.33)
-          nextLength = Math.min totalLength (targetLength + spacing * 0.33)
-          prevPoint = getPointAtArcLength path prevLength segmentLengths
-          nextPoint = getPointAtArcLength path nextLength segmentLengths
-          tangent = scalePoint (subPoints nextPoint prevPoint) 0.5
-          handleScale = 0.33
-      in { point: clonePoint point
-         , inHandle: scalePoint tangent (-handleScale)
-         , outHandle: scalePoint tangent handleScale
-         }
+               makeVertex i =
+                 let targetLen = toNumber i * spacing
+                     point = getPointAtArcLength path targetLen segmentLengths
+                     prevLength = Math.max 0.0 (targetLen - spacing * 0.33)
+                     nextLength = Math.min totalLength (targetLen + spacing * 0.33)
+                     prevPoint = getPointAtArcLength path prevLength segmentLengths
+                     nextPoint = getPointAtArcLength path nextLength segmentLengths
+                     tangent = scalePoint (subPoints nextPoint prevPoint) 0.5
+                     handleScale = 0.33
+                 in { point: clonePoint point
+                    , inHandle: scalePoint tangent (-handleScale)
+                    , outHandle: scalePoint tangent handleScale
+                    }
+           in { vertices: mapRange 0 vertexCount makeVertex
+              , closed: path.closed
+              }
 
 --------------------------------------------------------------------------------
 -- Main Morphing Functions
@@ -283,17 +285,18 @@ resamplePath path vertexCount
 
 -- | Interpolate between two prepared paths.
 morphPaths :: BezierPath -> BezierPath -> Number -> BezierPath
-morphPaths source target t
-  | clampedT == 0.0 = clonePath source
-  | clampedT == 1.0 = clonePath target
-  | otherwise =
-      { vertices: zipWith (\v1 v2 -> lerpVertex v1 v2 clampedT)
-                          source.vertices
-                          target.vertices
-      , closed: source.closed
-      }
-  where
-    clampedT = Math.max 0.0 (Math.min 1.0 t)
+morphPaths source target t =
+  let clampedT = Math.max 0.0 (Math.min 1.0 t)
+  in if clampedT == 0.0
+     then clonePath source
+     else if clampedT == 1.0
+     then clonePath target
+     else
+       { vertices: zipWith (\v1 v2 -> lerpVertex v1 v2 clampedT)
+                            source.vertices
+                            target.vertices
+       , closed: source.closed
+       }
 
 -- | Prepare two paths for morphing.
 prepareMorphPaths :: BezierPath -> BezierPath -> MorphConfig -> PreparedMorphPaths
@@ -313,12 +316,12 @@ prepareMorphPaths source target config
                 else { s: clonePath source
                      , t: subdivideToVertexCount target (length source.vertices) }
               SubdivideBoth ->
-                let maxCount = Math.max (length source.vertices) (length target.vertices)
+                let maxCount = max (length source.vertices) (length target.vertices)
                 in { s: subdivideToVertexCount source maxCount
                    , t: subdivideToVertexCount target maxCount }
               Resample ->
-                let count = fromMaybe (Math.max (length source.vertices)
-                                               (length target.vertices))
+                let count = fromMaybe (max (length source.vertices)
+                                           (length target.vertices))
                                       config.resampleCount
                 in { s: resamplePath source count, t: resamplePath target count }
 

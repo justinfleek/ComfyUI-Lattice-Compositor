@@ -30,13 +30,12 @@ module Lattice.Utils.ArrayUtils
   ) where
 
 import Prelude
-import Data.Array (filter, foldl, length, nub, null, zip, (..))
+import Data.Array (filter, foldl, length, nubEq, null, zip, (..))
 import Data.Array as Array
 import Data.Int (toNumber)
 import Data.Maybe (Maybe(..))
 import Data.Number (isFinite, sqrt) as Number
 import Data.Tuple (Tuple(..))
-import Lattice.Primitives (FiniteFloat, UnitFloat)
 
 --------------------------------------------------------------------------------
 -- Basic Operations
@@ -52,12 +51,11 @@ lerp a b t = a + (b - a) * t
 
 -- | Map a value from one range to another
 mapRange :: Number -> Number -> Number -> Number -> Number -> Number
-mapRange value inMin inMax outMin outMax
-  | range' == 0.0 = outMin
-  | otherwise = outMin + normalized * (outMax - outMin)
-  where
-    range' = inMax - inMin
-    normalized = (value - inMin) / range'
+mapRange value inMin inMax outMin outMax =
+  let range' = inMax - inMin
+      normalized = (value - inMin) / range'
+  in if range' == 0.0 then outMin
+     else outMin + normalized * (outMax - outMin)
 
 --------------------------------------------------------------------------------
 -- Array Statistics
@@ -91,7 +89,7 @@ normalize values maxValueOpt =
   in map (_ / safeMax) values
 
 --------------------------------------------------------------------------------
--- Safe Versions with Refined Types
+-- Safe Versions (finite-checked Number operations)
 --------------------------------------------------------------------------------
 
 -- | Check if Number is finite
@@ -99,42 +97,39 @@ isFiniteNumber :: Number -> Boolean
 isFiniteNumber x = Number.isFinite x
 
 -- | Clamp a finite value to a range
-clampFinite :: FiniteFloat -> FiniteFloat -> FiniteFloat -> FiniteFloat
+clampFinite :: Number -> Number -> Number -> Number
 clampFinite minVal maxVal value
   | value < minVal = minVal
   | value > maxVal = maxVal
   | otherwise = value
 
--- | Linear interpolation with finite floats and unit t
-lerpFinite :: FiniteFloat -> FiniteFloat -> UnitFloat -> FiniteFloat
-lerpFinite a b t
-  | isFiniteNumber result = result
-  | otherwise = a
-  where result = a + (b - a) * t
+-- | Linear interpolation with finite-checked floats and unit t
+lerpFinite :: Number -> Number -> Number -> Number
+lerpFinite a b t =
+  let result = a + (b - a) * t
+  in if isFiniteNumber result then result else a
 
 -- | Map a finite value from one range to another
-mapRangeFinite :: FiniteFloat -> FiniteFloat -> FiniteFloat -> FiniteFloat -> FiniteFloat -> FiniteFloat
-mapRangeFinite value inMin inMax outMin outMax
-  | range' == 0.0 = outMin
-  | isFiniteNumber result = result
-  | otherwise = outMin
-  where
-    range' = inMax - inMin
-    normalized = (value - inMin) / range'
-    result = outMin + normalized * (outMax - outMin)
+mapRangeFinite :: Number -> Number -> Number -> Number -> Number -> Number
+mapRangeFinite value inMin inMax outMin outMax =
+  let range' = inMax - inMin
+      normalized = (value - inMin) / range'
+      result = outMin + normalized * (outMax - outMin)
+  in if range' == 0.0 then outMin
+     else if isFiniteNumber result then result
+     else outMin
 
 -- | Calculate the mean of finite floats
-meanFinite :: Array FiniteFloat -> FiniteFloat
-meanFinite values
-  | null values = 0.0
-  | isFiniteNumber result = result
-  | otherwise = 0.0
-  where
-    sumVal = foldl (+) 0.0 values
-    result = sumVal / toNumber (length values)
+meanFinite :: Array Number -> Number
+meanFinite values =
+  if null values then 0.0
+  else
+    let sumVal = foldl (+) 0.0 values
+        result = sumVal / toNumber (length values)
+    in if isFiniteNumber result then result else 0.0
 
 -- | Normalize finite float array to [0, 1]
-normalizeFinite :: Array FiniteFloat -> Array UnitFloat
+normalizeFinite :: Array Number -> Array Number
 normalizeFinite values =
   let maxVal = foldl max 0.0 values
       safeMax = if maxVal > 0.0 then maxVal else 0.0001
@@ -173,7 +168,7 @@ findIndex' = Array.findIndex
 
 -- | Remove duplicates (keeps first occurrence)
 unique :: forall a. Eq a => Array a -> Array a
-unique = nub
+unique = nubEq
 
 -- | Zip two arrays with function
 zipWith' :: forall a b c. (a -> b -> c) -> Array a -> Array b -> Array c

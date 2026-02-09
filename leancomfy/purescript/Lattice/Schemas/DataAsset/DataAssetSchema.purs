@@ -36,6 +36,7 @@ import Data.Maybe (Maybe(..), maybe)
 import Data.String (length) as S
 import Data.Generic.Rep (class Generic)
 import Data.Show.Generic (genericShow)
+import Data.Int (toNumber) as Int
 import Data.Number (isFinite)
 
 --------------------------------------------------------------------------------
@@ -91,8 +92,8 @@ isTabularType = case _ of
 maxRawContentSize :: Int
 maxRawContentSize = 50 * 1024 * 1024  -- 50MB
 
-maxTimestamp :: Int
-maxTimestamp = 2147483647000  -- Year 2038
+maxTimestamp :: Number
+maxTimestamp = 2147483647000.0  -- Year 2038
 
 maxHeaders :: Int
 maxHeaders = 10000
@@ -155,7 +156,7 @@ isValidDataAssetBase :: DataAssetBase -> Boolean
 isValidDataAssetBase d =
   S.length d.id > 0 &&
   S.length d.name > 0 &&
-  d.lastModified <= maxTimestamp &&
+  Int.toNumber d.lastModified <= maxTimestamp &&
   S.length d.rawContent <= maxRawContentSize
 
 -- | Check if CSV parse options are valid

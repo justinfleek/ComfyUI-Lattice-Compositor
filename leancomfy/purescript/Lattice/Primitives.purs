@@ -8,7 +8,7 @@
 
 module Lattice.Primitives
   ( -- * String Primitives
-    NonEmptyString
+    NonEmptyString(..)
   , mkNonEmptyString
   , unNonEmptyString
     -- * Integer Primitives
@@ -16,19 +16,19 @@ module Lattice.Primitives
   , mkPositiveInt
   , unPositiveInt
     -- * Float Primitives
-  , FiniteFloat
+  , FiniteFloat(..)
   , mkFiniteFloat
   , unFiniteFloat
-  , PositiveFloat
+  , PositiveFloat(..)
   , mkPositiveFloat
   , unPositiveFloat
-  , NonNegativeFloat
+  , NonNegativeFloat(..)
   , mkNonNegativeFloat
   , unNonNegativeFloat
-  , Percentage
+  , Percentage(..)
   , mkPercentage
   , unPercentage
-  , UnitFloat
+  , UnitFloat(..)
   , mkUnitFloat
   , unUnitFloat
     -- * Frame Number
@@ -43,7 +43,7 @@ module Lattice.Primitives
     -- * Color Primitives
   , RGB
   , RGBA
-  , HexColor
+  , HexColor(..)
   , mkHexColor
   , unHexColor
     -- * Constants
@@ -60,6 +60,7 @@ import Data.Maybe (Maybe(..))
 import Data.String (length, null) as String
 import Data.String.CodeUnits (charAt, toCharArray)
 import Data.Array (all, elem)
+import Data.Array as Array
 import Global (isNaN, isFinite)
 
 --------------------------------------------------------------------------------
@@ -117,6 +118,11 @@ newtype FiniteFloat = FiniteFloat Number
 
 derive instance Eq FiniteFloat
 derive instance Ord FiniteFloat
+derive newtype instance Semiring FiniteFloat
+derive newtype instance Ring FiniteFloat
+derive newtype instance CommutativeRing FiniteFloat
+derive newtype instance EuclideanRing FiniteFloat
+derive newtype instance DivisionRing FiniteFloat
 
 instance Show FiniteFloat where
   show (FiniteFloat f) = "(FiniteFloat " <> show f <> ")"
@@ -136,6 +142,11 @@ newtype PositiveFloat = PositiveFloat Number
 
 derive instance Eq PositiveFloat
 derive instance Ord PositiveFloat
+derive newtype instance Semiring PositiveFloat
+derive newtype instance Ring PositiveFloat
+derive newtype instance CommutativeRing PositiveFloat
+derive newtype instance EuclideanRing PositiveFloat
+derive newtype instance DivisionRing PositiveFloat
 
 instance Show PositiveFloat where
   show (PositiveFloat f) = "(PositiveFloat " <> show f <> ")"
@@ -155,6 +166,11 @@ newtype NonNegativeFloat = NonNegativeFloat Number
 
 derive instance Eq NonNegativeFloat
 derive instance Ord NonNegativeFloat
+derive newtype instance Semiring NonNegativeFloat
+derive newtype instance Ring NonNegativeFloat
+derive newtype instance CommutativeRing NonNegativeFloat
+derive newtype instance EuclideanRing NonNegativeFloat
+derive newtype instance DivisionRing NonNegativeFloat
 
 instance Show NonNegativeFloat where
   show (NonNegativeFloat f) = "(NonNegativeFloat " <> show f <> ")"
@@ -174,6 +190,11 @@ newtype Percentage = Percentage Number
 
 derive instance Eq Percentage
 derive instance Ord Percentage
+derive newtype instance Semiring Percentage
+derive newtype instance Ring Percentage
+derive newtype instance CommutativeRing Percentage
+derive newtype instance EuclideanRing Percentage
+derive newtype instance DivisionRing Percentage
 
 instance Show Percentage where
   show (Percentage p) = "(Percentage " <> show p <> ")"
@@ -193,6 +214,11 @@ newtype UnitFloat = UnitFloat Number
 
 derive instance Eq UnitFloat
 derive instance Ord UnitFloat
+derive newtype instance Semiring UnitFloat
+derive newtype instance Ring UnitFloat
+derive newtype instance CommutativeRing UnitFloat
+derive newtype instance EuclideanRing UnitFloat
+derive newtype instance DivisionRing UnitFloat
 
 instance Show UnitFloat where
   show (UnitFloat f) = "(UnitFloat " <> show f <> ")"
@@ -294,23 +320,22 @@ instance Show HexColor where
 
 -- | Smart constructor for HexColor
 mkHexColor :: String -> Maybe HexColor
-mkHexColor s
-  | isValidHex s = Just (HexColor s)
-  | otherwise    = Nothing
-  where
-    isValidHex str =
-      let len = String.length str
-          firstChar = charAt 0 str
-          hexChars = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
-                      'a', 'b', 'c', 'd', 'e', 'f',
-                      'A', 'B', 'C', 'D', 'E', 'F']
-          rest = toCharArray str
-      in (len == 7 || len == 9) &&
-         firstChar == Just '#' &&
-         all (\c -> elem c hexChars) (case rest of
-           [] -> []
-           [_] -> []
-           (_ : xs) -> xs)
+mkHexColor s =
+  let isValidHex str =
+        let len = String.length str
+            firstChar = charAt 0 str
+            hexChars = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+                        'a', 'b', 'c', 'd', 'e', 'f',
+                        'A', 'B', 'C', 'D', 'E', 'F']
+            rest = toCharArray str
+            restWithoutFirst = case Array.uncons rest of
+              Nothing -> []
+              Just { head: _, tail: xs } -> xs
+        in (len == 7 || len == 9) &&
+           firstChar == Just '#' &&
+           all (\c -> elem c hexChars) restWithoutFirst
+  in if isValidHex s then Just (HexColor s)
+     else Nothing
 
 -- | Extract the underlying String
 unHexColor :: HexColor -> String

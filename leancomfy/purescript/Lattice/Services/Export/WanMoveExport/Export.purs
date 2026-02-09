@@ -67,8 +67,13 @@ exportWanMoveTrackCoordsJSON trajectory =
     formattedTracks = map (\track ->
       map (\point -> { x: point.x, y: point.y }) track
     ) tracks
+    pointToJSON :: { x :: Number, y :: Number } -> String
+    pointToJSON p = "[" <> show p.x <> "," <> show p.y <> "]"
+
+    trackToJSON :: Array { x :: Number, y :: Number } -> String
+    trackToJSON track = toJSONArray pointToJSON track
   in
-    toJSONArray formattedTracks
+    toJSONArray trackToJSON formattedTracks
 
 -- | Export visibility as WanMove-compatible JSON
 -- | Transposed from [N][T] to [T][N]
@@ -89,8 +94,13 @@ exportWanMoveVisibility trajectory =
           visVal
       ) (range 0 (numPoints - 1))
     ) (range 0 (numFrames - 1))
+    boolToJSON :: Boolean -> String
+    boolToJSON b = if b then "true" else "false"
+
+    rowToJSON :: Array Boolean -> String
+    rowToJSON row = toJSONArray boolToJSON row
   in
-    toJSONArray transposed
+    toJSONArray rowToJSON transposed
 
 -- | Export track_coords with metadata
 exportWanMoveTrackCoordsPackage :: WanMoveTrajectory -> WanMovePackage

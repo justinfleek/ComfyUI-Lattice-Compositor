@@ -36,6 +36,7 @@ import Effect.Ref (Ref)
 import Effect.Ref as Ref
 import Effect.Console (log, warn)
 import Data.Array (filter, mapMaybe)
+import Data.Array as Array
 import Data.Foldable (for_)
 import Data.Int (toNumber, floor)
 import Data.Map (Map)
@@ -430,12 +431,16 @@ checkRateLimitWarnings = do
 
 -- | Traverse effect over array
 for :: forall a b. Array a -> (a -> Effect b) -> Effect (Array b)
-for arr f = go arr []
+for arr f = go 0 []
   where
-    go [] acc = pure acc
-    go (x : xs) acc = do
-      b <- f x
-      go xs (acc <> [b])
+    len = Array.length arr
+    go idx acc
+      | idx >= len = pure acc
+      | otherwise = case Array.index arr idx of
+          Nothing -> pure acc
+          Just x -> do
+            b <- f x
+            go (idx + 1) (acc <> [b])
 
 -- | Maximum of two integers
 max :: Int -> Int -> Int

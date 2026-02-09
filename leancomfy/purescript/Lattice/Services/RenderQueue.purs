@@ -7,10 +7,18 @@
 
 module Lattice.Services.RenderQueue
   ( module Types
-  , module Database
-  , module Manager
+  , module ManagerTypes
+  , module Lifecycle
+  , module Jobs
+  , module QueueControl
+  , module Callbacks
+  , module Stats
   ) where
 
 import Lattice.Services.RenderQueue.Types as Types
-import Lattice.Services.RenderQueue.Database as Database
-import Lattice.Services.RenderQueue.Manager as Manager
+import Lattice.Services.RenderQueue.Manager.Types as ManagerTypes
+import Lattice.Services.RenderQueue.Manager.Lifecycle as Lifecycle
+import Lattice.Services.RenderQueue.Manager.Jobs as Jobs
+import Lattice.Services.RenderQueue.Manager.QueueControl as QueueControl
+import Lattice.Services.RenderQueue.Manager.Callbacks as Callbacks
+import Lattice.Services.RenderQueue.Manager.Stats as Stats

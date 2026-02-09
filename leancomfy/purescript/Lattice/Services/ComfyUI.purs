@@ -10,11 +10,9 @@ module Lattice.Services.ComfyUI
   , module Client
   , module WorkflowTypes
   , module WorkflowBuilder
-  , module WorkflowUtilities
   ) where
 
 import Lattice.Services.ComfyUI.Types as Types
 import Lattice.Services.ComfyUI.Client as Client
 import Lattice.Services.ComfyUI.WorkflowTypes as WorkflowTypes
 import Lattice.Services.ComfyUI.WorkflowBuilder as WorkflowBuilder
-import Lattice.Services.ComfyUI.WorkflowUtilities as WorkflowUtilities

@@ -46,7 +46,7 @@ module Lattice.Utils.NumericSafety
 import Prelude
 import Data.Int (floor, round, toNumber)
 import Data.Number (isFinite, isNaN, nan, pow, sqrt, log, pi, abs) as Number
-import Lattice.Primitives (FiniteFloat, UnitFloat, NonNegativeFloat, PositiveFloat, Vec2, Vec3)
+import Lattice.Primitives (FiniteFloat(..), mkFiniteFloat, unFiniteFloat, UnitFloat(..), mkUnitFloat, unUnitFloat, NonNegativeFloat(..), mkNonNegativeFloat, unNonNegativeFloat, PositiveFloat(..), unPositiveFloat, Vec2, Vec3)
 
 --------------------------------------------------------------------------------
 -- Basic Safety
@@ -58,15 +58,15 @@ isFiniteNumber x = Number.isFinite x && not (Number.isNaN x)
 
 -- | Ensure a value is finite, returning fallback if not
 ensureFinite :: Number -> FiniteFloat -> FiniteFloat
-ensureFinite value fallback
-  | isFiniteNumber value = value
-  | otherwise = fallback
+ensureFinite value fallback =
+  if isFiniteNumber value then FiniteFloat value
+  else fallback
 
 -- | Require a value to be finite (caller guarantees)
 requireFinite :: Number -> FiniteFloat
-requireFinite value
-  | isFiniteNumber value = value
-  | otherwise = 0.0
+requireFinite value =
+  if isFiniteNumber value then FiniteFloat value
+  else FiniteFloat 0.0
 
 --------------------------------------------------------------------------------
 -- Safe Arithmetic
@@ -74,48 +74,48 @@ requireFinite value
 
 -- | Safe division - returns fallback for zero divisor or infinite result
 safeDivide :: FiniteFloat -> FiniteFloat -> FiniteFloat -> FiniteFloat
-safeDivide num denom fallback
-  | denom == 0.0 = fallback
-  | isFiniteNumber result = result
-  | otherwise = fallback
-  where result = num / denom
+safeDivide (FiniteFloat n) (FiniteFloat d) fallback =
+  let result = n / d
+  in if d == 0.0 then fallback
+     else if isFiniteNumber result then FiniteFloat result
+     else fallback
 
 -- | Safe modulo - always returns non-negative result, handles zero divisor
 safeMod :: FiniteFloat -> FiniteFloat -> FiniteFloat
-safeMod value divisor
-  | divisor == 0.0 = 0.0
-  | isFiniteNumber positive = positive
-  | otherwise = 0.0
-  where
-    raw = modFloat value divisor
-    positive = modFloat (modFloat raw divisor + divisor) divisor
+safeMod value (FiniteFloat d) =
+  if d == 0.0 then FiniteFloat 0.0
+  else
+    let raw = modFloat' (unFiniteFloat value) d
+        positive = modFloat' (modFloat' raw d + d) d
+    in if isFiniteNumber positive then FiniteFloat positive
+       else FiniteFloat 0.0
 
--- | Helper for float modulo
-modFloat :: Number -> Number -> Number
-modFloat a b = a - b * toNumber (floor (a / b))
+-- | Helper for float modulo (operates on raw Numbers)
+modFloat' :: Number -> Number -> Number
+modFloat' a b = a - b * toNumber (floor (a / b))
 
 -- | Safe square root - returns 0 for negative numbers
 safeSqrt :: FiniteFloat -> NonNegativeFloat
-safeSqrt value
-  | value < 0.0 = 0.0
-  | isFiniteNumber result && result >= 0.0 = result
-  | otherwise = 0.0
-  where result = Number.sqrt value
+safeSqrt (FiniteFloat v) =
+  let result = Number.sqrt v
+  in if v < 0.0 then NonNegativeFloat 0.0
+     else if isFiniteNumber result && result >= 0.0 then NonNegativeFloat result
+     else NonNegativeFloat 0.0
 
 -- | Safe power - handles overflow
 safePow :: FiniteFloat -> FiniteFloat -> FiniteFloat -> FiniteFloat
-safePow base exponent fallback
-  | isFiniteNumber result = result
-  | otherwise = fallback
-  where result = Number.pow base exponent
+safePow (FiniteFloat b) (FiniteFloat e) fallback =
+  let result = Number.pow b e
+  in if isFiniteNumber result then FiniteFloat result
+     else fallback
 
 -- | Safe log - handles zero and negative
 safeLog :: FiniteFloat -> FiniteFloat -> FiniteFloat
-safeLog value fallback
-  | value <= 0.0 = fallback
-  | isFiniteNumber result = result
-  | otherwise = fallback
-  where result = Number.log value
+safeLog (FiniteFloat v) fallback =
+  let result = Number.log v
+  in if v <= 0.0 then fallback
+     else if isFiniteNumber result then FiniteFloat result
+     else fallback
 
 --------------------------------------------------------------------------------
 -- Clamping
@@ -123,26 +123,26 @@ safeLog value fallback
 
 -- | Clamp a value between min and max
 clamp :: FiniteFloat -> FiniteFloat -> FiniteFloat -> FiniteFloat
-clamp value minVal maxVal
-  | value < minVal = minVal
-  | value > maxVal = maxVal
-  | otherwise = value
+clamp value minVal maxVal =
+  if value < minVal then minVal
+  else if value > maxVal then maxVal
+  else value
 
 -- | Clamp to [0, 1] - returns UnitFloat
 clamp01 :: FiniteFloat -> UnitFloat
-clamp01 value = max 0.0 (min 1.0 value)
+clamp01 (FiniteFloat v) = UnitFloat (max 0.0 (min 1.0 v))
 
 -- | Clamp to [0, 100]
 clamp0100 :: FiniteFloat -> FiniteFloat
-clamp0100 value = clamp value 0.0 100.0
+clamp0100 value = clamp value (FiniteFloat 0.0) (FiniteFloat 100.0)
 
 -- | Clamp to [0, 255] for color channels
 clamp0255 :: FiniteFloat -> FiniteFloat
-clamp0255 value = clamp value 0.0 255.0
+clamp0255 value = clamp value (FiniteFloat 0.0) (FiniteFloat 255.0)
 
 -- | Clamp to [-1, 1]
 clampNeg1To1 :: FiniteFloat -> FiniteFloat
-clampNeg1To1 value = clamp value (-1.0) 1.0
+clampNeg1To1 value = clamp value (FiniteFloat (0.0 - 1.0)) (FiniteFloat 1.0)
 
 --------------------------------------------------------------------------------
 -- Interpolation
@@ -150,41 +150,39 @@ clampNeg1To1 value = clamp value (-1.0) 1.0
 
 -- | Safe linear interpolation with clamped t
 safeLerp :: FiniteFloat -> FiniteFloat -> UnitFloat -> FiniteFloat
-safeLerp a b t
-  | isFiniteNumber result = result
-  | isFiniteNumber alt = alt
-  | otherwise = a
-  where
-    diff = b - a
-    result = a + diff * t
-    alt = a * (1.0 - t) + b * t
+safeLerp (FiniteFloat a) (FiniteFloat b) (UnitFloat t) =
+  let diff = b - a
+      result = a + diff * t
+      alt = a * (1.0 - t) + b * t
+  in if isFiniteNumber result then FiniteFloat result
+     else if isFiniteNumber alt then FiniteFloat alt
+     else FiniteFloat a
 
 -- | Safe inverse lerp - where value falls between a and b as [0, 1]
 safeInverseLerp :: FiniteFloat -> FiniteFloat -> FiniteFloat -> UnitFloat
-safeInverseLerp a b value
-  | range == 0.0 = 0.0
-  | otherwise = clamp01 t
-  where
-    range = b - a
-    t = (value - a) / range
+safeInverseLerp (FiniteFloat a) (FiniteFloat b) (FiniteFloat v) =
+  let range' = b - a
+      t = (v - a) / range'
+  in if range' == 0.0 then UnitFloat 0.0
+     else UnitFloat (max 0.0 (min 1.0 t))
 
 -- | Safe remap from [inMin, inMax] to [outMin, outMax]
 safeRemap :: FiniteFloat -> FiniteFloat -> FiniteFloat -> FiniteFloat -> FiniteFloat -> FiniteFloat
 safeRemap value inMin inMax outMin outMax =
-  safeLerp outMin outMax t
-  where t = safeInverseLerp inMin inMax value
+  let t = safeInverseLerp inMin inMax value
+  in safeLerp outMin outMax t
 
 -- | Smooth step interpolation (Hermite)
 smoothStep :: FiniteFloat -> FiniteFloat -> UnitFloat -> FiniteFloat
-smoothStep a b t =
-  safeLerp a b smooth
-  where smooth = t * t * (3.0 - 2.0 * t)
+smoothStep a b (UnitFloat t) =
+  let smooth = UnitFloat (t * t * (3.0 - 2.0 * t))
+  in safeLerp a b smooth
 
 -- | Smoother step (Perlin's improved)
 smootherStep :: FiniteFloat -> FiniteFloat -> UnitFloat -> FiniteFloat
-smootherStep a b t =
-  safeLerp a b smooth
-  where smooth = t * t * t * (t * (t * 6.0 - 15.0) + 10.0)
+smootherStep a b (UnitFloat t) =
+  let smooth = UnitFloat (t * t * t * (t * (t * 6.0 - 15.0) + 10.0))
+  in safeLerp a b smooth
 
 --------------------------------------------------------------------------------
 -- 2D Vector Safety
@@ -192,35 +190,34 @@ smootherStep a b t =
 
 -- | Safe 2D vector normalization
 safeNormalize2D :: FiniteFloat -> FiniteFloat -> Vec2
-safeNormalize2D x y
-  | lengthSq == 0.0 = { x: 0.0, y: 0.0 }
-  | len == 0.0 = { x: 0.0, y: 0.0 }
-  | isFiniteNumber nx && isFiniteNumber ny = { x: nx, y: ny }
-  | otherwise = { x: 0.0, y: 0.0 }
-  where
-    lengthSq = x * x + y * y
-    len = Number.sqrt lengthSq
-    nx = x / len
-    ny = y / len
+safeNormalize2D (FiniteFloat x) (FiniteFloat y) =
+  let zero = { x: FiniteFloat 0.0, y: FiniteFloat 0.0 }
+      lengthSq = x * x + y * y
+      len = Number.sqrt lengthSq
+      nx = x / len
+      ny = y / len
+  in if lengthSq == 0.0 then zero
+     else if len == 0.0 then zero
+     else if isFiniteNumber nx && isFiniteNumber ny then { x: FiniteFloat nx, y: FiniteFloat ny }
+     else zero
 
 -- | Safe 2D distance calculation
 safeDistance2D :: FiniteFloat -> FiniteFloat -> FiniteFloat -> FiniteFloat -> NonNegativeFloat
-safeDistance2D x1 y1 x2 y2 =
-  safeSqrt (dx * dx + dy * dy)
-  where
-    dx = x2 - x1
-    dy = y2 - y1
+safeDistance2D (FiniteFloat x1) (FiniteFloat y1) (FiniteFloat x2) (FiniteFloat y2) =
+  let dx = x2 - x1
+      dy = y2 - y1
+  in safeSqrt (FiniteFloat (dx * dx + dy * dy))
 
 -- | Safe 2D length calculation
 safeLength2D :: FiniteFloat -> FiniteFloat -> NonNegativeFloat
-safeLength2D x y = safeSqrt (x * x + y * y)
+safeLength2D (FiniteFloat x) (FiniteFloat y) = safeSqrt (FiniteFloat (x * x + y * y))
 
 -- | Safe 2D dot product
 safeDot2D :: FiniteFloat -> FiniteFloat -> FiniteFloat -> FiniteFloat -> FiniteFloat
-safeDot2D x1 y1 x2 y2
-  | isFiniteNumber result = result
-  | otherwise = 0.0
-  where result = x1 * x2 + y1 * y2
+safeDot2D (FiniteFloat x1) (FiniteFloat y1) (FiniteFloat x2) (FiniteFloat y2) =
+  let result = x1 * x2 + y1 * y2
+  in if isFiniteNumber result then FiniteFloat result
+     else FiniteFloat 0.0
 
 --------------------------------------------------------------------------------
 -- 3D Vector Safety
@@ -228,31 +225,29 @@ safeDot2D x1 y1 x2 y2
 
 -- | Safe 3D vector normalization
 safeNormalize3D :: FiniteFloat -> FiniteFloat -> FiniteFloat -> Vec3
-safeNormalize3D x y z
-  | lengthSq == 0.0 = zero
-  | len == 0.0 = zero
-  | isFiniteNumber nx && isFiniteNumber ny && isFiniteNumber nz = { x: nx, y: ny, z: nz }
-  | otherwise = zero
-  where
-    zero = { x: 0.0, y: 0.0, z: 0.0 }
-    lengthSq = x * x + y * y + z * z
-    len = Number.sqrt lengthSq
-    nx = x / len
-    ny = y / len
-    nz = z / len
+safeNormalize3D (FiniteFloat x) (FiniteFloat y) (FiniteFloat z) =
+  let zero = { x: FiniteFloat 0.0, y: FiniteFloat 0.0, z: FiniteFloat 0.0 }
+      lengthSq = x * x + y * y + z * z
+      len = Number.sqrt lengthSq
+      nx = x / len
+      ny = y / len
+      nz = z / len
+  in if lengthSq == 0.0 then zero
+     else if len == 0.0 then zero
+     else if isFiniteNumber nx && isFiniteNumber ny && isFiniteNumber nz then { x: FiniteFloat nx, y: FiniteFloat ny, z: FiniteFloat nz }
+     else zero
 
 -- | Safe 3D distance calculation
 safeDistance3D :: FiniteFloat -> FiniteFloat -> FiniteFloat -> FiniteFloat -> FiniteFloat -> FiniteFloat -> NonNegativeFloat
-safeDistance3D x1 y1 z1 x2 y2 z2 =
-  safeSqrt (dx * dx + dy * dy + dz * dz)
-  where
-    dx = x2 - x1
-    dy = y2 - y1
-    dz = z2 - z1
+safeDistance3D (FiniteFloat x1) (FiniteFloat y1) (FiniteFloat z1) (FiniteFloat x2) (FiniteFloat y2) (FiniteFloat z2) =
+  let dx = x2 - x1
+      dy = y2 - y1
+      dz = z2 - z1
+  in safeSqrt (FiniteFloat (dx * dx + dy * dy + dz * dz))
 
 -- | Safe 3D length calculation
 safeLength3D :: FiniteFloat -> FiniteFloat -> FiniteFloat -> NonNegativeFloat
-safeLength3D x y z = safeSqrt (x * x + y * y + z * z)
+safeLength3D (FiniteFloat x) (FiniteFloat y) (FiniteFloat z) = safeSqrt (FiniteFloat (x * x + y * y + z * z))
 
 --------------------------------------------------------------------------------
 -- Angle Safety
@@ -260,25 +255,25 @@ safeLength3D x y z = safeSqrt (x * x + y * y + z * z)
 
 -- | Normalize angle to [0, 360) degrees
 normalizeAngleDegrees :: FiniteFloat -> FiniteFloat
-normalizeAngleDegrees angle = safeMod angle 360.0
+normalizeAngleDegrees angle = safeMod angle (FiniteFloat 360.0)
 
 -- | Normalize angle to [0, 2*PI) radians
 normalizeAngleRadians :: FiniteFloat -> FiniteFloat
-normalizeAngleRadians angle = safeMod angle (Number.pi * 2.0)
+normalizeAngleRadians angle = safeMod angle (FiniteFloat (Number.pi * 2.0))
 
 -- | Convert degrees to radians
 degreesToRadians :: FiniteFloat -> FiniteFloat
-degreesToRadians degrees
-  | isFiniteNumber result = result
-  | otherwise = 0.0
-  where result = degrees * (Number.pi / 180.0)
+degreesToRadians (FiniteFloat d) =
+  let result = d * (Number.pi / 180.0)
+  in if isFiniteNumber result then FiniteFloat result
+     else FiniteFloat 0.0
 
 -- | Convert radians to degrees
 radiansToDegrees :: FiniteFloat -> FiniteFloat
-radiansToDegrees radians
-  | isFiniteNumber result = result
-  | otherwise = 0.0
-  where result = radians * (180.0 / Number.pi)
+radiansToDegrees (FiniteFloat r) =
+  let result = r * (180.0 / Number.pi)
+  in if isFiniteNumber result then FiniteFloat result
+     else FiniteFloat 0.0
 
 --------------------------------------------------------------------------------
 -- Comparison
@@ -286,16 +281,15 @@ radiansToDegrees radians
 
 -- | Check if two numbers are approximately equal
 approximately :: FiniteFloat -> FiniteFloat -> PositiveFloat -> Boolean
-approximately a b epsilon
-  | Number.abs a < 1.0 && Number.abs b < 1.0 = diff < epsilon
-  | otherwise = diff < epsilon * maxAbs
-  where
-    diff = Number.abs (a - b)
-    maxAbs = max (Number.abs a) (Number.abs b)
+approximately (FiniteFloat a) (FiniteFloat b) (PositiveFloat eps) =
+  let diff = Number.abs (a - b)
+      maxAbs = max (Number.abs a) (Number.abs b)
+  in if Number.abs a < 1.0 && Number.abs b < 1.0 then diff < eps
+     else diff < eps * maxAbs
 
 -- | Check if a value is approximately zero
 isApproximatelyZero :: FiniteFloat -> PositiveFloat -> Boolean
-isApproximatelyZero value epsilon = Number.abs value < epsilon
+isApproximatelyZero (FiniteFloat v) (PositiveFloat eps) = Number.abs v < eps
 
 --------------------------------------------------------------------------------
 -- Rounding
@@ -303,20 +297,18 @@ isApproximatelyZero value epsilon = Number.abs value < epsilon
 
 -- | Round to specified decimal places
 roundTo :: FiniteFloat -> Int -> FiniteFloat
-roundTo value decimals
-  | isFiniteNumber result = result
-  | otherwise = value
-  where
-    factor = Number.pow 10.0 (toNumber decimals)
-    result = toNumber (round (value * factor)) / factor
+roundTo (FiniteFloat v) decimals =
+  let factor = Number.pow 10.0 (toNumber decimals)
+      result = toNumber (round (v * factor)) / factor
+  in if isFiniteNumber result then FiniteFloat result
+     else FiniteFloat v
 
 -- | Snap value to nearest multiple of step
 snapTo :: FiniteFloat -> PositiveFloat -> FiniteFloat
-snapTo value step
-  | isFiniteNumber result = result
-  | otherwise = value
-  where
-    result = toNumber (round (value / step)) * step
+snapTo (FiniteFloat v) (PositiveFloat s) =
+  let result = toNumber (round (v / s)) * s
+  in if isFiniteNumber result then FiniteFloat result
+     else FiniteFloat v
 
 --------------------------------------------------------------------------------
 -- Range Utilities
@@ -328,26 +320,26 @@ inRange value minVal maxVal = value >= minVal && value <= maxVal
 
 -- | Wrap value to range [min, max)
 wrapToRange :: FiniteFloat -> FiniteFloat -> FiniteFloat -> FiniteFloat
-wrapToRange value minVal maxVal
-  | range == 0.0 = minVal
-  | isFiniteNumber (minVal + wrapped) = minVal + wrapped
-  | otherwise = minVal
-  where
-    range = maxVal - minVal
-    shifted = value - minVal
-    wrapped = modFloat (modFloat shifted range + range) range
+wrapToRange (FiniteFloat v) (FiniteFloat minV) (FiniteFloat maxV) =
+  let range' = maxV - minV
+      shifted = v - minV
+      wrapped = modFloat' (modFloat' shifted range' + range') range'
+      result = minV + wrapped
+  in if range' == 0.0 then FiniteFloat minV
+     else if isFiniteNumber result then FiniteFloat result
+     else FiniteFloat minV
 
 -- | Ping-pong value between min and max
 pingPong :: FiniteFloat -> FiniteFloat -> FiniteFloat -> FiniteFloat
-pingPong value minVal maxVal
-  | range == 0.0 = minVal
-  | wrapped < range = safeResult (minVal + wrapped)
-  | otherwise = safeResult (maxVal - (wrapped - range))
-  where
-    range = maxVal - minVal
-    shifted = value - minVal
-    doubleRange = range * 2.0
-    wrapped = modFloat (modFloat shifted doubleRange + doubleRange) doubleRange
-    safeResult r
-      | isFiniteNumber r = r
-      | otherwise = minVal
+pingPong (FiniteFloat v) (FiniteFloat minV) (FiniteFloat maxV) =
+  let range' = maxV - minV
+      shifted = v - minV
+      doubleRange = range' + range'
+      wrapped = modFloat' (modFloat' shifted doubleRange + doubleRange) doubleRange
+      resultUp = minV + wrapped
+      resultDown = maxV - (wrapped - range')
+  in if range' == 0.0 then FiniteFloat minV
+     else if wrapped < range' then
+       if isFiniteNumber resultUp then FiniteFloat resultUp else FiniteFloat minV
+     else
+       if isFiniteNumber resultDown then FiniteFloat resultDown else FiniteFloat minV

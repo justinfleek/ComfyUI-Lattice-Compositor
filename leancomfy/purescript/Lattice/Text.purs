@@ -24,10 +24,11 @@ module Lattice.Text
   , TextAnimatorProperties
   , TextAnimator
   , TextData
+  , createDefaultTextData
   ) where
 
 import Prelude
-import Data.Maybe (Maybe)
+import Data.Maybe (Maybe(..))
 import Data.Generic.Rep (class Generic)
 import Data.Show.Generic (genericShow)
 import Lattice.Primitives
@@ -258,3 +259,73 @@ type TextData =
   , spaceAfter              :: Maybe FiniteFloat
   , animators               :: Array TextAnimator
   }
+
+--------------------------------------------------------------------------------
+-- Factory Functions
+--------------------------------------------------------------------------------
+
+-- | Create default text data matching TS createDefaultTextData()
+createDefaultTextData :: TextData
+createDefaultTextData =
+  { text: "Text"
+  , fontFamily: nes "Arial"
+  , fontSize: pf 72.0
+  , fontWeight: nes "normal"
+  , fontStyle: FSNormal
+  , fill: hex "#ffffff"
+  , stroke: ""
+  , strokeWidth: nnf 0.0
+  , tracking: ff 0.0
+  , lineSpacing: pf 1.2
+  , lineAnchor: pct 50.0
+  , characterOffset: 0
+  , characterValue: 0
+  , blur: { x: nnf 0.0, y: nnf 0.0 }
+  , letterSpacing: ff 0.0
+  , lineHeight: pf 1.2
+  , textAlign: TACenter
+  , pathLayerId: ""
+  , pathReversed: false
+  , pathPerpendicularToPath: true
+  , pathForceAlignment: false
+  , pathFirstMargin: nnf 0.0
+  , pathLastMargin: nnf 0.0
+  , pathOffset: pct 0.0
+  , pathAlign: TACenter
+  , anchorPointGrouping: Just APGCharacter
+  , groupingAlignment: Just { x: pct 50.0, y: pct 50.0 }
+  , fillAndStroke: Just FASOFillOverStroke
+  , interCharacterBlending: Just ICBNormal
+  , perCharacter3D: false
+  , baselineShift: Nothing
+  , textCase: Nothing
+  , verticalAlign: Nothing
+  , kerning: false
+  , ligatures: false
+  , discretionaryLigatures: false
+  , smallCapsFeature: false
+  , stylisticSet: 0
+  , firstLineIndent: Nothing
+  , spaceBefore: Nothing
+  , spaceAfter: Nothing
+  , animators: []
+  }
+  where
+    nes s = case mkNonEmptyString s of
+      Just v -> v
+      Nothing -> NonEmptyString "error"
+    pf n = case mkPositiveFloat n of
+      Just v -> v
+      Nothing -> PositiveFloat 1.0
+    nnf n = case mkNonNegativeFloat n of
+      Just v -> v
+      Nothing -> NonNegativeFloat 0.0
+    ff n = case mkFiniteFloat n of
+      Just v -> v
+      Nothing -> FiniteFloat 0.0
+    pct n = case mkPercentage n of
+      Just v -> v
+      Nothing -> Percentage 0.0
+    hex s = case mkHexColor s of
+      Just v -> v
+      Nothing -> HexColor "#000000"

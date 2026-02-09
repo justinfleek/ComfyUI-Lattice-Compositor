@@ -190,13 +190,13 @@ calculateRipple x y config width height =
 --   @return Combined displaced coordinates
 combineRipples :: Number -> Number -> Array RippleConfig -> Number -> Number -> Tuple Number Number
 combineRipples x y configs width height =
-  let Tuple totalDx totalDy = foldl accumDisplacement (Tuple 0.0 0.0) configs
-
-      accumDisplacement (Tuple accDx accDy) config =
+  let accumDisplacement (Tuple accDx accDy) config =
         let result = calculateRipple x y config width height
         in if result.inEffect
            then Tuple (accDx + (x - result.srcX)) (accDy + (y - result.srcY))
            else Tuple accDx accDy
+
+      Tuple totalDx totalDy = foldl accumDisplacement (Tuple 0.0 0.0) configs
 
   in Tuple (x - totalDx) (y - totalDy)
 

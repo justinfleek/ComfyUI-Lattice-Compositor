@@ -25,6 +25,7 @@ module Lattice.Services.Export.Transform
   ) where
 
 import Prelude
+import Data.Int (toNumber) as Int
 import Data.Maybe (Maybe(..))
 import Data.Array as Array
 import Data.Either (Either(..))
@@ -185,8 +186,7 @@ flipYCoordinate height y = height - y
 
 -- | Helper to convert Int to Number
 toNumber :: Int -> Number
-toNumber = toNumber' where
-  foreign import toNumber' :: Int -> Number
+toNumber = Int.toNumber
 
 --------------------------------------------------------------------------------
 -- Validation

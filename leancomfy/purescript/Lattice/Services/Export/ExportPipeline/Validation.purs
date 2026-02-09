@@ -181,18 +181,15 @@ validateServerConfig config =
 -- | Check if target requires a prompt
 needsPrompt :: ExportTarget -> Boolean
 needsPrompt = case _ of
-  TargetControlNetDepth -> false
-  TargetControlNetCanny -> false
-  TargetControlNetLineart -> false
+  TargetFullMatrices -> false
   _ -> true
 
 -- | Check if target requires depth map
 requiresDepthMap :: ExportTarget -> Boolean
 requiresDepthMap = case _ of
-  TargetControlNetDepth -> true
   TargetMotionCtrl -> true
   TargetMotionCtrlSVD -> true
-  TargetUni3C -> true
+  TargetUni3CCamera -> true
   _ -> false
 
 -- | Check if target requires camera data
@@ -200,9 +197,10 @@ requiresCameraData :: ExportTarget -> Boolean
 requiresCameraData = case _ of
   TargetMotionCtrl -> true
   TargetMotionCtrlSVD -> true
-  TargetUni3C -> true
+  TargetUni3CCamera -> true
+  TargetUni3CMotion -> true
   TargetWan22FunCamera -> true
-  TargetCameraCtrl -> true
+  TargetAnimateDiffCameraCtrl -> true
   _ -> false
 
 --------------------------------------------------------------------------------
@@ -238,9 +236,7 @@ frameCountWarnings :: Int -> ExportTarget -> Array String
 frameCountWarnings frameCount target =
   let
     recommendedMax = case target of
-      TargetWan21I2V -> 81
-      TargetWan22I2V -> 81
-      TargetWan22T2V -> 81
+      TargetWan22FunCamera -> 81
       _ -> 120
   in
     if frameCount > recommendedMax

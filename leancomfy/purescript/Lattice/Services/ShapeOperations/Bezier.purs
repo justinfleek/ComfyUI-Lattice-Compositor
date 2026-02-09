@@ -35,7 +35,7 @@ import Prelude
 import Data.Array (filter, foldl, range, (..), (:))
 import Data.Int (toNumber)
 import Data.Tuple (Tuple(..))
-import Math (abs, sqrt, max, min) as Math
+import Math (abs, sqrt) as Math
 
 import Lattice.Services.ShapeOperations.Point2D as P2D
 
@@ -159,7 +159,7 @@ splitCubicBezier p0 p1 p2 p3 t =
 -- | Approximate arc length using subdivision.
 arcLength :: CubicBezier -> Int -> Number
 arcLength curve subdivisions =
-  let n = Math.max 1 subdivisions
+  let n = max 1 subdivisions
       accumulate i prev accLen
         | i > n = accLen
         | otherwise =
@@ -206,10 +206,10 @@ parameterAtArcLength curve targetDistance totalLength tolerance =
 boundingBox :: CubicBezier -> BoundingBox
 boundingBox curve =
   -- Start with endpoints
-  let minX0 = Math.min curve.p0.x curve.p3.x
-      maxX0 = Math.max curve.p0.x curve.p3.x
-      minY0 = Math.min curve.p0.y curve.p3.y
-      maxY0 = Math.max curve.p0.y curve.p3.y
+  let minX0 = min curve.p0.x curve.p3.x
+      maxX0 = max curve.p0.x curve.p3.x
+      minY0 = min curve.p0.y curve.p3.y
+      maxY0 = max curve.p0.y curve.p3.y
 
       -- Coefficients for derivative
       ax = 3.0 * (-curve.p0.x + 3.0 * curve.p1.x - 3.0 * curve.p2.x + curve.p3.x)
@@ -240,11 +240,11 @@ boundingBox curve =
 
       updateBoundsX acc t =
         let pt = evalPoint curve t
-        in { mn: Math.min acc.mn pt.x, mx: Math.max acc.mx pt.x }
+        in { mn: min acc.mn pt.x, mx: max acc.mx pt.x }
 
       updateBoundsY acc t =
         let pt = evalPoint curve t
-        in { mn: Math.min acc.mn pt.y, mx: Math.max acc.mx pt.y }
+        in { mn: min acc.mn pt.y, mx: max acc.mx pt.y }
 
       xBounds = foldl updateBoundsX { mn: minX0, mx: maxX0 } xRoots
       yBounds = foldl updateBoundsY { mn: minY0, mx: maxY0 } yRoots
@@ -258,7 +258,7 @@ boundingBox curve =
 -- | Convert Bezier curve to polyline with specified number of segments
 flatten :: CubicBezier -> Int -> Array P2D.Point2D
 flatten curve segments =
-  let n = Math.max 2 segments
+  let n = max 2 segments
   in map (\i -> evalPoint curve (toNumber i / toNumber n)) (range 0 n)
 
 --------------------------------------------------------------------------------

@@ -24,7 +24,7 @@ import Prelude
 
 import Data.Int (toNumber, floor) as Int
 import Data.Tuple (Tuple(..))
-import Math (floor, max, min)
+import Math (floor)
 
 --------------------------------------------------------------------------------
 -- Types

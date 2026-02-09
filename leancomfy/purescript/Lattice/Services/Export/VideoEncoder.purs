@@ -18,6 +18,7 @@ module Lattice.Services.Export.VideoEncoder
   , getSupportedCodecs
     -- * Encoder Handle
   , VideoEncoderHandle
+  , FrameData
   , createEncoder
   , initializeEncoder
   , encodeFrame

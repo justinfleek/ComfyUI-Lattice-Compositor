@@ -213,5 +213,5 @@ pulseWave =
 
 -- | Filter function
 filter :: forall a. (a -> Boolean) -> Array a -> Array a
-filter _ [] = []
-filter pred (x : xs) = if pred x then x : filter pred xs else filter pred xs
+filter pred arr =
+  foldl (\acc x -> if pred x then acc <> [x] else acc) [] arr

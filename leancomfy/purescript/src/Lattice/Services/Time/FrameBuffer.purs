@@ -38,7 +38,7 @@ module Lattice.Services.Time.FrameBuffer
 
 import Prelude
 
-import Data.Array (filter, findIndex, head, length, mapWithIndex, sortBy)
+import Data.Array (filter, findIndex, head, length, mapWithIndex, range, sortBy)
 import Data.Foldable (foldl)
 import Data.Int (round, toNumber)
 import Data.Maybe (Maybe(..), fromMaybe)
@@ -172,12 +172,9 @@ findClosestFrameIndex entries targetFrame
 --   Returns array of (targetFrame, echoIndex) pairs.
 calculateEchoTargetFrames :: Int -> Number -> Int -> Array (Tuple Int Int)
 calculateEchoTargetFrames currentFrame echoTimeFrames numEchoes =
-  let indices = map (_ + 1) (0 .. (numEchoes - 1))
+  let indices = map (_ + 1) (range 0 (numEchoes - 1))
       calcTarget i = round (toNumber currentFrame + echoTimeFrames * toNumber i)
   in map (\i -> Tuple (calcTarget i) i) indices
-  where
-    (..) :: Int -> Int -> Array Int
-    (..) start end = if start > end then [] else [start] <> ((start + 1) .. end)
 
 -- | Calculate echo intensity using exponential decay.
 --   intensity = startingIntensity * (1 - decay)^echoIndex

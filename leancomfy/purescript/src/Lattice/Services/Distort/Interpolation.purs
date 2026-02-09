@@ -28,7 +28,7 @@ module Lattice.Services.Distort.Interpolation
 
 import Prelude
 
-import Data.Int (floor, round) as Int
+import Data.Int (floor, round, toNumber) as Int
 import Data.Tuple (Tuple(..))
 
 --------------------------------------------------------------------------------
@@ -199,6 +199,4 @@ interpolateRound v00 v10 v01 v11 weights =
 --------------------------------------------------------------------------------
 
 toNumber :: Int -> Number
-toNumber = toNumber'
-
-foreign import toNumber' :: Int -> Number
+toNumber = Int.toNumber

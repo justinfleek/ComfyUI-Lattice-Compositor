@@ -28,10 +28,13 @@ module Lattice.TemplateBuilder
   , LatticeTemplate
   , SavedTemplate
   , TemplateBuilderState
+  , createDefaultTemplateConfig
+  , createPropertyGroup
+  , createTemplateComment
   ) where
 
 import Prelude
-import Data.Maybe (Maybe)
+import Data.Maybe (Maybe(..))
 import Data.Generic.Rep (class Generic)
 import Data.Show.Generic (genericShow)
 import Lattice.Primitives
@@ -283,4 +286,50 @@ type TemplateBuilderState =
   , searchQuery           :: String
   , filterTags            :: Array String
   , savedTemplates        :: Array SavedTemplate
+  }
+
+--------------------------------------------------------------------------------
+-- Factory Functions
+--------------------------------------------------------------------------------
+
+-- | Create default template config
+createDefaultTemplateConfig :: NonEmptyString -> NonEmptyString -> NonEmptyString -> TemplateConfig
+createDefaultTemplateConfig compId compName timestamp =
+  { name: compName
+  , description: Nothing
+  , author: Nothing
+  , version: Nothing
+  , tags: []
+  , masterCompositionId: compId
+  , exposedProperties: []
+  , groups: []
+  , comments: []
+  , posterFrame: FrameNumber 0
+  , exportSettings:
+      { includeFonts: true
+      , includeMedia: true
+      , allowDurationChange: false
+      , posterQuality: PQHigh
+      }
+  , created: timestamp
+  , modified: timestamp
+  }
+
+-- | Create a property group
+createPropertyGroup :: NonEmptyString -> NonEmptyString -> Int -> PropertyGroup
+createPropertyGroup gid name order =
+  { id: gid
+  , name
+  , expanded: true
+  , order
+  , color: Nothing
+  }
+
+-- | Create a template comment
+createTemplateComment :: NonEmptyString -> String -> Int -> TemplateComment
+createTemplateComment cid text order =
+  { id: cid
+  , text
+  , order
+  , groupId: Nothing
   }

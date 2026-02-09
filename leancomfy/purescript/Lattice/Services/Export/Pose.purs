@@ -13,6 +13,7 @@ module Lattice.Services.Export.Pose
     PoseKeypoint
   , Pose
   , PoseFormat(..)
+  , PoseOutputFormat(..)
   , PoseExportConfig
   , PoseFrame
   , PoseSequence
@@ -48,6 +49,7 @@ import Data.Generic.Rep (class Generic)
 import Data.Show.Generic (genericShow)
 import Data.Eq.Generic (genericEq)
 import Data.Foldable (foldl)
+import Data.Traversable (traverse)
 import Data.String as String
 
 --------------------------------------------------------------------------------
@@ -217,7 +219,7 @@ renderPoseFrame = renderPoseFrameImpl
 interpolatePoses :: Pose -> Pose -> Number -> Pose
 interpolatePoses poseA poseB t =
   let
-    interpolatedKeypoints = Array.zipWith interpolateKeypoint poseA.keypoints poseB.keypoints
+    interpolatedKeypoints = Array.zipWith (\a b -> interpolateKeypoint a b t) poseA.keypoints poseB.keypoints
   in
     { id: poseA.id
     , keypoints: interpolatedKeypoints
@@ -343,7 +345,7 @@ exportPoseSequence sequence config = do
   images <- case config.outputFormat of
     OutputJSON -> pure Nothing
     _ -> do
-      canvases <- Array.traverse (\frame -> renderPoseFrame frame.poses config) framesToExport
+      canvases <- traverse (\frame -> renderPoseFrame frame.poses config) framesToExport
       pure (Just canvases)
 
   -- Export JSON if needed
@@ -424,10 +426,13 @@ parseKeypoints :: Array Number -> Array PoseKeypoint
 parseKeypoints arr = go arr []
   where
     go remaining acc =
-      case Array.take 3 remaining of
-        [x, y, confidence] ->
-          go (Array.drop 3 remaining) (Array.snoc acc { x, y, confidence })
-        _ -> acc
+      let chunk = Array.take 3 remaining
+      in if Array.length chunk == 3
+        then case Array.index chunk 0, Array.index chunk 1, Array.index chunk 2 of
+          Just x, Just y, Just confidence ->
+            go (Array.drop 3 remaining) (Array.snoc acc { x, y, confidence })
+          _, _, _ -> acc
+        else acc
 
 -- | Import pose sequence from array of OpenPose JSON
 importPoseSequence :: Array OpenPoseJSON -> Int -> PoseSequence

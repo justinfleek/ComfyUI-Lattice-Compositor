@@ -34,11 +34,11 @@ primeY = 668265263
 
 -- | MurmurHash3 mixing constant 1
 mixConstant1 :: Int
-mixConstant1 = 0x85ebca6b
+mixConstant1 = -2048144789  -- 0x85ebca6b as signed 32-bit
 
 -- | MurmurHash3 mixing constant 2
 mixConstant2 :: Int
-mixConstant2 = 0xc2b2ae35
+mixConstant2 = -1028477387  -- 0xc2b2ae35 as signed 32-bit
 
 -- | Final mixing constant
 mixConstant3 :: Int
@@ -50,7 +50,7 @@ mixConstant3 = 0x5bd1e995
 
 -- | Integer multiplication (for hash mixing)
 imul :: Int -> Int -> Int
-imul a b = (a * b) `and` 0xFFFFFFFF
+imul a b = (a * b) `and` (-1)
 
 --------------------------------------------------------------------------------
 -- Hash Function
@@ -62,13 +62,13 @@ imul a b = (a * b) `and` 0xFFFFFFFF
 -- | to produce well-distributed pseudo-random values.
 hash :: Int -> Int -> Int -> Int
 hash seed px py =
-  let h0 = seed `and` 0xFFFFFFFF
+  let h0 = seed `and` (-1)
       h1 = h0 `xor` (h0 `shr` 16)
       h2 = imul h1 mixConstant1
       h3 = h2 `xor` (h2 `shr` 13)
       h4 = imul h3 mixConstant2
       h5 = h4 `xor` (h4 `shr` 16)
-      h6 = (h5 + imul px primeX + imul py primeY) `and` 0xFFFFFFFF
+      h6 = (h5 + imul px primeX + imul py primeY) `and` (-1)
       h7 = h6 `xor` (h6 `shr` 13)
       h8 = imul h7 mixConstant3
   in h8 `xor` (h8 `shr` 15)

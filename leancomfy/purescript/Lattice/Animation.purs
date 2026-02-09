@@ -24,15 +24,18 @@ module Lattice.Animation
   , isKeyframeSelected
   , defaultInHandle
   , defaultOutHandle
+  , mkAnimatableProperty
+  , mkKeyframe
   ) where
 
 import Prelude
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Array as A
 import Data.Generic.Rep (class Generic)
 import Data.Show.Generic (genericShow)
 import Lattice.Primitives
-import Lattice.Entities (BezierHandle, ControlMode)
+import Lattice.Entities (BezierHandle, ControlMode(..), AnimatableProperty, PropertyValueType, Keyframe, PropertyExpression)
+import Lattice.Enums (InterpolationType(..))
 
 --------------------------------------------------------------------------------
 -- Full Interpolation Type
@@ -185,22 +188,61 @@ isKeyframeSelected kss layerId propPath kfId =
 
 defaultInHandle :: BezierHandle
 defaultInHandle =
-  { frame: case mkFiniteFloat (-5.0) of Just f -> f; Nothing -> defaultFinite
-  , value: case mkFiniteFloat 0.0 of Just f -> f; Nothing -> defaultFinite
+  { frame: fromMaybe (safeFinite 0.0) (mkFiniteFloat (-5.0))
+  , value: fromMaybe (safeFinite 0.0) (mkFiniteFloat 0.0)
   , enabled: true
   }
   where
-    defaultFinite = case mkFiniteFloat 0.0 of
+    safeFinite :: Number -> FiniteFloat
+    safeFinite n = case mkFiniteFloat n of
       Just f -> f
-      Nothing -> defaultFinite
+      Nothing -> safeFinite 0.0
 
 defaultOutHandle :: BezierHandle
 defaultOutHandle =
-  { frame: case mkFiniteFloat 5.0 of Just f -> f; Nothing -> defaultFinite
-  , value: case mkFiniteFloat 0.0 of Just f -> f; Nothing -> defaultFinite
+  { frame: fromMaybe (safeFinite 0.0) (mkFiniteFloat 5.0)
+  , value: fromMaybe (safeFinite 0.0) (mkFiniteFloat 0.0)
   , enabled: true
   }
   where
-    defaultFinite = case mkFiniteFloat 0.0 of
+    safeFinite :: Number -> FiniteFloat
+    safeFinite n = case mkFiniteFloat n of
       Just f -> f
-      Nothing -> defaultFinite
+      Nothing -> safeFinite 0.0
+
+--------------------------------------------------------------------------------
+-- Factory Functions
+--------------------------------------------------------------------------------
+
+-- | Create an AnimatableProperty with default values
+-- | Pure factory - caller provides the ID
+mkAnimatableProperty
+  :: NonEmptyString
+  -> NonEmptyString
+  -> PropertyValueType
+  -> String
+  -> Maybe NonEmptyString
+  -> AnimatableProperty
+mkAnimatableProperty id name propType value group =
+  { id
+  , name
+  , propertyType: propType
+  , value
+  , animated: false
+  , keyframes: []
+  , group
+  , expression: Nothing :: Maybe PropertyExpression
+  }
+
+-- | Create a Keyframe with default interpolation and handles
+-- | Pure factory - caller provides the ID
+mkKeyframe :: NonEmptyString -> FrameNumber -> String -> Keyframe
+mkKeyframe id frame value =
+  { id
+  , frame
+  , value
+  , interpolation: ITLinear
+  , inHandle: defaultInHandle
+  , outHandle: defaultOutHandle
+  , controlMode: CMSmooth
+  }

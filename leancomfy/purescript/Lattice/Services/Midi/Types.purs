@@ -34,7 +34,10 @@ module Lattice.Services.Midi.Types
 
 import Prelude
 import Data.Array (index, length, filter)
-import Data.Int (floor, toNumber, round)
+import Data.Array.NonEmpty (toArray) as NEA
+import Data.Either (Either(..))
+import Data.Int (toNumber, round) as Int
+import Data.Tuple (Tuple(..))
 import Data.Int.Bits ((.&.), (.|.), shr, shl)
 import Data.Maybe (Maybe(..))
 import Data.String (Pattern(..), split, toUpper)
@@ -45,6 +48,7 @@ import Foreign.Object (Object)
 import Foreign.Object as Obj
 import Data.Generic.Rep (class Generic)
 import Data.Show.Generic (genericShow)
+import Control.Bind (join) as Bind
 
 --------------------------------------------------------------------------------
 -- Device Types
@@ -209,25 +213,25 @@ noteNames = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
 -- | Note name to semitone (0-11)
 noteNameToSemitone :: Object Int
 noteNameToSemitone = Obj.fromFoldable
-  [ { key: "C", value: 0 }
-  , { key: "C#", value: 1 }
-  , { key: "D", value: 2 }
-  , { key: "D#", value: 3 }
-  , { key: "E", value: 4 }
-  , { key: "F", value: 5 }
-  , { key: "F#", value: 6 }
-  , { key: "G", value: 7 }
-  , { key: "G#", value: 8 }
-  , { key: "A", value: 9 }
-  , { key: "A#", value: 10 }
-  , { key: "B", value: 11 }
+  [ Tuple "C" 0
+  , Tuple "C#" 1
+  , Tuple "D" 2
+  , Tuple "D#" 3
+  , Tuple "E" 4
+  , Tuple "F" 5
+  , Tuple "F#" 6
+  , Tuple "G" 7
+  , Tuple "G#" 8
+  , Tuple "A" 9
+  , Tuple "A#" 10
+  , Tuple "B" 11
   ]
 
 -- | Convert MIDI note number to note name
 -- | Note 60 = C4 (middle C)
 midiNoteToName :: Int -> String
 midiNoteToName note =
-  let octave = (note / 12) - 1
+  let octave = (note `div` 12) - 1
       nameIndex = note `mod` 12
       name = case index noteNames nameIndex of
         Just n -> n
@@ -253,8 +257,9 @@ parseNoteName name =
     Left _ -> Nothing
     Right r -> case match r name of
       Just matches -> do
-        noteName <- join (index matches 1)
-        octaveStr <- join (index matches 2)
+        let matchArr = NEA.toArray matches
+        noteName <- Bind.join (index matchArr 1)
+        octaveStr <- Bind.join (index matchArr 2)
         octave <- parseOctave octaveStr
         Just { noteName, octave }
       Nothing -> Nothing
@@ -281,25 +286,11 @@ parseOctave s = case s of
 
 -- | Convert CC value (0-127) to normalized (0-1)
 ccToNormalized :: Int -> Number
-ccToNormalized value = toNumber value / 127.0
+ccToNormalized value = Int.toNumber value / 127.0
 
 -- | Convert normalized (0-1) to CC value (0-127)
 normalizedToCC :: Number -> Int
-normalizedToCC value = round (value * 127.0)
+normalizedToCC value = Int.round (value * 127.0)
 
---------------------------------------------------------------------------------
--- Internal Helpers
---------------------------------------------------------------------------------
-
--- | Integer division
-div :: Int -> Int -> Int
-div a b = floor (toNumber a / toNumber b)
-
--- | Modulo
-mod :: Int -> Int -> Int
-mod a b = a - (a `div` b) * b
-
--- | Join Maybe Maybe into Maybe
-join :: forall a. Maybe (Maybe a) -> Maybe a
-join Nothing = Nothing
-join (Just ma) = ma
+-- NOTE: Int division (div), modulo (mod) are from Prelude (EuclideanRing Int).
+-- Maybe join is from Control.Bind (imported qualified as Bind).

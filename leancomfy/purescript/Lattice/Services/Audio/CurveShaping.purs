@@ -141,17 +141,16 @@ applyThreshold value threshold
 -- | Soft knee provides gradual transition around threshold
 -- | instead of hard cutoff.
 applyThresholdSoftKnee :: Number -> Number -> Number -> Number
-applyThresholdSoftKnee value threshold knee
-  | knee <= 0.0 = applyThreshold value threshold
-  | value < kneeStart = 0.0
-  | value > kneeEnd = value
-  | otherwise =
-      let t = (value - kneeStart) / knee
-          curved = t * t
-      in value * curved
-  where
-    kneeStart = threshold - knee / 2.0
-    kneeEnd = threshold + knee / 2.0
+applyThresholdSoftKnee value threshold knee =
+  let kneeStart = threshold - knee / 2.0
+      kneeEnd = threshold + knee / 2.0
+  in if knee <= 0.0 then applyThreshold value threshold
+     else if value < kneeStart then 0.0
+     else if value > kneeEnd then value
+     else
+       let t = (value - kneeStart) / knee
+           curved = t * t
+       in value * curved
 
 --------------------------------------------------------------------------------
 -- Combined Processing

@@ -94,15 +94,15 @@ isColorChannel x = isFiniteNumber x && x >= 0.0 && x <= 255.0
 
 -- | Check if Vec2 has valid coordinates
 isValidVec2 :: Vec2 -> Boolean
-isValidVec2 v = isFiniteNumber v.x && isFiniteNumber v.y
+isValidVec2 v = isFiniteNumber (unFiniteFloat v.x) && isFiniteNumber (unFiniteFloat v.y)
 
 -- | Check if Vec3 has valid coordinates
 isValidVec3 :: Vec3 -> Boolean
-isValidVec3 v = isFiniteNumber v.x && isFiniteNumber v.y && isFiniteNumber v.z
+isValidVec3 v = isFiniteNumber (unFiniteFloat v.x) && isFiniteNumber (unFiniteFloat v.y) && isFiniteNumber (unFiniteFloat v.z)
 
 -- | Check if Vec4 has valid coordinates
 isValidVec4 :: Vec4 -> Boolean
-isValidVec4 v = isFiniteNumber v.x && isFiniteNumber v.y && isFiniteNumber v.z && isFiniteNumber v.w
+isValidVec4 v = isFiniteNumber (unFiniteFloat v.x) && isFiniteNumber (unFiniteFloat v.y) && isFiniteNumber (unFiniteFloat v.z) && isFiniteNumber (unFiniteFloat v.w)
 
 --------------------------------------------------------------------------------
 -- Bounding Box
@@ -120,7 +120,7 @@ type BoundingBox =
 mkBoundingBox :: Number -> Number -> Number -> Number -> Maybe BoundingBox
 mkBoundingBox x y width height
   | isFiniteNumber x && isFiniteNumber y && isPositive width && isPositive height =
-      Just { x, y, width, height }
+      Just { x: FiniteFloat x, y: FiniteFloat y, width: PositiveFloat width, height: PositiveFloat height }
   | otherwise = Nothing
 
 --------------------------------------------------------------------------------
@@ -129,11 +129,11 @@ mkBoundingBox x y width height
 
 -- | Check if RGB has valid channel values
 isValidRGB :: RGB -> Boolean
-isValidRGB c = isColorChannel c.r && isColorChannel c.g && isColorChannel c.b
+isValidRGB c = isColorChannel (unUnitFloat c.r) && isColorChannel (unUnitFloat c.g) && isColorChannel (unUnitFloat c.b)
 
 -- | Check if RGBA has valid values
 isValidRGBA :: RGBA -> Boolean
-isValidRGBA c = isColorChannel c.r && isColorChannel c.g && isColorChannel c.b && isUnitRange c.a
+isValidRGBA c = isColorChannel (unUnitFloat c.r) && isColorChannel (unUnitFloat c.g) && isColorChannel (unUnitFloat c.b) && isUnitRange (unUnitFloat c.a)
 
 --------------------------------------------------------------------------------
 -- Safe Defaults
@@ -143,35 +143,35 @@ isValidRGBA c = isColorChannel c.r && isColorChannel c.g && isColorChannel c.b &
 safeCoordinateDefault :: Maybe Number -> FiniteFloat -> FiniteFloat
 safeCoordinateDefault Nothing def = def
 safeCoordinateDefault (Just v) def
-  | isFiniteNumber v = v
+  | isFiniteNumber v = FiniteFloat v
   | otherwise = def
 
 -- | Safe non-negative default - requires >= 0
 safeNonNegativeDefault :: Maybe Number -> NonNegativeFloat -> NonNegativeFloat
 safeNonNegativeDefault Nothing def = def
 safeNonNegativeDefault (Just v) def
-  | isNonNegative v = v
+  | isNonNegative v = NonNegativeFloat v
   | otherwise = def
 
 -- | Safe positive default - requires > 0
 safePositiveDefault :: Maybe Number -> PositiveFloat -> PositiveFloat
 safePositiveDefault Nothing def = def
 safePositiveDefault (Just v) def
-  | isPositive v = v
+  | isPositive v = PositiveFloat v
   | otherwise = def
 
 -- | Safe unit default - requires [0, 1]
 safeUnitDefault :: Maybe Number -> UnitFloat -> UnitFloat
 safeUnitDefault Nothing def = def
 safeUnitDefault (Just v) def
-  | isUnitRange v = v
+  | isUnitRange v = UnitFloat v
   | otherwise = def
 
 -- | Safe percentage default - requires [0, 100]
 safePercentageDefault :: Maybe Number -> Percentage -> Percentage
 safePercentageDefault Nothing def = def
 safePercentageDefault (Just v) def
-  | isPercentageRange v = v
+  | isPercentageRange v = Percentage v
   | otherwise = def
 
 -- | Safe array default
@@ -184,7 +184,7 @@ safeStringDefault :: Maybe String -> NonEmptyString -> NonEmptyString
 safeStringDefault Nothing def = def
 safeStringDefault (Just v) def
   | String.null v = def
-  | otherwise = v
+  | otherwise = NonEmptyString v
 
 --------------------------------------------------------------------------------
 -- Assertions
@@ -193,26 +193,26 @@ safeStringDefault (Just v) def
 -- | Assert and extract finite number
 assertFinite :: Number -> String -> Either String FiniteFloat
 assertFinite value name
-  | isFiniteNumber value = Right value
+  | isFiniteNumber value = Right (FiniteFloat value)
   | otherwise = Left (name <> " must be finite, got " <> show value)
 
 -- | Assert and extract positive number
 assertPositive :: Number -> String -> Either String PositiveFloat
 assertPositive value name
-  | isPositive value = Right value
+  | isPositive value = Right (PositiveFloat value)
   | otherwise = Left (name <> " must be positive, got " <> show value)
 
 -- | Assert and extract non-negative number
 assertNonNegative :: Number -> String -> Either String NonNegativeFloat
 assertNonNegative value name
-  | isNonNegative value = Right value
+  | isNonNegative value = Right (NonNegativeFloat value)
   | otherwise = Left (name <> " must be non-negative, got " <> show value)
 
 -- | Assert non-empty string
 assertNonEmpty :: String -> String -> Either String NonEmptyString
 assertNonEmpty value name
   | String.null value = Left (name <> " cannot be empty")
-  | otherwise = Right value
+  | otherwise = Right (NonEmptyString value)
 
 -- | Assert array is non-empty
 assertNonEmptyArray :: forall a. Array a -> String -> Either String (Array a)

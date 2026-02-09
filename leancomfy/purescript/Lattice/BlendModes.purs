@@ -41,6 +41,7 @@ data BlendMode
   | BMClassicColorBurn | BMClassicColorDodge
 
 derive instance Eq BlendMode
+derive instance Ord BlendMode
 derive instance Generic BlendMode _
 instance Show BlendMode where show = genericShow
 

@@ -7,6 +7,8 @@
 module Lattice.Services.Math3D.Vec3
   ( -- * Types
     Vec3(..)
+    -- * Accessors
+  , getX, getY, getZ
     -- * Constructors
   , vec3
   , zero
@@ -33,6 +35,7 @@ module Lattice.Services.Math3D.Vec3
   ) where
 
 import Prelude
+import Data.Maybe (Maybe(..))
 import Data.Generic.Rep (class Generic)
 import Data.Show.Generic (genericShow)
 import Data.Array as Array

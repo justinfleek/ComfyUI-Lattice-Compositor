@@ -15,7 +15,7 @@ import Effect (Effect)
 import Effect.Aff (Aff)
 import Effect.Class (liftEffect)
 import Effect.Ref as Ref
-import Data.Array (filter, length, foldl)
+import Data.Array (filter, length, foldl, fromFoldable) as Array
 import Data.Map as Map
 import Data.Maybe (Maybe(..))
 
@@ -55,13 +55,13 @@ getFrames mgr jobId = do
 getStats :: RenderQueueManager -> Effect RenderQueueStats
 getStats mgr = do
   state <- Ref.read mgr.state
-  let jobs = Map.values state.jobs
-      activeJobs = filter (\j -> j.progress.status == StatusRendering) jobs
-      pendingJobs = filter (\j -> j.progress.status == StatusPending) jobs
-      completedJobs = filter (\j -> j.progress.status == StatusCompleted) jobs
-      failedJobs = filter (\j -> j.progress.status == StatusFailed) jobs
+  let jobs = Array.fromFoldable (Map.values state.jobs)
+      activeJobs = Array.filter (\j -> j.progress.status == StatusRendering) jobs
+      pendingJobs = Array.filter (\j -> j.progress.status == StatusPending) jobs
+      completedJobs = Array.filter (\j -> j.progress.status == StatusCompleted) jobs
+      failedJobs = Array.filter (\j -> j.progress.status == StatusFailed) jobs
 
-      totalFramesRendered = foldl countFrames 0 jobs
+      totalFramesRendered = Array.foldl countFrames 0 jobs
 
       avgFps = case state.activeJobId of
         Nothing -> 0.0
@@ -70,11 +70,11 @@ getStats mgr = do
           Just job -> job.progress.framesPerSecond
 
   pure
-    { totalJobs: length jobs
-    , activeJobs: length activeJobs
-    , pendingJobs: length pendingJobs
-    , completedJobs: length completedJobs
-    , failedJobs: length failedJobs
+    { totalJobs: Array.length jobs
+    , activeJobs: Array.length activeJobs
+    , pendingJobs: Array.length pendingJobs
+    , completedJobs: Array.length completedJobs
+    , failedJobs: Array.length failedJobs
     , totalFramesRendered
     , averageFps: avgFps
     }

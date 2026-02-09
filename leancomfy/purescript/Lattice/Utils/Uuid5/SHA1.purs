@@ -15,7 +15,7 @@ module Lattice.Utils.Uuid5.SHA1
 import Prelude
 import Data.Array as Array
 import Data.Foldable (foldl)
-import Data.Int.Bits (and, complement, or, rotateLeft, shl, shr, xor)
+import Data.Int.Bits (and, complement, or, shl, shr, xor)
 import Data.Maybe (fromMaybe)
 
 --------------------------------------------------------------------------------
@@ -37,24 +37,24 @@ sha1H0 :: Word32
 sha1H0 = 0x67452301
 
 sha1H1 :: Word32
-sha1H1 = 0xEFCDAB89
+sha1H1 = (-271733879)   -- 0xEFCDAB89 as signed 32-bit
 
 sha1H2 :: Word32
-sha1H2 = 0x98BADCFE
+sha1H2 = (-1732584194)  -- 0x98BADCFE as signed 32-bit
 
 sha1H3 :: Word32
 sha1H3 = 0x10325476
 
 sha1H4 :: Word32
-sha1H4 = 0xC3D2E1F0
+sha1H4 = (-1009589776) -- 0xC3D2E1F0 as signed 32-bit
 
 -- | SHA-1 round constants
 sha1K :: Int -> Word32
 sha1K i
   | i < 20 = 0x5A827999
   | i < 40 = 0x6ED9EBA1
-  | i < 60 = 0x8F1BBCDC
-  | otherwise = 0xCA62C1D6
+  | i < 60 = (-1894007588)   -- 0x8F1BBCDC as signed 32-bit
+  | otherwise = (-899497514) -- 0xCA62C1D6 as signed 32-bit
 
 -- | SHA-1 f function
 sha1F :: Int -> Word32 -> Word32 -> Word32 -> Word32
@@ -70,7 +70,7 @@ sha1F i b c d
 
 -- | Rotate left (32-bit)
 rotl32 :: Word32 -> Int -> Word32
-rotl32 x n = rotateLeft x n `and` 0xFFFFFFFF
+rotl32 x n = ((x `shl` n) `or` (x `shr` (32 - n))) `and` (-1)
 
 -- | Convert 4 bytes to Word32 (big-endian)
 bytesToWord32BE :: Int -> Int -> Int -> Int -> Word32
@@ -150,16 +150,16 @@ sha1ProcessChunk chunk offset { h0, h1, h2, h3, h4 } =
         let f = sha1F i b c d
             k = sha1K i
             wi = fromMaybe 0 (Array.index w i)
-            temp = (rotl32 a 5 + f + e + k + wi) `and` 0xFFFFFFFF
+            temp = (rotl32 a 5 + f + e + k + wi) `and` (-1)
         in { a: temp, b: a, c: rotl32 b 30, d: c, e: d }
 
       result = foldl step { a: h0, b: h1, c: h2, d: h3, e: h4 } (Array.range 0 79)
 
-  in { h0: (h0 + result.a) `and` 0xFFFFFFFF
-     , h1: (h1 + result.b) `and` 0xFFFFFFFF
-     , h2: (h2 + result.c) `and` 0xFFFFFFFF
-     , h3: (h3 + result.d) `and` 0xFFFFFFFF
-     , h4: (h4 + result.e) `and` 0xFFFFFFFF
+  in { h0: (h0 + result.a) `and` (-1)
+     , h1: (h1 + result.b) `and` (-1)
+     , h2: (h2 + result.c) `and` (-1)
+     , h3: (h3 + result.d) `and` (-1)
+     , h4: (h4 + result.e) `and` (-1)
      }
 
 --------------------------------------------------------------------------------

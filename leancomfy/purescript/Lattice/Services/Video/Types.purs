@@ -33,6 +33,7 @@ module Lattice.Services.Video.Types
 
 import Prelude
 import Data.Maybe (Maybe(..))
+import Data.Tuple (Tuple(..))
 import Data.Generic.Rep (class Generic)
 import Data.Show.Generic (genericShow)
 import Foreign.Object (Object)
@@ -217,12 +218,12 @@ intToFactor = case _ of
 -- | Default interpolation presets
 defaultPresets :: InterpolationPresets
 defaultPresets = Obj.fromFoldable
-  [ { key: "fast", value: fastPreset }
-  , { key: "balanced", value: balancedPreset }
-  , { key: "quality", value: qualityPreset }
-  , { key: "anime", value: animePreset }
-  , { key: "slowmo-2x", value: slowmo2xPreset }
-  , { key: "slowmo-4x", value: slowmo4xPreset }
+  [ Tuple "fast" fastPreset
+  , Tuple "balanced" balancedPreset
+  , Tuple "quality" qualityPreset
+  , Tuple "anime" animePreset
+  , Tuple "slowmo-2x" slowmo2xPreset
+  , Tuple "slowmo-4x" slowmo4xPreset
   ]
 
 fastPreset :: InterpolationPreset

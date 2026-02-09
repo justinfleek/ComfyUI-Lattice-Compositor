@@ -28,6 +28,8 @@ module Lattice.Services.Export.BackendDepth
   , checkAvailability
     -- * Utility Functions
   , canvasToBase64
+  , CanvasHandle
+  , BlobHandle
   , base64ToBlob
   , base64ToDataUrl
   ) where

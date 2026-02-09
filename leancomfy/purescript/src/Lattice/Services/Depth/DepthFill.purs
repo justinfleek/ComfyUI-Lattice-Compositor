@@ -47,7 +47,7 @@ import Data.Array (filter, range)
 import Data.Int (floor, ceil, toNumber)
 import Data.Number (isFinite, isNaN)
 import Data.Tuple (Tuple(..))
-import Math (abs, max, min)
+import Math (abs)
 
 --------------------------------------------------------------------------------
 -- Types

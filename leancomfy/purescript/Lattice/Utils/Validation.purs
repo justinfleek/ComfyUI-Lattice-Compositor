@@ -126,7 +126,9 @@ validateString value name opts
   | Just maxLen <- opts.maxLength, String.length value > maxLen =
       Fail (name <> " must be at most " <> show maxLen <> " characters")
   | String.null value = Fail (name <> " cannot be empty")
-  | otherwise = Ok value
+  | otherwise = case mkNonEmptyString value of
+      Just nes -> Ok nes
+      Nothing -> Fail (name <> " cannot be empty")
 
 -- | Options for numeric validation
 type NumberOptions =
@@ -146,7 +148,9 @@ validateFiniteNumber value name opts
       Fail (name <> " must be >= " <> show minVal <> ", got " <> show value)
   | Just maxVal <- opts.max, value > maxVal =
       Fail (name <> " must be <= " <> show maxVal <> ", got " <> show value)
-  | otherwise = Ok value
+  | otherwise = case mkFiniteFloat value of
+      Just ff -> Ok ff
+      Nothing -> Fail (name <> " must be a finite number")
 
 -- | Validate integer
 validateInteger :: Number -> String -> NumberOptions -> ValidationResult Int
@@ -176,14 +180,14 @@ validatePositive :: Number -> String -> ValidationResult PositiveFloat
 validatePositive value name
   | not (isFiniteNumber value) = Fail (name <> " must be a finite number")
   | value <= 0.0 = Fail (name <> " must be positive, got " <> show value)
-  | otherwise = Ok value
+  | otherwise = Ok (PositiveFloat value)
 
 -- | Validate non-negative number (>= 0)
 validateNonNegative :: Number -> String -> ValidationResult NonNegativeFloat
 validateNonNegative value name
   | not (isFiniteNumber value) = Fail (name <> " must be a finite number")
   | value < 0.0 = Fail (name <> " must be non-negative, got " <> show value)
-  | otherwise = Ok value
+  | otherwise = Ok (NonNegativeFloat value)
 
 -- | Validate unit float (0 to 1)
 validateUnit :: Number -> String -> ValidationResult UnitFloat
@@ -191,7 +195,7 @@ validateUnit value name
   | not (isFiniteNumber value) = Fail (name <> " must be a finite number")
   | value < 0.0 = Fail (name <> " must be >= 0, got " <> show value)
   | value > 1.0 = Fail (name <> " must be <= 1, got " <> show value)
-  | otherwise = Ok value
+  | otherwise = Ok (UnitFloat value)
 
 -- | Validate percentage (0 to 100)
 validatePercentage :: Number -> String -> ValidationResult Percentage
@@ -199,7 +203,7 @@ validatePercentage value name
   | not (isFiniteNumber value) = Fail (name <> " must be a finite number")
   | value < 0.0 = Fail (name <> " must be >= 0, got " <> show value)
   | value > 100.0 = Fail (name <> " must be <= 100, got " <> show value)
-  | otherwise = Ok value
+  | otherwise = Ok (Percentage value)
 
 -- | Validate frame number (non-negative integer)
 validateFrameNumber :: Number -> String -> ValidationResult FrameNumber
@@ -209,7 +213,7 @@ validateFrameNumber value name
   | otherwise =
       let intVal = floor value
       in if toNumber intVal == value && intVal >= 0
-         then Ok intVal
+         then Ok (FrameNumber intVal)
          else Fail (name <> " must be a non-negative integer, got " <> show value)
 
 --------------------------------------------------------------------------------
@@ -265,22 +269,20 @@ validateVec4 x y z w name = do
 -- Color Validators
 --------------------------------------------------------------------------------
 
--- | Validate RGB color (0-255 each)
+-- | Validate RGB color (0-1 unit floats)
 validateRGB :: Number -> Number -> Number -> String -> ValidationResult RGB
 validateRGB r g b name = do
-  let colorOpts = { min: Just 0.0, max: Just 255.0 }
-  vr <- validateFiniteNumber r (name <> ".r") colorOpts
-  vg <- validateFiniteNumber g (name <> ".g") colorOpts
-  vb <- validateFiniteNumber b (name <> ".b") colorOpts
+  vr <- validateUnit r (name <> ".r")
+  vg <- validateUnit g (name <> ".g")
+  vb <- validateUnit b (name <> ".b")
   pure { r: vr, g: vg, b: vb }
 
--- | Validate RGBA color
+-- | Validate RGBA color (0-1 unit floats)
 validateRGBA :: Number -> Number -> Number -> Number -> String -> ValidationResult RGBA
 validateRGBA r g b a name = do
-  let colorOpts = { min: Just 0.0, max: Just 255.0 }
-  vr <- validateFiniteNumber r (name <> ".r") colorOpts
-  vg <- validateFiniteNumber g (name <> ".g") colorOpts
-  vb <- validateFiniteNumber b (name <> ".b") colorOpts
+  vr <- validateUnit r (name <> ".r")
+  vg <- validateUnit g (name <> ".g")
+  vb <- validateUnit b (name <> ".b")
   va <- validateUnit a (name <> ".a")
   pure { r: vr, g: vg, b: vb, a: va }
 

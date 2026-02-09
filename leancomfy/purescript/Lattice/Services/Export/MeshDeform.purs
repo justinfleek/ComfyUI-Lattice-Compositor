@@ -23,6 +23,7 @@ module Lattice.Services.Export.MeshDeform
   , exportPinPositionsPerFrame
     -- * Depth Export
   , DepthBuffer
+  , DeformedVertices
   , exportOverlapAsDepth
   , depthBufferToImageData
   , exportOverlapDepthSequence

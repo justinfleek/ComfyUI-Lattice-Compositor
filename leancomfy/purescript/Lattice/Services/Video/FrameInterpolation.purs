@@ -47,6 +47,8 @@ module Lattice.Services.Video.FrameInterpolation
   ( -- * Types
     ApiEndpoint
   , InterpolationConfig(..)
+  , ImageData
+  , Blob
     -- * API Functions
   , getInterpolationModels
   , interpolateFramePair

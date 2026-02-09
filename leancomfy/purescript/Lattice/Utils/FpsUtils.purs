@@ -28,7 +28,7 @@ import Data.Either (Either(..))
 import Data.Int (ceil, round, toNumber)
 import Data.Maybe (Maybe(..))
 import Data.Number (isFinite) as Number
-import Lattice.Primitives (FiniteFloat, FrameNumber)
+import Lattice.Primitives (FiniteFloat(..), FrameNumber(..), unFiniteFloat)
 
 --------------------------------------------------------------------------------
 -- Constants
@@ -107,26 +107,26 @@ safeDivideByFps numerator (Fps fps) = numerator / toNumber fps
 
 -- | Convert frame number to time in seconds
 frameToTime :: FrameNumber -> Fps -> FiniteFloat
-frameToTime frame (Fps fps) =
+frameToTime (FrameNumber frame) (Fps fps) =
   let result = toNumber frame / toNumber fps
-  in if isFiniteNumber result then result else 0.0
+  in FiniteFloat (if isFiniteNumber result then result else 0.0)
 
 -- | Convert time in seconds to frame number
 timeToFrame :: FiniteFloat -> Fps -> FrameNumber
 timeToFrame time (Fps fps) =
-  let result = time * toNumber fps
-  in if result < 0.0 then 0 else max 0 (round result)
+  let result = unFiniteFloat time * toNumber fps
+  in FrameNumber (if result < 0.0 then 0 else max 0 (round result))
 
 -- | Calculate duration in seconds from frame count
 calculateDuration :: Int -> Fps -> FiniteFloat
 calculateDuration frameCount (Fps fps) =
   let result = toNumber frameCount / toNumber fps
-  in if isFiniteNumber result then result else 0.0
+  in FiniteFloat (if isFiniteNumber result then result else 0.0)
 
 -- | Calculate frame count from duration (ceiling)
 calculateFrameCount :: FiniteFloat -> Fps -> Int
 calculateFrameCount duration (Fps fps) =
-  ceil (duration * toNumber fps)
+  ceil (unFiniteFloat duration * toNumber fps)
 
 --------------------------------------------------------------------------------
 -- Assertions

@@ -29,6 +29,7 @@ import Prelude
 import Data.Generic.Rep (class Generic)
 import Data.Show.Generic (genericShow)
 import Data.Array as Array
+import Data.Maybe (Maybe(..))
 import Data.Tuple (Tuple(..))
 import Math (sqrt, sin, cos, asin, acos, atan2, abs) as Math
 import Lattice.Services.Math3D.Vec3 (Vec3(..))
@@ -126,42 +127,33 @@ fromEuler x y z = Quat
 
 -- | Convert quaternion to Euler angles (XYZ order) in radians
 toEuler :: Quat -> Vec3
-toEuler q
-  | len == 0.0 = V.zero
-  | Math.abs sinY > 0.9999999 = Vec3 { x: x', y: y', z: z' }  -- Gimbal lock
-  | otherwise = Vec3 { x: x'', y: y'', z: z'' }
-  where
-    len = lengthQuat q
-    Quat qr = q
-    qxn = qr.x / len
-    qyn = qr.y / len
-    qzn = qr.z / len
-    qwn = qr.w / len
+toEuler q =
+  let len = lengthQuat q
+  in if len == 0.0 then V.zero
+     else
+       let Quat qr = q
+           qxn = qr.x / len
+           qyn = qr.y / len
+           qzn = qr.z / len
+           qwn = qr.w / len
 
-    sqx = qxn * qxn
-    sqy = qyn * qyn
-    sqz = qzn * qzn
-    sqw = qwn * qwn
+           sqx = qxn * qxn
+           sqy = qyn * qyn
+           sqz = qzn * qzn
+           sqw = qwn * qwn
 
-    m11 = sqw + sqx - sqy - sqz
-    m12 = 2.0 * (qxn * qyn - qwn * qzn)
-    m13 = 2.0 * (qxn * qzn + qwn * qyn)
-    m22 = sqw - sqx + sqy - sqz
-    m23 = 2.0 * (qyn * qzn - qwn * qxn)
-    m32 = 2.0 * (qyn * qzn + qwn * qxn)
-    m33 = sqw - sqx - sqy + sqz
+           m11 = sqw + sqx - sqy - sqz
+           m12 = 2.0 * (qxn * qyn - qwn * qzn)
+           m13 = 2.0 * (qxn * qzn + qwn * qyn)
+           m22 = sqw - sqx + sqy - sqz
+           m23 = 2.0 * (qyn * qzn - qwn * qxn)
+           m32 = 2.0 * (qyn * qzn + qwn * qxn)
+           m33 = sqw - sqx - sqy + sqz
 
-    sinY = max (-1.0) (min 1.0 m13)
-
-    -- Gimbal lock case
-    y' = Math.asin sinY
-    z' = 0.0
-    x' = Math.atan2 (-m32) m22
-
-    -- Normal case
-    y'' = Math.asin sinY
-    x'' = Math.atan2 (-m23) m33
-    z'' = Math.atan2 (-m12) m11
+           sinY = max (-1.0) (min 1.0 m13)
+       in if Math.abs sinY > 0.9999999
+          then Vec3 { x: Math.atan2 (-m32) m22, y: Math.asin sinY, z: 0.0 }
+          else Vec3 { x: Math.atan2 (-m23) m33, y: Math.asin sinY, z: Math.atan2 (-m12) m11 }
 
 --------------------------------------------------------------------------------
 -- Axis-Angle Conversion
@@ -182,16 +174,16 @@ fromAxisAngle axis angle = Quat
 
 -- | Convert quaternion to axis-angle representation
 toAxisAngle :: Quat -> Tuple Vec3 Number
-toAxisAngle q
-  | Math.abs sinHalfAngle < 0.0001 = Tuple V.unitX 0.0
-  | otherwise = Tuple (Vec3 { x: qnx / sinHalfAngle, y: qny / sinHalfAngle, z: qnz / sinHalfAngle }) angle
-  where
-    Quat qn = normalize q
-    qnx = qn.x
-    qny = qn.y
-    qnz = qn.z
-    angle = 2.0 * Math.acos (max (-1.0) (min 1.0 qn.w))
-    sinHalfAngle = Math.sin (angle / 2.0)
+toAxisAngle q =
+  let Quat qn = normalize q
+      qnx = qn.x
+      qny = qn.y
+      qnz = qn.z
+      angle = 2.0 * Math.acos (max (-1.0) (min 1.0 qn.w))
+      sinHalfAngle = Math.sin (angle / 2.0)
+  in if Math.abs sinHalfAngle < 0.0001
+     then Tuple V.unitX 0.0
+     else Tuple (Vec3 { x: qnx / sinHalfAngle, y: qny / sinHalfAngle, z: qnz / sinHalfAngle }) angle
 
 --------------------------------------------------------------------------------
 -- Interpolation
@@ -199,40 +191,40 @@ toAxisAngle q
 
 -- | Spherical linear interpolation (SLERP)
 slerp :: Quat -> Quat -> Number -> Quat
-slerp a b t
-  | d' > 0.9995 = normalize (lerpQuat a b' t)
-  | otherwise = Quat
-      { x: s0 * ax + s1 * bx'
-      , y: s0 * ay + s1 * by'
-      , z: s0 * az + s1 * bz'
-      , w: s0 * aw + s1 * bw'
-      }
-  where
-    Quat ar = a
-    Quat br = b
-    ax = ar.x
-    ay = ar.y
-    az = ar.z
-    aw = ar.w
+slerp a b t =
+  let Quat ar = a
+      Quat br = b
+      ax = ar.x
+      ay = ar.y
+      az = ar.z
+      aw = ar.w
 
-    d = dotQuat a b
-    (Tuple b' d') = if d < 0.0
-                    then Tuple (Quat { x: -br.x, y: -br.y, z: -br.z, w: -br.w }) (-d)
-                    else Tuple b d
+      d = dotQuat a b
+      (Tuple b' d') = if d < 0.0
+                      then Tuple (Quat { x: -br.x, y: -br.y, z: -br.z, w: -br.w }) (-d)
+                      else Tuple b d
+  in if d' > 0.9995
+     then normalize (lerpQuat a b' t)
+     else
+       let Quat br' = b'
+           bx' = br'.x
+           by' = br'.y
+           bz' = br'.z
+           bw' = br'.w
 
-    Quat br' = b'
-    bx' = br'.x
-    by' = br'.y
-    bz' = br'.z
-    bw' = br'.w
+           theta0 = Math.acos d'
+           theta = theta0 * t
+           sinTheta = Math.sin theta
+           sinTheta0 = Math.sin theta0
 
-    theta0 = Math.acos d'
-    theta = theta0 * t
-    sinTheta = Math.sin theta
-    sinTheta0 = Math.sin theta0
-
-    s0 = Math.cos theta - d' * sinTheta / sinTheta0
-    s1 = sinTheta / sinTheta0
+           s0 = Math.cos theta - d' * sinTheta / sinTheta0
+           s1 = sinTheta / sinTheta0
+       in Quat
+            { x: s0 * ax + s1 * bx'
+            , y: s0 * ay + s1 * by'
+            , z: s0 * az + s1 * bz'
+            , w: s0 * aw + s1 * bw'
+            }
 
 -- | Linear interpolation (not normalized)
 lerpQuat :: Quat -> Quat -> Number -> Quat

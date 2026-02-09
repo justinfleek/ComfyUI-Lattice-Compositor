@@ -53,6 +53,8 @@ import Data.Maybe (Maybe(..))
 import Data.Set (Set)
 import Data.Set as Set
 import Data.String as String
+import Data.String.CodePoints (codePointFromChar)
+import Data.String.CodePoints as SCP
 import Data.String.Pattern (Pattern(..))
 import Data.Tuple (Tuple(..), snd)
 import Data.Generic.Rep (class Generic)
@@ -145,11 +147,27 @@ data JSONValue
   | JSONArray (Array JSONValue)
   | JSONObject (Array (Tuple String JSONValue))
 
-derive instance Generic JSONValue _
 derive instance Eq JSONValue
 
 instance Show JSONValue where
-  show = genericShow
+  show JSONNull = "JSONNull"
+  show (JSONBool b) = "(JSONBool " <> show b <> ")"
+  show (JSONNumber n) = "(JSONNumber " <> show n <> ")"
+  show (JSONString s) = "(JSONString " <> show s <> ")"
+  show (JSONArray items) = "(JSONArray [" <> showItems items <> "])"
+    where
+      showItems [] = ""
+      showItems arr = case Array.uncons arr of
+        Nothing -> ""
+        Just { head: x, tail: [] } -> show x
+        Just { head: x, tail: xs } -> show x <> ", " <> showItems xs
+  show (JSONObject fields) = "(JSONObject [" <> showFields fields <> "])"
+    where
+      showFields [] = ""
+      showFields arr = case Array.uncons arr of
+        Nothing -> ""
+        Just { head: (Tuple k v), tail: [] } -> "(Tuple " <> show k <> " " <> show v <> ")"
+        Just { head: (Tuple k v), tail: xs } -> "(Tuple " <> show k <> " " <> show v <> "), " <> showFields xs
 
 -- | Check a JSON value for prototype pollution
 hasPrototypePollution :: JSONValue -> Boolean
@@ -283,8 +301,8 @@ normalizePath = String.replaceAll (Pattern "\\") (String.Replacement "/")
 -- | Sanitize a user path relative to a base
 sanitizePath :: String -> String -> Either String String
 sanitizePath basePath userPath =
-  let normalizedBase = String.dropWhile (_ == '/') $ normalizePath basePath
-      normalizedUser = String.dropWhile (_ == '/') $ normalizePath userPath
+  let normalizedBase = SCP.dropWhile (_ == codePointFromChar '/') $ normalizePath basePath
+      normalizedUser = SCP.dropWhile (_ == codePointFromChar '/') $ normalizePath userPath
   in if String.contains (Pattern "\x00") normalizedUser
      then Left "Null byte detected in path"
      else if String.contains (Pattern "..") normalizedUser

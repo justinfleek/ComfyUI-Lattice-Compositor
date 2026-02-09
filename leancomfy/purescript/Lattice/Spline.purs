@@ -28,14 +28,16 @@ module Lattice.Spline
   , SplineLODSettings
   , SplineData
   , PathLayerData
+  , createDefaultSplineData
+  , createDefaultPathLayerData
   ) where
 
 import Prelude
-import Data.Maybe (Maybe)
+import Data.Maybe (Maybe(..))
 import Data.Generic.Rep (class Generic)
 import Data.Show.Generic (genericShow)
 import Lattice.Primitives
-import Lattice.Shapes (LineJoin, LineCap, GradientType)
+import Lattice.Shapes (LineJoin(..), LineCap(..), GradientType)
 
 --------------------------------------------------------------------------------
 -- Control Point Enums
@@ -271,3 +273,69 @@ type PathLayerData =
   , animatedControlPoints :: Maybe (Array AnimatableControlPoint)
   , animated              :: Boolean
   }
+
+--------------------------------------------------------------------------------
+-- Factory Functions
+--------------------------------------------------------------------------------
+
+-- | Create default spline data (empty path, white stroke)
+createDefaultSplineData :: SplineData
+createDefaultSplineData =
+  { pathData: ""
+  , controlPoints: []
+  , closed: false
+  , strokeType: STSolid
+  , stroke: nes "#ffffff"
+  , strokeGradient: Nothing
+  , strokeWidth: pf 2.0
+  , strokeOpacity: pct 100.0
+  , lineCap: LCButt
+  , lineJoin: LJMiter
+  , strokeMiterLimit: ff 4.0
+  , dashArray: Nothing
+  , dashOffset: Nothing
+  , fill: Nothing
+  , fillOpacity: pct 100.0
+  , trimStart: Nothing
+  , trimEnd: Nothing
+  , trimOffset: Nothing
+  , pathEffects: []
+  , animatedControlPoints: Nothing
+  , animated: false
+  , lod: Nothing
+  , audioReactiveEnabled: false
+  , audioReactiveSourceLayerId: Nothing
+  }
+  where
+    nes s = case mkNonEmptyString s of
+      Just v -> v
+      Nothing -> NonEmptyString "error"
+    pf n = case mkPositiveFloat n of
+      Just v -> v
+      Nothing -> PositiveFloat 1.0
+    pct n = case mkPercentage n of
+      Just v -> v
+      Nothing -> Percentage 0.0
+    ff n = case mkFiniteFloat n of
+      Just v -> v
+      Nothing -> FiniteFloat 0.0
+
+-- | Create default path layer data (empty path, cyan guide)
+createDefaultPathLayerData :: PathLayerData
+createDefaultPathLayerData =
+  { pathData: ""
+  , controlPoints: []
+  , closed: false
+  , showGuide: true
+  , guideColor: nes "#00FFFF"
+  , guideDashPattern: { dash: ff 5.0, gap: ff 5.0 }
+  , animatedControlPoints: Nothing
+  , animated: false
+  }
+  where
+    nes s = case mkNonEmptyString s of
+      Just v -> v
+      Nothing -> NonEmptyString "error"
+    ff n = case mkFiniteFloat n of
+      Just v -> v
+      Nothing -> FiniteFloat 0.0

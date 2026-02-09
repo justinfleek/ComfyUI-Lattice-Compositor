@@ -29,6 +29,7 @@ module Lattice.Project
   , ExtractionMethod(..)
   , PBRTextures
   , ExtractedTexture
+  , createEmptyProject
   ) where
 
 import Prelude
@@ -384,3 +385,60 @@ type ExtractedTexture =
   , resolutionWidth  :: Int  -- > 0
   , resolutionHeight :: Int  -- > 0
   }
+
+--------------------------------------------------------------------------------
+-- Factory Functions
+--------------------------------------------------------------------------------
+
+-- | Create an empty project with given dimensions and timestamp
+-- | Pure version - takes timestamp as parameter instead of using Effect
+-- | Matches TS createEmptyProject(width, height)
+-- | Note: width and height must be divisible by 8
+createEmptyProject :: Int -> Int -> NonEmptyString -> LatticeProject
+createEmptyProject width height timestamp =
+  { version: nes "1.0.0"
+  , schemaVersion: 2
+  , meta:
+      { name: "Untitled"
+      , created: timestamp
+      , modified: timestamp
+      , author: Nothing
+      , description: Nothing
+      , tags: []
+      }
+  , compositions:
+      [ { id: nes "main"
+        , name: nes "Main Comp"
+        , settings:
+            { width
+            , height
+            , frameCount: 81
+            , fps: pf 16.0
+            , duration: nnf 5.0625
+            , backgroundColor: hex "#2d2d2d"
+            , autoResizeToContent: true
+            , frameBlendingEnabled: false
+            }
+        , layers: []
+        , currentFrame: FrameNumber 0
+        , isNestedComp: false
+        , parentCompId: Nothing
+        }
+      ]
+  , mainCompositionId: nes "main"
+  , assets: []
+  , currentFrame: FrameNumber 0
+  }
+  where
+    nes s = case mkNonEmptyString s of
+      Just v -> v
+      Nothing -> NonEmptyString "error"
+    pf n = case mkPositiveFloat n of
+      Just v -> v
+      Nothing -> PositiveFloat 1.0
+    nnf n = case mkNonNegativeFloat n of
+      Just v -> v
+      Nothing -> NonNegativeFloat 0.0
+    hex s = case mkHexColor s of
+      Just v -> v
+      Nothing -> HexColor "#000000"

@@ -40,11 +40,21 @@ module Lattice.LayerData
   , PoseKeypoint
   , PoseLayerData
   , openposeConnections
+  , createDefaultPoseKeypoints
+  , LightType(..)
+  , FalloffType(..)
+  , LightLayerData
+  , NullLayerData
+  , createDefaultEffectLayerData
+  , createDefaultSolidLayerData
+  , createDefaultNullLayerData
+  , createDefaultLightLayerData
+  , createDefaultPoseLayerData
   ) where
 
 import Prelude
-import Data.Maybe (Maybe)
-import Data.Tuple (Tuple)
+import Data.Maybe (Maybe(..))
+import Data.Tuple (Tuple(..))
 import Data.Generic.Rep (class Generic)
 import Data.Show.Generic (genericShow)
 import Lattice.Primitives
@@ -442,3 +452,159 @@ openposeConnections =
   , Tuple 1 8, Tuple 8 9, Tuple 9 10, Tuple 1 11, Tuple 11 12, Tuple 12 13
   , Tuple 0 14, Tuple 14 16, Tuple 0 15, Tuple 15 17
   ]
+
+--------------------------------------------------------------------------------
+-- Factory Functions
+--------------------------------------------------------------------------------
+
+-- | Create default pose keypoints in OpenPose T-pose (18 keypoints)
+createDefaultPoseKeypoints :: Array PoseKeypoint
+createDefaultPoseKeypoints =
+  [ kp 0.5 0.1       -- 0: nose
+  , kp 0.5 0.2       -- 1: neck
+  , kp 0.35 0.25     -- 2: right_shoulder
+  , kp 0.2 0.25      -- 3: right_elbow
+  , kp 0.05 0.25     -- 4: right_wrist
+  , kp 0.65 0.25     -- 5: left_shoulder
+  , kp 0.8 0.25      -- 6: left_elbow
+  , kp 0.95 0.25     -- 7: left_wrist
+  , kp 0.4 0.5       -- 8: right_hip
+  , kp 0.4 0.7       -- 9: right_knee
+  , kp 0.4 0.85      -- 10: right_ankle
+  , kp 0.6 0.5       -- 11: left_hip
+  , kp 0.6 0.7       -- 12: left_knee
+  , kp 0.6 0.85      -- 13: left_ankle
+  , kp 0.45 0.08     -- 14: right_eye
+  , kp 0.55 0.08     -- 15: left_eye
+  , kp 0.4 0.1       -- 16: right_ear
+  , kp 0.6 0.1       -- 17: left_ear
+  ]
+  where
+    kp :: Number -> Number -> PoseKeypoint
+    kp x y =
+      { x: uf x, y: uf y, confidence: uf 1.0 }
+    uf :: Number -> UnitFloat
+    uf n = case mkUnitFloat n of
+      Just v -> v
+      Nothing -> UnitFloat 0.0
+
+--------------------------------------------------------------------------------
+-- Light Layer
+--------------------------------------------------------------------------------
+
+data LightType = LightPoint | LightSpot | LightAmbient | LightParallel
+
+derive instance Eq LightType
+derive instance Generic LightType _
+instance Show LightType where show = genericShow
+
+data FalloffType = FONone | FOSmooth | FOInverseSquare
+
+derive instance Eq FalloffType
+derive instance Generic FalloffType _
+instance Show FalloffType where show = genericShow
+
+type LightLayerData =
+  { lightType       :: LightType
+  , color           :: HexColor
+  , intensity       :: Percentage
+  , radius          :: PositiveFloat
+  , falloff         :: FalloffType
+  , falloffDistance :: PositiveFloat
+  , castShadows     :: Boolean
+  , shadowDarkness  :: Percentage
+  , shadowDiffusion :: NonNegativeFloat
+  }
+
+--------------------------------------------------------------------------------
+-- Null Layer
+--------------------------------------------------------------------------------
+
+type NullLayerData =
+  { size :: Int  -- Visual size of null icon in editor
+  }
+
+--------------------------------------------------------------------------------
+-- Additional Factory Functions
+--------------------------------------------------------------------------------
+
+-- | Create default effect layer data
+createDefaultEffectLayerData :: EffectLayerData
+createDefaultEffectLayerData =
+  { effectLayer: true
+  , adjustmentLayer: true
+  , color: hex "#FF6B6B"
+  }
+  where
+    hex s = case mkHexColor s of
+      Just v -> v
+      Nothing -> HexColor "#000000"
+
+-- | Create default solid layer data
+createDefaultSolidLayerData :: Int -> Int -> SolidLayerData
+createDefaultSolidLayerData w h =
+  { color: hex "#808080"
+  , width: w
+  , height: h
+  , shadowCatcher: false
+  , shadowOpacity: Nothing
+  , shadowColor: Nothing
+  , receiveShadow: false
+  }
+  where
+    hex s = case mkHexColor s of
+      Just v -> v
+      Nothing -> HexColor "#000000"
+
+-- | Create default null layer data
+createDefaultNullLayerData :: NullLayerData
+createDefaultNullLayerData =
+  { size: 40
+  }
+
+-- | Create default light layer data
+createDefaultLightLayerData :: LightLayerData
+createDefaultLightLayerData =
+  { lightType: LightPoint
+  , color: hex "#ffffff"
+  , intensity: pct 100.0
+  , radius: pf 500.0
+  , falloff: FONone
+  , falloffDistance: pf 500.0
+  , castShadows: false
+  , shadowDarkness: pct 100.0
+  , shadowDiffusion: nnf 0.0
+  }
+  where
+    hex s = case mkHexColor s of
+      Just v -> v
+      Nothing -> HexColor "#000000"
+    pct n = case mkPercentage n of
+      Just v -> v
+      Nothing -> Percentage 0.0
+    pf n = case mkPositiveFloat n of
+      Just v -> v
+      Nothing -> PositiveFloat 1.0
+    nnf n = case mkNonNegativeFloat n of
+      Just v -> v
+      Nothing -> NonNegativeFloat 0.0
+
+-- | Create default pose layer data
+createDefaultPoseLayerData :: PoseLayerData
+createDefaultPoseLayerData =
+  { keypoints: createDefaultPoseKeypoints
+  , format: PFCoco
+  , lineWidth: pf 4.0
+  , jointRadius: pf 4.0
+  , lineColor: hex "#FFFFFF"
+  , jointColor: hex "#FF0000"
+  , showConfidence: false
+  , mirror: false
+  }
+  where
+    hex s = case mkHexColor s of
+      Just v -> v
+      Nothing -> HexColor "#000000"
+    pf n = case mkPositiveFloat n of
+      Just v -> v
+      Nothing -> PositiveFloat 1.0

@@ -220,8 +220,8 @@ validateFilename field value
       "must be at most " <> show maxFilenameLength <> " characters"
   | Array.any (\c -> String.contains (Pattern c) value) invalidFilenameChars =
       Left $ mkError field "contains invalid characters"
-  | String.take 1 (String.takeEnd 1 value) == "." ||
-    String.take 1 (String.takeEnd 1 value) == " " =
+  | String.take 1 (String.drop (String.length value - 1) value) == "." ||
+    String.take 1 (String.drop (String.length value - 1) value) == " " =
       Left $ mkError field "must not end with dot or space"
   | otherwise = Right value
 
@@ -284,18 +284,17 @@ validateNonEmptyArray field arr
 
 -- | Validate ISO 8601 datetime format (simplified)
 validateDateTime :: String -> String -> Either ValidationError String
-validateDateTime field value
-  | String.length value < 19 = Left $ mkError field "must be valid ISO 8601 datetime"
-  | hasValidStructure = Right value
-  | otherwise = Left $ mkError field "must be valid ISO 8601 datetime"
-  where
-    dateTimePart = String.take 19 value
-    hasValidStructure =
-      String.take 1 (String.drop 4 dateTimePart) == "-" &&
-      String.take 1 (String.drop 7 dateTimePart) == "-" &&
-      String.take 1 (String.drop 10 dateTimePart) == "T" &&
-      String.take 1 (String.drop 13 dateTimePart) == ":" &&
-      String.take 1 (String.drop 16 dateTimePart) == ":"
+validateDateTime field value =
+  let dateTimePart = String.take 19 value
+      hasValidStructure =
+        String.take 1 (String.drop 4 dateTimePart) == "-" &&
+        String.take 1 (String.drop 7 dateTimePart) == "-" &&
+        String.take 1 (String.drop 10 dateTimePart) == "T" &&
+        String.take 1 (String.drop 13 dateTimePart) == ":" &&
+        String.take 1 (String.drop 16 dateTimePart) == ":"
+  in if String.length value < 19 then Left $ mkError field "must be valid ISO 8601 datetime"
+     else if hasValidStructure then Right value
+     else Left $ mkError field "must be valid ISO 8601 datetime"
 
 -- | Validate date format YYYY-MM-DD
 validateDate :: String -> String -> Either ValidationError String

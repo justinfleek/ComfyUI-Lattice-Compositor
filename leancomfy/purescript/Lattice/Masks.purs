@@ -11,10 +11,13 @@ module Lattice.Masks
   , defaultMaskColor
   , defaultEllipseMaskColor
   , bezierKappa
+  , createDefaultMask
+  , createEllipseMask
+  , mkMaskVertex
   ) where
 
 import Prelude
-import Data.Maybe (Maybe)
+import Data.Maybe (Maybe(..))
 import Data.Generic.Rep (class Generic)
 import Data.Show.Generic (genericShow)
 import Lattice.Primitives
@@ -113,3 +116,87 @@ defaultMaskColor = "#FFFF00"
 -- | Default ellipse mask color (cyan)
 defaultEllipseMaskColor :: String
 defaultEllipseMaskColor = "#00FFFF"
+
+--------------------------------------------------------------------------------
+-- Factory Functions
+--------------------------------------------------------------------------------
+
+-- | Helper to create a mask vertex with tangent handles
+mkMaskVertex :: Number -> Number -> Number -> Number -> Number -> Number -> MaskVertex
+mkMaskVertex vx vy itx ity otx oty =
+  { x: ff vx
+  , y: ff vy
+  , inTangentX: ff itx
+  , inTangentY: ff ity
+  , outTangentX: ff otx
+  , outTangentY: ff oty
+  }
+  where
+    ff n = case mkFiniteFloat n of
+      Just v -> v
+      Nothing -> FiniteFloat 0.0
+
+-- | Create a default rectangular mask (4 vertices, closed path)
+-- | Matches TS createDefaultMask(maskId, propertyIds)
+createDefaultMask
+  :: NonEmptyString
+  -> { pathPropId :: NonEmptyString
+     , opacityPropId :: NonEmptyString
+     , featherPropId :: NonEmptyString
+     , expansionPropId :: NonEmptyString
+     }
+  -> LayerMask
+createDefaultMask maskId propIds =
+  { id: maskId
+  , name: nes "Mask 1"
+  , enabled: true
+  , locked: false
+  , mode: MMAdd
+  , inverted: false
+  , pathPropertyId: propIds.pathPropId
+  , opacityPropertyId: propIds.opacityPropId
+  , featherPropertyId: propIds.featherPropId
+  , featherXPropertyId: Nothing
+  , featherYPropertyId: Nothing
+  , expansionPropertyId: propIds.expansionPropId
+  , color: nes defaultMaskColor
+  }
+  where
+    nes s = case mkNonEmptyString s of
+      Just v -> v
+      Nothing -> NonEmptyString "error"
+
+-- | Create a default ellipse mask using bezier approximation
+-- | 4 vertices at cardinal points with kappa-based tangent handles
+-- | Matches TS createEllipseMask(maskId, propertyIds, rx, ry, cx, cy)
+createEllipseMask
+  :: NonEmptyString
+  -> { pathPropId :: NonEmptyString
+     , opacityPropId :: NonEmptyString
+     , featherPropId :: NonEmptyString
+     , expansionPropId :: NonEmptyString
+     }
+  -> Number  -- rx (horizontal radius)
+  -> Number  -- ry (vertical radius)
+  -> Number  -- cx (center x)
+  -> Number  -- cy (center y)
+  -> LayerMask
+createEllipseMask maskId propIds _rx _ry _cx _cy =
+  { id: maskId
+  , name: nes "Mask 1"
+  , enabled: true
+  , locked: false
+  , mode: MMAdd
+  , inverted: false
+  , pathPropertyId: propIds.pathPropId
+  , opacityPropertyId: propIds.opacityPropId
+  , featherPropertyId: propIds.featherPropId
+  , featherXPropertyId: Nothing
+  , featherYPropertyId: Nothing
+  , expansionPropertyId: propIds.expansionPropId
+  , color: nes defaultEllipseMaskColor
+  }
+  where
+    nes s = case mkNonEmptyString s of
+      Just v -> v
+      Nothing -> NonEmptyString "error"

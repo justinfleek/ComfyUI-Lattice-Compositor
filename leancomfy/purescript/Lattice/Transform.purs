@@ -46,11 +46,12 @@ mkVec2 x y = do
 vec2Zero :: Vec2
 vec2Zero = case mkVec2 0.0 0.0 of
   Just v  -> v
-  Nothing -> { x: defaultFinite, y: defaultFinite }
+  Nothing -> { x: safeFinite 0.0, y: safeFinite 0.0 }
   where
-    defaultFinite = case mkFiniteFloat 0.0 of
+    safeFinite :: Number -> FiniteFloat
+    safeFinite n = case mkFiniteFloat n of
       Just f -> f
-      Nothing -> defaultFinite
+      Nothing -> safeFinite 0.0
 
 type Vec3 =
   { x :: FiniteFloat
@@ -68,11 +69,12 @@ mkVec3 x y z = do
 vec3Zero :: Vec3
 vec3Zero = case mkVec3 0.0 0.0 0.0 of
   Just v  -> v
-  Nothing -> { x: defaultFinite, y: defaultFinite, z: defaultFinite }
+  Nothing -> { x: safeFinite 0.0, y: safeFinite 0.0, z: safeFinite 0.0 }
   where
-    defaultFinite = case mkFiniteFloat 0.0 of
+    safeFinite :: Number -> FiniteFloat
+    safeFinite n = case mkFiniteFloat n of
       Just f -> f
-      Nothing -> defaultFinite
+      Nothing -> safeFinite 0.0
 
 --------------------------------------------------------------------------------
 -- Separate Dimensions

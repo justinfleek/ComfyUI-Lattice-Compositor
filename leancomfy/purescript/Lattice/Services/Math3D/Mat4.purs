@@ -266,37 +266,37 @@ determinant (Mat4 m) =
 
 -- | Invert matrix
 invert :: Mat4 -> InvertResult
-invert mat@(Mat4 m)
-  | det == 0.0 = SingularMatrix
-  | otherwise = InvertSuccess $ Mat4
-      { m00: c00 * invDet, m10: c01 * invDet, m20: c02 * invDet, m30: c03 * invDet
-      , m01: c10 * invDet, m11: c11 * invDet, m21: c12 * invDet, m31: c13 * invDet
-      , m02: c20 * invDet, m12: c21 * invDet, m22: c22 * invDet, m32: c23 * invDet
-      , m03: c30 * invDet, m13: c31 * invDet, m23: c32 * invDet, m33: c33 * invDet
-      }
-  where
-    det = determinant mat
-    invDet = 1.0 / det
+invert mat@(Mat4 m) =
+  let det = determinant mat
+  in if det == 0.0 then SingularMatrix
+     else
+       let invDet = 1.0 / det
 
-    c00 = m.m11*(m.m22*m.m33 - m.m23*m.m32) - m.m12*(m.m21*m.m33 - m.m23*m.m31) + m.m13*(m.m21*m.m32 - m.m22*m.m31)
-    c01 = -(m.m10*(m.m22*m.m33 - m.m23*m.m32) - m.m12*(m.m20*m.m33 - m.m23*m.m30) + m.m13*(m.m20*m.m32 - m.m22*m.m30))
-    c02 = m.m10*(m.m21*m.m33 - m.m23*m.m31) - m.m11*(m.m20*m.m33 - m.m23*m.m30) + m.m13*(m.m20*m.m31 - m.m21*m.m30)
-    c03 = -(m.m10*(m.m21*m.m32 - m.m22*m.m31) - m.m11*(m.m20*m.m32 - m.m22*m.m30) + m.m12*(m.m20*m.m31 - m.m21*m.m30))
+           c00 = m.m11*(m.m22*m.m33 - m.m23*m.m32) - m.m12*(m.m21*m.m33 - m.m23*m.m31) + m.m13*(m.m21*m.m32 - m.m22*m.m31)
+           c01 = -(m.m10*(m.m22*m.m33 - m.m23*m.m32) - m.m12*(m.m20*m.m33 - m.m23*m.m30) + m.m13*(m.m20*m.m32 - m.m22*m.m30))
+           c02 = m.m10*(m.m21*m.m33 - m.m23*m.m31) - m.m11*(m.m20*m.m33 - m.m23*m.m30) + m.m13*(m.m20*m.m31 - m.m21*m.m30)
+           c03 = -(m.m10*(m.m21*m.m32 - m.m22*m.m31) - m.m11*(m.m20*m.m32 - m.m22*m.m30) + m.m12*(m.m20*m.m31 - m.m21*m.m30))
 
-    c10 = -(m.m01*(m.m22*m.m33 - m.m23*m.m32) - m.m02*(m.m21*m.m33 - m.m23*m.m31) + m.m03*(m.m21*m.m32 - m.m22*m.m31))
-    c11 = m.m00*(m.m22*m.m33 - m.m23*m.m32) - m.m02*(m.m20*m.m33 - m.m23*m.m30) + m.m03*(m.m20*m.m32 - m.m22*m.m30)
-    c12 = -(m.m00*(m.m21*m.m33 - m.m23*m.m31) - m.m01*(m.m20*m.m33 - m.m23*m.m30) + m.m03*(m.m20*m.m31 - m.m21*m.m30))
-    c13 = m.m00*(m.m21*m.m32 - m.m22*m.m31) - m.m01*(m.m20*m.m32 - m.m22*m.m30) + m.m02*(m.m20*m.m31 - m.m21*m.m30)
+           c10 = -(m.m01*(m.m22*m.m33 - m.m23*m.m32) - m.m02*(m.m21*m.m33 - m.m23*m.m31) + m.m03*(m.m21*m.m32 - m.m22*m.m31))
+           c11 = m.m00*(m.m22*m.m33 - m.m23*m.m32) - m.m02*(m.m20*m.m33 - m.m23*m.m30) + m.m03*(m.m20*m.m32 - m.m22*m.m30)
+           c12 = -(m.m00*(m.m21*m.m33 - m.m23*m.m31) - m.m01*(m.m20*m.m33 - m.m23*m.m30) + m.m03*(m.m20*m.m31 - m.m21*m.m30))
+           c13 = m.m00*(m.m21*m.m32 - m.m22*m.m31) - m.m01*(m.m20*m.m32 - m.m22*m.m30) + m.m02*(m.m20*m.m31 - m.m21*m.m30)
 
-    c20 = m.m01*(m.m12*m.m33 - m.m13*m.m32) - m.m02*(m.m11*m.m33 - m.m13*m.m31) + m.m03*(m.m11*m.m32 - m.m12*m.m31)
-    c21 = -(m.m00*(m.m12*m.m33 - m.m13*m.m32) - m.m02*(m.m10*m.m33 - m.m13*m.m30) + m.m03*(m.m10*m.m32 - m.m12*m.m30))
-    c22 = m.m00*(m.m11*m.m33 - m.m13*m.m31) - m.m01*(m.m10*m.m33 - m.m13*m.m30) + m.m03*(m.m10*m.m31 - m.m11*m.m30)
-    c23 = -(m.m00*(m.m11*m.m32 - m.m12*m.m31) - m.m01*(m.m10*m.m32 - m.m12*m.m30) + m.m02*(m.m10*m.m31 - m.m11*m.m30))
+           c20 = m.m01*(m.m12*m.m33 - m.m13*m.m32) - m.m02*(m.m11*m.m33 - m.m13*m.m31) + m.m03*(m.m11*m.m32 - m.m12*m.m31)
+           c21 = -(m.m00*(m.m12*m.m33 - m.m13*m.m32) - m.m02*(m.m10*m.m33 - m.m13*m.m30) + m.m03*(m.m10*m.m32 - m.m12*m.m30))
+           c22 = m.m00*(m.m11*m.m33 - m.m13*m.m31) - m.m01*(m.m10*m.m33 - m.m13*m.m30) + m.m03*(m.m10*m.m31 - m.m11*m.m30)
+           c23 = -(m.m00*(m.m11*m.m32 - m.m12*m.m31) - m.m01*(m.m10*m.m32 - m.m12*m.m30) + m.m02*(m.m10*m.m31 - m.m11*m.m30))
 
-    c30 = -(m.m01*(m.m12*m.m23 - m.m13*m.m22) - m.m02*(m.m11*m.m23 - m.m13*m.m21) + m.m03*(m.m11*m.m22 - m.m12*m.m21))
-    c31 = m.m00*(m.m12*m.m23 - m.m13*m.m22) - m.m02*(m.m10*m.m23 - m.m13*m.m20) + m.m03*(m.m10*m.m22 - m.m12*m.m20)
-    c32 = -(m.m00*(m.m11*m.m23 - m.m13*m.m21) - m.m01*(m.m10*m.m23 - m.m13*m.m20) + m.m03*(m.m10*m.m21 - m.m11*m.m20))
-    c33 = m.m00*(m.m11*m.m22 - m.m12*m.m21) - m.m01*(m.m10*m.m22 - m.m12*m.m20) + m.m02*(m.m10*m.m21 - m.m11*m.m20)
+           c30 = -(m.m01*(m.m12*m.m23 - m.m13*m.m22) - m.m02*(m.m11*m.m23 - m.m13*m.m21) + m.m03*(m.m11*m.m22 - m.m12*m.m21))
+           c31 = m.m00*(m.m12*m.m23 - m.m13*m.m22) - m.m02*(m.m10*m.m23 - m.m13*m.m20) + m.m03*(m.m10*m.m22 - m.m12*m.m20)
+           c32 = -(m.m00*(m.m11*m.m23 - m.m13*m.m21) - m.m01*(m.m10*m.m23 - m.m13*m.m20) + m.m03*(m.m10*m.m21 - m.m11*m.m20))
+           c33 = m.m00*(m.m11*m.m22 - m.m12*m.m21) - m.m01*(m.m10*m.m22 - m.m12*m.m20) + m.m02*(m.m10*m.m21 - m.m11*m.m20)
+       in InvertSuccess $ Mat4
+            { m00: c00 * invDet, m10: c01 * invDet, m20: c02 * invDet, m30: c03 * invDet
+            , m01: c10 * invDet, m11: c11 * invDet, m21: c12 * invDet, m31: c13 * invDet
+            , m02: c20 * invDet, m12: c21 * invDet, m22: c22 * invDet, m32: c23 * invDet
+            , m03: c30 * invDet, m13: c31 * invDet, m23: c32 * invDet, m33: c33 * invDet
+            }
 
 -- | Transpose matrix
 transposeMat :: Mat4 -> Mat4

@@ -18,7 +18,7 @@ import Effect (Effect)
 import Effect.Aff (Aff)
 import Effect.Class (liftEffect)
 import Effect.Ref as Ref
-import Data.Array (filter, sortBy)
+import Data.Array (filter, sortBy, fromFoldable) as Array
 import Data.Map as Map
 import Data.Maybe (Maybe(..))
 import Data.Ord (comparing)
@@ -146,8 +146,8 @@ getJob mgr jobId = do
 getAllJobs :: RenderQueueManager -> Effect (Array RenderJob)
 getAllJobs mgr = do
   state <- Ref.read mgr.state
-  let jobs = Map.values state.jobs
-  pure $ sortBy (comparing _.priority) jobs
+  let jobs = Array.fromFoldable (Map.values state.jobs)
+  pure $ Array.sortBy (comparing _.priority) jobs
 
 -- | Update job priority
 -- |

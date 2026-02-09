@@ -26,6 +26,7 @@ module Lattice.Camera
   -- Constants
   , cameraPresets
   -- Factories
+  , createDefaultCamera
   , defaultDepthOfField
   , defaultIris
   , defaultHighlight
@@ -35,7 +36,7 @@ module Lattice.Camera
   ) where
 
 import Prelude
-import Data.Maybe (Maybe)
+import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Generic.Rep (class Generic)
 import Data.Show.Generic (genericShow)
 import Lattice.Primitives
@@ -282,9 +283,11 @@ cameraPresets =
       , zoom: unsafePositiveFloat z
       }
     -- These are safe because we only use them with known-valid constants
+    unsafeNonEmptyString :: String -> NonEmptyString
     unsafeNonEmptyString s = case mkNonEmptyString s of
       Just nes -> nes
       Nothing -> unsafeNonEmptyString "error"  -- Never reached for non-empty strings
+    unsafePositiveFloat :: Number -> PositiveFloat
     unsafePositiveFloat n = case mkPositiveFloat n of
       Just pf -> pf
       Nothing -> unsafePositiveFloat 1.0  -- Never reached for positive numbers
@@ -304,8 +307,12 @@ defaultDepthOfField =
   , lockToZoom: false
   }
   where
-    pf n = case mkPositiveFloat n of Just x -> x; Nothing -> pf 1.0
-    uf n = case mkUnitFloat n of Just x -> x; Nothing -> uf 0.0
+    pf n = case mkPositiveFloat n of
+      Just v -> v
+      Nothing -> PositiveFloat 1.0
+    uf n = case mkUnitFloat n of
+      Just v -> v
+      Nothing -> UnitFloat 0.0
 
 -- | Default iris properties
 defaultIris :: IrisProperties
@@ -317,8 +324,12 @@ defaultIris =
   , diffractionFringe: uf 0.0
   }
   where
-    ff n = case mkFiniteFloat n of Just x -> x; Nothing -> ff 0.0
-    uf n = case mkUnitFloat n of Just x -> x; Nothing -> uf 0.0
+    ff n = case mkFiniteFloat n of
+      Just v -> v
+      Nothing -> FiniteFloat 0.0
+    uf n = case mkUnitFloat n of
+      Just v -> v
+      Nothing -> UnitFloat 0.0
 
 -- | Default highlight properties
 defaultHighlight :: HighlightProperties
@@ -328,7 +339,9 @@ defaultHighlight =
   , saturation: uf 1.0
   }
   where
-    uf n = case mkUnitFloat n of Just x -> x; Nothing -> uf 0.0
+    uf n = case mkUnitFloat n of
+      Just v -> v
+      Nothing -> UnitFloat 0.0
 
 -- | Default custom view state
 defaultCustomViewState :: CustomViewState
@@ -341,8 +354,12 @@ defaultCustomViewState =
   , orthoOffset: vec2 0.0 0.0
   }
   where
-    ff n = case mkFiniteFloat n of Just x -> x; Nothing -> ff 0.0
-    pf n = case mkPositiveFloat n of Just x -> x; Nothing -> pf 1.0
+    ff n = case mkFiniteFloat n of
+      Just v -> v
+      Nothing -> FiniteFloat 0.0
+    pf n = case mkPositiveFloat n of
+      Just v -> v
+      Nothing -> PositiveFloat 1.0
     vec2 x y = { x: ff x, y: ff y }
     vec3 x y z = { x: ff x, y: ff y, z: ff z }
 
@@ -359,7 +376,9 @@ defaultViewportState =
   , activeViewIndex: 0
   }
   where
-    ff n = case mkFiniteFloat n of Just x -> x; Nothing -> ff 0.0
+    ff n = case mkFiniteFloat n of
+      Just v -> v
+      Nothing -> FiniteFloat 0.0
 
 -- | Default view options
 defaultViewOptions :: ViewOptions
@@ -376,3 +395,40 @@ defaultViewOptions =
   , showCompositionBounds: true
   , showFocalPlane: false
   }
+
+-- | Create a default camera for a composition with given dimensions
+-- | Matches TS createDefaultCamera(compWidth, compHeight)
+createDefaultCamera :: NonEmptyString -> Number -> Number -> Camera3D
+createDefaultCamera cameraId compWidth compHeight =
+  { id: cameraId
+  , name: nes "Camera 1"
+  , cameraType: CTTwoNode
+  , position: vec3 (compWidth / 2.0) (compHeight / 2.0) (-1500.0)
+  , pointOfInterest: vec3 (compWidth / 2.0) (compHeight / 2.0) 0.0
+  , orientation: vec3 0.0 0.0 0.0
+  , xRotation: ff 0.0
+  , yRotation: ff 0.0
+  , zRotation: ff 0.0
+  , zoom: pf 1778.0
+  , focalLength: pf 50.0
+  , angleOfView: pf 39.6
+  , filmSize: pf 36.0
+  , measureFilmSize: MFSHorizontal
+  , depthOfField: defaultDepthOfField
+  , iris: defaultIris
+  , highlight: defaultHighlight
+  , autoOrient: AOMOff
+  , nearClip: pf 1.0
+  , farClip: pf 10000.0
+  }
+  where
+    nes s = case mkNonEmptyString s of
+      Just v -> v
+      Nothing -> NonEmptyString "error"
+    ff n = case mkFiniteFloat n of
+      Just v -> v
+      Nothing -> FiniteFloat 0.0
+    pf n = case mkPositiveFloat n of
+      Just v -> v
+      Nothing -> PositiveFloat 1.0
+    vec3 x y z = { x: ff x, y: ff y, z: ff z }

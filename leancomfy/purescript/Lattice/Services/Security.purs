@@ -12,13 +12,11 @@
 module Lattice.Services.Security
   ( module UrlValidator
   , module JsonSanitizer
-  , module RateLimits
   , module TemplateVerifier
   , module AuditLog
   ) where
 
 import Lattice.Services.Security.UrlValidator as UrlValidator
 import Lattice.Services.Security.JsonSanitizer as JsonSanitizer
-import Lattice.Services.Security.RateLimits as RateLimits
 import Lattice.Services.Security.TemplateVerifier as TemplateVerifier
 import Lattice.Services.Security.AuditLog as AuditLog

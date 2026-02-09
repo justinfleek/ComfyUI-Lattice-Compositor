@@ -39,7 +39,7 @@ module Lattice.Services.Physics.VectorMath
 
 import Prelude
 
-import Math (atan2, acos, cos, max, min, sin, sqrt)
+import Math (atan2, acos, cos, sin, sqrt)
 
 --------------------------------------------------------------------------------
 -- Types
@@ -85,7 +85,7 @@ scale v s = { x: v.x * s, y: v.y * s }
 
 -- | Vector negation
 negate :: Vec2 -> Vec2
-negate v = { x: -v.x, y: -v.y }
+negate v = { x: 0.0 - v.x, y: 0.0 - v.y }
 
 --------------------------------------------------------------------------------
 -- Products
@@ -144,7 +144,7 @@ normalize v =
 -- |
 -- | For (x, y), returns (-y, x).
 perpendicular :: Vec2 -> Vec2
-perpendicular v = { x: -v.y, y: v.x }
+perpendicular v = { x: 0.0 - v.y, y: v.x }
 
 -- | Rotate vector by angle (in radians).
 -- |
@@ -210,5 +210,5 @@ angleBetween a b =
   in if lenA < 0.0001 || lenB < 0.0001
      then 0.0
      else let cosAng = dot a b / (lenA * lenB)
-              clamped = max (-1.0) (min 1.0 cosAng)
+              clamped = max (0.0 - 1.0) (min 1.0 cosAng)
           in acos clamped

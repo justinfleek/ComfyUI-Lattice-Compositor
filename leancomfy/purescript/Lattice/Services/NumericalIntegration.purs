@@ -25,8 +25,9 @@ module Lattice.Services.NumericalIntegration
   ) where
 
 import Prelude
-import Data.Array (length, mapWithIndex, range, foldl, snoc)
+import Data.Array (length, mapWithIndex, range, foldl, snoc, index)
 import Data.Int (floor, ceil, toNumber)
+import Data.Maybe (Maybe(..))
 import Math (max) as Math
 
 --------------------------------------------------------------------------------
@@ -52,7 +53,7 @@ trapezoid fa fb span = ((fa + fb) / 2.0) * span
 
 -- | Array get with default
 arrayGet :: Array Number -> Int -> Number
-arrayGet arr i = case arr !! i of
+arrayGet arr i = case index arr i of
   Just x -> x
   Nothing -> 0.0
 
@@ -204,7 +205,7 @@ cumulativeSourceFrames speedSamples h =
       scanl' :: forall a b. (b -> a -> b) -> b -> Array a -> Array b
       scanl' f init arr = foldl (\acc x -> snoc acc (f (lastOrDefault init acc) x)) [init] arr
       lastOrDefault :: forall a. a -> Array a -> a
-      lastOrDefault def arr = case arr !! (length arr - 1) of
+      lastOrDefault def arr = case index arr (length arr - 1) of
         Just x -> x
         Nothing -> def
   in scanl' (\acc r -> acc + r * h) 0.0 rates

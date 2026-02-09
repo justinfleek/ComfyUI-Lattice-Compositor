@@ -35,10 +35,11 @@ module Lattice.LayerStyles
   , StyleBlendingOptions
   , LayerStyles
   , GlobalLightSettings
+  , createDefaultLayerStyles
   ) where
 
 import Prelude
-import Data.Maybe (Maybe)
+import Data.Maybe (Maybe(..))
 import Data.Generic.Rep (class Generic)
 import Data.Show.Generic (genericShow)
 import Lattice.Primitives
@@ -396,4 +397,25 @@ type LayerStyles =
 type GlobalLightSettings =
   { anglePropertyId    :: NonEmptyString
   , altitudePropertyId :: NonEmptyString
+  }
+
+--------------------------------------------------------------------------------
+-- Factory Functions
+--------------------------------------------------------------------------------
+
+-- | Create default layer styles (disabled, no effects)
+createDefaultLayerStyles :: LayerStyles
+createDefaultLayerStyles =
+  { enabled: false
+  , blendingOptions: Nothing
+  , dropShadow: Nothing
+  , innerShadow: Nothing
+  , outerGlow: Nothing
+  , innerGlow: Nothing
+  , bevelEmboss: Nothing
+  , satin: Nothing
+  , colorOverlay: Nothing
+  , gradientOverlay: Nothing
+  , patternOverlay: Nothing
+  , stroke: Nothing
   }

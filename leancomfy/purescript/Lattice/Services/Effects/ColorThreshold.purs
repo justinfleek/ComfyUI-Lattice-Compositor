@@ -30,7 +30,6 @@ import Prelude
 import Data.Array ((..), mapWithIndex)
 import Data.Int (round, toNumber)
 import Data.Tuple (Tuple(..))
-import Math (max, min)
 
 --------------------------------------------------------------------------------
 -- Types

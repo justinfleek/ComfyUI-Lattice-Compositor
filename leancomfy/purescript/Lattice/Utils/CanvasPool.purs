@@ -51,7 +51,6 @@ import Data.Array as Array
 import Data.Maybe (Maybe(..))
 import Data.DateTime.Instant (unInstant)
 import Data.Time.Duration (Milliseconds(..))
-import Data.Newtype (unwrap)
 
 --------------------------------------------------------------------------------
 -- FFI Types
@@ -158,7 +157,7 @@ mkCanvasPool = do
 nowMs :: Effect Number
 nowMs = do
   instant <- now
-  let Milliseconds ms = unwrap (unInstant instant)
+  let (Milliseconds ms) = unInstant instant
   pure ms
 
 -- | Acquire a canvas of specified dimensions

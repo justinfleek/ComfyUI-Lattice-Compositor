@@ -41,6 +41,7 @@ import Effect.Exception (Error, error)
 import Data.Argonaut.Core (Json, stringify, toObject, toString)
 import Data.Argonaut.Parser (jsonParser)
 import Data.Array (elem, sort)
+import Data.Foldable as Data.Foldable
 import Data.Either (Either(..))
 import Data.Maybe (Maybe(..))
 import Data.String (Pattern(..), contains)
@@ -367,9 +368,4 @@ joinWith :: String -> Array String -> String
 joinWith sep arr = case arr of
   [] -> ""
   [x] -> x
-  _ -> foldl (\acc x -> if acc == "" then x else acc <> sep <> x) "" arr
-  where
-    foldl f init xs = go init xs
-      where
-        go acc [] = acc
-        go acc (y : ys) = go (f acc y) ys
+  _ -> Data.Foldable.foldl (\acc x -> if acc == "" then x else acc <> sep <> x) "" arr

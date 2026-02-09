@@ -26,7 +26,8 @@ import Lattice.Services.Export.WanMoveExport.Types
   , AttractorType(..)
   , TrackPoint
   )
-import Lattice.Services.Export.FlowGenerators.SeededRandom (SeededRandom, mkSeededRandom, next, range as rngRange)
+import Lattice.Services.Export.FlowGenerators.SeededRandom (SeededRandomState, initialState, next, rangeWithState) as SRng
+import Lattice.Services.Export.FlowGenerators.SeededRandom (SeededRandomState, initialState, next)
 
 --------------------------------------------------------------------------------
 -- Generic Attractor
@@ -68,7 +69,7 @@ generateLorenzAttractor config =
     -- Generate tracks
     result = foldl (\acc i ->
       let
-        rng = mkSeededRandom (seed + i)
+        rng = initialState (seed + i)
         initial = initLorenzPoint rng
         settled = settleLorenz initial dt sigma rho beta 500
         track = generateLorenzTrack settled dt sigma rho beta scale center width height numFrames
@@ -84,12 +85,12 @@ generateLorenzAttractor config =
     }
 
 -- | Initialize Lorenz starting point
-initLorenzPoint :: SeededRandom -> { x :: Number, y :: Number, z :: Number }
+initLorenzPoint :: SeededRandomState -> { x :: Number, y :: Number, z :: Number }
 initLorenzPoint rng =
   let
-    rx = rngRange rng (-0.1) 0.1
-    ry = rngRange rng (-0.1) 0.1
-    rz = rngRange rng 20.0 30.0
+    rx = SRng.rangeWithState (-0.1) 0.1 rng
+    ry = SRng.rangeWithState (-0.1) 0.1 rx.state
+    rz = SRng.rangeWithState 20.0 30.0 ry.state
   in
     { x: rx.value, y: ry.value, z: rz.value }
 
@@ -132,8 +133,7 @@ generateLorenzTrack initial dt sigma rho beta scale center w h numFrames =
   let
     width = toNumber w
     height = toNumber h
-  in
-    foldl (\acc f ->
+    result = foldl (\acc f ->
       let
         -- Multiple integration steps per frame
         newState = foldl (\p _ ->
@@ -160,6 +160,7 @@ generateLorenzTrack initial dt sigma rho beta scale center w h numFrames =
         , vis: acc.vis <> [true]
         }
     ) { state: initial, points: [], vis: [] } (range 0 (numFrames - 1))
+  in { points: result.points, vis: result.vis }
 
 --------------------------------------------------------------------------------
 -- Rossler Attractor
@@ -186,7 +187,7 @@ generateRosslerAttractor config =
 
     result = foldl (\acc i ->
       let
-        rng = mkSeededRandom (seed + i)
+        rng = initialState (seed + i)
         initial = initRosslerPoint rng
         settled = settleRossler initial dt a b c 300
         track = generateRosslerTrack settled dt a b c scale center width height numFrames
@@ -202,12 +203,12 @@ generateRosslerAttractor config =
     }
 
 -- | Initialize Rossler starting point
-initRosslerPoint :: SeededRandom -> { x :: Number, y :: Number, z :: Number }
+initRosslerPoint :: SeededRandomState -> { x :: Number, y :: Number, z :: Number }
 initRosslerPoint rng =
   let
-    rx = rngRange rng (-1.0) 1.0
-    ry = rngRange rng (-1.0) 1.0
-    rz = rngRange rng 0.0 1.0
+    rx = SRng.rangeWithState (-1.0) 1.0 rng
+    ry = SRng.rangeWithState (-1.0) 1.0 rx.state
+    rz = SRng.rangeWithState 0.0 1.0 ry.state
   in
     { x: rx.value, y: ry.value, z: rz.value }
 
@@ -245,31 +246,32 @@ generateRosslerTrack initial dt a b c scale center w h numFrames =
     width = toNumber w
     height = toNumber h
   in
-    foldl (\acc _ ->
-      let
-        newState = foldl (\p _ ->
+    let result = foldl (\acc _ ->
           let
-            dx = negate p.y - p.z
-            dy = p.x + a * p.y
-            dz = b + p.z * (p.x - c)
+            newState = foldl (\p _ ->
+              let
+                dx = negate p.y - p.z
+                dy = p.x + a * p.y
+                dz = b + p.z * (p.x - c)
+              in
+                { x: p.x + dx * dt
+                , y: p.y + dy * dt
+                , z: p.z + dz * dt
+                }
+            ) acc.state (range 0 4)
+
+            px = center.x + newState.x * scale
+            py = center.y + newState.y * scale
+
+            clampedX = max 0.0 (min width px)
+            clampedY = max 0.0 (min height py)
           in
-            { x: p.x + dx * dt
-            , y: p.y + dy * dt
-            , z: p.z + dz * dt
+            { state: newState
+            , points: acc.points <> [{ x: clampedX, y: clampedY }]
+            , vis: acc.vis <> [true]
             }
-        ) acc.state (range 0 4)
-
-        px = center.x + newState.x * scale
-        py = center.y + newState.y * scale
-
-        clampedX = max 0.0 (min width px)
-        clampedY = max 0.0 (min height py)
-      in
-        { state: newState
-        , points: acc.points <> [{ x: clampedX, y: clampedY }]
-        , vis: acc.vis <> [true]
-        }
-    ) { state: initial, points: [], vis: [] } (range 0 (numFrames - 1))
+        ) { state: initial, points: [], vis: [] } (range 0 (numFrames - 1))
+    in { points: result.points, vis: result.vis }
 
 --------------------------------------------------------------------------------
 -- Aizawa Attractor
@@ -293,7 +295,7 @@ generateAizawaAttractor config =
 
     result = foldl (\acc i ->
       let
-        rng = mkSeededRandom (seed + i)
+        rng = initialState (seed + i)
         initial = initAizawaPoint rng
         settled = settleAizawa initial dt params 500
         track = generateAizawaTrack settled dt params scale center width height numFrames
@@ -309,12 +311,12 @@ generateAizawaAttractor config =
     }
 
 -- | Initialize Aizawa starting point
-initAizawaPoint :: SeededRandom -> { x :: Number, y :: Number, z :: Number }
+initAizawaPoint :: SeededRandomState -> { x :: Number, y :: Number, z :: Number }
 initAizawaPoint rng =
   let
-    rx = rngRange rng 0.1 0.2
-    ry = rngRange rng 0.0 0.1
-    rz = rngRange rng 0.0 0.1
+    rx = SRng.rangeWithState 0.1 0.2 rng
+    ry = SRng.rangeWithState 0.0 0.1 rx.state
+    rz = SRng.rangeWithState 0.0 0.1 ry.state
   in
     { x: rx.value, y: ry.value, z: rz.value }
 
@@ -365,8 +367,7 @@ generateAizawaTrack initial dt params scale center w h numFrames =
   let
     width = toNumber w
     height = toNumber h
-  in
-    foldl (\acc _ ->
+    result = foldl (\acc _ ->
       let
         newState = foldl (\p _ -> aizawaStep p dt params) acc.state (range 0 7)
 
@@ -381,4 +382,5 @@ generateAizawaTrack initial dt params scale center w h numFrames =
         , vis: acc.vis <> [true]
         }
     ) { state: initial, points: [], vis: [] } (range 0 (numFrames - 1))
+  in { points: result.points, vis: result.vis }
 

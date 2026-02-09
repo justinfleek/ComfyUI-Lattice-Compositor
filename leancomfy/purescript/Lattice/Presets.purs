@@ -108,7 +108,12 @@ data EffectParamValue
 
 derive instance Eq EffectParamValue
 derive instance Generic EffectParamValue _
-instance Show EffectParamValue where show = genericShow
+instance Show EffectParamValue where
+  show (EPVNumber n) = "(EPVNumber " <> show n <> ")"
+  show (EPVString s) = "(EPVString " <> show s <> ")"
+  show (EPVBool b) = "(EPVBool " <> show b <> ")"
+  show (EPVColor c) = "(EPVColor " <> show c <> ")"
+  show (EPVArray arr) = "(EPVArray " <> show arr <> ")"
 
 type PresetEffect =
   { effectType :: NonEmptyString

@@ -29,6 +29,7 @@ import Data.Int (hexadecimal, toStringAs)
 import Data.Int.Bits (and, or)
 import Data.Maybe (fromMaybe)
 import Data.String as String
+import Data.Char (toCharCode)
 import Data.String.CodeUnits as CodeUnits
 
 import Lattice.Utils.Uuid5.SHA1 (sha1, ByteArray)
@@ -62,9 +63,9 @@ lATTICE_NAMESPACE = "a1b2c3d4-e5f6-4789-a012-3456789abcde"
 -- | Parse a hex character
 hexCharToInt :: Char -> Int
 hexCharToInt c
-  | c >= '0' && c <= '9' = CodeUnits.toCharCode c - CodeUnits.toCharCode '0'
-  | c >= 'a' && c <= 'f' = CodeUnits.toCharCode c - CodeUnits.toCharCode 'a' + 10
-  | c >= 'A' && c <= 'F' = CodeUnits.toCharCode c - CodeUnits.toCharCode 'A' + 10
+  | c >= '0' && c <= '9' = toCharCode c - toCharCode '0'
+  | c >= 'a' && c <= 'f' = toCharCode c - toCharCode 'a' + 10
+  | c >= 'A' && c <= 'F' = toCharCode c - toCharCode 'A' + 10
   | otherwise = 0
 
 -- | Parse UUID string to bytes
@@ -107,7 +108,7 @@ bytesToUuid bytes =
 
 -- | Convert string to UTF-8 bytes (simplified ASCII)
 stringToBytes :: String -> ByteArray
-stringToBytes s = map CodeUnits.toCharCode (CodeUnits.toCharArray s)
+stringToBytes s = map toCharCode (CodeUnits.toCharArray s)
 
 -- | Get byte from array with default 0
 getByte :: ByteArray -> Int -> Int

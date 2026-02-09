@@ -11,9 +11,7 @@
 module Lattice.Services.Video
   ( module Types
   , module FrameInterpolation
-  , module Transitions
   ) where
 
 import Lattice.Services.Video.Types as Types
 import Lattice.Services.Video.FrameInterpolation as FrameInterpolation
-import Lattice.Services.Video.Transitions as Transitions

@@ -52,6 +52,7 @@ import Lattice.Services.Export.FlowGenerators.SeededRandom
   , gaussianWithState
   )
 import Lattice.Services.Export.FlowGenerators.Noise (simplexNoise2D)
+import Lattice.Services.Export.FlowGenerators.Generators2 as G2
 
 --------------------------------------------------------------------------------
 -- Dispatch
@@ -425,8 +426,6 @@ generateVortexFlow cfg =
 --------------------------------------------------------------------------------
 -- Remaining generators (DataRiver, Morph, Swarm) from Generators2
 --------------------------------------------------------------------------------
-
-import Lattice.Services.Export.FlowGenerators.Generators2 as G2
 
 generateDataRiverFlow :: GenerativeFlowConfig -> WanMoveTrajectory
 generateDataRiverFlow = G2.generateDataRiverFlow

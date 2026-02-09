@@ -21,6 +21,7 @@ import Effect.Ref as Ref
 import Data.Map as Map
 import Data.Maybe (Maybe(..))
 import Data.Traversable (for_)
+import Data.Tuple (Tuple(..))
 
 import Lattice.Services.RenderQueue.Types
   ( RenderJob
@@ -103,7 +104,7 @@ initializeManager mgr = do
 
   -- Load existing jobs
   savedJobs <- DB.getAllJobs db
-  let jobMap = Map.fromFoldable (map (\j -> { key: j.id, value: j }) savedJobs)
+  let jobMap = Map.fromFoldable (map (\j -> Tuple j.id j) savedJobs)
 
   -- Reset interrupted jobs to pending
   for_ savedJobs $ \job ->

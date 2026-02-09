@@ -16,6 +16,8 @@ module Lattice.Services.Export.VACE.Exporter
   , getStateAtFrame
   , getPathLength
   , getPathSpeed
+    -- * ImageData
+  , ImageDataHandle
     -- * Exporter Operations
   , createExporter
   , renderFrame
@@ -46,6 +48,8 @@ import Lattice.Services.Export.VACE.Types
   , VACEFrame
   , PathStats
   , PathFollowerEasing(..)
+  , PathFollowerShape(..)
+  , LoopMode(..)
   , SplineControlPoint
   )
 
@@ -160,7 +164,7 @@ splineLayerToPathFollower layerId controlPoints closed totalFrames opts =
   , alignToPath: true
   , rotationOffset: 0.0
   , loop: false
-  , loopMode: Lattice.Services.Export.VACE.Types.LoopRestart
+  , loopMode: LoopRestart
   , scaleStart: 1.0
   , scaleEnd: 1.0
   , opacityStart: 1.0
@@ -168,14 +172,14 @@ splineLayerToPathFollower layerId controlPoints closed totalFrames opts =
   }
 
 -- | Convert string to shape (internal helper)
-stringToShape :: String -> Lattice.Services.Export.VACE.Types.PathFollowerShape
+stringToShape :: String -> PathFollowerShape
 stringToShape = case _ of
-  "circle" -> Lattice.Services.Export.VACE.Types.ShapeCircle
-  "square" -> Lattice.Services.Export.VACE.Types.ShapeSquare
-  "triangle" -> Lattice.Services.Export.VACE.Types.ShapeTriangle
-  "diamond" -> Lattice.Services.Export.VACE.Types.ShapeDiamond
-  "arrow" -> Lattice.Services.Export.VACE.Types.ShapeArrow
-  _ -> Lattice.Services.Export.VACE.Types.ShapeCircle
+  "circle" -> ShapeCircle
+  "square" -> ShapeSquare
+  "triangle" -> ShapeTriangle
+  "diamond" -> ShapeDiamond
+  "arrow" -> ShapeArrow
+  _ -> ShapeCircle
 
 --------------------------------------------------------------------------------
 -- Easing Functions (Pure)

@@ -47,7 +47,12 @@ data JSONValue
 
 derive instance Eq JSONValue
 derive instance Generic JSONValue _
-instance Show JSONValue where show = genericShow
+instance Show JSONValue where
+  show (JBool b) = "(JBool " <> show b <> ")"
+  show (JNumber n) = "(JNumber " <> show n <> ")"
+  show (JString s) = "(JString " <> show s <> ")"
+  show (JArray arr) = "(JArray " <> show arr <> ")"
+  show (JObject kvs) = "(JObject " <> show (map (\kv -> kv.key <> ": " <> show kv.value) kvs) <> ")"
 
 -- | Type of data asset
 data DataAssetType

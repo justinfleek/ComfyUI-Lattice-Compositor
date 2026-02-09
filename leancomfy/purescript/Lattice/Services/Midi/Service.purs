@@ -43,6 +43,7 @@ module Lattice.Services.Midi.Service
 import Prelude
 import Effect (Effect)
 import Effect.Aff (Aff)
+import Effect.Class (liftEffect)
 import Effect.Ref (Ref)
 import Effect.Ref as Ref
 import Data.Array (filter, elem, length)
@@ -148,8 +149,9 @@ disposeMIDIService (MIDIService { handle }) =
 
 -- | Initialize MIDI access
 initialize :: MIDIService -> Aff Boolean
-initialize (MIDIService { handle }) =
-  initializeMIDIImpl
+initialize (MIDIService { handle }) = do
+  aff <- liftEffect initializeMIDIImpl
+  aff
 
 -- | Check if Web MIDI API is available
 isAvailable :: Effect Boolean

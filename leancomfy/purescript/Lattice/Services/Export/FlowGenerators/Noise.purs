@@ -45,8 +45,8 @@ simplexNoise2D x y seed =
     hash px py =
       let
         h0 = seed `zshr` 0  -- Ensure unsigned
-        h1 = imul (h0 `xor` (h0 `zshr` 16)) 0x85EBCA6B
-        h2 = imul (h1 `xor` (h1 `zshr` 13)) 0xC2B2AE35
+        h1 = imul (h0 `xor` (h0 `zshr` 16)) (-2048144789)  -- 0x85EBCA6B as signed 32-bit
+        h2 = imul (h1 `xor` (h1 `zshr` 13)) (-1028477387)  -- 0xC2B2AE35 as signed 32-bit
         h3 = h2 `xor` (h2 `zshr` 16)
         h4 = h3 + px * 374761393 + py * 668265263
         h5 = imul (h4 `xor` (h4 `zshr` 13)) 0x5BD1E995

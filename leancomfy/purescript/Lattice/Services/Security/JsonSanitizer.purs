@@ -36,8 +36,9 @@ import Data.Either (Either(..))
 import Data.Foldable (foldl)
 import Data.Int (toNumber)
 import Data.Maybe (Maybe(..))
-import Data.String (Pattern(..), contains, length) as Str
+import Data.String (Pattern(..), contains, length, toLower) as Str
 import Data.String.CodeUnits (toCharArray)
+import Data.String.CodeUnits as SCU
 import Data.String.Regex (Regex, regex, test)
 import Data.String.Regex.Flags (ignoreCase)
 import Data.Tuple (Tuple(..))
@@ -234,12 +235,7 @@ removeNullBytes :: String -> String
 removeNullBytes str =
   let chars = toCharArray str
       filtered = filter (\c -> c /= '\x00') chars
-  in foldl (\acc c -> acc <> String.singleton c) "" filtered
-  where
-    -- Inline String.singleton since it may not be imported
-    module String where
-      singleton :: Char -> String
-      singleton c = Data.String.CodeUnits.singleton c
+  in foldl (\acc c -> acc <> SCU.singleton c) "" filtered
 
 --------------------------------------------------------------------------------
 -- Array Sanitization
@@ -406,15 +402,15 @@ isFinite n = n == n && n /= infinity && n /= (-infinity)
 
 -- | Take first n characters
 take :: Int -> String -> String
-take n str = Data.String.CodeUnits.take n str
+take n str = SCU.take n str
 
 -- | Convert to lowercase
 toLower :: String -> String
-toLower = Data.String.toLower
+toLower = Str.toLower
 
--- | Map over array
+-- | Map over array (uses Prelude's Functor map)
 map :: forall a b. (a -> b) -> Array a -> Array b
-map = Data.Functor.map
+map f arr = f <$> arr
 
 -- | Tuple operator
 infixr 6 Tuple as /\

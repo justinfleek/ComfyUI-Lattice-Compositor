@@ -31,7 +31,7 @@ import Prelude
 import Data.Array (length, range, mapWithIndex, (!!), concat)
 import Data.Int (floor, toNumber)
 import Data.Maybe (fromMaybe)
-import Math (pi, cos, sin, min, max) as Math
+import Math (pi, cos, sin) as Math
 
 import Lattice.Services.ShapeOperations.Point2D as P2D
 
@@ -113,7 +113,7 @@ generateRectangle :: P2D.Point2D -> P2D.Point2D -> Number -> WindingDirection ->
 generateRectangle position size roundness direction =
   let hw = size.x / 2.0
       hh = size.y / 2.0
-      r = Math.min roundness (Math.min hw hh)
+      r = min roundness (min hw hh)
 
       tl = { x: position.x - hw, y: position.y - hh }
       tr = { x: position.x + hw, y: position.y - hh }
@@ -205,7 +205,7 @@ generateEllipse position size direction =
 -- | Generate a regular polygon (n-gon).
 generatePolygon :: P2D.Point2D -> Int -> Number -> Number -> Number -> WindingDirection -> BezierPath
 generatePolygon position points radius roundness rotation direction =
-  let numPoints = Math.max 3 points
+  let numPoints = max 3 points
       angleStep = Math.pi * 2.0 / toNumber numPoints
       startAngle = degToRad (rotation - 90.0)
 
@@ -247,7 +247,7 @@ generateStar :: P2D.Point2D -> Int -> Number -> Number -> Number -> Number
              -> Number -> WindingDirection -> BezierPath
 generateStar position points outerRadius innerRadius outerRoundness innerRoundness
              rotation direction =
-  let numPoints = Math.max 3 points
+  let numPoints = max 3 points
       angleStep = Math.pi / toNumber numPoints
       startAngle = degToRad (rotation - 90.0)
       totalVertices = numPoints * 2

@@ -4,6 +4,8 @@
 -- | This is CRITICAL for particle system determinism - same seed always
 -- | produces the same sequence of numbers.
 -- |
+-- | Core bitwise operations delegated to JS FFI for correctness.
+-- |
 -- | Source: ui/src/services/particles/SeededRandom.ts
 
 module Lattice.Services.Particles.SeededRandom
@@ -65,64 +67,25 @@ instance Show Point3D where show = genericShow
 -- Constants
 --------------------------------------------------------------------------------
 
--- | Mulberry32 magic constant
-mulberry32Magic :: Number
-mulberry32Magic = 1831565813.0  -- 0x6D2B79F5
-
 -- | Max 32-bit unsigned value
 maxUint32 :: Number
 maxUint32 = 4294967296.0
 
 --------------------------------------------------------------------------------
--- Bit Operations (simulated for Numbers representing UInt32)
+-- Foreign imports for correct bitwise operations
 --------------------------------------------------------------------------------
 
--- | Simulate unsigned right shift
-shr :: Number -> Int -> Number
-shr n bits =
-  let intN = Int.floor n
-      shifted = intN / (2 `pow` bits)
-  in Int.toNumber (Int.floor shifted)
-  where
-    pow :: Int -> Int -> Int
-    pow _ 0 = 1
-    pow b e = b * pow b (e - 1)
-
--- | Simulate XOR
-xor' :: Number -> Number -> Number
-xor' a b =
-  let intA = Int.floor a
-      intB = Int.floor b
-  in Int.toNumber (intA `xorInt` intB)
-  where
-    xorInt :: Int -> Int -> Int
-    xorInt = xorBitwise
-
--- | Foreign import for bitwise XOR
+-- | Foreign import for bitwise XOR (unused now but kept for API compat)
 foreign import xorBitwise :: Int -> Int -> Int
 
--- | Simulate bitwise OR
-bor :: Number -> Number -> Number
-bor a b =
-  let intA = Int.floor a
-      intB = Int.floor b
-  in Int.toNumber (intA `orInt` intB)
-  where
-    orInt :: Int -> Int -> Int
-    orInt = orBitwise
-
--- | Foreign import for bitwise OR
+-- | Foreign import for bitwise OR (unused now but kept for API compat)
 foreign import orBitwise :: Int -> Int -> Int
 
--- | Wrap to 32-bit unsigned range
-wrap32 :: Number -> Number
-wrap32 n =
-  let m = n `mod` maxUint32
-  in if m < 0.0 then m + maxUint32 else m
+-- | Core mulberry32 step - implemented in JS for correct bitwise behavior
+foreign import mulberry32NextImpl :: Number -> { value :: Number, newState :: Number }
 
--- | Simulate 32-bit integer multiply
-imul :: Number -> Number -> Number
-imul a b = wrap32 (Int.toNumber (Int.floor a) * Int.toNumber (Int.floor b))
+-- | Wrap to uint32 using JS >>> 0
+foreign import wrap32Impl :: Number -> Number
 
 --------------------------------------------------------------------------------
 -- Core Operations
@@ -130,7 +93,7 @@ imul a b = wrap32 (Int.toNumber (Int.floor a) * Int.toNumber (Int.floor b))
 
 -- | Create new RNG with seed
 create :: Number -> RngState
-create seed = RngState { state: wrap32 seed, initialSeed: wrap32 seed }
+create seed = RngState { state: wrap32Impl seed, initialSeed: wrap32Impl seed }
 
 -- | Reset to initial seed
 reset :: RngState -> RngState
@@ -146,7 +109,7 @@ getState (RngState rng) = rng.state
 
 -- | Restore state from checkpoint
 setState :: Number -> RngState -> RngState
-setState s (RngState rng) = RngState { state: wrap32 s, initialSeed: rng.initialSeed }
+setState s (RngState rng) = RngState { state: wrap32Impl s, initialSeed: rng.initialSeed }
 
 -- | Get initial seed
 getSeed :: RngState -> Number
@@ -160,13 +123,8 @@ getSeed (RngState rng) = rng.initialSeed
 -- | Returns (value, newState)
 next :: RngState -> Tuple Number RngState
 next (RngState rng) =
-  let newState = wrap32 (rng.state + mulberry32Magic)
-      t1 = xor' newState (shr newState 15)
-      t2 = imul t1 (bor t1 1.0)
-      t3 = xor' t2 (wrap32 (t2 + imul (xor' t2 (shr t2 7)) (bor t2 61.0)))
-      t4 = xor' t3 (shr t3 14)
-      value = t4 / maxUint32
-  in Tuple value (RngState { state: newState, initialSeed: rng.initialSeed })
+  let result = mulberry32NextImpl rng.state
+  in Tuple result.value (RngState { state: result.newState, initialSeed: rng.initialSeed })
 
 -- | Generate n random numbers in [0, 1)
 nextN :: Int -> RngState -> Tuple (List Number) RngState

@@ -25,6 +25,7 @@ module Lattice.Services.Interpolation
   ) where
 
 import Prelude
+import Data.Enum (fromEnum, toEnum)
 import Data.Array (length, (!!))
 import Data.Array as Array
 import Data.Generic.Rep (class Generic)
@@ -210,11 +211,11 @@ toHex2 :: Int -> String
 toHex2 n =
   let clamped = Math.max 0.0 (Math.min 255.0 (Int.toNumber n))
       i = Int.floor clamped
-      hi = i / 16
+      hi = i `div` 16
       lo = i `mod` 16
       hexDigit d = if d < 10
-                   then singleton (toEnum (fromEnum '0' + d))
-                   else singleton (toEnum (fromEnum 'a' + d - 10))
+                   then singleton (fromMaybe '0' (toEnum (fromEnum '0' + d)))
+                   else singleton (fromMaybe 'a' (toEnum (fromEnum 'a' + d - 10)))
   in hexDigit hi <> hexDigit lo
 
 -- | Convert color to hex string
@@ -251,14 +252,12 @@ easeOutBack :: EasingPreset
 easeOutBack = EasingPreset { outX: 0.33, outY: 0.33, inX: 0.34, inY: 1.56 }
 
 -- | Apply easing preset to a ratio (0-1)
+-- | Uses cubicBezierEasing (Newton-Raphson x-solve) with handle values directly.
+-- | The preset stores absolute control point positions, not offsets from endpoints.
 applyEasingPreset :: Number -> EasingPreset -> Number
 applyEasingPreset ratio (EasingPreset preset) =
   let t = Math.max 0.0 (Math.min 1.0 ratio)
-      x1 = preset.outX
-      y1 = preset.outY
-      x2 = 1.0 - preset.inX
-      y2 = 1.0 - preset.inY
-  in cubicBezierEasing t x1 y1 x2 y2
+  in cubicBezierEasing t preset.outX preset.outY preset.inX preset.inY
 
 --------------------------------------------------------------------------------
 -- Binary Search for Keyframes
@@ -274,7 +273,7 @@ findKeyframeIndex frames frame
     binarySearch low high
       | low > high = min low (length frames - 2)
       | otherwise =
-          let mid = (low + high) / 2
+          let mid = (low + high) `div` 2
               midFrame = fromMaybe 0.0 (frames !! mid)
               nextFrame = fromMaybe 0.0 (frames !! (mid + 1))
           in if frame >= midFrame && frame <= nextFrame

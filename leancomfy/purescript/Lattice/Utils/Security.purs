@@ -45,6 +45,7 @@ import Data.Either (Either(..))
 import Data.Int as Int
 import Data.Maybe (Maybe(..))
 import Data.String as String
+import Data.String.CodePoints (codePointFromChar)
 import Data.String.Pattern (Pattern(..))
 import Data.Tuple (Tuple(..))
 import Data.Generic.Rep (class Generic)
@@ -190,7 +191,7 @@ sanitizeFilename filename =
         (\c -> not (Array.elem c invalidFilenameChars))
         (String.split (Pattern "") s1)
       -- Remove leading dots
-      s3 = String.dropWhile (_ == '.') s2
+      s3 = String.dropWhile (_ == codePointFromChar '.') s2
       -- Trim whitespace
       s4 = String.trim s3
   in if String.null s4 then "unnamed" else s4
@@ -246,11 +247,17 @@ data JSONValue
   | JSONArray (Array JSONValue)
   | JSONObject (Array (Tuple String JSONValue))
 
-derive instance Generic JSONValue _
 derive instance Eq JSONValue
 
 instance Show JSONValue where
-  show = genericShow
+  show JSONNull = "JSONNull"
+  show (JSONBool b) = "(JSONBool " <> show b <> ")"
+  show (JSONNumber n) = "(JSONNumber " <> show n <> ")"
+  show (JSONString s) = "(JSONString " <> show s <> ")"
+  show (JSONArray items) = "(JSONArray [" <> String.joinWith ", " (map show items) <> "])"
+  show (JSONObject fields) = "(JSONObject [" <> String.joinWith ", " (map showField fields) <> "])"
+    where
+      showField (Tuple k v) = "(Tuple " <> show k <> " " <> show v <> ")"
 
 -- | Check if a JSONValue is an object
 jsonIsObject :: JSONValue -> Boolean

@@ -222,14 +222,13 @@ easeInOutElastic t
 
 -- | Bounce easing
 easeOutBounce :: Number -> Number
-easeOutBounce t
-  | t < 1.0 / d1 = n1 * t * t
-  | t < 2.0 / d1 = let t' = t - 1.5 / d1 in n1 * t' * t' + 0.75
-  | t < 2.5 / d1 = let t' = t - 2.25 / d1 in n1 * t' * t' + 0.9375
-  | otherwise = let t' = t - 2.625 / d1 in n1 * t' * t' + 0.984375
-  where
-    n1 = 7.5625
-    d1 = 2.75
+easeOutBounce t =
+  let n1 = 7.5625
+      d1 = 2.75
+  in if t < 1.0 / d1 then n1 * t * t
+     else if t < 2.0 / d1 then let t' = t - 1.5 / d1 in n1 * t' * t' + 0.75
+     else if t < 2.5 / d1 then let t' = t - 2.25 / d1 in n1 * t' * t' + 0.9375
+     else let t' = t - 2.625 / d1 in n1 * t' * t' + 0.984375
 
 easeInBounce :: Number -> Number
 easeInBounce t = 1.0 - easeOutBounce (1.0 - t)

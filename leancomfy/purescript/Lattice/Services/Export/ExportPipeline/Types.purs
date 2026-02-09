@@ -7,6 +7,8 @@
 module Lattice.Services.Export.ExportPipeline.Types
   ( -- * Pipeline Options
     ExportPipelineOptions
+  , LayerRef
+  , CameraKeyframeRef
   , RenderedFrame
     -- * Export Config
   , ExportConfig
@@ -94,7 +96,7 @@ type ExportConfig =
 -- | Default export configuration
 defaultExportConfig :: ExportConfig
 defaultExportConfig =
-  { target: TargetControlNetDepth
+  { target: TargetFullMatrices
   , width: 512
   , height: 512
   , frameCount: 24

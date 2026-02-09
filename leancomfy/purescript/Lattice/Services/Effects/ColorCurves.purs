@@ -29,7 +29,6 @@ import Data.Int (round, toNumber)
 import Data.Maybe (fromMaybe)
 import Data.Number (abs, pow) as Number
 import Data.Tuple (Tuple(..))
-import Math (max, min)
 
 --------------------------------------------------------------------------------
 -- Types
