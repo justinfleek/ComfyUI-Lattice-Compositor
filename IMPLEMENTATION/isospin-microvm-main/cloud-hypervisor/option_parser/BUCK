@@ -1,0 +1,10 @@
+rust_library(
+    name = "option_parser",
+    srcs = glob(["src/**/*.rs"]),
+    crate = "option_parser",
+    edition = "2024",
+    deps = [
+        "//third-party/rust:thiserror",
+    ],
+    visibility = ["PUBLIC"],
+)

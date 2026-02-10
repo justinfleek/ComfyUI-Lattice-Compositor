@@ -1,0 +1,10 @@
+node_modules/
+output/
+.pspcache/
+.DS_Store
+*.log
+.nixd.json
+.nil.toml
+.direnv
+.devshell
+result

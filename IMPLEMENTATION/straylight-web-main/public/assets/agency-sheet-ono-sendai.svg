@@ -1,0 +1,327 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" font-family="system-ui, -apple-system, sans-serif">
+  <defs>
+    <linearGradient id="headerGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#218bff;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#54aeff;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#80ccff;stop-opacity:1" />
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <filter id="softGlow" x="-10%" y="-10%" width="120%" height="120%">
+      <feGaussianBlur stdDeviation="1.5" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="1200" height="900" fill="#0f1216"/>
+  
+  <!-- Subtle grid pattern -->
+  <defs>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1a1f24" stroke-width="0.5"/>
+    </pattern>
+  </defs>
+  <rect width="1200" height="900" fill="url(#grid)" opacity="0.5"/>
+  
+  <!-- Header -->
+  <text x="60" y="70" font-size="42" font-weight="300" fill="url(#headerGrad)" filter="url(#glow)">// ONO-SENDAI //</text>
+  <text x="60" y="100" font-size="14" fill="#54aeff" letter-spacing="4" filter="url(#softGlow)">HYPERMODERN</text>
+  <text x="260" y="100" font-size="14" fill="#3a424f" letter-spacing="2">DARK MODE CHROMATIC SERIES</text>
+  
+  <!-- Divider -->
+  <line x1="60" y1="120" x2="1140" y2="120" stroke="#218bff" stroke-width="1" opacity="0.3"/>
+  
+  <!-- Theme Cards -->
+  
+  <!-- TUNED (daily driver) -->
+  <g transform="translate(60, 150)">
+    <rect width="250" height="340" rx="8" fill="#191c20"/>
+    <rect x="1" y="1" width="248" height="338" rx="7" fill="none" stroke="#2a3039" stroke-width="1"/>
+    <rect y="280" width="250" height="60" rx="0 0 8 8" fill="#0f1216"/>
+    
+    <!-- Code preview -->
+    <g transform="translate(20, 20)">
+      <text y="20" font-size="11" fill="#3a424f">// ono-sendai-tuned</text>
+      <text y="40" font-size="11" fill="#0969da">const</text>
+      <text y="40" x="35" font-size="11" fill="#c5d0dd">signal</text>
+      <text y="40" x="80" font-size="11" fill="#54aeff">=</text>
+      <text y="40" x="95" font-size="11" fill="#218bff">"tuned"</text>
+      <text y="60" font-size="11" fill="#0969da">function</text>
+      <text y="60" x="55" font-size="11" fill="#54aeff">init</text>
+      <text y="60" x="75" font-size="11" fill="#c5d0dd">() {</text>
+      <text y="80" x="10" font-size="11" fill="#1f6feb">return</text>
+      <text y="80" x="50" font-size="11" fill="#80ccff">42</text>
+      <text y="100" font-size="11" fill="#c5d0dd">}</text>
+    </g>
+    
+    <!-- Palette strip -->
+    <g transform="translate(20, 130)">
+      <rect width="26" height="26" rx="4" fill="#191c20" stroke="#2a3039"/>
+      <rect x="30" width="26" height="26" rx="4" fill="#1f232a"/>
+      <rect x="60" width="26" height="26" rx="4" fill="#2a3039"/>
+      <rect x="90" width="26" height="26" rx="4" fill="#3a424f"/>
+      <rect x="120" width="26" height="26" rx="4" fill="#6b7689"/>
+      <rect x="150" width="26" height="26" rx="4" fill="#c5d0dd"/>
+      <rect x="180" width="26" height="26" rx="4" fill="#dce3ec"/>
+    </g>
+    <g transform="translate(20, 170)">
+      <rect width="26" height="26" rx="4" fill="#b6e3ff"/>
+      <rect x="30" width="26" height="26" rx="4" fill="#80ccff"/>
+      <rect x="60" width="26" height="26" rx="4" fill="#54aeff" filter="url(#softGlow)"/>
+      <rect x="90" width="26" height="26" rx="4" fill="#218bff"/>
+      <rect x="120" width="26" height="26" rx="4" fill="#0969da"/>
+      <rect x="150" width="26" height="26" rx="4" fill="#4d9fff"/>
+      <rect x="180" width="26" height="26" rx="4" fill="#1f6feb"/>
+    </g>
+    
+    <!-- Stats -->
+    <text x="20" y="230" font-size="10" fill="#3a424f">BASE00</text>
+    <text x="20" y="245" font-size="12" fill="#6b7689" font-family="monospace">#191c20</text>
+    <text x="110" y="230" font-size="10" fill="#3a424f">HERO</text>
+    <text x="110" y="245" font-size="12" fill="#54aeff" font-family="monospace" filter="url(#softGlow)">#54aeff</text>
+    
+    <!-- Label -->
+    <text x="20" y="305" font-size="18" font-weight="600" fill="#54aeff" filter="url(#softGlow)">TUNED</text>
+    <text x="20" y="325" font-size="11" fill="#3a424f">HSL perceptual • Daily driver</text>
+  </g>
+  
+  <!-- SPRAWL -->
+  <g transform="translate(340, 150)">
+    <rect width="250" height="340" rx="8" fill="#191c20"/>
+    <rect x="1" y="1" width="248" height="338" rx="7" fill="none" stroke="#2a3039" stroke-width="1"/>
+    <rect y="280" width="250" height="60" rx="0 0 8 8" fill="#0f1216"/>
+    
+    <g transform="translate(20, 20)">
+      <text y="20" font-size="11" fill="#3a424f">// ono-sendai-sprawl</text>
+      <text y="40" font-size="11" fill="#0969da">const</text>
+      <text y="40" x="35" font-size="11" fill="#d8e0e7">signal</text>
+      <text y="40" x="80" font-size="11" fill="#54aeff">=</text>
+      <text y="40" x="95" font-size="11" fill="#218bff">"sprawl"</text>
+      <text y="60" font-size="11" fill="#0969da">function</text>
+      <text y="60" x="55" font-size="11" fill="#54aeff">init</text>
+      <text y="60" x="75" font-size="11" fill="#d8e0e7">() {</text>
+      <text y="80" x="10" font-size="11" fill="#1f6feb">return</text>
+      <text y="80" x="50" font-size="11" fill="#80ccff">42</text>
+      <text y="100" font-size="11" fill="#d8e0e7">}</text>
+    </g>
+    
+    <g transform="translate(20, 130)">
+      <rect width="26" height="26" rx="4" fill="#191c20" stroke="#2a3039"/>
+      <rect x="30" width="26" height="26" rx="4" fill="#1f232a"/>
+      <rect x="60" width="26" height="26" rx="4" fill="#2a3039"/>
+      <rect x="90" width="26" height="26" rx="4" fill="#3a424f"/>
+      <rect x="120" width="26" height="26" rx="4" fill="#596775"/>
+      <rect x="150" width="26" height="26" rx="4" fill="#d8e0e7"/>
+      <rect x="180" width="26" height="26" rx="4" fill="#ddf4ff"/>
+    </g>
+    <g transform="translate(20, 170)">
+      <rect width="26" height="26" rx="4" fill="#b6e3ff"/>
+      <rect x="30" width="26" height="26" rx="4" fill="#80ccff"/>
+      <rect x="60" width="26" height="26" rx="4" fill="#54aeff"/>
+      <rect x="90" width="26" height="26" rx="4" fill="#218bff"/>
+      <rect x="120" width="26" height="26" rx="4" fill="#0969da"/>
+      <rect x="150" width="26" height="26" rx="4" fill="#4d9fff"/>
+      <rect x="180" width="26" height="26" rx="4" fill="#1f6feb"/>
+    </g>
+    
+    <text x="20" y="230" font-size="10" fill="#3a424f">BASE00</text>
+    <text x="20" y="245" font-size="12" fill="#596775" font-family="monospace">#191c20</text>
+    <text x="110" y="230" font-size="10" fill="#3a424f">L%</text>
+    <text x="110" y="245" font-size="12" fill="#596775" font-family="monospace">11%</text>
+    
+    <text x="20" y="305" font-size="18" font-weight="600" fill="#54aeff">SPRAWL</text>
+    <text x="20" y="325" font-size="11" fill="#3a424f">Carbon black • Best compromise</text>
+  </g>
+  
+  <!-- MEMPHIS -->
+  <g transform="translate(620, 150)">
+    <rect width="250" height="340" rx="8" fill="#000000"/>
+    <rect x="1" y="1" width="248" height="338" rx="7" fill="none" stroke="#0a0d10" stroke-width="1"/>
+    <rect y="280" width="250" height="60" rx="0 0 8 8" fill="#000000"/>
+    
+    <g transform="translate(20, 20)">
+      <text y="20" font-size="11" fill="#1a1f24">// ono-sendai-memphis</text>
+      <text y="40" font-size="11" fill="#0969da">const</text>
+      <text y="40" x="35" font-size="11" fill="#d8e0e7">signal</text>
+      <text y="40" x="80" font-size="11" fill="#54aeff">=</text>
+      <text y="40" x="95" font-size="11" fill="#218bff">"void"</text>
+      <text y="60" font-size="11" fill="#0969da">function</text>
+      <text y="60" x="55" font-size="11" fill="#4d9fff">init</text>
+      <text y="60" x="75" font-size="11" fill="#d8e0e7">() {</text>
+      <text y="80" x="10" font-size="11" fill="#6cb6ff">return</text>
+      <text y="80" x="50" font-size="11" fill="#80ccff">42</text>
+      <text y="100" font-size="11" fill="#d8e0e7">}</text>
+    </g>
+    
+    <g transform="translate(20, 130)">
+      <rect width="26" height="26" rx="4" fill="#000000" stroke="#0a0d10"/>
+      <rect x="30" width="26" height="26" rx="4" fill="#0a0d10"/>
+      <rect x="60" width="26" height="26" rx="4" fill="#13161a"/>
+      <rect x="90" width="26" height="26" rx="4" fill="#1a1f24"/>
+      <rect x="120" width="26" height="26" rx="4" fill="#596775"/>
+      <rect x="150" width="26" height="26" rx="4" fill="#d8e0e7"/>
+      <rect x="180" width="26" height="26" rx="4" fill="#ddf4ff"/>
+    </g>
+    <g transform="translate(20, 170)">
+      <rect width="26" height="26" rx="4" fill="#b6e3ff"/>
+      <rect x="30" width="26" height="26" rx="4" fill="#80ccff"/>
+      <rect x="60" width="26" height="26" rx="4" fill="#54aeff"/>
+      <rect x="90" width="26" height="26" rx="4" fill="#218bff"/>
+      <rect x="120" width="26" height="26" rx="4" fill="#0969da"/>
+      <rect x="150" width="26" height="26" rx="4" fill="#4d9fff"/>
+      <rect x="180" width="26" height="26" rx="4" fill="#1f6feb"/>
+    </g>
+    
+    <text x="20" y="230" font-size="10" fill="#1a1f24">BASE00</text>
+    <text x="20" y="245" font-size="12" fill="#596775" font-family="monospace">#000000</text>
+    <text x="110" y="230" font-size="10" fill="#1a1f24">L%</text>
+    <text x="110" y="245" font-size="12" fill="#596775" font-family="monospace">0%</text>
+    
+    <text x="20" y="305" font-size="18" font-weight="600" fill="#54aeff">MEMPHIS</text>
+    <text x="20" y="325" font-size="11" fill="#1a1f24">True black • OLED perfect</text>
+  </g>
+  
+  <!-- GITHUB -->
+  <g transform="translate(900, 150)">
+    <rect width="250" height="340" rx="8" fill="#22272e"/>
+    <rect x="1" y="1" width="248" height="338" rx="7" fill="none" stroke="#2d333b" stroke-width="1"/>
+    <rect y="280" width="250" height="60" rx="0 0 8 8" fill="#0f1216"/>
+    
+    <g transform="translate(20, 20)">
+      <text y="20" font-size="11" fill="#545d68">// ono-sendai-github</text>
+      <text y="40" font-size="11" fill="#0969da">const</text>
+      <text y="40" x="35" font-size="11" fill="#d8e0e7">signal</text>
+      <text y="40" x="80" font-size="11" fill="#54aeff">=</text>
+      <text y="40" x="95" font-size="11" fill="#218bff">"safe"</text>
+      <text y="60" font-size="11" fill="#0969da">function</text>
+      <text y="60" x="55" font-size="11" fill="#4d9fff">init</text>
+      <text y="60" x="75" font-size="11" fill="#d8e0e7">() {</text>
+      <text y="80" x="10" font-size="11" fill="#6cb6ff">return</text>
+      <text y="80" x="50" font-size="11" fill="#80ccff">42</text>
+      <text y="100" font-size="11" fill="#d8e0e7">}</text>
+    </g>
+    
+    <g transform="translate(20, 130)">
+      <rect width="26" height="26" rx="4" fill="#22272e" stroke="#2d333b"/>
+      <rect x="30" width="26" height="26" rx="4" fill="#2d333b"/>
+      <rect x="60" width="26" height="26" rx="4" fill="#444c56"/>
+      <rect x="90" width="26" height="26" rx="4" fill="#545d68"/>
+      <rect x="120" width="26" height="26" rx="4" fill="#596775"/>
+      <rect x="150" width="26" height="26" rx="4" fill="#d8e0e7"/>
+      <rect x="180" width="26" height="26" rx="4" fill="#ddf4ff"/>
+    </g>
+    <g transform="translate(20, 170)">
+      <rect width="26" height="26" rx="4" fill="#b6e3ff"/>
+      <rect x="30" width="26" height="26" rx="4" fill="#80ccff"/>
+      <rect x="60" width="26" height="26" rx="4" fill="#54aeff"/>
+      <rect x="90" width="26" height="26" rx="4" fill="#218bff"/>
+      <rect x="120" width="26" height="26" rx="4" fill="#0969da"/>
+      <rect x="150" width="26" height="26" rx="4" fill="#4d9fff"/>
+      <rect x="180" width="26" height="26" rx="4" fill="#1f6feb"/>
+    </g>
+    
+    <text x="20" y="230" font-size="10" fill="#545d68">BASE00</text>
+    <text x="20" y="245" font-size="12" fill="#596775" font-family="monospace">#22272e</text>
+    <text x="110" y="230" font-size="10" fill="#545d68">L%</text>
+    <text x="110" y="245" font-size="12" fill="#596775" font-family="monospace">16%</text>
+    
+    <text x="20" y="305" font-size="18" font-weight="600" fill="#54aeff">GITHUB</text>
+    <text x="20" y="325" font-size="11" fill="#545d68">Robust default • Maximum compat</text>
+  </g>
+  
+  <!-- Black level comparison -->
+  <g transform="translate(60, 520)">
+    <text y="0" font-size="12" fill="#54aeff" letter-spacing="2" filter="url(#softGlow)">BLACK LEVEL DISCIPLINE</text>
+    
+    <rect y="20" width="1080" height="60" rx="4" fill="#1a1f24"/>
+    
+    <!-- Markers showing the gradient -->
+    <g transform="translate(30, 30)">
+      <rect width="120" height="40" rx="4" fill="#000000"/>
+      <text x="60" y="55" font-size="9" fill="#3a424f" text-anchor="middle">L=0% memphis</text>
+    </g>
+    
+    <g transform="translate(180, 30)">
+      <rect width="120" height="40" rx="4" fill="#090b0e"/>
+      <text x="60" y="55" font-size="9" fill="#3a424f" text-anchor="middle">L=4% chiba</text>
+    </g>
+    
+    <g transform="translate(330, 30)">
+      <rect width="120" height="40" rx="4" fill="#111417"/>
+      <text x="60" y="55" font-size="9" fill="#3a424f" text-anchor="middle">L=8% razorgirl</text>
+    </g>
+    
+    <g transform="translate(480, 30)">
+      <rect width="120" height="40" rx="4" fill="#191c20" stroke="#54aeff" stroke-width="1"/>
+      <text x="60" y="55" font-size="9" fill="#54aeff" text-anchor="middle">L=11% tuned ●</text>
+    </g>
+    
+    <g transform="translate(630, 30)">
+      <rect width="120" height="40" rx="4" fill="#22272e"/>
+      <text x="60" y="55" font-size="9" fill="#3a424f" text-anchor="middle">L=16% github</text>
+    </g>
+    
+    <g transform="translate(780, 30)">
+      <rect width="120" height="40" rx="4" fill="#f5f7fa"/>
+      <text x="60" y="55" font-size="9" fill="#3a424f" text-anchor="middle">L=97% maas ↗</text>
+    </g>
+    
+    <g transform="translate(930, 30)">
+      <rect width="120" height="40" rx="4" fill="#ffffff"/>
+      <text x="60" y="55" font-size="9" fill="#3a424f" text-anchor="middle">L=100% tessier</text>
+    </g>
+  </g>
+  
+  <!-- Design principles -->
+  <g transform="translate(60, 630)">
+    <text y="0" font-size="12" fill="#54aeff" letter-spacing="2" filter="url(#softGlow)">DESIGN PRINCIPLES</text>
+    
+    <g transform="translate(0, 25)">
+      <rect width="350" height="100" rx="4" fill="#191c20" stroke="#2a3039" stroke-width="1"/>
+      <text x="15" y="25" font-size="11" fill="#54aeff">211° Hue Lock</text>
+      <text x="15" y="45" font-size="10" fill="#6b7689">All accent colors derived from single</text>
+      <text x="15" y="60" font-size="10" fill="#6b7689">hero blue at 211° hue. Luminance and</text>
+      <text x="15" y="75" font-size="10" fill="#6b7689">saturation vary; hue remains constant.</text>
+      <text x="15" y="90" font-size="10" fill="#3a424f">The heresy that defines the system.</text>
+    </g>
+    
+    <g transform="translate(370, 25)">
+      <rect width="350" height="100" rx="4" fill="#191c20" stroke="#2a3039" stroke-width="1"/>
+      <text x="15" y="25" font-size="11" fill="#54aeff">OLED-Safe Blacks</text>
+      <text x="15" y="45" font-size="10" fill="#6b7689">L=11% default avoids true black which</text>
+      <text x="15" y="60" font-size="10" fill="#6b7689">destroys font rendering on many panels.</text>
+      <text x="15" y="75" font-size="10" fill="#6b7689">Memphis (L=0%) available when you need</text>
+      <text x="15" y="90" font-size="10" fill="#3a424f">perfect blacks and know your display.</text>
+    </g>
+    
+    <g transform="translate(740, 25)">
+      <rect width="350" height="100" rx="4" fill="#191c20" stroke="#2a3039" stroke-width="1"/>
+      <text x="15" y="25" font-size="11" fill="#54aeff">Perceptual Uniformity</text>
+      <text x="15" y="45" font-size="10" fill="#6b7689">Grayscale ramp calculated for equal</text>
+      <text x="15" y="60" font-size="10" fill="#6b7689">perceptual steps. Comments at L=28%</text>
+      <text x="15" y="75" font-size="10" fill="#6b7689">sit exactly between selection and text.</text>
+      <text x="15" y="90" font-size="10" fill="#3a424f">Math that you feel, not see.</text>
+    </g>
+  </g>
+  
+  <!-- Footer -->
+  <line x1="60" y1="770" x2="1140" y2="770" stroke="#218bff" stroke-width="1" opacity="0.3"/>
+  
+  <text x="60" y="800" font-size="10" fill="#3a424f">HYPERMODERN</text>
+  <text x="60" y="815" font-size="10" fill="#3a424f">github.com/b7r6/hypermodern-emacs</text>
+  
+  <text x="1140" y="800" font-size="10" fill="#3a424f" text-anchor="end">BASE16 COMPATIBLE</text>
+  <text x="1140" y="815" font-size="10" fill="#3a424f" text-anchor="end">ono-sendai dark series v1.0</text>
+  
+  <!-- Tagline -->
+  <text x="600" y="860" font-size="9" fill="#218bff" text-anchor="middle" letter-spacing="6" filter="url(#softGlow)">BRIGHT LATTICES OF LOGIC UNFOLDING ACROSS THAT COLORLESS VOID</text>
+</svg>

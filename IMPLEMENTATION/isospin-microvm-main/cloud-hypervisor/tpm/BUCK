@@ -1,0 +1,15 @@
+rust_library(
+    name = "tpm",
+    srcs = glob(["src/**/*.rs"]),
+    crate = "tpm",
+    edition = "2024",
+    deps = [
+        "//cloud-hypervisor/net_gen:net_gen",
+        "//third-party/rust:anyhow",
+        "//third-party/rust:libc",
+        "//third-party/rust:log",
+        "//third-party/rust:thiserror",
+        "//third-party/rust:vmm-sys-util",
+    ],
+    visibility = ["PUBLIC"],
+)

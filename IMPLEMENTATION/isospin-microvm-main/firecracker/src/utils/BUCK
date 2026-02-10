@@ -1,0 +1,28 @@
+# utils - Common utilities
+# log-instrument is optional (feature = "tracing")
+
+rust_library(
+    name = "utils",
+    srcs = glob(["src/**/*.rs"]),
+    crate = "utils",
+    edition = "2024",
+    deps = [
+        "//third-party/rust:displaydoc",
+        "//third-party/rust:libc",
+        "//third-party/rust:thiserror",
+    ],
+    visibility = ["PUBLIC"],
+)
+
+rust_test(
+    name = "utils-test",
+    srcs = glob(["src/**/*.rs"]),
+    crate = "utils",
+    crate_root = "src/lib.rs",
+    edition = "2024",
+    deps = [
+        "//third-party/rust:displaydoc",
+        "//third-party/rust:libc",
+        "//third-party/rust:thiserror",
+    ],
+)

@@ -55,6 +55,17 @@ import Test.Lattice.Export.WanMoveExport as WanMoveExportSpec
 import Test.Lattice.Export.PoseExport as PoseExportSpec
 import Test.Lattice.Export.ATIExport as ATIExportSpec
 import Test.Lattice.Export.FlowGenerators as FlowGeneratorsSpec
+import Test.Lattice.Export.FrameSequence as FrameSequenceSpec
+import Test.Lattice.Export.CameraExportAdv as CameraExportAdvSpec
+import Test.Lattice.Export.VideoEncoder as VideoEncoderSpec
+import Test.Lattice.Export.OpacityRange as OpacityRangeSpec
+import Test.Lattice.Services.ActionExecutor as ActionExecutorSpec
+import Test.Lattice.Services.Depthflow as DepthflowSpec
+import Test.Lattice.Services.PhysicsEngine as PhysicsEngineSpec
+import Test.Lattice.Services.PropertyDriver as PropertyDriverSpec
+import Test.Lattice.Services.SpeedGraph as SpeedGraphSpec
+import Test.Lattice.Services.ExpressionProps as ExpressionPropsSpec
+import Test.Lattice.Services.MotionRecording as MotionRecordingSpec
 
 main :: Effect Unit
 main = launchAff_ $ runSpec [consoleReporter] do
@@ -106,3 +117,14 @@ main = launchAff_ $ runSpec [consoleReporter] do
   PoseExportSpec.spec
   ATIExportSpec.spec
   FlowGeneratorsSpec.spec
+  FrameSequenceSpec.spec
+  CameraExportAdvSpec.spec
+  VideoEncoderSpec.spec
+  OpacityRangeSpec.spec
+  ActionExecutorSpec.spec
+  DepthflowSpec.spec
+  PhysicsEngineSpec.spec
+  PropertyDriverSpec.spec
+  SpeedGraphSpec.spec
+  ExpressionPropsSpec.spec
+  MotionRecordingSpec.spec

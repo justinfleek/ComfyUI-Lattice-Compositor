@@ -1,0 +1,44 @@
+# snapshot-editor - Firecracker snapshot editing tool
+
+rust_binary(
+    name = "snapshot-editor",
+    srcs = glob(["src/**/*.rs"]),
+    crate = "snapshot_editor",
+    crate_root = "src/main.rs",
+    edition = "2024",
+    env = {
+        "CARGO_PKG_VERSION": "1.15.0-dev",
+    },
+    deps = [
+        "//firecracker/src/utils:utils",
+        "//firecracker/src/vmm:vmm",
+        "//third-party/rust:clap",
+        "//third-party/rust:displaydoc",
+        "//third-party/rust:libc",
+        "//third-party/rust:semver",
+        "//third-party/rust:thiserror",
+        "//third-party/rust:vmm-sys-util",
+    ],
+    visibility = ["PUBLIC"],
+)
+
+rust_test(
+    name = "snapshot-editor-test",
+    srcs = glob(["src/**/*.rs"]),
+    crate = "snapshot_editor",
+    crate_root = "src/main.rs",
+    edition = "2024",
+    env = {
+        "CARGO_PKG_VERSION": "1.15.0-dev",
+    },
+    deps = [
+        "//firecracker/src/utils:utils",
+        "//firecracker/src/vmm:vmm",
+        "//third-party/rust:clap",
+        "//third-party/rust:displaydoc",
+        "//third-party/rust:libc",
+        "//third-party/rust:semver",
+        "//third-party/rust:thiserror",
+        "//third-party/rust:vmm-sys-util",
+    ],
+)

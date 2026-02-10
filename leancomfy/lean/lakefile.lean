@@ -5,8 +5,9 @@ package «tensor-core» where
   preferReleaseBuild := true
 
 -- All dependencies fetched from git for reproducible Nix builds
--- Note: batteries, Qq, aesop are pulled transitively through mathlib
+-- SciLean provides numerical methods for interpolation/bezier calculations
 require mathlib from git "https://github.com/leanprover-community/mathlib4" @ "v4.26.0"
+require scilean from git "https://github.com/lecopivo/SciLean" @ "master"
 
 @[default_target]
 lean_lib TensorCore

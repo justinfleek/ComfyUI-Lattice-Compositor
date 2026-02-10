@@ -1,0 +1,227 @@
+<!-- Straylight Software - Brand System -->
+<!-- "a kind of ghostly DNA" — Neuromancer -->
+<!-- Rendered with ono-sendai-razorgirl palette -->
+<svg width="1920" height="1080" viewBox="0 0 1920 1080" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <style>
+      @font-face {
+        font-family: 'Berkeley Mono';
+        src: local('Berkeley Mono Medium'), local('BerkeleyMono-Medium');
+      }
+      .mono { 
+        font-family: 'Berkeley Mono', 'SF Mono', 'Consolas', monospace; 
+        font-feature-settings: 'liga' 1, 'calt' 1;
+      }
+    </style>
+  </defs>
+  
+  <!-- Background: razorgirl base00 -->
+  <rect width="1920" height="1080" fill="#111417"/>
+  
+  <!-- =========================================== -->
+  <!-- PRIMARY MARK - Large -->
+  <!-- =========================================== -->
+  <g transform="translate(960, 200)">
+    <text class="mono" fill="#596775" font-size="12" font-weight="400" text-anchor="end" x="400">
+      // PRIMARY MARK
+    </text>
+    
+    <!-- Top rail -->
+    <line x1="-400" y1="40" x2="400" y2="40" stroke="#54aeff" stroke-width="3"/>
+    
+    <!-- Wordmark - right justified -->
+    <text x="400" y="90" class="mono" fill="#b6e3ff" font-size="36" font-weight="500" text-anchor="end">
+      // straylight
+    </text>
+    
+    <!-- Bottom rail -->
+    <line x1="-400" y1="110" x2="400" y2="110" stroke="#54aeff" stroke-width="3"/>
+  </g>
+  
+  <!-- =========================================== -->
+  <!-- SECONDARY - With Continuity -->
+  <!-- =========================================== -->
+  <g transform="translate(480, 420)">
+    <text class="mono" fill="#596775" font-size="12" font-weight="400" text-anchor="end" x="300">
+      // WITH CONTINUITY
+    </text>
+    
+    <line x1="-300" y1="40" x2="300" y2="40" stroke="#54aeff" stroke-width="2"/>
+    <text x="300" y="80" class="mono" fill="#b6e3ff" font-size="28" font-weight="500" text-anchor="end">
+      // straylight
+    </text>
+    <text x="300" y="115" class="mono" fill="#596775" font-size="18" font-weight="400" text-anchor="end">
+      // continuity
+    </text>
+    <line x1="-300" y1="135" x2="300" y2="135" stroke="#54aeff" stroke-width="2"/>
+  </g>
+  
+  <!-- =========================================== -->
+  <!-- TERTIARY - Software -->
+  <!-- =========================================== -->
+  <g transform="translate(1440, 420)">
+    <text class="mono" fill="#596775" font-size="12" font-weight="400" text-anchor="end" x="300">
+      // SOFTWARE
+    </text>
+    
+    <line x1="-300" y1="40" x2="300" y2="40" stroke="#54aeff" stroke-width="2"/>
+    <text x="300" y="80" class="mono" fill="#b6e3ff" font-size="28" font-weight="500" text-anchor="end">
+      // straylight
+    </text>
+    <text x="300" y="115" class="mono" fill="#596775" font-size="18" font-weight="400" text-anchor="end">
+      // software
+    </text>
+    <line x1="-300" y1="135" x2="300" y2="135" stroke="#54aeff" stroke-width="2"/>
+  </g>
+  
+  <!-- =========================================== -->
+  <!-- COMPACT MARKS -->
+  <!-- =========================================== -->
+  <g transform="translate(200, 620)">
+    <text class="mono" fill="#596775" font-size="12" font-weight="400">
+      // COMPACT VARIATIONS
+    </text>
+    
+    <!-- Compact 1 -->
+    <g transform="translate(0, 40)">
+      <line x1="0" y1="0" x2="200" y2="0" stroke="#54aeff" stroke-width="2"/>
+      <text x="200" y="28" class="mono" fill="#b6e3ff" font-size="18" font-weight="500" text-anchor="end">
+        // straylight
+      </text>
+      <line x1="0" y1="40" x2="200" y2="40" stroke="#54aeff" stroke-width="2"/>
+    </g>
+    
+    <!-- Compact 2 - minimal -->
+    <g transform="translate(280, 40)">
+      <line x1="0" y1="0" x2="150" y2="0" stroke="#54aeff" stroke-width="2"/>
+      <text x="150" y="24" class="mono" fill="#b6e3ff" font-size="14" font-weight="500" text-anchor="end">
+        // straylight
+      </text>
+      <line x1="0" y1="36" x2="150" y2="36" stroke="#54aeff" stroke-width="2"/>
+    </g>
+    
+    <!-- Compact 3 - tiny -->
+    <g transform="translate(500, 40)">
+      <line x1="0" y1="0" x2="100" y2="0" stroke="#54aeff" stroke-width="1.5"/>
+      <text x="100" y="18" class="mono" fill="#b6e3ff" font-size="11" font-weight="500" text-anchor="end">
+        // straylight
+      </text>
+      <line x1="0" y1="28" x2="100" y2="28" stroke="#54aeff" stroke-width="1.5"/>
+    </g>
+  </g>
+  
+  <!-- =========================================== -->
+  <!-- ICON / FAVICON -->
+  <!-- =========================================== -->
+  <g transform="translate(800, 620)">
+    <text class="mono" fill="#596775" font-size="12" font-weight="400">
+      // ICON MARKS
+    </text>
+    
+    <!-- 64px -->
+    <g transform="translate(0, 40)">
+      <rect width="64" height="64" fill="#111417" stroke="#596775" stroke-width="1"/>
+      <line x1="8" y1="20" x2="56" y2="20" stroke="#54aeff" stroke-width="2"/>
+      <text x="56" y="40" class="mono" fill="#b6e3ff" font-size="11" font-weight="600" text-anchor="end">//</text>
+      <line x1="8" y1="48" x2="56" y2="48" stroke="#54aeff" stroke-width="2"/>
+    </g>
+    
+    <!-- 48px -->
+    <g transform="translate(80, 40)">
+      <rect width="48" height="48" fill="#111417" stroke="#596775" stroke-width="1"/>
+      <line x1="6" y1="14" x2="42" y2="14" stroke="#54aeff" stroke-width="2"/>
+      <text x="42" y="30" class="mono" fill="#b6e3ff" font-size="9" font-weight="600" text-anchor="end">//</text>
+      <line x1="6" y1="36" x2="42" y2="36" stroke="#54aeff" stroke-width="2"/>
+    </g>
+    
+    <!-- 32px -->
+    <g transform="translate(144, 40)">
+      <rect width="32" height="32" fill="#111417" stroke="#596775" stroke-width="1"/>
+      <line x1="4" y1="9" x2="28" y2="9" stroke="#54aeff" stroke-width="1.5"/>
+      <text x="28" y="20" class="mono" fill="#b6e3ff" font-size="7" font-weight="600" text-anchor="end">//</text>
+      <line x1="4" y1="24" x2="28" y2="24" stroke="#54aeff" stroke-width="1.5"/>
+    </g>
+    
+    <!-- 16px - just rails -->
+    <g transform="translate(192, 40)">
+      <rect width="16" height="16" fill="#111417" stroke="#596775" stroke-width="1"/>
+      <line x1="2" y1="5" x2="14" y2="5" stroke="#54aeff" stroke-width="1.5"/>
+      <line x1="2" y1="11" x2="14" y2="11" stroke="#54aeff" stroke-width="1.5"/>
+    </g>
+    
+    <!-- Abstract: just two lines -->
+    <g transform="translate(240, 40)">
+      <rect width="64" height="64" fill="#111417" stroke="#596775" stroke-width="1"/>
+      <line x1="12" y1="24" x2="52" y2="24" stroke="#54aeff" stroke-width="3"/>
+      <line x1="12" y1="40" x2="52" y2="40" stroke="#54aeff" stroke-width="3"/>
+    </g>
+  </g>
+  
+  <!-- =========================================== -->
+  <!-- LOG FORMAT INTEGRATION -->
+  <!-- =========================================== -->
+  <g transform="translate(200, 780)">
+    <text class="mono" fill="#596775" font-size="12" font-weight="400">
+      // LOG FORMAT INTEGRATION
+    </text>
+    
+    <text y="40" class="mono" font-size="16" font-weight="400">
+      <tspan fill="#54aeff">//</tspan>
+      <tspan fill="#b6e3ff" dx="8">straylight</tspan>
+      <tspan fill="#54aeff" dx="8">//</tspan>
+      <tspan fill="#596775" dx="8">continuity</tspan>
+      <tspan fill="#54aeff" dx="8">//</tspan>
+      <tspan fill="#80ccff" dx="8">NOMINAL</tspan>
+      <tspan fill="#54aeff" dx="8">//</tspan>
+      <tspan fill="#596775" dx="8">[state :: persisting]</tspan>
+      <tspan fill="#54aeff" dx="8">///</tspan>
+    </text>
+    
+    <text y="80" class="mono" font-size="16" font-weight="400">
+      <tspan fill="#54aeff">//</tspan>
+      <tspan fill="#b6e3ff" dx="8">straylight</tspan>
+      <tspan fill="#54aeff" dx="8">//</tspan>
+      <tspan fill="#596775" dx="8">broker</tspan>
+      <tspan fill="#54aeff" dx="8">//</tspan>
+      <tspan fill="#80ccff" dx="8">INFO</tspan>
+      <tspan fill="#54aeff" dx="8">//</tspan>
+      <tspan fill="#596775" dx="8">[tick :: 1847293]</tspan>
+      <tspan fill="#54aeff" dx="8">//</tspan>
+      <tspan fill="#596775" dx="8">[clients :: 3]</tspan>
+      <tspan fill="#54aeff" dx="8">///</tspan>
+    </text>
+    
+    <text y="120" class="mono" font-size="16" font-weight="400">
+      <tspan fill="#54aeff">//</tspan>
+      <tspan fill="#b6e3ff" dx="8">straylight</tspan>
+      <tspan fill="#54aeff" dx="8">//</tspan>
+      <tspan fill="#596775" dx="8">vfio</tspan>
+      <tspan fill="#54aeff" dx="8">//</tspan>
+      <tspan fill="#80ccff" dx="8">INFO</tspan>
+      <tspan fill="#54aeff" dx="8">//</tspan>
+      <tspan fill="#596775" dx="8">[gpu :: RTX PRO 6000]</tspan>
+      <tspan fill="#54aeff" dx="8">//</tspan>
+      <tspan fill="#596775" dx="8">[vram :: 128GB]</tspan>
+      <tspan fill="#54aeff" dx="8">///</tspan>
+    </text>
+  </g>
+  
+  <!-- =========================================== -->
+  <!-- PHILOSOPHY -->
+  <!-- =========================================== -->
+  <g transform="translate(1920, 1040)" opacity="0.4">
+    <text class="mono" fill="#596775" font-size="14" font-weight="400" text-anchor="end">
+      <tspan x="0" dy="0">continuity is continuity. continuity is continuity's job.</tspan>
+    </text>
+  </g>
+  
+  <!-- Status indicator -->
+  <g transform="translate(1880, 40)">
+    <line x1="-60" y1="0" x2="0" y2="0" stroke="#54aeff" stroke-width="1.5"/>
+    <text x="0" y="20" class="mono" fill="#596775" font-size="11" font-weight="400" text-anchor="end">
+      // nominal
+    </text>
+    <line x1="-60" y1="28" x2="0" y2="28" stroke="#54aeff" stroke-width="1.5"/>
+  </g>
+  
+</svg>

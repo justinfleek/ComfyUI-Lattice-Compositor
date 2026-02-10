@@ -1,0 +1,14 @@
+[package]
+edition.workspace = true
+name = "rate_limiter"
+version = "0.1.0"
+
+[dependencies]
+epoll = { workspace = true }
+libc = { workspace = true }
+log = { workspace = true }
+thiserror = { workspace = true }
+vmm-sys-util = { workspace = true }
+
+[lints]
+workspace = true

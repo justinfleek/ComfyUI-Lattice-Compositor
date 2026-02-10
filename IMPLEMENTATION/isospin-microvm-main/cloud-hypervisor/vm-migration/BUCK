@@ -1,0 +1,15 @@
+rust_library(
+    name = "vm-migration",
+    srcs = glob(["src/**/*.rs"]),
+    crate = "vm_migration",
+    edition = "2024",
+    deps = [
+        "//third-party/rust:anyhow",
+        "//third-party/rust:itertools",
+        "//third-party/rust:serde",
+        "//third-party/rust:serde_json",
+        "//third-party/rust:thiserror",
+        "//third-party/rust:vm-memory",
+    ],
+    visibility = ["PUBLIC"],
+)

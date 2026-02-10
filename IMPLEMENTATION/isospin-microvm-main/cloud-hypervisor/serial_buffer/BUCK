@@ -1,0 +1,8 @@
+rust_library(
+    name = "serial_buffer",
+    srcs = glob(["src/**/*.rs"]),
+    crate = "serial_buffer",
+    edition = "2024",
+    deps = [],
+    visibility = ["PUBLIC"],
+)

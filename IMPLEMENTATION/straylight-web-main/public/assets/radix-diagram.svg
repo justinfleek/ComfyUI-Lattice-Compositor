@@ -1,0 +1,105 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0a0a0f"/>
+      <stop offset="100%" style="stop-color:#12121a"/>
+    </linearGradient>
+    <linearGradient id="cyan" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#00d4ff"/>
+      <stop offset="100%" style="stop-color:#00a8cc"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#ffd700"/>
+      <stop offset="100%" style="stop-color:#ffaa00"/>
+    </linearGradient>
+    <linearGradient id="green" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#00ff88"/>
+      <stop offset="100%" style="stop-color:#00cc66"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="1200" height="800" fill="url(#bg)"/>
+  
+  <!-- Title -->
+  <text x="600" y="50" text-anchor="middle" fill="url(#cyan)" font-family="monospace" font-size="32" font-weight="bold" filter="url(#glow)">SYN</text>
+  <text x="600" y="80" text-anchor="middle" fill="#667" font-family="monospace" font-size="14">Proof-Directed Synthesis · Correct by Construction</text>
+  
+  <!-- Divider -->
+  <line x1="100" y1="100" x2="1100" y2="100" stroke="#00d4ff" stroke-width="2" opacity="0.5"/>
+  
+  <!-- Bootstrap Phase (Left) -->
+  <text x="300" y="150" text-anchor="middle" fill="#445" font-family="monospace" font-size="18">BOOTSTRAP (now)</text>
+  
+  <!-- Bootstrap boxes -->
+  <rect x="150" y="180" width="300" height="50" rx="5" fill="none" stroke="#334" stroke-width="1"/>
+  <text x="300" y="210" text-anchor="middle" fill="#00d4ff" font-family="monospace" font-size="14">Human writes spec</text>
+  
+  <path d="M300 230 L300 260" stroke="#445" stroke-width="2" marker-end="url(#arrow)"/>
+  <polygon points="300,265 295,255 305,255" fill="#445"/>
+  
+  <rect x="150" y="270" width="300" height="50" rx="5" fill="none" stroke="#334" stroke-width="1"/>
+  <text x="300" y="300" text-anchor="middle" fill="#ffd700" font-family="monospace" font-size="14">Droid writes implementation</text>
+  
+  <path d="M300 320 L300 350" stroke="#445" stroke-width="2"/>
+  <polygon points="300,355 295,345 305,345" fill="#445"/>
+  
+  <rect x="150" y="360" width="300" height="50" rx="5" fill="none" stroke="#334" stroke-width="1"/>
+  <text x="300" y="390" text-anchor="middle" fill="#00ff88" font-family="monospace" font-size="14">Lean verifies</text>
+  
+  <path d="M300 410 L300 440" stroke="#445" stroke-width="2"/>
+  <polygon points="300,445 295,435 305,435" fill="#445"/>
+  
+  <rect x="150" y="450" width="300" height="50" rx="5" fill="none" stroke="#667" stroke-width="1"/>
+  <text x="300" y="480" text-anchor="middle" fill="#667" font-family="monospace" font-size="14">iterate until ✓</text>
+  
+  <!-- Arrow between phases -->
+  <path d="M500 350 L700 350" stroke="url(#cyan)" stroke-width="3" stroke-dasharray="10,5" filter="url(#glow)"/>
+  <polygon points="710,350 695,343 695,357" fill="#00d4ff"/>
+  <text x="600" y="335" text-anchor="middle" fill="#00d4ff" font-family="monospace" font-size="12">proof db</text>
+  
+  <!-- Synthesis Phase (Right) -->
+  <text x="900" y="150" text-anchor="middle" fill="#00d4ff" font-family="monospace" font-size="18" filter="url(#glow)">SYN (next)</text>
+  
+  <!-- Synthesis boxes -->
+  <rect x="750" y="180" width="300" height="50" rx="5" fill="none" stroke="#00d4ff" stroke-width="2"/>
+  <text x="900" y="210" text-anchor="middle" fill="#00d4ff" font-family="monospace" font-size="14">Spec (type + properties)</text>
+  
+  <path d="M900 230 L900 280" stroke="#00d4ff" stroke-width="2"/>
+  <polygon points="900,285 895,275 905,275" fill="#00d4ff"/>
+  
+  <!-- Synthesis core -->
+  <rect x="750" y="290" width="300" height="120" rx="5" fill="none" stroke="url(#gold)" stroke-width="2" filter="url(#glow)"/>
+  <text x="900" y="325" text-anchor="middle" fill="#ffd700" font-family="monospace" font-size="16" font-weight="bold">SYNTHESIS</text>
+  <text x="900" y="355" text-anchor="middle" fill="#998800" font-family="monospace" font-size="11">constructive proof → program</text>
+  <text x="900" y="375" text-anchor="middle" fill="#998800" font-family="monospace" font-size="11">witness IS implementation</text>
+  <text x="900" y="395" text-anchor="middle" fill="#998800" font-family="monospace" font-size="11">correct by extraction</text>
+  
+  <path d="M900 410 L900 460" stroke="#00ff88" stroke-width="2"/>
+  <polygon points="900,465 895,455 905,455" fill="#00ff88"/>
+  
+  <!-- Output -->
+  <rect x="750" y="470" width="300" height="80" rx="5" fill="none" stroke="#00ff88" stroke-width="2"/>
+  <text x="900" y="500" text-anchor="middle" fill="#00ff88" font-family="monospace" font-size="14">Implementation</text>
+  <text x="900" y="520" text-anchor="middle" fill="#00cc66" font-family="monospace" font-size="11">+ Certificate (proof term)</text>
+  <text x="900" y="540" text-anchor="middle" fill="#00cc66" font-family="monospace" font-size="11">+ Optimizations (rewrite rules)</text>
+  
+  <!-- Bottom insight -->
+  <line x1="100" y1="600" x2="1100" y2="600" stroke="#00d4ff" stroke-width="1" opacity="0.3"/>
+  
+  <text x="600" y="650" text-anchor="middle" fill="#00d4ff" font-family="monospace" font-size="14" filter="url(#glow)">The Key Insight</text>
+  
+  <text x="600" y="690" text-anchor="middle" fill="#667" font-family="monospace" font-size="13">Droids generate the proof database.</text>
+  <text x="600" y="715" text-anchor="middle" fill="#667" font-family="monospace" font-size="13">The proof database trains the synthesizer.</text>
+  <text x="600" y="740" text-anchor="middle" fill="#00ff88" font-family="monospace" font-size="13" filter="url(#glow)">The synthesizer replaces the droids.</text>
+  
+  <!-- Straylight mark -->
+  <text x="1100" y="780" text-anchor="end" fill="#334" font-family="monospace" font-size="10">straylight · syn · 2026</text>
+</svg>

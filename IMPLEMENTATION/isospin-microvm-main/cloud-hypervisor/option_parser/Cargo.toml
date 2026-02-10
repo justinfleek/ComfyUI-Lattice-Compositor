@@ -1,0 +1,11 @@
+[package]
+authors = ["The Cloud Hypervisor Authors"]
+edition.workspace = true
+name = "option_parser"
+version = "0.1.0"
+
+[dependencies]
+thiserror = { workspace = true }
+
+[lints]
+workspace = true

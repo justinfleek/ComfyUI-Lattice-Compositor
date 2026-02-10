@@ -1,0 +1,16 @@
+[package]
+authors = ["The Cloud Hypervisor Authors"]
+edition.workspace = true
+name = "performance-metrics"
+version = "0.1.0"
+
+[dependencies]
+clap = { workspace = true, features = ["wrap_help"] }
+dirs = { workspace = true }
+serde = { workspace = true, features = ["derive", "rc"] }
+serde_json = { workspace = true }
+test_infra = { path = "../test_infra" }
+thiserror = { workspace = true }
+
+[lints]
+workspace = true

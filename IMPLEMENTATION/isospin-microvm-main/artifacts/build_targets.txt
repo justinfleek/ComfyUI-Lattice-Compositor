@@ -1,0 +1,36 @@
+# Isospin Build Targets Manifest
+# All available Buck2 targets for Firecracker and Cloud Hypervisor
+
+## Firecracker Targets
+//firecracker:firecracker_binary          # Main Firecracker binary
+//firecracker:vmm_lib                    # VMM library
+//firecracker:utils_lib                  # Utilities library
+//firecracker:seccompiler_binary         # Seccomp compiler
+//firecracker:seccomp_policies           # Seccomp policy collection
+
+## Cloud Hypervisor Targets
+//cloud-hypervisor:cloud_hypervisor_binary # Main Cloud Hypervisor binary
+//cloud-hypervisor:vmm_lib               # VMM library
+//cloud-hypervisor:hypervisor_lib        # Hypervisor abstraction
+//cloud-hypervisor:devices_lib           # Device management
+//cloud-hypervisor:pci_lib               # PCI management
+//cloud-hypervisor:arch_lib              # Architecture support
+//cloud-hypervisor:vm_allocator_lib      # Memory allocation
+//cloud-hypervisor:vm_device_lib         # Device abstraction
+//cloud-hypervisor:api_client_lib        # Management API
+
+## Platform Targets
+//platforms:x86_64-linux               # x86_64 Linux platform
+//platforms:aarch64-linux              # aarch64 Linux platform
+
+## Validation Targets
+//:build_validator                     # Build environment validator
+//:external_deps_test                  # External dependencies test
+//:all_unit_tests                      # All unit tests
+//:platform_tests                      # Platform validation tests
+//:core_hypervisors                    # Core hypervisor group
+
+## Build Groups
+//firecracker/...                      # All Firecracker targets
+//cloud-hypervisor/...                  # All Cloud Hypervisor targets
+//...                                   # All targets in monorepo

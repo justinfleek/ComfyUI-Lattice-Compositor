@@ -1,0 +1,42 @@
+[buildfile]
+include = "//:prelude"
+
+[builtin]
+allow_unresolved_symlinks = true
+
+[cells]
+root = .
+
+[parser]
+babel_bin = "node_modules/@babel/cli/bin/babel.js"
+
+[buck2]
+# Build configuration for isospin monorepo
+default_target_platforms = [
+    "root//platforms:x86_64-linux",
+    "root//platforms:aarch64-linux",
+]
+
+# L2 cache configuration
+l2_cache_path = "/tmp/buck2_l2_cache"
+
+# Remote execution (disabled for local development)
+remote_execution_enabled = false
+
+# Parallel execution
+parallel_execution = true
+
+# Build caching
+reuse_file_config = true
+materialize_file_changes = true
+
+# Source hashing
+project_hash_salt = "isospin-firecracker-cloud-hypervisor"
+
+[python]
+bootstrap_template_prepend = "#!/usr/bin/env python3"
+
+[rust]
+# Use system rust toolchain
+rustc_version = "1.89.0"
+default_edition = "2024"

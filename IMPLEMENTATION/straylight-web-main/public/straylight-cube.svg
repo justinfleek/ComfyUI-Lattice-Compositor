@@ -1,0 +1,335 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1400">
+  <defs>
+    <pattern id="grid" width="64" height="64" patternUnits="userSpaceOnUse">
+      <path d="M 64 0 L 0 0 0 64" fill="none" stroke="#596775" stroke-width="0.5" opacity="0.15"/>
+    </pattern>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L9,3 z" fill="#54aeff"/>
+    </marker>
+    <marker id="arrowGray" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L9,3 z" fill="#596775"/>
+    </marker>
+    <marker id="arrowStatus" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L9,3 z" fill="#80ccff"/>
+    </marker>
+    <linearGradient id="cubeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#54aeff" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#111417" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  
+  <rect width="1920" height="1400" fill="#111417"/>
+  <rect width="1920" height="1400" fill="url(#grid)"/>
+  
+  <!-- Title -->
+  <text x="960" y="60" text-anchor="middle" font-family="JetBrains Mono, SF Mono, Consolas, monospace" font-size="48" font-weight="600" fill="#80ccff">The Straylight Cube</text>
+  <text x="960" y="100" text-anchor="middle" font-family="JetBrains Mono, SF Mono, Consolas, monospace" font-size="20" fill="#596775">Correct by Construction · The Result is Saved</text>
+  
+  <!-- ═══════════════════════════════════════════════════════════════════════════════
+       TIER 0: PROVEN (rfl)
+       ═══════════════════════════════════════════════════════════════════════════════ -->
+  <g transform="translate(560, 140)">
+    <rect x="0" y="0" width="800" height="90" rx="0" fill="#111417" stroke="#54aeff" stroke-width="3"/>
+    <text x="400" y="35" text-anchor="middle" font-family="JetBrains Mono, SF Mono, Consolas, monospace" font-size="24" fill="#54aeff">PROVEN (rfl)</text>
+    <text x="400" y="60" text-anchor="middle" font-family="JetBrains Mono, SF Mono, Consolas, monospace" font-size="14" fill="#596775">Reflexivity · The oracle that accepts or rejects</text>
+    <text x="400" y="80" text-anchor="middle" font-family="JetBrains Mono, SF Mono, Consolas, monospace" font-size="11" fill="#80ccff" font-style="italic">stochastic_omega: LLM-driven proof search constrained by rfl</text>
+  </g>
+  
+  <!-- Arrow down -->
+  <line x1="960" y1="230" x2="960" y2="270" stroke="#54aeff" stroke-width="2" marker-end="url(#arrow)"/>
+  
+  <!-- ═══════════════════════════════════════════════════════════════════════════════
+       TIER 1: LANGUAGE COSET
+       ═══════════════════════════════════════════════════════════════════════════════ -->
+  <g transform="translate(160, 280)">
+    <rect x="0" y="0" width="1600" height="130" rx="0" fill="#111417" stroke="#80ccff" stroke-width="2"/>
+    <text x="30" y="35" font-family="JetBrains Mono, SF Mono, Consolas, monospace" font-size="20" fill="#80ccff">Language Coset</text>
+    <text x="30" y="55" font-family="JetBrains Mono, SF Mono, Consolas, monospace" font-size="12" fill="#596775">Same semantics, different tradeoffs. Property tested against each other.</text>
+    
+    <!-- Languages -->
+    <g transform="translate(30, 70)">
+      <rect x="0" y="0" width="100" height="45" rx="0" fill="#0d1012" stroke="#54aeff" stroke-width="2"/>
+      <text x="50" y="20" text-anchor="middle" font-family="JetBrains Mono, SF Mono, Consolas, monospace" font-size="14" fill="#54aeff">Lean 4</text>
+      <text x="50" y="36" text-anchor="middle" font-family="JetBrains Mono, SF Mono, Consolas, monospace" font-size="9" fill="#596775">CIC · proofs</text>
+    </g>
+    <g transform="translate(150, 70)">
+      <rect x="0" y="0" width="100" height="45" rx="0" fill="#0d1012" stroke="#80ccff" stroke-width="2"/>
+      <text x="50" y="20" text-anchor="middle" font-family="JetBrains Mono, SF Mono, Consolas, monospace" font-size="14" fill="#80ccff">Dhall</text>
+      <text x="50" y="36" text-anchor="middle" font-family="JetBrains Mono, SF Mono, Consolas, monospace" font-size="9" fill="#596775">Fω · total</text>
+    </g>
+    <g transform="translate(270, 70)">
+      <rect x="0" y="0" width="120" height="45" rx="0" fill="#0d1012" stroke="#d19a66" stroke-width="2"/>
+      <text x="60" y="20" text-anchor="middle" font-family="JetBrains Mono, SF Mono, Consolas, monospace" font-size="14" fill="#d19a66">PureScript</text>
+      <text x="60" y="36" text-anchor="middle" font-family="JetBrains Mono, SF Mono, Consolas, monospace" font-size="9" fill="#596775">Fω · HKT</text>
+    </g>
+    <g transform="translate(410, 70)">
+      <rect x="0" y="0" width="100" height="45" rx="0" fill="#0d1012" stroke="#b6e3ff" stroke-width="2"/>
+      <text x="50" y="20" text-anchor="middle" font-family="JetBrains Mono, SF Mono, Consolas, monospace" font-size="14" fill="#b6e3ff">Haskell</text>
+      <text x="50" y="36" text-anchor="middle" font-family="JetBrains Mono, SF Mono, Consolas, monospace" font-size="9" fill="#596775">Fω · native</text>
+    </g>
+    <g transform="translate(530, 70)">
+      <rect x="0" y="0" width="80" height="45" rx="0" fill="#0d1012" stroke="#54aeff" stroke-width="2"/>
+      <text x="40" y="20" text-anchor="middle" font-family="JetBrains Mono, SF Mono, Consolas, monospace" font-size="14" fill="#54aeff">Rust</text>
+      <text x="40" y="36" text-anchor="middle" font-family="JetBrains Mono, SF Mono, Consolas, monospace" font-size="9" fill="#596775">F · affine</text>
+    </g>
+    
+    <!-- Arrows between languages -->
+    <line x1="130" y1="92" x2="145" y2="92" stroke="#596775" stroke-width="1" stroke-dasharray="4,2"/>
+    <line x1="250" y1="92" x2="265" y2="92" stroke="#596775" stroke-width="1" stroke-dasharray="4,2"/>
+    <line x1="390" y1="92" x2="405" y2="92" stroke="#596775" stroke-width="1" stroke-dasharray="4,2"/>
+    <line x1="510" y1="92" x2="525" y2="92" stroke="#596775" stroke-width="1" stroke-dasharray="4,2"/>
+    
+    <!-- Compilers -->
+    <text x="680" y="85" font-family="JetBrains Mono, SF Mono, Consolas, monospace" font-size="10" fill="#596775">→</text>
+    <g transform="translate(700, 70)">
+      <text x="0" y="15" font-family="JetBrains Mono, SF Mono, Consolas, monospace" font-size="11" fill="#596775">lake → C</text>
+      <text x="0" y="30" font-family="JetBrains Mono, SF Mono, Consolas, monospace" font-size="11" fill="#596775">dhall-rust</text>
+      <text x="0" y="45" font-family="JetBrains Mono, SF Mono, Consolas, monospace" font-size="11" fill="#596775">purs → JS</text>
+    </g>
+    <g transform="translate(820, 70)">
+      <text x="0" y="15" font-family="JetBrains Mono, SF Mono, Consolas, monospace" font-size="11" fill="#596775">GHC → native</text>
+      <text x="0" y="30" font-family="JetBrains Mono, SF Mono, Consolas, monospace" font-size="11" fill="#596775">rustc → native</text>
+    </g>
+    
+    <!-- Note -->
+    <text x="1050" y="100" font-family="JetBrains Mono, SF Mono, Consolas, monospace" font-size="11" fill="#596775" font-style="italic">At LLVM IR level, closer than you'd think.</text>
+  </g>
+  
+  <!-- Branch arrows -->
+  <line x1="560" y1="410" x2="560" y2="460" stroke="#80ccff" stroke-width="2" marker-end="url(#arrowStatus)"/>
+  <line x1="1360" y1="410" x2="1360" y2="460" stroke="#80ccff" stroke-width="2" marker-end="url(#arrowStatus)"/>
+  
+  <!-- ═══════════════════════════════════════════════════════════════════════════════
+       TIER 2: OUTPUT TARGETS
+       ═══════════════════════════════════════════════════════════════════════════════ -->
+  <!-- WASM Branch -->
+  <g transform="translate(260, 470)">
+    <rect x="0" y="0" width="600" height="100" rx="0" fill="#111417" stroke="#7ec699" stroke-width="2"/>
+    <text x="30" y="35" font-family="JetBrains Mono, SF Mono, Consolas, monospace" font-size="20" fill="#7ec699">WASM (Portable)</text>
+    <text x="30" y="55" font-family="JetBrains Mono, SF Mono, Consolas, monospace" font-size="12" fill="#596775">Sandboxed execution · builtins.wasm</text>
+    
+    <g transform="translate(30, 65)">
+      <rect x="0" y="0" width="120" height="25" rx="0" fill="#111417" stroke="#7ec699"/>
+      <text x="60" y="17" text-anchor="middle" font-family="JetBrains Mono, SF Mono, Consolas, monospace" font-size="11" fill="#7ec699">builtins.wasm</text>
+    </g>
+    <g transform="translate(160, 65)">
+      <rect x="0" y="0" width="100" height="25" rx="0" fill="#111417" stroke="#7ec699"/>
+      <text x="50" y="17" text-anchor="middle" font-family="JetBrains Mono, SF Mono, Consolas, monospace" font-size="11" fill="#7ec699">git-odb.wasm</text>
+    </g>
+  </g>
+  
+  <!-- C/Native Branch -->
+  <g transform="translate(1060, 470)">
+    <rect x="0" y="0" width="600" height="100" rx="0" fill="#111417" stroke="#54aeff" stroke-width="2"/>
+    <text x="30" y="35" font-family="JetBrains Mono, SF Mono, Consolas, monospace" font-size="20" fill="#54aeff">C (Native/Kernel)</text>
+    <text x="30" y="55" font-family="JetBrains Mono, SF Mono, Consolas, monospace" font-size="12" fill="#596775">Certified extraction · Lean → C</text>
+    
+    <g transform="translate(30, 65)">
+      <rect x="0" y="0" width="100" height="25" rx="0" fill="#111417" stroke="#54aeff"/>
+      <text x="50" y="17" text-anchor="middle" font-family="JetBrains Mono, SF Mono, Consolas, monospace" font-size="11" fill="#54aeff">r2-backend</text>
+    </g>
+    <g transform="translate(140, 65)">
+      <rect x="0" y="0" width="100" height="25" rx="0" fill="#111417" stroke="#54aeff"/>
+      <text x="50" y="17" text-anchor="middle" font-family="JetBrains Mono, SF Mono, Consolas, monospace" font-size="11" fill="#54aeff">nvidia.ko</text>
+    </g>
+    <text x="260" y="82" font-family="JetBrains Mono, SF Mono, Consolas, monospace" font-size="10" fill="#596775" font-style="italic">(proven driver)</text>
+  </g>
+  
+  <!-- Arrows down from outputs -->
+  <line x1="560" y1="570" x2="560" y2="610" stroke="#7ec699" stroke-width="2"/>
+  <line x1="1360" y1="570" x2="1360" y2="610" stroke="#54aeff" stroke-width="2"/>
+  
+  <!-- ═══════════════════════════════════════════════════════════════════════════════
+       TIER 3: ISOLATION
+       ═══════════════════════════════════════════════════════════════════════════════ -->
+  <!-- WASM Sandbox -->
+  <g transform="translate(260, 620)">
+    <rect x="0" y="0" width="600" height="80" rx="0" fill="#111417" stroke="#596775" stroke-width="1"/>
+    <text x="30" y="30" font-family="JetBrains Mono, SF Mono, Consolas, monospace" font-size="16" fill="#7ec699">ISOLATION: Sandbox</text>
+    <text x="30" y="50" font-family="JetBrains Mono, SF Mono, Consolas, monospace" font-size="12" fill="#596775">wasmtime · capability-based · no syscalls</text>
+    <text x="30" y="68" font-family="JetBrains Mono, SF Mono, Consolas, monospace" font-size="10" fill="#596775" font-style="italic">The build runs in a WASM sandbox. Can't escape.</text>
+  </g>
+  
+  <!-- Firecracker/Hypervisor -->
+  <g transform="translate(1060, 620)">
+    <rect x="0" y="0" width="600" height="80" rx="0" fill="#111417" stroke="#596775" stroke-width="1"/>
+    <text x="30" y="30" font-family="JetBrains Mono, SF Mono, Consolas, monospace" font-size="16" fill="#54aeff">ISOLATION: Hypervisor</text>
+    <text x="30" y="50" font-family="JetBrains Mono, SF Mono, Consolas, monospace" font-size="12" fill="#596775">isospin microvm · firecracker · GPU workloads</text>
+    <text x="30" y="68" font-family="JetBrains Mono, SF Mono, Consolas, monospace" font-size="10" fill="#596775" font-style="italic">True isolation. Minimal kernel surface.</text>
+  </g>
+  
+  <!-- Converge -->
+  <line x1="560" y1="700" x2="560" y2="740" stroke="#596775" stroke-width="2"/>
+  <line x1="1360" y1="700" x2="1360" y2="740" stroke="#596775" stroke-width="2"/>
+  <line x1="560" y1="740" x2="960" y2="740" stroke="#596775" stroke-width="2"/>
+  <line x1="1360" y1="740" x2="960" y2="740" stroke="#596775" stroke-width="2"/>
+  <line x1="960" y1="740" x2="960" y2="780" stroke="#54aeff" stroke-width="2" marker-end="url(#arrow)"/>
+  
+  <!-- ═══════════════════════════════════════════════════════════════════════════════
+       TIER 4: DICE (Build System)
+       ═══════════════════════════════════════════════════════════════════════════════ -->
+  <g transform="translate(460, 790)">
+    <rect x="0" y="0" width="1000" height="120" rx="0" fill="#111417" stroke="#54aeff" stroke-width="3"/>
+    <text x="500" y="35" text-anchor="middle" font-family="JetBrains Mono, SF Mono, Consolas, monospace" font-size="24" fill="#54aeff">DICE</text>
+    <text x="500" y="55" text-anchor="middle" font-family="JetBrains Mono, SF Mono, Consolas, monospace" font-size="12" fill="#596775">Action graph · Remote execution · Incremental · TSET</text>
+    
+    <!-- Build flow -->
+    <g transform="translate(200, 70)">
+      <rect x="0" y="0" width="80" height="35" rx="0" fill="#0d1012" stroke="#80ccff"/>
+      <text x="40" y="22" text-anchor="middle" font-family="JetBrains Mono, SF Mono, Consolas, monospace" font-size="12" fill="#80ccff">inputs</text>
+    </g>
+    <line x1="290" y1="87" x2="350" y2="87" stroke="#80ccff" stroke-width="1" marker-end="url(#arrowStatus)"/>
+    <g transform="translate(360, 70)">
+      <rect x="0" y="0" width="80" height="35" rx="0" fill="#0d1012" stroke="#54aeff"/>
+      <text x="40" y="22" text-anchor="middle" font-family="JetBrains Mono, SF Mono, Consolas, monospace" font-size="12" fill="#54aeff">action</text>
+    </g>
+    <line x1="450" y1="87" x2="510" y2="87" stroke="#54aeff" stroke-width="1" marker-end="url(#arrow)"/>
+    <g transform="translate(520, 70)">
+      <rect x="0" y="0" width="80" height="35" rx="0" fill="#0d1012" stroke="#7ec699"/>
+      <text x="40" y="22" text-anchor="middle" font-family="JetBrains Mono, SF Mono, Consolas, monospace" font-size="12" fill="#7ec699">outputs</text>
+    </g>
+    
+    <text x="700" y="95" font-family="JetBrains Mono, SF Mono, Consolas, monospace" font-size="10" fill="#596775">Buck2 core + Dhall BUILD files</text>
+  </g>
+  
+  <!-- Arrow down -->
+  <line x1="960" y1="910" x2="960" y2="950" stroke="#54aeff" stroke-width="2" marker-end="url(#arrow)"/>
+  
+  <!-- ═══════════════════════════════════════════════════════════════════════════════
+       TIER 5: ATOMS
+       ═══════════════════════════════════════════════════════════════════════════════ -->
+  <g transform="translate(260, 960)">
+    <rect x="0" y="0" width="1400" height="100" rx="0" fill="#111417" stroke="url(#cubeGrad)" stroke-width="3"/>
+    <rect x="0" y="0" width="1400" height="100" rx="0" fill="none" stroke="#80ccff" stroke-width="2"/>
+    <text x="30" y="30" font-family="JetBrains Mono, SF Mono, Consolas, monospace" font-size="20" fill="#80ccff">ATOMS</text>
+    <text x="30" y="50" font-family="JetBrains Mono, SF Mono, Consolas, monospace" font-size="12" fill="#596775">The primitives. Not "hash → bytes" — there's structure.</text>
+    
+    <!-- Atoms -->
+    <g transform="translate(30, 60)">
+      <rect x="0" y="0" width="100" height="30" rx="0" fill="#0d1012" stroke="#596775"/>
+      <text x="50" y="20" text-anchor="middle" font-family="JetBrains Mono, SF Mono, Consolas, monospace" font-size="11" fill="#80ccff">namespace</text>
+    </g>
+    <line x1="135" y1="75" x2="155" y2="75" stroke="#596775" stroke-width="1"/>
+    <g transform="translate(160, 60)">
+      <rect x="0" y="0" width="60" height="30" rx="0" fill="#0d1012" stroke="#596775"/>
+      <text x="30" y="20" text-anchor="middle" font-family="JetBrains Mono, SF Mono, Consolas, monospace" font-size="11" fill="#80ccff">vm</text>
+    </g>
+    <line x1="225" y1="75" x2="245" y2="75" stroke="#596775" stroke-width="1"/>
+    <g transform="translate(250, 60)">
+      <rect x="0" y="0" width="70" height="30" rx="0" fill="#0d1012" stroke="#596775"/>
+      <text x="35" y="20" text-anchor="middle" font-family="JetBrains Mono, SF Mono, Consolas, monospace" font-size="11" fill="#80ccff">build</text>
+    </g>
+    <line x1="325" y1="75" x2="345" y2="75" stroke="#596775" stroke-width="1"/>
+    <g transform="translate(350, 60)">
+      <rect x="0" y="0" width="80" height="30" rx="0" fill="#0d1012" stroke="#596775"/>
+      <text x="40" y="20" text-anchor="middle" font-family="JetBrains Mono, SF Mono, Consolas, monospace" font-size="11" fill="#80ccff">artifact</text>
+    </g>
+    
+    <!-- All connect to store -->
+    <line x1="215" y1="95" x2="510" y2="95" stroke="#596775" stroke-width="1"/>
+    <line x1="510" y1="95" x2="510" y2="75" stroke="#596775" stroke-width="1"/>
+    
+    <g transform="translate(470, 60)">
+      <rect x="0" y="0" width="80" height="30" rx="0" fill="#0d1012" stroke="#54aeff" stroke-width="2"/>
+      <text x="40" y="20" text-anchor="middle" font-family="JetBrains Mono, SF Mono, Consolas, monospace" font-size="11" fill="#54aeff">store</text>
+    </g>
+    
+    <!-- Descriptions -->
+    <text x="620" y="75" font-family="JetBrains Mono, SF Mono, Consolas, monospace" font-size="10" fill="#596775">unshare</text>
+    <text x="620" y="88" font-family="JetBrains Mono, SF Mono, Consolas, monospace" font-size="10" fill="#596775">firecracker</text>
+    <text x="730" y="75" font-family="JetBrains Mono, SF Mono, Consolas, monospace" font-size="10" fill="#596775">derivation</text>
+    <text x="730" y="88" font-family="JetBrains Mono, SF Mono, Consolas, monospace" font-size="10" fill="#596775">r2</text>
+  </g>
+  
+  <!-- Arrow down -->
+  <line x1="960" y1="1060" x2="960" y2="1100" stroke="#80ccff" stroke-width="2" marker-end="url(#arrowStatus)"/>
+  
+  <!-- ═══════════════════════════════════════════════════════════════════════════════
+       TIER 6: CRYPTOGRAPHIC SUBSTRATE
+       ═══════════════════════════════════════════════════════════════════════════════ -->
+  <g transform="translate(360, 1110)">
+    <rect x="0" y="0" width="1200" height="140" rx="0" fill="#111417" stroke="#596775" stroke-width="2"/>
+    <text x="600" y="30" text-anchor="middle" font-family="JetBrains Mono, SF Mono, Consolas, monospace" font-size="18" fill="#596775">Cryptographic Substrate</text>
+    
+    <!-- Three pillars -->
+    <g transform="translate(100, 50)">
+      <rect x="0" y="0" width="120" height="70" rx="0" fill="#0d1012" stroke="#80ccff"/>
+      <text x="60" y="25" text-anchor="middle" font-family="JetBrains Mono, SF Mono, Consolas, monospace" font-size="14" fill="#80ccff">sha256</text>
+      <text x="60" y="45" text-anchor="middle" font-family="JetBrains Mono, SF Mono, Consolas, monospace" font-size="10" fill="#596775">content</text>
+      <text x="60" y="58" text-anchor="middle" font-family="JetBrains Mono, SF Mono, Consolas, monospace" font-size="10" fill="#596775">addressing</text>
+    </g>
+    
+    <g transform="translate(340, 50)">
+      <rect x="0" y="0" width="120" height="70" rx="0" fill="#0d1012" stroke="#54aeff"/>
+      <text x="60" y="25" text-anchor="middle" font-family="JetBrains Mono, SF Mono, Consolas, monospace" font-size="14" fill="#54aeff">git</text>
+      <text x="60" y="45" text-anchor="middle" font-family="JetBrains Mono, SF Mono, Consolas, monospace" font-size="10" fill="#596775">attestation</text>
+      <text x="60" y="58" text-anchor="middle" font-family="JetBrains Mono, SF Mono, Consolas, monospace" font-size="10" fill="#596775">(small)</text>
+    </g>
+    
+    <g transform="translate(580, 50)">
+      <rect x="0" y="0" width="120" height="70" rx="0" fill="#0d1012" stroke="#7ec699"/>
+      <text x="60" y="25" text-anchor="middle" font-family="JetBrains Mono, SF Mono, Consolas, monospace" font-size="14" fill="#7ec699">r2</text>
+      <text x="60" y="45" text-anchor="middle" font-family="JetBrains Mono, SF Mono, Consolas, monospace" font-size="10" fill="#596775">artifacts</text>
+      <text x="60" y="58" text-anchor="middle" font-family="JetBrains Mono, SF Mono, Consolas, monospace" font-size="10" fill="#596775">(big)</text>
+    </g>
+    
+    <g transform="translate(820, 50)">
+      <rect x="0" y="0" width="120" height="70" rx="0" fill="#0d1012" stroke="#b6e3ff"/>
+      <text x="60" y="25" text-anchor="middle" font-family="JetBrains Mono, SF Mono, Consolas, monospace" font-size="14" fill="#b6e3ff">ed25519</text>
+      <text x="60" y="45" text-anchor="middle" font-family="JetBrains Mono, SF Mono, Consolas, monospace" font-size="10" fill="#596775">identity</text>
+      <text x="60" y="58" text-anchor="middle" font-family="JetBrains Mono, SF Mono, Consolas, monospace" font-size="10" fill="#596775">+ signing</text>
+    </g>
+    
+    <g transform="translate(1000, 50)">
+      <rect x="0" y="0" width="80" height="70" rx="0" fill="#0d1012" stroke="#596775"/>
+      <text x="40" y="25" text-anchor="middle" font-family="JetBrains Mono, SF Mono, Consolas, monospace" font-size="14" fill="#596775">ssh</text>
+      <text x="40" y="50" text-anchor="middle" font-family="JetBrains Mono, SF Mono, Consolas, monospace" font-size="10" fill="#596775">transport</text>
+    </g>
+    
+    <!-- Arrows between -->
+    <line x1="230" y1="85" x2="330" y2="85" stroke="#596775" stroke-width="1" stroke-dasharray="4,2"/>
+    <line x1="470" y1="85" x2="570" y2="85" stroke="#596775" stroke-width="1" stroke-dasharray="4,2"/>
+    <line x1="710" y1="85" x2="810" y2="85" stroke="#596775" stroke-width="1" stroke-dasharray="4,2"/>
+    <line x1="950" y1="85" x2="990" y2="85" stroke="#596775" stroke-width="1" stroke-dasharray="4,2"/>
+  </g>
+  
+  <!-- ═══════════════════════════════════════════════════════════════════════════════
+       SIDE NOTES
+       ═══════════════════════════════════════════════════════════════════════════════ -->
+  
+  <!-- Eliminations box -->
+  <g transform="translate(40, 470)">
+    <rect x="0" y="0" width="200" height="200" rx="0" fill="#111417" stroke="#596775" stroke-width="1"/>
+    <text x="100" y="25" text-anchor="middle" font-family="JetBrains Mono, SF Mono, Consolas, monospace" font-size="14" fill="#80ccff">Eliminations</text>
+    <text x="15" y="50" font-family="JetBrains Mono, SF Mono, Consolas, monospace" font-size="10" fill="#596775">Bazel → Buck2</text>
+    <text x="15" y="68" font-family="JetBrains Mono, SF Mono, Consolas, monospace" font-size="10" fill="#596775">Starlark → Dhall</text>
+    <text x="15" y="86" font-family="JetBrains Mono, SF Mono, Consolas, monospace" font-size="10" fill="#596775">Globs → explicit</text>
+    <text x="15" y="104" font-family="JetBrains Mono, SF Mono, Consolas, monospace" font-size="10" fill="#596775">String configs → typed</text>
+    <text x="15" y="122" font-family="JetBrains Mono, SF Mono, Consolas, monospace" font-size="10" fill="#596775">nix remote → isospin</text>
+    <text x="15" y="155" font-family="JetBrains Mono, SF Mono, Consolas, monospace" font-size="9" fill="#596775" font-style="italic">"I'll know what I'm</text>
+    <text x="15" y="168" font-family="JetBrains Mono, SF Mono, Consolas, monospace" font-size="9" fill="#596775" font-style="italic">building or I'll know</text>
+    <text x="15" y="181" font-family="JetBrains Mono, SF Mono, Consolas, monospace" font-size="9" fill="#596775" font-style="italic">the reason why."</text>
+  </g>
+  
+  <!-- What's left of Nix box -->
+  <g transform="translate(1680, 470)">
+    <rect x="0" y="0" width="200" height="200" rx="0" fill="#111417" stroke="#7ec699" stroke-width="1"/>
+    <text x="100" y="25" text-anchor="middle" font-family="JetBrains Mono, SF Mono, Consolas, monospace" font-size="14" fill="#7ec699">What's Left of Nix?</text>
+    <text x="15" y="50" font-family="JetBrains Mono, SF Mono, Consolas, monospace" font-size="10" fill="#596775">DSL → typed langs</text>
+    <text x="15" y="68" font-family="JetBrains Mono, SF Mono, Consolas, monospace" font-size="10" fill="#596775">eval → builtins.wasm</text>
+    <text x="15" y="86" font-family="JetBrains Mono, SF Mono, Consolas, monospace" font-size="10" fill="#596775">daemon → r2 + git</text>
+    <text x="15" y="104" font-family="JetBrains Mono, SF Mono, Consolas, monospace" font-size="10" fill="#596775">sandbox → wasm/fc</text>
+    <line x1="15" y1="120" x2="185" y2="120" stroke="#596775" stroke-width="1"/>
+    <text x="15" y="140" font-family="JetBrains Mono, SF Mono, Consolas, monospace" font-size="11" fill="#7ec699">The answer:</text>
+    <text x="15" y="158" font-family="JetBrains Mono, SF Mono, Consolas, monospace" font-size="10" fill="#596775">The protocol.</text>
+    <text x="15" y="173" font-family="JetBrains Mono, SF Mono, Consolas, monospace" font-size="10" fill="#596775">Content-addressing.</text>
+    <text x="15" y="188" font-family="JetBrains Mono, SF Mono, Consolas, monospace" font-size="10" fill="#596775">The concept.</text>
+  </g>
+  
+  <!-- Footer -->
+  <text x="100" y="1320" font-family="JetBrains Mono, SF Mono, Consolas, monospace" font-size="14" fill="#596775">"Continuity is continuity. Continuity's job is continuity."</text>
+  <text x="100" y="1345" font-family="JetBrains Mono, SF Mono, Consolas, monospace" font-size="12" fill="#596775">All computations run on "perfect conceptual computers." Correct by construction — the result is saved.</text>
+  <text x="100" y="1370" font-family="JetBrains Mono, SF Mono, Consolas, monospace" font-size="12" fill="#596775">One content-addressing scheme — the hash is the artifact.</text>
+  
+  <text x="1870" y="1370" text-anchor="end" font-family="JetBrains Mono, SF Mono, Consolas, monospace" font-size="14" fill="#596775" opacity="0.6">aleph-008 · continuity · 2026</text>
+</svg>
