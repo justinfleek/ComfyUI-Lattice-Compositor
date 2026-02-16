@@ -1,4 +1,5 @@
 {-|
+{-# LANGUAGE OverloadedStrings #-}
 Module      : Lattice.Services.Particles.Turbulence
 Description : Turbulence/Noise Force Fields
 Copyright   : (c) Lattice Team, 2026
@@ -187,7 +188,6 @@ multiOctaveNoise persistence octaves =
 curlNoiseForce
   :: Double -> Double
   -> Double -> Double
-  -> Double
   -> Vec2
 curlNoiseForce noiseX noiseY strength deltaTime =
   let (curlX, curlY) = curlGradient noiseX noiseY

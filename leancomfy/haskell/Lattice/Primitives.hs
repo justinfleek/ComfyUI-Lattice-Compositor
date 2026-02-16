@@ -1,4 +1,5 @@
 {-# LANGUAGE StrictData #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
@@ -19,27 +20,27 @@ All other Lattice modules depend on this.
 
 module Lattice.Primitives
   ( -- * String Primitives
-    NonEmptyString
+    NonEmptyString(..)
   , mkNonEmptyString
   , unNonEmptyString
     -- * Integer Primitives
-  , PositiveInt
+  , PositiveInt(..)
   , mkPositiveInt
   , unPositiveInt
     -- * Float Primitives
-  , FiniteFloat
+  , FiniteFloat(..)
   , mkFiniteFloat
   , unFiniteFloat
-  , PositiveFloat
+  , PositiveFloat(..)
   , mkPositiveFloat
   , unPositiveFloat
-  , NonNegativeFloat
+  , NonNegativeFloat(..)
   , mkNonNegativeFloat
   , unNonNegativeFloat
-  , Percentage
+  , Percentage(..)
   , mkPercentage
   , unPercentage
-  , UnitFloat
+  , UnitFloat(..)
   , mkUnitFloat
   , unUnitFloat
     -- * Frame Number
@@ -54,7 +55,7 @@ module Lattice.Primitives
     -- * Color Primitives
   , RGB(..)
   , RGBA(..)
-  , HexColor
+  , HexColor(..)
   , mkHexColor
   , unHexColor
     -- * Constants
@@ -241,18 +242,18 @@ data Matrix4x4 = Matrix4x4
 -- Color Primitives
 --------------------------------------------------------------------------------
 
--- | RGB color with values in [0, 1]
+-- | RGB color with values in [0, 255]
 data RGB = RGB
-  { rgbR :: !UnitFloat
-  , rgbG :: !UnitFloat
-  , rgbB :: !UnitFloat
+  { rgbR :: !FiniteFloat
+  , rgbG :: !FiniteFloat
+  , rgbB :: !FiniteFloat
   } deriving stock (Eq, Show, Generic)
 
--- | RGBA color with values in [0, 1]
+-- | RGBA color with R,G,B in [0, 255] and A in [0, 1]
 data RGBA = RGBA
-  { rgbaR :: !UnitFloat
-  , rgbaG :: !UnitFloat
-  , rgbaB :: !UnitFloat
+  { rgbaR :: !FiniteFloat
+  , rgbaG :: !FiniteFloat
+  , rgbaB :: !FiniteFloat
   , rgbaA :: !UnitFloat
   } deriving stock (Eq, Show, Generic)
 

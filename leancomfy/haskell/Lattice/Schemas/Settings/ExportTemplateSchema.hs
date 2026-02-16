@@ -42,7 +42,7 @@ module Lattice.Schemas.Settings.ExportTemplateSchema
   ) where
 
 import GHC.Generics (Generic)
-import Data.Text (Text)
+import Data.Text (Text, pack)
 import qualified Data.Text as T
 import Data.Maybe (isJust)
 
@@ -192,18 +192,18 @@ validateExportTemplateConfig config = do
   -- Validate dimensions
   case etcWidth config of
     Just w | w > maxDimension -> Left $ mkError "config.width" $
-             "must be at most " <> show maxDimension
+             "must be at most " <> pack (show maxDimension)
     _ -> Right ()
 
   case etcHeight config of
     Just h | h > maxDimension -> Left $ mkError "config.height" $
-             "must be at most " <> show maxDimension
+             "must be at most " <> pack (show maxDimension)
     _ -> Right ()
 
   -- Validate frameCount
   case etcFrameCount config of
     Just fc | fc > maxFrames -> Left $ mkError "config.frameCount" $
-              "must be at most " <> show maxFrames
+              "must be at most " <> pack (show maxFrames)
     _ -> Right ()
 
   -- Validate startFrame/endFrame relationship
@@ -214,33 +214,33 @@ validateExportTemplateConfig config = do
   -- Validate string lengths
   case etcOutputDir config of
     Just od | T.length od > maxPathLength -> Left $ mkError "config.outputDir" $
-              "must be at most " <> show maxPathLength <> " characters"
+              "must be at most " <> pack (show maxPathLength) <> " characters"
     _ -> Right ()
 
   case etcFilenamePrefix config of
     Just fp | T.length fp > maxFilenameLength -> Left $ mkError "config.filenamePrefix" $
-              "must be at most " <> show maxFilenameLength <> " characters"
+              "must be at most " <> pack (show maxFilenameLength) <> " characters"
     _ -> Right ()
 
   case etcPrompt config of
     Just p | T.length p > maxPromptLength -> Left $ mkError "config.prompt" $
-             "must be at most " <> show maxPromptLength <> " characters"
+             "must be at most " <> pack (show maxPromptLength) <> " characters"
     _ -> Right ()
 
   case etcNegativePrompt config of
     Just np | T.length np > maxPromptLength -> Left $ mkError "config.negativePrompt" $
-              "must be at most " <> show maxPromptLength <> " characters"
+              "must be at most " <> pack (show maxPromptLength) <> " characters"
     _ -> Right ()
 
   -- Validate numeric limits
   case etcSeed config of
     Just s | s > maxSeed -> Left $ mkError "config.seed" $
-             "must be at most " <> show maxSeed
+             "must be at most " <> pack (show maxSeed)
     _ -> Right ()
 
   case etcSteps config of
     Just st | st > maxSteps -> Left $ mkError "config.steps" $
-              "must be at most " <> show maxSteps
+              "must be at most " <> pack (show maxSteps)
     _ -> Right ()
 
   Right config
@@ -254,16 +254,16 @@ validateExportTemplate template = do
   -- Validate description
   case etDescription template of
     Just d | T.length d > maxDescriptionLength -> Left $ mkError "description" $
-             "must be at most " <> show maxDescriptionLength <> " characters"
+             "must be at most " <> pack (show maxDescriptionLength) <> " characters"
     _ -> Right ()
 
   -- Validate timestamps
   if etCreatedAt template > maxTimestamp
-    then Left $ mkError "createdAt" $ "must be at most " <> show maxTimestamp
+    then Left $ mkError "createdAt" $ "must be at most " <> pack (show maxTimestamp)
     else Right ()
 
   if etModifiedAt template > maxTimestamp
-    then Left $ mkError "modifiedAt" $ "must be at most " <> show maxTimestamp
+    then Left $ mkError "modifiedAt" $ "must be at most " <> pack (show maxTimestamp)
     else Right ()
 
   if etModifiedAt template < etCreatedAt template
@@ -284,7 +284,7 @@ safeValidateExportTemplate template =
 validateExportTemplateStore :: ExportTemplateStore -> Either ValidationError ExportTemplateStore
 validateExportTemplateStore store = do
   if length (etsTemplates store) > maxTemplates
-    then Left $ mkError "templates" $ "must have at most " <> show maxTemplates <> " templates"
+    then Left $ mkError "templates" $ "must have at most " <> pack (show maxTemplates) <> " templates"
     else Right ()
 
   -- Validate all templates

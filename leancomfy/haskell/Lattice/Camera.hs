@@ -1,4 +1,5 @@
 {-# LANGUAGE StrictData #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DerivingStrategies #-}
 
@@ -42,7 +43,7 @@ module Lattice.Camera
 
 import GHC.Generics (Generic)
 import Data.Vector (Vector)
-import Lattice.Primitives
+import Lattice.Primitives hiding (Vec2(..), Vec3(..))
 
 --------------------------------------------------------------------------------
 -- Enumerations

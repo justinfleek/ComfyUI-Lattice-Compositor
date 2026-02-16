@@ -1,4 +1,5 @@
 {-|
+{-# LANGUAGE OverloadedStrings #-}
 Module      : Lattice.Services.Physics.ForceFields
 Description : Force Field Calculations for Physics Simulation
 Copyright   : (c) Lattice Team, 2026
@@ -23,7 +24,7 @@ Source: ui/src/services/physics/PhysicsEngine.ts (ForceFieldProcessor class)
 module Lattice.Services.Physics.ForceFields
   ( -- * Types
     ForceFieldType(..)
-    ForceResult(..)
+  , ForceResult(..)
   , ForceConfig(..)
     -- * Force Calculations
   , calculateGravity

@@ -1,4 +1,5 @@
 {-# LANGUAGE StrictData #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 {-|
 Module      : Lattice.Utils.TypeGuards
@@ -147,12 +148,12 @@ mkBoundingBox x y width height
 -- Color Type Guards
 --------------------------------------------------------------------------------
 
--- | Check if RGB has valid channel values
+-- | Check if RGB has valid channel values (all in [0, 255])
 isValidRGB :: RGB -> Bool
 isValidRGB (RGB (FiniteFloat r) (FiniteFloat g) (FiniteFloat b)) =
   isColorChannel r && isColorChannel g && isColorChannel b
 
--- | Check if RGBA has valid values
+-- | Check if RGBA has valid values (R,G,B in [0, 255], A in [0, 1])
 isValidRGBA :: RGBA -> Bool
 isValidRGBA (RGBA (FiniteFloat r) (FiniteFloat g) (FiniteFloat b) (UnitFloat a)) =
   isColorChannel r && isColorChannel g && isColorChannel b && isUnitRange a

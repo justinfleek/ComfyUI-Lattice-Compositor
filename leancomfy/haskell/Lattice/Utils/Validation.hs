@@ -1,5 +1,6 @@
 {-# LANGUAGE StrictData #-}
 {-# LANGUAGE DeriveFunctor #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 {-|
 Module      : Lattice.Utils.Validation
@@ -261,7 +262,7 @@ validateVec4 x y z w name = do
 -- Color Validators
 --------------------------------------------------------------------------------
 
--- | Validate RGB color (0-255 each)
+-- | Validate RGB color (values in [0, 255])
 validateRGB :: Double -> Double -> Double -> Text -> ValidationResult RGB
 validateRGB r g b name = do
   let colorOpts = NumberOptions (Just 0) (Just 255)
@@ -270,7 +271,7 @@ validateRGB r g b name = do
   vb <- validateFiniteNumber b (name <> ".b") colorOpts
   pure (RGB vr vg vb)
 
--- | Validate RGBA color
+-- | Validate RGBA color (R,G,B in [0, 255], A in [0, 1])
 validateRGBA :: Double -> Double -> Double -> Double -> Text -> ValidationResult RGBA
 validateRGBA r g b a name = do
   let colorOpts = NumberOptions (Just 0) (Just 255)
@@ -306,7 +307,7 @@ validateAll validations =
   let errors = [e | Fail e <- validations]
   in if null errors
      then Ok ()
-     else Fail (T.intercalate "; " errors)
+     else Fail (T.intercalate (T.pack "; ") errors)
 
 -- | Chain two validations
 andThen :: ValidationResult a -> (a -> ValidationResult b) -> ValidationResult b

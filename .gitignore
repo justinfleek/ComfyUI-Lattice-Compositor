@@ -26,7 +26,7 @@ Thumbs.db
 .vitest/
 
 # External reference projects (not part of this codebase)
-ComfyUI/
+/ComfyUI/
 newfeatures/
 emacs-prism-theme-generator/
 neovim-prism-theme-generator/

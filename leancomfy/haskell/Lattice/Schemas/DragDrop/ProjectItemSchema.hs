@@ -28,7 +28,7 @@ module Lattice.Schemas.DragDrop.ProjectItemSchema
   ) where
 
 import GHC.Generics (Generic)
-import Data.Text (Text)
+import Data.Text (Text, pack)
 
 import Lattice.Schemas.SharedValidation
   ( ValidationError, mkError
@@ -98,13 +98,13 @@ validateProjectItem item = do
   -- Validate width
   case piWidth item of
     Just w | w > maxDimension -> Left $ mkError "width" $
-             "must be at most " <> show maxDimension
+             "must be at most " <> pack (show maxDimension)
     _ -> Right ()
 
   -- Validate height
   case piHeight item of
     Just h | h > maxDimension -> Left $ mkError "height" $
-             "must be at most " <> show maxDimension
+             "must be at most " <> pack (show maxDimension)
     _ -> Right ()
 
   Right item

@@ -2,6 +2,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE PatternSynonyms #-}
+{-# LANGUAGE LambdaCase #-}
 
 {-|
 Module      : Lattice.Utils.Uuid5
@@ -20,11 +22,11 @@ Source: leancomfy/lean/Lattice/Utils/Uuid5.lean
 
 module Lattice.Utils.Uuid5
   ( -- * Namespaces
-    UUID5_NAMESPACE_DNS
-  , UUID5_NAMESPACE_URL
-  , UUID5_NAMESPACE_OID
-  , UUID5_NAMESPACE_X500
-  , LATTICE_NAMESPACE
+    pattern UUID5_NAMESPACE_DNS
+  , pattern UUID5_NAMESPACE_URL
+  , pattern UUID5_NAMESPACE_OID
+  , pattern UUID5_NAMESPACE_X500
+  , pattern LATTICE_NAMESPACE
     -- * Core UUID5 Function
   , uuid5
     -- * SHA-1

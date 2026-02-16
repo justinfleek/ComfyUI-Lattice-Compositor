@@ -1,4 +1,5 @@
 {-# LANGUAGE StrictData #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DerivingStrategies #-}
 
@@ -58,7 +59,7 @@ module Lattice.Project
 import GHC.Generics (Generic)
 import Data.Text (Text)
 import Data.Vector (Vector)
-import Lattice.Primitives
+import Lattice.Primitives hiding (Vec2(..), Vec3(..))
 
 --------------------------------------------------------------------------------
 -- Layer Type

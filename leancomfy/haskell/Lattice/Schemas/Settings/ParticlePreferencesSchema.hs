@@ -36,7 +36,7 @@ module Lattice.Schemas.Settings.ParticlePreferencesSchema
   ) where
 
 import GHC.Generics (Generic)
-import Data.Text (Text)
+import Data.Text (Text, pack)
 
 import Lattice.Schemas.SharedValidation
   ( ValidationError, mkError
@@ -146,7 +146,7 @@ validateParticlePreferences pp = do
   _ <- validatePositiveInt "maxParticlesPerLayer" maxParticlesPerLayer (ppMaxParticlesPerLayer pp)
   if ppTargetFPS pp < minTargetFPS || ppTargetFPS pp > maxTargetFPS
     then Left $ mkError "targetFPS" $
-           "must be between " <> show minTargetFPS <> " and " <> show maxTargetFPS
+           "must be between " <> pack (show minTargetFPS) <> " and " <> pack (show maxTargetFPS)
     else Right pp
 
 -- | Safe validation
