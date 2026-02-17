@@ -1,0 +1,63 @@
+# Dependencies
+node_modules/
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# Build outputs
+dist/
+dist-newstyle/
+build/
+*.egg-info/
+coverage/
+
+# IDE and tool caches
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Test caches
+.pytest_cache/
+.hypothesis/
+.vitest/
+
+# External reference projects (not part of this codebase)
+/ComfyUI/
+newfeatures/
+emacs-prism-theme-generator/
+neovim-prism-theme-generator/
+vscode-prism-theme-generator/
+ComfyUI-EnhancedLinksandNodes-main/
+
+# Research/experimental folders
+leandocs/
+leanparticles/
+r2-worker/
+
+# Large binary files
+*.pdf
+*.bin
+*.obj
+
+# AI tool caches
+.aider*/
+.backups/
+
+# Temporary files
+*.tmp
+*.temp
+*.log
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Lock files (keep package-lock.json and flake.lock)
+*.lock
+!package-lock.json
+!flake.lock

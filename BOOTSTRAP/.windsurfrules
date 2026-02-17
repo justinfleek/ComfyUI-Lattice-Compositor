@@ -1,0 +1,48 @@
+# STRAYLIGHT PROTOCOL
+
+Read before coding:
+
+## Required Reading
+
+### Nix
+- `straylight-protocol/docs/rfc/straylight-001-standard-nix.md` OR `straylight-core/docs/rfc/straylight-001-standard-nix.md` - Nix naming, structure, forbidden patterns
+
+### Bash
+- `straylight-core/docs/rfc/straylight-006-safe-bash.md` - exec only, no logic
+
+### Scripts
+- `straylight-core/docs/skills/straylight-script/SKILL.md` - Writing Haskell scripts
+
+### File Locations
+- `straylight-core/CONTRIBUTING.md` - Decision tree for where files go
+
+## Rules
+
+### Naming
+- **lisp-case**: `my-thing` not `myThing`
+
+### Nix Patterns
+- No `with lib;` → use `inherit (lib) x y;`
+- No `rec {` in derivations → use `finalAttrs:`
+- Packages need `meta` block with `description`, `license`
+- Modules need `_class` attribute
+
+### Bash
+- **ONLY allowed**: `exec "$@"`
+- No if/case/for/while → write Haskell script
+- No variables → write Haskell script
+
+### Scripts
+- Must `import Straylight.Script`
+- Use typed tool wrappers
+
+## File Locations
+
+- Packages: `straylight-core/nix/packages/{name}.hs`
+- Scripts: `straylight-core/nix/scripts/{name}.hs`
+- Tool wrappers: `straylight-core/nix/scripts/Straylight/Script/Tools/{Name}.hs`
+- Modules: `straylight-core/nix/modules/flake/{name}.nix`
+
+## Validate
+
+Run `nix run .#lint` before committing.

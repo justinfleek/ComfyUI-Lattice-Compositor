@@ -1,0 +1,49 @@
+id: non-lisp-case
+language: nix
+severity: error
+# Exclude areas that interface with nixpkgs/external APIs:
+# - prelude: defines the standard library identifiers
+# - modules: use NixOS/flake-parts module system API
+# - overlays: interface with nixpkgs conventions
+# - packages: nixpkgs package conventions
+# - lib: utility functions interfacing with nixpkgs
+# - checks: test code
+# - templates: starter templates for users
+# - docs: documentation examples
+ignores:
+  - nix/prelude/**/*.nix
+  - nix/modules/**/*.nix
+  - nix/overlays/**/*.nix
+  - nix/packages/**/*.nix
+  - nix/lib/**/*.nix
+  - nix/checks/**/*.nix
+  - nix/templates/**/*.nix
+  - docs/**/*.nix
+  - nix/_main.nix
+  - flake.nix
+rule:
+  kind: identifier
+  regex: "^[a-z].*(_|[A-Z]).*"
+  not:
+    inside:
+      any:
+        # Allow in string interpolations (paths, commands)
+        - kind: interpolation
+        # Allow in inherit statements
+        - kind: inherit
+message: "WSN-E003: non-lisp-case identifier"
+note: |
+  ## What's wrong?
+  All identifiers must use lisp-case (kebab-case): `foo-bar`, not `fooBar` or `foo_bar`.
+
+  This forces all code through the prelude, which provides well-typed paths.
+  Direct nixpkgs/lib/builtins usage is forbidden.
+
+  ## What can I do to fix this?
+  Use the prelude equivalent:
+
+  - `pkgs.stdenv.mkDerivation` → `prelude.mk-derivation`
+  - `lib.optionalString` → `prelude.optional-string`
+  - `buildInputs` → `build-inputs`
+
+  See nix/prelude/ for available functions.

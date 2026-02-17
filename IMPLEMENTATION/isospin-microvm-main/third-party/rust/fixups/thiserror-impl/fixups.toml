@@ -1,0 +1,4 @@
+# thiserror-impl needs CARGO_PKG_VERSION_PATCH to generate version-specific private module name
+# For thiserror 2.0.18, the patch version is 18
+[env]
+CARGO_PKG_VERSION_PATCH = "18"

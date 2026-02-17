@@ -1,0 +1,13 @@
+rust_library(
+    name = "vm-allocator",
+    srcs = glob(["src/**/*.rs"]),
+    crate = "vm_allocator",
+    edition = "2024",
+    features = ["kvm"],
+    deps = [
+        "//cloud-hypervisor/arch:arch",
+        "//third-party/rust:libc",
+        "//third-party/rust:vm-memory",
+    ],
+    visibility = ["PUBLIC"],
+)

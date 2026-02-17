@@ -1,0 +1,35 @@
+[package]
+authors = ["The Chromium OS Authors", "The Cloud Hypervisor Authors"]
+edition.workspace = true
+name = "block"
+version = "0.1.0"
+
+[features]
+default = []
+io_uring = ["dep:io-uring"]
+
+[dependencies]
+byteorder = { workspace = true }
+crc-any = "2.5.0"
+flate2 = "1.0"
+io-uring = { version = "0.7.11", optional = true }
+libc = { workspace = true }
+log = { workspace = true }
+remain = "0.2.15"
+serde = { workspace = true, features = ["derive"] }
+smallvec = "1.15.1"
+thiserror = { workspace = true }
+uuid = { workspace = true, features = ["v4"] }
+virtio-bindings = { workspace = true }
+virtio-queue = { workspace = true }
+vm-memory = { workspace = true, features = [
+  "backend-atomic",
+  "backend-bitmap",
+  "backend-mmap",
+] }
+vm-virtio = { path = "../vm-virtio" }
+vmm-sys-util = { workspace = true }
+zstd = "0.13"
+
+[lints]
+workspace = true

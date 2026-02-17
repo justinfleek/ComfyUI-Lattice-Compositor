@@ -1,0 +1,49 @@
+<!-- Straylight Software - Wallpaper 2560x1440 -->
+<!-- "continuity is continuity" — Mona Lisa Overdrive -->
+<svg width="2560" height="1440" viewBox="0 0 2560 1440" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <style>
+      .mono { 
+        font-family: 'Berkeley Mono', 'SF Mono', 'Consolas', monospace; 
+      }
+    </style>
+    
+    <!-- Subtle grid pattern -->
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1a1d21" stroke-width="0.5"/>
+    </pattern>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="2560" height="1440" fill="#111417"/>
+  <rect width="2560" height="1440" fill="url(#grid)" opacity="0.5"/>
+  
+  <!-- Primary mark - centered -->
+  <g transform="translate(1280, 720)">
+    <!-- Top rail -->
+    <line x1="-400" y1="-35" x2="400" y2="-35" stroke="#54aeff" stroke-width="3"/>
+    
+    <!-- Wordmark -->
+    <text x="400" y="12" class="mono" fill="#b6e3ff" font-size="48" font-weight="500" text-anchor="end">
+      // straylight
+    </text>
+    
+    <!-- Bottom rail -->
+    <line x1="-400" y1="40" x2="400" y2="40" stroke="#54aeff" stroke-width="3"/>
+  </g>
+  
+  <!-- Status indicator - bottom right -->
+  <g transform="translate(2480, 1380)">
+    <line x1="-100" y1="0" x2="0" y2="0" stroke="#54aeff" stroke-width="1.5" opacity="0.6"/>
+    <text x="0" y="24" class="mono" fill="#596775" font-size="14" font-weight="400" text-anchor="end" opacity="0.6">
+      // nominal
+    </text>
+    <line x1="-100" y1="36" x2="0" y2="36" stroke="#54aeff" stroke-width="1.5" opacity="0.6"/>
+  </g>
+  
+  <!-- Ghost text - very subtle -->
+  <text x="2520" y="60" class="mono" fill="#596775" font-size="12" font-weight="400" text-anchor="end" opacity="0.3">
+    continuity is continuity
+  </text>
+  
+</svg>

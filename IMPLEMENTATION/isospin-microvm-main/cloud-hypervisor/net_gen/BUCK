@@ -1,0 +1,10 @@
+rust_library(
+    name = "net_gen",
+    srcs = glob(["src/**/*.rs"]),
+    crate = "net_gen",
+    edition = "2021",
+    deps = [
+        "//third-party/rust:vmm-sys-util",
+    ],
+    visibility = ["PUBLIC"],
+)

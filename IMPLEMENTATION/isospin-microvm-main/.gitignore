@@ -1,0 +1,32 @@
+# Buck2 build output
+buck-out/
+
+# Nix
+result
+result-*
+.direnv/
+
+# Cargo cache (we use vendored deps)
+third-party/rust/.cargo/
+
+# Vendor directory (provided by Nix as a symlink)
+third-party/rust/vendor
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Backup directories
+firecracker_backup/
+
+# Firecracker test resources (kernel, rootfs, etc.)
+.firecracker-resources/
+.vm-assets/
+
+# OS files
+.DS_Store
+Thumbs.db
+.gpu-broker-test/
+third-party/rust/target/

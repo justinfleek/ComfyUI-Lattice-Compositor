@@ -1,0 +1,58 @@
+# INTERNAL (Engine/Layers) Issues - Fix with typeGuards.ts
+
+src/engine/core/LayerManager.ts:1291:      layer as unknown as { getSourceCanvas(): HTMLCanvasElement | null }
+src/engine/core/LayerManager.ts:166:      const layerData = (layer as any).layerData;
+src/engine/core/LayerManager.ts:173:          (layer as unknown as EffectLayer).setRenderContext(context);
+src/engine/core/LayerManager.ts:380:        (layer as unknown as EffectLayer).setRenderContext(
+src/engine/core/RenderPipeline.ts:1052:    (this.composer as any).renderTarget1 = this.colorTarget.clone();
+src/engine/core/RenderPipeline.ts:1053:    (this.composer as any).renderTarget2 = this.colorTarget.clone();
+src/engine/core/RenderPipeline.ts:404:      } as any, // width/height are needed but not in types
+src/engine/core/RenderPipeline.ts:417:    const uniforms = (this.bokehPass as any).uniforms;
+src/engine/core/SceneManager.ts:273:    const obj = object as any;
+src/engine/core/SceneManager.ts:285:      const patchChild = (child: any) => {
+src/engine/core/SceneManager.ts:328:      const index = this.scene.children.indexOf(object as any);
+src/engine/core/SceneManager.ts:331:        (object as any).parent = null;
+src/engine/core/SceneManager.ts:347:    const ensureMethods = (obj: any, depth = 0) => {
+src/engine/layers/BaseLayer.ts:1438:   * Check if this layer has any enabled masks
+src/engine/layers/BaseLayer.ts:919:   * Check if this layer has any enabled effects
+src/engine/layers/BaseLayer.ts:945:   * Check if this layer has any enabled layer styles
+src/engine/layers/ImageLayer.ts:400:    const data = properties.data as any;
+src/engine/layers/ImageLayer.ts:93:    const data = layerData.data as any;
+src/engine/layers/LightLayer.ts:1201:    if ((this.light as any).dispose) {
+src/engine/layers/LightLayer.ts:1202:      (this.light as any).dispose();
+src/engine/layers/LightLayer.ts:1204:    if (this.helper && (this.helper as any).dispose) {
+src/engine/layers/LightLayer.ts:1205:      (this.helper as any).dispose();
+src/engine/layers/LightLayer.ts:276:    const data = layerData.data as any;
+src/engine/layers/LightLayer.ts:502:      if ((this.helper as any).dispose) {
+src/engine/layers/LightLayer.ts:503:        (this.helper as any).dispose();
+src/engine/layers/LightLayer.ts:683:    if ((this.light as any).dispose) {
+src/engine/layers/LightLayer.ts:684:      (this.light as any).dispose();
+src/engine/layers/ModelLayer.ts:590:      (material as any).wireframe = override.wireframe;
+src/engine/layers/ModelLayer.ts:599:      (material as any).color = new THREE.Color(override.colorOverride);
+src/engine/layers/PoseLayer.ts:556:      this.layerData.data = data as any;
+src/engine/layers/PoseLayer.ts:593:    this.layerData.data = data as any;
+src/engine/layers/ShapeLayer.ts:158:    this.texture = new THREE.CanvasTexture(this.canvas as any);
+src/engine/layers/ShapeLayer.ts:209:    this.texture.image = this.canvas as any;
+src/engine/layers/ShapeLayer.ts:280:  onApplyEvaluatedState(state: any): void {
+src/engine/layers/SplineLayer.ts:1609:        const value = (audioMod as any)[key];
+src/engine/layers/SplineLayer.ts:1637:      const xMod = (audioMod as any)[`splineControlPoint_${index}_x`] as
+src/engine/layers/SplineLayer.ts:1640:      const yMod = (audioMod as any)[`splineControlPoint_${index}_y`] as
+src/engine/layers/SplineLayer.ts:1643:      const depthMod = (audioMod as any)[`splineControlPoint_${index}_depth`] as
+src/engine/layers/TextLayer.ts:1331:          (charMesh as any).__blurX = blurVal.x * influence;
+src/engine/layers/TextLayer.ts:1332:          (charMesh as any).__blurY = blurVal.y * influence;
+src/engine/layers/TextLayer.ts:366:    (text as any).fontWeight = this.textData.fontWeight || "400";
+src/engine/layers/TextLayer.ts:367:    (text as any).fontStyle = this.textData.fontStyle || "normal";
+src/engine/layers/TextLayer.ts:391:    (text as any).sdfGlyphSize = 256; // Default is 64, higher = sharper text
+src/engine/layers/TextLayer.ts:394:    (text as any).gpuAccelerateSDF = true;
+src/engine/layers/TextLayer.ts:398:      (text as any).outlineBlur = 0.003; // Slight blur for smoother outline edges
+src/engine/layers/TextLayer.ts:708:      (charMesh as any).fontWeight = this.textData.fontWeight || "400";
+src/engine/layers/TextLayer.ts:709:      (charMesh as any).fontStyle = this.textData.fontStyle || "normal";
+src/engine/layers/TextLayer.ts:718:        (charMesh as any).outlineBlur = 0.005;
+src/engine/layers/TextLayer.ts:722:      (charMesh as any).sdfGlyphSize = 128;
+src/engine/layers/TextLayer.ts:820:    (this.textMesh as any).fontWeight = weight;
+src/engine/layers/TextLayer.ts:824:      (charMesh as any).fontWeight = weight;
+src/engine/layers/TextLayer.ts:831:    (this.textMesh as any).fontStyle = style;
+src/engine/layers/TextLayer.ts:835:      (charMesh as any).fontStyle = style;
+src/engine/layers/VideoLayer.ts:1105:      (video as any).requestVideoFrameCallback(onFrame);
+src/engine/layers/VideoLayer.ts:1111:        (video as any).requestVideoFrameCallback(onFrame);
+src/engine/layers/VideoLayer.ts:343:    const audioTracks = (this.videoElement as any).audioTracks;

@@ -1,0 +1,49 @@
+# Platform definitions for isospin
+
+# Constraint settings for architecture and OS
+constraint_setting(
+    name = "arch",
+    visibility = ["PUBLIC"],
+)
+
+constraint_value(
+    name = "x86_64",
+    constraint_setting = ":arch",
+    visibility = ["PUBLIC"],
+)
+
+constraint_value(
+    name = "aarch64",
+    constraint_setting = ":arch",
+    visibility = ["PUBLIC"],
+)
+
+constraint_setting(
+    name = "os",
+    visibility = ["PUBLIC"],
+)
+
+constraint_value(
+    name = "linux",
+    constraint_setting = ":os",
+    visibility = ["PUBLIC"],
+)
+
+# Platform definitions
+platform(
+    name = "linux-x86_64",
+    constraint_values = [
+        ":linux",
+        ":x86_64",
+    ],
+    visibility = ["PUBLIC"],
+)
+
+platform(
+    name = "linux-arm64",
+    constraint_values = [
+        ":linux",
+        ":aarch64",
+    ],
+    visibility = ["PUBLIC"],
+)

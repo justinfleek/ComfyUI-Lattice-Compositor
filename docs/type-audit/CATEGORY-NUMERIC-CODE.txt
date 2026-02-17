@@ -1,0 +1,193 @@
+# NUMERIC CODE Issues - Fix with numericSafety.ts
+
+=== Animation/Interpolation ===
+src/components/timeline/PropertyTrack.vue:339:    (kf: any) => selectedKeyframeIds.value.has(kf.id) && kf.interpolation === "bezier"
+src/engine/animation/KeyframeEvaluator.ts:19:  private cache: Map<string, { frame: number; value: any }> = new Map();
+src/engine/animation/KeyframeEvaluator.ts:265:      return (from + (to - from) * t) as unknown as T;
+src/engine/animation/KeyframeEvaluator.ts:270:      return this.interpolatePosition(from, to, t) as unknown as T;
+src/engine/animation/KeyframeEvaluator.ts:276:        return this.interpolateColor(from, to, t) as unknown as T;
+src/engine/animation/KeyframeEvaluator.ts:282:      return this.interpolateArray(from, to, t) as unknown as T;
+src/engine/animation/KeyframeEvaluator.ts:293:    value: any,
+src/services/expressions/expressionEvaluator.ts:372:    const fn = (timeExpressions as any)[name];
+src/services/expressions/expressionEvaluator.ts:378:    const fn = (mathExpressions as any)[name];
+src/services/expressions/expressionHelpers.ts:20:export function subtractValues(a: any, b: any): number | number[] {
+src/services/expressions/expressionHelpers.ts:33:export function addValues(a: any, b: any): number | number[] {
+src/services/expressions/expressionHelpers.ts:46:export function scaleValue(v: any, s: number): number | number[] {
+src/services/expressions/expressionHelpers.ts:59:export function lerpValues(a: any, b: any, t: number): number | number[] {
+src/services/expressions/layerContentExpressions.ts:131:function getSolidSourceRect(data: any): SourceRect {
+src/services/expressions/layerContentExpressions.ts:146:function getMediaSourceRect(data: any): SourceRect {
+src/services/expressions/layerContentExpressions.ts:166:export function textSource(layerData: any): TextSourceInfo {
+src/services/expressions/layerContentExpressions.ts:199:  effects: any[] | undefined,
+src/services/expressions/layerContentExpressions.ts:203:): any {
+src/services/expressions/layerContentExpressions.ts:206:  const effect = effects.find((e: any) => e.name === effectName);
+src/services/expressions/layerContentExpressions.ts:30:  layerData: any,
+src/services/expressions/layerContentExpressions.ts:67:function getTextSourceRect(data: any, includeExtents: boolean): SourceRect {
+src/services/expressions/layerContentExpressions.ts:81:function getShapeSourceRect(data: any, includeExtents: boolean): SourceRect {
+src/services/expressions/layerContentExpressions.ts:93:  paths.forEach((path: any) => {
+src/services/expressions/layerContentExpressions.ts:95:    points.forEach((point: any) => {
+src/services/expressions/sesEvaluator.ts:100:  const { Compartment, harden } = globalThis as any;
+src/services/expressions/sesEvaluator.ts:332:      log: (...args: any[]) => console.log("[Expression]", ...args),
+src/services/expressions/sesEvaluator.ts:333:      warn: (...args: any[]) => console.warn("[Expression]", ...args),
+src/services/expressions/sesEvaluator.ts:488:  const { Compartment, harden } = globalThis as any;
+src/services/expressions/sesEvaluator.ts:92:export function createExpressionCompartment(ctx: ExpressionContext): any {
+src/services/expressions/types.ts:136:  fillColor: any;
+src/services/expressions/types.ts:137:  strokeColor: any;
+src/services/interpolation.ts:207:    const dx = (v2 as any).x - (v1 as any).x;
+src/services/interpolation.ts:208:    const dy = (v2 as any).y - (v1 as any).y;
+src/services/interpolation.ts:380:    const vb = valueBefore as any;
+src/services/interpolation.ts:381:    const va = valueAfter as any;
+src/services/interpolation.ts:554:    const val1 = v1 as any;
+src/services/interpolation.ts:555:    const val2 = v2 as any;
+src/services/interpolation.ts:557:    const result: any = {
+src/__tests__/_deprecated/properties/interpolation-complete.property.test.ts:356:      expect(typeof (result as any).x).toBe('number');
+src/__tests__/_deprecated/properties/interpolation-complete.property.test.ts:357:      expect(typeof (result as any).y).toBe('number');
+src/__tests__/_deprecated/properties/interpolation-complete.property.test.ts:358:      expect(Number.isFinite((result as any).x)).toBe(true);
+src/__tests__/_deprecated/properties/interpolation-complete.property.test.ts:359:      expect(Number.isFinite((result as any).y)).toBe(true);
+src/__tests__/_deprecated/properties/interpolation-complete.property.test.ts:374:        type: 'position' as any,
+src/__tests__/_deprecated/properties/interpolation-complete.property.test.ts:407:        type: 'vector3' as any, // BezierPath type
+src/__tests__/_deprecated/properties/interpolation-complete.property.test.ts:438:        type: 'vector3' as any,
+src/__tests__/_deprecated/properties/interpolation-complete.property.test.ts:475:        type: 'vector3' as any,
+src/__tests__/_deprecated/properties/interpolation-complete.property.test.ts:496:          type: 'vector3' as any,
+src/__tests__/_deprecated/properties/interpolation-complete.property.test.ts:584:        type: 'vector3' as any,
+src/__tests__/_deprecated/properties/interpolation-complete.property.test.ts:604:        type: 'vector3' as any,
+src/__tests__/services/interpolation.test.ts:289:        { ...createKeyframe(0, 0), interpolation: "unknownEasing" as any },
+src/__tests__/services/interpolation.test.ts:321:      const mid = interpolateProperty(prop, 50) as any;
+src/__tests__/services/interpolation.test.ts:332:      const mid = interpolateProperty(prop, 50) as any;
+src/__tests__/services/interpolation.test.ts:759:    (prop as any).expression = {
+src/__tests__/services/interpolation.test.ts:779:    (prop as any).expression = {
+src/__tests__/services/interpolation.test.ts:798:    (prop as any).expression = {
+src/__tests__/services/interpolation.test.ts:816:    (prop as any).expression = {
+
+=== Physics ===
+src/services/physics/PhysicsEngine.ts:1819:        const p = prev as unknown as PhysicsVec2;
+src/services/physics/PhysicsEngine.ts:1820:        const c = curr as unknown as PhysicsVec2;
+src/services/physics/PhysicsEngine.ts:1821:        const n = next as unknown as PhysicsVec2;
+src/services/physics/PhysicsEngine.ts:1844:        const p = prev as unknown as number;
+src/services/physics/PhysicsEngine.ts:1845:        const c = curr as unknown as number;
+src/services/physics/PhysicsEngine.ts:1846:        const n = next as unknown as number;
+
+=== Particles ===
+src/engine/particles/GPUParticleSystem.ts:1882:      type: type as any,
+src/engine/particles/ParticleAudioReactive.ts:158:          (emitter as unknown as Record<string, unknown>)[binding.parameter] =
+src/engine/particles/ParticleAudioReactive.ts:164:          (field as unknown as Record<string, unknown>)[binding.parameter] =
+src/engine/particles/ParticleGPUPhysics.ts:258:        this.forceFieldBuffer as unknown as BufferSource,
+src/services/particleSystem.ts:1142:        const coneAngle = (((emitter as any).coneAngle ?? 45) * Math.PI) / 180;
+src/services/particleSystem.ts:1143:        const coneRadius = (emitter as any).coneRadius ?? 0.1;
+src/services/particleSystem.ts:1144:        const coneLength = (emitter as any).coneLength ?? 0.2;
+src/services/particleSystem.ts:1311:    const config = (emitter as any).depthMapEmission;
+src/services/particleSystem.ts:1344:    config: any,
+src/services/particleSystem.ts:1410:    const config = (emitter as any).maskEmission;
+src/services/particleSystem.ts:1443:    config: any,
+src/services/particleSystem.ts:1556:    const sourceLayerId = (emitter as any).imageSourceLayerId;
+src/services/particleSystem.ts:1557:    const threshold = (emitter as any).emissionThreshold ?? 0.1;
+src/services/particleSystem.ts:1638:    const sourceLayerId = (emitter as any).depthSourceLayerId;
+src/services/particleSystem.ts:1639:    const threshold = (emitter as any).depthEdgeThreshold ?? 0.05;
+src/services/particleSystem.ts:2239:  static deserialize(data: any): ParticleSystem {
+
+=== Transform ===
+src/engine/TransformControlsManager.ts:107:        this.transformControls as unknown as THREE.Object3D,
+src/engine/TransformControlsManager.ts:112:        this.transformControls as unknown as THREE.Object3D,
+src/engine/TransformControlsManager.ts:126:      (event: any) => {
+src/engine/TransformControlsManager.ts:146:      const anchorZ = (layerData?.transform?.anchorPoint?.value as any)?.z ?? 0;
+src/engine/TransformControlsManager.ts:274:      (this.transformControls as any).visible = visible;
+src/engine/TransformControlsManager.ts:63:    if ((obj as any).children === undefined || (obj as any).children === null) {
+src/engine/TransformControlsManager.ts:64:      (obj as any).children = [];
+src/engine/TransformControlsManager.ts:68:    if (!(obj as any).matrix) {
+src/engine/TransformControlsManager.ts:69:      (obj as any).matrix = new THREE.Matrix4();
+src/engine/TransformControlsManager.ts:71:    if (!(obj as any).matrixWorld) {
+src/engine/TransformControlsManager.ts:72:      (obj as any).matrixWorld = new THREE.Matrix4();
+src/engine/TransformControlsManager.ts:76:    const children = (obj as any).children;
+
+=== Export Renderers ===
+src/components/export/ComfyUIExportDialog.vue:35:  cameraKeyframes: any[];
+src/components/export/ComfyUIExportDialog.vue:44:  exported: [result: any];
+src/services/export/backendDepthService.ts:305:    ctx.drawImage(canvas as unknown as CanvasImageSource, 0, 0);
+src/services/export/depthRenderer.ts:224:  const layerWidth = (layer as any).width || screenWidth;
+src/services/export/depthRenderer.ts:225:  const layerHeight = (layer as any).height || screenHeight;
+src/services/export/depthRenderer.ts:285:  return layer.type === "depthflow" && !!(layer as any).depthMapData;
+src/services/export/depthRenderer.ts:300:  const depthData = (layer as any).depthMapData as Uint8Array | Float32Array;
+src/services/export/depthRenderer.ts:301:  const depthWidth = (layer as any).depthWidth || bounds.width;
+src/services/export/depthRenderer.ts:302:  const depthHeight = (layer as any).depthHeight || bounds.height;
+src/services/export/depthRenderer.ts:360:  const engine = (window as any).__latticeEngine;
+src/services/export/depthRenderer.ts:449:  keyframes: any[],
+src/services/export/exportPipeline.ts:348:        : ((evaluated.transform.rotation as any)?.z ?? 0);
+src/services/export/exportPipeline.ts:360:    const layerData = layer.data as any;
+src/__tests__/_deprecated/services/export/attackSurface.test.ts:1016:      ] as any,
+src/__tests__/_deprecated/services/export/attackSurface.test.ts:1026:      } as any,
+src/__tests__/_deprecated/services/export/attackSurface.test.ts:1045:      ] as any,
+src/__tests__/_deprecated/services/export/attackSurface.test.ts:1056:      } as any,
+src/__tests__/_deprecated/services/export/attackSurface.test.ts:1089:      ] as any,
+src/__tests__/_deprecated/services/export/attackSurface.test.ts:1098:      } as any,
+src/__tests__/_deprecated/services/export/attackSurface.test.ts:1128:        } as any,
+src/__tests__/_deprecated/services/export/attackSurface.test.ts:122:      } as any,
+src/__tests__/_deprecated/services/export/attackSurface.test.ts:160:      } as any,
+src/__tests__/_deprecated/services/export/attackSurface.test.ts:177:      } as any,
+src/__tests__/_deprecated/services/export/attackSurface.test.ts:206:      } as any,
+src/__tests__/_deprecated/services/export/attackSurface.test.ts:244:    const createNestedLayer = (depth: number): any => {
+src/__tests__/_deprecated/services/export/attackSurface.test.ts:272:      } as any,
+src/__tests__/_deprecated/services/export/attackSurface.test.ts:344:        } as any,
+src/__tests__/_deprecated/services/export/attackSurface.test.ts:387:        } as any,
+src/__tests__/_deprecated/services/export/attackSurface.test.ts:424:    expect(({} as any).isAdmin).not.toBe(true);
+src/__tests__/_deprecated/services/export/attackSurface.test.ts:442:    const workflow = generateWorkflowForTarget("wan22-i2v", params as any);
+src/__tests__/_deprecated/services/export/attackSurface.test.ts:455:    const layer: any = {
+src/__tests__/_deprecated/services/export/attackSurface.test.ts:472:      } as any,
+src/__tests__/_deprecated/services/export/attackSurface.test.ts:50:      } as any,
+src/__tests__/_deprecated/services/export/attackSurface.test.ts:650:    const result = exportCameraMatrices(camera as any, [], {
+src/__tests__/_deprecated/services/export/attackSurface.test.ts:692:    const _workflow1 = generateWorkflowForTarget("wan22-i2v", params1 as any);
+src/__tests__/_deprecated/services/export/attackSurface.test.ts:705:    const workflow2 = generateWorkflowForTarget("motionctrl", params2 as any);
+src/__tests__/_deprecated/services/export/attackSurface.test.ts:730:    const keyframes2: any[] = []; // Empty keyframes
+src/__tests__/_deprecated/services/export/attackSurface.test.ts:735:      camera as any,
+src/__tests__/_deprecated/services/export/attackSurface.test.ts:736:      keyframes1 as any,
+src/__tests__/_deprecated/services/export/attackSurface.test.ts:743:      camera as any,
+src/__tests__/_deprecated/services/export/attackSurface.test.ts:772:      } as any,
+src/__tests__/_deprecated/services/export/attackSurface.test.ts:794:      } as any,
+src/__tests__/_deprecated/services/export/attackSurface.test.ts:80:      } as any,
+src/__tests__/_deprecated/services/export/attackSurface.test.ts:814:      } as any,
+src/__tests__/_deprecated/services/export/attackSurface.test.ts:846:        } as any,
+src/__tests__/_deprecated/services/export/attackSurface.test.ts:872:      generateWorkflowForTarget("wan22-i2v", params as any);
+src/__tests__/_deprecated/services/export/attackSurface.test.ts:897:      ] as any,
+src/__tests__/_deprecated/services/export/attackSurface.test.ts:906:      } as any,
+src/__tests__/_deprecated/services/export/attackSurface.test.ts:929:      ] as any,
+src/__tests__/_deprecated/services/export/attackSurface.test.ts:938:      } as any,
+src/__tests__/_deprecated/services/export/attackSurface.test.ts:950:    const comp: any = {
+src/__tests__/_deprecated/services/export/attackSurface.test.ts:969:      } as any,
+src/__tests__/_deprecated/services/export/attackSurface.test.ts:997:      } as any,
+src/__tests__/export/cameraExportFormats.adversarial.test.ts:300:    const result = interpolateCameraAtFrame(camera, null as any, 10);
+src/__tests__/export/cameraExportFormats.adversarial.test.ts:675:      "unknown-target" as any,
+src/__tests__/export/cameraExportFormats.property.test.ts:265:    const result = interpolateCameraAtFrame(camera, keyframes as any, 5);
+src/__tests__/export/cameraExportFormats.property.test.ts:966:            target as any,
+src/__tests__/export/cameraExportFormats.property.test.ts:988:            target as any,
+src/__tests__/export/cameraExportFormats.property.test.ts:994:            target as any,
+src/__tests__/export/cameraExportFormats.test.ts:732:    ) as any;
+src/__tests__/export/cameraExportFormats.test.ts:743:    ) as any;
+src/__tests__/export/cameraExportFormats.test.ts:754:    ) as any;
+src/__tests__/export/cameraExportFormats.test.ts:767:    ) as any;
+src/__tests__/export/cameraExportFormats.test.ts:778:    ) as any;
+src/__tests__/export/cameraExportFormats.test.ts:786:      "unknown-target" as any,
+src/__tests__/export/cameraExportFormats.test.ts:793:    ) as any;
+src/__tests__/export/depthRenderer.adversarial.test.ts:194:      convertDepthToFormat(result, null as any);
+src/__tests__/export/depthRenderer.adversarial.test.ts:202:      convertDepthToFormat(result, undefined as any);
+src/__tests__/export/depthRenderer.adversarial.test.ts:395:    const imageData = applyColormap(depth8, 1, 1, "unknown" as any);
+src/__tests__/export/depthRenderer.adversarial.test.ts:450:      layers: [createValidLayer({ opacity: { value: 0 } } as any)],
+src/__tests__/export/depthRenderer.adversarial.test.ts:462:    delete (layer as any).transform;
+src/__tests__/export/depthRenderer.adversarial.test.ts:75:  } as unknown as Layer;
+src/__tests__/export/export-format-contracts.test.ts:1087:      const metadata = generateDepthMetadata("midas", 30, 512, 512, 0.1, 100) as any;
+src/__tests__/export/export-format-contracts.test.ts:1100:      const metadata = generateDepthMetadata("depth-anything", 60, 1920, 1080, 0.5, 50) as any;
+src/__tests__/export/export-format-contracts.test.ts:1108:      const metadata = generateDepthMetadata("zoe", 10, 256, 256, 1, 200) as any;
+src/__tests__/export/export-format-contracts.test.ts:1116:      const metadata = generateDepthMetadata("marigold", 1, 768, 768, 0.01, 1000) as any;
+src/__tests__/export/export-format-contracts.test.ts:1124:      const metadata = generateDepthMetadata("raw", 120, 4096, 2160, 0.001, 10000) as any;
+src/__tests__/export/export-format-contracts.test.ts:1131:      const metadata = generateDepthMetadata("midas", 1, 100, 100, 0, 1) as any;
+src/__tests__/export/export-format-contracts.test.ts:159:  } as unknown as Layer;
+src/__tests__/export/meshDeformExport.test.ts:52:    type: "vector2" as any,
+src/__tests__/export/meshDeformExport.test.ts:796:      undefined as any, // Missing frame
+src/__tests__/export/modelExport.test.ts:1187:    const result = await exportForModel(options as any);
+src/__tests__/export/modelExport.test.ts:1195:      target: "unsupported-target" as any,
+src/__tests__/export/modelExport.test.ts:317:  ): (layer: any, frame: number) => { x: number; y: number } {
+src/__tests__/export/modelExport.test.ts:318:    return (_layer: any, frame: number) => positions[frame] || { x: 0, y: 0 };
+src/__tests__/export/modelExport.test.ts:321:  const mockLayer = { id: "layer-1" } as any;
+src/__tests__/export/modelExport.test.ts:540:    // Note: Single camera returns "static" (cast with as any in implementation)
+src/__tests__/export/modelExport.test.ts:547:    // Note: Empty array returns "static" (cast with as any in implementation)
+src/__tests__/export/modelExport.test.ts:997:  } as unknown as Layer);
+src/__tests__/export/svgExport.property.test.ts:263:    } as unknown as Layer;
+src/__tests__/export/svgExport.property.test.ts:368:    const layer = { id: "test", name: "Test", type: "image" } as unknown as Layer;
+src/__tests__/export/svgExport.property.test.ts:430:    const imageLayer = { id: "img", name: "Image", type: "image" } as unknown as Layer;

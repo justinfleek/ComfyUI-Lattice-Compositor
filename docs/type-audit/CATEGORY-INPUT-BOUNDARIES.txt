@@ -1,0 +1,62 @@
+# INPUT BOUNDARY Issues - Fix with validation.ts
+
+=== AI/Agent ===
+src/services/ai/actionExecutor.ts:1829:    layer.data = {} as unknown as typeof layer.data;
+src/services/ai/actionExecutor.ts:1834:  const layerData = layer.data as unknown as LayerDataWithSpeedMap;
+src/services/ai/actionExecutor.ts:1935:  const layerData = sourceLayer.data as unknown as ImageLayerDataExtended;
+src/services/ai/actionExecutor.ts:1980:      (layer.data as unknown as ImageLayerDataExtended).source = decomposed.image;
+src/services/ai/actionExecutor.ts:2028:  const layerData = sourceLayer.data as unknown as ImageLayerDataExtended;
+src/services/ai/actionExecutor.ts:779:    setNestedProperty(layer.data as unknown as Record<string, unknown>, parts.slice(1), value);
+src/services/ai/actionExecutor.ts:803:      setNestedProperty(layer.data as unknown as Record<string, unknown>, parts, value);
+src/services/ai/depthEstimation.ts:312:        layers: (parsed.layers || []).map((layer: any) => ({
+src/services/ai/stateSerializer.ts:166:  value: any;
+src/services/ai/stateSerializer.ts:174:  value: any;
+src/services/ai/stateSerializer.ts:526:function serializeLayerData(type: string, data: any): Record<string, any> {
+src/services/ai/toolDefinitions.ts:21:  result?: any;
+
+=== Migration/Import ===
+src/services/plugins/PluginManager.ts:111:  component: any; // Vue component
+src/services/plugins/PluginManager.ts:130:  action: (contextData: any) => void;
+src/services/plugins/PluginManager.ts:149:  defaultValue: any;
+src/services/plugins/PluginManager.ts:153:  options?: { label: string; value: any }[];
+src/services/plugins/PluginManager.ts:161:  export: (frames: ImageData[], options: any) => Promise<Blob>;
+src/services/plugins/PluginManager.ts:483:  emit(event: PluginEvent, ...args: any[]): void {
+src/services/plugins/PluginManager.ts:59:  getProject(): any;
+src/services/plugins/PluginManager.ts:62:  getLayer(id: string): any;
+src/services/plugins/PluginManager.ts:63:  getComposition(id: string): any;
+src/services/plugins/PluginManager.ts:64:  getAsset(id: string): any;
+src/services/plugins/PluginManager.ts:67:  on(event: PluginEvent, callback: (...args: any[]) => void): () => void;
+src/services/plugins/PluginManager.ts:68:  off(event: PluginEvent, callback: (...args: any[]) => void): void;
+src/services/plugins/PluginManager.ts:92:    debug(...args: any[]): void;
+src/services/plugins/PluginManager.ts:93:    info(...args: any[]): void;
+src/services/plugins/PluginManager.ts:94:    warn(...args: any[]): void;
+src/services/plugins/PluginManager.ts:95:    error(...args: any[]): void;
+src/services/projectMigration.ts:141:export function getProjectVersion(project: any): number {
+src/services/projectMigration.ts:153:export function needsMigration(project: any): boolean {
+src/services/projectMigration.ts:180:export function migrateProject(project: any): MigrationResult {
+src/services/projectMigration.ts:268:export function stampProjectVersion(project: any): any {
+src/services/projectMigration.ts:33:  [key: string]: any;
+src/services/projectMigration.ts:53:export type MigrationFunction = (project: any) => any;
+src/services/projectMigration.ts:76:    migrate: (project: any) => {
+src/services/templateBuilder.ts:392:export function getPropertyValue(layer: Layer, propertyPath: string): any {
+src/services/templateBuilder.ts:394:  let current: any = layer;
+src/services/templateBuilder.ts:422:  value: any,
+src/services/templateBuilder.ts:425:  let current: any = layer;
+src/services/templateBuilder.ts:470:): any {
+src/services/templateBuilder.ts:565:function serializeComposition(composition: Composition): any {
+src/services/templateBuilder.ts:582:): any[] {
+src/services/templateBuilder.ts:590:      const data = layer.data as any;
+src/services/templateBuilder.ts:601:  const collectedAssets: any[] = [];
+src/services/templateBuilder.ts:624:): any[] {
+src/services/templateBuilder.ts:625:  const fonts: any[] = [];
+src/services/templateBuilder.ts:631:      const data = layer.data as any;
+src/types/templateBuilder.ts:135:  defaultValue?: any;
+src/types/templateBuilder.ts:258:  composition: any; // Serialized composition
+src/types/templateBuilder.ts:361:  let defaultValue: any;
+
+=== API/ComfyUI ===
+src/services/comfyui/comfyuiClient.ts:413:  onMessage(type: string, handler: (data: any) => void): void {
+src/services/comfyui/comfyuiClient.ts:424:  private handleWebSocketMessage(data: any): void {
+src/services/comfyui/comfyuiClient.ts:63:  private messageHandlers: Map<string, (data: any) => void> = new Map();
+src/services/comfyui/workflowTemplates.ts:28:  cameraData?: any;
+src/services/comfyui/workflowTemplates.ts:55:  motionData?: any;

@@ -1,0 +1,9 @@
+# Root BUCK file for isospin monorepo
+# A list of available rules: https://buck2.build/docs/prelude/globals/
+
+# Simple test target to validate Buck2 setup
+genrule(
+    name = "hello_world",
+    out = "out.txt",
+    cmd = "echo 'ISOSPIN BUILT BY BUCK2' > $OUT",
+)

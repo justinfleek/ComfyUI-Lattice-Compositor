@@ -1,0 +1,1 @@
+savedcmd_nvidia-shim.ko := ld -r -m elf_x86_64 -z noexecstack --no-warn-rwx-segments --build-id=sha1  -T /nix/store/mc6kxq9vaq8p6s602phc7ya1qwbs9l5h-linux-6.18.4-dev/lib/modules/6.18.4/build/scripts/module.lds -o nvidia-shim.ko nvidia-shim.o nvidia-shim.mod.o .module-common.o

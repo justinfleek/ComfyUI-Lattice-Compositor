@@ -1,0 +1,14 @@
+rust_library(
+    name = "rate_limiter",
+    srcs = glob(["src/**/*.rs"]),
+    crate = "rate_limiter",
+    edition = "2024",
+    deps = [
+        "//third-party/rust:epoll",
+        "//third-party/rust:libc",
+        "//third-party/rust:log",
+        "//third-party/rust:thiserror",
+        "//third-party/rust:vmm-sys-util",
+    ],
+    visibility = ["PUBLIC"],
+)

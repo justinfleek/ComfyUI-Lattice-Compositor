@@ -1,0 +1,40 @@
+# vhost_user_net - Vhost-user net backend for Cloud Hypervisor
+
+rust_library(
+    name = "vhost_user_net_lib",
+    srcs = ["src/lib.rs"],
+    crate = "vhost_user_net",
+    edition = "2024",
+    deps = [
+        "//cloud-hypervisor/net_util:net_util",
+        "//cloud-hypervisor/option_parser:option_parser",
+        "//third-party/rust:epoll",
+        "//third-party/rust:libc",
+        "//third-party/rust:log",
+        "//third-party/rust:thiserror",
+        "//third-party/rust:vhost-0.14.0",  # Must match vhost-user-backend's dependency
+        "//third-party/rust:vhost-user-backend",
+        "//third-party/rust:virtio-bindings",
+        "//third-party/rust:vm-memory",
+        "//third-party/rust:vmm-sys-util-0.14.0",  # Must match vhost-user-backend's dependency
+    ],
+    visibility = ["PUBLIC"],
+)
+
+rust_binary(
+    name = "vhost_user_net",
+    srcs = ["src/main.rs"],
+    crate = "vhost_user_net_bin",
+    crate_root = "src/main.rs",
+    edition = "2024",
+    env = {
+        "CARGO_PKG_VERSION": "45.0.0",
+        "CARGO_PKG_AUTHORS": "Cloud Hypervisor Team",
+    },
+    deps = [
+        ":vhost_user_net_lib",
+        "//third-party/rust:clap",
+        "//third-party/rust:env_logger",
+    ],
+    visibility = ["PUBLIC"],
+)

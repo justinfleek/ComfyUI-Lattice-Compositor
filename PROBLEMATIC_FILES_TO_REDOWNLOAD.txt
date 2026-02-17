@@ -1,0 +1,35 @@
+# PROBLEMATIC FILES - REDOWNLOAD/REGENERATE THESE
+# These files are causing validation errors and should be redownloaded or regenerated
+
+# ============================================================================
+# GENERATED FILES (Auto-generated, DO NOT EDIT manually)
+# ============================================================================
+
+# Generated Nix files - regenerate with: dhall text < generate-nix.dhall
+# OR unstage them to skip validation
+
+1. docs/rfc/aleph/aleph-008-continuity/examples/generated-nvidia-packages.nix
+2. straylight-protocol/docs/rfc/straylight-008-continuity/examples/generated-nvidia-packages.nix
+3. NEWSPECS/aleph-b7r6-continuity-0x08/docs/rfc/aleph-008-continuity/examples/generated-nvidia-packages.nix
+
+# ============================================================================
+# TO FIX (run these commands after closing all git processes):
+# ============================================================================
+
+# Unstage all generated files:
+git restore --staged "docs/rfc/aleph/aleph-008-continuity/examples/generated-nvidia-packages.nix"
+git restore --staged "straylight-protocol/docs/rfc/straylight-008-continuity/examples/generated-nvidia-packages.nix"
+git restore --staged "NEWSPECS/aleph-b7r6-continuity-0x08/docs/rfc/aleph-008-continuity/examples/generated-nvidia-packages.nix"
+
+# OR unstage all at once:
+git restore --staged "docs/rfc/aleph/aleph-008-continuity/examples/generated-nvidia-packages.nix" "straylight-protocol/docs/rfc/straylight-008-continuity/examples/generated-nvidia-packages.nix" "NEWSPECS/aleph-b7r6-continuity-0x08/docs/rfc/aleph-008-continuity/examples/generated-nvidia-packages.nix"
+
+# Then commit everything else:
+git commit -m "Track everything: remove gitignore, push full tree"
+
+# ============================================================================
+# IF GIT LOCK PERSISTS:
+# ============================================================================
+# 1. Close ALL git processes (VS Code, Git GUI, terminals)
+# 2. Delete .git/index.lock if it exists
+# 3. Try again

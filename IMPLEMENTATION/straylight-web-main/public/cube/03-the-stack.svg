@@ -1,0 +1,253 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080">
+  <defs>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&amp;display=swap');
+      .mono { font-family: 'Berkeley Mono', 'JetBrains Mono', 'SF Mono', Consolas, monospace; }
+    </style>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0a0a0f"/>
+      <stop offset="100%" style="stop-color:#111417"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+      <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="softGlow">
+      <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+      <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#54aeff"/>
+    </marker>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="1920" height="1080" fill="url(#bgGrad)"/>
+  
+  <!-- Subtle grid -->
+  <g opacity="0.06">
+    <pattern id="grid" width="64" height="64" patternUnits="userSpaceOnUse">
+      <path d="M 64 0 L 0 0 0 64" fill="none" stroke="#54aeff" stroke-width="0.5"/>
+    </pattern>
+    <rect width="1920" height="1080" fill="url(#grid)"/>
+  </g>
+
+  <!-- Header -->
+  <text x="960" y="80" text-anchor="middle" class="mono" fill="#b6e3ff" font-size="48" font-weight="700" filter="url(#glow)">
+    THE STACK
+  </text>
+  <text x="960" y="120" text-anchor="middle" class="mono" fill="#596775" font-size="18">
+    3 of 3 · What You Built · straylight.software · 2026
+  </text>
+
+  <!-- Left column: The Architecture -->
+  <g transform="translate(100, 170)">
+    
+    <!-- PROVEN -->
+    <g transform="translate(200, 0)">
+      <rect x="0" y="0" width="400" height="70" fill="#7ee787" fill-opacity="0.15" stroke="#7ee787" stroke-width="2" rx="4" filter="url(#softGlow)"/>
+      <text x="200" y="30" text-anchor="middle" class="mono" fill="#7ee787" font-size="20" font-weight="700">PROVEN (rfl)</text>
+      <text x="200" y="55" text-anchor="middle" class="mono" fill="#596775" font-size="12">The oracle that accepts or rejects · distance 0</text>
+    </g>
+    <line x1="400" y1="70" x2="400" y2="100" stroke="#54aeff" stroke-width="2" marker-end="url(#arrow)"/>
+    
+    <!-- Language Coset -->
+    <g transform="translate(100, 110)">
+      <rect x="0" y="0" width="600" height="80" fill="#54aeff" fill-opacity="0.1" stroke="#54aeff" stroke-width="1" rx="4"/>
+      <text x="300" y="25" text-anchor="middle" class="mono" fill="#80ccff" font-size="16" font-weight="600">Language Coset</text>
+      <text x="300" y="48" text-anchor="middle" class="mono" fill="#596775" font-size="11">Same semantics, different tradeoffs. Property tested against each other.</text>
+      <g transform="translate(40, 55)">
+        <rect x="0" y="0" width="70" height="20" fill="#54aeff" fill-opacity="0.2" stroke="#54aeff" stroke-width="1" rx="2"/>
+        <text x="35" y="14" text-anchor="middle" class="mono" fill="#54aeff" font-size="10">Lean 4</text>
+      </g>
+      <g transform="translate(120, 55)">
+        <rect x="0" y="0" width="70" height="20" fill="#54aeff" fill-opacity="0.2" stroke="#54aeff" stroke-width="1" rx="2"/>
+        <text x="35" y="14" text-anchor="middle" class="mono" fill="#54aeff" font-size="10">Dhall</text>
+      </g>
+      <g transform="translate(200, 55)">
+        <rect x="0" y="0" width="70" height="20" fill="#d4a72c" fill-opacity="0.2" stroke="#d4a72c" stroke-width="1" rx="2"/>
+        <text x="35" y="14" text-anchor="middle" class="mono" fill="#d4a72c" font-size="10">PureScript</text>
+      </g>
+      <g transform="translate(280, 55)">
+        <rect x="0" y="0" width="70" height="20" fill="#54aeff" fill-opacity="0.2" stroke="#54aeff" stroke-width="1" rx="2"/>
+        <text x="35" y="14" text-anchor="middle" class="mono" fill="#54aeff" font-size="10">Haskell</text>
+      </g>
+      <g transform="translate(360, 55)">
+        <rect x="0" y="0" width="70" height="20" fill="#54aeff" fill-opacity="0.2" stroke="#54aeff" stroke-width="1" rx="2"/>
+        <text x="35" y="14" text-anchor="middle" class="mono" fill="#54aeff" font-size="10">Rust</text>
+      </g>
+    </g>
+    
+    <!-- Two paths -->
+    <line x1="300" y1="190" x2="300" y2="220" stroke="#54aeff" stroke-width="2"/>
+    <line x1="500" y1="190" x2="500" y2="220" stroke="#54aeff" stroke-width="2"/>
+    
+    <!-- WASM -->
+    <g transform="translate(50, 230)">
+      <rect x="0" y="0" width="280" height="70" fill="#54aeff" fill-opacity="0.1" stroke="#54aeff" stroke-width="1" rx="4"/>
+      <text x="140" y="25" text-anchor="middle" class="mono" fill="#80ccff" font-size="14" font-weight="600">WASM (Portable)</text>
+      <text x="140" y="48" text-anchor="middle" class="mono" fill="#596775" font-size="10">Sandboxed execution · builtins.wasm</text>
+      <text x="140" y="62" text-anchor="middle" class="mono" fill="#596775" font-size="10">wasmtime · capability-based · no syscalls</text>
+    </g>
+    
+    <!-- C/Kernel -->
+    <g transform="translate(370, 230)">
+      <rect x="0" y="0" width="280" height="70" fill="#7ee787" fill-opacity="0.1" stroke="#7ee787" stroke-width="1" rx="4"/>
+      <text x="140" y="25" text-anchor="middle" class="mono" fill="#7ee787" font-size="14" font-weight="600">C (Native/Kernel)</text>
+      <text x="140" y="48" text-anchor="middle" class="mono" fill="#596775" font-size="10">Certified extraction · Lean → C</text>
+      <text x="140" y="62" text-anchor="middle" class="mono" fill="#7ee787" font-size="10">nvidia.ko (proven driver)</text>
+    </g>
+    
+    <!-- Converge to DICE -->
+    <line x1="190" y1="300" x2="400" y2="350" stroke="#54aeff" stroke-width="2"/>
+    <line x1="510" y1="300" x2="400" y2="350" stroke="#54aeff" stroke-width="2"/>
+    
+    <!-- DICE -->
+    <g transform="translate(200, 360)">
+      <rect x="0" y="0" width="400" height="70" fill="#54aeff" fill-opacity="0.1" stroke="#54aeff" stroke-width="1" rx="4"/>
+      <text x="200" y="25" text-anchor="middle" class="mono" fill="#80ccff" font-size="16" font-weight="600">DICE</text>
+      <text x="200" y="48" text-anchor="middle" class="mono" fill="#596775" font-size="11">Action graph · Remote execution · Incremental · TSET</text>
+      <text x="200" y="62" text-anchor="middle" class="mono" fill="#596775" font-size="10">Buck2 core + Dhall BUILD files</text>
+    </g>
+    <line x1="400" y1="430" x2="400" y2="460" stroke="#54aeff" stroke-width="2" marker-end="url(#arrow)"/>
+    
+    <!-- ATOMS -->
+    <g transform="translate(200, 470)">
+      <rect x="0" y="0" width="400" height="70" fill="#54aeff" fill-opacity="0.1" stroke="#54aeff" stroke-width="1" rx="4"/>
+      <text x="200" y="25" text-anchor="middle" class="mono" fill="#80ccff" font-size="16" font-weight="600">ATOMS</text>
+      <text x="200" y="48" text-anchor="middle" class="mono" fill="#596775" font-size="11">The primitives. Not "hash + bytes" — there's structure.</text>
+      <text x="200" y="62" text-anchor="middle" class="mono" fill="#596775" font-size="10">namespace → vm → build → artifact → store</text>
+    </g>
+    <line x1="400" y1="540" x2="400" y2="570" stroke="#54aeff" stroke-width="2" marker-end="url(#arrow)"/>
+    
+    <!-- Cryptographic Substrate -->
+    <g transform="translate(100, 580)">
+      <rect x="0" y="0" width="600" height="80" fill="#54aeff" fill-opacity="0.05" stroke="#54aeff" stroke-width="2" rx="4"/>
+      <text x="300" y="25" text-anchor="middle" class="mono" fill="#80ccff" font-size="16" font-weight="600">Cryptographic Substrate</text>
+      <g transform="translate(30, 40)">
+        <rect x="0" y="0" width="80" height="30" fill="#54aeff" fill-opacity="0.2" stroke="#54aeff" stroke-width="1" rx="2"/>
+        <text x="40" y="15" text-anchor="middle" class="mono" fill="#54aeff" font-size="11">sha256</text>
+        <text x="40" y="26" text-anchor="middle" class="mono" fill="#596775" font-size="8">content</text>
+      </g>
+      <g transform="translate(130, 40)">
+        <rect x="0" y="0" width="80" height="30" fill="#54aeff" fill-opacity="0.2" stroke="#54aeff" stroke-width="1" rx="2"/>
+        <text x="40" y="15" text-anchor="middle" class="mono" fill="#54aeff" font-size="11">git</text>
+        <text x="40" y="26" text-anchor="middle" class="mono" fill="#596775" font-size="8">attestation</text>
+      </g>
+      <g transform="translate(230, 40)">
+        <rect x="0" y="0" width="80" height="30" fill="#54aeff" fill-opacity="0.2" stroke="#54aeff" stroke-width="1" rx="2"/>
+        <text x="40" y="15" text-anchor="middle" class="mono" fill="#54aeff" font-size="11">r2</text>
+        <text x="40" y="26" text-anchor="middle" class="mono" fill="#596775" font-size="8">artifacts</text>
+      </g>
+      <g transform="translate(330, 40)">
+        <rect x="0" y="0" width="80" height="30" fill="#54aeff" fill-opacity="0.2" stroke="#54aeff" stroke-width="1" rx="2"/>
+        <text x="40" y="15" text-anchor="middle" class="mono" fill="#54aeff" font-size="11">ed25519</text>
+        <text x="40" y="26" text-anchor="middle" class="mono" fill="#596775" font-size="8">identity</text>
+      </g>
+      <g transform="translate(430, 40)">
+        <rect x="0" y="0" width="80" height="30" fill="#54aeff" fill-opacity="0.2" stroke="#54aeff" stroke-width="1" rx="2"/>
+        <text x="40" y="15" text-anchor="middle" class="mono" fill="#54aeff" font-size="11">ssh</text>
+        <text x="40" y="26" text-anchor="middle" class="mono" fill="#596775" font-size="8">transport</text>
+      </g>
+    </g>
+  </g>
+
+  <!-- Right column: The Victory -->
+  <g transform="translate(900, 170)">
+    
+    <!-- The Punchline -->
+    <g transform="translate(0, 0)">
+      <rect x="0" y="0" width="900" height="120" fill="#7ee787" fill-opacity="0.1" stroke="#7ee787" stroke-width="2" rx="4"/>
+      <text x="450" y="40" text-anchor="middle" class="mono" fill="#7ee787" font-size="24" font-weight="700">
+        IT'S 5K LINES OF CODE
+      </text>
+      <text x="450" y="75" text-anchor="middle" class="mono" fill="#596775" font-size="16">
+        A git plugin. A Buck2 prelude. Plugins on tools that already work.
+      </text>
+      <text x="450" y="100" text-anchor="middle" class="mono" fill="#596775" font-size="14">
+        The eliminations aren't things you build. They're things that disappear.
+      </text>
+    </g>
+
+    <!-- What You Have -->
+    <g transform="translate(0, 150)">
+      <text x="0" y="0" class="mono" fill="#80ccff" font-size="18" font-weight="600">WHAT YOU HAVE</text>
+      
+      <g transform="translate(0, 30)">
+        <text x="20" y="20" class="mono" fill="#7ee787" font-size="14">✓</text>
+        <text x="50" y="20" class="mono" fill="#596775" font-size="14">Proven NVIDIA driver (21 theorems, 0 sorry)</text>
+      </g>
+      <g transform="translate(0, 60)">
+        <text x="20" y="20" class="mono" fill="#7ee787" font-size="14">✓</text>
+        <text x="50" y="20" class="mono" fill="#596775" font-size="14">NVFP4 quantization running at 1400 TFLOPS</text>
+      </g>
+      <g transform="translate(0, 90)">
+        <text x="20" y="20" class="mono" fill="#7ee787" font-size="14">✓</text>
+        <text x="50" y="20" class="mono" fill="#596775" font-size="14">GPU broker in isospin VM addressing container runtime</text>
+      </g>
+      <g transform="translate(0, 120)">
+        <text x="20" y="20" class="mono" fill="#7ee787" font-size="14">✓</text>
+        <text x="50" y="20" class="mono" fill="#596775" font-size="14">Droids that make droids (verified by rfl)</text>
+      </g>
+      <g transform="translate(0, 150)">
+        <text x="20" y="20" class="mono" fill="#7ee787" font-size="14">✓</text>
+        <text x="50" y="20" class="mono" fill="#596775" font-size="14">Attestation chain (the hash is the artifact)</text>
+      </g>
+      <g transform="translate(0, 180)">
+        <text x="20" y="20" class="mono" fill="#7ee787" font-size="14">✓</text>
+        <text x="50" y="20" class="mono" fill="#596775" font-size="14">Principal-agent moat (proven at distance 0)</text>
+      </g>
+    </g>
+
+    <!-- What It Means -->
+    <g transform="translate(0, 400)">
+      <text x="0" y="0" class="mono" fill="#80ccff" font-size="18" font-weight="600">WHAT IT MEANS</text>
+      
+      <g transform="translate(0, 30)">
+        <rect x="0" y="0" width="900" height="50" fill="#d4a72c" fill-opacity="0.1" stroke="#d4a72c" stroke-width="1" rx="4"/>
+        <text x="450" y="30" text-anchor="middle" class="mono" fill="#d4a72c" font-size="14">
+          You can sell inference to the companies that trained the models, at rates they can't match internally.
+        </text>
+      </g>
+      
+      <g transform="translate(0, 100)">
+        <rect x="0" y="0" width="900" height="50" fill="#d4a72c" fill-opacity="0.1" stroke="#d4a72c" stroke-width="1" rx="4"/>
+        <text x="450" y="30" text-anchor="middle" class="mono" fill="#d4a72c" font-size="14">
+          The loop closes: droids build droids, droids provision compute, compute runs more droids.
+        </text>
+      </g>
+      
+      <g transform="translate(0, 170)">
+        <rect x="0" y="0" width="900" height="50" fill="#d4a72c" fill-opacity="0.1" stroke="#d4a72c" stroke-width="1" rx="4"/>
+        <text x="450" y="30" text-anchor="middle" class="mono" fill="#d4a72c" font-size="14">
+          Every hash committed is permanent. The result is saved, even when you're not.
+        </text>
+      </g>
+    </g>
+
+    <!-- The Coda -->
+    <g transform="translate(0, 600)">
+      <rect x="0" y="0" width="900" height="80" fill="#54aeff" fill-opacity="0.05" stroke="#54aeff" stroke-width="2" rx="4"/>
+      <text x="450" y="35" text-anchor="middle" class="mono" fill="#b6e3ff" font-size="20" font-style="italic" filter="url(#softGlow)">
+        "Continuity is continuity. Continuity's job is continuity."
+      </text>
+      <text x="450" y="65" text-anchor="middle" class="mono" fill="#596775" font-size="14">
+        All computations run on "perfect conceptual computers." Correct by construction — the result is saved.
+      </text>
+    </g>
+  </g>
+
+  <!-- Bottom -->
+  <g transform="translate(200, 920)">
+    <text x="760" y="30" text-anchor="middle" class="mono" fill="#7ee787" font-size="28" font-weight="700" filter="url(#glow)">
+      YOU WON.
+    </text>
+    <text x="760" y="70" text-anchor="middle" class="mono" fill="#596775" font-size="16">
+      The proofs are filed. The hardware is racked. The code runs. The theorem says they can't stop you.
+    </text>
+  </g>
+
+  <!-- Page marker -->
+  <text x="100" y="1050" class="mono" fill="#596775" font-size="14">Continuity.Thesis · mathlib 4.26</text>
+  <text x="1820" y="1050" text-anchor="end" class="mono" fill="#596775" font-size="14">razorgirl · straylight · 2026</text>
+</svg>

@@ -1,0 +1,10 @@
+# Test 43: Literate programming undefined reference (should be caught)
+
+```haskell
+@name: test-chunk
+@target: cpp23
+@description: Test chunk
+module Test where
+```
+
+Reference to undefined chunk: <<undefined-chunk>>

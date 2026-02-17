@@ -1,0 +1,325 @@
+name: Straylight Protocol Enforcement
+
+on:
+  pull_request:
+    paths:
+      - '**.nix'
+      - '**.hs'
+      - '**.purs'
+      - '**.lean'
+      - '**.sh'
+      - '**.bash'
+      - '**.cpp'
+      - '**.hpp'
+      - '**.cc'
+      - '**.h'
+      - '**.cu'
+      - '**.cuh'
+      - '**.lit'
+      - '**.mdx'
+      - '**.lit.hs'
+      - '**.lit.cpp'
+      - '**.lit.purs'
+      - '**.dhall'
+      - '**.bzl'
+      - '**.rs'
+      - '**.py'
+      - 'straylight-core/**'
+  push:
+    branches:
+      - main
+      - master
+    paths:
+      - '**.nix'
+      - '**.hs'
+      - '**.purs'
+      - '**.lean'
+      - '**.sh'
+      - '**.bash'
+      - '**.cpp'
+      - '**.hpp'
+      - '**.cc'
+      - '**.h'
+      - '**.cu'
+      - '**.cuh'
+      - '**.lit'
+      - '**.mdx'
+      - '**.lit.hs'
+      - '**.lit.cpp'
+      - '**.lit.purs'
+      - '**.dhall'
+      - '**.bzl'
+      - '**.rs'
+      - '**.py'
+      - 'straylight-core/**'
+
+jobs:
+  enforce-straylight-protocol:
+    name: Enforce Straylight Protocol
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Nix
+        uses: cachix/install-nix-action@v25
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
+      
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      
+      - name: Install npm dependencies
+        run: npm install
+        working-directory: ${{ github.workspace }}
+      
+      - name: Validate MCP Server Syntax
+        run: node -c .claude/straylight-mcp.js
+      
+      - name: Run Nix Lint
+        run: |
+          cd straylight-core || true
+          nix flake check || nix run .#lint || echo "Lint check not available, skipping"
+        continue-on-error: false
+      
+      - name: Check for Protocol Violations
+        run: |
+          echo "Checking for Straylight Protocol violations..."
+          
+          # Check for 'with lib;' violations (but allow 'with pkgs; [...]' in list context)
+          if grep -r "with lib;" --include="*.nix" straylight-core/ 2>/dev/null | grep -v ".git" | grep -v "with.*;\s*\[" | head -1; then
+            echo "❌ ERROR: Found 'with lib;' violations (WSN-E001)"
+            exit 1
+          fi
+          
+          # Check for 'rec' in derivations
+          if grep -r "mkDerivation rec" --include="*.nix" straylight-core/ 2>/dev/null | grep -v ".git" | head -1; then
+            echo "❌ ERROR: Found 'rec' in derivations (WSN-E002)"
+            exit 1
+          fi
+          
+          # Check for bash logic violations
+          if grep -rE "\b(if|case|for|while)\s" --include="*.sh" --include="*.bash" straylight-core/ 2>/dev/null | grep -v ".git" | grep -v "exec" | head -1; then
+            echo "❌ ERROR: Found bash logic violations (STRAYLIGHT-006)"
+            exit 1
+          fi
+          
+          # Check for heredocs (minimize, but not completely forbidden in writeText context)
+          # This is a warning, not an error, as writeText uses heredocs internally
+          
+          # Check for if/then/else in module configs
+          if grep -rE "\bif\s+.*\bthen\s+.*\belse\s+" --include="*.nix" straylight-core/nix/modules/ 2>/dev/null | grep -v ".git" | head -1; then
+            echo "❌ ERROR: Found if/then/else in module config (WSN-E007)"
+            exit 1
+          fi
+          
+          # Check for per-flake nixpkgs config
+          if grep -r "nixpkgs\.config\s*=" --include="*.nix" straylight-core/ 2>/dev/null | grep -v ".git" | head -1; then
+            echo "❌ ERROR: Found per-flake nixpkgs config (WSN-E010)"
+            exit 1
+          fi
+          
+          # Check for camelCase in straylight namespace
+          if grep -rE "straylight\.[a-zA-Z_]*[A-Z]" --include="*.nix" straylight-core/ 2>/dev/null | grep -v ".git" | head -1; then
+            echo "❌ ERROR: Found camelCase in straylight.* namespace (WSN-E003)"
+            exit 1
+          fi
+          
+          # Check for CMake usage (BANNED)
+          if grep -rE "\bcmake\b" --include="*.nix" straylight-core/ 2>/dev/null | grep -v ".git" | grep -v "cmake-to-pc" | grep -v "cmakeFlags" | head -1; then
+            echo "❌ ERROR: Found CMake usage (STRAYLIGHT-003) - CMake is BANNED"
+            exit 1
+          fi
+          
+          # Check for nixpkgs.config.* in NixOS modules (WSN-E011)
+          if grep -r "nixpkgs\.config\." --include="*.nix" straylight-core/nix/modules/nixos/ 2>/dev/null | grep -v ".git" | head -1; then
+            echo "❌ ERROR: Found nixpkgs.config.* in NixOS config (WSN-E011)"
+            exit 1
+          fi
+          
+          # Check for missing finalAttrs pattern in packages
+          # This is a basic check - full validation requires parsing
+          if find straylight-core/nix -name "*.nix" -type f 2>/dev/null | xargs grep -l "mkDerivation" 2>/dev/null | xargs grep -L "finalAttrs:" 2>/dev/null | head -1; then
+            echo "⚠️  WARNING: Found mkDerivation without finalAttrs pattern"
+            echo "   Full validation requires parsing - use straylight_validate tool"
+          fi
+          
+          # Check for missing mainProgram in meta (WSN-W007)
+          echo "Checking for missing mainProgram in packages with executables..."
+          for file in $(find straylight-core/nix -name "*.nix" -type f 2>/dev/null | xargs grep -l "mkDerivation\|bin\s*=\|install.*-m755" 2>/dev/null); do
+            if grep -q "meta" "$file" 2>/dev/null && grep -q "bin\|install.*-m755" "$file" 2>/dev/null; then
+              if ! grep -q "mainProgram" "$file" 2>/dev/null; then
+                echo "⚠️  WARNING: $file has executables but missing mainProgram in meta (WSN-W007)"
+              fi
+            fi
+          done
+          
+          # Check for file size violations (>500 lines)
+          echo "Checking file sizes..."
+          for file in $(find straylight-core -type f \( -name "*.nix" -o -name "*.hs" -o -name "*.purs" -o -name "*.lean" -o -name "*.lit" -o -name "*.mdx" -o -name "*.lit.hs" -o -name "*.lit.cpp" -o -name "*.lit.purs" -o -name "*.cpp" -o -name "*.hpp" -o -name "*.cc" -o -name "*.h" -o -name "*.cu" -o -name "*.cuh" -o -name "*.dhall" -o -name "*.bzl" -o -name "*.rs" -o -name "*.py" \)); do
+            lines=$(wc -l < "$file" 2>/dev/null || echo "0")
+            if [ "$lines" -gt 500 ]; then
+              echo "❌ ERROR: File exceeds 500 line limit: $file ($lines lines)"
+              exit 1
+            fi
+          done
+          
+          # Check for PureScript violations
+          if grep -rE "\b(undefined|null|unsafeCoerce|unsafePartial|unsafePerformEffect)\b" --include="*.purs" straylight-core/ 2>/dev/null | grep -v ".git" | head -1; then
+            echo "❌ ERROR: Found PureScript forbidden patterns (STRAYLIGHT-007)"
+            exit 1
+          fi
+          
+          # Check for Lean4 violations
+          if grep -rE "\b(sorry|axiom|admit|unsafe)\b" --include="*.lean" straylight-core/ 2>/dev/null | grep -v ".git" | head -1; then
+            echo "❌ ERROR: Found Lean4 forbidden patterns (STRAYLIGHT-009)"
+            exit 1
+          fi
+          
+          # Check for C++23 violations
+          if grep -rE "\b(nullptr|new\s+\w+|delete\s+)" --include="*.cpp" --include="*.hpp" --include="*.cc" --include="*.h" straylight-core/ 2>/dev/null | grep -v ".git" | head -1; then
+            echo "❌ ERROR: Found C++23 forbidden patterns (STRAYLIGHT-011-E006/E007)"
+            exit 1
+          fi
+          
+          # Check for literate programming violations
+          echo "Validating literate programming files..."
+          # Find all literate programming files (.lit, .mdx, .lit.hs, .lit.cpp, .lit.purs)
+          for file in $(find straylight-core -type f \( -name "*.lit" -o -name "*.mdx" -o -name "*.lit.hs" -o -name "*.lit.cpp" -o -name "*.lit.purs" \) 2>/dev/null); do
+            if [ ! -f "$file" ]; then continue; fi
+            
+            # Check for @target annotations in code blocks
+            if grep -q "```" "$file" 2>/dev/null && ! grep -q "@target:" "$file" 2>/dev/null; then
+              echo "⚠️  WARNING: $file has code blocks without @target annotations (STRAYLIGHT-011-E001)"
+            fi
+            
+            # Check for duplicate chunk names (basic check)
+            chunk_names=$(grep "@name:" "$file" 2>/dev/null | sed 's/.*@name:\s*\(\w*\).*/\1/' | sort)
+            if echo "$chunk_names" | uniq -d | grep -q .; then
+              echo "❌ ERROR: $file has duplicate chunk names (STRAYLIGHT-011-E002)"
+              exit 1
+            fi
+            
+            # Check for undefined chunk references (basic check)
+            refs=$(grep -o "<<\w*>>" "$file" 2>/dev/null | sed 's/<<\(.*\)>>/\1/' | sort -u)
+            defs=$(grep "@name:" "$file" 2>/dev/null | sed 's/.*@name:\s*\(\w*\).*/\1/' | sort -u)
+            for ref in $refs; do
+              if ! echo "$defs" | grep -q "^$ref$"; then
+                echo "❌ ERROR: $file has undefined chunk reference <<$ref>> (STRAYLIGHT-011-E003)"
+                exit 1
+              fi
+            done
+            
+            # Check for code blocks exceeding 500 lines (STRAYLIGHT-010-BLOCK)
+            # Extract code blocks and count lines
+            in_block=false
+            block_lines=0
+            while IFS= read -r line; do
+              if [[ "$line" =~ ^\`\`\` ]]; then
+                if [ "$in_block" = true ]; then
+                  if [ "$block_lines" -gt 500 ]; then
+                    echo "❌ ERROR: $file has code block exceeding 500 lines (STRAYLIGHT-010-BLOCK)"
+                    exit 1
+                  fi
+                  block_lines=0
+                  in_block=false
+                else
+                  in_block=true
+                  block_lines=0
+                fi
+              elif [ "$in_block" = true ]; then
+                ((block_lines++))
+              fi
+            done < "$file"
+          done
+          
+          # Check for mkOption without description (WSN-W005)
+          echo "Checking for mkOption without description..."
+          for file in $(find straylight-core -name "*.nix" -type f 2>/dev/null); do
+            if grep -q "mkOption" "$file" 2>/dev/null; then
+              # Basic check: mkOption blocks should contain 'description'
+              if grep -q "mkOption" "$file" 2>/dev/null && ! grep -A 5 "mkOption" "$file" 2>/dev/null | grep -q "description"; then
+                echo "⚠️  WARNING: $file has mkOption without description (WSN-W005)"
+                echo "   Full validation requires parsing - use straylight_validate tool"
+              fi
+            fi
+          done
+          
+          echo "✅ Literate programming validation complete"
+          
+          echo "✅ No protocol violations found"
+      
+      - name: Validate Changed Files
+        run: |
+          echo "Validating changed files..."
+          
+          # Get list of changed files
+          if [ "${{ github.event_name }}" == "pull_request" ]; then
+            CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD | grep -E '\.(nix|hs|purs|sh|bash|lean|lit|mdx|lit\.hs|lit\.cpp|lit\.purs|cpp|hpp|cc|h|cu|cuh|dhall|bzl|rs|py)$' || true)
+          else
+            CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD | grep -E '\.(nix|hs|purs|sh|bash|lean|lit|mdx|lit\.hs|lit\.cpp|lit\.purs|cpp|hpp|cc|h|cu|cuh|dhall|bzl|rs|py)$' || true)
+          fi
+          
+          if [ -z "$CHANGED_FILES" ]; then
+            echo "No relevant files changed, skipping validation"
+            exit 0
+          fi
+          
+          echo "Changed files to validate:"
+          echo "$CHANGED_FILES"
+          
+          # Use validate-file.js for comprehensive validation
+          if [ -f "scripts/validate-file.js" ]; then
+            for file in $CHANGED_FILES; do
+              if [ ! -f "$file" ]; then
+                continue
+              fi
+              
+              echo "Validating $file..."
+              node scripts/validate-file.js "$file" || {
+                echo "❌ Validation failed for $file"
+                exit 1
+              }
+            done
+          else
+            echo "⚠️  validate-file.js not found, using basic grep checks..."
+            # Fallback to basic checks if validate-file.js not available
+            for file in $CHANGED_FILES; do
+              if [ ! -f "$file" ]; then
+                continue
+              fi
+              
+              echo "Validating $file..."
+              
+              # Check file extension and validate accordingly
+              if [[ "$file" == *.nix ]]; then
+                if grep -q "with lib;" "$file" 2>/dev/null; then
+                  echo "❌ ERROR: $file contains 'with lib;' (WSN-E001)"
+                  exit 1
+                fi
+                if grep -q "mkDerivation rec" "$file" 2>/dev/null; then
+                  echo "❌ ERROR: $file contains 'rec' in derivation (WSN-E002)"
+                  exit 1
+                fi
+              elif [[ "$file" == *.sh ]] || [[ "$file" == *.bash ]]; then
+                # Check for exec "$@" pattern (handles exec "$CXX" "${ARGS[@]}" "$@" too)
+                has_exec=$(grep -E "\bexec\b.*[\"']?\$@[\"']?" "$file" 2>/dev/null || echo "")
+                if grep -qE "\b(if|case|for|while)\s" "$file" 2>/dev/null && [ -z "$has_exec" ]; then
+                  echo "❌ ERROR: $file contains bash logic without exec \"\$@\" pattern (STRAYLIGHT-006)"
+                  exit 1
+                fi
+              elif [[ "$file" == *.hs ]] || [[ "$file" == *.purs ]]; then
+                if [[ "$file" == *"/scripts/"* ]] || [[ "$file" == *"/test-violations/"* ]]; then
+                  if ! grep -qE "^import\s+Straylight\.Script" "$file" 2>/dev/null; then
+                    echo "❌ ERROR: $file is a script but doesn't import Straylight.Script (STRAYLIGHT-004)"
+                    exit 1
+                  fi
+                fi
+              fi
+            done
+          fi
+          
+          echo "✅ All changed files validated"

@@ -1,0 +1,452 @@
+src/components/canvas/MeshWarpPinEditor.vue:206:  return (layer.data as any)?.warpPins ?? (layer.data as any)?.puppetPins ?? [];
+src/components/canvas/MeshWarpPinEditor.vue:352:    (layer.data as any)?.warpPins ?? (layer.data as any)?.puppetPins ?? [];
+src/components/canvas/MeshWarpPinEditor.vue:355:      ...(layer.data as any),
+src/components/canvas/MeshWarpPinEditor.vue:370:    (layer.data as any)?.warpPins ?? (layer.data as any)?.puppetPins ?? [];
+src/components/canvas/MeshWarpPinEditor.vue:373:      ...(layer.data as any),
+src/components/canvas/MeshWarpPinEditor.vue:391:    (layer.data as any)?.warpPins ?? (layer.data as any)?.puppetPins ?? [];
+src/components/canvas/MeshWarpPinEditor.vue:407:      ...(layer.data as any),
+src/components/canvas/MeshWarpPinEditor.vue:420:    (layer.data as any)?.warpPins ?? (layer.data as any)?.puppetPins ?? [];
+src/components/canvas/MeshWarpPinEditor.vue:433:      ...(layer.data as any),
+src/components/canvas/SplineEditor.vue:550:  visibleControlPoints: visibleControlPoints as any,
+src/components/canvas/SplineEditor.vue:552:  overlayStyle: overlayStyle as any,
+src/components/canvas/ThreeCanvas.vue:562:              (layer.data as any).assetId = item.id;
+src/components/canvas/ThreeCanvas.vue:563:              (layer.data as any).source = asset.data;
+src/components/canvas/ThreeCanvas.vue:577:            (layer.data as any).assetId = item.id;
+src/components/canvas/ThreeCanvas.vue:856:          l.type === "camera" && (l.data as any)?.cameraId === activeCameraId,
+src/components/canvas/ThreeCanvas.vue:1389:            (layer.transform.position?.value as any)?.z ??
+src/components/canvas/ThreeCanvas.vue:1450:        z: transform.scale.z ?? (layer.transform.scale?.value as any)?.z ?? 100,
+src/components/dialogs/DecomposeDialog.vue:413:        (layer.data as any).source = decomposed.image;
+src/components/dialogs/DecomposeDialog.vue:423:      (nestedLayer.data as any).compositionId = nestedComp.id;
+src/components/dialogs/DecomposeDialog.vue:431:        (layer.data as any).source = decomposed.image;
+src/components/dialogs/ExportDialog.vue:433:  const engine = (window as any).__latticeEngine;
+src/components/dialogs/ExportDialog.vue:533:  const engine = (window as any).__latticeEngine;
+src/components/dialogs/FrameInterpolationDialog.vue:303:  const engine = (window as any).__latticeEngine;
+src/components/dialogs/PathSuggestionDialog.vue:483:          intent: intent as any,
+src/components/dialogs/PathSuggestionDialog.vue:512:    keyframes: [] as any[],
+src/components/dialogs/PathSuggestionDialog.vue:513:    splines: [] as any[],
+src/components/dialogs/VectorizeDialog.vue:338:    const layerData = layer.data as any;
+src/components/dialogs/VectorizeDialog.vue:401:      const layerData = layer.data as any;
+src/components/layout/WorkspaceLayout.vue:659:      window.AudioContext || (window as any).webkitAudioContext
+src/components/layout/WorkspaceLayout.vue:772:    const transform = layer.transform as any;
+src/components/layout/WorkspaceLayout.vue:879:    const transform = layer.transform as any;
+src/components/layout/WorkspaceLayout.vue:1162:    const mem = (performance as any).memory;
+src/components/panels/AIChatPanel.vue:209:    (agent as any).config.model = selectedModel.value;
+src/components/panels/AssetsPanel.vue:522:    assetStore.registerPrimitiveMesh(selectedPrimitive.value as any);
+src/components/panels/AudioPanel.vue:849:    const splineData = splineLayer.data as any;
+src/components/panels/AudioPanel.vue:1551:      } as any;
+src/components/panels/LayerDecompositionPanel.vue:349:      store as any, // Type cast for simplified store interface
+src/components/panels/Model3DProperties.vue:296:const layerData = computed(() => layer.value?.data as any);
+src/components/panels/PropertiesPanel.vue:1119:  (audioPathAnimation.value as any)[key] = value;
+src/components/panels/PropertiesPanel.vue:1120:  (selectedLayer.value.audioPathAnimation as any)[key] = value;
+src/components/properties/CameraProperties.vue:798:  const animProp = (cameraData.value as any)[dataKey] as
+src/components/properties/CameraProperties.vue:939:  const animProp = (cameraData.value as any)[dataKey] as
+src/components/properties/CameraProperties.vue:955:  let animProp = (cameraData.value as any)[dataKey] as
+src/components/properties/CameraProperties.vue:978:  let animProp = (cameraData.value as any)[dataKey] as
+src/components/properties/ExpressionInput.vue:314:      const params = props.currentExpression.params as any;
+src/components/properties/ParticleProperties.vue:2003:    const engine = (window as any).__latticeEngine;
+src/components/properties/ParticleProperties.vue:2098:  const engine = (window as any).__latticeEngine;
+src/components/properties/ParticleProperties.vue:2103:    (particleLayer as any).clearCache();
+src/components/properties/PhysicsProperties.vue:510:  const data = (layer.data as any)?.physics;
+src/components/properties/shape-editors/StrokeEditor.vue:226:  (updated as any)[prop] = { ...(updated as any)[prop], value };
+src/components/properties/shape-editors/StrokeEditor.vue:258:  const animProp = (updated as any)[prop];
+src/components/properties/ShapeProperties.vue:760:    const currentValue = (shapeData.value as any)[dataKey] ?? 0;
+src/components/properties/ShapeProperties.vue:936:  const prop = (effect as any)[propName] as
+src/components/properties/ShapeProperties.vue:949:  const prop = (effect as any)[propName] as
+src/components/properties/ShapeProperties.vue:961:  const prop = (effect as any)[propName];
+src/components/properties/ShapeProperties.vue:965:    (effect as any)[propName] = value;
+src/components/properties/ShapeProperties.vue:976:  (effect as any)[key] = value;
+src/components/properties/ShapeProperties.vue:985:  const prop = (effect as any)[propName] as
+src/components/timeline/EnhancedLayerTrack.vue:501:    const splineData = props.layer.data as any;
+src/components/timeline/LayerTrack.vue:124:    const prop = (props.layer.transform as any)[propName];
+src/components/timeline/TimelinePanel.vue:350:  else newLayer = store.createLayer(type as any);
+src/components/timeline/TimelinePanel.vue:424:        (layer.data as any).compositionId = item.id;
+src/components/timeline/TimelinePanel.vue:438:            (layer.data as any).assetId = item.id;
+src/components/timeline/TimelinePanel.vue:469:              (layer.data as any).assetId = item.id;
+src/components/timeline/TimelinePanel.vue:470:              (layer.data as any).source = asset.data;
+src/components/timeline/TimelinePanel.vue:511:                (layer.data as any).assetId = item.id;
+src/components/timeline/TimelinePanel.vue:512:                (layer.data as any).source = asset.data;
+src/composables/useAssetHandlers.ts:19:  const store = useCompositorStore() as any;
+src/composables/useAssetHandlers.ts:89:        ...(layer.data as any).emitter,
+src/composables/useMenuActions.ts:47:  const store = useCompositorStore() as any;
+src/composables/useShapeDrawing.ts:249:    const shapeData = newLayer.data as any;
+src/composables/useSplineInteraction.ts:450:        const rawNewPointX = (newPoint as any)?.rawX ?? newPoint?.x ?? 0;
+src/composables/useSplineInteraction.ts:451:        const rawNewPointY = (newPoint as any)?.rawY ?? newPoint?.y ?? 0;
+src/composables/useSplineInteraction.ts:831:      startDepth: (point as any).depth ?? 0,
+src/engine/core/LayerManager.ts:166:      const layerData = (layer as any).layerData;
+src/engine/core/RenderPipeline.ts:404:      } as any, // width/height are needed but not in types
+src/engine/core/RenderPipeline.ts:417:    const uniforms = (this.bokehPass as any).uniforms;
+src/engine/core/RenderPipeline.ts:1052:    (this.composer as any).renderTarget1 = this.colorTarget.clone();
+src/engine/core/RenderPipeline.ts:1053:    (this.composer as any).renderTarget2 = this.colorTarget.clone();
+src/engine/core/SceneManager.ts:273:    const obj = object as any;
+src/engine/core/SceneManager.ts:328:      const index = this.scene.children.indexOf(object as any);
+src/engine/core/SceneManager.ts:331:        (object as any).parent = null;
+src/engine/LatticeEngine.ts:802:        typeof (layer as any).setResolution === "function"
+src/engine/LatticeEngine.ts:804:        (layer as any).setResolution(width, height);
+src/engine/layers/BaseLayer.ts:919:   * Check if this layer has any enabled effects
+src/engine/layers/BaseLayer.ts:945:   * Check if this layer has any enabled layer styles
+src/engine/layers/BaseLayer.ts:1438:   * Check if this layer has any enabled masks
+src/engine/layers/ImageLayer.ts:93:    const data = layerData.data as any;
+src/engine/layers/ImageLayer.ts:400:    const data = properties.data as any;
+src/engine/layers/LightLayer.ts:276:    const data = layerData.data as any;
+src/engine/layers/LightLayer.ts:502:      if ((this.helper as any).dispose) {
+src/engine/layers/LightLayer.ts:503:        (this.helper as any).dispose();
+src/engine/layers/LightLayer.ts:683:    if ((this.light as any).dispose) {
+src/engine/layers/LightLayer.ts:684:      (this.light as any).dispose();
+src/engine/layers/LightLayer.ts:1201:    if ((this.light as any).dispose) {
+src/engine/layers/LightLayer.ts:1202:      (this.light as any).dispose();
+src/engine/layers/LightLayer.ts:1204:    if (this.helper && (this.helper as any).dispose) {
+src/engine/layers/LightLayer.ts:1205:      (this.helper as any).dispose();
+src/engine/layers/ModelLayer.ts:590:      (material as any).wireframe = override.wireframe;
+src/engine/layers/ModelLayer.ts:599:      (material as any).color = new THREE.Color(override.colorOverride);
+src/engine/layers/PoseLayer.ts:556:      this.layerData.data = data as any;
+src/engine/layers/PoseLayer.ts:593:    this.layerData.data = data as any;
+src/engine/layers/ShapeLayer.ts:158:    this.texture = new THREE.CanvasTexture(this.canvas as any);
+src/engine/layers/ShapeLayer.ts:209:    this.texture.image = this.canvas as any;
+src/engine/layers/SplineLayer.ts:1609:        const value = (audioMod as any)[key];
+src/engine/layers/SplineLayer.ts:1637:      const xMod = (audioMod as any)[`splineControlPoint_${index}_x`] as
+src/engine/layers/SplineLayer.ts:1640:      const yMod = (audioMod as any)[`splineControlPoint_${index}_y`] as
+src/engine/layers/SplineLayer.ts:1643:      const depthMod = (audioMod as any)[`splineControlPoint_${index}_depth`] as
+src/engine/layers/TextLayer.ts:366:    (text as any).fontWeight = this.textData.fontWeight || "400";
+src/engine/layers/TextLayer.ts:367:    (text as any).fontStyle = this.textData.fontStyle || "normal";
+src/engine/layers/TextLayer.ts:391:    (text as any).sdfGlyphSize = 256; // Default is 64, higher = sharper text
+src/engine/layers/TextLayer.ts:394:    (text as any).gpuAccelerateSDF = true;
+src/engine/layers/TextLayer.ts:398:      (text as any).outlineBlur = 0.003; // Slight blur for smoother outline edges
+src/engine/layers/TextLayer.ts:708:      (charMesh as any).fontWeight = this.textData.fontWeight || "400";
+src/engine/layers/TextLayer.ts:709:      (charMesh as any).fontStyle = this.textData.fontStyle || "normal";
+src/engine/layers/TextLayer.ts:718:        (charMesh as any).outlineBlur = 0.005;
+src/engine/layers/TextLayer.ts:722:      (charMesh as any).sdfGlyphSize = 128;
+src/engine/layers/TextLayer.ts:820:    (this.textMesh as any).fontWeight = weight;
+src/engine/layers/TextLayer.ts:824:      (charMesh as any).fontWeight = weight;
+src/engine/layers/TextLayer.ts:831:    (this.textMesh as any).fontStyle = style;
+src/engine/layers/TextLayer.ts:835:      (charMesh as any).fontStyle = style;
+src/engine/layers/TextLayer.ts:1331:          (charMesh as any).__blurX = blurVal.x * influence;
+src/engine/layers/TextLayer.ts:1332:          (charMesh as any).__blurY = blurVal.y * influence;
+src/engine/layers/VideoLayer.ts:343:    const audioTracks = (this.videoElement as any).audioTracks;
+src/engine/layers/VideoLayer.ts:1105:      (video as any).requestVideoFrameCallback(onFrame);
+src/engine/layers/VideoLayer.ts:1111:        (video as any).requestVideoFrameCallback(onFrame);
+src/engine/particles/GPUParticleSystem.ts:1882:      type: type as any,
+src/engine/TransformControlsManager.ts:63:    if ((obj as any).children === undefined || (obj as any).children === null) {
+src/engine/TransformControlsManager.ts:64:      (obj as any).children = [];
+src/engine/TransformControlsManager.ts:68:    if (!(obj as any).matrix) {
+src/engine/TransformControlsManager.ts:69:      (obj as any).matrix = new THREE.Matrix4();
+src/engine/TransformControlsManager.ts:71:    if (!(obj as any).matrixWorld) {
+src/engine/TransformControlsManager.ts:72:      (obj as any).matrixWorld = new THREE.Matrix4();
+src/engine/TransformControlsManager.ts:76:    const children = (obj as any).children;
+src/engine/TransformControlsManager.ts:146:      const anchorZ = (layerData?.transform?.anchorPoint?.value as any)?.z ?? 0;
+src/engine/TransformControlsManager.ts:274:      (this.transformControls as any).visible = visible;
+src/engine/utils/PerformanceMonitor.ts:82:    const memory = (performance as any).memory;
+src/services/audioReactiveMapping.ts:1137:      (modifiers as any)[key] = value;
+src/services/cameraTrackingImport.ts:433:        positionProp.keyframes = positionKeyframes as any; // keyframes match the value type
+src/services/cameraTrackingImport.ts:443:        orientationProp.keyframes = rotationKeyframes as any;
+src/services/cameraTrackingImport.ts:450:            position: positionProp as any, // Cast needed due to z optional mismatch
+src/services/cameraTrackingImport.ts:494:              ) as any,
+src/services/cameraTrackingImport.ts:546:        // Note: point cloud data structure may vary - cast as any for flexibility
+src/services/cameraTrackingImport.ts:553:          } as any,
+src/services/export/depthRenderer.ts:224:  const layerWidth = (layer as any).width || screenWidth;
+src/services/export/depthRenderer.ts:225:  const layerHeight = (layer as any).height || screenHeight;
+src/services/export/depthRenderer.ts:285:  return layer.type === "depthflow" && !!(layer as any).depthMapData;
+src/services/export/depthRenderer.ts:300:  const depthData = (layer as any).depthMapData as Uint8Array | Float32Array;
+src/services/export/depthRenderer.ts:301:  const depthWidth = (layer as any).depthWidth || bounds.width;
+src/services/export/depthRenderer.ts:302:  const depthHeight = (layer as any).depthHeight || bounds.height;
+src/services/export/depthRenderer.ts:360:  const engine = (window as any).__latticeEngine;
+src/services/export/exportPipeline.ts:348:        : ((evaluated.transform.rotation as any)?.z ?? 0);
+src/services/export/exportPipeline.ts:360:    const layerData = layer.data as any;
+src/services/expressions/expressionEvaluator.ts:372:    const fn = (timeExpressions as any)[name];
+src/services/expressions/expressionEvaluator.ts:378:    const fn = (mathExpressions as any)[name];
+src/services/expressions/sesEvaluator.ts:100:  const { Compartment, harden } = globalThis as any;
+src/services/expressions/sesEvaluator.ts:488:  const { Compartment, harden } = globalThis as any;
+src/services/fontService.ts:122:      const fonts = await (window as any).queryLocalFonts();
+src/services/gpuDetection.ts:48:          const info = (adapter as any).info;
+src/services/gpuEffectDispatcher.ts:596:    const renderer = webgpuRenderer as any;
+src/services/interpolation.ts:207:    const dx = (v2 as any).x - (v1 as any).x;
+src/services/interpolation.ts:208:    const dy = (v2 as any).y - (v1 as any).y;
+src/services/interpolation.ts:380:    const vb = valueBefore as any;
+src/services/interpolation.ts:381:    const va = valueAfter as any;
+src/services/interpolation.ts:554:    const val1 = v1 as any;
+src/services/interpolation.ts:555:    const val2 = v2 as any;
+src/services/modelExport.ts:726:  if (cameras.length < 2) return "static" as any;
+src/services/particleSystem.ts:1142:        const coneAngle = (((emitter as any).coneAngle ?? 45) * Math.PI) / 180;
+src/services/particleSystem.ts:1143:        const coneRadius = (emitter as any).coneRadius ?? 0.1;
+src/services/particleSystem.ts:1144:        const coneLength = (emitter as any).coneLength ?? 0.2;
+src/services/particleSystem.ts:1311:    const config = (emitter as any).depthMapEmission;
+src/services/particleSystem.ts:1410:    const config = (emitter as any).maskEmission;
+src/services/particleSystem.ts:1556:    const sourceLayerId = (emitter as any).imageSourceLayerId;
+src/services/particleSystem.ts:1557:    const threshold = (emitter as any).emissionThreshold ?? 0.1;
+src/services/particleSystem.ts:1638:    const sourceLayerId = (emitter as any).depthSourceLayerId;
+src/services/particleSystem.ts:1639:    const threshold = (emitter as any).depthEdgeThreshold ?? 0.05;
+src/services/pathMorphing.ts:767:    if (typeof (v.point as any)?.x !== "number") return false;
+src/services/pathMorphing.ts:768:    if (typeof (v.point as any)?.y !== "number") return false;
+src/services/preprocessorService.ts:743:    const engine = (window as any).__latticeEngine;
+src/services/templateBuilder.ts:590:      const data = layer.data as any;
+src/services/templateBuilder.ts:631:      const data = layer.data as any;
+src/services/textShaper.ts:248:    const hasGSUB = !!(font.tables as any).gsub;
+src/services/textShaper.ts:249:    const hasGPOS = !!(font.tables as any).gpos;
+src/services/textShaper.ts:250:    const fvar = (font.tables as any).fvar;
+src/services/textShaper.ts:270:      lineGap: (font as any).tables?.hhea?.lineGap ?? 0,
+src/services/textShaper.ts:271:      capHeight: (font as any).tables?.os2?.sCapHeight ?? font.ascender * 0.7,
+src/services/textShaper.ts:272:      xHeight: (font as any).tables?.os2?.sxHeight ?? font.ascender * 0.5,
+src/services/textToVector.ts:401:  const layerX = (textLayer.transform?.position?.value as any)?.x ?? 0;
+src/services/textToVector.ts:402:  const layerY = (textLayer.transform?.position?.value as any)?.y ?? 0;
+src/services/videoDecoder.ts:322:      return (video as any).audioTracks.length > 0;
+src/stores/actions/textAnimatorActions/utility.ts:88: * Check if a layer has any text animators
+src/stores/assetStore.ts:371:        (stored.config as any)[textureType] = url;
+src/stores/assetStore.ts:980:          const value = (stored.config as any)[key];
+src/stores/compositorStore.ts:856:     * Check if a control point has any keyframes
+src/stores/compositorStore.ts:2148:        propertyName as any,
+src/stores/compositorStore.ts:2713:          return [(value as any).x, (value as any).y, (value as any).z ?? 0];
+src/stores/effectStore/index.ts:190:      updateStylePropertyImpl(compositorStore, layerId, styleType, property, value as any);
+src/stores/keyframeStore/query.ts:30:    const prop = (layer.transform as any)[propName];
+src/stores/keyframeStore/query.ts:50:    const prop = (layer.transform as any)[propName];
+src/stores/keyframeStore/query.ts:87:    const prop = (layer.transform as any)[propName];
+src/stores/keyframeStore/query.ts:105:    const prop = (layer.transform as any)[propName];
+src/stores/layerStore/spline.ts:414: * Check if a control point has any keyframes
+src/stores/presetStore.ts:261:      delete (duplicated as any).id;
+src/stores/presetStore.ts:262:      delete (duplicated as any).createdAt;
+src/stores/presetStore.ts:263:      delete (duplicated as any).updatedAt;
+src/types/presets.ts:778:      } as any,
+src/types/presets.ts:821:      } as any,
+src/workers/expressionWorker.ts:22:    const g = globalThis as any;
+src/__tests__/comfyui/workflowTemplates.adversarial.test.ts:274:      generateWorkflowForTarget(null as any, params);
+src/__tests__/comfyui/workflowTemplates.adversarial.test.ts:306:      "1": { inputs: {} } as any, // Missing class_type
+src/__tests__/engine/MotionEngine.test.ts:77:    type: typeof value as any,
+src/__tests__/engine/MotionEngine.test.ts:532:        (result as any).frame = 999;
+src/__tests__/engine/MotionEngine.test.ts:571:        type: 'number' as any,
+src/__tests__/engine/MotionEngine.test.ts:620:      delete (layer as any).startFrame;
+src/__tests__/engine/MotionEngine.test.ts:621:      delete (layer as any).endFrame;
+src/__tests__/engine/MotionEngine.test.ts:676:                type: 'number' as any,
+src/__tests__/engine/MotionEngine.test.ts:1065:            type: 'position' as any,
+src/__tests__/engine/MotionEngine.test.ts:1104:            type: 'number' as any,
+src/__tests__/engine/MotionEngine.test.ts:1172:            type: 'number' as any,
+src/__tests__/engine/MotionEngine.test.ts:1221:            type: 'number' as any,
+src/__tests__/engine/MotionEngine.test.ts:1240:            type: 'number' as any,
+src/__tests__/engine/MotionEngine.test.ts:1329:            type: 'number' as any,
+src/__tests__/export/cameraExportFormats.adversarial.test.ts:300:    const result = interpolateCameraAtFrame(camera, null as any, 10);
+src/__tests__/export/cameraExportFormats.adversarial.test.ts:675:      "unknown-target" as any,
+src/__tests__/export/cameraExportFormats.property.test.ts:265:    const result = interpolateCameraAtFrame(camera, keyframes as any, 5);
+src/__tests__/export/cameraExportFormats.property.test.ts:966:            target as any,
+src/__tests__/export/cameraExportFormats.property.test.ts:988:            target as any,
+src/__tests__/export/cameraExportFormats.property.test.ts:994:            target as any,
+src/__tests__/export/cameraExportFormats.test.ts:732:    ) as any;
+src/__tests__/export/cameraExportFormats.test.ts:743:    ) as any;
+src/__tests__/export/cameraExportFormats.test.ts:754:    ) as any;
+src/__tests__/export/cameraExportFormats.test.ts:767:    ) as any;
+src/__tests__/export/cameraExportFormats.test.ts:778:    ) as any;
+src/__tests__/export/cameraExportFormats.test.ts:786:      "unknown-target" as any,
+src/__tests__/export/cameraExportFormats.test.ts:793:    ) as any;
+src/__tests__/export/depthRenderer.adversarial.test.ts:194:      convertDepthToFormat(result, null as any);
+src/__tests__/export/depthRenderer.adversarial.test.ts:202:      convertDepthToFormat(result, undefined as any);
+src/__tests__/export/depthRenderer.adversarial.test.ts:395:    const imageData = applyColormap(depth8, 1, 1, "unknown" as any);
+src/__tests__/export/depthRenderer.adversarial.test.ts:450:      layers: [createValidLayer({ opacity: { value: 0 } } as any)],
+src/__tests__/export/depthRenderer.adversarial.test.ts:462:    delete (layer as any).transform;
+src/__tests__/export/export-format-contracts.test.ts:1087:      const metadata = generateDepthMetadata("midas", 30, 512, 512, 0.1, 100) as any;
+src/__tests__/export/export-format-contracts.test.ts:1100:      const metadata = generateDepthMetadata("depth-anything", 60, 1920, 1080, 0.5, 50) as any;
+src/__tests__/export/export-format-contracts.test.ts:1108:      const metadata = generateDepthMetadata("zoe", 10, 256, 256, 1, 200) as any;
+src/__tests__/export/export-format-contracts.test.ts:1116:      const metadata = generateDepthMetadata("marigold", 1, 768, 768, 0.01, 1000) as any;
+src/__tests__/export/export-format-contracts.test.ts:1124:      const metadata = generateDepthMetadata("raw", 120, 4096, 2160, 0.001, 10000) as any;
+src/__tests__/export/export-format-contracts.test.ts:1131:      const metadata = generateDepthMetadata("midas", 1, 100, 100, 0, 1) as any;
+src/__tests__/export/meshDeformExport.test.ts:52:    type: "vector2" as any,
+src/__tests__/export/meshDeformExport.test.ts:796:      undefined as any, // Missing frame
+src/__tests__/export/modelExport.test.ts:321:  const mockLayer = { id: "layer-1" } as any;
+src/__tests__/export/modelExport.test.ts:540:    // Note: Single camera returns "static" (cast with as any in implementation)
+src/__tests__/export/modelExport.test.ts:547:    // Note: Empty array returns "static" (cast with as any in implementation)
+src/__tests__/export/modelExport.test.ts:1187:    const result = await exportForModel(options as any);
+src/__tests__/export/modelExport.test.ts:1195:      target: "unsupported-target" as any,
+src/__tests__/integration/save-load-roundtrip.integration.test.ts:49:    type: "number" as any,
+src/__tests__/integration/save-load-roundtrip.integration.test.ts:352:      data: textData as any, // TextData is compatible with layer data union
+src/__tests__/integration/save-load-roundtrip.integration.test.ts:487:      data: textData as any,
+src/__tests__/integration/save-load-roundtrip.integration.test.ts:507:      data: textData as any,
+src/__tests__/integration/store-engine-export.integration.test.ts:52:    type: "number" as any,
+src/__tests__/performance/memory.test.ts:26:  if (typeof performance !== 'undefined' && (performance as any).memory) {
+src/__tests__/performance/memory.test.ts:27:    return (performance as any).memory.usedJSHeapSize;
+src/__tests__/performance/memory.test.ts:34:  return typeof global !== 'undefined' && typeof (global as any).gc === 'function';
+src/__tests__/performance/memory.test.ts:40:    (global as any).gc();
+src/__tests__/regression/actions/BUG-action-executor-wind-undefined.regression.test.ts:95:    const wind = { x: null as any, y: null as any };
+src/__tests__/regression/camera/camera-export-nan-validation.regression.test.ts:337:        { frame: 0, position: undefined as any },
+src/__tests__/regression/camera/viewport-controls-nan-validation.regression.test.ts:37:      engine: shallowRef(mockEngine) as any,
+src/__tests__/security/jsonSanitizer.test.ts:117:      const data = result.data as any;
+src/__tests__/security/jsonSanitizer.test.ts:129:      expect(Object.hasOwn(result.data as any, "constructor")).toBe(false);
+src/__tests__/security/jsonSanitizer.test.ts:180:      expect((result.data as any).normal).toBe(2);
+src/__tests__/security/jsonSanitizer.test.ts:181:      expect((result.data as any)[longKey]).toBeUndefined();
+src/__tests__/security/jsonSanitizer.test.ts:190:      expect((result.data as any).value).toBeNull();
+src/__tests__/security/jsonSanitizer.test.ts:197:      expect((result.data as any).yes).toBe(true);
+src/__tests__/security/jsonSanitizer.test.ts:198:      expect((result.data as any).no).toBe(false);
+src/__tests__/security/jsonSanitizer.test.ts:205:      expect((result.data as any).int).toBe(42);
+src/__tests__/security/jsonSanitizer.test.ts:206:      expect((result.data as any).float).toBeCloseTo(3.14);
+src/__tests__/security/jsonSanitizer.test.ts:207:      expect((result.data as any).neg).toBe(-10);
+src/__tests__/security/jsonSanitizer.test.ts:214:      expect((result.data as any).value).toBe("helloworld");
+src/__tests__/security/jsonSanitizer.test.ts:227:      const result = parseAndSanitize(123 as any);
+src/__tests__/security/jsonSanitizer.test.ts:357:      expect((result.data as any).value).toBe("hello\0world");
+src/__tests__/security/urlValidator.test.ts:173:      expect(validateURL(null as any).valid).toBe(false);
+src/__tests__/security/urlValidator.test.ts:174:      expect(validateURL(undefined as any).valid).toBe(false);
+src/__tests__/services/audio.property.test.ts:320:    const result = getFeatureAtFrame(null as any, 'amplitude', 0);
+src/__tests__/services/audio.property.test.ts:325:    const result = getFeatureAtFrame(undefined as any, 'amplitude', 0);
+src/__tests__/services/audio.property.test.ts:330:    const result = isBeatAtFrame(null as any, 0);
+src/__tests__/services/interpolation.test.ts:289:        { ...createKeyframe(0, 0), interpolation: "unknownEasing" as any },
+src/__tests__/services/interpolation.test.ts:321:      const mid = interpolateProperty(prop, 50) as any;
+src/__tests__/services/interpolation.test.ts:332:      const mid = interpolateProperty(prop, 50) as any;
+src/__tests__/services/interpolation.test.ts:759:    (prop as any).expression = {
+src/__tests__/services/interpolation.test.ts:779:    (prop as any).expression = {
+src/__tests__/services/interpolation.test.ts:798:    (prop as any).expression = {
+src/__tests__/services/interpolation.test.ts:816:    (prop as any).expression = {
+src/__tests__/services/projectStorage.property.test.ts:12:global.fetch = mockFetch as any;
+src/__tests__/stores/keyframeActions.property.test.ts:97:    type: "number" as any,
+src/__tests__/stores/keyframeActions.test.ts:45:    type: "number" as any,
+src/__tests__/stores/keyframeActions.test.ts:222:    (store.getActiveComp() as any).currentFrame = 15;
+src/__tests__/stores/keyframeActions.test.ts:290:    (store.getActiveComp() as any).currentFrame = 45;
+src/__tests__/stores/projectActions.test.ts:105:    type: type as any,
+src/__tests__/stores/projectActions.test.ts:394:        "asset-1": { id: "asset-1", type: "image", filename: "test.png" } as any,
+src/__tests__/stores/projectActions.test.ts:409:      const projectJson = JSON.stringify(createMockProject({ meta: { name: "Imported" } as any }));
+src/__tests__/stores/projectActions.test.ts:765:        "used-001": { id: "used-001", type: "image", filename: "used.png" } as any,
+src/__tests__/stores/projectActions.test.ts:766:        "unused-001": { id: "unused-001", type: "image", filename: "unused.png" } as any,
+src/__tests__/stores/projectActions.test.ts:783:        "used-001": { id: "used-001", type: "image", filename: "used.png" } as any,
+src/__tests__/stores/projectActions.test.ts:798:        "unused-001": { id: "unused-001", type: "image", filename: "unused.png" } as any,
+src/__tests__/stores/projectActions.test.ts:821:        "used-001": { id: "used-001", type: "image", filename: "used.png" } as any,
+src/__tests__/stores/projectActions.test.ts:822:        "unused-001": { id: "unused-001", type: "image", filename: "unused1.png" } as any,
+src/__tests__/stores/projectActions.test.ts:823:        "unused-002": { id: "unused-002", type: "image", filename: "unused2.png" } as any,
+src/__tests__/stores/projectActions.test.ts:901:      (store.project.compositions.main.layers[0].data as any).emitter.config.nested.deeply.value = 100;
+src/__tests__/stores/projectActions.test.ts:910:        (store.project.compositions.main.layers[0].data as any).emitter.config.nested.deeply.value
+src/__tests__/stores/projectActions.test.ts:951:      (layer as any).data = null;
+src/__tests__/stores/projectActions.test.ts:962:        "no-name": { id: "no-name", type: "image" } as any,
+src/__tests__/tutorials/tutorial-01-fundamentals.test.ts:737:        expect((solid!.data as any).color).toBeDefined();
+src/__tests__/tutorials/tutorial-01-fundamentals.test.ts:2912:        expect(typeof (store as any).centerOrigin).toBe('undefined');
+src/__tests__/tutorials/tutorial-01-fundamentals.test.ts:2913:        expect(typeof (store as any).resetOrigin).toBe('undefined');
+src/__tests__/tutorials/tutorial-01-fundamentals.test.ts:3018:        expect(typeof (store as any).resetProperty).toBe('undefined');
+src/__tests__/tutorials/tutorial-01-fundamentals.test.ts:3684:        expect(typeof (store as any).selectAllVisibleKeyframes).toBe('undefined');
+src/__tests__/tutorials/tutorial-01-fundamentals.test.ts:4995:        const textData = layer.data as any;
+src/__tests__/tutorials/tutorial-01-fundamentals.test.ts:5009:        expect((layer.data as any).text).toBe(longText);
+src/__tests__/tutorials/tutorial-01-fundamentals.test.ts:5023:        expect((updated!.data as any).fontFamily).toBe('Helvetica');
+src/__tests__/tutorials/tutorial-01-fundamentals.test.ts:5032:        expect((updated!.data as any).fontSize).toBe(48);
+src/__tests__/tutorials/tutorial-01-fundamentals.test.ts:5041:        expect((updated!.data as any).fill).toBe('#ff0000');
+src/__tests__/tutorials/tutorial-01-fundamentals.test.ts:5050:        expect((updated!.data as any).tracking).toBe(50);
+src/__tests__/tutorials/tutorial-01-fundamentals.test.ts:5059:        expect((updated!.data as any).lineHeight).toBe(1.5);
+src/__tests__/tutorials/tutorial-01-fundamentals.test.ts:5073:        expect((updated!.data as any).textAlign).toBe('center');
+src/__tests__/tutorials/tutorial-01-fundamentals.test.ts:5082:        expect((updated!.data as any).textAlign).toBe('left');
+src/__tests__/tutorials/tutorial-01-fundamentals.test.ts:5091:        expect((updated!.data as any).textAlign).toBe('right');
+src/__tests__/tutorials/tutorial-01-fundamentals.test.ts:5195:        const textData = layer.data as any;
+src/__tests__/tutorials/tutorial-01-fundamentals.test.ts:5209:        expect(typeof (store as any).createParagraphText).toBe('undefined');
+src/__tests__/tutorials/tutorial-01-fundamentals.test.ts:5213:        expect((layer.data as any).boundingBox).toBeUndefined();
+src/__tests__/tutorials/tutorial-01-fundamentals.test.ts:5219:        expect(typeof (store as any).convertTextType).toBe('undefined');
+src/__tests__/tutorials/tutorial-01-fundamentals.test.ts:5220:        expect(typeof (store as any).convertToPointText).toBe('undefined');
+src/__tests__/tutorials/tutorial-01-fundamentals.test.ts:5221:        expect(typeof (store as any).convertToParagraphText).toBe('undefined');
+src/__tests__/tutorials/tutorial-01-fundamentals.test.ts:5228:        const textData = layer.data as any;
+src/__tests__/tutorials/tutorial-01-fundamentals.test.ts:5247:        expect((updated!.data as any).text).toBe('Updated Text Content');
+src/__tests__/tutorials/tutorial-01-fundamentals.test.ts:5285:        expect((store.getLayerById(layer.id)!.data as any).fontSize).toBe(96);
+src/__tests__/tutorials/tutorial-01-fundamentals.test.ts:5288:        expect((store.getLayerById(layer.id)!.data as any).fontSize).toBe(72); // Default
+src/__tests__/tutorials/tutorial-01-fundamentals.test.ts:5291:        expect((store.getLayerById(layer.id)!.data as any).fontSize).toBe(96);
+src/__tests__/tutorials/tutorial-01-fundamentals.test.ts:5349:        const textData = loaded!.data as any;
+src/__tests__/tutorials/tutorial-01-fundamentals.test.ts:5823:        expect(typeof (store as any).alignLayerToComposition).toBe('undefined');
+src/__tests__/tutorials/tutorial-01-fundamentals.test.ts:5824:        expect(typeof (store as any).alignLayers).toBe('undefined');
+src/__tests__/tutorials/tutorial-01-fundamentals.test.ts:5825:        expect(typeof (store as any).distributeLayers).toBe('undefined');
+src/__tests__/tutorials/tutorial-01-fundamentals.test.ts:5826:        expect(typeof (store as any).centerLayerInComposition).toBe('undefined');
+src/__tests__/tutorials/tutorial-01-fundamentals.test.ts:5827:        expect(typeof (store as any).fitLayerToComposition).toBe('undefined');
+src/__tests__/types/animation.test.ts:227:      const prop = createAnimatableProperty('nullable', null as any);
+src/__tests__/types/animation.test.ts:232:      const prop = createAnimatableProperty('undef', undefined as any);
+src/__tests__/types/animation.test.ts:569:      const kf = createKeyframe(0, null as any);
+src/__tests__/types/animation.test.ts:574:      const kf = createKeyframe(0, undefined as any);
+src/__tests__/types/project.property.test.ts:147:    layer.data = { testField: 'value' } as any;
+src/__tests__/types/project.property.test.ts:155:    layer.data = { testField: 'value' } as any;
+src/__tests__/types/project.property.test.ts:452:    (layer as any).startFrame = undefined;
+src/__tests__/types/project.property.test.ts:453:    (layer as any).endFrame = undefined;
+src/__tests__/types/project.test.ts:393:    (layer as any).startFrame = undefined;
+src/__tests__/types/project.test.ts:403:    (layer as any).endFrame = undefined;
+src/__tests__/types/project.test.ts:442:    (layer as any).startFrame = undefined;
+src/__tests__/types/transform.property.test.ts:140:    delete (transform as any).origin;
+src/__tests__/types/transform.property.test.ts:150:    delete (transform as any).anchorPoint;
+src/__tests__/types/transform.test.ts:155:    delete (transform as any).origin;
+src/__tests__/types/transform.test.ts:165:    delete (transform as any).anchorPoint;
+src/__tests__/types/transform.test.ts:193:    delete (transform as any).origin;
+src/__tests__/types/transform.test.ts:194:    delete (transform as any).anchorPoint;
+src/__tests__/types/transform.test.ts:303:    transform.position.value = { x: 10, y: 20 } as any;
+src/__tests__/types/transform.test.ts:518:    transform.scale.value = { x: 150, y: 200 } as any;
+src/__tests__/_deprecated/integration/layer-creation-pipeline.test.ts:130:      expect(typeof (data as any).fontSize).toBe("number");
+src/__tests__/_deprecated/integration/layer-creation-pipeline.test.ts:131:      expect((data as any).fontSize).toBeGreaterThan(0);
+src/__tests__/_deprecated/integration/layer-creation-pipeline.test.ts:139:      expect((data as any).width).toBe(1920);
+src/__tests__/_deprecated/integration/layer-creation-pipeline.test.ts:140:      expect((data as any).height).toBe(1080);
+src/__tests__/_deprecated/integration/layer-creation-pipeline.test.ts:141:      expect((data as any).color).toBeTruthy();
+src/__tests__/_deprecated/integration/layer-creation-pipeline.test.ts:148:      const particleData = data as any;
+src/__tests__/_deprecated/integration/layer-creation-pipeline.test.ts:167:      const poseData = data as any;
+src/__tests__/_deprecated/integration/layer-creation-pipeline.test.ts:193:      const depthData = data as any;
+src/__tests__/_deprecated/integration/layer-creation-pipeline.test.ts:204:      const shapeData = data as any;
+src/__tests__/_deprecated/properties/interpolation-complete.property.test.ts:356:      expect(typeof (result as any).x).toBe('number');
+src/__tests__/_deprecated/properties/interpolation-complete.property.test.ts:357:      expect(typeof (result as any).y).toBe('number');
+src/__tests__/_deprecated/properties/interpolation-complete.property.test.ts:358:      expect(Number.isFinite((result as any).x)).toBe(true);
+src/__tests__/_deprecated/properties/interpolation-complete.property.test.ts:359:      expect(Number.isFinite((result as any).y)).toBe(true);
+src/__tests__/_deprecated/properties/interpolation-complete.property.test.ts:374:        type: 'position' as any,
+src/__tests__/_deprecated/properties/interpolation-complete.property.test.ts:407:        type: 'vector3' as any, // BezierPath type
+src/__tests__/_deprecated/properties/interpolation-complete.property.test.ts:438:        type: 'vector3' as any,
+src/__tests__/_deprecated/properties/interpolation-complete.property.test.ts:475:        type: 'vector3' as any,
+src/__tests__/_deprecated/properties/interpolation-complete.property.test.ts:496:          type: 'vector3' as any,
+src/__tests__/_deprecated/properties/interpolation-complete.property.test.ts:584:        type: 'vector3' as any,
+src/__tests__/_deprecated/properties/interpolation-complete.property.test.ts:604:        type: 'vector3' as any,
+src/__tests__/_deprecated/properties/strict-effectprocessor.property.test.ts:41:    type: typeof value as any,
+src/__tests__/_deprecated/properties/strict-effectprocessor.property.test.ts:57:    type: typeof startValue as any,
+src/__tests__/_deprecated/properties/strict-export.property.test.ts:86:      target: fc.constant(undefined as any),
+src/__tests__/_deprecated/services/export/attackSurface.test.ts:50:      } as any,
+src/__tests__/_deprecated/services/export/attackSurface.test.ts:80:      } as any,
+src/__tests__/_deprecated/services/export/attackSurface.test.ts:122:      } as any,
+src/__tests__/_deprecated/services/export/attackSurface.test.ts:160:      } as any,
+src/__tests__/_deprecated/services/export/attackSurface.test.ts:177:      } as any,
+src/__tests__/_deprecated/services/export/attackSurface.test.ts:206:      } as any,
+src/__tests__/_deprecated/services/export/attackSurface.test.ts:272:      } as any,
+src/__tests__/_deprecated/services/export/attackSurface.test.ts:344:        } as any,
+src/__tests__/_deprecated/services/export/attackSurface.test.ts:387:        } as any,
+src/__tests__/_deprecated/services/export/attackSurface.test.ts:424:    expect(({} as any).isAdmin).not.toBe(true);
+src/__tests__/_deprecated/services/export/attackSurface.test.ts:442:    const workflow = generateWorkflowForTarget("wan22-i2v", params as any);
+src/__tests__/_deprecated/services/export/attackSurface.test.ts:472:      } as any,
+src/__tests__/_deprecated/services/export/attackSurface.test.ts:650:    const result = exportCameraMatrices(camera as any, [], {
+src/__tests__/_deprecated/services/export/attackSurface.test.ts:692:    const _workflow1 = generateWorkflowForTarget("wan22-i2v", params1 as any);
+src/__tests__/_deprecated/services/export/attackSurface.test.ts:705:    const workflow2 = generateWorkflowForTarget("motionctrl", params2 as any);
+src/__tests__/_deprecated/services/export/attackSurface.test.ts:735:      camera as any,
+src/__tests__/_deprecated/services/export/attackSurface.test.ts:736:      keyframes1 as any,
+src/__tests__/_deprecated/services/export/attackSurface.test.ts:743:      camera as any,
+src/__tests__/_deprecated/services/export/attackSurface.test.ts:772:      } as any,
+src/__tests__/_deprecated/services/export/attackSurface.test.ts:794:      } as any,
+src/__tests__/_deprecated/services/export/attackSurface.test.ts:814:      } as any,
+src/__tests__/_deprecated/services/export/attackSurface.test.ts:846:        } as any,
+src/__tests__/_deprecated/services/export/attackSurface.test.ts:872:      generateWorkflowForTarget("wan22-i2v", params as any);
+src/__tests__/_deprecated/services/export/attackSurface.test.ts:897:      ] as any,
+src/__tests__/_deprecated/services/export/attackSurface.test.ts:906:      } as any,
+src/__tests__/_deprecated/services/export/attackSurface.test.ts:929:      ] as any,
+src/__tests__/_deprecated/services/export/attackSurface.test.ts:938:      } as any,
+src/__tests__/_deprecated/services/export/attackSurface.test.ts:969:      } as any,
+src/__tests__/_deprecated/services/export/attackSurface.test.ts:997:      } as any,
+src/__tests__/_deprecated/services/export/attackSurface.test.ts:1016:      ] as any,
+src/__tests__/_deprecated/services/export/attackSurface.test.ts:1026:      } as any,
+src/__tests__/_deprecated/services/export/attackSurface.test.ts:1045:      ] as any,
+src/__tests__/_deprecated/services/export/attackSurface.test.ts:1056:      } as any,
+src/__tests__/_deprecated/services/export/attackSurface.test.ts:1089:      ] as any,
+src/__tests__/_deprecated/services/export/attackSurface.test.ts:1098:      } as any,
+src/__tests__/_deprecated/services/export/attackSurface.test.ts:1128:        } as any,
+src/__tests__/_deprecated/utils/security.test.ts:95:      delete (project.compositions.main.settings as any).fps;
+src/__tests__/_deprecated/_archived/tutorials/tutorial-01-fundamentals.test.ts:737:        expect((solid!.data as any).color).toBeDefined();
+src/__tests__/_deprecated/_archived/tutorials/tutorial-01-fundamentals.test.ts:2912:        expect(typeof (store as any).centerOrigin).toBe('undefined');
+src/__tests__/_deprecated/_archived/tutorials/tutorial-01-fundamentals.test.ts:2913:        expect(typeof (store as any).resetOrigin).toBe('undefined');
+src/__tests__/_deprecated/_archived/tutorials/tutorial-01-fundamentals.test.ts:3018:        expect(typeof (store as any).resetProperty).toBe('undefined');
+src/__tests__/_deprecated/_archived/tutorials/tutorial-01-fundamentals.test.ts:3684:        expect(typeof (store as any).selectAllVisibleKeyframes).toBe('undefined');
+src/__tests__/_deprecated/_archived/tutorials/tutorial-01-fundamentals.test.ts:4995:        const textData = layer.data as any;
+src/__tests__/_deprecated/_archived/tutorials/tutorial-01-fundamentals.test.ts:5009:        expect((layer.data as any).text).toBe(longText);
+src/__tests__/_deprecated/_archived/tutorials/tutorial-01-fundamentals.test.ts:5023:        expect((updated!.data as any).fontFamily).toBe('Helvetica');
+src/__tests__/_deprecated/_archived/tutorials/tutorial-01-fundamentals.test.ts:5032:        expect((updated!.data as any).fontSize).toBe(48);
+src/__tests__/_deprecated/_archived/tutorials/tutorial-01-fundamentals.test.ts:5041:        expect((updated!.data as any).fill).toBe('#ff0000');
+src/__tests__/_deprecated/_archived/tutorials/tutorial-01-fundamentals.test.ts:5050:        expect((updated!.data as any).tracking).toBe(50);
+src/__tests__/_deprecated/_archived/tutorials/tutorial-01-fundamentals.test.ts:5059:        expect((updated!.data as any).lineHeight).toBe(1.5);
+src/__tests__/_deprecated/_archived/tutorials/tutorial-01-fundamentals.test.ts:5073:        expect((updated!.data as any).textAlign).toBe('center');
+src/__tests__/_deprecated/_archived/tutorials/tutorial-01-fundamentals.test.ts:5082:        expect((updated!.data as any).textAlign).toBe('left');
+src/__tests__/_deprecated/_archived/tutorials/tutorial-01-fundamentals.test.ts:5091:        expect((updated!.data as any).textAlign).toBe('right');
+src/__tests__/_deprecated/_archived/tutorials/tutorial-01-fundamentals.test.ts:5195:        const textData = layer.data as any;
+src/__tests__/_deprecated/_archived/tutorials/tutorial-01-fundamentals.test.ts:5209:        expect(typeof (store as any).createParagraphText).toBe('undefined');
+src/__tests__/_deprecated/_archived/tutorials/tutorial-01-fundamentals.test.ts:5213:        expect((layer.data as any).boundingBox).toBeUndefined();
+src/__tests__/_deprecated/_archived/tutorials/tutorial-01-fundamentals.test.ts:5219:        expect(typeof (store as any).convertTextType).toBe('undefined');
+src/__tests__/_deprecated/_archived/tutorials/tutorial-01-fundamentals.test.ts:5220:        expect(typeof (store as any).convertToPointText).toBe('undefined');
+src/__tests__/_deprecated/_archived/tutorials/tutorial-01-fundamentals.test.ts:5221:        expect(typeof (store as any).convertToParagraphText).toBe('undefined');
+src/__tests__/_deprecated/_archived/tutorials/tutorial-01-fundamentals.test.ts:5228:        const textData = layer.data as any;
+src/__tests__/_deprecated/_archived/tutorials/tutorial-01-fundamentals.test.ts:5247:        expect((updated!.data as any).text).toBe('Updated Text Content');
+src/__tests__/_deprecated/_archived/tutorials/tutorial-01-fundamentals.test.ts:5285:        expect((store.getLayerById(layer.id)!.data as any).fontSize).toBe(96);
+src/__tests__/_deprecated/_archived/tutorials/tutorial-01-fundamentals.test.ts:5288:        expect((store.getLayerById(layer.id)!.data as any).fontSize).toBe(72); // Default
+src/__tests__/_deprecated/_archived/tutorials/tutorial-01-fundamentals.test.ts:5291:        expect((store.getLayerById(layer.id)!.data as any).fontSize).toBe(96);
+src/__tests__/_deprecated/_archived/tutorials/tutorial-01-fundamentals.test.ts:5349:        const textData = loaded!.data as any;
+src/__tests__/_deprecated/_archived/tutorials/tutorial-01-fundamentals.test.ts:5806:        expect(typeof (store as any).alignLayerToComposition).toBe('undefined');
+src/__tests__/_deprecated/_archived/tutorials/tutorial-01-fundamentals.test.ts:5807:        expect(typeof (store as any).alignLayers).toBe('undefined');
+src/__tests__/_deprecated/_archived/tutorials/tutorial-01-fundamentals.test.ts:5808:        expect(typeof (store as any).distributeLayers).toBe('undefined');
+src/__tests__/_deprecated/_archived/tutorials/tutorial-01-fundamentals.test.ts:5809:        expect(typeof (store as any).centerLayerInComposition).toBe('undefined');
+src/__tests__/_deprecated/_archived/tutorials/tutorial-01-fundamentals.test.ts:5810:        expect(typeof (store as any).fitLayerToComposition).toBe('undefined');

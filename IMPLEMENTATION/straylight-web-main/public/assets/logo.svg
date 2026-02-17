@@ -1,0 +1,24 @@
+<!-- Straylight Software - Primary Mark -->
+<!-- Two rails, right-justified wordmark -->
+<svg width="400" height="100" viewBox="0 0 400 100" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <style>
+      .mono { 
+        font-family: 'Berkeley Mono', 'SF Mono', 'Consolas', monospace; 
+      }
+    </style>
+  </defs>
+  
+  <rect width="400" height="100" fill="#111417"/>
+  
+  <!-- Top rail -->
+  <line x1="20" y1="25" x2="380" y2="25" stroke="#54aeff" stroke-width="3"/>
+  
+  <!-- Wordmark - right justified -->
+  <text x="380" y="62" class="mono" fill="#b6e3ff" font-size="28" font-weight="500" text-anchor="end">
+    // straylight
+  </text>
+  
+  <!-- Bottom rail -->
+  <line x1="20" y1="78" x2="380" y2="78" stroke="#54aeff" stroke-width="3"/>
+</svg>

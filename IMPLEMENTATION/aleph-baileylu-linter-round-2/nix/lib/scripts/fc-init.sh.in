@@ -1,0 +1,16 @@
+#!/bin/sh
+set -e
+
+export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+@env-exports@
+
+@base-init@
+
+hostname builder
+
+@network-setup@
+
+@build-section@
+
+# Drop to interactive shell if no build command
+@interactive-section@

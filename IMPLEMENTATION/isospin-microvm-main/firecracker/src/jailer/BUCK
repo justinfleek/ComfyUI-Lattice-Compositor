@@ -1,0 +1,38 @@
+# jailer - Firecracker isolation binary
+
+rust_binary(
+    name = "jailer",
+    srcs = glob(["src/**/*.rs"]),
+    crate = "jailer",
+    crate_root = "src/main.rs",
+    edition = "2024",
+    env = {
+        "CARGO_PKG_VERSION": "1.15.0-dev",
+    },
+    deps = [
+        "//firecracker/src/utils:utils",
+        "//third-party/rust:libc",
+        "//third-party/rust:regex",
+        "//third-party/rust:thiserror",
+        "//third-party/rust:vmm-sys-util",
+    ],
+    visibility = ["PUBLIC"],
+)
+
+rust_test(
+    name = "jailer-test",
+    srcs = glob(["src/**/*.rs"]),
+    crate = "jailer",
+    crate_root = "src/main.rs",
+    edition = "2024",
+    env = {
+        "CARGO_PKG_VERSION": "1.15.0-dev",
+    },
+    deps = [
+        "//firecracker/src/utils:utils",
+        "//third-party/rust:libc",
+        "//third-party/rust:regex",
+        "//third-party/rust:thiserror",
+        "//third-party/rust:vmm-sys-util",
+    ],
+)

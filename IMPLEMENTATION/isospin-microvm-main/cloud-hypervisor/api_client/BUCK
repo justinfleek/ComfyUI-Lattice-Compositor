@@ -1,0 +1,11 @@
+rust_library(
+    name = "api_client",
+    srcs = glob(["src/**/*.rs"]),
+    crate = "api_client",
+    edition = "2024",
+    deps = [
+        "//third-party/rust:thiserror",
+        "//third-party/rust:vmm-sys-util",
+    ],
+    visibility = ["PUBLIC"],
+)

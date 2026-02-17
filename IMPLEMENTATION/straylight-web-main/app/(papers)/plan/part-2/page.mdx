@@ -1,0 +1,92 @@
+
+
+
+
+## Part II: The Sense/Net Pyramid and The Blue Nine
+
+### Coalescence as normalization (terminating, but not magic)
+
+
+
+*"He'd operated on an almost permanent adrenaline high, a byproduct of youth and proficiency, jacked into a custom cyberspace deck that projected his disembodied consciousness into the consensual hallucination that was the matrix."*
+
+
+
+Coalescence is CuTe's normalization pass. It takes a layout and repeatedly applies three local rewrite rules until none apply:
+
+1. **Right unit law**: `(M, 1) : (d, s)  →  (M) : (d)`
+2. **Left unit law**: `(1, M) : (d, s)  →  (M) : (s)`
+3. **Packed merge**: if `M₁ * d₁ = d₂`, then `(M₁, M₂) : (d₁, d₂)  →  (M₁ * M₂) : (d₁)`
+
+These rules remove unit-extent modes (dimensions of size 1) and merge adjacent modes that are densely packed.
+
+
+### Why it terminates
+
+The key insight: each rule **strictly decreases** the number of modes in the layout.
+
+- Unit laws: remove a mode entirely
+- Packed merge: replace two modes with one
+
+Since layouts are finite lists, and each step reduces the list length, the process must terminate.
+
+**Proof sketch in Lean 4:**
+
+```lean4
+def tryCoalesce (L : Layout) : Layout × Bool :=
+  match L with
+  | [] => ([], false)
+  | [m] => ([m], false)
+  | m₁ :: m₂ :: rest =>
+    if m₁.extent = 1 then
+      (m₂ :: rest, true)  -- left unit
+    else if m₂.extent = 1 then
+      (m₁ :: rest, true)  -- right unit
+    else if m₁.extent * m₁.stride = m₂.stride then
+      ({ extent := m₁.extent * m₂.extent, stride := m₁.stride } :: rest, true)  -- packed merge
+    else
+      let (rest', changed) := tryCoalesce (m₂ :: rest)
+      (m₁ :: rest', changed)
+
+theorem coalesce_terminates (L : Layout) : ∃ n, (tryCoalesce^[n] L).2 = false :=
+  sorry -- by well-founded recursion on L.length
+```
+
+
+### Why packed-merge preserves semantics
+
+When `M₁ * d₁ = d₂`, the two modes tile densely:
+
+```
+eval((M₁, M₂):(d₁, d₂), (x₁, x₂))
+  = x₁ * d₁ + x₂ * d₂
+  = x₁ * d₁ + x₂ * (M₁ * d₁)
+  = (x₁ + x₂ * M₁) * d₁
+  = eval((M₁*M₂):(d₁), x₁ + x₂ * M₁)
+```
+
+The right side is just mixed-radix linearization of `(x₁, x₂)` into `[0, M₁*M₂)`.
+
+**Theorem (Packed Merge Soundness):**
+
+```lean4
+theorem packedMerge_sound (m₁ m₂ : Mode) (h : m₁.extent * m₁.stride = m₂.stride) :
+  ∀ x₁ x₂,
+    eval [m₁, m₂] [x₁, x₂] =
+    eval [{ extent := m₁.extent * m₂.extent, stride := m₁.stride }]
+         [x₁ + x₂ * m₁.extent] :=
+  sorry -- proof by arithmetic
+```
+
+
+### What coalescence doesn't do
+
+Coalescence is **local**. It doesn't:
+
+- Reorder modes (that's a separate transformation)
+- Change which memory locations are accessed
+- Introduce new modes or strides
+
+It just **simplifies** the representation to canonical form.
+
+

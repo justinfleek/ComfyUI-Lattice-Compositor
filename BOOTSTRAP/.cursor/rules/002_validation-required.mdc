@@ -1,0 +1,41 @@
+# Mandatory Code Validation
+
+## Description
+CRITICAL: ALL code MUST be validated before writing. This is ENFORCED. Use MCP tool `straylight_validate` or run `node scripts/validate-file.js <file>`.
+
+## Globs
+**/*.nix, **/*.hs, **/*.sh, **/*.bash, straylight-core/**/*
+
+## Rules
+
+### Before Writing ANY Code
+
+1. **Call validation tool**: Use `straylight_validate` MCP tool with code and type
+2. **Check results**: If `valid: false`, fix errors before writing
+3. **Never skip**: Validation is mandatory, not optional
+
+### Validation Commands
+
+```bash
+# Via MCP tool (preferred)
+straylight_validate({ code: "...", type: "nix" })
+
+# Via CLI (fallback)
+nix run .#lint
+```
+
+### Error Handling
+
+If validation fails:
+- Read error messages
+- Apply suggested fixes
+- Re-validate until `valid: true`
+- Only then write code to file
+
+### Zero Tolerance
+
+- ❌ Writing code without validation
+- ❌ Ignoring validation errors
+- ❌ "We'll fix it later" approach
+
+✅ Validate → Fix → Validate → Write

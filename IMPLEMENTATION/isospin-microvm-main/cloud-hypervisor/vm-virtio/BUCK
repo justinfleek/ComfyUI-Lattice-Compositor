@@ -1,0 +1,11 @@
+rust_library(
+    name = "vm-virtio",
+    srcs = glob(["src/**/*.rs"]),
+    crate = "vm_virtio",
+    edition = "2024",
+    deps = [
+        "//third-party/rust:virtio-queue",
+        "//third-party/rust:vm-memory",
+    ],
+    visibility = ["PUBLIC"],
+)

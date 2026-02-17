@@ -1,0 +1,69 @@
+# STRAYLIGHT PROTOCOL - MANDATORY ENFORCEMENT
+
+⚠️ **CRITICAL**: This file is DEPRECATED. Use `.cursor/rules/*.mdc` files instead.
+
+Before writing ANY code, read the relevant documentation AND validate:
+
+## Required Reading by Task
+
+### Nix Code
+- `straylight-protocol/docs/rfc/straylight-001-standard-nix.md` OR `straylight-core/docs/rfc/straylight-001-standard-nix.md` - Nix naming, structure, forbidden patterns
+- `straylight-core/CONTRIBUTING.md` - File locations, decision tree (CRITICAL)
+
+### Bash
+- `straylight-core/docs/rfc/straylight-006-safe-bash.md` - ONLY `exec "$@"` allowed. NO logic.
+
+### Scripts
+- `straylight-core/docs/skills/straylight-script/SKILL.md` - Writing Haskell scripts with Straylight.Script
+- `straylight-core/docs/rfc/straylight-004-typed-unix.md` - Typed Unix architecture
+
+### Packages
+- `straylight-core/docs/guides/write-package.md` - How to write packages
+
+## Rules (Non-negotiable)
+
+### Naming
+- **lisp-case**: `my-thing` not `myThing`
+- Exception: Standard Nix idioms (`pkgs`, `lib`, `config`) and external API attributes
+
+### Nix Patterns
+1. **No `with lib;`** → use `inherit (lib) x y;`
+2. **No `rec {` in derivations** → use `finalAttrs:`
+3. **Packages need `meta`** → must have `description`, `license`, `mainProgram` (if applicable)
+4. **Modules need `_class`** → `_class = "flake"` or `"nixos"`
+5. **No `default.nix` in packages** → use `{name}.nix`
+
+### Bash Restrictions
+- **NO logic**: if/case/for/while → write Haskell script
+- **NO variables**: assignments → write Haskell script
+- **ONLY allowed**: `exec "$@"` (safe bash wrapper)
+
+### Scripts
+- Must `import Straylight.Script`
+- Use typed tool wrappers from `Straylight.Script.Tools.*`
+- No bash logic - use Haskell
+
+## File Locations
+
+Use the decision tree from `straylight-core/CONTRIBUTING.md`:
+
+- **Packages**: `straylight-core/nix/packages/{name}.hs`
+- **C++ libs**: `straylight-core/nix/overlays/libmodern/{name}.nix`
+- **Scripts**: `straylight-core/nix/scripts/{name}.hs`
+- **Tool wrappers**: `straylight-core/nix/scripts/Straylight/Script/Tools/{Name}.hs`
+- **Domain modules**: `straylight-core/nix/scripts/Straylight/Script/{Name}.hs`
+- **Flake modules**: `straylight-core/nix/modules/flake/{name}.nix`
+- **NixOS modules**: `straylight-core/nix/modules/nixos/{name}.nix`
+- **Prelude functions**: `straylight-core/nix/prelude/functions/{name}.nix`
+
+## Validation
+
+Run `nix run .#lint` before committing.
+
+## Examples
+
+Study these reference implementations:
+- Tool wrappers: `straylight-core/nix/scripts/Straylight/Script/Tools/Rg.hs`
+- Scripts: `straylight-core/nix/scripts/oci-run.hs`
+- Packages: `straylight-core/nix/packages/fmt.hs`
+- Modules: `straylight-core/nix/modules/flake/lint.nix`

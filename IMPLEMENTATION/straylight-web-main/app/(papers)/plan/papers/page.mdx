@@ -1,0 +1,299 @@
+
+
+> "While you were micro-tuning online softmax for cash-furnace LLMs, I studied the blade. And now that AI inference costs money again you dare to come to me for help?"
+
+
+
+
+*"There is always a point at which the terrorist ceases to manipulate the media gestalt. A point at which the violence may well escalate, but beyond which the terrorist has become symptomatic of the media gestalt itself. Terrorism as we ordinarily understand it is innately media-related. The Panther Moderns differ from other terrorists precisely in their degree of self-consciousness, in their awareness of the extent to which media divorce the act of terrorism from the original sociopolitical intent."*
+
+"Skip it," Case said.
+
+
+
+
+## By The Standards of the Archipelago
+
+**"Essay of 3Jane's," the Finn said, producing his Partagas. "Wrote that when she was twelve. Semiotics course."**
+
+NVIDIA documented the true names.
+
+Not in marketing materials or even `CUTLASS` example 77. In `doc/reading/tma-modeling-in-depth.md` and `doc/math/integer-division.md` and thirty other files released under BSD-3-Clause, written by engineers who needed to navigate the labyrinth they built. If you want to know what NVIDIA really thinks about something, watch the `nvfuser` repository. It's as close as you'll get to a source of truth this side of carrying the Jetson phone around in an iPhone case.
+
+The Fundamental Theorem of TMA Correctness. The `IterDomain` transformation algebra. The divisibility invariants that determine whether your kernel silently corrupts memory or merely crashes. Thirty-five theorems about Euclidean division. Recursive definitions of "TMA-protected" domains.
+
+They proved these by hand. They wrote them in markdown and SVG.
+
+We encoded them as types. The somewhat alarming synergy of frontier LLMs and Lean 4 is what Terrence Tao means when he talks about AI-assisted math. It's mostly the Lean 4.
+
+
+## Contents
+
+This essay comprises:
+
+1. **[Jensen's Razor](#jensens-razor)** — The Malevolent Combinatorics of the Polyhedral Villa Straylight
+2. **[Part I: The Rectilinear Chamber](#part-i-the-rectilinear-chamber)** — Layouts, Coordinate Spaces, and the CuTe Contract
+3. **[Part II: The Sense/Net Pyramid](#part-ii-the-sensenet-pyramid-and-the-blue-nine)** — Coalescence, Noetherian Reduction, and Why the Gothic Folly Terminates
+4. **[Part III: Built Him up From Nothing](#part-iii-built-him-up-from-nothing-in-france)** — Complementation, the FTTC, and the Holes in Your Iteration Space
+5. **[Part IV: Take Your Word, Thief](#part-iv-take-your-word-thief)** — Composition, the Tensor Core Cathedral, and Jensen's Razor
+
+
+## The Stack
+
+
+
+- **Lean 4** for the proofs. The polyhedral model is lattices and affine spaces. Lean's type system expresses "this tiling is valid for all M ≥ 128 where M mod 64 = 0" as a type, not an assert.
+
+- **Haskell** for the glue. Algebraic data types for CuTe layouts. QuickCheck against Lean specs. The polyhedral scanner, the MILP solver, the PTX pretty-printer.
+
+- **The blade** for everything else.
+
+
+
+
+## Jensen's Razor
+
+### The Malevolent Combinatorics of The Polyhedral Villa Straylight
+
+
+### I. The Semiotics of the Villa
+
+
+
+*"The Villa Straylight is a body grown in upon itself, a Gothic folly. Each space in Straylight is in some way secret, this endless series of chambers linked by passages, by stairwells vaulted like intestines, where the eye is trapped in narrow curves, carried past ornate screens, empty alcoves."*
+
+
+
+NVIDIA's CUDA stack is Villa Straylight.
+
+Not metaphorically. *Architecturally*. A body grown in upon itself over four decades, each space in some way secret, linked by passages the eye is trapped in. PTX to SASS. CUTLASS to cuBLAS. nvfuser to TensorRT to Myelin. Stairwells vaulted like intestines, where you're carried past ornate screens (the documentation that exists) and empty alcoves (the documentation that doesn't).
+
+Gibson continues:
+
+> *"The architects of Freeside went to great pains to conceal the fact that the interior of the spindle is arranged with the banal precision of furniture in a hotel room. In Straylight, the hull's inner surface is overgrown with a desperate proliferation of structures, forms flowing, interlocking, rising toward a solid core of microcircuitry."*
+
+Freeside is CUTLASS examples. The templates that compile. The GEMMs that work on problem sizes divisible by 128. Furniture in a hotel room. "Just tile it, bro."
+
+Straylight is the actual scheduling logic. The IterDomain transformation algebra. The Fundamental Theorem of TMA Correctness. A desperate proliferation of structures rising toward a solid core of silicon.
+
+And at that core:
+
+> *"At the Villa's silicon core is a small room, the only rectilinear chamber in the complex."*
+
+The tensor core. The one thing that follows clean, orthogonal rules. M×N×K. The actual hardware, executing warp-synchronous matrix operations with mathematical precision.
+
+Everything else—the entire CUDA ecosystem—is the Gothic folly grown around it.
+
+
+### II. The Shape of the Problem
+
+Here's the thing about NVIDIA's stack past "hello world": it's not complex, it's **combinatorially malevolent**. You're not writing code. You're specifying a point in a search space so vast that brute force would outlive the heat death of the universe.
+
+Consider what happens when you try to schedule a single TMA load. Not a GEMM. Just loading a tile.
+
+From NVIDIA's own internal documentation—which I obtained, studied, and will now quote liberally:
+
+> **Step 1: define TMA domain**
+> When a user is ready to schedule the consumer of the TMA expression, the user should already have an idea of how the problem should be viewed.
+
+Already we're in trouble. "Should already have an idea" is doing heavy lifting. The document continues:
+
+> **Step 2: define box** — There are two ways of defining box: partitioning and compositing.
+
+And then we learn about "boxing splits," "partitioned IterDomains," "box IterDomains," "coordinate IterDomains," the difference between them, and why merging discontiguous IterDomains is illegal unless your split size divides the inner extent.
+
+This is page one of the TMA tutorial. We haven't touched swizzling yet.
+
+
+### III. The Fundamental Theorem of TMA Correctness
+
+Deep in the nvfuser documentation, there's a theorem that should terrify you. They call it **"The Fundamental Theorem of TMA Correctness,"** or FTTC for short:
+
+
+
+*"Theorem 6 describes when strong correctness is achievable. It is so powerful that it deserves a fancier name: 'The fundamental theorem of TMA correctness.' It is powerful because the condition in it is both necessary and sufficient, so we have a clear idea on when we can achieve strong correctness, and when we have no choice but to raise an error."*
+
+
+
+Let me translate. "Strong correctness" means: when you do an indivisible split on your iteration domain, you create **holes**—indices that are visited during iteration but don't correspond to valid data. If those holes get read by an unpredicated reduction (like tensor core operations), you need them filled with the correct neutral element (zero for sum, one for product).
+
+The FTTC tells you exactly when this is possible. The conditions involve:
+
+- Whether your element stride divides your box size
+- Whether your box size is smaller than your tensor size
+- Whether certain IterDomains are "TMA-protected" through a recursive definition involving splits, merges, resizes, and swizzles
+
+Miss any of this and you don't get "wrong answer." You get **silent corruption** or, if you're lucky, "illegal memory access."
+
+
+### IV. We See You, NVIDIA
+
+Here's what I find fascinating: NVIDIA wrote this documentation. They **know** this is a theorem. They formalized the conditions. They proved it. They even use notation like `÷` for true division and `/` for Euclidean division, with careful distinctions about negative number behavior.
+
+From their integer division document:
+
+> *"We learnt arithmetic from as early as elementary school, and have been used to simplify expressions using rules like a(b+c) = ab+ac, but extra care is needed when dealing with integer divisions... Because unlike real numbers, integer division can be anti-intuitive:*
+>
+> *(a + b) / c ≠ a/c + b/c*
+> *(a / b) × c ≠ a / (b / c)*"
+
+They go on to prove **35+ theorems** about Euclidean division, truncation division, and ceil division. They derive properties like:
+
+**Theorem 2.10:** If b is a multiple of c, then `a × (b/c) = (a × b)/c`.
+
+And they **need** these theorems. They use them to prove that merge-then-split equals split-then-merge only when the split is divisible:
+
+**Theorem 5:** *The following two combinations of merge and split are equivalent if and only if the split is divisible.*
+
+This is the math behind why you can't just casually tile your loops. The IterDomain transformation algebra is not a group under composition. It's not even a monoid in all cases. Every transformation has preconditions, and violating them doesn't throw an error—it **silently corrupts** your indexing.
+
+
+### V. The IterDomain Calculus
+
+NVIDIA defines a formal algebra for iteration domains:
+
+**Definition 1.1 (IterDomain Transformation):** An IterDomain transformation of rank (m, n) is a pair of two mappings `⟨ℤᵐ→ℤⁿ, ℤᵐ→ℤⁿ⟩`, called extent mapping and index mapping.
+
+They define inner split, outer split, merge, resize, swizzle, and reorder. They prove equivalence relations between compositions of these transformations. They prove theorems about when transformations commute.
+
+For example, the Split-Split equivalence:
+
+**Theorem 2.1 (Equivalence of Split-Split):** Let m, n ∈ ℤ, we have:
+
+```
+InnerSplit(m)[0] ∘ InnerSplit(n) = InnerSplit(n)[1] ∘ InnerSplit(m·n)
+```
+
+This theorem is used in TMA scheduling for "rotation"—restructuring your transformation tree to match hardware requirements. If you don't know this theorem exists, you'll cargo-cult from examples until something works.
+
+
+### VI. The Correctness Model
+
+Here's where the documentation gets genuinely profound. They define two levels of correctness:
+
+**Definition 1 (Weak Correctness):** A schedule/lowering strategy is weakly correct if all the valid items in the tensor are computed correctly.
+
+**Definition 2 (Strong Correctness):** A schedule/lowering strategy is strongly correct if, in addition to being weakly correct, all the invalid items that need to be visited are filled with correct neutral elements.
+
+The difference matters for tensor core operations. Weak correctness means "the result is right." Strong correctness means "the result is right **and** the hardware didn't see garbage that could have caused undefined behavior."
+
+
+
+NVIDIA documented when strong correctness is **impossible**. And their stack doesn't always enforce these constraints as types. That's what we're fixing.
+
+
+
+
+### VII. The Semiotics Bespeak a Turning In
+
+Let me make the cultural argument explicit.
+
+NVIDIA has, over decades, built a stack that:
+
+1. Requires formal mathematical reasoning to use correctly
+2. Documents that reasoning in BSD-3-Clause markdown files
+3. Embeds theorems with proofs in code comments
+4. **Does not provide tooling to enforce these theorems as types**
+
+This is not laziness. This is the natural endpoint of bottom-up engineering. You solve problems as they arise. You document solutions. You eventually realize you've proven theorems, so you write them down. But the tooling—the compiler that enforces divisibility as a type error—that would require rebuilding the stack from the top down.
+
+And here's the thing: **they can't do that**. NVIDIA has a million lines of CUTLASS/cuBLAS/TensorRT that assume the current abstraction layers. Breaking changes cascade. Technical debt compounds. The Villa Straylight grows another passage.
+
+But we can.
+
+
+### VIII. The Blade
+
+There's a software project called **razorgirl**.
+
+Not released yet. Mostly Lean 4 proofs, some Haskell glue, a lot of staring at nvfuser documentation at 3 AM.
+
+The core idea: **encode NVIDIA's theorems as Lean types**.
+
+When you write:
+
+```lean4
+def myTiling : Layout := Layout.mk (4, 128, 64) (1, 4, 512)
+```
+
+The type checker verifies:
+- Your strides are valid (no negative, no zero)
+- Your coordinate space is well-formed
+- If you compose with complementation, the divisibility constraints hold
+- If you compose with another layout, the admissibility predicate succeeds
+
+**You can't write a layout that violates the FTTC.** Not because we added runtime checks. Because the **type system rejects it**.
+
+
+### IX. The Actual Error Message
+
+This is what happens when you try to tile incorrectly:
+
+```
+Error: admissibility predicate failed for complement
+  Have: complement_requires (N=128) (d=16) (M=2040)
+  Need: N * d ∣ M
+  Because: 128 * 16 = 2048, but 2048 ∤ 2040
+
+Suggestion: Increase M to 2048, or use M=2032 with N=127, or use d=15 with M=1920.
+```
+
+The type system tells you **why** your tiling is illegal and **what values would work**.
+
+
+### X. Jensen's Razor
+
+Here's the razor:
+
+> **Never attribute to search what can be proven by construction.**
+
+NVIDIA's stack requires you to search for valid tilings. Try a configuration. Run it. Check for corruption. Try again.
+
+We prove tilings valid **before compilation**. The search space collapses to the subset of provably correct transformations.
+
+This doesn't make scheduling "easy." It makes it **correct by construction**.
+
+The Gothic folly remains. But now the passages have guardrails.
+
+
+### XI. The Ducal Palace at Mantua
+
+There's a reason I keep quoting Gibson.
+
+The Villa Straylight isn't evil. It's **grown**. It's the result of forty years of smart people solving hard problems under constraints. PTX was designed before tensor cores existed. CUTLASS was designed before Hopper. Each layer solved real problems.
+
+But there's a difference between **growth** and **design**.
+
+The Ducal Palace at Mantua has a Camera degli Sposi—a single perfect room painted by Mantegna, surrounded by centuries of accumulated architecture. You can see the vision in that one room. The rest is context.
+
+NVIDIA's tensor cores are the Camera degli Sposi. Clean. Orthogonal. Beautiful.
+
+The CUDA stack is the palace.
+
+
+### XII. razorgirl
+
+The project has three parts:
+
+1. **Lean 4 kernel**: CuTe layouts, transformation algebra, FTTC encoding, divisibility as types
+2. **Haskell layer**: Polyhedral scanner, MILP solver interface, PTX codegen
+3. **The blade**: Direct CUDA when nothing else will do
+
+The Lean kernel is ~3000 lines. Proving termination of coalescence took two days. Encoding the admissibility predicate for composition took three. The error messages are generated from proof witnesses.
+
+It's not magic. It's **type-level validation of NVIDIA's own theorems**.
+
+
+### XIII. Coda
+
+> **"Take your word, thief."**
+
+NVIDIA gave us the theorems.
+
+We gave them types.
+
+
+## Continue Reading
+
+
+

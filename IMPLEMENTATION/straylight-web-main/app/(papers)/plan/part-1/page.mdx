@@ -1,0 +1,131 @@
+
+
+
+
+## Part I: The Rectilinear Chamber
+
+### Layouts, Coordinate Spaces, and the CuTe Contract
+
+
+### 1. Layouts as coordinate → offset maps
+
+A **layout** has two parts:
+
+- a **shape** `S = (M₀, …, M₍ₙ₋₁₎)` of positive integers,
+- a **stride** `D = (d₀, …, d₍ₙ₋₁₎)` of positive integers,
+
+with the same "profile" (same rank / structure).
+
+The **coordinate space** is the finite product:
+
+```
+Coord(S) = [0,M₀) × … × [0,M₍ₙ₋₁₎)
+```
+
+The **semantics** of the layout is the dot-product map:
+
+```
+eval_L(x₀,…,x₍ₙ₋₁₎) = Σᵢ xᵢ · dᵢ
+```
+
+That's the thing CuTe means by "a layout maps coordinate space(s) defined by Shape into an index space defined by Stride."
+
+#### Row-major / column-major are just special cases
+
+For a 4×8 matrix:
+
+- **column-major**: `S=(4,8)`, `D=(1,4)`
+- **row-major**: `S=(4,8)`, `D=(8,1)`
+
+
+### 2. Size and cosize (tight definition)
+
+Two numbers matter constantly:
+
+- **size**: how many logical coordinates exist: `size(L) = ∏ᵢ Mᵢ`
+- **cosize**: how far the layout's *image* reaches in memory: `cosize(L) = 1 + max{ eval_L(c) | c ∈ Coord(S) }`
+
+
+
+**Cosize is not** "eval at the last linear index + 1" unless you already know the layout is monotone in that linearization.
+
+Cosize is a maximum over the *whole* coordinate space.
+
+
+
+
+### 3. Compact vs contiguous
+
+Two properties you want to name cleanly:
+
+- **Compact (injective)**: no two coordinates collide in memory: `eval_L(c)=eval_L(c') ⇒ c=c'`
+- **Contiguous (a permutation of a block)**: compact **and** it fills exactly `[0,size)` (no gaps, no overshoot). A convenient sufficient characterization: compact, and `cosize(L) = size(L)`.
+
+
+### 4. Coordinate isomorphism (why 1D indices still show up)
+
+CuTe "thinks in coordinates". Humans (and many APIs) still "think in linear indices".
+
+Given just a shape `S`, there is a standard **mixed-radix bijection** between:
+
+- linear index `x ∈ [0, ∏ Mᵢ)`
+- coordinate tuple `(x₀,…,x₍ₙ₋₁₎) ∈ Coord(S)`
+
+with:
+
+```
+x₀ = x mod M₀
+x₁ = ⌊x / M₀⌋ mod M₁
+…
+xᵢ = ⌊x / (∏₍ⱼ<ᵢ₎ Mⱼ)⌋ mod Mᵢ
+```
+
+This is *not* the layout yet; it's the coordinate system induced by the shape.
+
+Once you have a coordinate, the layout semantics is just the dot product with strides.
+
+
+### 5. Lean 4: make the semantics the center
+
+The biggest Lean cleanup is: **don't define the meaning of a layout as `Nat → Nat` first.** Define it as a function on bounded coordinates (like CuTe does), then optionally add a linearization layer.
+
+#### Lean: core data types
+
+```lean4
+structure Mode where
+  extent : Nat
+  stride : Nat
+  h_extent_pos : 0 < extent
+
+def Layout : Type := List Mode
+
+def Layout.eval (L : Layout) (c : List Nat) : Option Nat :=
+  if h : c.length = L.length ∧ (∀ i, c[i]? < L[i]?.extent)
+  then some (List.sum (List.zipWith (· * ·) c (L.map Mode.stride)))
+  else none
+
+def Layout.cosize (L : Layout) : Nat :=
+  1 + (List.finRange (Layout.size L)).maximum? (Layout.eval_from_lin L)
+```
+
+#### Lean: linearization layer (kept explicit)
+
+```lean4
+def linToCoord (shape : List Nat) (x : Nat) : List Nat :=
+  shape.scanl (· * ·) 1
+    |>.zip shape
+    |>.map (fun (prod, m) => (x / prod) % m)
+
+theorem linToCoord_bijective (shape : List Nat) (h : shape.all (0 < ·)) :
+  Function.Bijective (linToCoord shape ∘ fun x => x < shape.prod) :=
+  sorry -- proof by mixed-radix isomorphism
+```
+
+
+### 6. What's next
+
+- **Part II: Coalescence** — a terminating normalization that removes "fake rank" (unit modes) and merges compatible adjacent modes.
+- **Part III: Complementation** — constructing the "rest of the space" so two layouts tile a memory region without overlap.
+- **Part IV: Composition** — the operation that turns layouts into a real algebra of access patterns.
+
+

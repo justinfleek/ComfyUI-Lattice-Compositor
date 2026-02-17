@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="ono-sendai">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Radix Pure</title>
+  <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.14/dist/full.min.css" rel="stylesheet" type="text/css" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            mono: ['JetBrains Mono', 'Fira Code', 'monospace'],
+          },
+        }
+      },
+      daisyui: {
+        themes: ["ono-sendai", "maas"]
+      }
+    }
+  </script>
+  <style>
+    /* ═══════════════════════════════════════════════════════════════════════
+       ONO-SENDAI (Dark) - Cyberspace VII
+       From base16-ono-sendai-tuned-theme.el
+       ═══════════════════════════════════════════════════════════════════════ */
+    [data-theme="ono-sendai"] {
+      --base00: #191c20;  /* background */
+      --base01: #1f232a;  /* raised surfaces */
+      --base02: #2a3039;  /* selections */
+      --base03: #3a424f;  /* comments */
+      --base04: #6b7689;  /* dark foreground */
+      --base05: #c5d0dd;  /* default foreground */
+      --base06: #dce3ec;  /* light foreground */
+      --base07: #f0f4f8;  /* light background */
+      --base08: #b6e3ff;  /* ice blue */
+      --base09: #80ccff;  /* sky blue */
+      --base0A: #54aeff;  /* HERO: electric blue */
+      --base0B: #218bff;  /* deep blue */
+      --base0C: #0969da;  /* matrix blue */
+      --base0D: #4d9fff;  /* link blue */
+      --base0E: #6cb6ff;  /* soft electric */
+      --base0F: #1f6feb;  /* corp blue */
+      
+      /* DaisyUI mappings */
+      --b1: var(--base00);
+      --b2: var(--base01);
+      --b3: var(--base02);
+      --bc: var(--base05);
+      --p: 211 100% 66%;   /* base0A electric blue */
+      --pc: 211 24% 8%;
+      --s: 211 100% 57%;   /* base0B deep blue */
+      --sc: 211 36% 95%;
+      --a: 201 100% 86%;   /* base08 ice blue */
+      --ac: 211 24% 8%;
+      --n: 211 17% 19%;
+      --nc: 211 28% 81%;
+      
+      background-color: var(--base00);
+      color: var(--base05);
+    }
+    
+    /* ═══════════════════════════════════════════════════════════════════════
+       MAAS NEOFORM (Light) - Clean Room Schematics
+       From base16-maas-neoform-theme.el
+       ═══════════════════════════════════════════════════════════════════════ */
+    [data-theme="maas"] {
+      --base00: #f5f7fa;  /* paper white */
+      --base01: #e8ecf2;  /* raised surfaces */
+      --base02: #d4dbe6;  /* selections */
+      --base03: #8896a8;  /* comments */
+      --base04: #5c6b7d;  /* dark foreground */
+      --base05: #2d3848;  /* default foreground */
+      --base06: #1d2530;  /* darker text */
+      --base07: #0f1318;  /* darkest */
+      --base08: #0550ae;  /* variables */
+      --base09: #0969da;  /* integers */
+      --base0A: #1f6feb;  /* classes */
+      --base0B: #218bff;  /* strings (hero) */
+      --base0C: #54aeff;  /* support */
+      --base0D: #0550ae;  /* functions */
+      --base0E: #0969da;  /* keywords */
+      --base0F: #1b4b91;  /* deprecated */
+      
+      /* DaisyUI mappings */
+      --b1: var(--base00);
+      --b2: var(--base01);
+      --b3: var(--base02);
+      --bc: var(--base05);
+      --p: 211 86% 53%;    /* base0A */
+      --pc: 211 28% 97%;
+      --s: 211 100% 57%;   /* base0B hero */
+      --sc: 211 28% 97%;
+      --a: 211 95% 35%;    /* base08 */
+      --ac: 211 28% 97%;
+      --n: 211 28% 87%;
+      --nc: 211 26% 23%;
+      
+      background-color: var(--base00);
+      color: var(--base05);
+    }
+    
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap');
+    
+    body {
+      font-family: 'JetBrains Mono', monospace;
+      background-color: var(--base00);
+      color: var(--base05);
+      transition: background-color 0.3s, color 0.3s;
+    }
+    
+    /* Grid background */
+    .grid-bg {
+      background-image: 
+        linear-gradient(var(--base02) 1px, transparent 1px),
+        linear-gradient(90deg, var(--base02) 1px, transparent 1px);
+      background-size: 24px 24px;
+      background-position: -1px -1px;
+    }
+    
+    /* Glow effects (dark mode only) */
+    [data-theme="ono-sendai"] .glow {
+      box-shadow: 0 0 20px var(--base0A), 0 0 40px color-mix(in srgb, var(--base0A) 30%, transparent);
+    }
+    
+    /* ═══════════════════════════════════════════════════════════════════════
+       RADIX COMPONENT STYLES
+       ═══════════════════════════════════════════════════════════════════════ */
+    
+    .dialog-root {
+      display: inline-block;
+    }
+    
+    .dialog-trigger {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      border-radius: 0.25rem;
+      padding: 0.75rem 1.5rem;
+      font-size: 0.8rem;
+      font-weight: 500;
+      font-family: 'JetBrains Mono', monospace;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      background: var(--base0A);
+      color: var(--base00);
+      cursor: pointer;
+      border: 1px solid var(--base0B);
+      transition: all 0.2s;
+    }
+    
+    [data-theme="ono-sendai"] .dialog-trigger {
+      box-shadow: 0 0 15px color-mix(in srgb, var(--base0A) 40%, transparent);
+    }
+    
+    .dialog-trigger:hover {
+      transform: translateY(-1px);
+      filter: brightness(1.1);
+    }
+    
+    [data-theme="ono-sendai"] .dialog-trigger:hover {
+      box-shadow: 0 0 25px color-mix(in srgb, var(--base0A) 60%, transparent);
+    }
+    
+    .dialog-portal {
+      position: fixed;
+      inset: 0;
+      z-index: 50;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .dialog-overlay {
+      position: fixed;
+      inset: 0;
+      background: color-mix(in srgb, var(--base00) 85%, transparent);
+      backdrop-filter: blur(4px);
+      z-index: 40;
+    }
+    
+    .dialog-content {
+      position: relative;
+      z-index: 50;
+      width: 100%;
+      max-width: 28rem;
+      padding: 1.5rem;
+      border-radius: 0.5rem;
+      background: var(--base01);
+      border: 1px solid var(--base02);
+    }
+    
+    [data-theme="ono-sendai"] .dialog-content {
+      box-shadow: 0 0 40px color-mix(in srgb, var(--base0A) 20%, transparent),
+                  0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    }
+    
+    [data-theme="maas"] .dialog-content {
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+    }
+    
+    .dialog-title {
+      font-weight: 700;
+      font-size: 1rem;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      color: var(--base0A);
+      margin: 0 0 0.5rem 0;
+    }
+    
+    .dialog-description {
+      font-size: 0.875rem;
+      color: var(--base04);
+      margin: 0;
+    }
+    
+    .dialog-body {
+      padding: 1rem 0;
+      color: var(--base05);
+    }
+    
+    .dialog-close {
+      position: absolute;
+      right: 0.75rem;
+      top: 0.75rem;
+      width: 1.75rem;
+      height: 1.75rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      border: 1px solid var(--base02);
+      border-radius: 0.25rem;
+      cursor: pointer;
+      color: var(--base04);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      transition: all 0.2s;
+    }
+    
+    .dialog-close:hover {
+      color: var(--base0A);
+      border-color: var(--base0A);
+      background: color-mix(in srgb, var(--base0A) 10%, transparent);
+    }
+    
+    /* Tabs */
+    .tabs-root {
+      width: 100%;
+    }
+    
+    .tabs-list {
+      display: flex;
+      gap: 2px;
+      padding: 0.25rem;
+      background: var(--base01);
+      border: 1px solid var(--base02);
+      border-radius: 0.25rem;
+      margin-bottom: 1rem;
+    }
+    
+    .tabs-trigger {
+      flex: 1;
+      padding: 0.625rem 1rem;
+      font-size: 0.7rem;
+      font-weight: 500;
+      font-family: 'JetBrains Mono', monospace;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      background: transparent;
+      border: none;
+      border-radius: 0.125rem;
+      cursor: pointer;
+      color: var(--base04);
+      transition: all 0.2s;
+    }
+    
+    .tabs-trigger:hover:not([disabled]) {
+      color: var(--base05);
+      background: var(--base02);
+    }
+    
+    .tabs-trigger[data-state="active"] {
+      background: var(--base0A);
+      color: var(--base00);
+    }
+    
+    [data-theme="ono-sendai"] .tabs-trigger[data-state="active"] {
+      box-shadow: 0 0 15px color-mix(in srgb, var(--base0A) 50%, transparent);
+    }
+    
+    .tabs-trigger[disabled] {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+    
+    .tabs-content {
+      padding: 1rem;
+      border-radius: 0.25rem;
+      background: var(--base01);
+      border: 1px solid var(--base02);
+      font-size: 0.875rem;
+      color: var(--base05);
+    }
+    
+    /* Cards */
+    .card-cyber {
+      background: var(--base01);
+      border: 1px solid var(--base02);
+      border-radius: 0.5rem;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    
+    [data-theme="ono-sendai"] .card-cyber {
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+    }
+    
+    [data-theme="maas"] .card-cyber {
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+    }
+    
+    .card-title {
+      font-size: 0.9rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      color: var(--base0A);
+      margin-bottom: 0.5rem;
+    }
+    
+    .card-subtitle {
+      font-size: 0.8rem;
+      color: var(--base04);
+      margin-bottom: 1rem;
+    }
+    
+    /* Status badge */
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.25rem 0.75rem;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      border: 1px solid var(--base02);
+      border-radius: 0.25rem;
+      color: var(--base04);
+    }
+    
+    .status-badge::before {
+      content: '';
+      width: 0.4rem;
+      height: 0.4rem;
+      border-radius: 50%;
+      background: var(--base0B);
+    }
+    
+    [data-theme="ono-sendai"] .status-badge::before {
+      box-shadow: 0 0 8px var(--base0B);
+    }
+    
+    /* Theme toggle */
+    .theme-toggle {
+      position: fixed;
+      top: 1rem;
+      right: 1rem;
+      padding: 0.5rem 1rem;
+      font-size: 0.7rem;
+      font-family: 'JetBrains Mono', monospace;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      background: var(--base01);
+      border: 1px solid var(--base02);
+      border-radius: 0.25rem;
+      color: var(--base04);
+      cursor: pointer;
+      transition: all 0.2s;
+      z-index: 100;
+    }
+    
+    .theme-toggle:hover {
+      color: var(--base0A);
+      border-color: var(--base0A);
+    }
+  </style>
+</head>
+<body class="min-h-screen grid-bg">
+  <!-- Theme Toggle -->
+  <button class="theme-toggle" onclick="toggleTheme()">
+    <span id="theme-label">◐ Maas</span>
+  </button>
+
+  <div class="container mx-auto p-8 max-w-3xl">
+    <!-- Header -->
+    <header class="text-center mb-12">
+      <pre class="text-xs leading-tight mb-4" style="color: var(--base0A)">
+ ██████   █████  ██████  ██ ██   ██
+ ██   ██ ██   ██ ██   ██ ██  ██ ██ 
+ ██████  ███████ ██   ██ ██   ███  
+ ██   ██ ██   ██ ██   ██ ██  ██ ██ 
+ ██   ██ ██   ██ ██████  ██ ██   ██
+      </pre>
+      <p class="text-sm tracking-widest uppercase mb-4" style="color: var(--base04)">
+        Pure PureScript/Halogen UI Components
+      </p>
+      <div class="flex gap-2 justify-center">
+        <span class="status-badge" style="border-color: var(--base0A); color: var(--base0A);">PureScript</span>
+        <span class="status-badge" style="border-color: var(--base0B); color: var(--base0B);">Halogen</span>
+        <span class="status-badge" style="border-color: var(--base08); color: var(--base08);">No React</span>
+      </div>
+    </header>
+
+    <!-- App -->
+    <div id="app"></div>
+    
+    <!-- Footer -->
+    <footer class="mt-12 text-center text-xs" style="color: var(--base03)">
+      <div class="flex items-center justify-center gap-4">
+        <span class="status-badge">Online</span>
+        <span>•</span>
+        <span>// straylight //</span>
+      </div>
+    </footer>
+  </div>
+  
+  <script type="module">
+    import { main } from '../output/Example.Main/index.js';
+    main();
+  </script>
+  
+  <script>
+    function toggleTheme() {
+      const html = document.documentElement;
+      const label = document.getElementById('theme-label');
+      if (html.dataset.theme === 'ono-sendai') {
+        html.dataset.theme = 'maas';
+        label.textContent = '◑ Ono-Sendai';
+      } else {
+        html.dataset.theme = 'ono-sendai';
+        label.textContent = '◐ Maas';
+      }
+    }
+  </script>
+</body>
+</html>

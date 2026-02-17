@@ -1,0 +1,126 @@
+# Aleph-004: Typed Unix (Aleph.Script) Enforcement
+
+## Description
+CRITICAL: Enforces Aleph-004 (Typed Unix) rules. ALL scripts MUST be written in Haskell using Aleph.Script. Bash scripts are FORBIDDEN except for safe wrappers.
+
+## Globs
+**/*.hs, **/*.sh, **/*.bash, **/scripts/**/*
+
+## Rules
+
+### Before Writing Scripts
+1. Read: `docs/rfc/aleph/aleph-004-typed-unix.md`
+2. Read: `docs/skills/straylight-script/SKILL.md` or `.cursor/skills/straylight-script/SKILL.md`
+3. Use: `import Aleph.Script` for all Haskell scripts
+
+### Script Requirements
+
+#### All Scripts Must Use Aleph.Script
+
+```haskell
+# ❌ ERROR (missing import)
+#!/usr/bin/env runghc
+main :: IO ()
+main = putStrLn "Hello"
+
+# ✅ OK (using Aleph.Script)
+#!/usr/bin/env runghc
+import Aleph.Script
+
+main :: IO ()
+main = script $ echo "Hello"
+```
+
+#### Use Typed Tool Wrappers
+
+```haskell
+# ❌ ERROR (calling tools directly)
+run "rg" ["TODO", "."]
+
+# ✅ OK (using typed wrapper)
+import qualified Aleph.Script.Tools.Rg as Rg
+Rg.search "TODO" (Rg.defaults { Rg.glob = Just "*.hs" })
+```
+
+### Bash Restrictions
+
+#### Only Safe Bash Allowed
+
+```bash
+# ❌ ERROR (bash with logic)
+#!/bin/bash
+if [ "$1" = "test" ]; then
+  echo "Testing"
+else
+  echo "Not testing"
+fi
+
+# ✅ OK (safe bash wrapper)
+#!/bin/bash
+exec my-haskell-script "$@"
+```
+
+**Safe Bash Rules:**
+- ONLY `exec "$@"` allowed
+- NO variables
+- NO conditionals (`if`, `case`, `for`, `while`)
+- NO logic
+- NO interpolation (except Nix build-time)
+
+### Script Registration
+
+All scripts MUST be registered in `nix/overlays/script.nix`:
+
+```nix
+# ✅ OK
+compiled = {
+  my-script = mkCompiledScript {
+    name = "my-script";
+    deps = [ final.jq final.crane ];
+  };
+};
+```
+
+### Domain Modules
+
+Use domain modules for common operations:
+
+```haskell
+# ✅ OK (using OCI module)
+import Aleph.Script
+import qualified Aleph.Script.Oci as Oci
+
+main = script $ do
+  rootfs <- Oci.pullOrCache Oci.defaultConfig "alpine:latest"
+  let sandbox = Oci.baseSandbox rootfs & Oci.withGpuSupport env gpuBinds
+  Oci.exec sandbox ["./myprogram"]
+```
+
+**Available Domain Modules:**
+- `Aleph.Script.Oci` - OCI container operations
+- `Aleph.Script.Vm` - VM rootfs construction
+- `Aleph.Script.Vfio` - GPU passthrough (VFIO/IOMMU)
+
+### Tool Wrappers
+
+Use typed tool wrappers from `Aleph.Script.Tools.*`:
+
+**Available Tools:**
+- Clap (Rust): `Rg`, `Fd`, `Bat`, `Delta`, `Dust`, `Tokei`, `Hyperfine`
+- GNU: `Ls`, `Grep`, `Sed`, `Find`, `Xargs`, `Tar`, `Gzip`, `Wget`, `Rsync`
+- Hand-crafted: `Jq`, `Crane`, `Bwrap`
+
+### Validation
+
+ALWAYS validate scripts:
+- Check for `import Aleph.Script`
+- Verify tool wrapper usage
+- Ensure bash scripts are safe wrappers only
+- Run `nix flake check`
+
+## Examples
+
+Study these reference implementations:
+- Scripts: `nix/scripts/oci-gpu.hs`, `nix/scripts/vfio-bind.hs`
+- Tool wrappers: `nix/scripts/Aleph/Script/Tools/Rg.hs`
+- Domain modules: `nix/scripts/Aleph/Script/Oci.hs`
