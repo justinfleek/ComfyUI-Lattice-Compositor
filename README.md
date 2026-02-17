@@ -4,7 +4,7 @@
 
 **Professional Motion Graphics Engine for AI Video Workflows**
 
-[![CI](https://github.com/justinfleek/weyl-compositor/actions/workflows/ci.yml/badge.svg)](https://github.com/justinfleek/weyl-compositor/actions/workflows/ci.yml)
+[![CI](https://github.com/justinfleek/ComfyUI-Lattice-Compositor/actions/workflows/ci.yml/badge.svg)](https://github.com/justinfleek/ComfyUI-Lattice-Compositor/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![ComfyUI](https://img.shields.io/badge/ComfyUI-Extension-green.svg)](https://github.com/comfyanonymous/ComfyUI)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue.svg)](https://www.typescriptlang.org/)
@@ -195,10 +195,10 @@ See [PROJECT_STATUS.md](PROJECT_STATUS.md) for detailed status and [PRD.md](PRD.
 cd ComfyUI/custom_nodes
 
 # Clone the repository
-git clone https://github.com/justinfleek/lattice-compositor.git
+git clone https://github.com/justinfleek/ComfyUI-Lattice-Compositor.git
 
 # Install Python dependencies
-pip install -r lattice-compositor/requirements.txt
+pip install -r ComfyUI-Lattice-Compositor/requirements.txt
 ```
 
 **Restart ComfyUI.** The Lattice icon will appear in your sidebar. **No build step required** — pre-built JavaScript files are included.
@@ -212,10 +212,10 @@ If you're using ComfyUI's portable distribution with embedded Python:
 cd "C:\ComfyUI_windows_portable\ComfyUI\custom_nodes"
 
 # Clone
-git clone https://github.com/justinfleek/lattice-compositor.git
+git clone https://github.com/justinfleek/ComfyUI-Lattice-Compositor.git
 
 # Install with embedded Python
-& "C:\ComfyUI_windows_portable\python_embeded\python.exe" -m pip install -r lattice-compositor/requirements.txt
+& "C:\ComfyUI_windows_portable\python_embeded\python.exe" -m pip install -r ComfyUI-Lattice-Compositor/requirements.txt
 ```
 
 ### Requirements
@@ -440,8 +440,8 @@ Contributions are welcome! Please read [CLAUDE.md](CLAUDE.md) for architecture d
 
 ```bash
 # Clone
-git clone https://github.com/justinfleek/lattice-compositor.git
-cd lattice-compositor/ui
+git clone https://github.com/justinfleek/ComfyUI-Lattice-Compositor.git
+cd ComfyUI-Lattice-Compositor/ui
 
 # Install dependencies
 npm install
@@ -477,6 +477,6 @@ MIT License — see [LICENSE](LICENSE) for details.
 
 *Professional motion graphics accessible to everyone*
 
-[Report Bug](https://github.com/justinfleek/lattice-compositor/issues) · [Request Feature](https://github.com/justinfleek/lattice-compositor/issues) · [Discussions](https://github.com/justinfleek/lattice-compositor/discussions)
+[Report Bug](https://github.com/justinfleek/ComfyUI-Lattice-Compositor/issues) · [Request Feature](https://github.com/justinfleek/ComfyUI-Lattice-Compositor/issues) · [Discussions](https://github.com/justinfleek/ComfyUI-Lattice-Compositor/discussions)
 
 </div>
