@@ -2,6 +2,38 @@
 
 **🚨 CRITICAL: This protocol is ENFORCED. You MUST follow the workflow below for EVERY code generation. No exceptions.**
 
+---
+
+## PRIME DIRECTIVE: NO TECHNICAL DEBT
+
+**RUSHING IS BAD. SLOW = ACCURATE. SPEED = BAD.**
+
+### Mandatory Rules:
+1. **FULL IMPLEMENTATION ONLY** - Never create stubs, TODOs, placeholders, or "coming soon" text
+2. **THINK BEFORE WRITING** - Plan completely before touching any file
+3. **FULL FILE READS** - Always read entire files to understand context before editing
+4. **NO DELETION OF WORK** - What was written was written for a reason; complete it, don't discard it
+5. **COMMIT OFTEN** - Check in working code frequently
+6. **NO SWISS CHEESE** - If something isn't fully wired, it WILL cause debt later
+7. **SYSTEM F OMEGA** - Full determinism, full type safety, no escape hatches
+
+### Forbidden in All Code:
+- `TODO` comments
+- `FIXME` comments
+- Placeholder text like "coming soon", "not implemented", "TBD"
+- Stub functions that throw or return dummy values
+- Commented-out code blocks
+- `undefined`, `null`, `unsafeCoerce`, `unsafePartial`
+- Empty implementations with `pure unit` or `pass`
+
+### Before Writing ANY Code:
+1. Read ALL relevant existing files completely
+2. Understand the full context and dependencies
+3. Plan the complete implementation
+4. Only then write - and write it COMPLETE
+
+---
+
 ## MANDATORY WORKFLOW - ENFORCED ON EVERY MESSAGE
 
 **You are REQUIRED to follow these steps in order. Skipping any step is a violation.**

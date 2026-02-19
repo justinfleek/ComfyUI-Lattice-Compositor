@@ -54,21 +54,32 @@
               pkgs.biome
               pkgs.ghc
               pkgs.cabal-install
+              pkgs.haskell-language-server
               pkgs.gh
               pursOverlayPkgs.purs
               pursOverlayPkgs.spago-unstable
               pursOverlayPkgs.purs-tidy
               pursOverlayPkgs.purs-backend-es
               pkgs.esbuild
+              pkgs.dhall
+              pkgs.dhall-json
               # C libraries for Haskell packages
               pkgs.zlib
               pkgs.pkg-config
+              pkgs.openssl
             ];
             # Make sure C libraries are found
             LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath [
               pkgs.zlib
+              pkgs.openssl
             ];
           };
+
+          # Haskell packages built with cabal
+          packages.lattice = pkgs.haskellPackages.callCabal2nix "lattice" ./. { };
+
+          # Armitage build system CLI
+          packages.armitage = pkgs.haskellPackages.callCabal2nix "lattice" ./. { };
 
           packages.ui = pkgs.buildNpmPackage {
             pname = "lattice-compositor-ui";
@@ -78,6 +89,9 @@
             buildPhase = "npm run build";
             installPhase = "cp -r dist $out";
           };
+
+          # Default package
+          packages.default = config.packages.lattice;
         };
     };
 }

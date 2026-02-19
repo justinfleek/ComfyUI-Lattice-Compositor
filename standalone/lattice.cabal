@@ -14,6 +14,7 @@ library
   hs-source-dirs:
     lattice-core/haskell
     src/haskell
+    src/armitage
   exposed-modules:
     -- Core Lattice modules
     Lattice.Actions
@@ -257,6 +258,15 @@ library
     Aleph.Script.Vfio
     Aleph.Script.Vm
     Aleph.Script.Vm.Config
+    -- Armitage build system (DICE, CAS, Remote Execution)
+    Armitage.Builder
+    Armitage.CAS
+    Armitage.DICE
+    Armitage.Dhall
+    Armitage.Proxy
+    Armitage.RE
+    Armitage.Store
+    Armitage.Trace
   -- Note: Aleph.Nix.Examples.* are standalone WASM plugins
   -- They export the same 'nix_wasm_init_v1' symbol and cannot be linked together
   -- Build them separately with: ghc -o fib.wasm Aleph/Nix/Examples/Fib.hs
@@ -303,14 +313,65 @@ test-suite render-api-property
     http-client >=0.7 && <0.8,
     http-client-tls >=0.3 && <0.4
 
-executable render-api-test
+-- Armitage build system CLI
+-- Commands: build, analyze, run, trace, proxy, store, cas
+executable armitage
   default-language: GHC2021
-  hs-source-dirs: tests/property
-  main-is: RenderApiSpec.hs
+  hs-source-dirs: src/armitage
+  main-is: Main.hs
+  other-modules:
+    Armitage.Builder
+    Armitage.CAS
+    Armitage.DICE
+    Armitage.Dhall
+    Armitage.Proxy
+    Armitage.RE
+    Armitage.Store
+    Armitage.Trace
   build-depends:
     base >=4.18 && <5,
+    aeson >=2.2 && <3,
+    async >=2.2 && <3,
+    bytestring >=0.11 && <0.13,
     containers >=0.6 && <0.8,
-    haskemathesis,
-    hspec >=2.11 && <3,
+    cryptohash-sha256 >=0.11 && <0.12,
+    dhall >=1.41 && <1.43,
+    directory >=1.3 && <1.4,
+    filepath >=1.4 && <1.6,
+    hashable >=1.4 && <1.6,
     http-client >=0.7 && <0.8,
-    http-client-tls >=0.3 && <0.4
+    http-client-tls >=0.3 && <0.4,
+    http-types >=0.12 && <0.13,
+    megaparsec >=9.2 && <10,
+    mtl >=2.3 && <2.4,
+    network >=3.1 && <3.3,
+    optparse-applicative >=0.18 && <0.19,
+    process >=1.6 && <1.7,
+    shelly >=1.12 && <1.13,
+    stm >=2.5 && <2.6,
+    text >=2.0 && <3,
+    time >=1.12 && <1.15,
+    unix >=2.7 && <2.9,
+    unordered-containers >=0.2 && <0.3,
+    vector >=0.13 && <0.14
+
+-- Armitage witness proxy
+executable armitage-proxy
+  default-language: GHC2021
+  hs-source-dirs: src/armitage
+  main-is: ProxyMain.hs
+  other-modules:
+    Armitage.Proxy
+  build-depends:
+    base >=4.18 && <5,
+    async >=2.2 && <3,
+    bytestring >=0.11 && <0.13,
+    cryptohash-sha256 >=0.11 && <0.12,
+    http-client >=0.7 && <0.8,
+    http-client-tls >=0.3 && <0.4,
+    http-types >=0.12 && <0.13,
+    network >=3.1 && <3.3,
+    stm >=2.5 && <2.6,
+    text >=2.0 && <3,
+    tls >=1.6 && <2.0
+
