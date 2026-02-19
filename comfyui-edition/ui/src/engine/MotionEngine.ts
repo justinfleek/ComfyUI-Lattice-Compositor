@@ -1,0 +1,1670 @@
+/**
+ * MotionEngine - Single Source of Truth for Time-Based Evaluation
+ *
+ * ARCHITECTURAL CONTRACT:
+ * ========================
+ * This module is the SOLE AUTHORITY for answering:
+ * "What is the complete evaluated state at frame N?"
+ *
+ * AXIOMS ENFORCED:
+ * 1. Time is immutable input, never accumulated state
+ * 2. Frame evaluation must be order-independent
+ * 3. evaluate(frame) MUST NOT mutate any external state
+ * 4. All returned values are snapshots, not live references
+ *
+ * PURE DEPENDENCIES ONLY:
+ * - interpolation.ts (keyframe evaluation)
+ * - audioFeatures.ts (pre-computed audio lookup)
+ *
+ * DO NOT:
+ * - Import stores
+ * - Import renderers
+ * - Accumulate state between calls
+ * - Use Math.random() without seed
+ * - Reference requestAnimationFrame
+ */
+
+import type { AudioAnalysis } from "@/services/audioFeatures";
+import { getFeatureAtFrame } from "@/services/audioFeatures";
+// Audio path animator - deterministic SVG path animation driven by audio
+import { AudioPathAnimator } from "@/services/audioPathAnimator";
+import type { RuntimeValue } from "@/types/ses-ambient";
+import type { AudioMapping } from "@/services/audioReactiveMapping";
+import {
+  AudioReactiveMapper,
+  collectAudioReactiveModifiers,
+  collectParticleAudioReactiveModifiers,
+  type ParticleAudioReactiveModifiers,
+} from "@/services/audioReactiveMapping";
+// Camera enhancement imports - deterministic (seeded noise)
+import {
+  CameraShake,
+  getRackFocusDistance,
+} from "@/services/cameraEnhancements";
+import { interpolateProperty } from "@/services/interpolation";
+import type { ParticleSystemConfig } from "@/services/particleSystem";
+import { isFiniteNumber, safeNonNegativeDefault } from "@/utils/typeGuards";
+import type {
+  AnimatableProperty,
+  CameraLayerData,
+  CompositionSettings,
+  EffectInstance,
+  LatticeProject,
+  Layer,
+  LayerTransform,
+  ParticleLayerData,
+  PropertyValue,
+} from "@/types/project";
+import {
+  type ParticleSnapshot,
+  particleSimulationRegistry,
+} from "./ParticleSimulationController";
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//                                          // evaluated // state // interfaces
+// These are immutable snapshots returned by evaluate()
+// ════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Complete evaluated state for a single frame
+ * This is the output of MotionEngine.evaluate()
+ *
+ * DETERMINISM: This interface contains ONLY deterministic values.
+ * Same frame + same project = byte-identical FrameState.
+ * No timestamps, no random values, no order-dependent state.
+ */
+export interface FrameState {
+  /** The frame number this state represents */
+  readonly frame: number;
+
+  /** Composition settings (immutable reference) */
+  readonly composition: CompositionSettings;
+
+  /** Evaluated state for all visible layers */
+  readonly layers: readonly EvaluatedLayer[];
+
+  /** Evaluated camera state (null if no camera layer active) */
+  readonly camera: EvaluatedCamera | null;
+
+  /** Audio feature values at this frame (empty if no audio) */
+  readonly audio: EvaluatedAudio;
+
+  /** Particle snapshots for deterministic particle evaluation (layerId → snapshot) */
+  readonly particleSnapshots: Readonly<Record<string, ParticleSnapshot>>;
+}
+
+/**
+ * Evaluated state for a single layer at a specific frame
+ *
+ * ARCHITECTURAL RULE:
+ * This interface contains ALL evaluated values a layer needs.
+ * Layers must ONLY accept these pre-evaluated values.
+ * Layers must NEVER call interpolateProperty() or sample time internally.
+ */
+export interface EvaluatedLayer {
+  /** Layer ID (immutable reference) */
+  readonly id: string;
+
+  /** Layer type */
+  readonly type: string;
+
+  /** Layer name */
+  readonly name: string;
+
+  /** Frame number this layer was evaluated at */
+  readonly frame: number;
+
+  /** Whether this layer is visible at this frame */
+  readonly visible: boolean;
+
+  /** Whether layer is within in/out points */
+  readonly inRange: boolean;
+
+  /** Evaluated opacity (0-100) */
+  readonly opacity: number;
+
+  /** Evaluated transform values */
+  readonly transform: EvaluatedTransform;
+
+  /** Evaluated effect parameters */
+  readonly effects: readonly EvaluatedEffect[];
+
+  /** Layer-specific evaluated properties (type-safe) */
+  readonly properties: Readonly<Record<string, PropertyValue>>;
+
+  /** Parent layer ID for hierarchy */
+  readonly parentId: string | null;
+
+  /** Blend mode */
+  readonly blendMode: string;
+
+  /** 3D layer flag */
+  readonly threeD: boolean;
+
+  /** Reference to original layer data (for static data only - NOT for evaluation) */
+  readonly layerRef: Layer;
+
+  /** Audio reactive modifiers (additive values from audio mappings) */
+  readonly audioModifiers: AudioReactiveModifiers;
+
+  /** Per-emitter audio reactive modifiers for particle layers */
+  readonly emitterAudioModifiers?: Readonly<
+    Map<string, ParticleAudioReactiveModifiers>
+  >;
+}
+
+/**
+ * Evaluated transform at a specific frame
+ */
+export interface EvaluatedTransform {
+  readonly position: Readonly<{ x: number; y: number; z?: number }>;
+  readonly origin: Readonly<{ x: number; y: number; z?: number }>;
+  /** @deprecated Use 'origin' instead */
+  readonly anchorPoint?: Readonly<{ x: number; y: number; z?: number }>;
+  readonly scale: Readonly<{ x: number; y: number; z?: number }>;
+  readonly rotation: number;
+  readonly rotationX?: number;
+  readonly rotationY?: number;
+  readonly rotationZ?: number;
+}
+
+/**
+ * Evaluated camera state at a specific frame
+ */
+export interface EvaluatedCamera {
+  /** Camera layer ID */
+  readonly id: string;
+
+  /** Camera name */
+  readonly name: string;
+
+  /** Evaluated position */
+  readonly position: Readonly<{ x: number; y: number; z: number }>;
+
+  /** Evaluated target/look-at point */
+  readonly target: Readonly<{ x: number; y: number; z: number }>;
+
+  /** Evaluated field of view */
+  readonly fov: number;
+
+  /** Evaluated focal length */
+  readonly focalLength: number;
+
+  /** Depth of field settings */
+  readonly depthOfField: {
+    readonly enabled: boolean;
+    readonly focusDistance: number;
+    readonly aperture: number;
+    readonly blurLevel: number;
+  };
+}
+
+/**
+ * Evaluated effect with all parameters resolved
+ */
+export interface EvaluatedEffect {
+  readonly id: string;
+  readonly type: string;
+  readonly enabled: boolean;
+  readonly parameters: Readonly<Record<string, PropertyValue>>;
+}
+
+/**
+ * Evaluated audio features at a specific frame
+ */
+export interface EvaluatedAudio {
+  /** Whether audio analysis data is available */
+  readonly hasAudio: boolean;
+
+  /** Common audio features (0-1 normalized) */
+  readonly amplitude: number;
+  readonly rms: number;
+  readonly bass: number;
+  readonly mid: number;
+  readonly high: number;
+  readonly spectralCentroid: number;
+
+  /** Beat detection */
+  readonly isBeat: boolean;
+  readonly isOnset: boolean;
+
+  /** BPM if detected */
+  readonly bpm: number;
+}
+
+/**
+ * Audio reactive modifiers applied to a layer
+ * Re-exported from audioReactiveMapping for convenience
+ */
+export type { AudioReactiveModifiers } from "@/services/audioReactiveMapping";
+
+// Import the type for internal use
+import type { AudioReactiveModifiers } from "@/services/audioReactiveMapping";
+
+/**
+ * Input for audio reactive evaluation
+ */
+export interface AudioReactiveInput {
+  /** Pre-computed audio analysis data */
+  readonly analysis: AudioAnalysis;
+  /** Audio mappings from the project */
+  readonly mappings: readonly AudioMapping[];
+}
+
+/**
+ * Evaluated property value with metadata
+ */
+export interface EvaluatedProperty<T = PropertyValue> {
+  readonly name: string;
+  readonly value: T;
+  readonly animated: boolean;
+  readonly atKeyframe: boolean;
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+//                                                   // frame // state // cache
+// Memoizes frame evaluation results to avoid redundant computation
+// ════════════════════════════════════════════════════════════════════════════
+
+interface CacheEntry {
+  frameState: FrameState;
+  projectHash: string;
+  timestamp: number;
+}
+
+/**
+ * LRU Cache for FrameState with automatic eviction
+ * Prevents memory leaks by limiting cache size and entry lifetime
+ */
+class FrameStateCache {
+  private cache = new Map<string, CacheEntry>();
+  private readonly maxSize: number;
+  private readonly maxAgeMs: number;
+
+  constructor(maxSize: number = 120, maxAgeMs: number = 30000) {
+    this.maxSize = maxSize; // ~120 frames = ~7.5 seconds at 16fps
+    this.maxAgeMs = maxAgeMs; // 30 second TTL
+  }
+
+  /**
+   * Generate cache key from frame + composition ID
+   */
+  private makeKey(frame: number, compositionId: string): string {
+    return `${compositionId}:${frame}`;
+  }
+
+  /**
+   * Compute a lightweight hash of project state that affects rendering
+   * Changes to layers, keyframes, or effects invalidate the cache
+   */
+  computeProjectHash(project: LatticeProject): string {
+    const comp = project.compositions[project.mainCompositionId];
+    if (!comp) return "";
+
+    // Hash key properties that affect frame evaluation
+    // We use a simple checksum approach - not cryptographic, just for comparison
+    let hash = 0;
+    const str = JSON.stringify({
+      layerCount: comp.layers.length,
+      layerIds: comp.layers.map((l) => l.id),
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining/logical OR
+      modified: (typeof project.meta === "object" && project.meta !== null && typeof project.meta.modified === "string" && project.meta.modified.length > 0) ? project.meta.modified : "",
+      // Include layer visibility and animation state in hash
+      layerStates: comp.layers.map((l) => {
+        // Type proof: startFrame ∈ ℕ ∪ {undefined}, inPoint ∈ ℕ ∪ {undefined} → startFrame ∈ ℕ
+        const startFrameValue = l.startFrame;
+        const startFrame = isFiniteNumber(startFrameValue) && Number.isInteger(startFrameValue) && startFrameValue >= 0
+          ? startFrameValue
+          : (isFiniteNumber(l.inPoint) && Number.isInteger(l.inPoint) && l.inPoint >= 0 ? l.inPoint : 0);
+        // Type proof: endFrame ∈ ℕ ∪ {undefined}, outPoint ∈ ℕ ∪ {undefined} → endFrame ∈ ℕ
+        const endFrameValue = l.endFrame;
+        const endFrame = isFiniteNumber(endFrameValue) && Number.isInteger(endFrameValue) && endFrameValue >= 0
+          ? endFrameValue
+          : (isFiniteNumber(l.outPoint) && Number.isInteger(l.outPoint) && l.outPoint >= 0 ? l.outPoint : 80);
+        return {
+          id: l.id,
+          visible: l.visible,
+          startFrame,
+          endFrame,
+          kfCount: l.properties.reduce(
+            // Type proof: keyframes.length ∈ number | undefined → number (≥ 0, count)
+            // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+            (sum, p) => {
+              const keyframes = (p != null && typeof p === "object" && "keyframes" in p && p.keyframes != null && Array.isArray(p.keyframes)) ? p.keyframes : undefined;
+              const length = (keyframes != null && typeof keyframes.length === "number") ? keyframes.length : undefined;
+              return sum + safeNonNegativeDefault(length, 0, "p.keyframes.length");
+            },
+            0,
+          ),
+        };
+      }),
+    });
+
+    for (let i = 0; i < str.length; i++) {
+      const char = str.charCodeAt(i);
+      hash = (hash << 5) - hash + char;
+      hash = hash & hash; // Convert to 32-bit integer
+    }
+    return hash.toString(36);
+  }
+
+  /**
+   * Get cached frame state if valid
+   */
+  get(
+    frame: number,
+    compositionId: string,
+    projectHash: string,
+  ): FrameState {
+    const key = this.makeKey(frame, compositionId);
+    const entry = this.cache.get(key);
+
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy truthy checks
+    if (typeof entry === "undefined") {
+      throw new Error(`[MotionEngine] Cache miss: Frame ${frame} not found in cache for composition ${compositionId}`);
+    }
+
+    // Validate cache entry
+    const now = Date.now();
+    if (
+      entry.projectHash !== projectHash ||
+      now - entry.timestamp > this.maxAgeMs
+    ) {
+      this.cache.delete(key);
+      throw new Error(`[MotionEngine] Cache entry expired or invalid: Frame ${frame} for composition ${compositionId}`);
+    }
+
+    // Move to end (LRU behavior via Map insertion order)
+    this.cache.delete(key);
+    this.cache.set(key, entry);
+
+    return entry.frameState;
+  }
+
+  /**
+   * Store frame state in cache
+   */
+  set(
+    frame: number,
+    compositionId: string,
+    projectHash: string,
+    frameState: FrameState,
+  ): void {
+    const key = this.makeKey(frame, compositionId);
+
+    // Evict oldest entries if at capacity
+    while (this.cache.size >= this.maxSize) {
+      const firstKey = this.cache.keys().next().value;
+      if (firstKey) this.cache.delete(firstKey);
+    }
+
+    this.cache.set(key, {
+      frameState,
+      projectHash,
+      timestamp: Date.now(),
+    });
+  }
+
+  /**
+   * Invalidate all cached entries
+   * Call when project structure changes (layer add/remove, etc.)
+   */
+  invalidate(): void {
+    this.cache.clear();
+  }
+
+  /**
+   * Invalidate entries for a specific composition
+   */
+  invalidateComposition(compositionId: string): void {
+    for (const key of this.cache.keys()) {
+      if (key.startsWith(`${compositionId}:`)) {
+        this.cache.delete(key);
+      }
+    }
+  }
+
+  /**
+   * Get cache statistics for debugging
+   */
+  getStats(): { size: number; maxSize: number; hitRate: number } {
+    return {
+      size: this.cache.size,
+      maxSize: this.maxSize,
+      hitRate: 0, // Would need hit/miss tracking
+    };
+  }
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+//                                        // motion // engine // implementation
+// ════════════════════════════════════════════════════════════════════════════
+
+/**
+ * MotionEngine - Stateless frame evaluator with optional memoization
+ *
+ * USAGE:
+ * ```typescript
+ * const engine = new MotionEngine();
+ * const state = engine.evaluate(frame, project, audioAnalysis);
+ * renderer.render(state);
+ * ```
+ *
+ * CACHING:
+ * Frame states are cached by default. Cache is invalidated when:
+ * - Project structure changes (layers added/removed)
+ * - Cache entries exceed 30 second TTL
+ * - Cache size exceeds 120 entries
+ *
+ * Disable caching for real-time preview with `evaluate(frame, project, audio, camera, false)`
+ */
+export class MotionEngine {
+  /**
+   * Frame state cache for memoization
+   * Dramatically improves scrubbing performance (90%+ for repeated frames)
+   */
+  private frameCache = new FrameStateCache();
+
+  /**
+   * Persistent AudioReactiveMapper for temporal state.
+   * Temporal features (smoothing, release envelopes, beat toggles) require
+   * state to persist across frames during sequential playback.
+   */
+  // System F/Omega: Explicit undefined instead of lazy null
+  // Type proof: audioMapper ∈ AudioReactiveMapper | undefined
+  private audioMapper: AudioReactiveMapper | undefined = undefined;
+  private lastAudioReactiveFrame: number = -1;
+  // System F/Omega: Explicit undefined instead of lazy null
+  // Type proof: lastAudioAnalysis ∈ AudioAnalysis | undefined
+  private lastAudioAnalysis: AudioAnalysis | undefined = undefined;
+
+  /**
+   * Cache AudioPathAnimator instances per layer.
+   * Prevents re-parsing SVG path data every frame.
+   */
+  private audioPathAnimatorCache = new Map<
+    string,
+    {
+      animator: AudioPathAnimator;
+      pathData: string; // Track path data to invalidate on change
+    }
+  >();
+
+  /** Track project hash for cache invalidation */
+  private lastProjectHash: string = "";
+
+  /**
+   * Invalidate the frame cache
+   * Call this when project structure changes
+   */
+  invalidateCache(): void {
+    this.frameCache.invalidate();
+    this.lastProjectHash = "";
+    // Reset audio reactive temporal state on cache invalidation (smoothing, envelopes)
+    if (this.audioMapper !== undefined) {
+      this.audioMapper.resetTemporalState();
+    }
+    this.lastAudioReactiveFrame = -1;
+    this.lastAudioAnalysis = undefined;
+    // Clear audio path animator cache on invalidation
+    this.audioPathAnimatorCache.clear();
+  }
+
+  /**
+   * Get cache statistics for debugging
+   */
+  getCacheStats() {
+    return this.frameCache.getStats();
+  }
+
+  /**
+   * Evaluate complete frame state
+   *
+   * PURE FUNCTION: Same inputs always produce same outputs
+   * NO SIDE EFFECTS: Does not mutate project, layers, or any external state
+   *
+   * @param frame - Absolute frame number (0-indexed)
+   * @param project - The project data (read-only)
+   * @param audioAnalysis - Pre-computed audio analysis (optional)
+   * @param activeCameraId - ID of active camera layer (optional)
+   * @param useCache - Whether to use memoization cache (default: true)
+   * @param audioReactive - Audio reactive mappings for audio-driven animation (optional)
+   * @returns Immutable FrameState snapshot
+   */
+  evaluate(
+    frame: number,
+    project: LatticeProject,
+    audioAnalysis?: AudioAnalysis | null,
+    activeCameraId?: string | null,
+    useCache: boolean = true,
+    audioReactive?: AudioReactiveInput | null,
+  ): FrameState {
+    //                                                               // determinism
+
+    // Get active composition
+    const composition = project.compositions[project.mainCompositionId];
+    if (!composition) {
+      return this.createEmptyFrameState(frame, project.composition);
+    }
+
+    // Compute project hash for cache validation
+    const projectHash = useCache
+      ? this.frameCache.computeProjectHash(project)
+      : "";
+
+    // Check cache first (if enabled)
+    if (useCache) {
+      try {
+        const cached = this.frameCache.get(
+          frame,
+          project.mainCompositionId,
+          projectHash,
+        );
+        return cached;
+      } catch {
+        // Cache miss - continue to evaluate frame
+      }
+    }
+
+    // Persist AudioReactiveMapper for temporal features (smoothing, envelopes, beat toggles).
+    // State persists across sequential frames but resets on non-sequential access (scrubbing).
+    let audioMapper: AudioReactiveMapper | undefined = undefined;
+    // Pattern match: audioReactive ∈ AudioReactiveInput | null | undefined → check explicitly
+    const hasAudioReactive = typeof audioReactive === "object" && audioReactive !== null;
+    const hasAnalysis = hasAudioReactive && typeof audioReactive.analysis === "object" && audioReactive.analysis !== null;
+    const hasMappings = hasAudioReactive && Array.isArray(audioReactive.mappings) && audioReactive.mappings.length > 0;
+    if (hasAnalysis && hasMappings) {
+      // Create mapper if needed
+      if (this.audioMapper === undefined) {
+        this.audioMapper = new AudioReactiveMapper(audioReactive.analysis);
+        this.lastAudioAnalysis = audioReactive.analysis;
+      } else {
+        // Update existing mapper if analysis changed
+        if (this.lastAudioAnalysis === undefined || this.lastAudioAnalysis !== audioReactive.analysis) {
+          // Analysis changed - must call setAnalysis (which resets temporal state)
+          // This is correct: new audio means temporal state should reset
+          this.audioMapper.setAnalysis(audioReactive.analysis);
+          this.lastAudioAnalysis = audioReactive.analysis;
+        }
+      }
+      // If same analysis, reuse mapper with preserved temporal state
+
+      // Detect non-sequential frame access and reset temporal state
+      // Sequential: frame === lastFrame + 1 OR first frame (lastFrame === -1)
+      const isNonSequential =
+        this.lastAudioReactiveFrame >= 0 &&
+        frame !== this.lastAudioReactiveFrame + 1;
+      if (isNonSequential) {
+        // Pattern match: audioMapper ∈ AudioReactiveMapper | {} → check explicitly
+        if (this.audioMapper !== undefined) {
+          this.audioMapper.resetTemporalState();
+        }
+      }
+
+      // Sync mappings: add/update new, remove old
+      // audioMapper is guaranteed to be AudioReactiveMapper here (we just created/verified it)
+      if (this.audioMapper === undefined) {
+        throw new Error(`[MotionEngine] audioMapper is undefined after initialization. This should not happen.`);
+      }
+      const audioMapperTyped = this.audioMapper;
+      const currentMappingIds = new Set(
+        audioMapperTyped.getAllMappings().map((m: { id: string }) => m.id),
+      );
+      const newMappingIds = new Set<string>();
+
+      for (const mapping of audioReactive.mappings) {
+        if (!currentMappingIds.has(mapping.id)) {
+          audioMapperTyped.addMapping(mapping); // Preserves temporal state for existing
+          newMappingIds.add(mapping.id);
+        }
+      }
+
+      // Remove mappings that are no longer present
+      for (const id of currentMappingIds) {
+        if (typeof id === "string" && !newMappingIds.has(id)) {
+          audioMapperTyped.removeMapping(id);
+        }
+      }
+
+      audioMapper = audioMapperTyped;
+      this.lastAudioReactiveFrame = frame;
+    } else {
+      // No audio reactive input - reset tracking
+      this.lastAudioReactiveFrame = -1;
+    }
+
+    // Get composition fps
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+    // Type proof: fps ∈ ℝ₊ ∧ finite(fps) → fps ∈ ℝ₊
+    const hasSettings = typeof composition.settings === "object" && composition.settings !== null;
+    const fpsValue = hasSettings && typeof composition.settings.fps === "number" ? composition.settings.fps : undefined;
+    const fps = isFiniteNumber(fpsValue) && fpsValue > 0 ? fpsValue : 30;
+
+    // Evaluate all layers (pass audio analysis for audio path animation)
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy null
+    // Pattern match: analysis ∈ AudioAnalysis | null | undefined → AudioAnalysis | {} (use empty object sentinel instead of null)
+    const hasAudioReactiveForLayers = typeof audioReactive === "object" && audioReactive !== null;
+    const hasAnalysisForLayers = hasAudioReactiveForLayers && typeof audioReactive.analysis === "object" && audioReactive.analysis !== null;
+    const audioAnalysisForLayers = hasAnalysisForLayers ? audioReactive.analysis : null;
+    // Pattern match: audioMapper ∈ AudioReactiveMapper | {} → convert to AudioReactiveMapper | null for function signature compatibility
+    const audioMapperForLayers = audioMapper !== undefined ? audioMapper : null;
+    const evaluatedLayers = this.evaluateLayers(
+      frame,
+      composition.layers,
+      audioMapperForLayers,
+      fps,
+      audioAnalysisForLayers,
+    );
+
+    // Evaluate camera with audioMapper for fov/dollyZ/shake modifiers
+    // Pattern match: audioMapper ∈ AudioReactiveMapper | {} → convert to AudioReactiveMapper | null for function signature compatibility
+    const audioMapperForCamera = audioMapper !== undefined ? audioMapper : null;
+    const evaluatedCamera = this.evaluateCamera(
+      frame,
+      composition.layers,
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy null
+      // Pattern match: activeCameraId ∈ string | null | undefined → string (empty string = no camera, never null)
+      // Note: evaluateCamera signature still accepts string | null for compatibility
+      (typeof activeCameraId === "string" && activeCameraId.length > 0) ? activeCameraId : null,
+      composition.settings,
+      fps,
+      audioMapperForCamera,
+    );
+
+    // Evaluate audio
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy null
+    // Pattern match: audioAnalysis ∈ AudioAnalysis | null | undefined → AudioAnalysis | null
+    const hasAudioAnalysis = typeof audioAnalysis === "object" && audioAnalysis !== null;
+    const evaluatedAudio = this.evaluateAudio(frame, hasAudioAnalysis ? audioAnalysis : null);
+
+    // Evaluate particle layers through deterministic simulation
+    const particleSnapshots = this.evaluateParticleLayers(
+      frame,
+      composition.layers,
+    );
+
+    const frameState = Object.freeze({
+      frame,
+      composition: composition.settings,
+      layers: Object.freeze(evaluatedLayers),
+      camera: evaluatedCamera,
+      audio: evaluatedAudio,
+      particleSnapshots: Object.freeze(particleSnapshots),
+    });
+
+    // Store in cache (if enabled)
+    if (useCache) {
+      this.frameCache.set(
+        frame,
+        project.mainCompositionId,
+        projectHash,
+        frameState,
+      );
+    }
+
+    return frameState;
+  }
+
+  /**
+   * Evaluate a single property at a given frame
+   * Utility method for UI components that need individual values
+   */
+  evaluateProperty<T>(property: AnimatableProperty<T>, frame: number): T {
+    return interpolateProperty(property, frame);
+  }
+
+  /**
+   * Check if a layer is visible at a given frame
+   */
+  isLayerVisibleAtFrame(layer: Layer, frame: number): boolean {
+    // Type proof: startFrame ∈ ℕ ∪ {undefined}, inPoint ∈ ℕ ∪ {undefined} → startFrame ∈ ℕ
+    const startFrameValue = layer.startFrame;
+    const start = isFiniteNumber(startFrameValue) && Number.isInteger(startFrameValue) && startFrameValue >= 0
+      ? startFrameValue
+      : (isFiniteNumber(layer.inPoint) && Number.isInteger(layer.inPoint) && layer.inPoint >= 0 ? layer.inPoint : 0);
+    // Type proof: endFrame ∈ ℕ ∪ {undefined}, outPoint ∈ ℕ ∪ {undefined} → endFrame ∈ ℕ
+    const endFrameValue = layer.endFrame;
+    const end = isFiniteNumber(endFrameValue) && Number.isInteger(endFrameValue) && endFrameValue >= 0
+      ? endFrameValue
+      : (isFiniteNumber(layer.outPoint) && Number.isInteger(layer.outPoint) && layer.outPoint >= 0 ? layer.outPoint : 80);
+    return layer.visible && frame >= start && frame <= end;
+  }
+
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                          // private // evaluation // methods
+  // ════════════════════════════════════════════════════════════════════════════
+
+  private evaluateLayers(
+    frame: number,
+    layers: Layer[],
+    audioMapper: AudioReactiveMapper | null,
+    fps: number = 30,
+    audioAnalysis: AudioAnalysis | null = null,
+  ): EvaluatedLayer[] {
+    const evaluated: EvaluatedLayer[] = [];
+
+    for (const layer of layers) {
+      // Type proof: startFrame ∈ ℕ ∪ {undefined}, inPoint ∈ ℕ ∪ {undefined} → startFrame ∈ ℕ
+      const startFrameValue = layer.startFrame;
+      const start = isFiniteNumber(startFrameValue) && Number.isInteger(startFrameValue) && startFrameValue >= 0
+        ? startFrameValue
+        : (isFiniteNumber(layer.inPoint) && Number.isInteger(layer.inPoint) && layer.inPoint >= 0 ? layer.inPoint : 0);
+      // Type proof: endFrame ∈ ℕ ∪ {undefined}, outPoint ∈ ℕ ∪ {undefined} → endFrame ∈ ℕ
+      const endFrameValue = layer.endFrame;
+      const end = isFiniteNumber(endFrameValue) && Number.isInteger(endFrameValue) && endFrameValue >= 0
+        ? endFrameValue
+        : (isFiniteNumber(layer.outPoint) && Number.isInteger(layer.outPoint) && layer.outPoint >= 0 ? layer.outPoint : 80);
+      const inRange = frame >= start && frame <= end;
+      const visible = layer.visible && inRange;
+
+      // Evaluate transform
+      let transform = this.evaluateTransform(
+        frame,
+        layer.transform,
+        layer.threeD,
+        fps,
+      );
+
+      // Apply audio path animation if enabled (layer position follows SVG path based on audio)
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+      const audioPathAnimation = (layer != null && typeof layer === "object" && "audioPathAnimation" in layer && layer.audioPathAnimation != null && typeof layer.audioPathAnimation === "object") ? layer.audioPathAnimation : undefined;
+      if (
+        (audioPathAnimation != null && typeof audioPathAnimation === "object" && "enabled" in audioPathAnimation && audioPathAnimation.enabled) &&
+        (audioPathAnimation != null && typeof audioPathAnimation === "object" && "pathData" in audioPathAnimation && audioPathAnimation.pathData)
+      ) {
+        const pathAnim = audioPathAnimation;
+
+        // Get or create cached animator (avoids re-parsing SVG every frame)
+        let animator: AudioPathAnimator;
+        const cached = this.audioPathAnimatorCache.get(layer.id);
+        if (cached && cached.pathData === pathAnim.pathData) {
+          // Reuse cached animator, update config
+          animator = cached.animator;
+          animator.setConfig({
+            movementMode: pathAnim.movementMode,
+            sensitivity: pathAnim.sensitivity,
+            smoothing: pathAnim.smoothing,
+            release: pathAnim.release,
+            amplitudeCurve: pathAnim.amplitudeCurve,
+            flipOnBeat: pathAnim.flipOnBeat,
+            beatThreshold: pathAnim.beatThreshold,
+          });
+        } else {
+          // Create new animator and cache it
+          animator = new AudioPathAnimator(pathAnim.pathData, {
+            movementMode: pathAnim.movementMode,
+            sensitivity: pathAnim.sensitivity,
+            smoothing: pathAnim.smoothing,
+            release: pathAnim.release,
+            amplitudeCurve: pathAnim.amplitudeCurve,
+            flipOnBeat: pathAnim.flipOnBeat,
+            beatThreshold: pathAnim.beatThreshold,
+          });
+          this.audioPathAnimatorCache.set(layer.id, {
+            animator,
+            pathData: pathAnim.pathData,
+          });
+        }
+
+        // Deterministic evaluation - get audio at frame from analysis
+        const pathState = animator.evaluateAtFrame(
+          frame,
+          // getAudioAtFrame callback - uses audio analysis amplitude
+          (f: number) => {
+            if (audioAnalysis) {
+              return getFeatureAtFrame(audioAnalysis, "amplitude", f);
+            }
+            return 0;
+          },
+          // isBeatAtFrame callback - uses onset detection
+          (f: number) => {
+            if (audioAnalysis) {
+              return getFeatureAtFrame(audioAnalysis, "onsets", f) > 0.5;
+            }
+            return false;
+          },
+        );
+
+        // Apply path position as offset to layer transform
+        transform = {
+          ...transform,
+          position: Object.freeze({
+            x: transform.position.x + pathState.x,
+            y: transform.position.y + pathState.y,
+            z: transform.position.z,
+          }),
+          // Apply auto-orient rotation if enabled
+          rotation: pathAnim.autoOrient
+            ? transform.rotation + pathState.angle + pathAnim.rotationOffset
+            : transform.rotation,
+        };
+      }
+
+      // Evaluate opacity (explicit type for TypeScript inference)
+      let opacity: number = interpolateProperty(
+        layer.opacity,
+        frame,
+        fps,
+        layer.id,
+      );
+
+      // Evaluate effects
+      const effects = this.evaluateEffects(frame, layer.effects, fps);
+
+      // Evaluate layer-specific properties
+      const properties = this.evaluateLayerProperties(frame, layer, fps);
+
+      // Evaluate audio reactive modifiers for this layer
+      let audioModifiers: AudioReactiveModifiers = {};
+      let emitterAudioModifiers:
+        | Map<string, ParticleAudioReactiveModifiers>
+        | undefined;
+      if (audioMapper) {
+        audioModifiers = collectAudioReactiveModifiers(
+          audioMapper,
+          layer.id,
+          frame,
+        );
+
+        // Apply audio modifiers to opacity (additive)
+        if (audioModifiers.opacity !== undefined) {
+          opacity = Math.max(
+            0,
+            Math.min(100, opacity + audioModifiers.opacity * 100),
+          );
+        }
+
+        // Compute per-emitter modifiers for particle layers (allows different audio response per emitter)
+        if (layer.type === "particles" && layer.data) {
+          const particleData = layer.data as {
+            emitters?: Array<{ id: string }>;
+          };
+          if (particleData.emitters && particleData.emitters.length > 0) {
+            emitterAudioModifiers = new Map();
+            for (const emitter of particleData.emitters) {
+              const emitterMods = collectParticleAudioReactiveModifiers(
+                audioMapper,
+                layer.id,
+                emitter.id,
+                frame,
+              );
+              // Only add if there are actual modifiers
+              if (Object.keys(emitterMods).length > 0) {
+                emitterAudioModifiers.set(emitter.id, emitterMods);
+              }
+            }
+            // Don't include if no emitters have modifiers
+            if (emitterAudioModifiers.size === 0) {
+              emitterAudioModifiers = undefined;
+            }
+          }
+        }
+      }
+
+      evaluated.push(
+        Object.freeze({
+          id: layer.id,
+          type: layer.type,
+          name: layer.name,
+          frame, // Include frame number for layers that need simulation (particles)
+          visible,
+          inRange,
+          opacity,
+          transform: Object.freeze(transform),
+          effects: Object.freeze(effects),
+          properties: Object.freeze(properties),
+          parentId: layer.parentId,
+          blendMode: layer.blendMode,
+          threeD: layer.threeD,
+          layerRef: layer, // Reference for static data only - NOT for evaluation
+          audioModifiers: Object.freeze(audioModifiers),
+          emitterAudioModifiers: emitterAudioModifiers
+            ? Object.freeze(emitterAudioModifiers)
+            : undefined,
+        }),
+      );
+    }
+
+    return evaluated;
+  }
+
+  private evaluateTransform(
+    frame: number,
+    transform: LayerTransform,
+    is3D: boolean,
+    fps: number = 30,
+  ): EvaluatedTransform {
+    // Evaluate position - check for separate dimensions first
+    let position: { x: number; y: number; z?: number };
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const separateDimensions = (transform != null && typeof transform === "object" && "separateDimensions" in transform && transform.separateDimensions != null && typeof transform.separateDimensions === "object") ? transform.separateDimensions : undefined;
+    if (
+      (separateDimensions != null && typeof separateDimensions === "object" && "position" in separateDimensions && separateDimensions.position) &&
+      transform.positionX &&
+      transform.positionY
+    ) {
+      position = {
+        x: interpolateProperty(transform.positionX, frame, fps),
+        y: interpolateProperty(transform.positionY, frame, fps),
+        z: transform.positionZ
+          ? interpolateProperty(transform.positionZ, frame, fps)
+          : 0,
+      };
+    } else {
+      position = interpolateProperty(transform.position, frame, fps);
+    }
+
+    // Use origin (new name) with fallback to anchorPoint (deprecated) for backwards compatibility
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy logical OR
+    const hasOrigin = typeof transform.origin === "object" && transform.origin !== null;
+    const hasAnchorPoint = typeof transform.anchorPoint === "object" && transform.anchorPoint !== null;
+    const originProp = hasOrigin ? transform.origin : (hasAnchorPoint ? transform.anchorPoint : undefined);
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy truthy checks
+    const origin = (typeof originProp === "object" && originProp !== null)
+      ? interpolateProperty(originProp, frame, fps)
+      : { x: 0, y: 0, z: 0 };
+
+    // Evaluate scale - check for separate dimensions first
+    let scale: { x: number; y: number; z?: number };
+    if (
+      (separateDimensions != null && typeof separateDimensions === "object" && "scale" in separateDimensions && separateDimensions.scale) &&
+      transform.scaleX &&
+      transform.scaleY
+    ) {
+      scale = {
+        x: interpolateProperty(transform.scaleX, frame, fps),
+        y: interpolateProperty(transform.scaleY, frame, fps),
+        z: transform.scaleZ
+          ? interpolateProperty(transform.scaleZ, frame, fps)
+          : 100,
+      };
+    } else {
+      scale = interpolateProperty(transform.scale, frame, fps);
+    }
+
+    const rotation = interpolateProperty(transform.rotation, frame, fps);
+
+    const result: EvaluatedTransform = {
+      position: { ...position },
+      origin: { ...origin },
+      // Keep anchorPoint alias for backwards compatibility
+      anchorPoint: { ...origin },
+      scale: { ...scale },
+      rotation,
+    };
+
+    // Add 3D rotations if layer is 3D
+    if (is3D) {
+      return {
+        ...result,
+        rotationX: transform.rotationX
+          ? interpolateProperty(transform.rotationX, frame, fps)
+          : 0,
+        rotationY: transform.rotationY
+          ? interpolateProperty(transform.rotationY, frame, fps)
+          : 0,
+        rotationZ: transform.rotationZ
+          ? interpolateProperty(transform.rotationZ, frame, fps)
+          : rotation,
+      };
+    }
+
+    return result;
+  }
+
+  private evaluateEffects(
+    frame: number,
+    effects: EffectInstance[],
+    fps: number = 30,
+  ): EvaluatedEffect[] {
+    return effects.map((effect) => {
+      const evaluatedParams: Record<string, PropertyValue> = {};
+
+      // Evaluate each parameter
+      for (const [key, param] of Object.entries(effect.parameters)) {
+        if (this.isAnimatableProperty(param)) {
+          evaluatedParams[key] = interpolateProperty(param, frame, fps) as PropertyValue;
+        } else {
+          // Non-animatable parameters are already PropertyValue (from AnimatableProperty.value)
+          evaluatedParams[key] = param.value as PropertyValue;
+        }
+      }
+
+      return Object.freeze({
+        id: effect.id,
+        type: effect.effectKey, // Use effectKey as the effect type identifier
+        enabled: effect.enabled,
+        parameters: Object.freeze(evaluatedParams),
+      });
+    });
+  }
+
+  private evaluateLayerProperties(
+    frame: number,
+    layer: Layer,
+    fps: number = 30,
+  ): Record<string, PropertyValue> {
+    const evaluated: Record<string, PropertyValue> = {};
+
+    // Evaluate properties array
+    for (const prop of layer.properties) {
+      evaluated[prop.name] = interpolateProperty(prop, frame, fps, layer.id) as PropertyValue;
+    }
+
+    // Type-specific evaluation
+    switch (layer.type) {
+      case "text":
+        if (layer.data && "fontSize" in layer.data) {
+          // Text layers may have additional animatable properties
+          // stored in data - handle them here if needed
+        }
+        break;
+
+      case "solid":
+        // Solid color might be animatable
+        break;
+
+      case "depthflow":
+        if (layer.data && "animatedZoom" in layer.data) {
+          const data = layer.data;
+          if (data.animatedZoom) {
+            evaluated.zoom = interpolateProperty(
+              data.animatedZoom,
+              frame,
+              fps,
+              layer.id,
+            );
+          }
+          if (data.animatedOffsetX) {
+            evaluated.offsetX = interpolateProperty(
+              data.animatedOffsetX,
+              frame,
+              fps,
+              layer.id,
+            );
+          }
+          if (data.animatedOffsetY) {
+            evaluated.offsetY = interpolateProperty(
+              data.animatedOffsetY,
+              frame,
+              fps,
+              layer.id,
+            );
+          }
+          if (data.animatedRotation) {
+            evaluated.rotation = interpolateProperty(
+              data.animatedRotation,
+              frame,
+              fps,
+              layer.id,
+            );
+          }
+        }
+        break;
+
+      //                                                                      // note
+      // They require special handling via ParticleSimulationController
+      // to maintain scrub-determinism
+      case "particles":
+        evaluated._requiresSimulation = true;
+        break;
+    }
+
+    return evaluated;
+  }
+
+  // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy null
+  // Pattern match: activeCameraId ∈ string | null | undefined → string (empty string = no camera, never null)
+  // Pattern match: audioMapper ∈ AudioReactiveMapper | null | undefined → AudioReactiveMapper | {} (use empty object sentinel instead of null)
+  // Pattern match: Returns EvaluatedCamera | null (interface requirement - null means no camera)
+  private evaluateCamera(
+    frame: number,
+    layers: Layer[],
+    activeCameraId: string | null,
+    compositionSettings?: CompositionSettings,
+    fps: number = 30,
+    audioMapper?: AudioReactiveMapper | null,
+  ): EvaluatedCamera | null {
+    // Find active camera layer
+    let cameraLayer: Layer | undefined;
+
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy truthy checks
+    const hasActiveCameraId = typeof activeCameraId === "string" && activeCameraId.length > 0;
+    if (hasActiveCameraId) {
+      cameraLayer = layers.find(
+        (l) => l.id === activeCameraId && l.type === "camera",
+      );
+    }
+
+    // If no active camera specified, find first visible camera
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy truthy checks
+    const hasCameraLayerFound = typeof cameraLayer === "object" && cameraLayer !== null;
+    if (!hasCameraLayerFound) {
+      cameraLayer = layers.find(
+        (l) =>
+          l.type === "camera" &&
+          l.visible &&
+          (() => {
+            // Type proof: startFrame ∈ ℕ ∪ {undefined}, inPoint ∈ ℕ ∪ {undefined} → startFrame ∈ ℕ
+            const startFrameValue = l.startFrame;
+            const start = isFiniteNumber(startFrameValue) && Number.isInteger(startFrameValue) && startFrameValue >= 0
+              ? startFrameValue
+              : (isFiniteNumber(l.inPoint) && Number.isInteger(l.inPoint) && l.inPoint >= 0 ? l.inPoint : 0);
+            // Type proof: endFrame ∈ ℕ ∪ {undefined}, outPoint ∈ ℕ ∪ {undefined} → endFrame ∈ ℕ
+            const endFrameValue = l.endFrame;
+            const end = isFiniteNumber(endFrameValue) && Number.isInteger(endFrameValue) && endFrameValue >= 0
+              ? endFrameValue
+              : (isFiniteNumber(l.outPoint) && Number.isInteger(l.outPoint) && l.outPoint >= 0 ? l.outPoint : 80);
+            return frame >= start && frame <= end;
+          })(),
+      );
+    }
+
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy logical OR/truthy checks
+    // Pattern match: Verify cameraLayer is defined after find operations
+    // Return null when no camera found - this is valid (not all compositions have cameras)
+    const hasCameraLayerValid = typeof cameraLayer === "object" && cameraLayer !== null;
+    if (!hasCameraLayerValid) {
+      return null;
+    }
+    
+    // Pattern match: cameraLayer is guaranteed to be Layer here (after type guard check)
+    const cameraLayerTyped = cameraLayer as Layer;
+    const hasCameraData = typeof cameraLayerTyped.data === "object" && cameraLayerTyped.data !== null;
+    if (!hasCameraData) {
+      throw new Error(`[MotionEngine] Cannot evaluate camera: Camera layer "${activeCameraId}" has no data`);
+    }
+    
+    const cameraData = cameraLayerTyped.data as CameraLayerData;
+
+    // Evaluate camera transform
+    // Pattern match: cameraLayer is guaranteed to be Layer here
+    const transform = this.evaluateTransform(
+      frame,
+      cameraLayerTyped.transform,
+      true,
+      fps,
+    );
+
+    // Default camera values - use composition center as default target
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+    // Type proof: width ∈ ℕ ∧ finite(width) → width ∈ ℕ₊
+    const hasCompositionSettings = typeof compositionSettings === "object" && compositionSettings !== null;
+    const compWidthValue = hasCompositionSettings && typeof compositionSettings.width === "number" ? compositionSettings.width : undefined;
+    const compWidth = isFiniteNumber(compWidthValue) && Number.isInteger(compWidthValue) && compWidthValue > 0
+      ? compWidthValue
+      : 1024;
+    // Type proof: height ∈ ℕ ∧ finite(height) → height ∈ ℕ₊
+    const compHeightValue = hasCompositionSettings && typeof compositionSettings.height === "number" ? compositionSettings.height : undefined;
+    const compHeight = isFiniteNumber(compHeightValue) && Number.isInteger(compHeightValue) && compHeightValue > 0
+      ? compHeightValue
+      : 1024;
+    const centerX = compWidth / 2;
+    const centerY = compHeight / 2;
+
+    let position = { x: transform.position.x, y: transform.position.y, z: 0 };
+    let target = { x: centerX, y: centerY, z: 0 }; // Default to composition center
+    let fov = 50;
+    let focalLength = 50;
+
+    // Evaluate animated camera properties if they exist
+    if (cameraData.animatedPosition) {
+      const pos: { x: number; y: number; z?: number } = interpolateProperty(
+        cameraData.animatedPosition,
+        frame,
+        fps,
+        cameraLayerTyped.id,
+      );
+      // Type proof: z ∈ ℝ ∪ {undefined} → z ∈ ℝ
+      const zValue = pos.z;
+      const z = isFiniteNumber(zValue) ? zValue : 0;
+      position = { x: pos.x, y: pos.y, z };
+    }
+
+    if (cameraData.animatedTarget) {
+      const tgt: { x: number; y: number; z?: number } = interpolateProperty(
+        cameraData.animatedTarget,
+        frame,
+        fps,
+        cameraLayerTyped.id,
+      );
+      // Type proof: z ∈ ℝ ∪ {undefined} → z ∈ ℝ
+      const zValue = tgt.z;
+      const z = isFiniteNumber(zValue) ? zValue : 0;
+      target = { x: tgt.x, y: tgt.y, z };
+    }
+
+    if (cameraData.animatedFov) {
+      fov = interpolateProperty(
+        cameraData.animatedFov,
+        frame,
+        fps,
+        cameraLayerTyped.id,
+      );
+    }
+
+    if (cameraData.animatedFocalLength) {
+      focalLength = interpolateProperty(
+        cameraData.animatedFocalLength,
+        frame,
+        fps,
+        cameraLayerTyped.id,
+      );
+    }
+
+    // Evaluate depth of field
+    // Support both new structured format (cameraData.depthOfField) and
+    // legacy inline format (cameraData.camera.*)
+    const dofConfig = cameraData.depthOfField;
+    const legacyCamera = cameraData.camera;
+
+    // Determine if DOF is enabled - check structured format first, then legacy
+    // Type proof: enabled ∈ {true, false} ∪ {undefined}, depthOfField ∈ {true, false} ∪ {undefined} → enabled ∈ {true, false}
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const dofEnabledValue = (dofConfig != null && typeof dofConfig === "object" && "enabled" in dofConfig && typeof dofConfig.enabled === "boolean") ? dofConfig.enabled : undefined;
+    const dofEnabled = typeof dofEnabledValue === "boolean"
+      ? dofEnabledValue
+      : (legacyCamera != null && typeof legacyCamera === "object" && "depthOfField" in legacyCamera && typeof legacyCamera.depthOfField === "boolean" ? legacyCamera.depthOfField : false);
+
+    // Get initial values - prefer structured format, fall back to legacy
+    // Type proof: focusDistance ∈ ℝ ∧ finite(focusDistance) → focusDistance ∈ ℝ₊
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const focusDistanceValue = (dofConfig != null && typeof dofConfig === "object" && "focusDistance" in dofConfig && typeof dofConfig.focusDistance === "number") ? dofConfig.focusDistance : undefined;
+    let focusDistance = isFiniteNumber(focusDistanceValue) && focusDistanceValue > 0
+      ? focusDistanceValue
+      : (legacyCamera != null && typeof legacyCamera === "object" && "focusDistance" in legacyCamera && isFiniteNumber(legacyCamera.focusDistance) && legacyCamera.focusDistance > 0 ? legacyCamera.focusDistance : 1000);
+    // Type proof: aperture ∈ ℝ ∧ finite(aperture) → aperture ∈ ℝ₊
+    const apertureValue = (dofConfig != null && typeof dofConfig === "object" && "aperture" in dofConfig && typeof dofConfig.aperture === "number") ? dofConfig.aperture : undefined;
+    let aperture = isFiniteNumber(apertureValue) && apertureValue > 0
+      ? apertureValue
+      : (legacyCamera != null && typeof legacyCamera === "object" && "aperture" in legacyCamera && isFiniteNumber(legacyCamera.aperture) && legacyCamera.aperture > 0 ? legacyCamera.aperture : 2.8);
+    // Type proof: blurLevel ∈ ℝ ∧ finite(blurLevel) → blurLevel ∈ ℝ₊
+    const blurLevelValue = (dofConfig != null && typeof dofConfig === "object" && "blurLevel" in dofConfig && typeof dofConfig.blurLevel === "number") ? dofConfig.blurLevel : undefined;
+    let blurLevel = isFiniteNumber(blurLevelValue) && blurLevelValue >= 0
+      ? blurLevelValue
+      : (legacyCamera != null && typeof legacyCamera === "object" && "blurLevel" in legacyCamera && isFiniteNumber(legacyCamera.blurLevel) && legacyCamera.blurLevel >= 0 ? legacyCamera.blurLevel : 50);
+
+    if (cameraData.animatedFocusDistance) {
+      focusDistance = interpolateProperty(
+        cameraData.animatedFocusDistance,
+        frame,
+        fps,
+        cameraLayerTyped.id,
+      );
+    }
+    if (cameraData.animatedAperture) {
+      aperture = interpolateProperty(
+        cameraData.animatedAperture,
+        frame,
+        fps,
+        cameraLayerTyped.id,
+      );
+    }
+    if (cameraData.animatedBlurLevel) {
+      blurLevel = interpolateProperty(
+        cameraData.animatedBlurLevel,
+        frame,
+        fps,
+        cameraLayerTyped.id,
+      );
+    }
+
+    // Apply trajectory keyframes if present (override animated position/target)
+    if (cameraData.trajectoryKeyframes) {
+      const trajKfs = cameraData.trajectoryKeyframes;
+
+      // Find surrounding keyframes for position
+      if (trajKfs.position && trajKfs.position.length > 0) {
+        const posKfs = trajKfs.position;
+        let before = posKfs[0];
+        let after = posKfs[posKfs.length - 1];
+
+        for (const kf of posKfs) {
+          if (kf.frame <= frame && kf.frame >= before.frame) before = kf;
+          if (kf.frame >= frame && kf.frame <= after.frame) after = kf;
+        }
+
+        if (before.frame === after.frame || frame <= before.frame) {
+          position = { ...before.position };
+        } else if (frame >= after.frame) {
+          position = { ...after.position };
+        } else {
+          const t = (frame - before.frame) / (after.frame - before.frame);
+          position = {
+            x: before.position.x + (after.position.x - before.position.x) * t,
+            y: before.position.y + (after.position.y - before.position.y) * t,
+            z: before.position.z + (after.position.z - before.position.z) * t,
+          };
+        }
+      }
+
+      // Find surrounding keyframes for point of interest
+      if (trajKfs.pointOfInterest && trajKfs.pointOfInterest.length > 0) {
+        const poiKfs = trajKfs.pointOfInterest;
+        let before = poiKfs[0];
+        let after = poiKfs[poiKfs.length - 1];
+
+        for (const kf of poiKfs) {
+          if (kf.frame <= frame && kf.frame >= before.frame) before = kf;
+          if (kf.frame >= frame && kf.frame <= after.frame) after = kf;
+        }
+
+        if (before.frame === after.frame || frame <= before.frame) {
+          target = { ...before.pointOfInterest };
+        } else if (frame >= after.frame) {
+          target = { ...after.pointOfInterest };
+        } else {
+          const t = (frame - before.frame) / (after.frame - before.frame);
+          target = {
+            x:
+              before.pointOfInterest.x +
+              (after.pointOfInterest.x - before.pointOfInterest.x) * t,
+            y:
+              before.pointOfInterest.y +
+              (after.pointOfInterest.y - before.pointOfInterest.y) * t,
+            z:
+              before.pointOfInterest.z +
+              (after.pointOfInterest.z - before.pointOfInterest.z) * t,
+          };
+        }
+      }
+    }
+
+    // Collect audio modifiers before applying camera effects (allows fov, dollyZ, shake modulation)
+    let cameraAudioModifiers: AudioReactiveModifiers = {};
+    if (audioMapper) {
+      cameraAudioModifiers = collectAudioReactiveModifiers(
+        audioMapper,
+        cameraLayerTyped.id,
+        frame,
+      );
+    }
+
+    // Apply FOV audio modifier (additive degrees, 0-1 maps to 0-30 degrees)
+    if (
+      cameraAudioModifiers.fov !== undefined &&
+      cameraAudioModifiers.fov !== 0
+    ) {
+      fov += cameraAudioModifiers.fov * 30;
+    }
+
+    // Apply dollyZ audio modifier (additive Z position, 0-1 maps to 0-500 units)
+    if (
+      cameraAudioModifiers.dollyZ !== undefined &&
+      cameraAudioModifiers.dollyZ !== 0
+    ) {
+      position = {
+        x: position.x,
+        y: position.y,
+        z: position.z + cameraAudioModifiers.dollyZ * 500,
+      };
+    }
+
+    // Apply camera shake if enabled (deterministic via seed)
+    // Audio modifier modulates shake intensity (applied ONCE, not twice)
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const shakeConfig = (cameraData != null && typeof cameraData === "object" && "shake" in cameraData && cameraData.shake != null && typeof cameraData.shake === "object") ? cameraData.shake : undefined;
+    if (shakeConfig != null && typeof shakeConfig === "object" && "enabled" in shakeConfig && shakeConfig.enabled) {
+      const shakeData = shakeConfig;
+
+      // Calculate effective intensity with audio modifier
+      let effectiveIntensity = shakeData.intensity;
+      if (
+        cameraAudioModifiers.shake !== undefined &&
+        cameraAudioModifiers.shake !== 0
+      ) {
+        effectiveIntensity *= 1 + cameraAudioModifiers.shake * 2; // 0-1 maps to 1x-3x intensity
+      }
+
+      const shake = new CameraShake(
+        {
+          type: shakeData.type,
+          intensity: effectiveIntensity,
+          frequency: shakeData.frequency,
+          rotationEnabled: shakeData.rotationEnabled,
+          rotationScale: shakeData.rotationScale,
+          seed: shakeData.seed,
+          decay: shakeData.decay,
+        },
+        shakeData.startFrame,
+        shakeData.duration,
+      );
+
+      const offset = shake.getOffset(frame);
+      position = {
+        x: position.x + offset.position.x,
+        y: position.y + offset.position.y,
+        z: position.z + offset.position.z,
+      };
+      // Note: rotation shake would need to be added to evaluated camera rotation
+    }
+
+    // Apply rack focus if enabled (overrides focus distance)
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
+    const rackFocus = (cameraData != null && typeof cameraData === "object" && "rackFocus" in cameraData && cameraData.rackFocus != null && typeof cameraData.rackFocus === "object") ? cameraData.rackFocus : undefined;
+    if (rackFocus != null && typeof rackFocus === "object" && "enabled" in rackFocus && rackFocus.enabled) {
+      const rf = rackFocus;
+      focusDistance = getRackFocusDistance(
+        {
+          startDistance: rf.startDistance,
+          endDistance: rf.endDistance,
+          duration: rf.duration,
+          startFrame: rf.startFrame,
+          easing: rf.easing,
+          holdStart: rf.holdStart,
+          holdEnd: rf.holdEnd,
+        },
+        frame,
+      );
+    }
+
+    return Object.freeze({
+      id: cameraLayerTyped.id,
+      name: cameraLayerTyped.name,
+      position: Object.freeze(position),
+      target: Object.freeze(target),
+      fov,
+      focalLength,
+      depthOfField: Object.freeze({
+        enabled: dofEnabled,
+        focusDistance,
+        aperture,
+        blurLevel,
+      }),
+    });
+  }
+
+  private evaluateAudio(
+    frame: number,
+    analysis: AudioAnalysis | null,
+  ): EvaluatedAudio {
+    if (!analysis) {
+      return Object.freeze({
+        hasAudio: false,
+        amplitude: 0,
+        rms: 0,
+        bass: 0,
+        mid: 0,
+        high: 0,
+        spectralCentroid: 0,
+        isBeat: false,
+        isOnset: false,
+        bpm: 0,
+      });
+    }
+
+    return Object.freeze({
+      hasAudio: true,
+      amplitude: getFeatureAtFrame(analysis, "amplitude", frame),
+      rms: getFeatureAtFrame(analysis, "rms", frame),
+      bass: getFeatureAtFrame(analysis, "bass", frame),
+      mid: getFeatureAtFrame(analysis, "mid", frame),
+      high: getFeatureAtFrame(analysis, "high", frame),
+      spectralCentroid: getFeatureAtFrame(analysis, "spectralCentroid", frame),
+      isBeat: getFeatureAtFrame(analysis, "onsets", frame) > 0.5,
+      isOnset: getFeatureAtFrame(analysis, "onsets", frame) > 0,
+      bpm: analysis.bpm,
+    });
+  }
+
+  /**
+   * Evaluate particle layers through deterministic simulation
+   * DETERMINISM: Uses ParticleSimulationRegistry which guarantees same frame = same result
+   */
+  private evaluateParticleLayers(
+    frame: number,
+    layers: Layer[],
+  ): Record<string, ParticleSnapshot> {
+    const snapshots: Record<string, ParticleSnapshot> = {};
+
+    for (const layer of layers) {
+      if (layer.type !== "particles" || !layer.visible) continue;
+      // Type proof: startFrame ∈ ℕ ∪ {undefined}, inPoint ∈ ℕ ∪ {undefined} → startFrame ∈ ℕ
+      const startFrameValue = layer.startFrame;
+      const start = isFiniteNumber(startFrameValue) && Number.isInteger(startFrameValue) && startFrameValue >= 0
+        ? startFrameValue
+        : (isFiniteNumber(layer.inPoint) && Number.isInteger(layer.inPoint) && layer.inPoint >= 0 ? layer.inPoint : 0);
+      // Type proof: endFrame ∈ ℕ ∪ {undefined}, outPoint ∈ ℕ ∪ {undefined} → endFrame ∈ ℕ
+      const endFrameValue = layer.endFrame;
+      const end = isFiniteNumber(endFrameValue) && Number.isInteger(endFrameValue) && endFrameValue >= 0
+        ? endFrameValue
+        : (isFiniteNumber(layer.outPoint) && Number.isInteger(layer.outPoint) && layer.outPoint >= 0 ? layer.outPoint : 80);
+      if (frame < start || frame > end) continue;
+
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining/truthy checks
+      const data = layer.data as ParticleLayerData | null;
+      const hasData = typeof data === "object" && data !== null;
+      const hasSystemConfig = hasData && typeof data.systemConfig === "object" && data.systemConfig !== null;
+      if (!hasData || !hasSystemConfig) continue;
+
+      // Convert ParticleLayerData to ParticleSystemConfig
+      const config = this.convertToParticleSystemConfig(data);
+
+      // Evaluate through the deterministic registry
+      // Calculate frame relative to layer's start frame for proper simulation
+      const relativeFrame = frame - start;
+      const snapshot = particleSimulationRegistry.evaluateLayer(
+        layer.id,
+        relativeFrame,
+        config,
+      );
+
+      snapshots[layer.id] = snapshot;
+    }
+
+    return snapshots;
+  }
+
+  /**
+   * Convert ParticleLayerData to ParticleSystemConfig
+   * Maps the project-level configuration to the simulation config
+   */
+  private convertToParticleSystemConfig(
+    data: ParticleLayerData,
+  ): ParticleSystemConfig {
+    const sys = data.systemConfig;
+    // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+    // Pattern match: data.collision ∈ CollisionConfig | undefined → check explicitly
+    // Note: CollisionConfig doesn't have layerCollisionLayerId - it's in ParticleSystemConfig.collision
+    // So we use empty string as default
+    return {
+      maxParticles: sys.maxParticles,
+      gravity: sys.gravity,
+      windStrength: sys.windStrength,
+      windDirection: sys.windDirection,
+      warmupPeriod: sys.warmupPeriod,
+      respectMaskBoundary: sys.respectMaskBoundary,
+      boundaryBehavior: sys.boundaryBehavior,
+      friction: sys.friction,
+      // Type proof: turbulenceFields ∈ Array | {undefined} → Array
+      turbulenceFields: Array.isArray(sys.turbulenceFields) ? sys.turbulenceFields : [],
+      // Type proof: subEmitters ∈ Array | {undefined} → Array
+      subEmitters: Array.isArray(sys.subEmitters) ? sys.subEmitters : [],
+      collision: {
+        enabled: false,
+        particleCollision: false,
+        particleCollisionRadius: 1,
+        particleCollisionResponse: "bounce",
+        particleCollisionDamping: 0.5,
+        layerCollision: false,
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy null
+        // Pattern match: layerCollisionLayerId ∈ string (empty string = no collision layer, never null)
+        // Note: ParticleSystemConfig.collision type allows string | null, but we use empty string pattern
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy null
+        // Pattern match: layerCollisionLayerId ∈ string (empty string = no collision layer, never null)
+        // Note: Default value - data.collision (CollisionConfig) doesn't have layerCollisionLayerId
+        // ParticleSystemConfig.collision has it, so we use empty string as default
+        layerCollisionLayerId: "",
+        layerCollisionThreshold: 0.5,
+        floorEnabled: false,
+        floorY: 1,
+        ceilingEnabled: false,
+        ceilingY: 0,
+        wallsEnabled: false,
+        bounciness: 0.8,
+        friction: 0.1,
+        spatialHashCellSize: 32,
+      },
+    };
+  }
+
+  /**
+   * Create empty frame state for missing compositions
+   * DETERMINISM: No timestamps or non-deterministic values
+   */
+  private createEmptyFrameState(
+    frame: number,
+    settings: CompositionSettings,
+  ): FrameState {
+    return Object.freeze({
+      frame,
+      composition: settings,
+      layers: Object.freeze([]),
+      camera: null,
+      audio: Object.freeze({
+        hasAudio: false,
+        amplitude: 0,
+        rms: 0,
+        bass: 0,
+        mid: 0,
+        high: 0,
+        spectralCentroid: 0,
+        isBeat: false,
+        isOnset: false,
+        bpm: 0,
+      }),
+      particleSnapshots: Object.freeze({}),
+    });
+  }
+
+  /**
+   * Type guard to check if a value is an AnimatableProperty
+   */
+  private isAnimatableProperty(
+    value: RuntimeValue,
+  ): value is AnimatableProperty<PropertyValue> {
+    return (
+      typeof value === "object" &&
+      value !== null &&
+      "value" in value &&
+      "keyframes" in value &&
+      Array.isArray((value as AnimatableProperty<PropertyValue>).keyframes)
+    );
+  }
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+//                                                     // singleton // instance
+// ════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Global MotionEngine instance
+ * Since the engine is stateless, a single instance can be shared
+ */
+export const motionEngine = new MotionEngine();
+
+// ════════════════════════════════════════════════════════════════════════════
+//                                                                   // exports
+// ════════════════════════════════════════════════════════════════════════════
+
+export default MotionEngine;

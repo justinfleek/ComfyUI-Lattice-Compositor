@@ -1,0 +1,48 @@
+# Nix
+result
+result-*
+.direnv/
+
+# Haskell
+dist-newstyle/
+.stack-work/
+*.hi
+*.o
+*.dyn_hi
+*.dyn_o
+.ghc.environment.*
+cabal.project.local
+cabal.project.local~
+.HTF/
+.hpc/
+
+# PureScript
+.spago/
+output/
+.psc-ide-port
+.purs-repl
+node_modules/
+
+# Lean
+.lake/
+lake-packages/
+build/
+
+# Editor
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+*.sublime-*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Temp files
+*.tmp
+*.temp

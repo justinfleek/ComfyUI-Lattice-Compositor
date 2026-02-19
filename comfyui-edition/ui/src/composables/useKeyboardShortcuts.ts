@@ -1,0 +1,2102 @@
+import { type ComputedRef, computed, provide, type Ref, ref } from "vue";
+import { useAudioStore } from "@/stores/audioStore";
+import { useLayerStore } from "@/stores/layerStore";
+import { usePlaybackStore } from "@/stores/playbackStore";
+import { useSelectionStore } from "@/stores/selectionStore";
+import { useKeyframeStore } from "@/stores/keyframeStore";
+import { useAnimationStore } from "@/stores/animationStore";
+import { useProjectStore } from "@/stores/projectStore";
+import { useMarkerStore } from "@/stores/markerStore";
+import type { MarkerStoreAccess } from "@/stores/markerStore";
+import type { AnimationStoreAccess } from "@/stores/animationStore/types";
+import type { AnimatableProperty } from "@/types/animation";
+import type { LayerTransform } from "@/types/transform";
+import type { ImageLayerData, VideoData, ModelLayerData, SolidLayerData } from "@/types/layerData";
+import type { Layer } from "@/types/project";
+import type { AssetReference } from "@/types/project";
+import { hasDimensions, hasAssetIdProperty, safeCoordinateDefault } from "@/utils/typeGuards";
+import type { JSONValue } from "@/types/dataAsset";
+import type { PropertyValue } from "@/types/animation";
+
+/**
+ * All possible JavaScript values that can be validated at runtime
+ * Used as input type for validators (replaces unknown)
+ */
+type RuntimeValue = string | number | boolean | object | null | undefined | bigint | symbol;
+
+// Internal types for dynamic property access
+
+/** Transform property keys that can be iterated for easing operations */
+type EasingTransformKey = "position" | "scale" | "rotation" | "anchor" | "opacity";
+
+/**
+ * Get layer dimensions with proper type handling.
+ * 
+ * Production-grade implementation that:
+ * 1. For solid layers: uses data.width and data.height directly
+ * 2. For image/video layers: gets dimensions from project.assets[assetId]
+ * 3. For other layers: uses composition dimensions as fallback
+ * 
+ * @param layer - The layer to get dimensions for
+ * @param assets - Project assets map for looking up image/video dimensions
+ * @param fallbackWidth - Composition width to use as fallback
+ * @param fallbackHeight - Composition height to use as fallback
+ * @returns Object with width and height, guaranteed to be positive numbers
+ */
+function getLayerDimensions(
+  layer: Layer,
+  assets: Record<string, import("@/types/project").AssetReference>,
+  fallbackWidth: number,
+  fallbackHeight: number,
+): { width: number; height: number } {
+  if (!layer.data) {
+    return { width: fallbackWidth, height: fallbackHeight };
+  }
+
+  // Case 1: Solid layers have width/height directly in data
+  if (layer.type === "solid" && hasDimensions(layer.data)) {
+    return {
+      width: layer.data.width,
+      height: layer.data.height,
+    };
+  }
+
+  // Case 2: Image/video layers get dimensions from assets
+  if ((layer.type === "image" || layer.type === "video") && hasAssetIdProperty(layer.data)) {
+    const assetId = layer.data.assetId;
+    if (assetId && assets[assetId]) {
+      const asset = assets[assetId];
+      if (isFiniteNumber(asset.width) && isFiniteNumber(asset.height) && asset.width > 0 && asset.height > 0) {
+        return {
+          width: asset.width,
+          height: asset.height,
+        };
+      }
+    }
+  }
+
+  // Case 3: Fallback to composition dimensions
+  return { width: fallbackWidth, height: fallbackHeight };
+}
+
+/**
+ * Helper function to check if a number is finite and positive
+ */
+function isFiniteNumber(value: RuntimeValue): value is number {
+  return typeof value === "number" && Number.isFinite(value) && value > 0;
+}
+
+
+/**
+ * Image layer data with runtime properties (for file imports)
+ */
+interface ImageLayerDataWithRuntime extends ImageLayerData {
+  src?: string;
+  width?: number;
+  height?: number;
+  originalFilename?: string;
+}
+
+/**
+ * Video layer data with runtime properties (for file imports)
+ */
+interface VideoDataWithRuntime extends VideoData {
+  originalFilename?: string;
+}
+
+/**
+ * Model layer data with runtime properties (for file imports)
+ */
+interface ModelLayerDataWithRuntime extends ModelLayerData {
+  src?: string;
+  format?: string;
+  originalFilename?: string;
+}
+
+/**
+ * Type guard for objects with keyframes property
+ */
+interface ObjectWithKeyframes {
+  keyframes?: Array<{ id?: string; frame?: number; value?: PropertyValue }>;
+}
+
+function hasKeyframes(obj: RuntimeValue): obj is ObjectWithKeyframes {
+  return (
+    typeof obj === "object" &&
+    obj !== null &&
+    "keyframes" in obj &&
+    Array.isArray((obj as ObjectWithKeyframes).keyframes)
+  );
+}
+
+/** Type-safe transform property accessor for easing operations */
+function getTransformProperty(
+  transform: LayerTransform,
+  key: EasingTransformKey,
+): AnimatableProperty<PropertyValue> {
+  // Map "anchor" to "origin" (the new property name)
+  if (key === "anchor") {
+    return transform.origin as AnimatableProperty<PropertyValue>;
+  }
+  // For other keys, access directly
+  if (key === "position") return transform.position as AnimatableProperty<PropertyValue>;
+  if (key === "scale") return transform.scale as AnimatableProperty<PropertyValue>;
+  if (key === "rotation") return transform.rotation as AnimatableProperty<PropertyValue>;
+  throw new Error(`[KeyboardShortcuts] Invalid transform key: "${key}". Expected "position", "scale", or "rotation"`);
+}
+
+// Types
+export type SoloPropertyType =
+  | "position"
+  | "scale"
+  | "rotation"
+  | "opacity"
+  | "anchor"
+  | "animated"
+  | "modified"
+  | "expressions"
+  | "effects"
+  | "masks";
+
+export interface KeyboardShortcutsOptions {
+  // Refs for dialogs
+  showExportDialog: Ref<boolean>;
+  showCompositionSettingsDialog: Ref<boolean>;
+  showKeyframeInterpolationDialog: Ref<boolean>;
+  showKeyframeVelocityDialog: Ref<boolean>;
+  showPrecomposeDialog: Ref<boolean>;
+  showCurveEditor: Ref<boolean>;
+  showTimeStretchDialog: Ref<boolean>;
+  showCameraTrackingImportDialog: Ref<boolean>;
+  showKeyboardShortcutsModal?: Ref<boolean>;
+
+  //                                                                        // ui
+  currentTool: Ref<string>;
+  leftTab: Ref<string>;
+  viewOptions: Ref<{
+    showGrid: boolean;
+    showRulers: boolean;
+    gridSize: number;
+  }>;
+
+  // Canvas/viewer refs
+  threeCanvasRef: Ref<InstanceType<typeof import("@/components/canvas/ThreeCanvas.vue").default> | null>;
+  viewZoom: Ref<string>;
+
+  // Computed values
+  compWidth: ComputedRef<number>;
+  compHeight: ComputedRef<number>;
+
+  // Asset store for imports
+  assetStore: ReturnType<typeof import("@/stores/assetStore").useAssetStore>;
+}
+
+export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
+  const layerStore = useLayerStore();
+  const playbackStore = usePlaybackStore();
+  const audioStore = useAudioStore();
+  const keyframeStore = useKeyframeStore();
+  const animationStore = useAnimationStore();
+  const projectStore = useProjectStore();
+  const markerStore = useMarkerStore();
+  const selectionStore = useSelectionStore();
+
+  // Helper to create MarkerStoreAccess for marker operations
+  function getMarkerStoreAccess(): MarkerStoreAccess {
+    const activeComp = projectStore.getActiveComp();
+    return {
+      project: {
+        compositions: projectStore.project.compositions,
+        meta: projectStore.project.meta,
+      },
+      activeCompositionId: projectStore.activeCompositionId,
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+      currentFrame: (() => {
+        if (activeComp !== null && typeof activeComp === "object" && "currentFrame" in activeComp && typeof activeComp.currentFrame === "number") {
+          return activeComp.currentFrame;
+        }
+        return 0;
+      })(),
+      getActiveComp: () => projectStore.getActiveComp(),
+      setFrame: (frame: number) => {
+        const comp = projectStore.getActiveComp();
+        if (comp) {
+          comp.currentFrame = frame;
+        }
+      },
+      pushHistory: () => projectStore.pushHistory(),
+    };
+  }
+
+  // Helper to create AnimationStoreAccess for animation operations
+  function getAnimationStoreAccess(): AnimationStoreAccess {
+    const activeComp = projectStore.getActiveComp();
+    return {
+      isPlaying: playbackStore.isPlaying,
+      getActiveComp: () => projectStore.getActiveComp(),
+      get currentFrame() {
+        const comp = projectStore.getActiveComp();
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+        if (comp !== null && typeof comp === "object" && "currentFrame" in comp && typeof comp.currentFrame === "number") {
+          return comp.currentFrame;
+        }
+        return 0;
+      },
+      get frameCount() {
+        const comp = projectStore.getActiveComp();
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+        if (comp !== null && typeof comp === "object" && "settings" in comp) {
+          const settings = comp.settings;
+          if (settings !== null && typeof settings === "object" && "frameCount" in settings && typeof settings.frameCount === "number") {
+            return settings.frameCount;
+          }
+        }
+        return 81;
+      },
+      get fps() {
+        return projectStore.getFps();
+      },
+      getActiveCompLayers: () => projectStore.getActiveCompLayers(),
+      getLayerById: (id: string) => {
+        const layers = projectStore.getActiveCompLayers();
+        return layers.find(l => l.id === id) || null;
+      },
+      project: {
+        composition: {
+          // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+          width: (() => {
+            if (activeComp !== null && typeof activeComp === "object" && "settings" in activeComp) {
+              const settings = activeComp.settings;
+              if (settings !== null && typeof settings === "object" && "width" in settings && typeof settings.width === "number") {
+                return settings.width;
+              }
+            }
+            return projectStore.project.composition.width;
+          })(),
+          height: (() => {
+            if (activeComp !== null && typeof activeComp === "object" && "settings" in activeComp) {
+              const settings = activeComp.settings;
+              if (settings !== null && typeof settings === "object" && "height" in settings && typeof settings.height === "number") {
+                return settings.height;
+              }
+            }
+            return projectStore.project.composition.height;
+          })(),
+        },
+        meta: projectStore.project.meta,
+      },
+      pushHistory: () => projectStore.pushHistory(),
+    };
+  }
+
+  const {
+    showExportDialog,
+    showCompositionSettingsDialog,
+    showKeyframeInterpolationDialog,
+    showKeyframeVelocityDialog,
+    showPrecomposeDialog,
+    showCurveEditor,
+    showTimeStretchDialog,
+    showCameraTrackingImportDialog,
+    showKeyboardShortcutsModal,
+    currentTool,
+    leftTab,
+    viewOptions,
+    threeCanvasRef,
+    viewZoom,
+    compWidth,
+    compHeight,
+    assetStore,
+  } = options;
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  //                                                         // playback // state
+  // ════════════════════════════════════════════════════════════════════════════
+  const isPlaying = ref(false);
+
+  function togglePlay() {
+    isPlaying.value = !isPlaying.value;
+    const animationAccess = getAnimationStoreAccess();
+    if (isPlaying.value) {
+      animationStore.play(animationAccess);
+    } else {
+      animationStore.pause(animationAccess);
+    }
+  }
+
+  function goToStart() {
+    animationStore.goToStart(getAnimationStoreAccess());
+  }
+
+  function goToEnd() {
+    animationStore.goToEnd(getAnimationStoreAccess());
+  }
+
+  function stepForward(frames: number = 1) {
+    const animationAccess = getAnimationStoreAccess();
+    const currentFrame = animationAccess.currentFrame;
+    const frameCount = animationAccess.frameCount;
+    animationStore.setFrame(animationAccess, Math.min(currentFrame + frames, frameCount - 1));
+  }
+
+  function stepBackward(frames: number = 1) {
+    const animationAccess = getAnimationStoreAccess();
+    const currentFrame = animationAccess.currentFrame;
+    animationStore.setFrame(animationAccess, Math.max(0, currentFrame - frames));
+  }
+
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                          // smooth // easing
+  // ════════════════════════════════════════════════════════════════════════════
+  function applySmoothEasing() {
+    const selectedIds = selectionStore.selectedLayerIds;
+    if (selectedIds.length === 0) return;
+
+    let keyframesUpdated = 0;
+
+    for (const layerId of selectedIds) {
+      const layer = layerStore.getLayerById(layerId);
+      if (layer === null || typeof layer !== "object" || !("transform" in layer) || layer.transform === null || typeof layer.transform !== "object") continue;
+
+      const transform = layer.transform;
+      const easingKeys: EasingTransformKey[] = ["position", "scale", "rotation", "anchor"];
+      for (const propKey of easingKeys) {
+        const prop = getTransformProperty(transform, propKey);
+        if (prop !== null && typeof prop === "object" && "animated" in prop && prop.animated === true && "keyframes" in prop && prop.keyframes !== null) {
+          for (const kf of prop.keyframes) {
+            keyframeStore.setKeyframeInterpolation(
+              layerId,
+              `transform.${propKey}`,
+              kf.id,
+              "bezier",
+            );
+            keyframesUpdated++;
+          }
+        }
+      }
+
+      if (layer.opacity !== null && typeof layer.opacity === "object" && "animated" in layer.opacity && layer.opacity.animated === true && "keyframes" in layer.opacity && layer.opacity.keyframes !== null) {
+        for (const kf of layer.opacity.keyframes) {
+          keyframeStore.setKeyframeInterpolation(layerId, "opacity", kf.id, "bezier");
+          keyframesUpdated++;
+        }
+      }
+    }
+
+    if (keyframesUpdated > 0) {
+      console.log(
+        `[Lattice] Applied smooth easing to ${keyframesUpdated} keyframes`,
+      );
+    }
+  }
+
+  function applySmoothEaseIn() {
+    const selectedIds = selectionStore.selectedLayerIds;
+    if (selectedIds.length === 0) return;
+
+    let keyframesUpdated = 0;
+
+    for (const layerId of selectedIds) {
+      const layer = layerStore.getLayerById(layerId);
+      if (layer === null || typeof layer !== "object" || !("transform" in layer) || layer.transform === null || typeof layer.transform !== "object") continue;
+
+      const transform = layer.transform;
+      const easingKeys: EasingTransformKey[] = ["position", "scale", "rotation", "anchor"];
+      for (const propKey of easingKeys) {
+        const prop = getTransformProperty(transform, propKey);
+        if (prop !== null && typeof prop === "object" && "animated" in prop && prop.animated === true && "keyframes" in prop && prop.keyframes !== null) {
+          for (const kf of prop.keyframes) {
+            keyframeStore.setKeyframeInterpolation(
+              layerId,
+              `transform.${propKey}`,
+              kf.id,
+              "bezier",
+            );
+            keyframeStore.setKeyframeHandle(
+              layerId,
+              `transform.${propKey}`,
+              kf.id,
+              "out",
+              { frame: 0.1, value: 0, enabled: true },
+            );
+            keyframeStore.setKeyframeHandle(
+              layerId,
+              `transform.${propKey}`,
+              kf.id,
+              "in",
+              { frame: -0.42, value: 0, enabled: true },
+            );
+            keyframesUpdated++;
+          }
+        }
+      }
+    }
+
+    if (keyframesUpdated > 0) {
+      console.log(
+        `[Lattice] Applied Smooth In to ${keyframesUpdated} keyframes`,
+      );
+    }
+  }
+
+  function applySmoothEaseOut() {
+    const selectedIds = selectionStore.selectedLayerIds;
+    if (selectedIds.length === 0) return;
+
+    let keyframesUpdated = 0;
+
+    for (const layerId of selectedIds) {
+      const layer = layerStore.getLayerById(layerId);
+      if (layer === null || typeof layer !== "object" || !("transform" in layer) || layer.transform === null || typeof layer.transform !== "object") continue;
+
+      const transform = layer.transform;
+      const easingKeys: EasingTransformKey[] = ["position", "scale", "rotation", "anchor"];
+      for (const propKey of easingKeys) {
+        const prop = getTransformProperty(transform, propKey);
+        if (prop !== null && typeof prop === "object" && "animated" in prop && prop.animated === true && "keyframes" in prop && prop.keyframes !== null) {
+          for (const kf of prop.keyframes) {
+            keyframeStore.setKeyframeInterpolation(
+              layerId,
+              `transform.${propKey}`,
+              kf.id,
+              "bezier",
+            );
+            keyframeStore.setKeyframeHandle(
+              layerId,
+              `transform.${propKey}`,
+              kf.id,
+              "out",
+              { frame: 0.42, value: 0, enabled: true },
+            );
+            keyframeStore.setKeyframeHandle(
+              layerId,
+              `transform.${propKey}`,
+              kf.id,
+              "in",
+              { frame: -0.1, value: 0, enabled: true },
+            );
+            keyframesUpdated++;
+          }
+        }
+      }
+    }
+
+    if (keyframesUpdated > 0) {
+      console.log(
+        `[Lattice] Applied Smooth Out to ${keyframesUpdated} keyframes`,
+      );
+    }
+  }
+
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                    // keyframe // navigation
+  // ════════════════════════════════════════════════════════════════════════════
+  function goToPrevKeyframe() {
+    const selectedIds = selectionStore.selectedLayerIds;
+    if (selectedIds.length === 0) return;
+
+    let prevFrame = -1;
+    const animationAccess = getAnimationStoreAccess();
+    const currentFrame = animationAccess.currentFrame;
+
+    for (const layerId of selectedIds) {
+      const layer = layerStore.getLayerById(layerId);
+      if (layer === null || typeof layer !== "object" || !("transform" in layer) || layer.transform === null || typeof layer.transform !== "object") continue;
+
+      const transform = layer.transform;
+      const easingKeys: EasingTransformKey[] = ["position", "scale", "rotation", "anchor"];
+      for (const propKey of easingKeys) {
+        const prop = getTransformProperty(transform, propKey);
+        if (prop !== null && typeof prop === "object" && "animated" in prop && prop.animated === true && "keyframes" in prop && prop.keyframes !== null) {
+          for (const kf of prop.keyframes) {
+            if (kf.frame < currentFrame && kf.frame > prevFrame) {
+              prevFrame = kf.frame;
+            }
+          }
+        }
+      }
+    }
+
+    if (prevFrame >= 0) {
+      animationStore.setFrame(animationAccess, prevFrame);
+    }
+  }
+
+  function goToNextKeyframe() {
+    const selectedIds = selectionStore.selectedLayerIds;
+    if (selectedIds.length === 0) return;
+
+    let nextFrame = Infinity;
+    const animationAccess = getAnimationStoreAccess();
+    const currentFrame = animationAccess.currentFrame;
+
+    for (const layerId of selectedIds) {
+      const layer = layerStore.getLayerById(layerId);
+      if (layer === null || typeof layer !== "object" || !("transform" in layer) || layer.transform === null || typeof layer.transform !== "object") continue;
+
+      const transform = layer.transform;
+      const easingKeys: EasingTransformKey[] = ["position", "scale", "rotation", "anchor"];
+      for (const propKey of easingKeys) {
+        const prop = getTransformProperty(transform, propKey);
+        if (prop !== null && typeof prop === "object" && "animated" in prop && prop.animated === true && "keyframes" in prop && prop.keyframes !== null) {
+          for (const kf of prop.keyframes) {
+            if (kf.frame > currentFrame && kf.frame < nextFrame) {
+              nextFrame = kf.frame;
+            }
+          }
+        }
+      }
+    }
+
+    if (nextFrame < Infinity) {
+      animationStore.setFrame(animationAccess, nextFrame);
+    }
+  }
+
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                          // property // solo
+  // ════════════════════════════════════════════════════════════════════════════
+  const soloedProperties = ref<Set<SoloPropertyType>>(new Set());
+
+  function soloProperty(prop: SoloPropertyType, additive: boolean = false) {
+    if (additive) {
+      if (soloedProperties.value.has(prop)) {
+        soloedProperties.value.delete(prop);
+      } else {
+        soloedProperties.value.add(prop);
+      }
+      soloedProperties.value = new Set(soloedProperties.value);
+    } else {
+      if (
+        soloedProperties.value.size === 1 &&
+        soloedProperties.value.has(prop)
+      ) {
+        soloedProperties.value = new Set();
+      } else {
+        soloedProperties.value = new Set([prop]);
+      }
+    }
+  }
+
+  const soloedProperty = computed(() => {
+    const arr = Array.from(soloedProperties.value);
+    return arr.length > 0 ? arr[0] : null;
+  });
+
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                                    // double
+  // ════════════════════════════════════════════════════════════════════════════
+  const lastKeyPress = ref<{ key: string; time: number } | null>(null);
+  const DOUBLE_TAP_THRESHOLD = 300;
+
+  function isDoubleTap(key: string): boolean {
+    const now = Date.now();
+    const last = lastKeyPress.value;
+
+    lastKeyPress.value = { key, time: now };
+
+    if (last && last.key === key && now - last.time < DOUBLE_TAP_THRESHOLD) {
+      lastKeyPress.value = null;
+      return true;
+    }
+
+    return false;
+  }
+
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                           // render // range
+  // ════════════════════════════════════════════════════════════════════════════
+  const workAreaStart = ref<number | null>(null);
+  const workAreaEnd = ref<number | null>(null);
+
+  function setWorkAreaStart() {
+    const animationAccess = getAnimationStoreAccess();
+    workAreaStart.value = animationAccess.currentFrame;
+    playbackStore.setWorkArea(workAreaStart.value, workAreaEnd.value);
+    console.log(
+      `[Lattice] Render range start set to frame ${animationAccess.currentFrame}`,
+    );
+  }
+
+  function setWorkAreaEnd() {
+    const animationAccess = getAnimationStoreAccess();
+    workAreaEnd.value = animationAccess.currentFrame;
+    playbackStore.setWorkArea(workAreaStart.value, workAreaEnd.value);
+    console.log(
+      `[Lattice] Render range end set to frame ${animationAccess.currentFrame}`,
+    );
+  }
+
+  function clearWorkArea() {
+    workAreaStart.value = null;
+    workAreaEnd.value = null;
+    playbackStore.clearWorkArea();
+    console.log("[Lattice] Render range cleared");
+  }
+
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                          // hidden // layers
+  // ════════════════════════════════════════════════════════════════════════════
+  const showHiddenLayers = ref(true);
+
+  function toggleHiddenLayersVisibility() {
+    showHiddenLayers.value = !showHiddenLayers.value;
+    console.log(
+      `[Lattice] Hidden layers visibility: ${showHiddenLayers.value ? "shown" : "hidden"}`,
+    );
+  }
+
+  function toggleLayerHidden(layerId: string) {
+    const layer = layerStore.getLayerById(layerId);
+    if (layer) {
+      // Layer uses 'visible' property (true = visible, false = hidden)
+      layerStore.updateLayer(layerId, { visible: !layer.visible });
+    }
+  }
+
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                          // preview // pause
+  // ════════════════════════════════════════════════════════════════════════════
+  const previewUpdatesPaused = ref(false);
+
+  function togglePreviewPause() {
+    previewUpdatesPaused.value = !previewUpdatesPaused.value;
+    console.log(
+      `[Lattice] Preview updates: ${previewUpdatesPaused.value ? "PAUSED" : "active"}`,
+    );
+  }
+
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                      // transparency // grid
+  // ════════════════════════════════════════════════════════════════════════════
+  const showTransparencyGrid = ref(false);
+
+  function toggleTransparencyGrid() {
+    showTransparencyGrid.value = !showTransparencyGrid.value;
+    console.log(
+      `[Lattice] Transparency grid: ${showTransparencyGrid.value ? "ON" : "OFF"}`,
+    );
+  }
+
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                           // grid // overlay
+  // ════════════════════════════════════════════════════════════════════════════
+  const gridColor = ref("#444444");
+  const gridMajorColor = ref("#666666");
+
+  function toggleGrid() {
+    viewOptions.value.showGrid = !viewOptions.value.showGrid;
+    console.log(`[Lattice] Grid: ${viewOptions.value.showGrid ? "ON" : "OFF"}`);
+  }
+
+  function setGridSize(size: number) {
+    viewOptions.value.gridSize = Math.max(10, Math.min(200, size));
+  }
+
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                                    // rulers
+  // ════════════════════════════════════════════════════════════════════════════
+  const rulerUnits = ref<"pixels" | "percent">("pixels");
+
+  function toggleRulers() {
+    viewOptions.value.showRulers = !viewOptions.value.showRulers;
+    console.log(
+      `[Lattice] Rulers: ${viewOptions.value.showRulers ? "ON" : "OFF"}`,
+    );
+  }
+
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                                      // snap
+  // ════════════════════════════════════════════════════════════════════════════
+  const snapEnabled = ref(false);
+  const snapToGrid = ref(true);
+  const snapToGuides = ref(true);
+  const snapToLayers = ref(true);
+  const snapTolerance = ref(10);
+
+  function toggleSnap() {
+    snapEnabled.value = !snapEnabled.value;
+    console.log(`[Lattice] Snap: ${snapEnabled.value ? "ON" : "OFF"}`);
+  }
+
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                                      // undo
+  // ════════════════════════════════════════════════════════════════════════════
+  function undo() {
+    projectStore.undo();
+  }
+
+  function redo() {
+    projectStore.redo();
+  }
+
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                       // layer // navigation
+  // ════════════════════════════════════════════════════════════════════════════
+  function goToLayerInPoint() {
+    const selectedIds = selectionStore.selectedLayerIds;
+    if (selectedIds.length === 0) return;
+    const layer = layerStore.getLayerById(selectedIds[0]);
+    if (layer) {
+      const animationAccess = getAnimationStoreAccess();
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy null/undefined
+      const inPoint: number = typeof layer.inPoint === "number" ? layer.inPoint : 0;
+      animationStore.setFrame(animationAccess, inPoint);
+    }
+  }
+
+  function goToLayerOutPoint() {
+    const selectedIds = selectionStore.selectedLayerIds;
+    if (selectedIds.length === 0) return;
+    const layer = layerStore.getLayerById(selectedIds[0]);
+    if (layer) {
+      const animationAccess = getAnimationStoreAccess();
+      const frameCount = animationAccess.frameCount;
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy null/undefined
+      const outPoint: number = typeof layer.outPoint === "number" ? layer.outPoint : frameCount;
+      animationStore.setFrame(animationAccess, outPoint - 1);
+    }
+  }
+
+  function moveLayerInPointToPlayhead() {
+    const selectedIds = selectionStore.selectedLayerIds;
+    if (selectedIds.length === 0) return;
+    const animationAccess = getAnimationStoreAccess();
+    for (const id of selectedIds) {
+      layerStore.updateLayer(id, { inPoint: animationAccess.currentFrame });
+    }
+  }
+
+  function moveLayerOutPointToPlayhead() {
+    const selectedIds = selectionStore.selectedLayerIds;
+    if (selectedIds.length === 0) return;
+    const animationAccess = getAnimationStoreAccess();
+    for (const id of selectedIds) {
+      layerStore.updateLayer(id, { outPoint: animationAccess.currentFrame + 1 });
+    }
+  }
+
+  function trimLayerInPoint() {
+    const selectedIds = selectionStore.selectedLayerIds;
+    if (selectedIds.length === 0) return;
+    const animationAccess = getAnimationStoreAccess();
+    for (const id of selectedIds) {
+      const layer = layerStore.getLayerById(id);
+      if (layer) {
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy null/undefined
+        const currentIn: number = typeof layer.inPoint === "number" ? layer.inPoint : 0;
+        const currentFrame = animationAccess.currentFrame;
+        if (currentFrame > currentIn) {
+          layerStore.updateLayer(id, { inPoint: currentFrame });
+        }
+      }
+    }
+  }
+
+  function trimLayerOutPoint() {
+    const selectedIds = selectionStore.selectedLayerIds;
+    if (selectedIds.length === 0) return;
+    const animationAccess = getAnimationStoreAccess();
+    for (const id of selectedIds) {
+      const layer = layerStore.getLayerById(id);
+      if (layer) {
+        const frameCount = animationAccess.frameCount;
+        // Type proof: layer.outPoint ∈ number | undefined → number (≥ 0, frame number)
+        const currentOut: number = layer.outPoint !== undefined && isFiniteNumber(layer.outPoint) && layer.outPoint >= 0
+          ? layer.outPoint
+          : frameCount;
+        const currentFrame = animationAccess.currentFrame;
+        if (currentFrame < currentOut) {
+          layerStore.updateLayer(id, { outPoint: currentFrame + 1 });
+        }
+      }
+    }
+  }
+
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                        // layer // selection
+  // ════════════════════════════════════════════════════════════════════════════
+  function selectPreviousLayer(extend: boolean = false) {
+    const layers = projectStore.getActiveCompLayers();
+    if (layers.length === 0) return;
+
+    const selectedIds = selectionStore.selectedLayerIds;
+    if (selectedIds.length === 0) {
+      layerStore.selectLayer(layers[0].id);
+      return;
+    }
+
+    const currentIndex = layers.findIndex((l) => l.id === selectedIds[0]);
+    if (currentIndex > 0) {
+      const targetLayer = layers[currentIndex - 1];
+      if (extend) {
+        layerStore.selectLayer(targetLayer.id, true);
+      } else {
+        layerStore.selectLayer(targetLayer.id);
+      }
+    }
+  }
+
+  function selectNextLayer(extend: boolean = false) {
+    const layers = projectStore.getActiveCompLayers();
+    if (layers.length === 0) return;
+
+    const selectedIds = selectionStore.selectedLayerIds;
+    if (selectedIds.length === 0) {
+      layerStore.selectLayer(layers[0].id);
+      return;
+    }
+
+    const lastSelectedIndex = layers.findIndex(
+      (l) => l.id === selectedIds[selectedIds.length - 1],
+    );
+    if (lastSelectedIndex < layers.length - 1) {
+      const targetLayer = layers[lastSelectedIndex + 1];
+      if (extend) {
+        layerStore.selectLayer(targetLayer.id, true);
+      } else {
+        layerStore.selectLayer(targetLayer.id);
+      }
+    }
+  }
+
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                            // split // layer
+  // ════════════════════════════════════════════════════════════════════════════
+  function splitLayerAtPlayhead() {
+    const selectedIds = selectionStore.selectedLayerIds;
+    if (selectedIds.length === 0) return;
+
+    for (const id of selectedIds) {
+      const layer = layerStore.getLayerById(id);
+      if (!layer) continue;
+
+      const animationAccess = getAnimationStoreAccess();
+      const currentFrame = animationAccess.currentFrame;
+      // Type proof: layer.inPoint/outPoint ∈ number | undefined → number (≥ 0, frame number)
+      const inPoint: number = layer.inPoint !== undefined && isFiniteNumber(layer.inPoint) && layer.inPoint >= 0
+        ? layer.inPoint
+        : 0;
+      const outPoint: number = layer.outPoint !== undefined && isFiniteNumber(layer.outPoint) && layer.outPoint >= 0
+        ? layer.outPoint
+        : animationAccess.frameCount;
+
+      if (currentFrame > inPoint && currentFrame < outPoint) {
+        layerStore.updateLayer(id, { outPoint: currentFrame });
+
+        const newLayer = layerStore.duplicateLayer(id);
+        if (newLayer) {
+          layerStore.updateLayer(newLayer.id, {
+            inPoint: currentFrame,
+            outPoint: outPoint,
+          });
+          layerStore.renameLayer(newLayer.id, `${layer.name} (split)`);
+        }
+      }
+    }
+  }
+
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                          // reverse // layer
+  // ════════════════════════════════════════════════════════════════════════════
+  function reverseSelectedLayers() {
+    const selectedIds = selectionStore.selectedLayerIds;
+    if (selectedIds.length === 0) return;
+
+    for (const id of selectedIds) {
+      layerStore.reverseLayer(id);
+    }
+  }
+
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                           // freeze // frame
+  // ════════════════════════════════════════════════════════════════════════════
+  function freezeSelectedLayers() {
+    const selectedIds = selectionStore.selectedLayerIds;
+    if (selectedIds.length === 0) return;
+
+    for (const id of selectedIds) {
+      layerStore.freezeFrameAtPlayhead(id);
+    }
+    console.log(
+      "[Lattice] Freeze frame created at playhead for selected layers",
+    );
+  }
+
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                          // timeline // zoom
+  // ════════════════════════════════════════════════════════════════════════════
+  const timelineZoom = ref(1);
+
+  function zoomTimelineIn() {
+    timelineZoom.value = Math.min(timelineZoom.value * 1.5, 10);
+    animationStore.setTimelineZoom(timelineZoom.value);
+  }
+
+  function zoomTimelineOut() {
+    timelineZoom.value = Math.max(timelineZoom.value / 1.5, 0.1);
+    animationStore.setTimelineZoom(timelineZoom.value);
+  }
+
+  function zoomTimelineToFit() {
+    timelineZoom.value = 1;
+    animationStore.setTimelineZoom(1);
+  }
+
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                            // viewer // zoom
+  // ════════════════════════════════════════════════════════════════════════════
+  const viewerZoom = ref(1);
+
+  function zoomViewerIn() {
+    viewerZoom.value = Math.min(viewerZoom.value * 1.25, 8);
+    // Deterministic: Explicit type narrowing with proper type guard
+    const canvas = threeCanvasRef.value;
+    if (canvas !== null && canvas !== undefined && typeof canvas === "object" && "setZoom" in canvas) {
+      const setZoom = (canvas as unknown as { setZoom: (value: number) => void }).setZoom;
+      if (typeof setZoom === "function") {
+        setZoom(viewerZoom.value);
+      }
+    }
+    const percent = Math.round(viewerZoom.value * 100);
+    viewZoom.value = String(percent);
+  }
+
+  function zoomViewerOut() {
+    viewerZoom.value = Math.max(viewerZoom.value / 1.25, 0.1);
+    // Deterministic: Explicit type narrowing with proper type guard
+    const canvas = threeCanvasRef.value;
+    if (canvas !== null && canvas !== undefined && typeof canvas === "object" && "setZoom" in canvas) {
+      const setZoom = (canvas as unknown as { setZoom: (value: number) => void }).setZoom;
+      if (typeof setZoom === "function") {
+        setZoom(viewerZoom.value);
+      }
+    }
+    const percent = Math.round(viewerZoom.value * 100);
+    viewZoom.value = String(percent);
+  }
+
+  function zoomViewerToFit() {
+    viewerZoom.value = 1;
+    viewZoom.value = "fit";
+    // Deterministic: Explicit type narrowing with proper type guard
+    const canvas = threeCanvasRef.value;
+    if (canvas !== null && canvas !== undefined && typeof canvas === "object" && "fitToView" in canvas) {
+      const fitToView = (canvas as unknown as { fitToView: () => void }).fitToView;
+      if (typeof fitToView === "function") {
+        fitToView();
+      }
+    }
+  }
+
+  function zoomViewerTo100() {
+    viewerZoom.value = 1;
+    viewZoom.value = "100";
+    // Deterministic: Explicit type narrowing with proper type guard
+    const canvas = threeCanvasRef.value;
+    if (canvas !== null && canvas !== undefined && typeof canvas === "object" && "setZoom" in canvas) {
+      const setZoom = (canvas as unknown as { setZoom: (value: number) => void }).setZoom;
+      if (typeof setZoom === "function") {
+        setZoom(1);
+      }
+    }
+  }
+
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                         // hold // keyframes
+  // ════════════════════════════════════════════════════════════════════════════
+  function convertToHoldKeyframes() {
+    const selectedIds = selectionStore.selectedLayerIds;
+    if (selectedIds.length === 0) return;
+
+    let keyframesUpdated = 0;
+
+    for (const layerId of selectedIds) {
+      const layer = layerStore.getLayerById(layerId);
+      if (layer === null || typeof layer !== "object" || !("transform" in layer) || layer.transform === null || typeof layer.transform !== "object") continue;
+
+      const transform = layer.transform;
+      const easingKeys: EasingTransformKey[] = ["position", "scale", "rotation", "anchor"];
+      for (const propKey of easingKeys) {
+        const prop = getTransformProperty(transform, propKey);
+        if (prop !== null && typeof prop === "object" && "animated" in prop && prop.animated === true && "keyframes" in prop && prop.keyframes !== null) {
+          for (const kf of prop.keyframes) {
+            keyframeStore.setKeyframeInterpolation(
+              layerId,
+              `transform.${propKey}`,
+              kf.id,
+              "hold",
+            );
+            keyframesUpdated++;
+          }
+        }
+      }
+    }
+
+    if (keyframesUpdated > 0) {
+      console.log(`[Lattice] Converted ${keyframesUpdated} keyframes to hold`);
+    }
+  }
+
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                                      // time
+  // ════════════════════════════════════════════════════════════════════════════
+  function timeReverseKeyframes() {
+    const selectedIds = selectionStore.selectedLayerIds;
+    if (selectedIds.length === 0) return;
+
+    let totalReversed = 0;
+    for (const layerId of selectedIds) {
+      // Use keyframeStore action to reverse all transform property keyframes
+      totalReversed += keyframeStore.timeReverseKeyframes(layerId);
+    }
+
+    if (totalReversed > 0) {
+      console.log(`[Lattice] ${totalReversed} keyframes time-reversed`);
+    }
+  }
+
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                // fit // layer // to // comp
+  // ════════════════════════════════════════════════════════════════════════════
+  function fitLayerToComp() {
+    const selectedIds = selectionStore.selectedLayerIds;
+    if (selectedIds.length === 0) return;
+
+    const compW = compWidth.value;
+    const compH = compHeight.value;
+    const assets = projectStore.project.assets;
+
+    for (const id of selectedIds) {
+      const layer = layerStore.getLayerById(id);
+      if (!layer) continue;
+
+      const { width: layerW, height: layerH } = getLayerDimensions(layer, assets, compW, compH);
+
+      const scaleX = compW / layerW;
+      const scaleY = compH / layerH;
+      const scale = Math.max(scaleX, scaleY);
+
+      const centerX = compW / 2;
+      const centerY = compH / 2;
+
+      layerStore.updateLayerTransform(id, {
+        position: { x: centerX, y: centerY, z: 0 },
+        scale: { x: scale * 100, y: scale * 100, z: 100 },
+        anchor: { x: layerW / 2, y: layerH / 2, z: 0 },
+      });
+    }
+
+    console.log("[Lattice] Fit layer(s) to composition");
+  }
+
+  function fitLayerToCompWidth() {
+    const selectedIds = selectionStore.selectedLayerIds;
+    if (selectedIds.length === 0) return;
+
+    const compW = compWidth.value;
+    const compH = compHeight.value;
+    const assets = projectStore.project.assets;
+
+    for (const id of selectedIds) {
+      const layer = layerStore.getLayerById(id);
+      if (!layer) continue;
+
+      const { width: layerW } = getLayerDimensions(layer, assets, compW, compH);
+      const scale = compW / layerW;
+
+      layerStore.updateLayerTransform(id, {
+        scale: { x: scale * 100, y: scale * 100, z: 100 },
+      });
+    }
+
+    console.log("[Lattice] Fit layer(s) to composition width");
+  }
+
+  function fitLayerToCompHeight() {
+    const selectedIds = selectionStore.selectedLayerIds;
+    if (selectedIds.length === 0) return;
+
+    const compW = compWidth.value;
+    const compH = compHeight.value;
+    const assets = projectStore.project.assets;
+
+    for (const id of selectedIds) {
+      const layer = layerStore.getLayerById(id);
+      if (!layer) continue;
+
+      const { height: layerH } = getLayerDimensions(layer, assets, compW, compH);
+      const scale = compH / layerH;
+
+      layerStore.updateLayerTransform(id, {
+        scale: { x: scale * 100, y: scale * 100, z: 100 },
+      });
+    }
+
+    console.log("[Lattice] Fit layer(s) to composition height");
+  }
+
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                             // lock // layer
+  // ════════════════════════════════════════════════════════════════════════════
+  function toggleLayerLock() {
+    const selectedIds = selectionStore.selectedLayerIds;
+    if (selectedIds.length === 0) return;
+
+    for (const id of selectedIds) {
+      const layer = layerStore.getLayerById(id);
+      if (layer) {
+        layerStore.updateLayer(id, { locked: !layer.locked });
+      }
+    }
+  }
+
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                 // center // anchor // point
+  // ════════════════════════════════════════════════════════════════════════════
+  function centerAnchorPoint() {
+    const selectedIds = selectionStore.selectedLayerIds;
+    if (selectedIds.length === 0) return;
+
+    const compW = compWidth.value;
+    const compH = compHeight.value;
+    const assets = projectStore.project.assets;
+
+    for (const id of selectedIds) {
+      const layer = layerStore.getLayerById(id);
+      if (!layer) continue;
+
+      const { width: layerW, height: layerH } = getLayerDimensions(layer, assets, compW, compH);
+
+      const centerX = layerW / 2;
+      const centerY = layerH / 2;
+
+      const transform = layer.transform;
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy null/undefined
+      const originValue = typeof transform.origin === "object" && transform.origin !== null ? transform.origin.value : null;
+      const anchorPointValue = typeof transform.anchorPoint === "object" && transform.anchorPoint !== null ? transform.anchorPoint.value : null;
+      const currentAnchor = typeof originValue === "object" && originValue !== null
+        ? originValue
+        : typeof anchorPointValue === "object" && anchorPointValue !== null
+          ? anchorPointValue
+          : { x: 0, y: 0, z: 0 };
+      
+      const positionValue = typeof transform.position === "object" && transform.position !== null ? transform.position.value : null;
+      const currentPos = typeof positionValue === "object" && positionValue !== null
+        ? positionValue
+        : { x: 0, y: 0, z: 0 };
+
+      // Type proof: anchor coordinates ∈ number | undefined → number (coordinate-like, can be negative)
+      const anchorX = safeCoordinateDefault(currentAnchor.x, 0, "currentAnchor.x");
+      const anchorY = safeCoordinateDefault(currentAnchor.y, 0, "currentAnchor.y");
+      const anchorZ = safeCoordinateDefault(currentAnchor.z, 0, "currentAnchor.z");
+      const offsetX = centerX - anchorX;
+      const offsetY = centerY - anchorY;
+
+      // Type proof: position coordinates ∈ number | undefined → number (coordinate-like, can be negative)
+      const posX = safeCoordinateDefault(currentPos.x, 0, "currentPos.x");
+      const posY = safeCoordinateDefault(currentPos.y, 0, "currentPos.y");
+      const posZ = safeCoordinateDefault(currentPos.z, 0, "currentPos.z");
+
+      layerStore.updateLayerTransform(id, {
+        anchor: { x: centerX, y: centerY, z: anchorZ },
+        position: {
+          x: posX + offsetX,
+          y: posY + offsetY,
+          z: posZ,
+        },
+      });
+    }
+
+    console.log("[Lattice] Centered anchor point(s)");
+  }
+
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                             // center // layer // in // comp
+  // ════════════════════════════════════════════════════════════════════════════
+  function centerLayerInComp() {
+    const selectedIds = selectionStore.selectedLayerIds;
+    if (selectedIds.length === 0) return;
+
+    const centerX = compWidth.value / 2;
+    const centerY = compHeight.value / 2;
+
+    for (const id of selectedIds) {
+      const layer = layerStore.getLayerById(id);
+      if (!layer) continue;
+
+      const transform = layer.transform;
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+      const positionValue = typeof transform.position === "object" && transform.position !== null ? transform.position.value : null;
+      const currentPos = typeof positionValue === "object" && positionValue !== null
+        ? positionValue
+        : { x: 0, y: 0, z: 0 };
+
+      // Type proof: z coordinate ∈ number | undefined → number (coordinate-like, can be negative)
+      const posZ = safeCoordinateDefault(currentPos.z, 0, "currentPos.z");
+
+      layerStore.updateLayerTransform(id, {
+        position: { x: centerX, y: centerY, z: posZ },
+      });
+    }
+
+    console.log("[Lattice] Centered layer(s) in composition");
+  }
+
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                 // create // effect // layer
+  // ════════════════════════════════════════════════════════════════════════════
+  function createAdjustmentLayer() {
+    layerStore.createLayer("adjustment", "Effect Layer");
+    console.log("[Lattice] Created effect layer");
+  }
+
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                // create // control // layer
+  // ════════════════════════════════════════════════════════════════════════════
+  function createNullLayer() {
+    layerStore.createLayer("null", "Control");
+    console.log("[Lattice] Created control layer");
+  }
+
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                         // reveal // source // in // project
+  // ════════════════════════════════════════════════════════════════════════════
+  function revealSourceInProject() {
+    const selectedIds = selectionStore.selectedLayerIds;
+    if (selectedIds.length === 0) {
+      console.log("[Lattice] No layer selected to reveal source");
+      return;
+    }
+
+    const layer = layerStore.getLayerById(selectedIds[0]);
+    if (!layer || !layer.data) return;
+
+    // Type guard: Check if layer data has assetId property
+    let assetId: string | null = null;
+    if (hasAssetIdProperty(layer.data)) {
+      assetId = layer.data.assetId;
+    }
+
+    // Check for nested comp compositionId
+    if (!assetId && layer.type === "nestedComp") {
+      const nestedCompData = layer.data as { compositionId?: string };
+      if (nestedCompData.compositionId) {
+        leftTab.value = "comps";
+        console.log(
+          `[Lattice] Revealed nested comp source: ${nestedCompData.compositionId}`,
+        );
+        return;
+      }
+    }
+
+    if (assetId) {
+      leftTab.value = "assets";
+      projectStore.selectAsset(assetId);
+      console.log(`[Lattice] Revealed source asset: ${assetId}`);
+    } else {
+      console.log(`[Lattice] Layer type '${layer.type}' has no source asset`);
+    }
+  }
+
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                // select // all // keyframes // on // layers
+  // ════════════════════════════════════════════════════════════════════════════
+  function selectAllKeyframesOnSelectedLayers(): boolean {
+    const selectedIds = selectionStore.selectedLayerIds;
+    if (selectedIds.length === 0) return false;
+
+    const keyframeIds: string[] = [];
+
+    for (const layerId of selectedIds) {
+      const layer = layerStore.getLayerById(layerId);
+      if (!layer) continue;
+
+      const transform = layer.transform;
+      if (transform) {
+        const easingKeys: EasingTransformKey[] = ["position", "rotation", "scale", "anchor"];
+        for (const propName of easingKeys) {
+          const prop = getTransformProperty(transform, propName);
+          // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+          if (prop !== null && typeof prop === "object" && "keyframes" in prop && Array.isArray(prop.keyframes)) {
+            for (const kf of prop.keyframes) {
+              if (kf.id) keyframeIds.push(kf.id);
+            }
+          }
+        }
+      }
+
+      // Recursively check layer data for keyframes
+      if (layer.data) {
+        const checkForKeyframes = (obj: RuntimeValue): void => {
+          if (!obj || typeof obj !== "object" || obj === null) return;
+          if (hasKeyframes(obj)) {
+            const keyframes = obj.keyframes;
+            if (keyframes) {
+              for (const kf of keyframes) {
+                if (kf.id) keyframeIds.push(kf.id);
+              }
+            }
+          }
+          // Recursively check nested objects
+          if (typeof obj === "object" && obj !== null) {
+            const objRecord = obj as Record<string, JSONValue>;
+            for (const key of Object.keys(objRecord)) {
+              // Type-safe property access for recursive keyframe checking
+              const value = objRecord[key] as RuntimeValue;
+              if (typeof value === "object" && value !== null) checkForKeyframes(value);
+            }
+          }
+        };
+        checkForKeyframes(layer.data);
+      }
+    }
+
+    if (keyframeIds.length > 0) {
+      selectionStore.selectKeyframes(keyframeIds);
+      console.log(
+        `[Lattice] Selected ${keyframeIds.length} keyframes on ${selectedIds.length} layer(s)`,
+      );
+      return true;
+    }
+    return false;
+  }
+
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                           // select // layers // by // label
+  // ════════════════════════════════════════════════════════════════════════════
+  function selectLayersByLabel() {
+    const selectedIds = selectionStore.selectedLayerIds;
+    if (selectedIds.length === 0) return;
+
+    const firstLayer = layerStore.getLayerById(selectedIds[0]);
+    if (!firstLayer) return;
+
+    const targetColor = firstLayer.labelColor || "#808080";
+
+    const layers = projectStore.getActiveCompLayers();
+    const matchingIds: string[] = [];
+
+    for (const layer of layers) {
+      const layerColor = layer.labelColor || "#808080";
+      if (layerColor === targetColor) {
+        matchingIds.push(layer.id);
+      }
+    }
+
+    if (matchingIds.length > 0) {
+      selectionStore.selectLayers(matchingIds);
+      console.log(
+        `[Lattice] Selected ${matchingIds.length} layers with label color ${targetColor}`,
+      );
+    }
+  }
+
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                           // asset // import
+  // ════════════════════════════════════════════════════════════════════════════
+  function triggerAssetImport() {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept =
+      ".svg,.gltf,.glb,.obj,.fbx,.hdr,.exr,.png,.jpg,.jpeg,.webp,.gif,.mp4,.webm,.mov";
+    input.multiple = true;
+    input.onchange = async (e) => {
+      const files = (e.target as HTMLInputElement).files;
+      if (!files) return;
+
+      // Use Array.from() for explicit iteration (FileList is array-like)
+      for (const file of Array.from(files)) {
+        // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+        const parts = file.name.split(".");
+        const lastPart = parts.length > 0 ? parts[parts.length - 1] : null;
+        const ext = typeof lastPart === "string" ? lastPart.toLowerCase() : null;
+        if (ext === "svg") {
+          await assetStore.importSvgFromFile(file);
+        } else if (["hdr", "exr"].includes(ext !== null ? ext : "")) {
+          await assetStore.loadEnvironment(file);
+        } else if (["png", "jpg", "jpeg", "webp", "gif"].includes(ext !== null ? ext : "")) {
+          // Import image as layer
+          const url = URL.createObjectURL(file);
+          const img = new Image();
+          img.onload = () => {
+            const layerName = file.name.replace(/\.[^/.]+$/, "");
+            const layer = layerStore.createLayer("image", layerName);
+            // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+            if (layer !== null && typeof layer === "object" && "data" in layer && layer.data !== null && layer.type === "image") {
+              const data = layer.data as ImageLayerDataWithRuntime;
+              data.src = url;
+              data.width = img.width;
+              data.height = img.height;
+              data.originalFilename = file.name;
+            }
+          };
+          img.src = url;
+        } else if (ext !== null && ["mp4", "webm", "mov"].includes(ext)) {
+          // Import video as layer
+          const url = URL.createObjectURL(file);
+          const layerName = file.name.replace(/\.[^/.]+$/, "");
+          layerStore.createVideoLayer(file).then((result) => {
+            // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+            if (result.status === "success" && result.layer !== null && typeof result.layer === "object" && "data" in result.layer && result.layer.data !== null && result.layer.type === "video") {
+              const data = result.layer.data as VideoDataWithRuntime;
+              data.originalFilename = file.name;
+            }
+          });
+        } else if (ext !== null && ["gltf", "glb", "obj", "fbx"].includes(ext)) {
+          // Import 3D model
+          // System F/Omega proof: Type guard ensures layer.data is ModelLayerData before accessing runtime properties
+          const url = URL.createObjectURL(file);
+          const layerName = file.name.replace(/\.[^/.]+$/, "");
+          const layer = layerStore.createLayer("model", layerName);
+          // Type proof: layer.type === "model" → layer.data: ModelLayerData | null
+          if (layer && layer.type === "model" && layer.data) {
+            // Type narrowing: layer.type === "model" ensures data is ModelLayerData
+            // Runtime extension: Add runtime properties for file import
+            // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy type assertions
+            // Type guard: Check for ModelLayerData-specific properties (assetId, format, castShadow, receiveShadow, frustumCulled, renderOrder)
+            const layerData = layer.data;
+            if (
+              layerData != null &&
+              typeof layerData === "object" &&
+              "assetId" in layerData &&
+              "format" in layerData &&
+              "castShadow" in layerData &&
+              "receiveShadow" in layerData &&
+              "frustumCulled" in layerData &&
+              "renderOrder" in layerData &&
+              typeof layerData.assetId === "string" &&
+              typeof layerData.format === "string"
+            ) {
+              // Type proof: layerData has ModelLayerData shape
+              // ModelLayerDataWithRuntime extends ModelLayerData with optional src, format, originalFilename
+              // Lean4/PureScript/Haskell: Explicit property assignment - no type assertions
+              // We can safely assign optional properties since ModelLayerDataWithRuntime extends ModelLayerData
+              // Type narrowing: layerData is ModelLayerData, we're adding runtime properties
+              if (layerData != null && typeof layerData === "object") {
+                // Assign runtime properties directly (ModelLayerDataWithRuntime extends ModelLayerData)
+                (layerData as { src?: string; format?: string; originalFilename?: string }).src = url;
+                (layerData as { src?: string; format?: string; originalFilename?: string }).format = ext;
+                (layerData as { src?: string; format?: string; originalFilename?: string }).originalFilename = file.name;
+              }
+            }
+          }
+        }
+      }
+
+      leftTab.value = "project";
+    };
+    input.click();
+  }
+
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                         // open // time // stretch // dialog
+  // ════════════════════════════════════════════════════════════════════════════
+  function openTimeStretchDialog() {
+    if (selectionStore.selectedLayerIds.length === 0) return;
+    showTimeStretchDialog.value = true;
+  }
+
+  // ════════════════════════════════════════════════════════════════════════════
+  //                            // open // camera // tracking // import // dialog
+  // ════════════════════════════════════════════════════════════════════════════
+  function openCameraTrackingImportDialog() {
+    showCameraTrackingImportDialog.value = true;
+  }
+
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                              // keyboard // event // handler
+  // ════════════════════════════════════════════════════════════════════════════
+  function handleKeydown(e: KeyboardEvent) {
+    // Don't handle if input is focused
+    if (
+      // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
+      (document.activeElement !== null && typeof document.activeElement === "object" && "tagName" in document.activeElement && document.activeElement.tagName === "INPUT") ||
+      (document.activeElement !== null && typeof document.activeElement === "object" && "tagName" in document.activeElement && document.activeElement.tagName === "TEXTAREA")
+    ) {
+      return;
+    }
+
+    const hasSelectedLayer = selectionStore.selectedLayerIds.length > 0;
+
+    switch (e.key.toLowerCase()) {
+      case " ":
+        e.preventDefault();
+        togglePlay();
+        break;
+
+      // Property solo shortcuts
+      case "p":
+        if (hasSelectedLayer && !e.ctrlKey && !e.metaKey) {
+          e.preventDefault();
+          soloProperty("position", e.shiftKey);
+        } else if (!e.ctrlKey && !e.metaKey && !e.shiftKey) {
+          currentTool.value = "pen";
+        }
+        break;
+      case "s":
+        if (hasSelectedLayer && !e.ctrlKey && !e.metaKey) {
+          e.preventDefault();
+          soloProperty("scale", e.shiftKey);
+        }
+        break;
+      case "t":
+        if ((e.ctrlKey || e.metaKey) && e.altKey && hasSelectedLayer) {
+          e.preventDefault();
+          openTimeStretchDialog();
+        } else if (hasSelectedLayer && !e.ctrlKey && !e.metaKey) {
+          e.preventDefault();
+          soloProperty("opacity", e.shiftKey);
+        } else if (!e.ctrlKey && !e.metaKey && !e.shiftKey) {
+          currentTool.value = "text";
+        }
+        break;
+      case "a":
+        if (e.ctrlKey || e.metaKey) {
+          e.preventDefault();
+          if (hasSelectedLayer) {
+            const selectedKeyframes = selectAllKeyframesOnSelectedLayers();
+            if (!selectedKeyframes) {
+              layerStore.selectAllLayers();
+            }
+          } else {
+            layerStore.selectAllLayers();
+          }
+        } else if (hasSelectedLayer) {
+          e.preventDefault();
+          soloProperty("anchor", e.shiftKey);
+        } else if (!e.shiftKey) {
+          leftTab.value = "assets";
+        }
+        break;
+      case "u":
+        if (hasSelectedLayer && !e.ctrlKey && !e.metaKey) {
+          e.preventDefault();
+          if (isDoubleTap("u")) {
+            soloProperty("modified", e.shiftKey);
+          } else {
+            soloProperty("animated", e.shiftKey);
+          }
+        }
+        break;
+
+      case "e":
+        if ((e.ctrlKey || e.metaKey) && e.altKey && hasSelectedLayer) {
+          e.preventDefault();
+          revealSourceInProject();
+        } else if (hasSelectedLayer && !e.ctrlKey && !e.metaKey) {
+          e.preventDefault();
+          if (isDoubleTap("e")) {
+            soloProperty("expressions", e.shiftKey);
+          } else {
+            soloProperty("effects", e.shiftKey);
+          }
+        }
+        break;
+
+      case "m":
+        if (hasSelectedLayer && !e.ctrlKey && !e.metaKey) {
+          e.preventDefault();
+          if (isDoubleTap("m")) {
+            soloProperty("masks", e.shiftKey);
+            console.log("[Lattice] Showing all mask properties (MM)");
+          } else {
+            soloProperty("masks", e.shiftKey);
+          }
+        } else if (e.ctrlKey || e.metaKey) {
+          e.preventDefault();
+          showExportDialog.value = true;
+        }
+        break;
+
+      case "h":
+        if (e.ctrlKey && e.altKey) {
+          e.preventDefault();
+          convertToHoldKeyframes();
+        } else if ((e.ctrlKey || e.metaKey) && e.shiftKey) {
+          e.preventDefault();
+          toggleTransparencyGrid();
+        } else if (!e.ctrlKey && !e.metaKey && !e.shiftKey && !e.altKey) {
+          currentTool.value = "hand";
+        }
+        break;
+      case "z":
+        if (e.ctrlKey || e.metaKey) {
+          e.preventDefault();
+          if (e.shiftKey) {
+            redo();
+          } else {
+            undo();
+          }
+        } else {
+          currentTool.value = "zoom";
+        }
+        break;
+
+      // Navigation
+      case "end":
+        e.preventDefault();
+        goToEnd();
+        break;
+      case "pageup":
+        e.preventDefault();
+        stepBackward(e.shiftKey ? 10 : 1);
+        break;
+      case "pagedown":
+        e.preventDefault();
+        stepForward(e.shiftKey ? 10 : 1);
+        break;
+      case "arrowleft":
+        e.preventDefault();
+        stepBackward(e.shiftKey ? 10 : 1);
+        break;
+      case "arrowright":
+        e.preventDefault();
+        stepForward(e.shiftKey ? 10 : 1);
+        break;
+
+      // Keyframe/Marker navigation (J/K, Shift+J/K for markers)
+      case "j":
+        if (!e.ctrlKey && !e.metaKey) {
+          e.preventDefault();
+          if (e.shiftKey) {
+            // Shift+J: Jump to previous marker
+            markerStore.jumpToPreviousMarker(getMarkerStoreAccess());
+          } else {
+            // J: Go to previous keyframe
+            goToPrevKeyframe();
+          }
+        }
+        break;
+      case "k":
+        if ((e.ctrlKey || e.metaKey) && e.shiftKey) {
+          e.preventDefault();
+          if (selectionStore.selectedKeyframeIds.length > 0) {
+            showKeyframeInterpolationDialog.value = true;
+          } else {
+            console.log(
+              "[Lattice] No keyframes selected for interpolation dialog",
+            );
+          }
+        } else if (e.ctrlKey || e.metaKey) {
+          e.preventDefault();
+          showCompositionSettingsDialog.value = true;
+        } else if (e.shiftKey) {
+          // Shift+K: Jump to next marker
+          e.preventDefault();
+          markerStore.jumpToNextMarker(getMarkerStoreAccess());
+        } else {
+          e.preventDefault();
+          goToNextKeyframe();
+        }
+        break;
+
+      case "g":
+        if ((e.ctrlKey || e.metaKey) && e.shiftKey && hasSelectedLayer) {
+          e.preventDefault();
+          selectLayersByLabel();
+        } else if (e.shiftKey) {
+          e.preventDefault();
+          showCurveEditor.value = !showCurveEditor.value;
+        }
+        break;
+      case "i":
+        if ((e.ctrlKey || e.metaKey) && e.shiftKey) {
+          // Ctrl+Shift+I - Import Camera Tracking
+          e.preventDefault();
+          openCameraTrackingImportDialog();
+        } else if (e.ctrlKey || e.metaKey) {
+          e.preventDefault();
+          triggerAssetImport();
+        } else if (hasSelectedLayer) {
+          e.preventDefault();
+          goToLayerInPoint();
+        }
+        break;
+      case "o":
+        if (hasSelectedLayer && !e.ctrlKey && !e.metaKey) {
+          e.preventDefault();
+          goToLayerOutPoint();
+        }
+        break;
+
+      // Pre-compose (Ctrl+Shift+C)
+      case "c":
+        if ((e.ctrlKey || e.metaKey) && e.shiftKey) {
+          e.preventDefault();
+          if (selectionStore.selectedLayerIds.length > 0) {
+            showPrecomposeDialog.value = true;
+          }
+        } else if (e.ctrlKey || e.metaKey) {
+          e.preventDefault();
+          layerStore.copySelectedLayers();
+        }
+        break;
+      case "delete":
+      case "backspace":
+        if (selectionStore.selectedLayerIds.length > 0) {
+          e.preventDefault();
+          layerStore.deleteSelectedLayers();
+        }
+        break;
+      case "f9":
+        e.preventDefault();
+        if ((e.ctrlKey || e.metaKey) && e.shiftKey) {
+          applySmoothEaseOut();
+        } else if (e.shiftKey) {
+          applySmoothEaseIn();
+        } else {
+          applySmoothEasing();
+        }
+        break;
+      case "v":
+        if ((e.ctrlKey || e.metaKey) && e.shiftKey) {
+          // Ctrl+Shift+V - Keyframe Velocity Dialog
+          e.preventDefault();
+          if (selectionStore.selectedKeyframeIds.length > 0) {
+            showKeyframeVelocityDialog.value = true;
+          } else {
+            console.log(
+              "[Lattice] No keyframes selected for velocity dialog",
+            );
+          }
+        } else if (e.ctrlKey || e.metaKey) {
+          e.preventDefault();
+          layerStore.pasteLayers();
+        } else if (!e.shiftKey) {
+          currentTool.value = "select";
+        }
+        break;
+      case "x":
+        if (e.ctrlKey || e.metaKey) {
+          e.preventDefault();
+          layerStore.cutSelectedLayers();
+        }
+        break;
+
+      // Layer timing ([ and ])
+      case "[":
+        if (e.altKey) {
+          e.preventDefault();
+          trimLayerInPoint();
+        } else if (hasSelectedLayer) {
+          e.preventDefault();
+          moveLayerInPointToPlayhead();
+        }
+        break;
+      case "]":
+        if (e.altKey) {
+          e.preventDefault();
+          trimLayerOutPoint();
+        } else if (hasSelectedLayer) {
+          e.preventDefault();
+          moveLayerOutPointToPlayhead();
+        }
+        break;
+
+      // Layer navigation (Ctrl+Arrow)
+      case "arrowup":
+        if (e.ctrlKey || e.metaKey) {
+          e.preventDefault();
+          selectPreviousLayer(e.shiftKey);
+        }
+        break;
+      case "arrowdown":
+        if (e.ctrlKey || e.metaKey) {
+          e.preventDefault();
+          selectNextLayer(e.shiftKey);
+        }
+        break;
+
+      // Split/Duplicate layer
+      case "d":
+        if ((e.ctrlKey || e.metaKey) && e.shiftKey) {
+          e.preventDefault();
+          splitLayerAtPlayhead();
+        } else if (e.ctrlKey || e.metaKey) {
+          e.preventDefault();
+          layerStore.duplicateSelectedLayers();
+        }
+        break;
+
+      // R key shortcuts
+      case "r":
+        if ((e.ctrlKey || e.metaKey) && e.shiftKey && !e.altKey) {
+          e.preventDefault();
+          toggleRulers();
+        } else if ((e.ctrlKey || e.metaKey) && e.altKey && hasSelectedLayer) {
+          e.preventDefault();
+          reverseSelectedLayers();
+        } else if ((e.ctrlKey || e.metaKey) && e.altKey) {
+          e.preventDefault();
+          timeReverseKeyframes();
+        } else if (hasSelectedLayer && !e.ctrlKey && !e.metaKey) {
+          e.preventDefault();
+          soloProperty("rotation", e.shiftKey);
+        }
+        break;
+
+      // Timeline zoom
+      case "=":
+      case "+":
+        if (e.ctrlKey || e.metaKey) {
+          e.preventDefault();
+          zoomViewerIn();
+        } else {
+          e.preventDefault();
+          zoomTimelineIn();
+        }
+        break;
+      case "-":
+        if (e.ctrlKey || e.metaKey) {
+          e.preventDefault();
+          zoomViewerOut();
+        } else {
+          e.preventDefault();
+          zoomTimelineOut();
+        }
+        break;
+      case ";":
+        if ((e.ctrlKey || e.metaKey) && e.shiftKey) {
+          e.preventDefault();
+          toggleSnap();
+        } else if (!e.ctrlKey && !e.metaKey) {
+          e.preventDefault();
+          zoomTimelineToFit();
+        }
+        break;
+      case "0":
+        if (e.ctrlKey || e.metaKey) {
+          e.preventDefault();
+          zoomViewerToFit();
+        } else if (e.shiftKey && (e.ctrlKey || e.metaKey)) {
+          e.preventDefault();
+          zoomViewerTo100();
+        }
+        break;
+
+      // Audio-only preview
+      case ".":
+        if (e.ctrlKey || e.metaKey) {
+          e.preventDefault();
+          const animationAccess = getAnimationStoreAccess();
+          audioStore.toggleAudioPlayback(animationAccess.currentFrame, animationAccess.fps);
+        }
+        break;
+
+      // Work area
+      case "b":
+        if (!e.ctrlKey && !e.metaKey && !e.shiftKey) {
+          e.preventDefault();
+          setWorkAreaStart();
+        }
+        break;
+      case "n":
+        if (!e.ctrlKey && !e.metaKey && !e.shiftKey) {
+          e.preventDefault();
+          setWorkAreaEnd();
+        }
+        break;
+
+      // Lock layer
+      case "l":
+        if (e.ctrlKey || e.metaKey) {
+          e.preventDefault();
+          toggleLayerLock();
+        }
+        break;
+
+      // Preview pause
+      case "capslock":
+        e.preventDefault();
+        togglePreviewPause();
+        break;
+
+      // Fit layer to comp / Freeze frame
+      case "f":
+        if ((e.ctrlKey || e.metaKey) && e.altKey) {
+          e.preventDefault();
+          if (e.shiftKey) {
+            fitLayerToCompHeight();
+          } else {
+            fitLayerToComp();
+          }
+        } else if ((e.ctrlKey || e.metaKey) && e.shiftKey) {
+          e.preventDefault();
+          fitLayerToCompWidth();
+        } else if (e.altKey && e.shiftKey && hasSelectedLayer) {
+          // Freeze frame at playhead (Alt+Shift+F)
+          e.preventDefault();
+          freezeSelectedLayers();
+        }
+        break;
+
+      // Y key shortcuts
+      case "y":
+        if ((e.ctrlKey || e.metaKey) && e.altKey && e.shiftKey) {
+          e.preventDefault();
+          createNullLayer();
+        } else if ((e.ctrlKey || e.metaKey) && e.altKey) {
+          e.preventDefault();
+          createAdjustmentLayer();
+        } else if ((e.ctrlKey || e.metaKey) && e.shiftKey) {
+          e.preventDefault();
+          toggleHiddenLayersVisibility();
+        }
+        break;
+
+      // Home key shortcuts
+      case "home":
+        if ((e.ctrlKey || e.metaKey) && e.altKey) {
+          e.preventDefault();
+          centerAnchorPoint();
+        } else if (e.ctrlKey || e.metaKey) {
+          e.preventDefault();
+          centerLayerInComp();
+        } else {
+          e.preventDefault();
+          const animationAccess = getAnimationStoreAccess();
+          animationStore.setFrame(animationAccess, 0);
+        }
+        break;
+
+      // Grid toggle
+      case "'":
+      case "`":
+        if (e.ctrlKey || e.metaKey) {
+          e.preventDefault();
+          toggleGrid();
+        }
+        break;
+
+      // Keyboard shortcuts modal
+      case "?":
+        e.preventDefault();
+        if (showKeyboardShortcutsModal) {
+          showKeyboardShortcutsModal.value = !showKeyboardShortcutsModal.value;
+        }
+        break;
+
+      // Add marker at playhead (* on numpad or Shift+8)
+      case "*":
+      case "numpadmultiply":
+        e.preventDefault();
+        const markerAccess = getMarkerStoreAccess();
+        markerStore.addMarkers(markerAccess, [
+          {
+            frame: markerAccess.currentFrame,
+            label: `Marker ${markerStore.getMarkers(markerAccess).length + 1}`,
+            color: "#FFFF00",
+          },
+        ]);
+        break;
+    }
+  }
+
+  // ════════════════════════════════════════════════════════════════════════════
+  //                             // provide // state // to // child // components
+  // ════════════════════════════════════════════════════════════════════════════
+  function setupProvides() {
+    provide("soloedProperty", soloedProperty);
+    provide("soloedProperties", soloedProperties);
+    provide("workAreaStart", workAreaStart);
+    provide("workAreaEnd", workAreaEnd);
+    provide("showHiddenLayers", showHiddenLayers);
+    provide("toggleLayerHidden", toggleLayerHidden);
+    provide("previewUpdatesPaused", previewUpdatesPaused);
+    provide("showTransparencyGrid", showTransparencyGrid);
+    provide("gridColor", gridColor);
+    provide("gridMajorColor", gridMajorColor);
+    provide("rulerUnits", rulerUnits);
+    provide("snapEnabled", snapEnabled);
+    provide("snapToGrid", snapToGrid);
+    provide("snapToGuides", snapToGuides);
+    provide("snapToLayers", snapToLayers);
+    provide("snapTolerance", snapTolerance);
+    provide("toggleSnap", toggleSnap);
+  }
+
+  return {
+    // State
+    isPlaying,
+    soloedProperties,
+    soloedProperty,
+    workAreaStart,
+    workAreaEnd,
+    showHiddenLayers,
+    previewUpdatesPaused,
+    showTransparencyGrid,
+    gridColor,
+    gridMajorColor,
+    rulerUnits,
+    snapEnabled,
+    snapToGrid,
+    snapToGuides,
+    snapToLayers,
+    snapTolerance,
+    timelineZoom,
+    viewerZoom,
+
+    // Actions
+    togglePlay,
+    goToStart,
+    goToEnd,
+    stepForward,
+    stepBackward,
+    applySmoothEasing,
+    applySmoothEaseIn,
+    applySmoothEaseOut,
+    goToPrevKeyframe,
+    goToNextKeyframe,
+    soloProperty,
+    isDoubleTap,
+    setWorkAreaStart,
+    setWorkAreaEnd,
+    clearWorkArea,
+    toggleHiddenLayersVisibility,
+    toggleLayerHidden,
+    togglePreviewPause,
+    toggleTransparencyGrid,
+    toggleGrid,
+    setGridSize,
+    toggleRulers,
+    toggleSnap,
+    undo,
+    redo,
+    goToLayerInPoint,
+    goToLayerOutPoint,
+    moveLayerInPointToPlayhead,
+    moveLayerOutPointToPlayhead,
+    trimLayerInPoint,
+    trimLayerOutPoint,
+    selectPreviousLayer,
+    selectNextLayer,
+    splitLayerAtPlayhead,
+    reverseSelectedLayers,
+    freezeSelectedLayers,
+    zoomTimelineIn,
+    zoomTimelineOut,
+    zoomTimelineToFit,
+    zoomViewerIn,
+    zoomViewerOut,
+    zoomViewerToFit,
+    zoomViewerTo100,
+    convertToHoldKeyframes,
+    timeReverseKeyframes,
+    fitLayerToComp,
+    fitLayerToCompWidth,
+    fitLayerToCompHeight,
+    toggleLayerLock,
+    centerAnchorPoint,
+    centerLayerInComp,
+    createAdjustmentLayer,
+    createNullLayer,
+    revealSourceInProject,
+    selectAllKeyframesOnSelectedLayers,
+    selectLayersByLabel,
+    triggerAssetImport,
+    openTimeStretchDialog,
+    handleKeydown,
+    setupProvides,
+  };
+}

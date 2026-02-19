@@ -1,0 +1,42 @@
+# Node
+node_modules/
+dist/
+*.log
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+.venv/
+*.egg-info/
+.eggs/
+
+# Build output
+web/js/
+*.map
+
+# Editor
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+*.sublime-*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test
+coverage/
+.nyc_output/
+playwright-report/
+test-results/
+
+# Temp
+*.tmp
+*.temp
+comfyui.pid

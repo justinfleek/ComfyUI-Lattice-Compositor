@@ -1,0 +1,12 @@
+packages: .
+
+-- Use current GHC from PATH or nix develop
+-- With Nix: add ghc to devShell and run cabal build
+-- Without Nix: install GHC (ghcup) and run cabal build
+
+-- Optional: pin compiler
+-- compiler: ghc-9.10.1
+
+-- Optional: enable -Wall for stricter builds (recommended for porting)
+package lattice
+  ghc-options: -Wall -Wcompat -Widentities

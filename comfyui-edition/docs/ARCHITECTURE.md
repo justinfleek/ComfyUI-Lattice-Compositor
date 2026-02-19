@@ -1,0 +1,175 @@
+# Architecture
+
+> Last Updated: February 2026
+
+## Overview
+
+Lattice Compositor ComfyUI Edition is a motion graphics engine built as a ComfyUI extension. It uses a layered architecture with clear separation between presentation, state, engine, and service layers.
+
+## Architecture Diagram
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  PRESENTATION LAYER (Vue 3 + TypeScript)                                    │
+│  ┌───────────────────────────────────────────────────────────────────────┐  │
+│  │ ui/src/components/                                                    │  │
+│  │ - WorkspaceLayout.vue    Main application layout                      │  │
+│  │ - TimelinePanel.vue      Timeline and keyframe editing                │  │
+│  │ - ThreeCanvas.vue        WebGL viewport                               │  │
+│  │ - PropertiesPanel.vue    Layer property editing                       │  │
+│  │ - EffectsPanel.vue       Effect stack management                      │  │
+│  └───────────────────────────────────────────────────────────────────────┘  │
+└─────────────┬───────────────────────────────────────────────────────────────┘
+              │
+              ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  STATE LAYER (Pinia)                                                        │
+│  ┌───────────────────────────────────────────────────────────────────────┐  │
+│  │ ui/src/stores/                                                        │  │
+│  │ - compositorStore    Main project state, compositions, layers         │  │
+│  │ - playbackStore      Timeline playback, current frame                 │  │
+│  │ - historyStore       Undo/redo (50 snapshots)                         │  │
+│  │ - audioStore         Audio analysis, beat detection                   │  │
+│  │ - assetStore         Asset management, file references                │  │
+│  │ - toolStore          Current tool, selection state                    │  │
+│  └───────────────────────────────────────────────────────────────────────┘  │
+└─────────────┬───────────────────────────────────────────────────────────────┘
+              │
+              ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  ENGINE LAYER (Three.js)                                                    │
+│  ┌───────────────────────────────────────────────────────────────────────┐  │
+│  │ ui/src/engine/                                                        │  │
+│  │ - LatticeEngine       Main rendering facade, scene management         │  │
+│  │ - MotionEngine        Deterministic frame evaluation                  │  │
+│  │ - LayerManager        Layer type implementations                      │  │
+│  │ - ParticleSystem      Checkpoint-based particle simulation            │  │
+│  │ - EffectProcessor     Canvas-based effect pipeline                    │  │
+│  │ - CameraController    3D camera with camera-controls library          │  │
+│  └───────────────────────────────────────────────────────────────────────┘  │
+└─────────────┬───────────────────────────────────────────────────────────────┘
+              │
+              ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  SERVICE LAYER                                                              │
+│  ┌───────────────────────────────────────────────────────────────────────┐  │
+│  │ ui/src/services/                                                      │  │
+│  │ - Animation      interpolation, easing, expressions, propertyDriver   │  │
+│  │ - Audio          fftAnalyzer, beatDetection, stemSeparation           │  │
+│  │ - Particles      cpuSimulation, gpuRenderer, presets                  │  │
+│  │ - Camera         trajectoryExport, cameraPresets, depthParallax       │  │
+│  │ - Effects        blur, color, distort, generate renderers             │  │
+│  │ - Export         videoExport, matteExport, trajectoryExport           │  │
+│  │ - Security       urlValidator, jsonSanitizer, sesEvaluator            │  │
+│  └───────────────────────────────────────────────────────────────────────┘  │
+└─────────────┬───────────────────────────────────────────────────────────────┘
+              │
+              ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  BACKEND (Python + ComfyUI)                                                 │
+│  ┌───────────────────────────────────────────────────────────────────────┐  │
+│  │ src/nodes/                                                            │  │
+│  │ - compositor_node.py         Main ComfyUI node                        │  │
+│  │ - lattice_api_proxy.py       API proxy to frontend                    │  │
+│  │ - controlnet_preprocessors.py ControlNet preprocessing                │  │
+│  │ - lattice_layer_decomposition.py AI layer decomposition               │  │
+│  └───────────────────────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+## Data Flow
+
+### Project Load
+```
+1. User opens project file
+2. projectActions.importProject() parses JSON
+3. projectMigration.migrateProject() upgrades schema if needed
+4. security.validateProjectStructure() validates data
+5. compositorStore.project = project
+6. LatticeEngine renders first frame
+```
+
+### Frame Evaluation
+```
+1. playbackStore.currentFrame changes
+2. MotionEngine.evaluate(frame) called
+3. For each layer:
+   a. Evaluate property expressions
+   b. Interpolate keyframed values
+   c. Apply effects
+4. Render to Three.js scene
+5. Composite to canvas
+```
+
+### Export
+```
+1. User selects export format
+2. Export service iterates all frames
+3. MotionEngine.evaluate(frame) for each
+4. Render to offscreen canvas
+5. Encode to output format
+6. Save/download file
+```
+
+## State Management
+
+### compositorStore
+Primary state container for project data.
+
+```typescript
+interface CompositorState {
+  project: LatticeProject;
+  activeCompositionId: string;
+  selectedLayerIds: string[];
+  hasUnsavedChanges: boolean;
+}
+```
+
+### playbackStore
+Timeline and playback state.
+
+```typescript
+interface PlaybackState {
+  currentFrame: number;
+  isPlaying: boolean;
+  playbackSpeed: number;
+  loopEnabled: boolean;
+}
+```
+
+### historyStore
+Undo/redo with snapshot-based history.
+
+```typescript
+interface HistoryState {
+  past: ProjectSnapshot[];
+  future: ProjectSnapshot[];
+  maxSnapshots: 50;
+}
+```
+
+## Security
+
+### Expression Sandbox
+Expressions run in SES (Secure EcmaScript) compartments:
+- No access to global objects
+- No network access
+- CPU time limits
+- Memory limits
+
+### Data Validation
+All external data passes through validation:
+- `validateProjectStructure()` - NaN/Infinity rejection
+- `safeJSONParse()` - Error handling
+- `sanitizeString()` - XSS prevention
+
+## Determinism
+
+For AI video generation, every frame must be reproducible:
+
+> `evaluate(frame, project)` always returns identical results for identical inputs.
+
+This is achieved through:
+- **Seeded RNG** - Mulberry32 algorithm
+- **Checkpoint System** - Particles restore state on scrub
+- **Pure Evaluation** - No `Math.random()`, no `Date.now()`
