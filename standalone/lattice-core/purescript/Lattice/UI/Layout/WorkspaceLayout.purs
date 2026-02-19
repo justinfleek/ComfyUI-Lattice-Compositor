@@ -30,9 +30,14 @@ import Type.Proxy (Proxy(..))
 import Effect.Aff.Class (class MonadAff)
 import Halogen as H
 import Halogen.HTML as HH
+import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 
 import Lattice.UI.Core (cls)
+import Lattice.UI.Components.LayerList as LayerList
+import Lattice.UI.Components.Timeline as Timeline
+import Lattice.UI.Components.PropertiesPanel as PropertiesPanel
+import Lattice.Project (LayerBase)
 
 -- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 --                                                                     // types
@@ -50,18 +55,34 @@ type State =
   { leftSidebarWidth :: Number  -- Percentage (default 14%)
   , rightSidebarWidth :: Number -- Percentage (default 20%)
   , timelineHeight :: Number    -- Percentage (default 35%)
+  , layers :: Array LayerBase
+  , selectedLayerIds :: Array String
+  , currentFrame :: Int
+  , totalFrames :: Int
+  , fps :: Number
+  , isPlaying :: Boolean
+  , activeLeftTab :: LeftTab
   }
+
+data LeftTab = TabProject | TabEffects | TabAssets
+derive instance eqLeftTab :: Eq LeftTab
 
 data Action
   = Initialize
+  | SetLeftTab LeftTab
+  | HandleLayerList LayerList.Output
+  | HandleTimeline Timeline.Output
+  | HandleProperties PropertiesPanel.Output
 
 type Slots =
   ( menuBar :: H.Slot (Const Void) Void Unit
   , toolbar :: H.Slot (Const Void) Void Unit
   , leftSidebar :: H.Slot (Const Void) Void Unit
   , viewport :: H.Slot (Const Void) Void Unit
-  , timeline :: H.Slot (Const Void) Void Unit
+  , timeline :: Timeline.Slot Unit
   , rightSidebar :: H.Slot (Const Void) Void Unit
+  , layerList :: LayerList.Slot Unit
+  , properties :: PropertiesPanel.Slot Unit
   )
 
 _menuBar :: Proxy "menuBar"
@@ -82,6 +103,12 @@ _timeline = Proxy
 _rightSidebar :: Proxy "rightSidebar"
 _rightSidebar = Proxy
 
+_layerList :: Proxy "layerList"
+_layerList = Proxy
+
+_properties :: Proxy "properties"
+_properties = Proxy
+
 -- ════════════════════════════════════════════════════════════════════════════
 --                                                                 // component
 -- ════════════════════════════════════════════════════════════════════════════
@@ -101,6 +128,13 @@ initialState =
   { leftSidebarWidth: 14.0
   , rightSidebarWidth: 20.0
   , timelineHeight: 35.0
+  , layers: []
+  , selectedLayerIds: []
+  , currentFrame: 0
+  , totalFrames: 81
+  , fps: 16.0
+  , isPlaying: false
+  , activeLeftTab: TabProject
   }
 
 -- ════════════════════════════════════════════════════════════════════════════
@@ -129,7 +163,7 @@ render state =
             [ cls [ "lattice-sidebar lattice-sidebar-left" ]
             , HP.attr (HH.AttrName "style") (sidebarStyle state.leftSidebarWidth)
             ]
-            [ renderLeftSidebar ]
+            [ renderLeftSidebar state ]
         
           -- Center (Viewport + Timeline)
         , HH.div
@@ -148,7 +182,7 @@ render state =
                 [ cls [ "lattice-timeline-container" ]
                 , HP.attr (HH.AttrName "style") (timelineStyle state.timelineHeight)
                 ]
-                [ renderTimeline ]
+                [ renderTimeline state ]
             ]
         
           -- Right Sidebar
@@ -156,7 +190,7 @@ render state =
             [ cls [ "lattice-sidebar lattice-sidebar-right" ]
             , HP.attr (HH.AttrName "style") (sidebarStyle state.rightSidebarWidth)
             ]
-            [ renderRightSidebar ]
+            [ renderRightSidebar state ]
         ]
     ]
 
@@ -252,26 +286,71 @@ toolButton iconName tooltip active =
         [] -- Icon rendered via CSS data-icon attribute
     ]
 
-renderLeftSidebar :: forall m. H.ComponentHTML Action Slots m
-renderLeftSidebar =
+renderLeftSidebar :: forall m. MonadAff m => State -> H.ComponentHTML Action Slots m
+renderLeftSidebar state =
   HH.div [ cls [ "lattice-sidebar-content" ] ]
     [ -- Tabs: Project / Effects / Assets
       HH.div [ cls [ "lattice-sidebar-tabs" ] ]
-        [ tabButton "Project" true
-        , tabButton "Effects" false
-        , tabButton "Assets" false
+        [ HH.button 
+            [ cls [ "lattice-tabs-trigger" ]
+            , HP.attr (HH.AttrName "data-state") (if state.activeLeftTab == TabProject then "active" else "inactive")
+            , HE.onClick \_ -> SetLeftTab TabProject
+            ]
+            [ HH.text "Project" ]
+        , HH.button 
+            [ cls [ "lattice-tabs-trigger" ]
+            , HP.attr (HH.AttrName "data-state") (if state.activeLeftTab == TabEffects then "active" else "inactive")
+            , HE.onClick \_ -> SetLeftTab TabEffects
+            ]
+            [ HH.text "Effects" ]
+        , HH.button 
+            [ cls [ "lattice-tabs-trigger" ]
+            , HP.attr (HH.AttrName "data-state") (if state.activeLeftTab == TabAssets then "active" else "inactive")
+            , HE.onClick \_ -> SetLeftTab TabAssets
+            ]
+            [ HH.text "Assets" ]
         ]
     
-      -- Tab content (Project panel shown by default)
-    , HH.div [ cls [ "lattice-sidebar-panel" ] ]
-        [ HH.div [ cls [ "lattice-panel-header" ] ]
-            [ HH.text "Project" ]
-        , HH.div [ cls [ "lattice-panel-content" ] ]
-            [ HH.p [ cls [ "lattice-text-muted" ] ] 
-                [ HH.text "No compositions yet." ]
-            , HH.button [ cls [ "lattice-btn lattice-btn-primary" ] ]
-                [ HH.text "+ New Composition" ]
-            ]
+      -- Tab content
+    , case state.activeLeftTab of
+        TabProject -> renderProjectTab state
+        TabEffects -> renderEffectsTab
+        TabAssets -> renderAssetsTab
+    ]
+
+renderProjectTab :: forall m. MonadAff m => State -> H.ComponentHTML Action Slots m
+renderProjectTab state =
+  HH.div [ cls [ "lattice-sidebar-panel" ] ]
+    [ HH.div [ cls [ "lattice-panel-header" ] ]
+        [ HH.text "Layers" ]
+    , HH.slot _layerList unit LayerList.component
+        { layers: state.layers
+        , selectedIds: state.selectedLayerIds
+        }
+        HandleLayerList
+    ]
+
+renderEffectsTab :: forall m. H.ComponentHTML Action Slots m
+renderEffectsTab =
+  HH.div [ cls [ "lattice-sidebar-panel" ] ]
+    [ HH.div [ cls [ "lattice-panel-header" ] ]
+        [ HH.text "Effects" ]
+    , HH.div [ cls [ "lattice-panel-content" ] ]
+        [ HH.p [ cls [ "lattice-text-muted" ] ] 
+            [ HH.text "Select a layer to view effects" ]
+        ]
+    ]
+
+renderAssetsTab :: forall m. H.ComponentHTML Action Slots m
+renderAssetsTab =
+  HH.div [ cls [ "lattice-sidebar-panel" ] ]
+    [ HH.div [ cls [ "lattice-panel-header" ] ]
+        [ HH.text "Assets" ]
+    , HH.div [ cls [ "lattice-panel-content" ] ]
+        [ HH.p [ cls [ "lattice-text-muted" ] ] 
+            [ HH.text "No assets imported" ]
+        , HH.button [ cls [ "lattice-btn lattice-btn-primary" ] ]
+            [ HH.text "+ Import" ]
         ]
     ]
 
@@ -296,68 +375,27 @@ renderViewport =
         ]
     ]
 
-renderTimeline :: forall m. H.ComponentHTML Action Slots m
-renderTimeline =
-  HH.div [ cls [ "lattice-timeline" ] ]
-    [ -- Timeline header
-      HH.div [ cls [ "lattice-timeline-header" ] ]
-        [ HH.div [ cls [ "lattice-timeline-tabs" ] ]
-            [ tabButton "Main Comp" true ]
-        , HH.button [ cls [ "lattice-btn lattice-btn-ghost" ] ]
-            [ HH.text "+ Add Layer" ]
-        ]
-    
-      -- Timeline body (sidebar + tracks)
-    , HH.div [ cls [ "lattice-timeline-body" ] ]
-        [ -- Layer sidebar
-          HH.div [ cls [ "lattice-layer-sidebar" ] ]
-            [ HH.div [ cls [ "lattice-layer-list" ] ]
-                [ HH.p [ cls [ "lattice-text-muted" ] ]
-                    [ HH.text "No layers" ]
-                ]
-            ]
-        
-          -- Track viewport
-        , HH.div [ cls [ "lattice-track-viewport" ] ]
-            [ -- Time ruler
-              HH.div [ cls [ "lattice-time-ruler" ] ] []
-            
-              -- Tracks area
-            , HH.div [ cls [ "lattice-tracks" ] ]
-                [ HH.div [ cls [ "lattice-tracks-empty" ] ]
-                    [ HH.text "Add layers to begin" ]
-                ]
-            
-              -- Playhead
-            , HH.div 
-                [ cls [ "lattice-playhead" ]
-                , HP.attr (HH.AttrName "style") "left: 0px;"
-                ] 
-                []
-            ]
-        ]
-    ]
+renderTimeline :: forall m. MonadAff m => State -> H.ComponentHTML Action Slots m
+renderTimeline state =
+  HH.slot _timeline unit Timeline.component
+    { layers: state.layers
+    , currentFrame: state.currentFrame
+    , totalFrames: state.totalFrames
+    , fps: state.fps
+    , selectedLayerIds: state.selectedLayerIds
+    , isPlaying: state.isPlaying
+    }
+    HandleTimeline
 
-renderRightSidebar :: forall m. H.ComponentHTML Action Slots m
-renderRightSidebar =
+renderRightSidebar :: forall m. MonadAff m => State -> H.ComponentHTML Action Slots m
+renderRightSidebar state =
   HH.div [ cls [ "lattice-sidebar-content" ] ]
-    [ -- Collapsible panels
-      collapsiblePanel "Properties" true
-        [ HH.p [ cls [ "lattice-text-muted" ] ]
-            [ HH.text "Select a layer to view properties" ]
-        ]
+    [ -- Properties panel
+      HH.slot _properties unit PropertiesPanel.component
+        { selectedLayer: getSelectedLayer state }
+        HandleProperties
     
-    , collapsiblePanel "Effects" false
-        [ HH.p [ cls [ "lattice-text-muted" ] ]
-            [ HH.text "No effects applied" ]
-        ]
-    
-    , collapsiblePanel "Drivers" false
-        [ HH.p [ cls [ "lattice-text-muted" ] ]
-            [ HH.text "No drivers configured" ]
-        ]
-    
-      --                                                                   // ai // s
+      -- AI section
     , HH.div [ cls [ "lattice-ai-section" ] ]
         [ HH.div [ cls [ "lattice-sidebar-tabs" ] ]
             [ tabButton "Chat" true
@@ -370,6 +408,15 @@ renderRightSidebar =
             ]
         ]
     ]
+
+getSelectedLayer :: State -> Maybe LayerBase
+getSelectedLayer state =
+  case state.selectedLayerIds of
+    [layerId] -> findLayer layerId state.layers
+    _ -> Nothing
+
+findLayer :: String -> Array LayerBase -> Maybe LayerBase
+findLayer _layerId _layers = Nothing  -- Simplified for now
 
 tabButton :: forall m. String -> Boolean -> H.ComponentHTML Action Slots m
 tabButton label active =
@@ -448,3 +495,23 @@ timelineStyle height =
 handleAction :: forall o m. MonadAff m => Action -> H.HalogenM State Action Slots o m Unit
 handleAction = case _ of
   Initialize -> pure unit
+  
+  SetLeftTab tab -> H.modify_ _ { activeLeftTab = tab }
+  
+  HandleLayerList output -> case output of
+    LayerList.SelectLayer layerId -> 
+      H.modify_ _ { selectedLayerIds = [layerId] }
+    LayerList.ToggleVisibility _layerId -> pure unit
+    LayerList.ToggleLock _layerId -> pure unit
+    LayerList.ReorderLayer _layerId _index -> pure unit
+  
+  HandleTimeline output -> case output of
+    Timeline.SeekToFrame frame -> 
+      H.modify_ _ { currentFrame = frame }
+    Timeline.TogglePlayback -> 
+      H.modify_ \s -> s { isPlaying = not s.isPlaying }
+    Timeline.SelectLayer layerId -> 
+      H.modify_ _ { selectedLayerIds = [layerId] }
+    Timeline.ToggleLayerExpanded _layerId -> pure unit
+  
+  HandleProperties _output -> pure unit
