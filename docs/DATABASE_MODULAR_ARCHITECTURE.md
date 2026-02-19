@@ -42,7 +42,7 @@
 
 ### Lean4 Definitions
 
-**File:** `leancomfy/lean/Lattice/Database/ModuleRegistry.lean`
+**File:** `lattice-core/lean/Lattice/Database/ModuleRegistry.lean`
 
 Defines all types with proofs:
 - `ModuleId` - Non-empty string identifier
@@ -167,5 +167,5 @@ let registry' = registerPluginModule pluginModuleId pluginConfig defaultRegistry
 
 - `docs/DATABASE_SCHEMA.md` - Complete schema documentation
 - `scripts/database/plugins/README.md` - Plugin registration guide
-- `leancomfy/lean/Lattice/Database/ModuleRegistry.lean` - Lean4 type definitions
+- `lattice-core/lean/Lattice/Database/ModuleRegistry.lean` - Lean4 type definitions
 - `src/lattice/Database/ModuleRegistry.hs` - Haskell implementation

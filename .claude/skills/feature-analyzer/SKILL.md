@@ -82,10 +82,10 @@ Map extracted features to Lattice's current system:
 ```yaml
 lattice_mapping:
   # Types (Lean4/PureScript)
-  types_location: leancomfy/lean/Lattice/**/*.lean
+  types_location: lattice-core/lean/Lattice/**/*.lean
 
   # Services (Implementation)
-  services_location: leancomfy/purescript/src/Lattice/Services/**/*.purs
+  services_location: lattice-core/purescript/src/Lattice/Services/**/*.purs
 
   # UI Components
   ui_location: ui/src/components/**/*.vue

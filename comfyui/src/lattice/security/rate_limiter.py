@@ -4,7 +4,7 @@ Rate Limiter for Lattice Compositor
 Token bucket rate limiting per user per tool.
 Supports: User limits, API key overrides, Organization limits.
 
-LEAN4 PROOFS: leancomfy/lean/Compass/RateLimiter.lean
+LEAN4 PROOFS: lattice-core/lean/Compass/RateLimiter.lean
 - Token bucket invariants (never exceed max_tokens)
 - Refill is monotonic (tokens never decrease from refill)
 - Burst capacity tracking

@@ -1,0 +1,6 @@
+packages: .
+
+-- Pin http2 to 5.3.x to match nixpkgs and avoid API incompatibility
+-- http2 5.4.x changed Config from a data constructor to a smart constructor
+constraints:
+  http2 >= 5.3 && < 5.4

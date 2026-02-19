@@ -82,7 +82,7 @@ main = script $ do
     
     -- Check Lean4 files
     echo "Checking Lean4 files..."
-    leanViolations <- checkFiles (projectRoot </> "leancomfy" </> "lean") "*.lean" ".lean"
+    leanViolations <- checkFiles (projectRoot </> "lattice-core" </> "lean") "*.lean" ".lean"
     
     return $ hsViolations + hsTestViolations + 
              pursViolations + pursTestViolations + 

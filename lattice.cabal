@@ -12,7 +12,7 @@ build-type: Simple
 library
   default-language: GHC2021
   hs-source-dirs:
-    leancomfy/haskell
+    lattice-core/haskell
     src/haskell
   exposed-modules:
     -- Core Lattice modules

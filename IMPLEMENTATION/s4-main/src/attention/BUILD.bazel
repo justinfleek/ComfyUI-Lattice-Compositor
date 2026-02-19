@@ -1,0 +1,57 @@
+"""Attention kernels: SageAttention with FP4 quantization."""
+
+load("//bazel:cuda.bzl", "s4_cuda_kernel_library", "s4_cuda_library")
+
+package(default_visibility = ["//visibility:public"])
+
+# =============================================================================
+# Score Correction (cuBLAS GEMM for δS = query_mean @ key_centered^T)
+# =============================================================================
+
+s4_cuda_library(
+    name = "score_correction",
+    source_files = ["score_correction.cu"],
+    header_files = ["//include/s4/attention:score_correction.h"],
+    includes = ["include"],
+    linker_options = ["-lcublas"],
+    dependencies = ["//:core"],
+)
+
+# =============================================================================
+# Mean Centering Kernels (Header-only CUDA templates)
+# =============================================================================
+
+cc_library(
+    name = "mean_centering",
+    hdrs = ["//include/s4/attention:mean_centering.cuh"],
+    includes = ["include"],
+)
+
+# =============================================================================
+# SageAttention TensorRT Plugin
+# =============================================================================
+
+s4_cuda_kernel_library(
+    name = "sage_attention_plugin",
+    source_files = ["sage_attention_plugin.cu"],
+    header_files = ["//include/s4/attention:sage_attention_plugin.h"],
+    includes = ["include"],
+    dependencies = [
+        ":mean_centering",
+        ":score_correction",
+        "//src/cuda:nvfp4",
+    ],
+)
+
+# =============================================================================
+# Full Attention Module
+# =============================================================================
+
+cc_library(
+    name = "attention",
+    deps = [
+        ":mean_centering",
+        ":sage_attention_plugin",
+        ":score_correction",
+    ],
+)

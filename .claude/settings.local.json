@@ -8,7 +8,7 @@
       "Bash(bash scripts/check-banned-patterns.sh:*)",
       "Bash(for dir in ui/src/services/*/)",
       "Bash(do basename:*)",
-      "Bash(for dir in leancomfy/purescript/Lattice/Services/*/)",
+      "Bash(for dir in lattice-core/purescript/Lattice/Services/*/)",
       "Bash(ls:*)",
       "Bash(npx tsc:*)",
       "Bash(npx biome check:*)",
@@ -35,10 +35,10 @@
       "Bash(node:*)",
       "Bash(nix log:*)",
       "Bash(nix flake show:*)",
-      "Bash(git -C /mnt/c/Users/justi/desktop/comfyui-lattice-compositor/leancomfy/lean submodule status)",
+      "Bash(git -C /mnt/c/Users/justi/desktop/comfyui-lattice-compositor/lattice-core/lean submodule status)",
       "Bash(git -C /mnt/c/Users/justi/desktop/comfyui-lattice-compositor submodule status:*)",
       "Bash(nix flake update:*)",
-      "Bash(git -C /mnt/c/Users/justi/desktop/comfyui-lattice-compositor ls-files --error-unmatch leancomfy/lean/patched-deps/aesop/lakefile.lean)",
+      "Bash(git -C /mnt/c/Users/justi/desktop/comfyui-lattice-compositor ls-files --error-unmatch lattice-core/lean/patched-deps/aesop/lakefile.lean)",
       "Bash(exec:*)",
       "Bash(nix:*)",
       "Bash(command -v:*)",
@@ -77,7 +77,7 @@
       "Bash(git status:*)",
       "Bash(for file in ui/src/__tests__/export/*.test.ts)",
       "Bash(do wc -l \"$file\")",
-      "Bash(for file in leancomfy/purescript/test/Lattice/Export/*.purs)"
+      "Bash(for file in lattice-core/purescript/test/Lattice/Export/*.purs)"
     ]
   }
 }

@@ -19,7 +19,7 @@ main = script $ do
   
   scriptDir <- pwd
   let projectRoot = FP.takeDirectory (FP.takeDirectory scriptDir)
-      leanDir = projectRoot </> "leancomfy" </> "lean"
+      leanDir = projectRoot </> "lattice-core" </> "lean"
       uiSrcDir = projectRoot </> "ui" </> "src"
       srcDir = projectRoot </> "src"
       testDir = projectRoot </> "test"

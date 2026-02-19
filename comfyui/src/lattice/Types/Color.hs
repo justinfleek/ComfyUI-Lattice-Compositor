@@ -13,7 +13,7 @@
 -- - Alpha channels throughout
 --
 -- All conversions mathematically sound
--- Lean4 proofs available in leancomfy/lean/Color/Color.lean
+-- Lean4 proofs available in lattice-core/lean/Color/Color.lean
 --
 
 {-# LANGUAGE OverloadedStrings #-}

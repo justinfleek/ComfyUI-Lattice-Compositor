@@ -1,0 +1,6 @@
+dist-newstyle
+.nixd.json
+.nil.toml
+.direnv
+.devshell
+result

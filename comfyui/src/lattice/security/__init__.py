@@ -7,7 +7,7 @@ Port of COMPASS security infrastructure:
 - Budget control (daily/monthly limits)
 - Audit logging
 
-LEAN4 PROOFS: leancomfy/lean/Compass/
+LEAN4 PROOFS: lattice-core/lean/Compass/
 - Permissions.lean - Role-based access control proofs
 - RateLimiter.lean - Token bucket invariants
 - Budget.lean - Budget control proofs

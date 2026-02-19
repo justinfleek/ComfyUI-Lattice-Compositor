@@ -1,0 +1,90 @@
+# Attention kernels: SageAttention with FP4 quantization
+
+load("@prelude//cxx:cxx.bzl", "cxx_library")
+load("//buck2/rules:cuda.bzl", "cuda_library")
+
+# =============================================================================
+# Mean Centering Kernels (Header-only CUDA templates)
+# =============================================================================
+
+cxx_library(
+    name = "mean_centering",
+    exported_headers = [
+        "//include/s4/attention:mean_centering.cuh",
+    ],
+    visibility = ["PUBLIC"],
+)
+
+# =============================================================================
+# Score Correction (cuBLAS GEMM for δS = query_mean @ key_centered^T)
+# =============================================================================
+
+cuda_library(
+    name = "score_correction",
+    srcs = ["score_correction.cu"],
+    exported_headers = {
+        "s4/attention/score_correction.h": "//include/s4/attention:score_correction.h",
+    },
+    deps = ["//:core"],
+    linker_flags = ["-lcublas"],
+    cuda_archs = [
+        "sm_80",   # Ampere
+        "sm_86",   # Ampere
+        "sm_89",   # Ada
+        "sm_90",   # Hopper
+        "sm_100",  # Blackwell
+    ],
+    compiler_flags = [
+        "-O3",
+        "--use_fast_math",
+        "--expt-relaxed-constexpr",
+        "--extended-lambda",
+    ],
+    visibility = ["PUBLIC"],
+)
+
+# =============================================================================
+# SageAttention TensorRT Plugin
+# =============================================================================
+
+cuda_library(
+    name = "sage_attention_plugin",
+    srcs = ["sage_attention_plugin.cu"],
+    exported_headers = {
+        "s4/attention/sage_attention_plugin.h": "//include/s4/attention:sage_attention_plugin.h",
+    },
+    deps = [
+        ":mean_centering",
+        ":score_correction",
+        "//src/cuda:nvfp4",
+    ],
+    cuda_archs = [
+        "sm_80",
+        "sm_86",
+        "sm_89",
+        "sm_90",
+        "sm_100",
+    ],
+    compiler_flags = [
+        "-O3",
+        "--use_fast_math",
+        "-lineinfo",
+        "--expt-relaxed-constexpr",
+        "--extended-lambda",
+    ],
+    visibility = ["PUBLIC"],
+)
+
+# =============================================================================
+# Full Attention Module
+# =============================================================================
+
+cxx_library(
+    name = "attention",
+    exported_deps = [
+        ":mean_centering",
+        ":sage_attention_plugin",
+        ":score_correction",
+    ],
+    visibility = ["PUBLIC"],
+)

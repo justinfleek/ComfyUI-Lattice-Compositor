@@ -17,7 +17,7 @@ main = script $ do
   
   scriptDir <- pwd
   let projectRoot = FP.takeDirectory (FP.takeDirectory scriptDir)
-      leanDir = projectRoot </> "leancomfy" </> "lean"
+      leanDir = projectRoot </> "lattice-core" </> "lean"
   
   violations <- do
     echo "Checking Lean4 files..."

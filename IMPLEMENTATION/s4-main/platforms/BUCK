@@ -1,0 +1,29 @@
+# platforms/BUCK
+#
+# Platform definitions for Buck2
+# Simplified - just alias prelude platforms
+
+alias(
+    name = "default",
+    actual = "prelude//platforms:default",
+)
+
+alias(
+    name = "execution_linux-x86_64",
+    actual = "prelude//platforms:default",
+)
+
+alias(
+    name = "linux-x86_64",
+    actual = "prelude//platforms:linux-x86_64",
+)
+
+alias(
+    name = "linux-aarch64",
+    actual = "prelude//platforms:linux-aarch64",
+)
+
+alias(
+    name = "host",
+    actual = "prelude//platforms:default",
+)

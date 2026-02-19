@@ -155,7 +155,7 @@
 **Components:**
 - ✅ `RenderQueueManager.ts` - Complete render queue with persistence
 - ✅ `workerPool.ts` - WebWorker pool for parallel computation
-- ✅ PureScript bindings: `leancomfy/purescript/Lattice/Services/RenderQueue/`
+- ✅ PureScript bindings: `lattice-core/purescript/Lattice/Services/RenderQueue/`
 - ✅ Database persistence (IndexedDB)
 - ✅ Progress tracking, resume capability
 - ✅ Auto-save, job management
@@ -190,7 +190,7 @@
 - ⏳ Not integrated with actual database initialization (schema exists but registry not used)
 
 ### 9. Lean4 Proofs ✅ **EXTENSIVE**
-**Location:** `leancomfy/lean/Lattice/`
+**Location:** `lattice-core/lean/Lattice/`
 
 **Status:** ✅ **MASSIVE IMPLEMENTATION** - 9,892+ Lean4 files
 
@@ -291,7 +291,7 @@
 - ❌ No JWT authentication implementation (only Bearer token forwarding in proxy)
 
 ### 14. PureScript Services ✅ **IMPLEMENTED**
-**Location:** `leancomfy/purescript/Lattice/Services/`
+**Location:** `lattice-core/purescript/Lattice/Services/`
 
 **Status:** ✅ **FULLY IMPLEMENTED** - Complete PureScript service bindings
 
@@ -362,7 +362,7 @@
 - ⏳ Only ComfyUI WebSocket is actually running
 
 ### 17. Export Pipeline ✅ **COMPLETE**
-**Location:** `ui/src/services/export/`, `leancomfy/purescript/Lattice/Services/Export/`
+**Location:** `ui/src/services/export/`, `lattice-core/purescript/Lattice/Services/Export/`
 
 **Status:** ✅ **FULLY IMPLEMENTED** - Complete export system
 

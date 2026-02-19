@@ -1,0 +1,16 @@
+"""Test targets for s4 library."""
+
+package(default_visibility = ["//visibility:public"])
+
+# Test source file exports.
+exports_files(glob([
+    "unit/*.cpp",
+    "property/*.cpp",
+    "integration/*.cpp",
+]))
+
+# Test data files.
+filegroup(
+    name = "test_data",
+    srcs = glob(["data/**"]),
+)

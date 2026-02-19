@@ -1,10 +1,10 @@
 """
 Security Types for Lattice Compositor
 
-Types extracted from Lean4 proofs in leancomfy/lean/Compass/
+Types extracted from Lean4 proofs in lattice-core/lean/Compass/
 All types have proven roundtrip theorems.
 
-LEAN4 SOURCE: leancomfy/lean/Compass/Permissions.lean
+LEAN4 SOURCE: lattice-core/lean/Compass/Permissions.lean
 """
 
 from __future__ import annotations

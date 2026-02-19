@@ -1,0 +1,169 @@
+cabal-version: 3.0
+name:          slide
+version:       0.1.0.0
+synopsis:      Console cowboy for the sprawl
+description:
+  Ingress adapter that jacks into OpenAI-compatible
+  inference endpoints, parses their SSE/JSON garbage,
+  and emits clean SIGIL binary frames over ZMQ.
+
+license:       BSD-3-Clause
+author:        straylight
+maintainer:    console@sprawl.net
+category:      Network
+
+common warnings
+  ghc-options:
+    -Wall -Werror -Wincomplete-patterns -Wincomplete-record-updates
+    -Wmissing-signatures -Wname-shadowing -Wunused-matches
+    -Wunused-imports -Wredundant-constraints
+
+library
+  import:             warnings
+  exposed-modules:
+    Slide.Chunk
+    Slide.Configuration
+    Slide.HotTable
+    Slide.Model
+    Slide.Parse
+    Slide.Provider
+    Slide.Provider.HTTP2
+    Slide.Provider.OpenAI
+    Slide.Provider.OpenRouter
+    Slide.Provider.Vertex.Anthropic
+    Slide.Tokenizer
+    Slide.Tokenizer.FFI
+    Slide.Wire.Decode
+    Slide.Wire.Encode
+    Slide.Wire.Frame
+    Slide.Wire.Types
+    Slide.Wire.Varint
+
+  -- Slide.Provider.HTTP2  -- Pending http2-client-tls nixpkgs packaging
+  build-depends:
+    , aeson               >=2.1
+    , async               >=2.2
+    , base                >=4.17 && <5
+    , blake3              >=0.3
+    , bytestring          >=0.11
+    , containers          >=0.6
+    , crypton             >=0.34
+    , data-default-class  >=0.1
+    , dhall               >=1.41
+    , case-insensitive    >=1.2
+    , http2               >=5.1
+    , http-semantics      >=0.2
+    , http-types          >=0.12
+    , time-manager        >=0.1
+    , megaparsec          >=9.5
+    , memory              >=0.18
+    , network             >=3.1
+    , text                >=2.0
+    , tls                 >=1.7
+    , vector              >=0.13
+
+  -- Core
+  -- Parsing
+  -- Networking
+  -- Crypto (for hot table verification)
+  -- C++ sources for tokenizers-cpp bindings
+  c-sources:          cbits/tokenizers_c.cpp
+  include-dirs:       cbits
+  cxx-options:        -std=c++17 -O3
+
+  -- Link C++ standard library
+  extra-libraries:
+    stdc++
+    tokenizers_cpp
+    tokenizers_c
+    sentencepiece
+
+  pkgconfig-depends:  libzmq >=4.3
+  hs-source-dirs:     src
+  default-language:   GHC2021
+  default-extensions:
+    BangPatterns
+    CApiFFI
+    DerivingStrategies
+    ForeignFunctionInterface
+    LambdaCase
+    NumericUnderscores
+    OverloadedStrings
+    PatternSynonyms
+    StrictData
+    PackageImports
+
+executable slide
+  import:             warnings
+  main-is:            Main.hs
+  build-depends:
+    , aeson                   >=2.0
+    , async                   >=2.2
+    , base
+    , bytestring
+    , dhall
+    , http-types              >=0.12
+    , katip                   >=0.8
+    , optparse-applicative    >=0.17
+    , prometheus-client       >=1.1
+    , prometheus-metrics-ghc  >=1.0
+    , random                  >=1.2
+    , slide
+    , text
+    , time                    >=1.11
+    , vector
+    , wai                     >=3.2
+    , warp                    >=3.3
+    , zeromq4-haskell         >=0.8
+
+  hs-source-dirs:     app
+  default-language:   GHC2021
+  default-extensions:
+    BangPatterns
+    LambdaCase
+    OverloadedStrings
+    StrictData
+
+  ghc-options:        -O2 -threaded -rtsopts "-with-rtsopts=-N -A64m -I0"
+
+test-suite slide-test
+  import:             warnings
+  type:               exitcode-stdio-1.0
+  main-is:            Spec.hs
+  other-modules:
+    ChunkSpec
+    ConfigurationSpec
+    DecodeSpec
+    EncodeSpec
+    FrameSpec
+    HotTableSpec
+    ModelSpec
+    ParseSpec
+    RoundtripSpec
+    StressSpec
+    TokenizerFFISpec
+    ToolCallSpec
+    TypesSpec
+    VarintSpec
+
+  build-depends:
+    , base
+    , async           >=2.2
+    , blake3
+    , bytestring
+    , crypton
+    , hspec           >=2.10
+    , hspec-discover  >=2.10
+    , QuickCheck      >=2.14
+    , slide
+    , temporary       >=1.3
+    , text
+    , vector
+
+  hs-source-dirs:     test
+  default-language:   GHC2021
+  default-extensions:
+    OverloadedStrings
+    StrictData
+
+  ghc-options:        -threaded -rtsopts -with-rtsopts=-N

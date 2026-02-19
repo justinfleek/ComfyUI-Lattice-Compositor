@@ -1,0 +1,38 @@
+"""CUDA targets for s4: NVFP4 quantization and attention kernels."""
+
+load("//bazel:cuda.bzl", "s4_cuda_kernel_library", "s4_cuda_library")
+
+package(default_visibility = ["//visibility:public"])
+
+# =============================================================================
+# NVFP4 Quantization Kernels
+# =============================================================================
+
+s4_cuda_kernel_library(
+    name = "nvfp4",
+    source_files = ["nvfp4.cu"],
+    header_files = [
+        "//include/s4/cuda/nvfp4:nvfp4.cuh",
+        "//include/s4/cuda/nvfp4:nvfp4.h",
+    ],
+    includes = ["include"],
+    dependencies = [
+        "//:core",
+        "//:dtypes",
+        "//:tensor",
+    ],
+)
+
+# Header-only primitives (for CPU testing without CUDA device).
+cc_library(
+    name = "nvfp4_host",
+    hdrs = [
+        "//include/s4/cuda/nvfp4:nvfp4.h",
+    ],
+    includes = ["include"],
+    deps = [
+        "//:core",
+        "//:dtypes",
+        "//:tensor",
+    ],
+)

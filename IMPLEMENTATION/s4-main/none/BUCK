@@ -1,0 +1,25 @@
+# Cell aliases for Buck2
+# Stub implementations for Meta-internal toolchains
+
+# Stub C++ toolchain - uses system default
+filegroup(
+    name = "cxx",
+    srcs = [],
+)
+
+# Stub Python toolchain
+filegroup(
+    name = "python",
+    srcs = [],
+)
+
+filegroup(
+    name = "python_bootstrap",
+    srcs = [],
+)
+
+# Stub CUDA toolchain
+filegroup(
+    name = "cuda",
+    srcs = [],
+)

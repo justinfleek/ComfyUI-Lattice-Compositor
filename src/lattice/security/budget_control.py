@@ -4,7 +4,7 @@ Budget Controller for Lattice Compositor
 Track and limit spending per user/API key/organization.
 Supports sliding budgets with tier-based operation limits.
 
-LEAN4 PROOFS: leancomfy/lean/Compass/Budget.lean
+LEAN4 PROOFS: lattice-core/lean/Compass/Budget.lean
 - Refill bounded (never exceeds max)
 - Refill monotonic (current <= refill(current))
 - Consume fails insufficient (returns Optional value)

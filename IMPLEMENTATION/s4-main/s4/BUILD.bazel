@@ -1,0 +1,46 @@
+"""Header exports for s4 library."""
+
+package(default_visibility = ["//visibility:public"])
+
+exports_files(glob(["**/*.h", "**/*.cuh"]))
+
+filegroup(
+    name = "all_headers",
+    srcs = glob(["**/*.h", "**/*.cuh"]),
+)
+
+# Per-module header groups.
+filegroup(
+    name = "core_headers",
+    srcs = glob(["core/*.h"]),
+)
+
+filegroup(
+    name = "containers_headers",
+    srcs = glob(["containers/*.h"]),
+)
+
+filegroup(
+    name = "dtypes_headers",
+    srcs = glob(["dtypes/*.h"]),
+)
+
+filegroup(
+    name = "tensor_headers",
+    srcs = glob(["tensor/*.h"]),
+)
+
+filegroup(
+    name = "traits_headers",
+    srcs = glob(["traits/*.h"]),
+)
+
+filegroup(
+    name = "cuda_headers",
+    srcs = glob(["cuda/**/*.h", "cuda/**/*.cuh"]),
+)
+
+filegroup(
+    name = "attention_headers",
+    srcs = glob(["attention/*.h", "attention/*.cuh"]),
+)

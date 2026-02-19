@@ -1,0 +1,97 @@
+# s4 Bazel configuration.
+# C++23 for host and device code.
+
+# =============================================================================
+# C++ Standard and Compiler Flags
+# =============================================================================
+
+# Host C++23.
+build --cxxopt=-std=c++23
+build --host_cxxopt=-std=c++23
+
+# Optimization levels.
+build --copt=-O2
+build --copt=-Wall
+build --copt=-Wextra
+build --copt=-Wpedantic
+build --copt=-Wno-unused-parameter
+
+# Release configuration: maximum optimization.
+build:release --copt=-O3
+build:release --copt=-DNDEBUG
+build:release --copt=-march=native
+build:release --copt=-ffast-math
+build:release --linkopt=-s
+
+# Debug configuration: full symbols, no optimization.
+build:debug --copt=-O0
+build:debug --copt=-g
+build:debug --copt=-fno-omit-frame-pointer
+build:debug --strip=never
+
+# Address sanitizer configuration.
+build:asan --copt=-fsanitize=address
+build:asan --linkopt=-fsanitize=address
+build:asan --copt=-fno-omit-frame-pointer
+build:asan --copt=-O1
+build:asan --copt=-g
+
+# Thread sanitizer configuration.
+build:tsan --copt=-fsanitize=thread
+build:tsan --linkopt=-fsanitize=thread
+
+# =============================================================================
+# CUDA Configuration
+# =============================================================================
+
+# CUDA C++23 (requires CUDA 12.4+).
+build --@rules_cuda//cuda:copts=-std=c++23
+build --@rules_cuda//cuda:host_copts=-std=c++23
+
+# Target architectures: Ampere, Ada, Hopper.
+# Use --config=blackwell for SM100.
+build --@rules_cuda//cuda:archs=sm_80,sm_86,sm_89,sm_90
+
+# CUDA release optimization.
+build:release --@rules_cuda//cuda:copts=-O3
+build:release --@rules_cuda//cuda:copts=--use_fast_math
+build:release --@rules_cuda//cuda:copts=-lineinfo
+
+# CUDA debug configuration.
+build:debug --@rules_cuda//cuda:copts=-O0
+build:debug --@rules_cuda//cuda:copts=-g
+build:debug --@rules_cuda//cuda:copts=-G
+
+# Blackwell-specific configuration (SM100).
+build:blackwell --@rules_cuda//cuda:archs=sm_100
+build:blackwell --@rules_cuda//cuda:copts=-O3
+build:blackwell --@rules_cuda//cuda:copts=--use_fast_math
+
+# =============================================================================
+# Platform Configuration
+# =============================================================================
+
+build --incompatible_enable_cc_toolchain_resolution
+build --action_env=CUDA_PATH
+build --action_env=LD_LIBRARY_PATH
+
+# =============================================================================
+# Test Configuration
+# =============================================================================
+
+test --test_output=errors
+test --test_verbose_timeout_warnings
+
+# =============================================================================
+# Convenience Configurations
+# =============================================================================
+
+# Fast build for development iteration.
+build:fast --compilation_mode=fastbuild
+build:fast --@rules_cuda//cuda:archs=sm_89
+
+# CI configuration: release with verbose failures.
+build:ci --config=release
+build:ci --keep_going
+build:ci --verbose_failures
+

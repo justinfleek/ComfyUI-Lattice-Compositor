@@ -1,0 +1,5 @@
+# s4: GPU inference runtime.
+# This project uses bzlmod (MODULE.bazel) for dependency management.
+# This file exists for compatibility with older Bazel versions.
+
+workspace(name = "s4")

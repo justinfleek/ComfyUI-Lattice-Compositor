@@ -8,7 +8,7 @@
 --
 -- HSL-based blend modes (Hue, Saturation, Color, Luminosity) use proven
 -- color conversions from Lattice.Types.Color, which are proven correct
--- in Lean4 (leancomfy/lean/Color/Color.lean and Color.BlendModes.lean)
+-- in Lean4 (lattice-core/lean/Color/Color.lean and Color.BlendModes.lean)
 --
 
 {-# LANGUAGE OverloadedStrings #-}
@@ -65,7 +65,7 @@ import Lattice.Utils.NumericSafety (ensureFinite)
 -- ============================================================================
 
 -- Note: RGB and HSL types are imported from Lattice.Types.Color (proven)
--- These use the Lean4-proven color system from leancomfy/lean/Color/Color.lean
+-- These use the Lean4-proven color system from lattice-core/lean/Color/Color.lean
 
 -- | RGBA pixel
 data PixelRGBA = PixelRGBA

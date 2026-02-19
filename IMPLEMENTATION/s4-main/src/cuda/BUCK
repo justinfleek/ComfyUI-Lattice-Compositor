@@ -1,0 +1,46 @@
+# CUDA targets for s4: NVFP4 quantization kernels
+
+load("//buck2/rules:cuda.bzl", "cuda_library")
+
+# =============================================================================
+# NVFP4 Quantization Kernels
+# =============================================================================
+
+# NVFP4 quantization library (CUDA kernels)
+cuda_library(
+    name = "nvfp4",
+    srcs = ["nvfp4.cu"],
+    exported_headers = {
+        "s4/cuda/nvfp4/nvfp4.h": "//include/s4/cuda/nvfp4:nvfp4.h",
+        "s4/cuda/nvfp4/nvfp4.cuh": "//include/s4/cuda/nvfp4:nvfp4.cuh",
+    },
+    deps = [
+        "//:core",
+        "//:dtypes",
+        "//:tensor",
+    ],
+    cuda_archs = [
+        "sm_80",   # Ampere (A100)
+        "sm_86",   # Ampere (RTX 3090)
+        "sm_89",   # Ada Lovelace (RTX 4090)
+        "sm_90",   # Hopper (H100)
+        "sm_100",  # Blackwell (B100) - NVFP4 hardware
+    ],
+    compiler_flags = [
+        "-O3",
+        "--use_fast_math",
+        "-lineinfo",
+        "-Xptxas=-v",  # Show register usage
+        "--expt-relaxed-constexpr",
+        "--extended-lambda",
+    ],
+    visibility = ["PUBLIC"],
+)
+
+# TODO: Add pybind11 bindings
+# cuda_library(
+#     name = "nvfp4_pybind",
+#     srcs = ["nvfp4_pybind.cpp"],
+#     deps = [":nvfp4"],
+#     visibility = ["PUBLIC"],
+# )

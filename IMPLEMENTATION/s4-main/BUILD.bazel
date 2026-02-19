@@ -1,0 +1,133 @@
+"""s4: GPU inference runtime for NVFP4 quantization and SageAttention."""
+
+load("@rules_cc//cc:defs.bzl", "cc_library", "cc_test")
+load("//bazel:defs.bzl", "s4_cc_library", "s4_cc_test", "s4_property_test")
+
+package(default_visibility = ["//visibility:public"])
+
+# =============================================================================
+# Core Libraries (Header-only + Minimal Implementation)
+# =============================================================================
+
+cc_library(
+    name = "traits",
+    hdrs = ["include/s4/traits/traits.h"],
+    includes = ["include"],
+)
+
+cc_library(
+    name = "dtypes",
+    hdrs = ["include/s4/dtypes/dtype.h"],
+    includes = ["include"],
+)
+
+s4_cc_library(
+    name = "exceptions",
+    source_files = ["src/exceptions.cpp"],
+    header_files = ["include/s4/core/exceptions.h"],
+    includes = ["include"],
+)
+
+cc_library(
+    name = "core",
+    hdrs = [
+        "include/s4/core/exceptions.h",
+        "include/s4/core/generator.h",
+        "include/s4/core/serialize.h",
+        "include/s4/core/workspace.h",
+    ],
+    includes = ["include"],
+    deps = [
+        ":dtypes",
+        ":exceptions",
+        ":traits",
+    ],
+)
+
+cc_library(
+    name = "containers",
+    hdrs = [
+        "include/s4/containers/disjoint_sets.h",
+        "include/s4/containers/unique_vector.h",
+    ],
+    includes = ["include"],
+    deps = [":core"],
+)
+
+cc_library(
+    name = "tensor",
+    hdrs = [
+        "include/s4/tensor/tensor.h",
+        "include/s4/tensor/view.h",
+    ],
+    includes = ["include"],
+    deps = [":dtypes"],
+)
+
+# Aggregate header-only library (host-only).
+cc_library(
+    name = "s4_core",
+    hdrs = ["include/s4/s4.h"],
+    includes = ["include"],
+    deps = [
+        ":containers",
+        ":core",
+        ":dtypes",
+        ":tensor",
+        ":traits",
+    ],
+)
+
+# =============================================================================
+# Unit Tests
+# =============================================================================
+
+s4_cc_test(
+    name = "test_dtypes",
+    source_files = ["tests/unit/test_dtype.cpp"],
+    dependencies = [":dtypes"],
+)
+
+s4_cc_test(
+    name = "test_containers",
+    source_files = ["tests/unit/test_containers.cpp"],
+    dependencies = [":containers"],
+)
+
+s4_cc_test(
+    name = "test_core",
+    source_files = ["tests/unit/test_core.cpp"],
+    dependencies = [":core"],
+)
+
+s4_cc_test(
+    name = "test_generator",
+    source_files = ["tests/unit/test_generator.cpp"],
+    dependencies = [":core"],
+)
+
+# =============================================================================
+# Property Tests
+# =============================================================================
+
+s4_property_test(
+    name = "test_properties",
+    source_files = ["tests/property/test_properties.cpp"],
+    dependencies = [
+        ":containers",
+        ":core",
+        ":dtypes",
+    ],
+)
+
+s4_property_test(
+    name = "test_attention_properties",
+    source_files = ["tests/property/test_attention_properties.cpp"],
+    dependencies = [":core"],
+)
+
+s4_property_test(
+    name = "test_nvfp4_properties",
+    source_files = ["tests/property/test_nvfp4_properties.cpp"],
+    dependencies = [":core"],
+)

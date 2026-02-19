@@ -4,7 +4,7 @@
 -- 
 -- Generates base16 color schemes with HSL(211° ...) hero hue lock
 -- Based on ono-sendai color scheme patterns
--- Lean4 proofs: leancomfy/lean/Color/Base16.lean
+-- Lean4 proofs: lattice-core/lean/Color/Base16.lean
 --
 
 {-# LANGUAGE OverloadedStrings #-}

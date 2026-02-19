@@ -1,0 +1,12 @@
+"""Source file exports for s4 library."""
+
+package(default_visibility = ["//visibility:public"])
+
+# Source file exports.
+exports_files(glob(["*.cpp"]))
+
+# All source files.
+filegroup(
+    name = "all_sources",
+    srcs = glob(["*.cpp"]),
+)

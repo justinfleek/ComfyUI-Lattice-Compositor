@@ -1,0 +1,17 @@
+# Lean
+.lake/
+lake-packages/
+build/
+*.olean
+*.ilean
+*.trace
+
+# Nix
+result
+result-*
+.direnv/
+
+# Editor
+.vscode/
+*.swp
+*~

@@ -3,7 +3,7 @@
 -- Description : Black balance mathematics for OLED vs LCD displays
 -- 
 -- Handles monitor-specific black balance calculations
--- Lean4 proofs: leancomfy/lean/Color/BlackBalance.lean
+-- Lean4 proofs: lattice-core/lean/Color/BlackBalance.lean
 --
 
 {-# LANGUAGE DeriveAnyClass #-}

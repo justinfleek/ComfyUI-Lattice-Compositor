@@ -1,0 +1,41 @@
+[cells]
+  root = .
+  prelude = prelude
+  toolchains = toolchains
+  platforms = platforms
+  nix = nix
+  none = none
+
+[cell_aliases]
+  config = prelude
+  fbsource = none
+  fbcode = none
+
+[external_cells]
+  prelude = bundled
+  nix = git
+
+[external_cell_nix]
+  git_origin = https://github.com/tweag/buck2.nix.git
+  commit_hash = 038b031b84846101030b9d081445003e82e3be5c
+
+[buildfile]
+  name = BUCK
+
+[buck2]
+  materializations = deferred
+
+[parser]
+  target_platform_detector_spec = target:root//...->platforms//:default
+
+[build]
+  execution_platforms = platforms//:execution_linux-x86_64
+
+[buck2_re_client]
+  engine_address = grpc://localhost:50051
+  action_cache_address = grpc://localhost:50051
+  cas_address = grpc://localhost:50051
+  
+[buck2]
+  materializations = deferred
+  digest_algorithms = BLAKE3

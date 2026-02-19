@@ -1,0 +1,113 @@
+# s4: GPU inference runtime for NVFP4 quantization and SageAttention
+# Buck2 build definitions for core libraries
+
+load("@prelude//rules.bzl", "cxx_library", "filegroup")
+load("@nix//flake.bzl", "flake")
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Nix Flake (required by toolchains)
+# ═══════════════════════════════════════════════════════════════════════════
+
+# Point to the root directory containing flake.nix
+filegroup(
+    name = "flake",
+    srcs = ["flake.nix", "flake.lock"],
+    visibility = ["PUBLIC"],
+)
+
+# =============================================================================
+# Core Libraries (Header-only + Minimal Implementation)
+# =============================================================================
+
+# Type traits for GPU-safe types
+cxx_library(
+    name = "traits",
+    exported_headers = ["s4/traits/traits.h"],
+    visibility = ["PUBLIC"],
+)
+
+# Dtype vocabulary system
+cxx_library(
+    name = "dtypes",
+    exported_headers = ["s4/dtypes/dtype.h"],
+    visibility = ["PUBLIC"],
+)
+
+# Exception handling with backtrace
+cxx_library(
+    name = "exceptions",
+    srcs = ["src/exceptions.cpp"],
+    exported_headers = ["s4/core/exceptions.h"],
+    compiler_flags = [
+        "-std=c++23",
+        "-Wall",
+        "-Wextra",
+        "-Wpedantic",
+        "-Wno-unused-parameter",
+    ],
+    preferred_linkage = "static",
+    visibility = ["PUBLIC"],
+)
+
+# Core utilities: generators, serialization, workspace
+cxx_library(
+    name = "core",
+    exported_headers = [
+        "s4/core/exceptions.h",
+        "s4/core/generator.h",
+        "s4/core/serialize.h",
+        "s4/core/workspace.h",
+        "s4/core/hash.h",
+        "s4/core/nvtx.h",
+    ],
+    exported_deps = [
+        ":dtypes",
+        ":exceptions",
+        ":traits",
+    ],
+    visibility = ["PUBLIC"],
+)
+
+# Containers: unique_vector, disjoint_sets
+cxx_library(
+    name = "containers",
+    exported_headers = [
+        "s4/containers/disjoint_sets.h",
+        "s4/containers/unique_vector.h",
+    ],
+    exported_deps = [":core"],
+    visibility = ["PUBLIC"],
+)
+
+# Tensor views (framework-independent)
+cxx_library(
+    name = "tensor",
+    exported_headers = [
+        "s4/tensor/view.h",
+        "s4/tensor/device_tensor.h",
+    ],
+    exported_deps = [":dtypes"],
+    visibility = ["PUBLIC"],
+)
+
+# Testing generators (for property-based tests)
+cxx_library(
+    name = "testing",
+    exported_headers = ["s4/testing/generators.h"],
+    exported_deps = [":core"],
+    visibility = ["PUBLIC"],
+)
+
+# Aggregate header-only library (host-only, no CUDA)
+cxx_library(
+    name = "s4_core",
+    exported_headers = ["s4/s4.h"],
+    exported_deps = [
+        ":containers",
+        ":core",
+        ":dtypes",
+        ":tensor",
+        ":traits",
+    ],
+    visibility = ["PUBLIC"],
+)

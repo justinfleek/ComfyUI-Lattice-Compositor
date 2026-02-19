@@ -4,7 +4,7 @@ Permission System for Lattice Compositor
 Check user permissions for tool access.
 Supports: User roles, Organization policies, API key scopes, Resource-level access.
 
-LEAN4 PROOFS: leancomfy/lean/Compass/Permissions.lean
+LEAN4 PROOFS: lattice-core/lean/Compass/Permissions.lean
 - Permission hierarchy invariants
 - Role-based access control proofs
 - API key scope constraints
