@@ -286,3 +286,31 @@ library
     unix >=2.7 && <2.9,
     unordered-containers >=0.2 && <0.3,
     vector >=0.13 && <0.14
+
+-- Property-based API tests using haskemathesis
+-- Run: cabal test render-api-property
+-- Or against live server: cabal run render-api-test -- --url https://sync.render.weyl.ai
+test-suite render-api-property
+  type: exitcode-stdio-1.0
+  default-language: GHC2021
+  hs-source-dirs: tests/property
+  main-is: RenderApiSpec.hs
+  build-depends:
+    base >=4.18 && <5,
+    containers >=0.6 && <0.8,
+    haskemathesis,
+    hspec >=2.11 && <3,
+    http-client >=0.7 && <0.8,
+    http-client-tls >=0.3 && <0.4
+
+executable render-api-test
+  default-language: GHC2021
+  hs-source-dirs: tests/property
+  main-is: RenderApiSpec.hs
+  build-depends:
+    base >=4.18 && <5,
+    containers >=0.6 && <0.8,
+    haskemathesis,
+    hspec >=2.11 && <3,
+    http-client >=0.7 && <0.8,
+    http-client-tls >=0.3 && <0.4

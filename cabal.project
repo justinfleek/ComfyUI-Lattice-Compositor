@@ -1,5 +1,9 @@
 packages: .
 
+-- Include haskemathesis from local IMPLEMENTATION directory
+-- This provides property-based API testing from OpenAPI specs
+packages: IMPLEMENTATION/haskemathesis-main
+
 -- Use current GHC from PATH or nix develop
 -- With Nix: add ghc to devShell and run cabal build
 -- Without Nix: install GHC (ghcup) and run cabal build
