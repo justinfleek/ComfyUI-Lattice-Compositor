@@ -1,0 +1,58 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "lattice-compositor"
+version = "0.1.0"
+description = "Lattice Compositor - Motion graphics engine for ComfyUI"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "numpy>=2.4.0",
+    "pillow>=12.1.0",
+    "scipy>=1.16.3",
+    "aiohttp>=3.9.0",  # Route handlers (aiohttp.web); also provided by ComfyUI at runtime
+    "torch>=2.0.0",  # Provided by ComfyUI, but needed for type checking
+    "torchvision>=0.15.0",  # Provided by ComfyUI, but needed for type checking
+    "torchaudio>=2.0.0",  # Provided by ComfyUI, but needed for type checking
+]
+
+[tool.hatchling.build]
+packages = ["src/lattice"]
+
+[tool.pyright]
+include = ["src"]
+exclude = ["**/__pycache__", "**/node_modules", ".venv", "venv", "build", "dist"]
+extraPaths = ["src"]
+pythonVersion = "3.13"
+typeCheckingMode = "basic"
+reportMissingImports = true
+reportMissingTypeStubs = false
+reportUnusedImport = false
+reportGeneralTypeIssues = "warning"
+reportOptionalMemberAccess = "none"
+reportOptionalSubscript = "none"
+stubPath = "src/lattice-stubs"
+# Use project venv so aiohttp and other deps resolve from real install
+venvPath = "."
+venv = ".venv"
+
+[tool.pylint."MESSAGES CONTROL"]
+# Disable indentation warnings since project uses 2-space indentation (configured in ruff.toml)
+# Pylint expects 4-space by default, but Ruff formatter uses 2-space
+# Note: Pylint infers indentation from files, but IDE integration may use different settings
+disable = "bad-indentation"
+
+[dependency-groups]
+dev = [
+    "hypothesis>=6.148.9",
+    "pytest>=9.0.2",
+    "pytest-asyncio>=1.3.0",
+    "pytest-cov>=7.0.0",
+    "ruff>=0.14.10",
+    "ty>=0.0.8",
+    "torch>=2.0.0",  # For type checking (provided by ComfyUI at runtime)
+    "torchvision>=0.15.0",  # For type checking (provided by ComfyUI at runtime)
+    "torchaudio>=2.0.0",  # For type checking (provided by ComfyUI at runtime)
+]

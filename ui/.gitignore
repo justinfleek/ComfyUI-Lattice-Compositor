@@ -1,0 +1,8 @@
+coverage/
+playwright-report/
+test-results/
+e2e/screenshots/
+test-inventory.txt
+test-malicious.lattice.json
+playwright-report/
+test-results/
