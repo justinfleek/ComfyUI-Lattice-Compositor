@@ -4,6 +4,10 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     flake-parts.url = "github:hercules-ci/flake-parts";
+    purescript-overlay = {
+      url = "github:thomashoneyman/purescript-overlay";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs =
@@ -28,6 +32,12 @@
         }:
         let
           elan = pkgs.elan;
+
+          # Apply purescript-overlay for spago-unstable (registry-based, no git race condition)
+          ps-pkgs = import inputs.nixpkgs {
+            inherit system;
+            overlays = [ inputs.purescript-overlay.overlays.default ];
+          };
 
           python-env = pkgs.python311.withPackages (
             ps: with ps; [
@@ -57,6 +67,9 @@
               pkgs.elmPackages.elm-format
               pkgs.nodejs
               pkgs.gnumake
+              ps-pkgs.purs
+              ps-pkgs.spago-unstable
+              ps-pkgs.purs-tidy
             ];
 
             shellHook = ''

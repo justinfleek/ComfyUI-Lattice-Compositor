@@ -1,5 +1,7 @@
 package:
   name: lattice-compositor
+  build:
+    strict: false
   dependencies:
     - aff
     - aff-promise

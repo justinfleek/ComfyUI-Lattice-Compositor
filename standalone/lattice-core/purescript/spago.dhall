@@ -62,7 +62,6 @@
 , packages = ./packages.dhall
 , sources =
   [ "src/**/*.purs"
-  , "Lattice/**/*.purs"
   , "test/**/*.purs"
   ]
 }

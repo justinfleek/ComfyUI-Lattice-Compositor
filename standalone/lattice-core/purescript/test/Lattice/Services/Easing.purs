@@ -7,9 +7,10 @@ module Test.Lattice.Services.Easing (spec) where
 
 import Prelude
 
-import Data.Array ((..), filter, any)
+import Data.Array ((..), filter, any, head, tail)
 import Data.Foldable (for_)
 import Data.Int (toNumber) as Int
+import Data.Maybe (Maybe(..))
 import Data.Number as Number
 import Data.Tuple (Tuple(..))
 import Effect.Aff (Aff)
@@ -292,22 +293,16 @@ monotonicityTests = do
   where
     checkMonotonic :: (Number -> Number) -> Array Number -> Number -> Aff Unit
     checkMonotonic _ [] _ = pure unit
-    checkMonotonic fn ts prev = case ts of
-      [] -> pure unit
-      _ -> do
-        let t = unsafeHead ts
+    checkMonotonic fn ts prev = case head ts of
+      Nothing -> pure unit
+      Just t -> do
         let curr = fn t
+        let rest = case tail ts of
+              Nothing -> []
+              Just r -> r
         if curr >= prev - tolerance
-          then checkMonotonic fn (unsafeTail ts) curr
+          then checkMonotonic fn rest curr
           else fail ("Not monotonic at t=" <> show t <> ": " <> show curr <> " < " <> show prev)
-
-    unsafeHead :: forall a. Array a -> a
-    unsafeHead arr = case arr of
-      _ -> unsafePartialHead arr
-
-    unsafeTail :: forall a. Array a -> Array a
-    unsafeTail arr = case arr of
-      _ -> unsafePartialTail arr
 
 symmetryTests :: Spec Unit
 symmetryTests = do
@@ -347,7 +342,3 @@ edgeCaseTests = do
 -- | Convert Int to Number
 toNumber :: Int -> Number
 toNumber = Int.toNumber
-
--- | Unsafe head (array guaranteed non-empty by caller)
-foreign import unsafePartialHead :: forall a. Array a -> a
-foreign import unsafePartialTail :: forall a. Array a -> Array a
