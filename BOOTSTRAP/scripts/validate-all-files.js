@@ -388,7 +388,7 @@ function main() {
   results.endTime = Date.now();
   results.duration = results.endTime - results.startTime;
   
-  // JSON output (only JSON, no console output)
+  //                                                                      // json
   if (isJSON) {
     console.log(JSON.stringify(results, null, 2));
     process.exit(results.failed > 0 ? 1 : 0);

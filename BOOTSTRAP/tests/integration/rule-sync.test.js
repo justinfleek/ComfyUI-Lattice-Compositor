@@ -56,9 +56,9 @@ describe('Rule Synchronization', () => {
   });
   
   it('All enforcement points should reference same source', () => {
-    // MCP server: .claude/straylight-mcp.js -> scripts/rules.js
+    //                                                                       // mcp
     // Validator: scripts/validate-file.js -> scripts/rules.js
-    // CI: .github/workflows/straylight-enforcement.yml -> scripts/validate-file.js -> scripts/rules.js
+    //                                                                        // ci
     // Hook: hooks/pre-commit -> scripts/validate-file.js -> scripts/rules.js
     
     // All paths lead to scripts/rules.js, ensuring single source of truth

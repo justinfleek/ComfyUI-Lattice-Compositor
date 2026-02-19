@@ -22,7 +22,7 @@ describe('Bypass Prevention', () => {
     const content = readFileSync(workflowPath, 'utf-8');
     
     expect(content).toContain('exit 1');
-    // CI will fail if validation fails, blocking merge
+    //                                                                        // ci
   });
   
   it('AGENTS.md should emphasize validation is mandatory', () => {

@@ -261,7 +261,7 @@ function determineFileType(filePath) {
   // C++ files (check before forbidden languages to avoid false positives)
   if (ext === '.cpp' || ext === '.hpp' || ext === '.cc' || ext === '.cxx' || ext === '.h' || ext === '.hxx') return 'cpp23';
   
-  // CUDA files (C++ extension)
+  //                                                                      // cuda
   if (ext === '.cu' || ext === '.cuh') return 'cpp23';
   
   // Dhall files
@@ -318,7 +318,7 @@ try {
   
   if (!type) {
     const ext = extname(filePath).toLowerCase();
-    // WASM files are binary - skip validation but note they should be generated from validated source
+    //                                                                      // wasm
     if (ext === '.wasm') {
       console.log(`⚠️  ${filePath}: WASM binary file detected. Binary files are not validated directly.`);
       console.log(`   Ensure source files (Rust/C++/etc.) that generate this WASM are validated.`);

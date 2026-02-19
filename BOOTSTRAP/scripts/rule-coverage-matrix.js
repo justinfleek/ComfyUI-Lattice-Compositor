@@ -66,7 +66,7 @@ const ALL_RULES = {
   'STRAYLIGHT-010': { name: 'file >500 lines', category: 'file-size', required: true },
   'STRAYLIGHT-010-BLOCK': { name: 'code block >500 lines', category: 'file-size', required: true },
   
-  // CMake Ban - 1 rule
+  //                                                                        // cm
   'STRAYLIGHT-003': { name: 'CMake banned', category: 'cmake', required: true },
 };
 
