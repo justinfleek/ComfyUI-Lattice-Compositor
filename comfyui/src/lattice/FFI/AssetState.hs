@@ -44,9 +44,9 @@ import Lattice.State.Asset
   , PBRMaterialConfig(..)
   )
 
--- ============================================================================
--- JSON Response Helpers
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                                 // json // r
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Convert JSON Value to CString
 jsonToCString :: Value -> IO CString
@@ -63,9 +63,9 @@ errorResponse msg = object ["status" .= ("error" :: T.Text), "message" .= msg]
 successResponse :: ToJSON a => a -> Value
 successResponse result = object ["status" .= ("success" :: T.Text), "result" .= result]
 
--- ============================================================================
--- PURE QUERIES (GETTERS)
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                           // pure // queries
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Get material list
 foreign export ccall "material_list"
@@ -211,9 +211,9 @@ c_is_loading assetStateJson = do
       jsonToCString (successResponse result)
     Nothing -> jsonToCString (errorResponse "Invalid JSON: expected AssetState")
 
--- ============================================================================
--- PURE CALCULATIONS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                      // pure // calculations
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Create default material config
 foreign export ccall "create_default_material_config"

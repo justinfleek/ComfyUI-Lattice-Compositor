@@ -45,9 +45,9 @@ import Lattice.Services.Security.JsonSanitizer
   , deepFreeze
   )
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Helpers
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Build a deeply nested JSON string: {"nested": {"nested": ... {"value": 1} ... }}
 buildNestedJson :: Int -> String
@@ -80,9 +80,9 @@ assertInvalidWithError result expectedSubstr = do
     Just errMsg -> errMsg `StringAssert.shouldContain` expectedSubstr
     Nothing -> fail ("Expected error containing '" <> expectedSubstr <> "' but got no error")
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Test Spec
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 spec :: Spec Unit
 spec = do
@@ -100,9 +100,9 @@ spec = do
     deepFreezeTests
     customOptionsTests
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- parseAndSanitize - Depth Limits
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 depthLimitTests :: Spec Unit
 depthLimitTests = do
@@ -134,9 +134,9 @@ depthLimitTests = do
       result.valid `shouldEqual` true
       result.stats.depth `shouldEqual` 4
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- parseAndSanitize - Array Size Limits
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 arraySizeLimitTests :: Spec Unit
 arraySizeLimitTests = do
@@ -168,9 +168,9 @@ arraySizeLimitTests = do
       -- Either exceeds single array limit or cumulative limit
       result.valid `shouldEqual` false
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- parseAndSanitize - String Size Limits
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 stringSizeLimitTests :: Spec Unit
 stringSizeLimitTests = do
@@ -193,9 +193,9 @@ stringSizeLimitTests = do
       let result = parseAndSanitize json defaultOptions
       result.valid `shouldEqual` true
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- parseAndSanitize - Prototype Pollution Protection
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 prototypePollutionTests :: Spec Unit
 prototypePollutionTests = do
@@ -211,7 +211,7 @@ prototypePollutionTests = do
       let hasWarning = any (_ == "Prototype pollution key removed: __proto__") result.warnings
       hasWarning `shouldEqual` true
       -- Verify __proto__ key was removed from result
-      -- NOTE: Obj.lookup uses JS 'in' operator which traverses the prototype chain,
+      --                                                                      // note
       -- so __proto__/constructor are always found. Use Obj.keys (Object.keys) instead.
       case result.dat of
         Just d -> case Json.toObject d of
@@ -259,9 +259,9 @@ prototypePollutionTests = do
       result.valid `shouldEqual` true
       result.stats.prototypeKeysRemoved `shouldEqual` 2
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- parseAndSanitize - Object Key Limits
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 objectKeyLimitTests :: Spec Unit
 objectKeyLimitTests = do
@@ -300,9 +300,9 @@ objectKeyLimitTests = do
           Nothing -> fail "Expected result to be an object"
         Nothing -> fail "Expected data in result"
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- parseAndSanitize - Special Values
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 specialValueTests :: Spec Unit
 specialValueTests = do
@@ -375,9 +375,9 @@ specialValueTests = do
       let hasWarning = any (_ == "Null bytes removed from string") result.warnings
       hasWarning `shouldEqual` true
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- parseAndSanitize - Invalid JSON
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 invalidJsonTests :: Spec Unit
 invalidJsonTests = do
@@ -394,9 +394,9 @@ invalidJsonTests = do
       let result = parseAndSanitize "" defaultOptions
       result.valid `shouldEqual` false
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- sanitize - Pre-parsed Data
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 sanitizePreParsedTests :: Spec Unit
 sanitizePreParsedTests = do
@@ -436,9 +436,9 @@ sanitizePreParsedTests = do
             else fail "Expected result to be an array"
         Nothing -> fail "Expected data in result"
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- quickValidate - Fast Rejection
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 quickValidateTests :: Spec Unit
 quickValidateTests = do
@@ -463,9 +463,9 @@ quickValidateTests = do
     it "should pass valid JSON" do
       quickValidate "{\"safe\": \"value\"}" defaultOptions `shouldEqual` true
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- safeParse - Convenience Function
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 safeParseTests :: Spec Unit
 safeParseTests = do
@@ -493,9 +493,9 @@ safeParseTests = do
       let result = safeParse ("{\"x\":\"" <> large <> "\"}") opts
       isLeft result `shouldEqual` true
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- deepFreeze - Immutability
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 deepFreezeTests :: Spec Unit
 deepFreezeTests = do
@@ -515,9 +515,9 @@ deepFreezeTests = do
       Json.stringify (deepFreeze (Json.fromString "string")) `shouldEqual` Json.stringify (Json.fromString "string")
       Json.stringify (deepFreeze Json.jsonNull) `shouldEqual` Json.stringify Json.jsonNull
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Custom Options
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 customOptionsTests :: Spec Unit
 customOptionsTests = do

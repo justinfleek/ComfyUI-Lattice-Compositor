@@ -62,9 +62,9 @@ import qualified Data.Vector as V
 import Lattice.Primitives
 import Lattice.Utils.Validation
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Primitive Type Guards
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Check if Double is finite (not NaN, not Infinity)
 isFiniteDouble :: Double -> Bool
@@ -78,9 +78,9 @@ isNonEmptyString = not . T.null
 isNonEmptyList :: [a] -> Bool
 isNonEmptyList = not . null
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Numeric Type Guards
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Check if value is positive
 isPositive :: Double -> Bool
@@ -102,9 +102,9 @@ isPercentageRange x = isFiniteDouble x && x >= 0 && x <= 100
 isColorChannel :: Double -> Bool
 isColorChannel x = isFiniteDouble x && x >= 0 && x <= 255
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Vector Type Guards
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Check if Vec2 has valid coordinates
 isValidVec2 :: Vec2 -> Bool
@@ -121,9 +121,9 @@ isValidVec4 :: Vec4 -> Bool
 isValidVec4 (Vec4 (FiniteFloat x) (FiniteFloat y) (FiniteFloat z) (FiniteFloat w)) =
   isFiniteDouble x && isFiniteDouble y && isFiniteDouble z && isFiniteDouble w
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Bounding Box
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Bounding box with validated dimensions
 data BoundingBox = BoundingBox
@@ -144,9 +144,9 @@ mkBoundingBox x y width height
         (PositiveFloat height)
   | otherwise = Nothing
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Color Type Guards
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Check if RGB has valid channel values (all in [0, 255])
 isValidRGB :: RGB -> Bool
@@ -158,9 +158,9 @@ isValidRGBA :: RGBA -> Bool
 isValidRGBA (RGBA (FiniteFloat r) (FiniteFloat g) (FiniteFloat b) (UnitFloat a)) =
   isColorChannel r && isColorChannel g && isColorChannel b && isUnitRange a
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Safe Defaults
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Safe coordinate default - allows negative, zero, positive
 safeCoordinateDefault :: Maybe Double -> FiniteFloat -> FiniteFloat
@@ -209,9 +209,9 @@ safeStringDefault (Just v) def
   | T.null v = def
   | otherwise = NonEmptyString v
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Assertions
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Assert and extract finite double
 assertFinite :: Double -> Text -> Either Text FiniteFloat
@@ -242,9 +242,9 @@ assertNonEmptyList :: [a] -> Text -> Either Text [a]
 assertNonEmptyList [] name = Left (name <> " cannot be empty")
 assertNonEmptyList xs _ = Right xs
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Checked Constructors
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Create Vec2 with validation
 mkVec2Checked :: Double -> Double -> Text -> ValidationResult Vec2

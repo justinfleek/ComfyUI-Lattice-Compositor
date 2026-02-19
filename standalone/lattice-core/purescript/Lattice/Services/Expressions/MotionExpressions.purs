@@ -34,9 +34,9 @@ import Data.Array (zipWith)
 import Global (isNaN, isFinite) as Global
 import Math (exp, log, pi, sin, sqrt) as Math
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Constants
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Default inertia amplitude
 defaultAmplitude :: Number
@@ -66,9 +66,9 @@ defaultPeriod = 0.3
 maxBounces :: Int
 maxBounces = 10
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Helper Functions
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Check if finite
 isFiniteNum :: Number -> Boolean
@@ -98,9 +98,9 @@ safeGravity g = if isFiniteNum g && g > 0.0 then g else defaultGravity
 safePeriod :: Number -> Number
 safePeriod p = if isFiniteNum p && p > 0.0 then p else defaultPeriod
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Inertia Oscillation
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Damped sine wave oscillation for inertia effect.
 -- |
@@ -132,9 +132,9 @@ inertiaVector :: Array Number -> Array Number -> Number -> Number -> Number -> N
 inertiaVector values velocities amplitude frequency decay t =
   zipWith (\v vel -> v + inertiaOscillation vel amplitude frequency decay t) values velocities
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Bounce Physics
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Calculate bounce position given time and parameters.
 -- |
@@ -184,9 +184,9 @@ bounceVector values t elasticity gravity =
   let offset = bouncePhysics t elasticity gravity
   in map (\v -> v - offset) values
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Elastic Oscillation
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Elastic spring-like oscillation.
 -- |
@@ -218,9 +218,9 @@ elasticVector values t amplitude period =
   let oscillation = elasticOscillation t amplitude period
   in map (_ + oscillation) values
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Main API
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Inertia expression for scalar values
 inertia :: Number -> Number -> Number -> Number -> Number -> Number -> Number

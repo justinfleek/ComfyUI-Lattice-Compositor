@@ -25,9 +25,9 @@ import Lattice.Services.PropertyEvaluator (AudioMapping(..))
 import Lattice.State.Audio.Types (AudioState(..))
 import Lattice.Types.LayerDataParticles (AudioParticleMapping(..))
 
--- ============================================================================
--- PURE MAPPING QUERIES
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                // pure // mapping // queries
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Get all audio reactive mappings
 -- Pure function: takes audio state, returns all mappings

@@ -21,9 +21,9 @@ module Lattice.Utils.ErrorHelpers
 import Prelude
 import Data.Maybe (Maybe(..))
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Error Types
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Structured error with context
 type ContextualError =
@@ -41,9 +41,9 @@ type ValidationError =
   , expected    :: String  -- What was expected
   }
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Error Construction
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Create a contextual error
 mkContextualError :: String -> String -> String -> Maybe String -> ContextualError
@@ -55,9 +55,9 @@ mkValidationError :: String -> String -> String -> String -> ValidationError
 mkValidationError field actualType actualValue expected =
   { field, actualType, actualValue, expected }
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Formatting
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Format contextual error as string
 formatContextualError :: ContextualError -> String
@@ -77,9 +77,9 @@ formatValidationError e =
         (Just $ "Provide a valid " <> e.expected <> " value for " <> e.field)
   in formatContextualError contextual
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Common Error Patterns
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Create error for missing required field
 missingFieldError :: String -> ContextualError

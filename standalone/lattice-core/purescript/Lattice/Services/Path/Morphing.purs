@@ -33,9 +33,9 @@ import Math (max, min) as Math
 
 import Lattice.Services.Path.BezierCore
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Types
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Point matching strategy for paths with different vertex counts
 data PointMatchingStrategy
@@ -77,9 +77,9 @@ defaultMorphConfig =
   , resampleCount: Nothing
   }
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Path Cloning
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Clone a path
 clonePath :: BezierPath -> BezierPath
@@ -88,9 +88,9 @@ clonePath path =
   , closed: path.closed
   }
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Correspondence / Travel Distance
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Calculate total travel distance for a given rotation offset.
 calculateTravelDistance :: BezierPath -> BezierPath -> Int -> Boolean -> Number
@@ -166,9 +166,9 @@ rotateVertices path offset reverse
 
     defaultVertex = { point: zeroPoint, inHandle: zeroPoint, outHandle: zeroPoint }
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Subdivision
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Find index of longest segment.
 findLongestSegment :: Array Number -> Int
@@ -221,9 +221,9 @@ subdivideToVertexCount path targetCount
           newPath = subdivideSegmentAt path maxIdx 0.5
       in subdivideToVertexCount newPath targetCount
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Resampling
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Get point at a specific arc length along the path.
 getPointAtArcLength :: BezierPath -> Number -> Array Number -> Point2D
@@ -279,9 +279,9 @@ resamplePath path vertexCount
               , closed: path.closed
               }
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Main Morphing Functions
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Interpolate between two prepared paths.
 morphPaths :: BezierPath -> BezierPath -> Number -> BezierPath

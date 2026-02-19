@@ -48,9 +48,9 @@ import Data.Int (floor, round, toNumber)
 import Data.Number (isFinite, isNaN, nan, pow, sqrt, log, pi, abs) as Number
 import Lattice.Primitives (FiniteFloat(..), mkFiniteFloat, unFiniteFloat, UnitFloat(..), mkUnitFloat, unUnitFloat, NonNegativeFloat(..), mkNonNegativeFloat, unNonNegativeFloat, PositiveFloat(..), unPositiveFloat, Vec2, Vec3)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Basic Safety
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Check if a Number is finite (not NaN or Infinity)
 isFiniteNumber :: Number -> Boolean
@@ -68,9 +68,9 @@ requireFinite value =
   if isFiniteNumber value then FiniteFloat value
   else FiniteFloat 0.0
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Safe Arithmetic
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Safe division - returns fallback for zero divisor or infinite result
 safeDivide :: FiniteFloat -> FiniteFloat -> FiniteFloat -> FiniteFloat
@@ -117,9 +117,9 @@ safeLog (FiniteFloat v) fallback =
      else if isFiniteNumber result then FiniteFloat result
      else fallback
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Clamping
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Clamp a value between min and max
 clamp :: FiniteFloat -> FiniteFloat -> FiniteFloat -> FiniteFloat
@@ -144,9 +144,9 @@ clamp0255 value = clamp value (FiniteFloat 0.0) (FiniteFloat 255.0)
 clampNeg1To1 :: FiniteFloat -> FiniteFloat
 clampNeg1To1 value = clamp value (FiniteFloat (0.0 - 1.0)) (FiniteFloat 1.0)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Interpolation
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Safe linear interpolation with clamped t
 safeLerp :: FiniteFloat -> FiniteFloat -> UnitFloat -> FiniteFloat
@@ -184,9 +184,9 @@ smootherStep a b (UnitFloat t) =
   let smooth = UnitFloat (t * t * t * (t * (t * 6.0 - 15.0) + 10.0))
   in safeLerp a b smooth
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- 2D Vector Safety
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Safe 2D vector normalization
 safeNormalize2D :: FiniteFloat -> FiniteFloat -> Vec2
@@ -219,9 +219,9 @@ safeDot2D (FiniteFloat x1) (FiniteFloat y1) (FiniteFloat x2) (FiniteFloat y2) =
   in if isFiniteNumber result then FiniteFloat result
      else FiniteFloat 0.0
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- 3D Vector Safety
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Safe 3D vector normalization
 safeNormalize3D :: FiniteFloat -> FiniteFloat -> FiniteFloat -> Vec3
@@ -249,9 +249,9 @@ safeDistance3D (FiniteFloat x1) (FiniteFloat y1) (FiniteFloat z1) (FiniteFloat x
 safeLength3D :: FiniteFloat -> FiniteFloat -> FiniteFloat -> NonNegativeFloat
 safeLength3D (FiniteFloat x) (FiniteFloat y) (FiniteFloat z) = safeSqrt (FiniteFloat (x * x + y * y + z * z))
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Angle Safety
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Normalize angle to [0, 360) degrees
 normalizeAngleDegrees :: FiniteFloat -> FiniteFloat
@@ -275,9 +275,9 @@ radiansToDegrees (FiniteFloat r) =
   in if isFiniteNumber result then FiniteFloat result
      else FiniteFloat 0.0
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Comparison
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Check if two numbers are approximately equal
 approximately :: FiniteFloat -> FiniteFloat -> PositiveFloat -> Boolean
@@ -291,9 +291,9 @@ approximately (FiniteFloat a) (FiniteFloat b) (PositiveFloat eps) =
 isApproximatelyZero :: FiniteFloat -> PositiveFloat -> Boolean
 isApproximatelyZero (FiniteFloat v) (PositiveFloat eps) = Number.abs v < eps
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Rounding
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Round to specified decimal places
 roundTo :: FiniteFloat -> Int -> FiniteFloat
@@ -310,9 +310,9 @@ snapTo (FiniteFloat v) (PositiveFloat s) =
   in if isFiniteNumber result then FiniteFloat result
      else FiniteFloat v
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Range Utilities
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Check if value is in range [min, max] inclusive
 inRange :: FiniteFloat -> FiniteFloat -> FiniteFloat -> Boolean

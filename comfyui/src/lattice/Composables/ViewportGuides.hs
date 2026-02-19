@@ -31,9 +31,9 @@ module Lattice.Composables.ViewportGuides
 import Data.Text (Text)
 import qualified Data.Text as T
 
--- ============================================================================
--- TYPES
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                                     // types
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Safe frame overlay bounds in screen pixels (left, top, right, bottom)
 data SafeFrameBounds = SafeFrameBounds
@@ -75,9 +75,9 @@ data SafeFrameStyle = SafeFrameStyle
   }
   deriving (Eq, Show)
 
--- ============================================================================
--- CONSTANTS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                                 // constants
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Standard resolution presets (480p, 720p, 1080p)
 resolutionPresets :: [ResolutionPreset]
@@ -87,9 +87,9 @@ resolutionPresets =
   , ResolutionPreset "1080p" 1920 1080 "#06B6D4"
   ]
 
--- ============================================================================
--- SAFE FRAME STYLES FROM BOUNDS (PURE)
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                 // safe // frame // styles // from // bounds
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Left overlay: from 0 to bounds.left
 safeFrameLeftStyle :: SafeFrameBounds -> SafeFrameStyle
@@ -144,9 +144,9 @@ compositionBoundaryStyle b
 pxStyle :: Double -> Text
 pxStyle d = T.pack (show (round d :: Int)) <> "px"
 
--- ============================================================================
--- RESOLUTION CROP GEOMETRY (PURE)
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                            // resolution // crop // geometry
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Crop rect in composition space: center (compW/2, compH/2), half dimensions.
 -- Returns (centerX, centerY, halfWidth, halfHeight) for a preset smaller than or equal to comp.

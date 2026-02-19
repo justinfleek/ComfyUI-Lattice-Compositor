@@ -5,7 +5,7 @@
 -- Migrated from ui/src/stores/keyframeStore/dimensions.ts
 -- Pure functions for separating and linking position/scale dimensions
 --
--- NOTE: Full implementation requires interpolation utilities for merging keyframes
+--                                                                      // note
 -- This is a simplified version that handles the core separation/linking logic
 --
 
@@ -47,9 +47,9 @@ import Lattice.Types.Transform
   , SeparateDimensions(..)
   )
 
--- ============================================================================
--- SEPARATE DIMENSIONS
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                    // separate // dimensions
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Separate position into individual X, Y, Z properties for independent keyframing
 -- Pure function: takes layer ID, ID generator, and layers list
@@ -193,7 +193,7 @@ linkPositionDimensionsAction targetLayerId genId layers =
               allFrames = sort (nub (xFrames ++ yFrames ++ zFrames))
               
               -- Create combined keyframes at each frame
-              -- NOTE: This is simplified - full implementation would interpolate when keyframe doesn't exist
+              --                                                                      // note
               mCombinedKeyframes = traverse (\frame ->
                 let
                   -- Find keyframes at this frame (or use property value if none)

@@ -59,9 +59,9 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Lattice.Primitives
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Result Type
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Validation result - either success with typed value, or failure with error
 data ValidationResult a
@@ -97,9 +97,9 @@ getOr :: a -> ValidationResult a -> a
 getOr _ (Ok v) = v
 getOr d (Fail _) = d
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Primitive Validators
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Options for string validation
 data StringOptions = StringOptions
@@ -166,9 +166,9 @@ validateEnum value name allowed
   | value `elem` allowed = Ok value
   | otherwise = Fail (name <> " must be one of allowed values")
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Numeric Type Validators
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Validate positive number (> 0)
 validatePositive :: Double -> Text -> ValidationResult PositiveFloat
@@ -211,9 +211,9 @@ validateFrameNumber value name
          then Ok (FrameNumber (fromIntegral intVal))
          else Fail (name <> " must be a non-negative integer, got " <> T.pack (show value))
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Array Validators
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Validate array with item validator
 validateArray :: [Double] -> Text -> (Double -> Text -> ValidationResult a) -> ValidationResult [a]
@@ -230,9 +230,9 @@ validateNumberArray :: [Double] -> Text -> NumberOptions -> ValidationResult [Fi
 validateNumberArray values name opts =
   validateArray values name (\v n -> validateFiniteNumber v n opts)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Vector Validators
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Validate Vec2
 validateVec2 :: Double -> Double -> Text -> ValidationResult Vec2
@@ -258,9 +258,9 @@ validateVec4 x y z w name = do
   vw <- validateFiniteNumber w (name <> ".w") defaultNumberOptions
   pure (Vec4 vx vy vz vw)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Color Validators
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Validate RGB color (values in [0, 255])
 validateRGB :: Double -> Double -> Double -> Text -> ValidationResult RGB
@@ -281,9 +281,9 @@ validateRGBA r g b a name = do
   va <- validateUnit a (name <> ".a")
   pure (RGBA vr vg vb va)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Optional/Default Helpers
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Make validation optional
 optional :: (Double -> Text -> ValidationResult a) -> Maybe Double -> Text -> ValidationResult (Maybe a)
@@ -297,9 +297,9 @@ withDefault validator def v name =
     Ok x -> Ok x
     Fail _ -> Ok def
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Composition Helpers
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Collect all errors from multiple validations
 validateAll :: [ValidationResult ()] -> ValidationResult ()

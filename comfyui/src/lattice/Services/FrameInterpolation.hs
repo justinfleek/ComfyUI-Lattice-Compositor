@@ -32,9 +32,9 @@ import Lattice.Utils.NumericSafety
   ( validateFinite
   )
 
--- ============================================================================
--- MODEL CONFIGURATION
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                    // model // configuration
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | RIFE model configuration
 data RIFEModel = RIFEModel
@@ -87,9 +87,9 @@ getRIFEModelConfig name = Map.lookup name rifeModels
 getAvailableRIFEModels :: [RIFEModel]
 getAvailableRIFEModels = Map.elems rifeModels
 
--- ============================================================================
--- ATTRIBUTION
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                               // attribution
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Attribution information for open source dependencies
 data Attribution = Attribution
@@ -133,9 +133,9 @@ sourceAttribution = Map.fromList
 getRIFEAttributionInfo :: Map Text Attribution
 getRIFEAttributionInfo = sourceAttribution
 
--- ============================================================================
--- PARAMETER VALIDATION
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                   // parameter // validation
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Validated frame interpolation parameters
 data FrameInterpolationParams = FrameInterpolationParams
@@ -170,9 +170,9 @@ validateInterpolationParams modelName factor ensemble mSlowdown =
         then Left "slowdown must be between 0 and 8 and finite"
       else Right $ FrameInterpolationParams modelName factor ensemble mSlowdown
 
--- ============================================================================
--- SLOWDOWN MAPPING
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                       // slowdown // mapping
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Map slowdown factor to interpolation factor
 -- Pure function: deterministic mapping

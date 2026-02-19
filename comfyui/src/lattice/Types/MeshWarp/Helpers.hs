@@ -30,9 +30,9 @@ import Lattice.Types.MeshWarp.Core
   )
 import Lattice.Types.Primitives (Vec2 (..))
 
--- ============================================================================
--- HELPER FUNCTIONS
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                       // helper // functions
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Get default name based on pin type
 -- Uses last 4 characters of ID as suffix
@@ -48,12 +48,12 @@ getPinDefaultName pinType id_ =
         _ -> "Pin"
    in baseName <> " " <> suffix
 
--- ============================================================================
--- MESH WARP FACTORIES
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                 // mesh // warp // factories
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Create a default warp pin
--- NOTE: ID generation should be handled by caller (no IO in pure functions)
+--                                                                      // note
 createDefaultWarpPin ::
   Text -> -- id
   Double -> -- x
@@ -110,7 +110,7 @@ createDefaultWarpPin id_ x y pinType =
         else pin
 
 -- | Create an empty warp mesh
--- NOTE: Float32Array in TypeScript is represented as [Double] in Haskell
+--                                                                      // note
 createEmptyWarpMesh :: Text -> WarpMesh
 createEmptyWarpMesh layerId =
   WarpMesh

@@ -32,9 +32,9 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Lattice.Types.Primitives (Vec2(..))
 
--- ============================================================================
--- TYPES
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                                     // types
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Pen tool sub-mode
 data PenSubMode
@@ -79,26 +79,26 @@ data PointWithId = PointWithId
   }
   deriving (Eq, Show)
 
--- ============================================================================
--- CONSTANTS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                                 // constants
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Distance (px) within which cursor is considered "over first point" for close-path
 closeThreshold :: Double
 closeThreshold = 15
 
--- ============================================================================
--- LAYER TYPE
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                             // layer // type
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Check if layer type is spline or path
 isSplineOrPathType :: Maybe Text -> Bool
 isSplineOrPathType (Just t) = t == "spline" || t == "path"
 isSplineOrPathType Nothing = False
 
--- ============================================================================
--- TOOL TIP
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                               // tool // tip
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Tool tip text for current pen sub-mode
 activeToolTipForPenSubMode :: PenSubMode -> Text
@@ -111,9 +111,9 @@ activeToolTipForPenSubMode PenSubModeDelete =
 activeToolTipForPenSubMode PenSubModeConvert =
   "Click on a point to toggle between smooth (curved) and corner (sharp) type."
 
--- ============================================================================
--- COORDINATE CONVERSION
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                  // coordinate // conversion
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Convert screen position (within SVG overlay) to canvas/composition coordinates.
 -- Pure: (screenX, screenY) in overlay pixel space → (x, y) in composition space.
@@ -132,9 +132,9 @@ screenToCanvas screenX screenY overlayW overlayH canvasW canvasH
           y = (screenY / overlayH) * canvasH
       in (x, y)
 
--- ============================================================================
--- HIT-TEST AND CLOSE-PATH
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                                       // hit
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Distance between two points
 pointDistance :: Double -> Double -> Double -> Double -> Double

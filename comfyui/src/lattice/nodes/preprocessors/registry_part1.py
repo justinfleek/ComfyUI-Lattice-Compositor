@@ -4,9 +4,9 @@ from .types import JSONValue, PreprocessorCategory
 
 # Part 1: DEPTH, NORMAL, POSE, VIDEO POSE
 REGISTRY_PART1: dict[str, dict[str, JSONValue]] = {
-  # ========================================================================
-  # DEPTH (from comfyui_controlnet_aux - Fannovel16)
-  # ========================================================================
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  #                                                                     // depth
+  # ════════════════════════════════════════════════════════════════════════════
   "depth_anything_v2": {
     "node_class": "DepthAnythingV2Preprocessor",
     "display_name": "Depth Anything V2",
@@ -82,9 +82,9 @@ REGISTRY_PART1: dict[str, dict[str, JSONValue]] = {
     },
     "outputs": ["IMAGE"],
   },
-  # ========================================================================
-  # NORMAL (from comfyui_controlnet_aux - Fannovel16)
-  # ========================================================================
+  # ════════════════════════════════════════════════════════════════════════════
+  #                                                                    // normal
+  # ════════════════════════════════════════════════════════════════════════════
   "normal_bae": {
     "node_class": "BAE-NormalMapPreprocessor",
     "display_name": "BAE Normal Map",
@@ -138,10 +138,10 @@ REGISTRY_PART1: dict[str, dict[str, JSONValue]] = {
     },
     "outputs": ["IMAGE"],
   },
-  # ========================================================================
-  # NORMALCRAFTER (from Binyr/NormalCrafter + AIWarper/ComfyUI-NormalCrafterWrapper)
+  # ════════════════════════════════════════════════════════════════════════════
+  #                                                             // normalcrafter
   # Video-to-Normal diffusion model - temporally consistent normal sequences
-  # ========================================================================
+  # ════════════════════════════════════════════════════════════════════════════
   "normalcrafter": {
     "node_class": "NormalCrafter",
     "display_name": "NormalCrafter (Video)",
@@ -161,9 +161,9 @@ REGISTRY_PART1: dict[str, dict[str, JSONValue]] = {
     },
     "outputs": ["IMAGE"],  # Outputs sequence of normal maps
   },
-  # ========================================================================
-  # POSE (from comfyui_controlnet_aux - Fannovel16)
-  # ========================================================================
+  # ════════════════════════════════════════════════════════════════════════════
+  #                                                                      // pose
+  # ════════════════════════════════════════════════════════════════════════════
   "dwpose": {
     "node_class": "DWPreprocessor",
     "display_name": "DWPose",
@@ -253,10 +253,10 @@ REGISTRY_PART1: dict[str, dict[str, JSONValue]] = {
     },
     "outputs": ["IMAGE"],
   },
-  # ========================================================================
-  # VIDEO POSE (from kijai/ComfyUI-WanAnimatePreprocess)
+  # ════════════════════════════════════════════════════════════════════════════
+  #                                                             // video // pose
   # For Wan 2.2 video animation preprocessing
-  # ========================================================================
+  # ════════════════════════════════════════════════════════════════════════════
   "vitpose": {
     "node_class": "PoseAndFaceDetection",
     "display_name": "ViTPose + Face (Video)",

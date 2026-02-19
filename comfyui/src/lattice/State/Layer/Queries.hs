@@ -40,9 +40,9 @@ import Lattice.Types.LayerDataSpline
   , AnimatableHandle(..)
   )
 
--- ============================================================================
--- HIERARCHY QUERIES
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                      // hierarchy // queries
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Get a layer by ID from a list of layers
 -- Pure function: takes layers list and ID, returns layer or Nothing
@@ -132,9 +132,9 @@ getSelectedLayer layers selectedIds =
       (_ : _ : _) -> Nothing  -- Multiple elements with size 1 is impossible, but type-safe fallback
     else Nothing
 
--- ============================================================================
--- SPLINE QUERIES
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                         // spline // queries
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Check if a spline layer has animation enabled
 -- Pure function: takes layer, returns True if animation is enabled

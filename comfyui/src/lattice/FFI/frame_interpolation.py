@@ -7,7 +7,7 @@ Python wrappers for Haskell frame interpolation functions.
 import json
 from typing import Dict, Optional
 
-# JSON-compatible value types
+#                                                                      // json
 JSONValue = str | int | float | bool | None | list | dict
 JSONDict = Dict[str, JSONValue]
 import ctypes

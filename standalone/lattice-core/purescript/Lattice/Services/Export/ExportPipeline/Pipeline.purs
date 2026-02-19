@@ -45,9 +45,9 @@ import Lattice.Services.Export.ExportPipeline.Types
 import Lattice.Services.Export.DepthRenderer.Types (DepthMapFormat)
 import Lattice.Services.Export.CameraExport.Types (ExportTarget)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Opaque Handles
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Opaque handle to export pipeline instance
 foreign import data PipelineHandle :: Type
@@ -55,9 +55,9 @@ foreign import data PipelineHandle :: Type
 -- | Opaque handle to OffscreenCanvas
 foreign import data CanvasHandle :: Type
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Pipeline Execution
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Create and execute an export pipeline
 foreign import executeExportImpl
@@ -97,9 +97,9 @@ exportToComfyUI layers keyframes config maybeProgress =
   in
     executeExport layers keyframes config onProgress
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Quick Export Functions
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Quick export depth sequence
 foreign import quickExportDepthSequenceImpl
@@ -151,9 +151,9 @@ quickExportReferenceFrame
 quickExportReferenceFrame layers w h =
   fromEffectFnAff (quickExportReferenceFrameImpl layers w h)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Frame Rendering
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Render a single frame to canvas
 foreign import renderFrameImpl
@@ -255,9 +255,9 @@ renderControlSequence layers start end w h ctrlType outDir prefix server onProgr
     , onProgress
     })
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Camera Export
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Export camera data to JSON
 foreign import exportCameraDataImpl
@@ -294,9 +294,9 @@ exportCameraData target keyframes fc w h fps prefix server =
     , comfyuiServer: server
     })
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Workflow Operations
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Generate ComfyUI workflow JSON
 foreign import generateWorkflowImpl
@@ -335,9 +335,9 @@ queueWorkflow server workflow onProgress =
     , onProgress
     })
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- File Operations
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Save blob locally (triggers download)
 foreign import saveBlobImpl
@@ -372,9 +372,9 @@ uploadToComfyUI server canvas filename subfolder =
     , subfolder
     })
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Helper Types
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Workflow parameters
 type WorkflowParams =
@@ -444,9 +444,9 @@ toWorkflowParamsRaw params =
   , outputFilename: params.outputFilename
   }
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- String Conversions
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Convert format to string
 formatToString :: DepthMapFormat -> String

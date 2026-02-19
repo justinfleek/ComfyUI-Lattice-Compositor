@@ -59,9 +59,9 @@ import Lattice.Utils.Interpolation
   , cubicBezierEasing
   )
 
--- ============================================================================
--- SPLINE OPERATIONS
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                      // spline // operations
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Add a control point to a spline layer
 -- Pure function: takes layer ID, control point, and layers list
@@ -283,9 +283,9 @@ enableSplineAnimation targetLayerId genXId genYId genDepthId genHandleId layers 
                 Right (map (\l -> if layerId l == targetLayerId then updatedLayer else l) layers)
         _ -> Left ("Layer is not a spline layer: " <> targetLayerId)
 
--- ============================================================================
--- SPLINE POINT PROPERTY TYPE
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                       // spline // point // property // type
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Property type for spline control point properties
 data SplinePointProperty
@@ -298,9 +298,9 @@ data SplinePointProperty
   | SplinePointPropertyHandleOutY
   deriving (Eq, Show)
 
--- ============================================================================
--- SPLINE KEYFRAME OPERATIONS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                          // spline // keyframe // operations
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Add a keyframe to a spline control point property at the specified frame
 -- Pure function: takes layer ID, point ID, property, frame, ID generator, and layers list
@@ -551,9 +551,9 @@ updateSplinePointWithKeyframe targetLayerId pointId x y frame addKeyframe genKey
                   else Left ("Control point not found: " <> pointId)
         _ -> Left ("Layer is not a spline layer: " <> targetLayerId)
 
--- ============================================================================
--- SPLINE EVALUATION AND SIMPLIFICATION
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                             // spline // evaluation // and // simplification
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Evaluated control point at a specific frame
 -- Result of interpolating an AnimatableControlPoint

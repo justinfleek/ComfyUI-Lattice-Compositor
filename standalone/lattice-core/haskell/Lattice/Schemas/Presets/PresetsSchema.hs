@@ -44,9 +44,9 @@ module Lattice.Schemas.Presets.PresetsSchema
 import GHC.Generics (Generic)
 import Data.Text (Text)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Preset Category
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Preset category options
 data PresetCategory
@@ -81,9 +81,9 @@ presetCategoryToText PresetPathEffect = "path-effect"
 presetCategoryToText PresetTextStyle = "text-style"
 presetCategoryToText PresetColorPalette = "color-palette"
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Camera Shake Type
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Camera shake type options
 data CameraShakeType
@@ -109,9 +109,9 @@ cameraShakeTypeToText ShakeEarthquake = "earthquake"
 cameraShakeTypeToText ShakeSubtle = "subtle"
 cameraShakeTypeToText ShakeCustom = "custom"
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Text Align
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Text alignment options
 data TextAlign
@@ -134,9 +134,9 @@ textAlignToText AlignCenter = "center"
 textAlignToText AlignRight = "right"
 textAlignToText AlignJustify = "justify"
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Constants
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 maxPresetVersion :: Int
 maxPresetVersion = 1000

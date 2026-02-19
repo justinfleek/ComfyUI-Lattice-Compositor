@@ -40,9 +40,9 @@ import Lattice.Types.Primitives
   , validateFinite
   )
 
--- ============================================================================
--- AUTO BEZIER TANGENT CALCULATION
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                  // auto // bezier // tangent // calculation
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Extract numeric value from PropertyValue for tangent calculation
 -- Returns first component of vector types, or the number itself

@@ -40,9 +40,9 @@ import Lattice.Types.Layer
   )
 import Lattice.Types.LayerDataAsset (NestedCompData(..), VideoData(..))
 
--- ============================================================================
--- TIME OPERATIONS
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                        // time // operations
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Apply time stretch to a video or nested comp layer
 -- Pure function: takes layer ID, time stretch options, and layers list

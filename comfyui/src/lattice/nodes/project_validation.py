@@ -9,9 +9,9 @@ from typing import Union, Optional
 # Security logger for audit trail
 security_logger = logging.getLogger("lattice.security")
 
-# =============================================================================
-# PROJECT VALIDATION SYSTEM
-# =============================================================================
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+#                                           // project // validation // system
+# ════════════════════════════════════════════════════════════════════════════
 
 # Validation constants
 MAX_PROJECT_SIZE_BYTES = 50 * 1024 * 1024  # 50MB max project file

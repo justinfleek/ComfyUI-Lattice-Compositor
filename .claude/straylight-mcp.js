@@ -437,7 +437,7 @@ function generatePlan(task) {
   return { docs, examples, location, templateType };
 }
 
-// MCP Server setup
+//                                                                  // mcp // s
 const server = new Server(
   {
     name: "straylight-protocol",

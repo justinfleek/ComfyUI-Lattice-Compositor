@@ -5,7 +5,7 @@
 -- Migrated from ui/src/stores/expressionStore/index.ts, types.ts, drivers.ts
 -- Pure functions extracted from Pinia store - no state mutation, no IO
 --
--- NOTE: Expression CRUD operations are in Lattice.State.Keyframe.Expression
+--                                                                      // note
 -- This module re-exports them for convenience and adds expression store-specific
 -- functionality (property drivers).
 --
@@ -49,9 +49,9 @@ import Lattice.Services.PropertyDriver
 -- Re-export expression CRUD operations from keyframeStore
 import Lattice.State.Keyframe.Expression
 
--- ============================================================================
--- TYPES
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                                     // types
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Audio feature type for audio-driven property drivers
 data AudioFeatureType
@@ -100,7 +100,7 @@ instance FromJSON AudioFeatureType where
 
 -- | Property driver - full type definition
 -- Migrated from ui/src/services/propertyDriver.ts PropertyDriver interface
--- EVERY VALUE HAS EXPLICIT DEFAULTS - NO Maybe/Nothing
+--                             // every // value // has // explicit // defaults
 data PropertyDriver = PropertyDriver
   { propertyDriverId :: Text
   , propertyDriverName :: Text
@@ -162,9 +162,9 @@ instance FromJSON PropertyDriver where
     blendAmount <- o .:? "blendAmount" .!= 1.0
     return (PropertyDriver id_ name enabled targetLayerId targetProperty sourceType sourceLayerId sourceLayerIdSet sourceProperty sourcePropertySet audioFeature audioFeatureSet audioThreshold audioThresholdSet audioAboveThreshold audioAboveThresholdSet transforms blendMode blendAmount)
 
--- ============================================================================
--- QUERY FUNCTIONS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                        // query // functions
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Get all drivers for a specific layer
 -- Pure function: takes layer ID and drivers list, returns filtered drivers
@@ -182,9 +182,9 @@ getDriversForProperty layerId propertyPath drivers =
     propertyDriverEnabled d
   ) drivers
 
--- ============================================================================
--- CIRCULAR DEPENDENCY CHECKING
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                        // circular // dependency // checking
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Check if adding a driver would create a circular dependency
 -- Pure function: takes new driver and existing drivers list, returns True if cycle detected

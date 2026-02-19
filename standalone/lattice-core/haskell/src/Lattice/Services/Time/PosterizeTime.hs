@@ -21,9 +21,9 @@ module Lattice.Services.Time.PosterizeTime
   , nearFrameThreshold
   ) where
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Parameter Validation
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Default target frame rate for posterize effect.
 defaultTargetFps :: Double
@@ -33,9 +33,9 @@ defaultTargetFps = 12.0
 validateTargetFps :: Double -> Double
 validateTargetFps fps = max 1.0 (min 60.0 fps)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Posterize Calculation
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Calculate frame ratio: source fps / target fps.
 calculateFrameRatio :: Double -> Double -> Double

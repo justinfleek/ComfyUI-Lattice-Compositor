@@ -27,9 +27,9 @@ import Lattice.Utils.NumericSafety
   ( validateFinite
   )
 
--- ============================================================================
--- HASH COMPUTATION
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                       // hash // computation
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Compute SHA256 hash of bytes, returning hex digest
 -- Pure function: deterministic, no IO
@@ -47,9 +47,9 @@ computeHash bytes = T.pack (show (hash bytes))
 verifyHash :: Text -> Text -> Bool
 verifyHash computed expected = computed == expected
 
--- ============================================================================
--- PARAMETER VALIDATION
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                   // parameter // validation
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Validated decomposition parameters
 data DecompositionParams = DecompositionParams

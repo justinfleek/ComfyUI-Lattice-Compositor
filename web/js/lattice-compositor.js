@@ -1146,9 +1146,9 @@ class WebGPURenderer {
     }
     return imageData;
   }
-  // ============================================================================
-  // NEW GPU-ACCELERATED EFFECTS
-  // ============================================================================
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  //                                                                // new // gpu
+  // ════════════════════════════════════════════════════════════════════════════
   /**
    * Apply radial blur (zoom blur) using GPU compute shader
    */
@@ -1373,9 +1373,9 @@ class WebGPURenderer {
     }
     return imageData;
   }
-  // ============================================================================
-  // HELPER METHODS
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                         // helper // methods
+  // ════════════════════════════════════════════════════════════════════════════
   /**
    * Run a standard compute shader with 4 float params
    */
@@ -1625,7 +1625,7 @@ const easings = {
   // Linear - no easing
   linear: (t) => t,
   // Sine easing
-  // FIX: Handle boundary conditions explicitly for floating point precision
+  //                                                                       // fix
   easeInSine: (t) => {
     if (t === 0) return 0;
     if (t === 1) return 1;
@@ -1667,7 +1667,7 @@ const easings = {
   easeOutCirc: (t) => Math.sqrt(1 - (t - 1) ** 2),
   easeInOutCirc: (t) => t < 0.5 ? (1 - Math.sqrt(1 - (2 * t) ** 2)) / 2 : (Math.sqrt(1 - (-2 * t + 2) ** 2) + 1) / 2,
   // Back (overshoot)
-  // FIX: Handle boundary conditions explicitly for floating point precision
+  //                                                                       // fix
   easeInBack: (t) => {
     if (t === 0) return 0;
     if (t === 1) return 1;
@@ -2515,7 +2515,7 @@ function createExpressionCompartment(ctx) {
       log: (...args) => console.log("[Expression]", ...args),
       warn: (...args) => console.warn("[Expression]", ...args)
     }),
-    // SECURITY: Explicitly block dangerous intrinsics
+    //                                                                  // security
     // Even though SES sandboxes these, we block them for defense-in-depth
     Function: void 0,
     eval: void 0,

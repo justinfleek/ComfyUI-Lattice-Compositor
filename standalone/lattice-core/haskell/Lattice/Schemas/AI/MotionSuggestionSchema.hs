@@ -60,9 +60,9 @@ module Lattice.Schemas.AI.MotionSuggestionSchema
 import GHC.Generics (Generic)
 import Data.Text (Text)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Camera Motion Type
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Camera motion type options
 data CameraMotionType
@@ -109,9 +109,9 @@ cameraMotionTypeToText CamCrane = "crane"
 cameraMotionTypeToText CamZoom = "zoom"
 cameraMotionTypeToText CamFollowPath = "follow_path"
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Motion Intensity
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Motion intensity levels
 data MotionIntensity
@@ -137,9 +137,9 @@ motionIntensityToText IntensityMedium = "medium"
 motionIntensityToText IntensityStrong = "strong"
 motionIntensityToText IntensityDramatic = "dramatic"
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Easing Type
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Easing type options
 data EasingType
@@ -168,9 +168,9 @@ easingTypeToText EaseInOut = "easeInOut"
 easingTypeToText EaseBounce = "bounce"
 easingTypeToText EaseElastic = "elastic"
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Spline Usage
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Spline usage options
 data SplineUsage
@@ -193,9 +193,9 @@ splineUsageToText SplineEmitterPath = "emitter_path"
 splineUsageToText SplineTextPath = "text_path"
 splineUsageToText SplineLayerPath = "layer_path"
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Particle Behavior
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Particle behavior options
 data ParticleBehavior
@@ -239,9 +239,9 @@ particleBehaviorToText BehaviorFireflies = "fireflies"
 particleBehaviorToText BehaviorDust = "dust"
 particleBehaviorToText BehaviorAlongPath = "along_path"
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Layer Motion Type
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Layer motion type options
 data LayerMotionType
@@ -279,9 +279,9 @@ layerMotionTypeToText LayerPulse = "pulse"
 layerMotionTypeToText LayerRotate = "rotate"
 layerMotionTypeToText LayerFollowPath = "follow_path"
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Color Scheme
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Color scheme options
 data ColorScheme = SchemeWarm | SchemeCool | SchemeNeutral | SchemeCustom
@@ -300,9 +300,9 @@ colorSchemeToText SchemeCool = "cool"
 colorSchemeToText SchemeNeutral = "neutral"
 colorSchemeToText SchemeCustom = "custom"
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Control Point Type
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Control point type options
 data ControlPointType = PointCorner | PointSmooth | PointSymmetric
@@ -319,9 +319,9 @@ controlPointTypeToText PointCorner = "corner"
 controlPointTypeToText PointSmooth = "smooth"
 controlPointTypeToText PointSymmetric = "symmetric"
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Axis
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Axis options
 data Axis = AxisX | AxisY | AxisZ | AxisAll
@@ -340,9 +340,9 @@ axisToText AxisY = "y"
 axisToText AxisZ = "z"
 axisToText AxisAll = "all"
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Motion Axis
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Motion axis options
 data MotionAxis = MAxisX | MAxisY | MAxisZ | MAxisScale | MAxisRotation

@@ -7,7 +7,7 @@
 #
 # Pinned to known-good SM120 support (2026-01-04)
 #
-# NOTE: This is a callPackage-style file. Use the overlay version at
+#                                                                      // note
 # nix/overlays/llvm-git.nix for the primary LLVM build.
 #
 {
@@ -56,7 +56,7 @@ aleph.stdenv.default {
     # Skip compiler-rt - CUDA doesn't require it and avoids i386 issues
   ];
 
-  # LLVM is huge, enable parallel building
+  #                                                                      // llvm
   enable-parallel-building = true;
 
   meta = {

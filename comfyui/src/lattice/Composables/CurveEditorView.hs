@@ -35,9 +35,9 @@ import Lattice.Composables.CurveEditorCoords
   )
 import Lattice.Types.Animation (AnimatableProperty(..), Keyframe(..), PropertyValue)
 
--- ============================================================================
--- TYPES
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                                     // types
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Selected keyframe reference (prop id, index, keyframe)
 data SelectedKeyframe = SelectedKeyframe
@@ -47,9 +47,9 @@ data SelectedKeyframe = SelectedKeyframe
   }
   deriving (Eq, Show)
 
--- ============================================================================
--- VIEW STATE
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                             // view // state
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Create initial view state
 createViewState
@@ -67,9 +67,9 @@ createViewState frameStart frameEnd valueMin valueMax =
     , curveViewStateZoom = 1
     }
 
--- ============================================================================
--- FIT TO VIEW
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                         // fit // to // view
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Compute bounds (min/max frame and value) from visible properties.
 -- If no keyframes, returns (0, 100, 0, 100).
@@ -133,9 +133,9 @@ fitSelectionToView selected visibleProperties viewState
            , curveViewStateValueMax = valueMax'
            }
 
--- ============================================================================
--- ZOOM
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                                      // zoom
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Zoom in (narrow frame/value range by 40%)
 zoomIn :: CurveViewState -> CurveViewState
@@ -187,9 +187,9 @@ handleWheelZoomPure cursorX cursorY zoomFactor shiftOnly viewState canvasWidth c
             , curveViewStateValueMax = valueAtCursor + (curveViewStateValueMax viewState - valueAtCursor) * zoomFactor
             }
 
--- ============================================================================
--- PAN
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                                       // pan
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Pan view by delta pixels (pure: returns new view state).
 -- No-op if graph width or height is non-positive (avoids division by zero).

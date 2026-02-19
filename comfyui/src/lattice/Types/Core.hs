@@ -21,9 +21,9 @@ import Data.Aeson (ToJSON, FromJSON)
 import GHC.Generics (Generic)
 import Lattice.Types.Primitives (BlendMode)
 
--- ============================================================
--- UTILITY TYPES
--- ============================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                          // utility // types
+-- ════════════════════════════════════════════════════════════════════════════
 
 data Point = Point
   { pointX :: Double
@@ -41,9 +41,9 @@ data BoundingBox = BoundingBox
 
 -- BlendMode is now in Lattice.Types.Primitives (re-exported above)
 
--- ============================================================
--- COLOR SPACE TYPES
--- ============================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                   // color // space // types
+-- ════════════════════════════════════════════════════════════════════════════
 
 data ColorSpace
   = ColorSpaceSRGB

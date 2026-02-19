@@ -40,9 +40,9 @@ module Lattice.Services.Flow.Patterns
 import Data.Word (Word32)
 import Lattice.Services.Noise.SimplexNoise (simplexNoise2D)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Types
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | 2D point for flow calculations
 data Point2D = Point2D
@@ -61,9 +61,9 @@ data FlowParams = FlowParams
 defaultFlowParams :: Double -> Double -> FlowParams
 defaultFlowParams w h = FlowParams w h 42 0.1
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Point Operations
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 origin :: Point2D
 origin = Point2D 0 0
@@ -85,9 +85,9 @@ clampPoint p minX minY maxX maxY = Point2D
   (max minX (min maxX (px p)))
   (max minY (min maxY (py p)))
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Spiral Flow
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Parameters for spiral galaxy flow
 data SpiralParams = SpiralParams
@@ -113,9 +113,9 @@ spiralPosition params t armOffset radiusOffset phaseOffset center maxRadius poin
 
   in clampPoint (Point2D x y) 0 0 (fpWidth fp) (fpHeight fp)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Wave Flow
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Parameters for wave/ocean flow
 data WaveParams = WaveParams
@@ -152,9 +152,9 @@ wavePosition params t startX layerY phaseOffset amplitudeVar layer pointIndex fr
   where
     fmod a b = a - fromIntegral (floor (a / b) :: Int) * b
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Explosion Flow
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Parameters for explosion/big bang flow
 data ExplosionParams = ExplosionParams
@@ -206,9 +206,9 @@ stepExplosionParticle params state pointIndex frameIndex =
       visible = newX >= 0 && newX <= fpWidth fp && newY >= 0 && newY <= fpHeight fp
   in (newState, pos, visible)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Vortex Flow
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Parameters for vortex/whirlpool flow
 data VortexParams = VortexParams
@@ -253,9 +253,9 @@ stepVortexParticle params state =
       pos = clampPoint (Point2D x y) 0 0 (fpWidth fp) (fpHeight fp)
   in (newState, pos)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Data River Flow
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Parameters for data river flow
 data RiverParams = RiverParams
@@ -291,9 +291,9 @@ riverPosition params t startX laneOffset speed pointIndex frameIndex =
       visible = x >= 0 && x <= fpWidth fp
   in (pos, visible)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Morph Flow
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Shape type for morph source/target
 data MorphShape = Grid | Circle | Random
@@ -354,9 +354,9 @@ morphPosition params t source target pointIndex frameIndex =
 
   in clampPoint (Point2D x y) 0 0 (fpWidth fp) (fpHeight fp)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Swarm/Flocking Flow
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Parameters for swarm/flocking behavior
 data SwarmParams = SwarmParams

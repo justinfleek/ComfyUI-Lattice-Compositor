@@ -7,7 +7,7 @@ Python wrappers for Haskell audio stem separation functions.
 import json
 from typing import Dict, Optional, List
 
-# JSON-compatible value types
+#                                                                      // json
 JSONValue = str | int | float | bool | None | list | dict
 JSONDict = Dict[str, JSONValue]
 import ctypes

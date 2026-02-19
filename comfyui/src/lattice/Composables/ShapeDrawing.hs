@@ -14,7 +14,7 @@ module Lattice.Composables.ShapeDrawing
   , computeShapeBounds
   -- Tool type
   , ShapeToolType(..)
-  -- SVG path (relative to 0,0 with width/height)
+  --                                                                       // svg
   , shapePathFromBounds
   ) where
 
@@ -22,9 +22,9 @@ import Data.Text (Text)
 import Lattice.Utils.NumericSafety (isFinite)
 import qualified Data.Text as T
 
--- ============================================================================
--- BOUNDS
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                                    // bounds
+-- ════════════════════════════════════════════════════════════════════════════
 
 data ShapeDrawBounds = ShapeDrawBounds
   { shapeDrawBoundsX1 :: Double
@@ -61,9 +61,9 @@ computeShapeBounds startX startY endX endY constrain fromCenter
               else (x1, y1, x2, y2)
       in Right (ShapeDrawBounds x1' y1' x2' y2')
 
--- ============================================================================
--- TOOL TYPE
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                              // tool // type
+-- ════════════════════════════════════════════════════════════════════════════
 
 data ShapeToolType
   = ShapeRectangle
@@ -72,9 +72,9 @@ data ShapeToolType
   | ShapeStar Int Double  -- points, inner ratio
   deriving (Eq, Show)
 
--- ============================================================================
--- SVG PATH (relative to origin; width = |x2-x1|, height = |y2-y1|)
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                               // svg // path
+-- ════════════════════════════════════════════════════════════════════════════
 
 widthHeight :: ShapeDrawBounds -> (Double, Double)
 widthHeight b =

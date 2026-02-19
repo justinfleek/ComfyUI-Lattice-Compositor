@@ -1,9 +1,9 @@
-# NVIDIA NVFP4 Pre-quantized Models
+#                                                      // nvidia // nvfp4 // p
 #
 # These models are pre-quantized by NVIDIA using ModelOpt and work with TensorRT-LLM.
-# NVFP4 = 4-bit floating point quantization with FP8 KV cache
+#                                                                     // nvfp4
 #
-# VRAM estimates are for inference with reasonable batch size and context.
+#                                                                      // vram
 # Actual usage depends on batch size, sequence length, and KV cache.
 
 {
@@ -131,7 +131,7 @@
     vramMin = "400GB";
     recommended = {
       tp8 = "8x H100-80GB";
-      # B200 with 192GB would need fewer GPUs
+      #                                                                      // b200
     };
     context = 65536;
     notes = "Reasoning model. 80 safetensor shards. Needs multi-node for most setups.";

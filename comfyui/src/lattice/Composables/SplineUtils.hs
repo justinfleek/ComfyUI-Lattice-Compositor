@@ -20,7 +20,7 @@ module Lattice.Composables.SplineUtils
   -- Path operations (Either for "not found" instead of throw)
   , findClosestPointOnPath
   , findPointAtPosition
-  -- SVG path generation
+  --                                                                       // svg
   , generateSplinePath
   , generateCurvePreview
   -- Coordinate transformation
@@ -35,9 +35,9 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Lattice.Types.Primitives (Vec2(..), validateFinite)
 
--- ============================================================================
--- TYPES
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                                     // types
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Layer transform for coordinate conversion (position, rotation, scale, anchor)
 data LayerTransformValues = LayerTransformValues
@@ -65,9 +65,9 @@ data ClosestPointResult = ClosestPointResult
   }
   deriving (Eq, Show)
 
--- ============================================================================
--- BEZIER CURVE EVALUATION
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                             // bezier // curve // evaluation
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Evaluate cubic bezier at parameter t (0..1)
 evaluateBezier :: Vec2 -> Vec2 -> Vec2 -> Vec2 -> Double -> Vec2
@@ -106,9 +106,9 @@ bezierArcLength p0 h0 h1 p1 samples =
             in go (i + 1) (acc + seg) curr
   in go 1 0 p0
 
--- ============================================================================
--- PATH OPERATIONS (Either Text for "not found")
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                        // path // operations
+-- ════════════════════════════════════════════════════════════════════════════
 
 distance :: Vec2 -> Vec2 -> Double
 distance a b = sqrt ((vec2X a - vec2X b) ** 2 + (vec2Y a - vec2Y b) ** 2)
@@ -171,9 +171,9 @@ findPointAtPosition pos cps threshold =
     [] -> Left "[SplineUtils] No point at position within threshold."
     (p : _) -> Right p
 
--- ============================================================================
--- SVG PATH GENERATION
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                 // svg // path // generation
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Generate SVG path 'd' for a spline
 generateSplinePath :: [SplineControlPoint] -> Bool -> Text
@@ -221,9 +221,9 @@ generateCurvePreview prevPoint newPoint dragPos =
       y1 = vec2Y newPoint
   in "M " <> T.pack (show x0) <> "," <> T.pack (show y0) <> " C " <> T.pack (show h1x) <> "," <> T.pack (show h1y) <> " " <> T.pack (show h2x) <> "," <> T.pack (show h2y) <> " " <> T.pack (show x1) <> "," <> T.pack (show y1)
 
--- ============================================================================
--- COORDINATE TRANSFORMATION
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                              // coordinate // transformation
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Transform point from layer space to composition space
 transformPointToComp :: Vec2 -> LayerTransformValues -> Vec2
@@ -261,9 +261,9 @@ transformPointToLayer point transform =
       y1 = ry / (vec2Y scale / 100)
   in Vec2 (x1 + vec2X anchor) (y1 + vec2Y anchor)
 
--- ============================================================================
--- PATH SMOOTHING
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                         // path // smoothing
+-- ════════════════════════════════════════════════════════════════════════════
 
 safeAt :: [a] -> Int -> Maybe a
 safeAt [] _ = Nothing

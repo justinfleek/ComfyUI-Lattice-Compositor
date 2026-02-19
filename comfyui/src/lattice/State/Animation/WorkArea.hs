@@ -22,9 +22,9 @@ import qualified Data.Text as T
 import Lattice.State.Animation.Types (AnimationState(..))
 import Lattice.Types.Primitives (validateFinite, validateNonNegative)
 
--- ============================================================================
--- WORK AREA OPERATIONS
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                // work // area // operations
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Set work area bounds
 -- Pure function: takes animation state and start/end frames, returns new state
@@ -80,9 +80,9 @@ setLoopPlayback ::
 setLoopPlayback state loop =
   state {animationStateLoopPlayback = loop}
 
--- ============================================================================
--- WORK AREA QUERIES
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                   // work // area // queries
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Check if work area is defined
 -- Pure function: takes animation state, returns True if work area is defined

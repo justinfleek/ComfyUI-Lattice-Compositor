@@ -24,7 +24,7 @@ let
     hp.unordered-containers
   ];
   
-  # GHC with all required packages
+  #                                                                       // ghc
   ghc-with-deps = ghc.pkgs'.ghcWithPackages haskell-deps;
   
 in
@@ -62,7 +62,7 @@ pkgs.stdenv.mkDerivation {
     # Compile all FFI modules together into shared library
     # Note: GHC will automatically compile dependencies
     # 
-    # CRITICAL: Include all FFI modules that export C functions
+    #                                                                  // critical
     ghc -shared -dynamic -fPIC \
       -i$src/src \
       -i$src/nix \

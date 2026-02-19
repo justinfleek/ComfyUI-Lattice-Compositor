@@ -72,7 +72,7 @@ async function evaluate(req) {
     const globals = {
       ...safeMath,
       random: seededRandom,
-      // SECURITY: Explicitly block dangerous intrinsics
+      //                                                                  // security
       // Even though SES sandboxes these, we block them for defense-in-depth
       Function: void 0,
       eval: void 0,

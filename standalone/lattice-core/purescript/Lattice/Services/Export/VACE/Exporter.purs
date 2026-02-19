@@ -53,9 +53,9 @@ import Lattice.Services.Export.VACE.Types
   , SplineControlPoint
   )
 
---------------------------------------------------------------------------------
--- FFI Types
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
+--                                                                  // ffi // t
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Opaque path follower handle
 foreign import data PathFollowerHandle :: Type
@@ -69,9 +69,9 @@ foreign import data CanvasHandle :: Type
 -- | Opaque ImageData handle
 foreign import data ImageDataHandle :: Type
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Path Follower Operations
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Create a new path follower
 foreign import createPathFollowerImpl :: PathFollowerConfig -> Effect PathFollowerHandle
@@ -91,9 +91,9 @@ foreign import getPathLength :: PathFollowerHandle -> Effect Number
 -- | Get path speed (pixels per frame)
 foreign import getPathSpeed :: PathFollowerHandle -> Effect Number
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Exporter Operations
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Create a new VACE exporter
 foreign import createExporterImpl :: VACEExportConfig -> Effect VACEExporterHandle
@@ -125,9 +125,9 @@ foreign import exportToImageDataArrayImpl :: VACEExporterHandle -> EffectFnAff (
 exportToImageDataArray :: VACEExporterHandle -> Aff (Array ImageDataHandle)
 exportToImageDataArray handle = fromEffectFnAff (exportToImageDataArrayImpl handle)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Utility Functions
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Calculate duration needed for a specific speed (pixels per frame)
 calculateDurationForSpeed :: Number -> Number -> Int
@@ -181,9 +181,9 @@ stringToShape = case _ of
   "arrow" -> ShapeArrow
   _ -> ShapeCircle
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Easing Functions (Pure)
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Apply easing function to progress value
 applyEasing :: PathFollowerEasing -> Number -> Number

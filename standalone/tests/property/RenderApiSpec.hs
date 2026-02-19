@@ -56,7 +56,7 @@ main = do
                     it "contains expected operations" $ do
                         pendingWith "Run with --url to test against live server"
             Just baseUrl -> do
-                -- URL provided - run property tests against live server
+                --                                                                       // url
                 manager <- newManager tlsManagerSettings
                 
                 let authConfig = case mToken of

@@ -81,5 +81,5 @@ initializeFeatureFlags :: DuckDBConnection -> IO (Either Text ())
 initializeFeatureFlags conn = do
   -- Execute feature flags SQL from init-feature-flags.sql
   -- For now, return success
-  -- TODO: Read and execute scripts/init-feature-flags.sql
+  --                                                                      // todo
   return (Right ())

@@ -57,9 +57,9 @@ module Lattice.Services.Depth.DepthFill
 
 import Data.Word (Word8)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Types
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Screen bounds for depth fill operations.
 data FillBounds = FillBounds
@@ -99,9 +99,9 @@ data DepthflowParams = DepthflowParams
   , dpFarClip     :: Double
   } deriving (Show, Eq)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Depth Sampling
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Calculate sample coordinates from depth map.
 -- Maps screen position to depth map position.
@@ -138,9 +138,9 @@ screenToBufferIndex :: Int -> Int -> Int -> Int
 screenToBufferIndex screenX screenY screenWidth =
   screenY * screenWidth + screenX
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Depthflow Sampling Logic
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Calculate depthflow sample position for a screen pixel.
 depthflowSamplePosition :: Double -> Double -> DepthflowParams -> (Int, Int)
@@ -159,9 +159,9 @@ boundsToScreen boundsX boundsY localX localY =
 shouldWriteDepth :: Double -> Double -> Bool
 shouldWriteDepth newDepth existingDepth = newDepth < existingDepth
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Particle Depth Logic
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Calculate particle depth relative to camera.
 particleRelativeDepth :: Double -> Double -> Double
@@ -200,9 +200,9 @@ isValidParticle p =
 particleScreenPosition :: ParticleData -> (Int, Int)
 particleScreenPosition p = (floor (pdX p), floor (pdY p))
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Uniform Depth Fill Logic
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Calculate fill region from bounds.
 -- Returns (startX, startY, endX, endY).
@@ -225,9 +225,9 @@ generateFillPixels :: Int -> Int -> Int -> Int -> [(Int, Int)]
 generateFillPixels startX startY endX endY =
   [(x, y) | y <- [startY..endY-1], x <- [startX..endX-1]]
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Depth Buffer Operations
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Initialize depth buffer value (far clip).
 initDepthValue :: Double -> Double
@@ -251,9 +251,9 @@ handleEmptyScene minDepth maxDepth farClip
     isNaN maxDepth || isInfinite maxDepth = (farClip, farClip)
   | otherwise = validateDepthRange minDepth maxDepth
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Float32 Precision
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Round to Float32 precision for buffer consistency.
 -- In Haskell, we use Double but could use realToFrac for actual Float32.

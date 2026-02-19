@@ -106,9 +106,9 @@ module Lattice.Schemas.Layers.LayerDataSchema
 import GHC.Generics (Generic)
 import Data.Text (Text)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Image Layer
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 data ImageFitMode = FitNone | FitContain | FitCover | FitFill
   deriving stock (Eq, Show, Generic, Enum, Bounded)
@@ -135,9 +135,9 @@ imageSourceTypeFromText "generated" = Just SourceGenerated
 imageSourceTypeFromText "segmented" = Just SourceSegmented
 imageSourceTypeFromText _ = Nothing
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Video Layer
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 data TimewarpMethod = TwWholeFrames | TwFrameMix | TwPixelMotion
   deriving stock (Eq, Show, Generic, Enum, Bounded)
@@ -157,9 +157,9 @@ frameBlendingFromText "frame-mix" = Just FbFrameMix
 frameBlendingFromText "pixel-motion" = Just FbPixelMotion
 frameBlendingFromText _ = Nothing
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Depth Layer
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 data DepthVisualizationMode = DepthGrayscale | DepthColormap | DepthContour | DepthMesh3d
   deriving stock (Eq, Show, Generic, Enum, Bounded)
@@ -183,9 +183,9 @@ depthColorMapFromText "magma" = Just CmMagma
 depthColorMapFromText "grayscale" = Just CmGrayscale
 depthColorMapFromText _ = Nothing
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Normal Layer
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 data NormalVisualizationMode = NormRgb | NormHemisphere | NormArrows | NormLit
   deriving stock (Eq, Show, Generic, Enum, Bounded)
@@ -205,9 +205,9 @@ normalFormatFromText "opengl" = Just NfOpenGL
 normalFormatFromText "directx" = Just NfDirectX
 normalFormatFromText _ = Nothing
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Generated Layer
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 data GenerationType = GenDepth | GenNormal | GenEdge | GenSegment | GenInpaint | GenCustom
   deriving stock (Eq, Show, Generic, Enum, Bounded)
@@ -231,9 +231,9 @@ generationStatusFromText "complete" = Just StatusComplete
 generationStatusFromText "error" = Just StatusError
 generationStatusFromText _ = Nothing
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Control Layer
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 data IconShape = IconCrosshair | IconDiamond | IconCircle | IconSquare
   deriving stock (Eq, Show, Generic, Enum, Bounded)
@@ -245,9 +245,9 @@ iconShapeFromText "circle" = Just IconCircle
 iconShapeFromText "square" = Just IconSquare
 iconShapeFromText _ = Nothing
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Camera Layer
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 data CameraType = CamOneNode | CamTwoNode
   deriving stock (Eq, Show, Generic, Enum, Bounded)
@@ -298,9 +298,9 @@ autoFocusModeFromText "nearest" = Just AfNearest
 autoFocusModeFromText "farthest" = Just AfFarthest
 autoFocusModeFromText _ = Nothing
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Light Layer
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 data LightType = LightPoint | LightSpot | LightDirectional | LightAmbient
   deriving stock (Eq, Show, Generic, Enum, Bounded)
@@ -322,9 +322,9 @@ lightFalloffFromText "quadratic" = Just FalloffQuadratic
 lightFalloffFromText "smooth" = Just FalloffSmooth
 lightFalloffFromText _ = Nothing
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Pose Layer
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 data PoseFormat = PoseCoco18 | PoseBody25 | PoseCustom
   deriving stock (Eq, Show, Generic, Enum, Bounded)
@@ -335,9 +335,9 @@ poseFormatFromText "body25" = Just PoseBody25
 poseFormatFromText "custom" = Just PoseCustom
 poseFormatFromText _ = Nothing
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Model Layer
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 data ModelType = ModelGltf | ModelObj | ModelFbx | ModelUsd
   deriving stock (Eq, Show, Generic, Enum, Bounded)
@@ -349,9 +349,9 @@ modelTypeFromText "fbx" = Just ModelFbx
 modelTypeFromText "usd" = Just ModelUsd
 modelTypeFromText _ = Nothing
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Point Cloud Layer
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 data PointCloudFormat = PcPly | PcPcd | PcLas | PcXyz
   deriving stock (Eq, Show, Generic, Enum, Bounded)
@@ -373,9 +373,9 @@ pointCloudColorModeFromText "intensity" = Just PcIntensity
 pointCloudColorModeFromText "classification" = Just PcClassification
 pointCloudColorModeFromText _ = Nothing
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Matte Layer
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 data MatteType = MatteLuminance | MatteAlpha | MatteRed | MatteGreen | MatteBlue | MatteHue | MatteSaturation
   deriving stock (Eq, Show, Generic, Enum, Bounded)
@@ -399,9 +399,9 @@ mattePreviewModeFromText "composite" = Just PreviewComposite
 mattePreviewModeFromText "overlay" = Just PreviewOverlay
 mattePreviewModeFromText _ = Nothing
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Procedural Matte
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 data ProceduralMatteType
   = PmLinearGradient | PmRadialGradient | PmAngularGradient | PmRamp
@@ -436,9 +436,9 @@ waveTypeFromText "square" = Just WaveSquare
 waveTypeFromText "sawtooth" = Just WaveSawtooth
 waveTypeFromText _ = Nothing
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Depthflow Layer
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 data DepthflowPreset
   = DfStatic | DfZoomIn | DfZoomOut | DfDollyZoomIn | DfDollyZoomOut
@@ -463,9 +463,9 @@ depthflowPresetFromText "vertical_swing" = Just DfVerticalSwing
 depthflowPresetFromText "custom" = Just DfCustom
 depthflowPresetFromText _ = Nothing
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Generated Map
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 data GeneratedMapType = GmDepth | GmNormal | GmEdge | GmSegment | GmPose | GmFlow
   deriving stock (Eq, Show, Generic, Enum, Bounded)
@@ -479,9 +479,9 @@ generatedMapTypeFromText "pose" = Just GmPose
 generatedMapTypeFromText "flow" = Just GmFlow
 generatedMapTypeFromText _ = Nothing
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Spline/Path
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 data ControlPointType = CpCorner | CpSmooth | CpSymmetric
   deriving stock (Eq, Show, Generic, Enum, Bounded)
@@ -554,9 +554,9 @@ strokeTypeFromText "solid" = Just StrokeSolid
 strokeTypeFromText "gradient" = Just StrokeGradient
 strokeTypeFromText _ = Nothing
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Text Layer
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 data TextAlign = AlignLeft | AlignCenter | AlignRight
   deriving stock (Eq, Show, Generic, Enum, Bounded)
@@ -671,9 +671,9 @@ textVerticalAlignFromText "superscript" = Just VaSuperscript
 textVerticalAlignFromText "subscript" = Just VaSubscript
 textVerticalAlignFromText _ = Nothing
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Particle Layer
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 data EmitterShape
   = EsPoint | EsLine | EsCircle | EsBox | EsSphere | EsRing

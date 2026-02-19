@@ -1,4 +1,4 @@
-// FFI implementation for Lattice.Services.Export.BackendDepth
+//                                                                       // ffi
 // Backend depth and normal map generation service
 
 "use strict";

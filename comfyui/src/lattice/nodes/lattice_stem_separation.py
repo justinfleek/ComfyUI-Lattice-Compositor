@@ -55,7 +55,7 @@ import tempfile
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-# JSON-compatible value types
+#                                                                      // json
 JSONValue = str | int | float | bool | None | list | dict
 
 
@@ -475,9 +475,9 @@ def get_attribution() -> dict[str, JSONValue]:
   }
 
 
-# ============================================================================
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 # ComfyUI Route Registration
-# ============================================================================
+# ════════════════════════════════════════════════════════════════════════════
 
 try:
   import asyncio
@@ -696,9 +696,9 @@ except ImportError:
   logger.warning("Not running in ComfyUI - stem separation routes not registered")
 
 
-# ============================================================================
+# ════════════════════════════════════════════════════════════════════════════
 # Standalone Testing
-# ============================================================================
+# ════════════════════════════════════════════════════════════════════════════
 
 if __name__ == "__main__":
   import argparse

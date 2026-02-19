@@ -3,7 +3,7 @@
 # fmt - A modern formatting library for C++
 # https://fmt.dev/
 #
-# NOTE: mk-static-cpp already accepts lisp-case attrs and handles translation.
+#                                                                      // note
 #
 {
   final,

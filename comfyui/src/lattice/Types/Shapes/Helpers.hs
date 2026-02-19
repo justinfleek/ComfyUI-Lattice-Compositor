@@ -106,12 +106,12 @@ import Lattice.Types.LayerDataShapes
     ZigZagPointType (..),
   )
 
--- ============================================================================
--- ANIMATABLE PROPERTY FACTORIES
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                       // animatable // property // factories
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Create default animatable point property
--- NOTE: ID generation should be handled by caller (no IO in pure functions)
+--                                                                      // note
 createDefaultAnimatablePoint :: Text -> AnimatableProperty Point2D
 createDefaultAnimatablePoint name =
   createAnimatableProperty
@@ -132,7 +132,7 @@ createDefaultAnimatableNumber value name =
     Nothing
 
 -- | Create default animatable color property
--- RGB values are 0-255, alpha is 0-1
+--                                                                       // rgb
 createDefaultAnimatableColor ::
   Double ->
   Double ->
@@ -171,9 +171,9 @@ createDefaultAnimatableNumberArray value name =
     PropertyTypeNumber -- Closest match
     Nothing
 
--- ============================================================================
--- SHAPE GENERATOR FACTORIES
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                           // shape // generator // factories
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Create default rectangle shape
 createDefaultRectangle :: RectangleShape
@@ -253,9 +253,9 @@ createDefaultPath =
       pathShapeDirection = ShapeDirectionClockwise
     }
 
--- ============================================================================
--- SHAPE MODIFIER FACTORIES
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                            // shape // modifier // factories
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Create default fill shape
 createDefaultFill :: FillShape
@@ -379,9 +379,9 @@ createDefaultGradientStroke =
           gradientStrokeShapeBlendMode = "normal"
         }
 
--- ============================================================================
--- PATH OPERATOR FACTORIES
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                             // path // operator // factories
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Create default trim paths operator
 createDefaultTrimPaths :: TrimPathsOperator
@@ -471,9 +471,9 @@ createDefaultRoundedCorners =
       roundedCornersOperatorRadius = createDefaultAnimatableNumber 10.0 ""
     }
 
--- ============================================================================
--- TRANSFORM AND REPEATER FACTORIES
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                 // transform // and // repeater // factories
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Create default shape transform
 createDefaultShapeTransform :: ShapeTransform
@@ -534,9 +534,9 @@ createDefaultRepeater =
               }
         }
 
--- ============================================================================
--- GROUP FACTORY
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                          // group // factory
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Create default shape group
 createDefaultGroup :: ShapeGroup
@@ -549,9 +549,9 @@ createDefaultGroup =
       shapeGroupBlendMode = "normal"
     }
 
--- ============================================================================
--- ILLUSTRATOR OPERATOR FACTORIES
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                      // illustrator // operator // factories
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Create default extrude operator
 createDefaultExtrude :: ExtrudeOperator
@@ -611,9 +611,9 @@ createDefaultSmoothPath =
       smoothPathOperatorAmount = createDefaultAnimatableNumber 50.0 ""
     }
 
--- ============================================================================
--- LAYER DATA FACTORY
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                  // layer // data // factory
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Create default shape layer data
 createDefaultShapeLayerData :: ShapeLayerData

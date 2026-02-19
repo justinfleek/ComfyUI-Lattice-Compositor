@@ -55,9 +55,9 @@ module Lattice.Services.Driver.Transforms
 import Data.Vector (Vector)
 import qualified Data.Vector as V
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Types
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Transform type for property drivers
 data TransformType
@@ -115,9 +115,9 @@ defaultTransform = Transform
   , trPhase = 0
   }
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Individual Transform Functions
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Scale transform: value * factor
 applyScale :: Double -> Double -> Double
@@ -166,9 +166,9 @@ applyOscillate value frequency amplitude phase =
       amp = if amplitude < 0 then 0 else amplitude
   in sin ((value * freq + phase) * pi * 2) * amp
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Transform Chain
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Apply a single transform to a value.
 --
@@ -196,9 +196,9 @@ applyTransformChain :: Vector Transform -> Double -> Double
 applyTransformChain transforms value =
   V.foldl' (\v t -> applyTransform t v) value transforms
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Blend Modes
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Blend driven value with base value using blend mode.
 blendValue :: Double -> Double -> BlendMode -> Double -> Double
@@ -210,9 +210,9 @@ blendValue base driven mode amount =
   -- Mix between base and result based on blend amount
   in base * (1 - amount) + result * amount
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Constructors
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Create a scale transform
 mkScaleTransform :: Double -> Transform

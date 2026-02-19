@@ -5,7 +5,7 @@
 -- Migrated from ui/src/utils/fpsUtils.ts
 -- Pure functions for fps validation and conversion
 -- 
--- CRITICAL: No forbidden patterns - explicit types, no null/undefined, no type escapes
+--                                                                  // critical
 --
 
 {-# LANGUAGE OverloadedStrings #-}
@@ -31,9 +31,9 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Lattice.Utils.NumericSafety (ensureFinite, clamp)
 
--- ============================================================================
--- CONSTANTS
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                                 // constants
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Default fps for Lattice Compositor (WAN model standard)
 defaultFps :: Double
@@ -47,9 +47,9 @@ minFps = 1.0
 maxFps :: Double
 maxFps = 120.0
 
--- ============================================================================
--- VALIDATION
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                                // validation
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Validates that fps is a positive number within acceptable range
 -- Returns the validated fps or the default if invalid
@@ -101,9 +101,9 @@ buildErrorMsg mFps mContext =
         Just ctx -> " in " <> ctx
   in "Invalid fps value" <> ctxStr <> ": " <> fpsStr <> ". FPS must be a positive number."
 
--- ============================================================================
--- CONVERSION
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                                // conversion
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Safely divides by fps, returning fallback if fps is invalid
 -- Prevents division by zero errors

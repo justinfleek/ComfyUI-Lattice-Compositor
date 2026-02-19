@@ -31,9 +31,9 @@ import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual)
 import Test.Lattice.TestHelpers (assertCloseTo)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Helpers
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 mkKeypoint :: Number -> Number -> Number -> PoseKeypoint
 mkKeypoint x y c = { x, y, confidence: c }
@@ -49,9 +49,9 @@ simplePose = mkPose "test" (Data.Array.mapWithIndex (\i _ -> mkKeypoint (toNumbe
 simplePose2 :: Pose
 simplePose2 = mkPose "test2" (Data.Array.mapWithIndex (\i _ -> mkKeypoint (toNumber i * 10.0 + 100.0) (toNumber i * 20.0 + 200.0) 0.5) (Data.Array.range 0 17))
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Test Spec
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 spec :: Spec Unit
 spec = do
@@ -63,9 +63,9 @@ spec = do
     createPoseSequenceTests
     defaultConfigTests
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- 1. cocoBones and colors
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 cocoBonesAndColorsTests :: Spec Unit
 cocoBonesAndColorsTests = do
@@ -88,9 +88,9 @@ cocoBonesAndColorsTests = do
       let allHaveTwo = Data.Array.all (\bone -> Data.Array.length bone == 2) cocoBones
       allHaveTwo `shouldEqual` true
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- 2. exportToOpenPoseJSON
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 exportToOpenPoseJSONTests :: Spec Unit
 exportToOpenPoseJSONTests = do
@@ -129,9 +129,9 @@ exportToOpenPoseJSONTests = do
       let result = exportToOpenPoseJSON []
       Data.Array.length result.people `shouldEqual` 0
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- 3. importFromOpenPoseJSON roundtrip
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 importRoundtripTests :: Spec Unit
 importRoundtripTests = do
@@ -173,9 +173,9 @@ importRoundtripTests = do
       let imported = importFromOpenPoseJSON exported
       Data.Array.length imported `shouldEqual` 2
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- 4. interpolatePoses
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 interpolatePosesTests :: Spec Unit
 interpolatePosesTests = do
@@ -208,9 +208,9 @@ interpolatePosesTests = do
           assertCloseTo 1e-5 120.0 kp.y
         Nothing -> shouldEqual true false
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- 6. createPoseSequence
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 createPoseSequenceTests :: Spec Unit
 createPoseSequenceTests = do
@@ -242,9 +242,9 @@ createPoseSequenceTests = do
       let seq = createPoseSequence keyframes 10 24
       seq.fps `shouldEqual` 24
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- 7. defaultPoseExportConfig
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 defaultConfigTests :: Spec Unit
 defaultConfigTests = do

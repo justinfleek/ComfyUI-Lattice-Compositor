@@ -134,7 +134,7 @@ class VisualGenerator:
             **kwargs,
         }
 
-        # TODO: Integrate with ComfyUI workflow execution
+        #                                                                      // todo
         # For now, return placeholder
         return GeneratedImage(
             image_path="",
@@ -185,7 +185,7 @@ class VisualGenerator:
             **kwargs,
         }
 
-        # TODO: Integrate with ComfyUI workflow execution
+        #                                                                      // todo
         # For now, return placeholder
         duration = frame_count / fps
         return GeneratedVideo(

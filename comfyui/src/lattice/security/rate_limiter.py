@@ -120,7 +120,7 @@ class RateLimiter:
 
         Priority: API key override > Org limit > Tool default
         """
-        # API key override is highest priority
+        #                                                                       // api
         if api_key and api_key.rate_limit_override != -1:
             return RateLimit(
                 requests=api_key.rate_limit_override,

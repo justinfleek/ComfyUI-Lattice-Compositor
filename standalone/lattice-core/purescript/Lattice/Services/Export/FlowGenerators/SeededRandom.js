@@ -1,4 +1,4 @@
-// FFI for Lattice.Services.Export.FlowGenerators.SeededRandom
+//                                                                       // ffi
 // Bitwise operations that match JavaScript semantics
 
 export const zshr = (a) => (b) => a >>> b;

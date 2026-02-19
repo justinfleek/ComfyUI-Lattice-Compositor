@@ -15,7 +15,7 @@ module Lattice.Services.ColorProfile
   , linearToSRGB
   , gammaToLinear
   , linearToGamma
-  -- RGB linearization
+  --                                                                       // rgb
   , linearizeRGB
   , applyGammaRGB
   -- Matrix operations
@@ -37,9 +37,9 @@ import Lattice.Utils.NumericSafety
   , safePow
   )
 
--- ============================================================================
--- TYPES
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                                     // types
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Color space enum
 data ColorSpace
@@ -72,9 +72,9 @@ data XYZ = XYZ
 -- | 3x3 matrix type
 type Matrix3x3 = ((Double, Double, Double), (Double, Double, Double), (Double, Double, Double))
 
--- ============================================================================
--- TRANSFER FUNCTIONS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                     // transfer // functions
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | sRGB transfer function (linearize)
 sRGBToLinear :: Double -> Double
@@ -107,9 +107,9 @@ linearToGamma value gamma =
       invGamma = if finiteGamma /= 0.0 then 1.0 / finiteGamma else 1.0
   in safePow finiteValue invGamma 0.0
 
--- ============================================================================
--- RGB LINEARIZATION
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                      // rgb // linearization
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Linearize RGB based on color space
 linearizeRGB :: RGB -> ColorSpace -> RGB
@@ -149,9 +149,9 @@ applyGammaRGB (RGB r g b) colorSpace =
     ColorSpaceRec2020 ->
       RGB (linearToGamma r 2.4) (linearToGamma g 2.4) (linearToGamma b 2.4)
 
--- ============================================================================
--- MATRIX OPERATIONS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                      // matrix // operations
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | 3x3 matrix-vector multiplication
 matrixMultiply3x3 :: Matrix3x3 -> (Double, Double, Double) -> (Double, Double, Double)
@@ -161,9 +161,9 @@ matrixMultiply3x3 ((m00, m01, m02), (m10, m11, m12), (m20, m21, m22)) (v0, v1, v
       r2 = m20 * v0 + m21 * v1 + m22 * v2
   in (ensureFinite r0 0.0, ensureFinite r1 0.0, ensureFinite r2 0.0)
 
--- ============================================================================
--- COLOR SPACE CONVERSION MATRICES
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                  // color // space // conversion // matrices
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- sRGB to XYZ (D65)
 sRGBToXYZMatrix :: Matrix3x3
@@ -172,7 +172,7 @@ sRGBToXYZMatrix =
    (0.2126729, 0.7151522, 0.072175),
    (0.0193339, 0.119192, 0.9503041))
 
--- XYZ to sRGB (D65)
+--                                                                       // xyz
 xyzToSRGBMatrix :: Matrix3x3
 xyzToSRGBMatrix =
   ((3.2404542, -1.5371385, -0.4985314),
@@ -186,7 +186,7 @@ p3ToXYZMatrix =
    (0.2289746, 0.6917385, 0.0792869),
    (0.0, 0.0451134, 1.0439444))
 
--- XYZ to Display P3 (D65)
+--                                                                       // xyz
 xyzToP3Matrix :: Matrix3x3
 xyzToP3Matrix =
   ((2.4934969, -0.9313836, -0.4027108),
@@ -200,16 +200,16 @@ wideGamutRGBToXYZMatrix =
    (0.2973769, 0.6273491, 0.0752741),
    (0.0270343, 0.0706872, 0.9911085))
 
--- XYZ to Wide-Gamut RGB (D65)
+--                                                                       // xyz
 xyzToWideGamutRGBMatrix :: Matrix3x3
 xyzToWideGamutRGBMatrix =
   ((2.041369, -0.5649464, -0.3446944),
    (-0.969266, 1.8760108, 0.041556),
    (0.0134474, -0.1183897, 1.0154096))
 
--- ============================================================================
--- COLOR SPACE CONVERSIONS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                             // color // space // conversions
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Convert RGB to XYZ color space
 rgbToXYZ :: RGB -> ColorSpace -> XYZ

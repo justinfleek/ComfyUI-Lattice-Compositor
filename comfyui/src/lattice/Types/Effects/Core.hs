@@ -19,7 +19,7 @@ import Data.Aeson (FromJSON, ToJSON)
 import Data.Hashable (Hashable)
 import GHC.Generics (Generic)
 import Lattice.Types.Animation (AnimatableProperty, PropertyValue)
--- TODO: Import MeshWarp types once meshWarp.ts is migrated (Phase 4.1)
+--                                                                      // todo
 -- import Lattice.Types.MeshWarp (WarpMesh, WarpPin)
 
 -- | Effect category classification
@@ -94,7 +94,7 @@ data EffectInstance = EffectInstance
 
 -- | Mesh Deform effect instance with puppet pins
 -- Extends base EffectInstance with pin storage and cached mesh
--- TODO: Update once MeshWarp types are migrated (Phase 4.1)
+--                                                                      // todo
 -- For now, using String placeholders - will be replaced with proper types
 data MeshDeformEffectInstance = MeshDeformEffectInstance
   { meshDeformInstance :: EffectInstance,

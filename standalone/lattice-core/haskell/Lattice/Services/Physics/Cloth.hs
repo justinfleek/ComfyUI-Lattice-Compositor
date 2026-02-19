@@ -40,9 +40,9 @@ module Lattice.Services.Physics.Cloth
   , tornConstraintInfo
   ) where
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Types
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Cloth configuration
 data ClothConfig = ClothConfig
@@ -97,9 +97,9 @@ data TornConstraint = TornConstraint
   , tcType :: ClothConstraintType
   } deriving (Show, Eq)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Default Values
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Default cloth configuration
 defaultClothConfig :: ClothConfig
@@ -120,9 +120,9 @@ defaultClothConfig = ClothConfig
   , ccPinnedParticles = []
   }
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Grid Operations
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Convert (row, col) to particle index
 gridToIndex :: Int -> Int -> Int -> Int
@@ -139,9 +139,9 @@ particlePosition config row col =
   , ccOriginY config + fromIntegral row * ccSpacing config
   )
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Constraint Generation
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Generate structural constraints (horizontal and vertical)
 generateStructuralConstraints :: ClothConfig -> String -> [ClothConstraint]
@@ -254,9 +254,9 @@ generateAllConstraints config clothId =
   ++ generateShearConstraints config clothId
   ++ generateBendConstraints config clothId
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Tearing
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Check if a constraint should tear based on current distance
 checkTear :: ClothConstraint -> Double -> Bool

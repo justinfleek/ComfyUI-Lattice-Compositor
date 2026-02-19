@@ -31,9 +31,9 @@ import Lattice.Primitives (FiniteFloat(..), FrameNumber(..), NonEmptyString, unN
 import Lattice.Entities (Keyframe, ControlMode(..))
 import Lattice.Enums (InterpolationType(..))
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Sort
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Sort keyframes by frame number (ascending)
 sortKeyframes :: Array Keyframe -> Array Keyframe
@@ -41,9 +41,9 @@ sortKeyframes = sortBy compareFrames
   where
     compareFrames a b = compare a.frame b.frame
 
---------------------------------------------------------------------------------
--- CRUD
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
+--                                                                      // crud
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Add a keyframe to the array. If a keyframe at the same frame exists, replace it.
 -- | Returns the new sorted array.
@@ -125,9 +125,9 @@ setKeyframeInterpolation kfId newInterp kfs =
              then k { interpolation = newInterp }
              else k) kfs
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Queries
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Get all keyframes at a specific frame
 getKeyframesAtFrame :: FrameNumber -> Array Keyframe -> Array Keyframe
@@ -157,9 +157,9 @@ findSurroundingKeyframes frame kfs =
     after = head (filter (\k -> k.frame > frame) sorted)
   in { before, after }
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Timing
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Scale keyframe timing by a factor around an anchor frame
 scaleKeyframeTiming :: Number -> FrameNumber -> Array Keyframe -> Array Keyframe

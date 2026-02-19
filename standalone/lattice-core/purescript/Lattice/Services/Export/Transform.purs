@@ -41,9 +41,9 @@ import Lattice.Services.Export.Types
   , UnifiedExportResult
   )
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Motion Data Types (for workflow params)
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | WanMove motion data format for workflow params
 type WanMoveMotionData =
@@ -55,9 +55,9 @@ type ATIMotionData =
   { trajectories :: Array (Array TrackPoint)
   }
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- WanMove Transformation
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Transform WanMove export result to workflow motion data
 -- | Converts tracks: number[][][] to tracks: Array<Array<{x, y}>>
@@ -99,9 +99,9 @@ transformExportToMotionData target result = do
     _ ->
       Left ("Unsupported target for motion data transformation: " <> show target)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Track Conversion
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Convert a single track from [frame][x,y] to Array<{x,y}>
 trackToPoints :: Array (Array Number) -> Array TrackPoint
@@ -126,9 +126,9 @@ pointsToTracks = map (map pointToArray)
 pointToArray :: TrackPoint -> Array Number
 pointToArray p = [p.x, p.y]
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Normalization
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Normalize trajectory coordinates to [0, 1] range
 normalizeTrajectory :: Int -> Int -> WanMoveTrajectory -> WanMoveTrajectory
@@ -166,9 +166,9 @@ denormalizePoint width height arr =
       ]
     _, _ -> arr
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Coordinate Conversion
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Convert pixel coordinate to normalized [0, 1]
 pixelToNormalized :: Number -> Number -> Number
@@ -188,9 +188,9 @@ flipYCoordinate height y = height - y
 toNumber :: Int -> Number
 toNumber = Int.toNumber
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Validation
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Validate that all trajectory points are within bounds
 validateTrajectoryBounds :: Int -> Int -> WanMoveTrajectory -> Either String WanMoveTrajectory

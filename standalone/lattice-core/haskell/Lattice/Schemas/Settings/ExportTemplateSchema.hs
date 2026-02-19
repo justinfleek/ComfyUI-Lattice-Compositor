@@ -54,9 +54,9 @@ import Lattice.Schemas.SharedValidation
 import Lattice.Schemas.ComfyUI.Targets
   ( ExportTarget, DepthMapFormat, ControlType )
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Constants
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 maxDimension :: Int
 maxDimension = 16384
@@ -94,9 +94,9 @@ maxCfgScale = 30.0
 maxUrlLength :: Int
 maxUrlLength = 2048
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Export Template Config
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Partial export config for templates
 data ExportTemplateConfig = ExportTemplateConfig
@@ -156,9 +156,9 @@ defaultExportTemplateConfig = ExportTemplateConfig
   , etcWorkflowTemplate = Nothing
   }
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Export Template
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Export template structure
 data ExportTemplate = ExportTemplate
@@ -171,9 +171,9 @@ data ExportTemplate = ExportTemplate
   }
   deriving stock (Eq, Show, Generic)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Export Template Store
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Export template store
 data ExportTemplateStore = ExportTemplateStore
@@ -182,9 +182,9 @@ data ExportTemplateStore = ExportTemplateStore
   }
   deriving stock (Eq, Show, Generic)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Validation
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Validate ExportTemplateConfig
 validateExportTemplateConfig :: ExportTemplateConfig -> Either ValidationError ExportTemplateConfig

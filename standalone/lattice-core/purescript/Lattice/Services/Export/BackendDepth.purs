@@ -43,9 +43,9 @@ import Data.Generic.Rep (class Generic)
 import Data.Show.Generic (genericShow)
 import Data.Eq.Generic (genericEq)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Types
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Depth estimation model options
 data DepthModel
@@ -123,9 +123,9 @@ type AvailabilityResult =
   , fallbackOnly :: Boolean
   }
 
---------------------------------------------------------------------------------
--- FFI Types
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
+--                                                                  // ffi // t
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Opaque service handle
 foreign import data BackendDepthService :: Type
@@ -136,9 +136,9 @@ foreign import data CanvasHandle :: Type
 -- | Opaque blob handle
 foreign import data BlobHandle :: Type
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Service Management
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Create a new backend depth service
 foreign import createServiceImpl :: Maybe String -> Effect BackendDepthService
@@ -149,9 +149,9 @@ createService = createServiceImpl
 -- | Get the default service instance
 foreign import getDefaultService :: Effect BackendDepthService
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Generation Functions
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Generate depth map from image
 foreign import generateDepthImpl
@@ -210,9 +210,9 @@ foreign import checkAvailabilityImpl
 checkAvailability :: BackendDepthService -> Aff AvailabilityResult
 checkAvailability service = fromEffectFnAff (checkAvailabilityImpl service)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Utility Functions
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Convert canvas to base64 string (no data URL prefix)
 foreign import canvasToBase64 :: CanvasHandle -> Effect String
@@ -226,9 +226,9 @@ base64ToBlob = base64ToBlobImpl
 -- | Convert base64 string to data URL
 foreign import base64ToDataUrl :: String -> String -> String
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Default Options
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Default depth generation options
 defaultDepthOptions :: DepthGenerationOptions

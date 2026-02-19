@@ -2,7 +2,7 @@
 -- Module      : Lattice.Types.PrecisionLimits
 -- Description : Domain-specific precision limits and validation
 -- 
--- CRITICAL: This module enforces precision limits for different domains:
+--                                                                  // critical
 -- - Physics forces: Lower precision (simulation tolerance)
 -- - 3D coordinates: High precision (exact positioning)
 -- - Data visualization: Medium precision (human-readable)
@@ -35,9 +35,9 @@ import qualified Data.Text as T
 import Lattice.Types.Primitives (validateFinite)
 import Lattice.Utils.NumericSafety (roundTo)
 
--- ============================================================================
--- PRECISION DOMAINS
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                      // precision // domains
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Precision domain classification
 -- Each domain has different precision requirements based on use case
@@ -49,9 +49,9 @@ data PrecisionDomain
   | PrecisionExportFormats      -- Export to external formats (format-dependent)
   deriving (Eq, Show)
 
--- ============================================================================
--- PRECISION LIMITS (Decimal Places)
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                       // precision // limits
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Get maximum decimal places for a domain
 -- Returns: Maximum decimal places allowed (values beyond this are rounded)
@@ -73,9 +73,9 @@ getPrecisionEpsilon domain = case domain of
   PrecisionUIDisplay -> 0.1            -- 1 pixel tolerance
   PrecisionExportFormats -> 0.0001    -- Format-dependent tolerance
 
--- ============================================================================
--- PRECISION CONSTANTS (For Documentation)
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                    // precision // constants
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Physics forces precision: 3 decimal places (0.001)
 -- Use for: Force magnitudes, velocities, accelerations, particle forces
@@ -102,9 +102,9 @@ precisionUIDisplay = 1
 precisionExportFormats :: Int
 precisionExportFormats = 4
 
--- ============================================================================
--- VALIDATION FUNCTIONS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                   // validation // functions
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Validate that a value has acceptable precision for a domain
 -- Returns: True if value is within precision limits, False otherwise
@@ -135,9 +135,9 @@ normalizePrecision domain value =
       in
         roundTo value decimals
 
--- ============================================================================
--- DOMAIN-SPECIFIC VALIDATION HELPERS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                                    // domain
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Validate physics force value (3 decimal places)
 validatePhysicsForce :: Double -> Either Text Double

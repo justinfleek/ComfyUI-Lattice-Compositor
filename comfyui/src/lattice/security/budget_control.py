@@ -385,7 +385,7 @@ class BudgetController:
         api_key: Optional[APIKey] = None,
     ) -> None:
         """Record spending and check for alerts"""
-        # SECURITY: Reject negative amounts to prevent budget manipulation
+        #                                                                  // security
         if amount < 0:
             logger.warning(f"Rejected negative spend amount {amount} for user {user.id}")
             return

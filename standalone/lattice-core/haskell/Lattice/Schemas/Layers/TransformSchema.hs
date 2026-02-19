@@ -62,9 +62,9 @@ module Lattice.Schemas.Layers.TransformSchema
 import GHC.Generics (Generic)
 import Data.Text (Text)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Motion Blur Type
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Motion blur types
 data MotionBlurType
@@ -93,9 +93,9 @@ motionBlurTypeToText BlurRadial = "radial"
 motionBlurTypeToText BlurVector = "vector"
 motionBlurTypeToText BlurAdaptive = "adaptive"
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Radial Mode
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Radial motion blur modes
 data RadialMode
@@ -112,9 +112,9 @@ radialModeToText :: RadialMode -> Text
 radialModeToText RadialSpin = "spin"
 radialModeToText RadialZoom = "zoom"
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Auto Orient Mode
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Auto-orient mode for layers
 data AutoOrientMode
@@ -137,9 +137,9 @@ autoOrientModeToText OrientToCamera = "toCamera"
 autoOrientModeToText OrientAlongPath = "alongPath"
 autoOrientModeToText OrientToPointOfInterest = "toPointOfInterest"
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Casts Shadows
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Shadow casting modes
 data CastsShadows
@@ -159,9 +159,9 @@ castsShadowsToText ShadowOff = "off"
 castsShadowsToText ShadowOn = "on"
 castsShadowsToText ShadowOnly = "only"
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Stretch Anchor
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Time stretch anchor points
 data StretchAnchor
@@ -181,9 +181,9 @@ stretchAnchorToText AnchorStartFrame = "startFrame"
 stretchAnchorToText AnchorEndFrame = "endFrame"
 stretchAnchorToText AnchorCurrentFrame = "currentFrame"
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Audio Feature
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Audio features for audio-driven animation
 data AudioFeature
@@ -209,9 +209,9 @@ audioFeatureToText FeatureMid = "mid"
 audioFeatureToText FeatureTreble = "treble"
 audioFeatureToText FeatureSpectral = "spectral"
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Constants
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 maxShutterAngle :: Double
 maxShutterAngle = 720.0
@@ -243,9 +243,9 @@ maxTimeStretch = 100.0
 minTimeStretch :: Double
 minTimeStretch = 0.01
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Structures
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Separate dimensions flags
 data SeparateDimensions = SeparateDimensions
@@ -283,9 +283,9 @@ data MaterialOptions = MaterialOptions
   }
   deriving stock (Eq, Show, Generic)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Validation
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Check if motion blur settings are valid
 isValidMotionBlurSettings :: MotionBlurSettings -> Bool

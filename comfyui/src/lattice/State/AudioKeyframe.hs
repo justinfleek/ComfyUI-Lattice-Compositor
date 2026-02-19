@@ -18,9 +18,9 @@ import Data.List (find, sortBy)
 import Data.Ord (comparing)
 import Lattice.Utils.NumericSafety (ensureFinite)
 
--- ============================================================================
--- HELPER FUNCTIONS
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                       // helper // functions
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Apply exponential smoothing to amplitude values
 -- Pure function: takes value array and smoothing factor, returns smoothed array

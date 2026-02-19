@@ -47,9 +47,9 @@ import Data.Number (isFinite, isNaN) as Number
 import Data.String as String
 import Lattice.Primitives
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Result Type
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Validation result - either success with typed value, or failure with error
 data ValidationResult a
@@ -98,9 +98,9 @@ getOr :: forall a. a -> ValidationResult a -> a
 getOr _ (Ok v) = v
 getOr d (Fail _) = d
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Primitive Validators
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Options for string validation
 type StringOptions =
@@ -171,9 +171,9 @@ validateEnum value name allowed
   | Array.elem value allowed = Ok value
   | otherwise = Fail (name <> " must be one of allowed values")
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Numeric Type Validators
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Validate positive number (> 0)
 validatePositive :: Number -> String -> ValidationResult PositiveFloat
@@ -216,9 +216,9 @@ validateFrameNumber value name
          then Ok (FrameNumber intVal)
          else Fail (name <> " must be a non-negative integer, got " <> show value)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Array Validators
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Validate array with item validator
 validateArray :: forall a. Array Number -> String -> (Number -> String -> ValidationResult a) -> ValidationResult (Array a)
@@ -237,9 +237,9 @@ validateNumberArray :: Array Number -> String -> NumberOptions -> ValidationResu
 validateNumberArray values name opts =
   validateArray values name (\v n -> validateFiniteNumber v n opts)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Vector Validators
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Validate Vec2
 validateVec2 :: Number -> Number -> String -> ValidationResult Vec2
@@ -265,9 +265,9 @@ validateVec4 x y z w name = do
   vw <- validateFiniteNumber w (name <> ".w") defaultNumberOptions
   pure { x: vx, y: vy, z: vz, w: vw }
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Color Validators
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Validate RGB color (0-1 unit floats)
 validateRGB :: Number -> Number -> Number -> String -> ValidationResult RGB
@@ -286,9 +286,9 @@ validateRGBA r g b a name = do
   va <- validateUnit a (name <> ".a")
   pure { r: vr, g: vg, b: vb, a: va }
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Optional/Default Helpers
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Make validation optional
 optional :: forall a. (Number -> String -> ValidationResult a) -> Maybe Number -> String -> ValidationResult (Maybe a)
@@ -302,9 +302,9 @@ withDefault validator def v name =
     Ok x -> Ok x
     Fail _ -> Ok def
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Composition Helpers
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Collect all errors from multiple validations
 validateAll :: Array (ValidationResult Unit) -> ValidationResult Unit

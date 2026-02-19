@@ -34,9 +34,9 @@ import Data.Vector (Vector)
 import qualified Data.Vector as V
 import Data.Foldable (foldl')
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Types
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | 3D vertex position
 data Vertex3D = Vertex3D
@@ -52,9 +52,9 @@ data SimplifiedGeometry = SimplifiedGeometry
   , sgOriginalToNew :: !(Vector Int)   -- ^ Mapping from original to new vertex index
   } deriving (Show, Eq)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Tolerance Rounding
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Round a value to the nearest tolerance step.
 --
@@ -78,9 +78,9 @@ vertexKey :: Vertex3D -> String
 vertexKey vertex =
   show (vertexX vertex) ++ "," ++ show (vertexY vertex) ++ "," ++ show (vertexZ vertex)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Vertex Welding
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Weld state during processing
 data WeldState = WeldState
@@ -132,9 +132,9 @@ remapIndices originalIndices indexMap = V.map remap originalIndices
       | oldIdx >= 0 && oldIdx < V.length indexMap = indexMap V.! oldIdx
       | otherwise = oldIdx  -- Keep original if out of bounds
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Degenerate Triangle Removal
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Check if a triangle is degenerate (has repeated vertices).
 isDegenerateTriangle :: Int -> Int -> Int -> Bool
@@ -158,9 +158,9 @@ removeDegenerateTriangles indices =
                else process (i2 : i1 : i0 : acc) (i + 1)
   in V.fromList (reverse (process [] 0))
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Full Pipeline
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Simplify geometry by welding vertices and removing degenerate triangles.
 simplifyGeometry :: Vector Vertex3D -> Vector Int -> Double -> SimplifiedGeometry

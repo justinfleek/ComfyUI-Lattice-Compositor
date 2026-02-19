@@ -17,9 +17,9 @@ module Lattice.Services.JitterExpressions
 
 import Lattice.Utils.NumericSafety (isFinite)
 
--- ============================================================================
--- TYPES
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                                     // types
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Parameters for jitter expressions
 -- Simplified from JitterExpressionContext - only what's needed for pure calculations
@@ -28,9 +28,9 @@ data JitterParams = JitterParams
   , jitterParamsValue :: [Double]       -- Current value (as array)
   } deriving (Eq, Show)
 
--- ============================================================================
--- DETERMINISTIC NOISE FUNCTIONS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                       // deterministic // noise // functions
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Simple deterministic noise using sine waves
 -- Pure function: same inputs → same outputs
@@ -73,9 +73,9 @@ smoothNoise seed t frequency =
             (2 * v0 - 5 * v1 + 4 * v2 - v3) * t2 +
             (-v0 + 3 * v1 - 3 * v2 + v3) * t3)
 
--- ============================================================================
--- JITTER EXPRESSIONS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                     // jitter // expressions
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Jitter expression
 -- Pure function: same inputs → same outputs

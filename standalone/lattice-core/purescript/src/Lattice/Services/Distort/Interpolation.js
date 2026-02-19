@@ -1,4 +1,4 @@
-// FFI stubs for Lattice.Services.Distort.Interpolation
+//                                                                       // ffi
 "use strict";
 
 export const toNumber$prime = function (n) {

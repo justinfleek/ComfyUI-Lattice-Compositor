@@ -16,9 +16,9 @@ module Lattice.State.Depthflow
 import Data.Aeson (Value(..))
 import Lattice.Utils.NumericSafety (ensureFinite)
 
--- ============================================================================
--- HELPER FUNCTIONS
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                       // helper // functions
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Sanitize numeric config value, returning default if invalid
 -- Pure function: takes value and default, returns sanitized number

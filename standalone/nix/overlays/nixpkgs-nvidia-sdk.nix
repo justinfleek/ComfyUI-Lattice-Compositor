@@ -52,7 +52,7 @@ let
     }
   );
 
-  # CUTLASS - latest version, header-only
+  #                                                                   // cutlass
   cutlass = prev.stdenv.mkDerivation (
     final-attrs:
     translate-attrs {
@@ -86,7 +86,7 @@ let
   );
 
   # ════════════════════════════════════════════════════════════════════════════
-  # NVIDIA SDK
+  #                                                             // nvidia // sdk
   # ════════════════════════════════════════════════════════════════════════════
 
   nvidia-sdk = prev.symlinkJoin {
@@ -111,16 +111,16 @@ let
       cuda-packages.libcusparse
       cuda-packages.libnvjitlink
 
-      # ML
+      #                                                                        // ml
       cuda-packages.cudnn
       cuda-packages.tensorrt
       cuda-packages.nccl
 
-      # CUTLASS
+      #                                                                   // cutlass
       cutlass
     ];
 
-    # NOTE: postBuild is not in translate-attrs, quote it
+    #                                                                      // note
     "postBuild" = builtins.readFile ./scripts/nvidia-sdk-postbuild.sh;
 
     passthru = {

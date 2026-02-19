@@ -36,9 +36,9 @@ import Lattice.Services.Export.CameraExport.Formats.Common
 import Lattice.Services.Export.CameraExport.Matrix (computeW2CMatrixFlat)
 import Lattice.Services.Export.CameraExport.MotionAnalysis (analyzeCameraMotion)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- CameraCtrl Format
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Detect AnimateDiff CameraCtrl motion type
 detectCameraCtrlMotionType :: Array CameraKeyframe -> CameraCtrlMotionType

@@ -43,9 +43,9 @@ import Lattice.Types.Animation
   )
 import Lattice.Types.Layer (Layer(..))
 
--- ============================================================================
--- EXPRESSION METHODS
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                     // expression // methods
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Set an expression on a property
 -- Pure function: takes layer ID, property path, expression, and layers list
@@ -253,9 +253,9 @@ updateExpressionParams layerId propertyPath newParams layers =
               in
                 Right updatedLayers
 
--- ============================================================================
--- CONVERT EXPRESSION TO KEYFRAMES (BAKE)
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                  // convert // expression // to // keyframes
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Convert an expression to keyframes by sampling at every frame
 -- Pure function: takes layer ID, property path, start frame, end frame, sample rate, ID generator, and layers list

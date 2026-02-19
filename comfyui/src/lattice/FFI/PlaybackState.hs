@@ -40,9 +40,9 @@ import Lattice.State.Playback
   , PlaybackState(..)
   )
 
--- ============================================================================
--- JSON Response Helpers
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                                 // json // r
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Convert JSON Value to CString
 jsonToCString :: Value -> IO CString
@@ -59,9 +59,9 @@ errorResponse msg = object ["status" .= ("error" :: T.Text), "message" .= msg]
 successResponse :: ToJSON a => a -> Value
 successResponse result = object ["status" .= ("success" :: T.Text), "result" .= result]
 
--- ============================================================================
--- PURE QUERIES (GETTERS)
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                           // pure // queries
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Check if playback is currently playing
 foreign export ccall "playing"
@@ -130,9 +130,9 @@ c_effective_end_frame playbackStateJson frameCountJson = do
       jsonToCString (successResponse result)
     _ -> jsonToCString (errorResponse "Invalid JSON: expected PlaybackState and Double")
 
--- ============================================================================
--- PURE CALCULATIONS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                      // pure // calculations
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Clamp frame to valid range
 foreign export ccall "clamp_frame"

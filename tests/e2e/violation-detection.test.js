@@ -29,7 +29,7 @@ describe('Violation Detection at All Enforcement Points', () => {
   });
   
   it('MCP server validation logic should catch violations', () => {
-    // MCP server uses same validation logic as validator
+    //                                                                       // mcp
     // Test by checking that rules.js has the rule
     const rulesPath = join(process.cwd(), 'scripts', 'rules.js');
     const content = require('fs').readFileSync(rulesPath, 'utf-8');
@@ -48,7 +48,7 @@ describe('Violation Detection at All Enforcement Points', () => {
     const content = require('fs').readFileSync(workflowPath, 'utf-8');
     expect(content).toContain('validate-file.js');
     expect(content).toContain('WSN-E001');
-    // CI uses validate-file.js and also has grep checks
+    //                                                                        // ci
   });
   
   it('All enforcement points should use same validation logic', () => {

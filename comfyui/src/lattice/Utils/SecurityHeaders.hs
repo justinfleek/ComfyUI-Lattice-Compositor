@@ -5,7 +5,7 @@
 -- Migrated from ui/src/utils/securityHeaders.ts
 -- Pure configuration data for server/proxy security headers
 -- 
--- CRITICAL: No forbidden patterns - explicit types, no null/undefined, no type escapes
+--                                                                  // critical
 -- Note: These headers must be configured at the server/proxy level, not in application code
 --
 
@@ -29,9 +29,9 @@ import qualified Data.Text as T
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 
--- ============================================================================
--- TYPES
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                                     // types
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Environment type for security header selection
 -- 
@@ -57,13 +57,13 @@ data SecurityHeaders = SecurityHeaders
   }
   deriving (Eq, Show)
 
--- ============================================================================
--- DEFAULT CONFIGURATIONS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                 // default // configurations
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Default security headers configuration
 -- 
--- CSP Policy:
+--                                                                  // csp // p
 -- - default-src 'self' - Only allow resources from same origin
 -- - script-src 'self' 'unsafe-inline' 'unsafe-eval' - Allow inline scripts (Vue requires this)
 -- - style-src 'self' 'unsafe-inline' - Allow inline styles (Vue requires this)
@@ -147,9 +147,9 @@ developmentSecurityHeaders = SecurityHeaders
   , securityStrictTransportSecurity = Nothing
   }
 
--- ============================================================================
--- FUNCTIONS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                                 // functions
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Get security headers based on environment
 -- 

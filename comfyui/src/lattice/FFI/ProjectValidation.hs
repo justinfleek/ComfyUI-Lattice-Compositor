@@ -39,9 +39,9 @@ import Lattice.Services.ProjectValidation
   , defaultNumericBounds
   )
 
--- ============================================================================
--- HELPER FUNCTIONS
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                       // helper // functions
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Convert ValidationError list to JSON
 encodeValidationErrors :: [ValidationError] -> Value
@@ -74,9 +74,9 @@ jsonToCString resultJSON = do
   let resultText = TE.decodeUtf8 resultBS
   newCString (T.unpack resultText)
 
--- ============================================================================
--- VALIDATION FUNCTIONS (JSON-based)
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                   // validation // functions
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Export calculateMaxDepth as C function
 -- C signature: char* calculate_max_depth(char* json_input, int current_depth)

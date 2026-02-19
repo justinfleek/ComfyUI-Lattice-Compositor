@@ -37,9 +37,9 @@ module Lattice.Services.Particles.SubEmitter
   , subEmitterBurst
   ) where
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Types
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | What triggers sub-emission
 data SubEmitterTrigger
@@ -84,9 +84,9 @@ data SubSpawnResult = SubSpawnResult
   , ssrLifetime :: Double      -- ^ Sub-particle lifetime
   } deriving (Show, Eq)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Trigger Check
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Check if sub-emitter should trigger.
 --
@@ -112,9 +112,9 @@ shouldTrigger config parentEmitterId trigger lifeRatio threshold =
        (TriggerLifetime, TriggerLifetime) -> lifeRatio >= threshold
        _ -> False
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Sub-Emission Calculation
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Calculate sub-spawn parameters from parent particle.
 --
@@ -161,9 +161,9 @@ subEmitterBurst base variance randomVal =
   let varianceAmount = fromIntegral base * variance * (randomVal - 0.5) * 2
   in max 0 (round (fromIntegral base + varianceAmount))
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Property Inheritance
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Inherit velocity from parent based on mode.
 inheritVelocity :: Double -> Double -> InheritMode -> (Double, Double)

@@ -2,7 +2,7 @@
 
 import re
 
-# JSON-compatible value types
+#                                                                      // json
 JSONValue = str | int | float | bool | None | list | dict
 
 
@@ -301,8 +301,8 @@ def parse_path_data(d: str, path_idx: int) -> tuple[list[dict], bool]:
         y = args[i + 3] + (cy if is_relative else 0)
 
         # Convert quadratic to cubic control points
-        # CP1 = P0 + 2/3 * (Q - P0)
-        # CP2 = P1 + 2/3 * (Q - P1)
+        #                                                                       // cp1
+        #                                                                       // cp2
         cp1x = cx + (2 / 3) * (qx - cx)
         cp1y = cy + (2 / 3) * (qy - cy)
         cp2x = x + (2 / 3) * (qx - x)

@@ -57,9 +57,9 @@ import Data.Ord (comparing)
 import Data.Vector (Vector)
 import qualified Data.Vector as V
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Types
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | 3D position with x, y, z coordinates.
 data Position3D = Position3D
@@ -113,9 +113,9 @@ data LayerWithDepth a = LayerWithDepth
   , lwdDepth :: Double
   } deriving (Show, Eq)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Default Values
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Default position at origin.
 defaultPosition :: Position3D
@@ -137,9 +137,9 @@ defaultTransform = LayerTransform defaultPosition defaultScale defaultAnchor
 defaultOpacity :: Double
 defaultOpacity = 1.0
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Layer Depth Extraction
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Extract Z value from static position.
 getStaticDepth :: Position3D -> Double
@@ -201,9 +201,9 @@ getLayerDepth transform maybeKeyframes frame =
     Just kfs | not (V.null kfs) -> interpolateZFromKeyframes kfs frame
     _ -> pos3dZ (ltPosition transform)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Layer Opacity Extraction
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Convert percentage opacity (0-100) to normalized (0-1).
 normalizeOpacity :: Double -> Double
@@ -247,9 +247,9 @@ getLayerOpacity staticOpacity maybeKeyframes frame =
     Just kfs | not (V.null kfs) -> interpolateOpacityFromKeyframes kfs frame
     _ -> normalizeOpacity staticOpacity
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Screen Bounds Calculation
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Calculate scaled dimensions.
 calculateScaledDimensions :: Double -> Double -> Scale2D -> (Double, Double)
@@ -303,9 +303,9 @@ getLayerScreenBounds transform layerWidth layerHeight screenWidth screenHeight =
                            screenWidth screenHeight
   in clipBoundsToScreen screenX screenY finalWidth finalHeight screenWidth screenHeight
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Layer Sorting
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Sort layers by depth (front to back from camera).
 -- Lower Z values are closer to camera.

@@ -6,7 +6,7 @@
 -- Pure pixel-level blend mode calculations
 -- Note: Canvas operations (blendImages) deferred
 --
--- HSL-based blend modes (Hue, Saturation, Color, Luminosity) use proven
+--                                                                       // hsl
 -- color conversions from Lattice.Types.Color, which are proven correct
 -- in Lean4 (lattice-core/lean/Color/Color.lean and Color.BlendModes.lean)
 --
@@ -60,9 +60,9 @@ import Lattice.Types.Color
   )
 import Lattice.Utils.NumericSafety (ensureFinite)
 
--- ============================================================================
--- TYPES
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                                     // types
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- Note: RGB and HSL types are imported from Lattice.Types.Color (proven)
 -- These use the Lean4-proven color system from lattice-core/lean/Color/Color.lean
@@ -76,9 +76,9 @@ data PixelRGBA = PixelRGBA
   }
   deriving (Eq, Show)
 
--- ============================================================================
--- COLOR SPACE FUNCTIONS (USING PROVEN CONVERSIONS)
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                               // color // space // functions
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Convert RGB (Int components) to HSL using proven conversion
 -- Uses Lattice.Types.Color.rgbToHSL (proven in Lean4)
@@ -113,9 +113,9 @@ getLuminance r g b =
 clampRGB :: Int -> Int
 clampRGB value = max 0 (min 255 value)
 
--- ============================================================================
--- BLEND MODE FUNCTIONS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                // blend // mode // functions
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Dissolve blend (requires seeded random)
 -- Pure function: same inputs → same outputs
@@ -282,9 +282,9 @@ blendLuminosity baseR baseG baseB blendR blendG blendB =
       resultRGB = hslToRGB blendedHSL
   in (rgb8Value (rgbR resultRGB), rgb8Value (rgbG resultRGB), rgb8Value (rgbB resultRGB))
 
--- ============================================================================
--- PIXEL BLEND FUNCTION
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                // pixel // blend // function
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Apply blend mode to a single pixel
 -- Pure function: same inputs → same outputs
@@ -378,9 +378,9 @@ blendPixel baseR baseG baseB baseA blendR blendG blendB blendA mode opacity =
                                           else (resultR, resultG, resultB, resultA)
   in (clampRGB finalR, clampRGB finalG, clampRGB finalB, clampRGB finalA)
 
--- ============================================================================
--- UTILITY FUNCTIONS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                      // utility // functions
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Check if a blend mode can use Canvas 2D native operation
 -- Pure function: same inputs → same outputs

@@ -25,9 +25,9 @@ import Effect (Effect)
 import Effect.Aff (Aff)
 import Data.Argonaut.Core (Json)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Session FFI
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | @ffi Get session ID (from sessionStorage or generate new UUID)
 foreign import getSessionId :: Effect String
@@ -35,9 +35,9 @@ foreign import getSessionId :: Effect String
 -- | @ffi Get current ISO 8601 timestamp
 foreign import getCurrentISOTimestamp :: Effect String
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Database FFI
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | @ffi Open IndexedDB database
 -- | @param dbName Database name
@@ -72,9 +72,9 @@ foreign import clearStoreImpl :: String -> Aff Unit
 -- | @returns Number of entries deleted
 foreign import deleteOldEntriesImpl :: String -> String -> Int -> Aff Int
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- File FFI
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | @ffi Download blob as file
 -- | @param content File content

@@ -29,7 +29,7 @@
 #   - libsodium   : Modern cryptography library
 #   - simdjson    : SIMD-accelerated JSON parser (4+ GB/s)
 #
-# USAGE:
+#                                                                     // usage
 #
 #   imports = [ aleph.modules.flake.shortlist ];
 #

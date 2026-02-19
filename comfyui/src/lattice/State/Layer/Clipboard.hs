@@ -26,9 +26,9 @@ import Lattice.State.Layer.Types (LayerStateClipboard(..))
 import Lattice.Types.Animation (ClipboardKeyframe(..))
 import Lattice.Types.Layer (Layer(..))
 
--- ============================================================================
--- CLIPBOARD OPERATIONS
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                   // clipboard // operations
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Set clipboard contents
 -- Pure function: takes layers and keyframes, returns new clipboard state

@@ -31,9 +31,9 @@ import Lattice.Types.Animation
 import Lattice.Types.Layer (Layer(..))
 import Lattice.Types.Primitives (validateFinite)
 
--- ============================================================================
--- KEYFRAME CLIPBOARD (COPY/PASTE)
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                     // keyframe // clipboard
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Keyframe selection for copy operation
 data KeyframeSelection = KeyframeSelection

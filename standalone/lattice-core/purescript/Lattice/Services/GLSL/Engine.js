@@ -1,4 +1,4 @@
-// FFI bindings for Lattice.Services.GLSL.Engine
+//                                                                       // ffi
 // WebGL shader engine implementation
 
 // Default vertex shader

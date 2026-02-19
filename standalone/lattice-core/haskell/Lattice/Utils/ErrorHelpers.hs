@@ -33,9 +33,9 @@ module Lattice.Utils.ErrorHelpers
 import Data.Text (Text)
 import qualified Data.Text as T
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Error Types
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Structured error with context
 data ContextualError = ContextualError
@@ -53,9 +53,9 @@ data ValidationError = ValidationError
   , veExpected    :: !Text  -- What was expected
   } deriving (Eq, Show)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Error Construction
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Create a contextual error
 mkContextualError :: Text -> Text -> Text -> Maybe Text -> ContextualError
@@ -65,9 +65,9 @@ mkContextualError = ContextualError
 mkValidationError :: Text -> Text -> Text -> Text -> ValidationError
 mkValidationError = ValidationError
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Formatting
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Format contextual error as string
 formatContextualError :: ContextualError -> Text
@@ -87,9 +87,9 @@ formatValidationError e =
         (Just $ "Provide a valid " <> veExpected e <> " value for " <> veField e)
   in formatContextualError contextual
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Common Error Patterns
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Create error for missing required field
 missingFieldError :: Text -> ContextualError

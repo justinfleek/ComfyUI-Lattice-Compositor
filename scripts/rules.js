@@ -672,7 +672,7 @@ export const RULES = {
           const isStandaloneScript = /\.(hs|purs)$/.test(normalizedPath) && !normalizedPath.includes('/packages/') && !normalizedPath.includes('/src/') && (normalizedPath.includes('/test-violations/') || normalizedPath.includes('/scripts/'));
           
           // If it has script structure (module Main + main =), require import regardless of path
-          // UNLESS it's clearly a package module (Straylight.Nix.Packages.*)
+          //                                                                    // unless
           if (hasScriptStructure && !isPackageFile) {
             // Match actual import statements, not comments
             return /^import\s+Straylight\.Script/m.test(code);
@@ -769,7 +769,7 @@ export const RULES = {
           const isStandaloneScript = /\.(hs|purs)$/.test(normalizedPath) && !normalizedPath.includes('/packages/') && !normalizedPath.includes('/src/') && (normalizedPath.includes('/test-violations/') || normalizedPath.includes('/scripts/'));
           
           // If it has script structure (module Main + main =), require import regardless of path
-          // UNLESS it's clearly a package module (Straylight.Nix.Packages.*)
+          //                                                                    // unless
           if (hasScriptStructure && !isPackageFile) {
             // Match actual import statements, not comments
             return /^import\s+Straylight\.Script/m.test(code);

@@ -43,9 +43,9 @@ module Lattice.Services.Particles.Modulation
   , scurve
   ) where
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Types
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Type of property being modulated
 data ModulationType
@@ -87,9 +87,9 @@ data ModulationResult = ModulationResult
   , mrVelocityMult :: Double  -- ^ Velocity multiplier
   } deriving (Show, Eq)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Curve Evaluation
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Evaluate a modulation curve at a given life ratio.
 --
@@ -124,7 +124,7 @@ evaluateLinear points t =
       in cpValue before + (cpValue after - cpValue before) * localT
 
 -- | Safe last element accessor - returns default (1.0) for empty list.
--- NEVER uses partial `last` function.
+--                                                                     // never
 safeLast :: [CurvePoint] -> Double
 safeLast [] = 1.0  -- Default: no change
 safeLast xs = go xs
@@ -154,9 +154,9 @@ evaluateCatmullRom points t =
   -- Full Catmull-Rom requires 4 points per segment
   evaluateLinear points t
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Property Modulation
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Calculate size modulation multiplier.
 modulateSize :: ModulationCurve -> Double -> Double
@@ -178,9 +178,9 @@ modulateVelocity :: ModulationCurve -> Double -> Double
 modulateVelocity curve lifeRatio =
   max 0 (evaluateCurve curve lifeRatio)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Combined Application
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Apply all modulations to get combined result.
 --
@@ -220,9 +220,9 @@ combineModulations lifeRatio pm result =
     ModVelocity ->
       result { mrVelocityMult = mrVelocityMult result * modulateVelocity (pmCurve pm) lifeRatio }
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Preset Curves
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Linear fade from 1 to 0 over lifetime.
 linearFadeOut :: ModulationCurve

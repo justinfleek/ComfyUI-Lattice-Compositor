@@ -22,9 +22,9 @@ import Lattice.Services.AudioFeatures
 import Lattice.State.Audio.Queries (activeAnalysis)
 import Lattice.State.Audio.Types (AudioState(..))
 
--- ============================================================================
--- PURE BEAT CALCULATIONS
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                              // pure // beat // calculations
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Get beat timestamps in seconds
 -- Pure function: takes audio state, returns list of beat timestamps

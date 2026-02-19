@@ -32,9 +32,9 @@ module Lattice.Services.Shader.Transition
   , lerpColorAlpha
   ) where
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Smoothstep (Hermite interpolation)
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Clamp value to [0, 1] range.
 clamp01 :: Double -> Double
@@ -55,9 +55,9 @@ smoothstep edge0 edge1 x
   where
     t = clamp01 ((x - edge0) / (edge1 - edge0))
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Dissolve Transition
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Calculate dissolve edge value.
 --
@@ -79,9 +79,9 @@ dissolveEdge noiseValue progress softness =
 dissolveBlend :: Double -> Double -> Double -> Double
 dissolveBlend = dissolveEdge
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Wipe Transition
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Calculate directional wipe projection.
 --
@@ -96,7 +96,7 @@ wipeProjection uvX uvY angleDeg =
   let rad = angleDeg * pi / 180.0
       dirX = cos rad
       dirY = sin rad
-      -- UV relative to center (0.5, 0.5)
+      --                                                                        // uv
       relX = uvX - 0.5
       relY = uvY - 0.5
   -- Dot product + offset to get [0, 1] range
@@ -124,9 +124,9 @@ wipeEdge uvX uvY angleDeg progress softness =
 wipeBlend :: Double -> Double -> Double -> Double -> Double -> Double
 wipeBlend = wipeEdge
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Radial Wipe
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Calculate radial wipe distance from center.
 --
@@ -162,9 +162,9 @@ radialWipeEdge uvX uvY centerX centerY progress softness maxRadius invert =
       threshold = if invert then 1.0 - progress else progress
   in smoothstep (threshold - softness) (threshold + softness) normalizedDist
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Clock Wipe
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Calculate angle from center (in radians, 0 = right, counter-clockwise).
 angleFromCenter :: Double  -- ^ UV X
@@ -204,9 +204,9 @@ clockWipeEdge uvX uvY centerX centerY startAngleDeg progress softness clockwise 
       directedAngle = if clockwise then 1.0 - normalizedAngle else normalizedAngle
   in smoothstep (progress - softness) (progress + softness) directedAngle
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Linear Interpolation (for transition blending)
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Linear interpolation between two values.
 lerp :: Double -> Double -> Double -> Double

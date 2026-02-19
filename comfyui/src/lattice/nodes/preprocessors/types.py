@@ -2,7 +2,7 @@
 
 from enum import Enum
 
-# JSON-compatible value types
+#                                                                      // json
 JSONValue = str | int | float | bool | None | list | dict
 
 

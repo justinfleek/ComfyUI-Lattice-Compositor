@@ -1,4 +1,4 @@
-// FFI bindings for TemplateVerifier.purs
+//                                                                       // ffi
 // Ed25519 operations via tweetnacl
 
 let nacl = null;

@@ -1,4 +1,4 @@
-// FFI for Lattice.Services.Particles.SeededRandom
+//                                                                       // ffi
 // Bitwise operations for simulating 32-bit unsigned integers
 
 export const xorBitwise = function(a) {

@@ -1,4 +1,4 @@
-// FFI stubs for Lattice.Services.RenderQueue.Manager.Rendering
+//                                                                       // ffi
 
 "use strict";
 

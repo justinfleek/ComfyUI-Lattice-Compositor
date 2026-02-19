@@ -33,9 +33,9 @@ module Lattice.Schemas.Effects.EffectsSchema
 import GHC.Generics (Generic)
 import Data.Text (Text)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Effect Category
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Effect category options
 data EffectCategory
@@ -82,9 +82,9 @@ effectCategoryToText EffectTime = "time"
 effectCategoryToText EffectTransition = "transition"
 effectCategoryToText EffectUtility = "utility"
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Effect Parameter Type
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Effect parameter type options
 data EffectParameterType
@@ -128,9 +128,9 @@ effectParameterTypeToText ParamString = "string"
 effectParameterTypeToText ParamCurve = "curve"
 effectParameterTypeToText ParamData = "data"
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Constants
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 maxParameters :: Int
 maxParameters = 1000

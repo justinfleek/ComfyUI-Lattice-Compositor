@@ -30,9 +30,9 @@ import Lattice.State.TextAnimator
   , RGBA(..)
   )
 
--- ============================================================================
--- JSON HELPERS
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                           // json // helpers
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Create success response JSON
 successResponse :: ToJSON a => a -> BSL.ByteString
@@ -46,9 +46,9 @@ errorResponse msg = encode $ object ["status" .= ("error" :: T.Text), "message" 
 jsonToCString :: BSL.ByteString -> IO CString
 jsonToCString = newCString . T.unpack . TE.decodeUtf8 . BSL.toStrict
 
--- ============================================================================
--- QUERY FUNCTIONS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                        // query // functions
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | FFI: Get text content
 foreign export ccall get_text_content_ffi :: CString -> IO CString
@@ -116,9 +116,9 @@ has_text_path_ffi inputCStr = do
       let result = hasTextPath layer
       jsonToCString (successResponse result)
 
--- ============================================================================
--- HELPER FUNCTIONS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                       // helper // functions
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | FFI: Convert RGBA object to hex
 foreign export ccall rgba_object_to_hex_ffi :: CString -> IO CString

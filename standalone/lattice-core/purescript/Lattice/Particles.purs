@@ -40,9 +40,9 @@ import Data.Generic.Rep (class Generic)
 import Data.Show.Generic (genericShow)
 import Lattice.Primitives
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Enumerations
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 data EmitterShape
   = ESPoint | ESLine | ESCircle | ESBox | ESSphere | ESRing | ESSpline
@@ -190,9 +190,9 @@ derive instance Eq FloorBehavior
 derive instance Generic FloorBehavior _
 instance Show FloorBehavior where show = genericShow
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Core Types
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 type ParticleVec3 =
   { x :: FiniteFloat

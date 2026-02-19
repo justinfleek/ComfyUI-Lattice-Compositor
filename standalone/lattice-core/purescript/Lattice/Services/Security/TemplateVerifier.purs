@@ -51,9 +51,9 @@ import Foreign.Object as Obj
 import Data.Generic.Rep (class Generic)
 import Data.Show.Generic (genericShow)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Types
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Signature structure in template files
 type TemplateSignature =
@@ -109,9 +109,9 @@ type SignedTemplate =
   , signature :: Maybe TemplateSignature
   }
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Constants
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Official Lattice public key for template signing
 -- |
@@ -124,9 +124,9 @@ officialPublicKey = "xmCWXfRKw7DQLuyQdqQIJlAb+r0arpUu2oVjTdJgv/k="
 supportedVersions :: Array String
 supportedVersions = ["1.0"]
 
---------------------------------------------------------------------------------
--- FFI for Ed25519 operations
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
+--                                                                       // ffi
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Verify Ed25519 signature (async FFI)
 foreign import verifyEd25519Signature :: String -> String -> String -> Aff Boolean
@@ -140,9 +140,9 @@ foreign import getCurrentISOTimestamp :: Aff String
 -- | Extract public key from private key (last 32 bytes)
 foreign import extractPublicKeyFromPrivate :: String -> String
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Verification Functions
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Verify a template file
 verifyTemplate :: Json -> Aff VerificationResult
@@ -232,9 +232,9 @@ getVerificationBadge result = case result.status of
     , icon: "question"
     }
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Signing Functions (build-time only)
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Sign a template with a private key
 -- |
@@ -264,9 +264,9 @@ signTemplate templateData privateKeyBase64 = do
 
   pure { dat: templateData, signature: Just sig }
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Loading Functions
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Load and verify a template from JSON string
 loadAndVerifyTemplate :: String -> Aff { template :: TemplateDataForSigning, verification :: VerificationResult }
@@ -302,9 +302,9 @@ getLoadingWarning result = case result.status of
   VsUnsigned ->
     Right "This template is unsigned. Only load templates from sources you trust."
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Internal Functions
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Create unsigned result
 mkUnsignedResult :: String -> VerificationResult

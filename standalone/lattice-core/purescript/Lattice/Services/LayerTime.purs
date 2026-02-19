@@ -38,9 +38,9 @@ import Data.Tuple (Tuple(..))
 import Global (isNaN, isFinite) as Global
 import Math (abs) as Math
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Types
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Result of source time calculation
 type SourceTimeResult =
@@ -68,9 +68,9 @@ defaultSourceTimeOptions =
   , pingPong: false
   }
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Constants
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Normal time stretch (100%)
 normalStretch :: Number
@@ -80,9 +80,9 @@ normalStretch = 100.0
 defaultFps :: Number
 defaultFps = 30.0
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Helper Functions
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Check if finite
 isFiniteNum :: Number -> Boolean
@@ -104,9 +104,9 @@ safeMod a b =
   if b == 0.0 then a
   else a - b * toNumber (floor (a / b))
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Core Functions
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Calculate effective speed from time stretch percentage.
 -- | 100% = 1x speed, 200% = 0.5x speed (slower), 50% = 2x speed (faster)
@@ -138,9 +138,9 @@ getSourceDuration stretchedDuration timeStretch =
   in if safe == 0.0 then stretchedDuration
      else (stretchedDuration * normalStretch) / Math.abs safe
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Loop/Clamp Functions
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Apply simple loop to source frame
 loopFrame :: Number -> Number -> Tuple Number Boolean
@@ -172,9 +172,9 @@ clampFrame sourceFrameVal sourceDuration
       let adjusted = max 0.0 (min sourceFrameVal (sourceDuration - 1.0))
       in Tuple adjusted (adjusted /= sourceFrameVal)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Source Time Calculation
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Calculate source time from composition frame.
 getSourceTime :: Number             -- ^ compFrame
@@ -240,9 +240,9 @@ getSourceFrame compFrame layerStartFrame timeStretch fps sourceDuration =
       result = getSourceTime compFrame layerStartFrame timeStretch options
   in result.sourceFrame
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Stretch Anchor Calculations
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Calculate new endpoints after time stretch, anchored at start
 stretchFromStart :: Number -> Number -> Number -> Number -> Tuple Number Number

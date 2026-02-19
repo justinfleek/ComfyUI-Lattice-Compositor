@@ -52,9 +52,9 @@ import GHC.Generics (Generic)
 import Numeric (showHex)
 import Lattice.Utils.NumericSafety (ensureFinite)
 
--- ============================================================================
--- LAYER TYPE
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                             // layer // type
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Layer type enumeration
 data LayerType
@@ -81,9 +81,9 @@ instance FromJSON LayerType where
       "particles" -> return LayerTypeParticles
       _ -> return (LayerTypeOther s)
 
--- ============================================================================
--- RGBA COLOR
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                             // rgba // color
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | RGBA color object
 data RGBA = RGBA
@@ -111,9 +111,9 @@ instance FromJSON RGBA where
     a <- o .:? "a" .!= 255.0
     return (RGBA r g b a)
 
--- ============================================================================
--- TEXT ANIMATOR (Minimal type for queries)
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                          // text // animator
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Text animator with minimal fields for pure queries
 data TextAnimator = TextAnimator
@@ -138,9 +138,9 @@ instance FromJSON TextAnimator where
     enabled <- o .:? "enabled" .!= True
     return (TextAnimator id_ name enabled)
 
--- ============================================================================
--- TEXT PATH CONFIG
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                    // text // path // config
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Text path configuration
 data TextPathConfig = TextPathConfig
@@ -183,9 +183,9 @@ instance FromJSON TextPathConfig where
     align <- o .:? "align" .!= "left"
     return (TextPathConfig pathPoints closed reversed perpendicularToPath forceAlignment firstMargin lastMargin offset align)
 
--- ============================================================================
--- TEXT DATA (Minimal type for queries)
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                              // text // data
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Text data with minimal fields for pure queries
 data TextData = TextData
@@ -211,9 +211,9 @@ instance FromJSON TextData where
     mPathConfig <- o .:? "pathConfig"
     return (TextData mText mAnimators mPathConfig)
 
--- ============================================================================
--- LAYER (Minimal type for queries)
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                                     // layer
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Layer with minimal fields for pure queries
 data Layer = Layer
@@ -237,9 +237,9 @@ instance FromJSON Layer where
     mData <- o .:? "data"
     return (Layer id_ type_ mData)
 
--- ============================================================================
--- COLOR CONVERSION HELPERS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                            // color // conversion // helpers
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Convert RGB to hex string (#RRGGBB)
 rgbToHex :: Int -> Int -> Int -> Text
@@ -319,9 +319,9 @@ isRgbaObject (Object o) =
     _ -> False
 isRgbaObject _ = False
 
--- ============================================================================
--- QUERY FUNCTIONS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                        // query // functions
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Get text content from a text layer
 -- Pure function: takes layer, returns text or Nothing

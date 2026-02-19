@@ -51,13 +51,13 @@ import Lattice.Types.Transform
   )
 import Lattice.Types.LayerDataText (TextData(..))
 
--- ============================================================================
--- PURE TRANSFORMATIONS
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                   // pure // transformations
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Regenerate all keyframe IDs in a layer to avoid conflicts
 -- Pure function: takes layer and ID generator function, returns new layer with regenerated keyframe IDs
--- NOTE: Requires pure ID generator function (no IO) - caller provides ID generation
+--                                                                      // note
 regenerateKeyframeIds ::
   (Text -> Text) ->  -- ID generator function (pure) - takes old ID, returns new ID
   Layer ->
@@ -110,9 +110,9 @@ regenerateKeyframeIds generateId layer =
   in
     layer {layerTransform = newTransform, layerProperties = newProperties}
 
--- ============================================================================
--- CRUD OPERATIONS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                        // crud // operations
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Create a new layer
 -- Pure function: takes layer ID, type, options, composition settings, layer data, and ID generators

@@ -36,9 +36,9 @@ import Data.Vector (Vector)
 import qualified Data.Vector as V
 import Lattice.Services.Path.BezierCore
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Types
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Point matching strategy for paths with different vertex counts
 data PointMatchingStrategy
@@ -74,9 +74,9 @@ data PreparedMorphPaths = PreparedMorphPaths
 defaultMorphConfig :: MorphConfig
 defaultMorphConfig = MorphConfig SubdivideShorter NearestRotation Nothing
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Path Cloning
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Clone a path
 clonePath :: BezierPath -> BezierPath
@@ -85,9 +85,9 @@ clonePath path = BezierPath
   , bpClosed = bpClosed path
   }
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Correspondence / Travel Distance
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Calculate total travel distance for a given rotation offset.
 calculateTravelDistance :: BezierPath -> BezierPath -> Int -> Bool -> Double
@@ -151,9 +151,9 @@ rotateVertices path offset reverse
               }
          else cloneVertex srcVertex
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Subdivision
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Subdivide a segment at parameter t.
 subdivideSegmentAt :: BezierPath -> Int -> Double -> BezierPath
@@ -198,9 +198,9 @@ subdivideToVertexCount path targetCount
           newPath = subdivideSegmentAt path maxIdx 0.5
       in subdivideToVertexCount newPath targetCount
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Resampling
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Get point at a specific arc length along the path.
 getPointAtArcLength :: BezierPath -> Double -> Vector Double -> Point2D
@@ -251,9 +251,9 @@ resamplePath path vertexCount
          , bvOutHandle = scalePoint tangent handleScale
          }
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Main Morphing Functions
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Interpolate between two prepared paths.
 morphPaths :: BezierPath -> BezierPath -> Double -> BezierPath

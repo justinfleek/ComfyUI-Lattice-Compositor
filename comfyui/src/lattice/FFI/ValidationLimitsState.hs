@@ -35,9 +35,9 @@ import Lattice.State.ValidationLimits
   , clampLimit
   )
 
--- ============================================================================
--- JSON Response Helpers
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                                 // json // r
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Convert JSON Value to CString
 jsonToCString :: Value -> IO CString
@@ -54,9 +54,9 @@ errorResponse msg = object ["status" .= ("error" :: T.Text), "message" .= msg]
 successResponse :: ToJSON a => a -> Value
 successResponse result = object ["status" .= ("success" :: T.Text), "result" .= result]
 
--- ============================================================================
--- PURE CONSTANTS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                         // pure // constants
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Get default validation limits
 foreign export ccall "get_default_limits"
@@ -67,9 +67,9 @@ c_get_default_limits = do
   let result = getDefaultLimits
   jsonToCString (successResponse result)
 
--- ============================================================================
--- PURE VALIDATION
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                        // pure // validation
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Validate a limit value
 foreign export ccall "validate_limit"

@@ -54,9 +54,9 @@ import Lattice.Services.Export.FlowGenerators.SeededRandom
 import Lattice.Services.Export.FlowGenerators.Noise (simplexNoise2D)
 import Lattice.Services.Export.FlowGenerators.Generators2 as G2
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Dispatch
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Generate flow based on pattern type
 generateFlow :: GenerativeFlowConfig -> WanMoveTrajectory
@@ -69,9 +69,9 @@ generateFlow config = case config.pattern of
   PatternMorph -> generateMorphFlow config
   PatternSwarm -> generateSwarmFlow config
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Helper Functions
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Clamp value to bounds
 clamp :: Number -> Number -> Number -> Number
@@ -99,9 +99,9 @@ makeMetadata cfg =
   , fps: 16
   }
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Spiral Flow Generator
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Generate spiral galaxy flow pattern
 generateSpiralFlow :: GenerativeFlowConfig -> WanMoveTrajectory
@@ -180,9 +180,9 @@ generateSpiralFlow cfg =
     , metadata: makeMetadata cfg
     }
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Wave Flow Generator
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Generate wave/ocean flow pattern
 generateWaveFlow :: GenerativeFlowConfig -> WanMoveTrajectory
@@ -264,9 +264,9 @@ foldPoints numPoints initialRng genFn =
   in
     go 0 initialRng [] []
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Explosion Flow Generator
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Generate explosion/big bang pattern
 generateExplosionFlow :: GenerativeFlowConfig -> WanMoveTrajectory
@@ -361,9 +361,9 @@ generateExplosionFlow cfg =
     , metadata: makeMetadata cfg
     }
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Vortex Flow Generator
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Generate vortex/whirlpool pattern
 generateVortexFlow :: GenerativeFlowConfig -> WanMoveTrajectory
@@ -423,9 +423,9 @@ generateVortexFlow cfg =
     , metadata: makeMetadata cfg
     }
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Remaining generators (DataRiver, Morph, Swarm) from Generators2
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 generateDataRiverFlow :: GenerativeFlowConfig -> WanMoveTrajectory
 generateDataRiverFlow = G2.generateDataRiverFlow

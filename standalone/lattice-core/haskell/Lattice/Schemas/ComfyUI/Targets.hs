@@ -33,9 +33,9 @@ module Lattice.Schemas.ComfyUI.Targets
 import GHC.Generics (Generic)
 import Data.Text (Text)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Export Target
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Export target for ComfyUI workflows
 data ExportTarget
@@ -61,9 +61,9 @@ exportTargetToText TargetForge   = "forge"
 exportTargetToText TargetInvokeAI = "invokeai"
 exportTargetToText TargetCustom  = "custom"
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Depth Map Format
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Depth map output format
 data DepthMapFormat
@@ -92,9 +92,9 @@ depthMapFormatToText DepthDepthAnything = "depth_anything"
 depthMapFormatToText DepthNormalized    = "normalized"
 depthMapFormatToText DepthInverse       = "inverse"
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Control Type
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | ControlNet control type
 data ControlType

@@ -37,9 +37,9 @@ import Lattice.State.Theme
   , ThemeName(..)
   )
 
--- ============================================================================
--- JSON Response Helpers
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                                 // json // r
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Convert JSON Value to CString
 jsonToCString :: Value -> IO CString
@@ -56,9 +56,9 @@ errorResponse msg = object ["status" .= ("error" :: T.Text), "message" .= msg]
 successResponse :: ToJSON a => a -> Value
 successResponse result = object ["status" .= ("success" :: T.Text), "result" .= result]
 
--- ============================================================================
--- PURE QUERIES (GETTERS)
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                           // pure // queries
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Get theme gradient CSS variable
 foreign export ccall "theme_gradient"
@@ -108,9 +108,9 @@ c_theme_secondary themeJson = do
       jsonToCString (successResponse result)
     Nothing -> jsonToCString (errorResponse "Invalid JSON: expected ThemeName")
 
--- ============================================================================
--- PURE CONSTANTS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                         // pure // constants
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Get glow color for theme
 foreign export ccall "get_glow_color"

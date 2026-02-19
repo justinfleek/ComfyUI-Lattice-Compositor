@@ -933,5 +933,5 @@ stylizeBasicDefinitions =
             defFragmentShader = Nothing
           }
       )
-      -- NOTE: cinematic-bloom is complex (many parameters) - moved to StylizeAdvanced.hs
+      --                                                                      // note
     ]

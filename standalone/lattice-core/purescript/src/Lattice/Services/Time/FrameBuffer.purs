@@ -46,9 +46,9 @@ import Data.Ord (abs)
 import Data.Tuple (Tuple(..), fst, snd)
 import Math (pow)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Types
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Frame buffer entry - stores frame image data with metadata.
 type FrameBufferEntry a =
@@ -119,9 +119,9 @@ efrFrame r = r.frame
 efrEchoIndex :: forall a. EchoFrameResult a -> Int
 efrEchoIndex r = r.echoIndex
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Constants
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Maximum number of frames to store in buffer.
 maxBufferFrames :: Int
@@ -131,9 +131,9 @@ maxBufferFrames = 64
 defaultMaxFrameDistance :: Int
 defaultMaxFrameDistance = maxBufferFrames * 2
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Buffer Operations (pure)
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Check if buffer needs trimming.
 shouldTrimBuffer :: Int -> Boolean
@@ -182,9 +182,9 @@ calculateEchoIntensity :: Number -> Number -> Int -> Number
 calculateEchoIntensity startingIntensity decay echoIndex =
   startingIntensity * pow (1.0 - decay) (toNumber echoIndex)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Statistics
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Calculate buffer statistics from entries.
 calculateBufferStats :: forall a. Array (FrameBufferEntry a) -> FrameBufferStats

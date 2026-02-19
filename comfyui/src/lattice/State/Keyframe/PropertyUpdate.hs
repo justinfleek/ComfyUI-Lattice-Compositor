@@ -4,7 +4,7 @@
 --
 -- Internal module for keyframe operations
 -- Provides functions to update keyframes in specific properties in Layer structure
--- NOTE: This module works with typed properties (Position2DOr3D, Vec3, Double)
+--                                                                      // note
 -- For operations that need PropertyValue, conversion happens at call site
 --
 

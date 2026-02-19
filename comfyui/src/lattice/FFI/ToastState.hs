@@ -25,9 +25,9 @@ import Lattice.State.Toast
   , Toast(..)
   )
 
--- ============================================================================
--- JSON HELPERS
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                           // json // helpers
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Create success response JSON
 successResponse :: ToJSON a => a -> BSL.ByteString
@@ -41,9 +41,9 @@ errorResponse msg = encode $ object ["status" .= ("error" :: T.Text), "message" 
 jsonToCString :: BSL.ByteString -> IO CString
 jsonToCString = newCString . T.unpack . TE.decodeUtf8 . BSL.toStrict
 
--- ============================================================================
--- HELPER FUNCTIONS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                       // helper // functions
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | FFI: Create a toast notification
 foreign export ccall create_toast_ffi :: CString -> IO CString
@@ -56,9 +56,9 @@ create_toast_ffi inputCStr = do
       let result = createToast id_ message type_ duration
       jsonToCString (successResponse result)
 
--- ============================================================================
--- QUERY FUNCTIONS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                        // query // functions
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | FFI: Get all toasts
 foreign export ccall get_toasts_ffi :: CString -> IO CString

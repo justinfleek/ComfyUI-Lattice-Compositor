@@ -73,9 +73,9 @@ import Lattice.Types.Primitives
   )
 import Lattice.Types.Transform (LayerTransform(..))
 
--- ============================================================================
--- SPECIALIZED LAYER CREATION
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                          // specialized // layer // creation
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Create a text layer with default text data
 -- Pure function: takes text content, layer ID, composition settings, and ID generators
@@ -535,9 +535,9 @@ replaceLayerSource targetLayerId newSource layers =
           
           _ -> Left ("Unsupported source replacement: layer type " <> T.pack (show (layerType existingLayer)) <> " with replacement type " <> T.pack (show replacementType))
 
--- ============================================================================
--- TEXT TO SPLINE CONVERSION
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                        // text // to // spline // conversion
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Character vector group (pre-converted from async text-to-vector operation)
 -- This represents paths for a single character
@@ -592,7 +592,7 @@ bezierPathToControlPoints (BezierPath vertices _) genId =
 -- | Convert a text layer to one or more spline layers
 -- Pure function: takes layer ID, pre-converted paths, options, ID generators, composition settings, and layers list
 -- Returns list of created layer IDs and new layers list, or error
--- NOTE: The async parts (font loading, text-to-vector conversion) are handled at the FFI boundary.
+--                                                                      // note
 -- This function takes the already-converted paths as input.
 convertTextLayerToSplines ::
   Text -> -- Text layer ID

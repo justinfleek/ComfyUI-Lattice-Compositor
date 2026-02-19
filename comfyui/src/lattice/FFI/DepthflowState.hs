@@ -19,9 +19,9 @@ import Foreign.C.String (CString, peekCString, newCString)
 import Foreign.C.Types (CDouble)
 import Lattice.State.Depthflow (sanitizeNumber)
 
--- ============================================================================
--- JSON HELPERS
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                           // json // helpers
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Create success response JSON
 successResponse :: ToJSON a => a -> BSL.ByteString
@@ -35,9 +35,9 @@ errorResponse msg = encode $ object ["status" .= ("error" :: T.Text), "message" 
 jsonToCString :: BSL.ByteString -> IO CString
 jsonToCString = newCString . T.unpack . TE.decodeUtf8 . BSL.toStrict
 
--- ============================================================================
--- HELPER FUNCTIONS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                       // helper // functions
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | FFI: Sanitize numeric config value
 foreign export ccall sanitize_number_ffi :: CString -> IO CString

@@ -41,9 +41,9 @@ import qualified Data.Text as T
 import GHC.Generics (Generic)
 import Lattice.Types.Primitives (validateFinite, validateNonNegative)
 
--- ============================================================================
--- SNAP TYPE
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                              // snap // type
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Snap target types
 data SnapType
@@ -77,9 +77,9 @@ instance FromJSON SnapType where
       "playhead" -> return SnapTypePlayhead
       _ -> fail ("Invalid SnapType: " ++ show t)
 
--- ============================================================================
--- AUDIO ANALYSIS (Minimal type for queries)
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                         // audio // analysis
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Audio analysis with minimal fields for snap queries
 data AudioAnalysis = AudioAnalysis
@@ -96,9 +96,9 @@ instance FromJSON AudioAnalysis where
     onsets <- o .:? "onsets" .!= []
     return (AudioAnalysis onsets)
 
--- ============================================================================
--- SNAP CONFIGURATION
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                     // snap // configuration
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Snap configuration for timeline snapping
 data SnapConfig = SnapConfig
@@ -158,9 +158,9 @@ defaultSnapConfig = SnapConfig
   , snapConfigGridInterval = 5.0  -- Snap to every 5 frames by default
   }
 
--- ============================================================================
--- SNAP RESULT
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                            // snap // result
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Result of finding nearest snap point
 data SnapResult = SnapResult
@@ -188,9 +188,9 @@ instance FromJSON SnapResult where
       then return (SnapResult frame typ distance)
       else fail "SnapResult: frame and distance must be finite and non-negative"
 
--- ============================================================================
--- PEAK DATA (Minimal type for queries)
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                              // peak // data
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Peak data with minimal fields for snap queries
 data PeakData = PeakData
@@ -207,9 +207,9 @@ instance FromJSON PeakData where
     indices <- o .:? "indices" .!= []
     return (PeakData indices)
 
--- ============================================================================
--- QUERY FUNCTIONS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                        // query // functions
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Get all beat frames from audio analysis
 -- Pure function: takes audio analysis, returns beat frames list

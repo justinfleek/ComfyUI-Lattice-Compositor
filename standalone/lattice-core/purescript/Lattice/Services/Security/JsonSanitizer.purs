@@ -45,9 +45,9 @@ import Data.Tuple (Tuple(..))
 import Foreign.Object (Object)
 import Foreign.Object as Obj
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Types
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Sanitization options
 type JSONSanitizeOptions =
@@ -84,9 +84,9 @@ type SanitizeState =
   , warnings :: Array String
   }
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Constants
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Default sanitization options
 defaultOptions :: JSONSanitizeOptions
@@ -126,9 +126,9 @@ emptyStats =
 emptyState :: SanitizeState
 emptyState = { stats: emptyStats, warnings: [] }
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Parsing & Sanitization
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Parse and sanitize JSON string
 parseAndSanitize :: String -> JSONSanitizeOptions -> JSONSanitizeResult
@@ -210,9 +210,9 @@ sanitizeValue json opts state depth =
   -- Unknown type (should not happen with valid JSON)
   else Left "Unknown JSON value type"
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- String Sanitization
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Sanitize a string value
 sanitizeString :: String -> JSONSanitizeOptions -> SanitizeState -> Either String (Tuple Json SanitizeState)
@@ -237,9 +237,9 @@ removeNullBytes str =
       filtered = filter (\c -> c /= '\x00') chars
   in foldl (\acc c -> acc <> SCU.singleton c) "" filtered
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Array Sanitization
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Sanitize an array
 sanitizeArray :: Array Json -> JSONSanitizeOptions -> SanitizeState -> Int -> Either String (Tuple Json SanitizeState)
@@ -266,9 +266,9 @@ sanitizeArrayElements arr opts state depth acc =
         Right (Tuple sanitized newState) ->
           sanitizeArrayElements tail opts newState depth (acc <> [sanitized])
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Object Sanitization
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Sanitize an object
 sanitizeObject :: Object Json -> JSONSanitizeOptions -> SanitizeState -> Int -> Either String (Tuple Json SanitizeState)
@@ -314,9 +314,9 @@ sanitizeObjectKeys pairs opts state depth acc =
         Right (Tuple sanitized newState) ->
           sanitizeObjectKeys tail opts newState depth (Obj.insert key sanitized acc)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Quick Validation
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Quick validation without full sanitization
 -- | Use for fast rejection of obviously malicious input
@@ -372,18 +372,18 @@ safeParse jsonString opts =
       Just e -> e
       Nothing -> "JSON validation failed")
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Utilities
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Deep freeze (no-op in PureScript since data is immutable)
 -- | Included for API compatibility
 deepFreeze :: Json -> Json
 deepFreeze = identity
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Internal Helpers
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Create error result
 mkError :: String -> SanitizeStats -> Array String -> JSONSanitizeResult

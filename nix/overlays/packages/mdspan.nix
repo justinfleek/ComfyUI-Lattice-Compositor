@@ -1,7 +1,7 @@
 # nix/packages/mdspan.nix — Kokkos reference implementation of std::mdspan
 #
-# P0009 mdspan - multidimensional array view for C++23
-# GCC 15 doesn't ship it yet, so we use the Kokkos reference impl.
+#                                                                     // p0009
+#                                                                 // gcc // 15
 # Patched to inject into std:: namespace (not std::experimental::)
 #
 {

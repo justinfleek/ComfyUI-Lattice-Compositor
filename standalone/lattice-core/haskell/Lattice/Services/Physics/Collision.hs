@@ -37,9 +37,9 @@ import Data.Maybe (listToMaybe, catMaybes)
 import Data.List (minimumBy)
 import Data.Ord (comparing)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Types
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Collision manifold containing contact information
 data CollisionManifold = CollisionManifold
@@ -50,9 +50,9 @@ data CollisionManifold = CollisionManifold
   , cmContactY :: Double  -- ^ Contact point Y
   } deriving (Show, Eq)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Internal Helpers
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 vecLength :: Double -> Double -> Double
 vecLength x y = sqrt (x * x + y * y)
@@ -60,9 +60,9 @@ vecLength x y = sqrt (x * x + y * y)
 vecLengthSq :: Double -> Double -> Double
 vecLengthSq x y = x * x + y * y
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Circle vs Circle
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Test collision between two circles.
 --
@@ -90,9 +90,9 @@ circleVsCircle x1 y1 r1 x2 y2 r2 =
               contactY = y1 + ny * r1
           in Just $ CollisionManifold nx ny depth contactX contactY
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Circle vs Box
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Test collision between a circle and an axis-aligned box.
 circleVsBox :: Double  -- ^ Circle center X
@@ -147,9 +147,9 @@ circleVsBox cx cy cr bx by bw bh boxAngle =
                in Just $ CollisionManifold worldNX worldNY depth contactX contactY
           else Nothing
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Box vs Box (AABB)
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Test collision between two axis-aligned boxes.
 boxVsBox :: Double  -- ^ Box 1 center X
@@ -176,9 +176,9 @@ boxVsBox x1 y1 w1 h1 x2 y2 w2 h2 =
               contactY = y1 + ny * h1
           in Just $ CollisionManifold nx ny depth contactX contactY
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Oriented Box vs Oriented Box (SAT)
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Project a box onto an axis and return (min, max).
 projectBoxOnAxis :: Double  -- ^ Center X

@@ -10,7 +10,7 @@
 
 module Lattice.State.Animation.Evaluation
   ( getCurrentTime
-  -- FFI helpers (pass-through / simple conversions)
+  --                                                                       // ffi
   , getCurrentFrame
   , getFrameCount
   , getFps
@@ -24,9 +24,9 @@ import qualified Data.Text as T
 import Lattice.Types.Primitives (validateFinite, validateNonNegative)
 import Lattice.Types.Project (Composition(..), CompositionSettings(..))
 
--- ============================================================================
--- FRAME EVALUATION OPERATIONS
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                         // frame // evaluation // operations
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Get current time in seconds
 -- Pure function: takes composition, returns current time in seconds
@@ -45,9 +45,9 @@ getCurrentTime comp =
         then Left ("getCurrentTime: Invalid currentFrame (must be finite and non-negative): " <> T.pack (show currentFrame))
         else Right (currentFrame / fps)
 
--- ============================================================================
--- FFI HELPERS (pass-through / simple conversions for FFI layer)
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                            // ffi // helpers
+-- ════════════════════════════════════════════════════════════════════════════
 
 getCurrentFrame :: Int -> Int
 getCurrentFrame = id
@@ -67,9 +67,9 @@ getEffectiveEndFrame mEnd frameCount =
 getCurrentTimeFromFrameFps :: Int -> Double -> Double
 getCurrentTimeFromFrameFps frame fps = fromIntegral frame / fps
 
--- ============================================================================
--- NOTE: getFrameState
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                                      // note
+-- ════════════════════════════════════════════════════════════════════════════
 --
 -- The getFrameState function requires MotionEngine.evaluate() which has not been
 -- migrated yet. This function will be added when MotionEngine migration is complete.

@@ -25,9 +25,9 @@ import Data.Aeson
   )
 import GHC.Generics (Generic)
 
--- ============================================================================
--- KEYPOINT
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                                  // keypoint
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Keypoint with x, y coordinates and confidence
 data Keypoint = Keypoint
@@ -52,9 +52,9 @@ instance FromJSON Keypoint where
     confidence <- o .: "confidence"
     return (Keypoint x y confidence)
 
--- ============================================================================
--- DEFAULT DATA CREATION FUNCTIONS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                  // default // data // creation // functions
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Create default T-pose keypoints for COCO 18-point format (normalized 0-1)
 -- Pure function: returns constant array of 18 keypoints

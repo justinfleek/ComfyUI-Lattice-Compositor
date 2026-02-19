@@ -31,9 +31,9 @@ import Lattice.Services.ModelIntegrity
   , DecompositionParams(..)
   )
 
--- ============================================================================
--- HASH COMPUTATION
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                       // hash // computation
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Export computeHash as C function
 -- C signature: char* compute_hash(char* bytes, int length)
@@ -67,9 +67,9 @@ c_verify_hash computedPtr expectedPtr = do
     then return (CInt 1)
     else return (CInt 0)
 
--- ============================================================================
--- PARAMETER VALIDATION
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                   // parameter // validation
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Input JSON structure for validateDecompositionParams
 -- Expected format: {"numLayers": 5, "cfgScale": 4.0, "steps": 50, "resolution": 640, "seed": null}

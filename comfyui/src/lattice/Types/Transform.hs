@@ -45,9 +45,9 @@ import Lattice.Types.Primitives
   , Position2DOr3D(..)
   )
 
--- ============================================================
--- LAYER TRANSFORM
--- ============================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                        // layer // transform
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Layer transform with animatable properties
 -- Position and origin can be 2D or 3D (z optional)
@@ -117,9 +117,9 @@ data SeparateDimensions = SeparateDimensions
   }
   deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
--- ============================================================
--- MOTION BLUR SETTINGS
--- ============================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                // motion // blur // settings
+-- ════════════════════════════════════════════════════════════════════════════
 
 data MotionBlurType
   = MotionBlurStandard    -- Standard shutter-based blur
@@ -149,9 +149,9 @@ instance FromJSON MotionBlurType where
       t | t == T.pack "adaptive" -> return MotionBlurAdaptive
       _ -> fail "Invalid MotionBlurType"
 
--- ============================================================
--- DEFAULT VALUES
--- ============================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                         // default // values
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Create default layer transform
 -- Note: Requires ID generation - caller must provide IDs

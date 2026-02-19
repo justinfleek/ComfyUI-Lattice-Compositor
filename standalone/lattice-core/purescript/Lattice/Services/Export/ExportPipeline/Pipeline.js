@@ -1,4 +1,4 @@
-// FFI for Lattice.Services.Export.ExportPipeline.Pipeline
+//                                                                       // ffi
 // Export pipeline execution using browser APIs
 
 // Execute full export pipeline

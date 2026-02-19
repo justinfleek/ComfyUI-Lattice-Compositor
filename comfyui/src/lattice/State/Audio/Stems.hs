@@ -25,9 +25,9 @@ import GHC.Generics (Generic)
 import Lattice.Services.AudioFeatures (AudioAnalysis(..))
 import Lattice.State.Audio.Types (AudioState(..), AudioBuffer(..), StemData(..))
 
--- ============================================================================
--- TYPES
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                                     // types
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Stem information (name, duration, BPM)
 data StemInfo = StemInfo
@@ -37,9 +37,9 @@ data StemInfo = StemInfo
   }
   deriving (Eq, Show, Generic)
 
--- ============================================================================
--- PURE STEM QUERIES
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                   // pure // stem // queries
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Get stem analysis by name
 -- Pure function: takes audio state, stem name, returns analysis (with defaults if not found)

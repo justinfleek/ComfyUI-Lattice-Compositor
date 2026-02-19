@@ -27,9 +27,9 @@ import Lattice.Utils.NumericSafety (isFinite)
 import Lattice.Types.Primitives (Vec2(..))
 import Lattice.Utils.NumericSafety (ensureFinite, safeSqrt)
 
--- ============================================================================
--- TYPES
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                                     // types
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Triangle with vertex indices
 data Triangle = Triangle
@@ -39,9 +39,9 @@ data Triangle = Triangle
   }
   deriving (Eq, Show)
 
--- ============================================================================
--- GEOMETRIC UTILITY FUNCTIONS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                         // geometric // utility // functions
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Calculate Euclidean distance between two 2D points
 -- Pure function: same inputs → same outputs
@@ -86,9 +86,9 @@ scalePoint point origin scale =
       newY = vec2Y origin + (vec2Y point - vec2Y origin) * finiteScale
   in Vec2 (ensureFinite newX 0.0) (ensureFinite newY 0.0)
 
--- ============================================================================
--- DELAUNAY TRIANGULATION
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                 // delaunay // triangulation
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Check if a point is inside the circumcircle of a triangle
 -- Pure function: same inputs → same outputs

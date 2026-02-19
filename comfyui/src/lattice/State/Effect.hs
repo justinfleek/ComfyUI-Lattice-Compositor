@@ -22,9 +22,9 @@ import Data.Maybe (Maybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 
--- ============================================================================
--- STYLE PRESET NAMES
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                  // style // preset // names
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Style preset name enumeration
 data StylePresetName
@@ -47,9 +47,9 @@ stylePresetNameToText StylePresetEmbossed = "embossed"
 stylePresetNameToText StylePresetInnerBevel = "inner-bevel"
 stylePresetNameToText StylePresetPillowEmboss = "pillow-emboss"
 
--- ============================================================================
--- QUERY FUNCTIONS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                        // query // functions
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Check if styles clipboard has content
 -- Pure function: takes clipboard styles, returns Bool

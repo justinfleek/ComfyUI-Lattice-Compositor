@@ -38,9 +38,9 @@ import qualified Data.Vector as V
 
 import Lattice.Services.ShapeOperations.Point2D
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Types
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Direction for shape winding
 data WindingDirection
@@ -61,9 +61,9 @@ data BezierPath = BezierPath
   , bpClosed   :: Bool
   } deriving (Show, Eq)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Constants
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Magic number for circular Bezier approximation.
 -- Derived from: 4/3 * tan(π/8) ≈ 0.5522847498
@@ -74,9 +74,9 @@ kappa = 0.5522847498
 degToRad :: Double -> Double
 degToRad deg = deg * pi / 180
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Vertex Helpers
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Create a corner vertex (no handles)
 cornerVertex :: Point2D -> BezierVertex
@@ -96,9 +96,9 @@ cloneVertex (BezierVertex p i o) = BezierVertex (clone p) (clone i) (clone o)
 clonePath :: BezierPath -> BezierPath
 clonePath (BezierPath vs c) = BezierPath (V.map cloneVertex vs) c
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Rectangle
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Generate a rectangle path.
 generateRectangle :: Point2D -> Point2D -> Double -> WindingDirection -> BezierPath
@@ -143,9 +143,9 @@ generateRectangle position size roundness direction =
 
        in BezierPath (V.fromList vertices) True
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Ellipse
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Generate an ellipse path using 4-point Bezier approximation.
 generateEllipse :: Point2D -> Point2D -> WindingDirection -> BezierPath
@@ -183,9 +183,9 @@ generateEllipse position size direction =
 
   in BezierPath (V.fromList vertices) True
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Regular Polygon
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Generate a regular polygon (n-gon).
 generatePolygon :: Point2D -> Int -> Double -> Double -> Double -> WindingDirection -> BezierPath
@@ -222,9 +222,9 @@ generatePolygon position points radius roundness rotation direction =
 
   in BezierPath (V.fromList vertices) True
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Star
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Generate a star shape.
 generateStar :: Point2D -> Int -> Double -> Double -> Double -> Double
@@ -268,9 +268,9 @@ generateStar position points outerRadius innerRadius outerRoundness innerRoundne
 
   in BezierPath (V.fromList vertices) True
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Path from Points
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Create a path from an array of points (sharp corners)
 pathFromPoints :: Vector Point2D -> Bool -> BezierPath

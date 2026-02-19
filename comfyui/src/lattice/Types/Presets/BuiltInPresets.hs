@@ -24,12 +24,12 @@ import Lattice.Types.Presets.Core
     PresetMetadata (..),
   )
 
--- ============================================================================
--- BUILT-IN PARTICLE PRESETS
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                                     // built
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Built-in particle presets
--- NOTE: Timestamps use 0.0 as placeholder - should be set at runtime or during import
+--                                                                      // note
 builtInParticlePresets :: [ParticlePreset]
 builtInParticlePresets =
   [ ParticlePreset
@@ -831,13 +831,13 @@ builtInParticlePresets =
       }
   ]
 
--- ============================================================================
--- BUILT-IN PATH EFFECT PRESETS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                                     // built
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Built-in path effect presets
--- NOTE: Uses Text placeholders for SplinePathEffectInstance - will be updated when spline.ts is migrated
--- NOTE: Timestamps use 0.0 as placeholder - should be set at runtime or during import
+--                                                                      // note
+--                                                                      // note
 builtInPathEffectPresets :: [PathEffectPreset]
 builtInPathEffectPresets =
   [ PathEffectPreset

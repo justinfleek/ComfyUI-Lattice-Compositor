@@ -37,9 +37,9 @@ module Lattice.Services.Color.ValueMapping
 import Data.Vector (Vector)
 import qualified Data.Vector as V
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Types
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Configuration for value mapping.
 data ValueMappingConfig = ValueMappingConfig
@@ -69,9 +69,9 @@ data DepthMappingConfig = DepthMappingConfig
 defaultDepthMappingConfig :: DepthMappingConfig
 defaultDepthMappingConfig = DepthMappingConfig 0 1 1 0 0 1 False
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Core Mapping Functions
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Clamp a value to 0-1 range.
 clamp01 :: Double -> Double
@@ -104,9 +104,9 @@ applySmoothing currentValue previousValue smoothing
   | smoothing <= 0 = currentValue
   | otherwise = previousValue * smoothing + currentValue * (1 - smoothing)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Complete Value Mapping
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Apply complete value mapping pipeline.
 --
@@ -136,9 +136,9 @@ mapValue rawValue config mPreviousValue =
 mapValueSimple :: Double -> ValueMappingConfig -> Double
 mapValueSimple rawValue config = mapValue rawValue config Nothing
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Depth Mapping
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Normalize depth value to near/far range.
 --
@@ -178,9 +178,9 @@ mapDepthValue depthValue config mPreviousValue =
        Nothing -> mapped
        Just prev -> applySmoothing mapped prev (dmcSmoothing config)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Motion Detection Math
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Calculate per-pixel color difference (0-1).
 --
@@ -215,9 +215,9 @@ mapMotionValue motionValue sensitivity minVal maxVal mPreviousValue smoothing =
        Nothing -> mapped
        Just prev -> applySmoothing mapped prev smoothing
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Gradient Calculation
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Calculate gradient magnitude from dx and dy.
 gradientMagnitude :: Double -> Double -> Double
@@ -233,9 +233,9 @@ calculateGradient left right top bottom =
       dy = bottom - top
   in gradientMagnitude dx dy
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Statistics
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Calculate variance of a vector of values.
 calculateVariance :: Vector Double -> Double

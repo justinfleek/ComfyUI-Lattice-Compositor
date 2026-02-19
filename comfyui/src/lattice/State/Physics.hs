@@ -18,9 +18,9 @@ module Lattice.State.Physics
 
 import Lattice.Utils.NumericSafety (ensureFinite)
 
--- ============================================================================
--- HELPER FUNCTIONS
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                       // helper // functions
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Convert angle from radians to degrees
 -- Pure function: takes angle in radians, returns angle in degrees
@@ -42,9 +42,9 @@ degreesToRadians degrees =
   in
     safeDegrees * (pi / 180.0)
 
--- ============================================================================
--- CALCULATION FUNCTIONS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                  // calculation // functions
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Calculate start and end frame for baking given options and composition frame count
 -- Pure function: takes startFrame option, endFrame option, composition frame count, returns (startFrame, endFrame)

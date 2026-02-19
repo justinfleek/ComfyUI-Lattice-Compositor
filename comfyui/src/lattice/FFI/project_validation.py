@@ -7,7 +7,7 @@ Python wrappers for Haskell project validation functions.
 import json
 from typing import Dict, List
 
-# JSON-compatible value types (recursive structure)
+#                                                                      // json
 JSONValue = str | int | float | bool | None | list["JSONValue"] | dict[str, "JSONValue"]
 JSONDict = Dict[str, JSONValue]
 import ctypes

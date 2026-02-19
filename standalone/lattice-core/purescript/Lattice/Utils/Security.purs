@@ -28,7 +28,7 @@ module Lattice.Utils.Security
   , ValidationError
   , mkValidationError
   , formatPath
-    -- JSON Value
+    --                                                                 // json // v
   , JSONValue(..)
   , jsonIsObject
   , jsonIsArray
@@ -51,9 +51,9 @@ import Data.Tuple (Tuple(..))
 import Data.Generic.Rep (class Generic)
 import Data.Show.Generic (genericShow)
 
---------------------------------------------------------------------------------
--- URL Validation
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
+--                                                                  // url // v
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Blocked hostnames (localhost, private IPs)
 blockedHostnames :: Array String
@@ -173,9 +173,9 @@ isValidURL url options =
     URLValid -> true
     _ -> false
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Input Sanitization
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Characters invalid in filenames
 invalidFilenameChars :: Array String
@@ -214,9 +214,9 @@ escapeHTML input =
     input
     htmlEntities
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Runtime Type Validation
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Validation error with context
 type ValidationError =
@@ -234,9 +234,9 @@ formatPath path =
   if Array.null path then "root"
   else String.joinWith "." path
 
---------------------------------------------------------------------------------
--- JSON Value
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
+--                                                                 // json // v
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Simple JSON value representation
 data JSONValue
@@ -285,9 +285,9 @@ jsonField (JSONObject fields) key =
   map (\(Tuple _ v) -> v) $ Array.find (\(Tuple k _) -> k == key) fields
 jsonField _ _ = Nothing
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Project Validation
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Validate basic project structure
 validateProjectStructure :: JSONValue -> Either ValidationError Unit

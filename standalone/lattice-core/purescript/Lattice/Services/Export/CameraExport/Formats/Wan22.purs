@@ -23,9 +23,9 @@ import Lattice.Services.Export.CameraExport.Types
 import Lattice.Services.Export.CameraExport.Formats.Common (CameraKeyframe)
 import Lattice.Services.Export.CameraExport.MotionAnalysis (analyzeCameraMotion)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Wan 2.2 Fun Camera Format
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Map to Wan 2.2 Fun Camera preset
 mapToWan22FunCamera :: Array CameraKeyframe -> Wan22FunCameraData

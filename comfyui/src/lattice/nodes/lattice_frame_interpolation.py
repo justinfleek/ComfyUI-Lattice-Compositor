@@ -57,7 +57,7 @@ import logging
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-# JSON-compatible value types
+#                                                                      // json
 JSONValue = str | int | float | bool | None | list | dict
 
 import numpy as np
@@ -71,7 +71,7 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger("lattice.frame_interpolation")
 
-# RIFE model variants
+#                                                                      // rife
 RIFE_MODELS = {
   "rife-v4.6": {
     "name": "RIFE v4.6",
@@ -241,7 +241,7 @@ class FrameInterpolator:
         pass
 
       # Fallback: try loading state dict directly
-      # SECURITY: weights_only=True prevents arbitrary code execution from
+      #                                                                  // security
       # malicious pickle payloads. See AUDIT/PYTHON_FINDINGS.md for details.
       state_dict = torch.load(model_path, map_location=self.device, weights_only=True)
       logger.info(f"Loaded RIFE state dict from {model_path}")
@@ -338,7 +338,7 @@ class FrameInterpolator:
 
         # Generate intermediate frame
         if hasattr(self._model, "inference"):
-          # RIFE-style inference
+          #                                                                      // rife
           mid = self._model.inference(t1, t2, timestep=t, ensemble=ensemble)
         elif hasattr(self._model, "forward"):
           # Generic forward pass
@@ -485,9 +485,9 @@ def get_attribution() -> dict[str, JSONValue]:
   }
 
 
-# ============================================================================
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 # Image Encoding/Decoding Utilities
-# ============================================================================
+# ════════════════════════════════════════════════════════════════════════════
 
 
 def decode_image(image_b64: str) -> np.ndarray:
@@ -509,9 +509,9 @@ def encode_image(frame: np.ndarray, format: str = "png") -> str:
   return base64.b64encode(buffer.getvalue()).decode("utf-8")
 
 
-# ============================================================================
+# ════════════════════════════════════════════════════════════════════════════
 # ComfyUI Route Registration
-# ============================================================================
+# ════════════════════════════════════════════════════════════════════════════
 
 try:
   import asyncio
@@ -768,9 +768,9 @@ except ImportError:
   logger.warning("Not running in ComfyUI - frame interpolation routes not registered")
 
 
-# ============================================================================
+# ════════════════════════════════════════════════════════════════════════════
 # Standalone Testing
-# ============================================================================
+# ════════════════════════════════════════════════════════════════════════════
 
 if __name__ == "__main__":
   import argparse

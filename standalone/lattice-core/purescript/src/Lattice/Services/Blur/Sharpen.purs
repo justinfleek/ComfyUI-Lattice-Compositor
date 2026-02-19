@@ -27,9 +27,9 @@ import Prelude
 
 import Math (abs)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Unsharp Mask
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Apply unsharp mask formula to a single value.
 --
@@ -44,9 +44,9 @@ unsharpMask original blurred amount =
 highPassComponent :: Number -> Number -> Number
 highPassComponent original blurred = original - blurred
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Threshold Application
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Check if difference exceeds threshold.
 exceedsThreshold :: Number -> Number -> Number -> Boolean
@@ -59,9 +59,9 @@ unsharpMaskWithThreshold original blurred amount threshold
   | exceedsThreshold original blurred threshold = unsharpMask original blurred amount
   | otherwise = original
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Amount Conversion
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Convert percentage amount to multiplier.
 percentToMultiplier :: Number -> Number
@@ -71,9 +71,9 @@ percentToMultiplier percent = percent / 100.0
 clampAmount :: Number -> Number
 clampAmount amount = max 0.0 (min 5.0 amount)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Edge Detection Estimation
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Estimate edge strength at a pixel.
 edgeStrength :: Number -> Number -> Number
@@ -84,9 +84,9 @@ isEdgePixel :: Number -> Number -> Number -> Boolean
 isEdgePixel original blurred edgeThreshold =
   edgeStrength original blurred >= edgeThreshold
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Adaptive Sharpening
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Calculate adaptive sharpening amount based on local contrast.
 adaptiveAmount :: Number -> Number -> Number -> Number

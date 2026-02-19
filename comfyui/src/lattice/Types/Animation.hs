@@ -70,9 +70,9 @@ import Lattice.Schema.SharedValidation
   ( validateBoundedArray
   )
 
--- ============================================================================
--- INTERPOLATION TYPES
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                    // interpolation // types
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Control mode for bezier handles (industry standard)
 data ControlMode
@@ -226,9 +226,9 @@ instance FromJSON InterpolationType where
     -- If not base, try easing
     (InterpolationEasing <$> parseJSON v)
 
--- ============================================================================
--- BEZIER HANDLE
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                          // bezier // handle
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Bezier handle for keyframe curves
 data BezierHandle = BezierHandle
@@ -255,9 +255,9 @@ instance FromJSON BezierHandle where
       then return (BezierHandle f v e)
       else fail "BezierHandle frame and value must be finite numbers"
 
--- ============================================================================
--- PROPERTY VALUE (Union Type)
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                         // property // value
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | All possible values that can be stored in keyframes.
 -- Used for type-safe clipboard operations and generic property handling.
@@ -304,9 +304,9 @@ instance FromJSON PropertyValue where
         return (PropertyValueVec2 vec2))
   parseJSON _ = fail "Invalid PropertyValue"
 
--- ============================================================================
--- KEYFRAME
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                                  // keyframe
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Keyframe with bezier handles for smooth interpolation
 data Keyframe a = Keyframe
@@ -350,9 +350,9 @@ instance FromJSON a => FromJSON (Keyframe a) where
       then return (Keyframe id_ frame val interp inH outH ctrlMode mSpatialIn mSpatialOut)
       else fail "Keyframe frame must be finite number"
 
--- ============================================================================
--- PROPERTY EXPRESSION
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                    // property // expression
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Expression attached to a property
 -- Evaluated after keyframe interpolation to add dynamic behavior
@@ -422,9 +422,9 @@ instance FromJSON PropertyExpression where
           return (toText k, paramVal)) pairs) paramsObj
     return (PropertyExpression enabled typ name params)
 
--- ============================================================================
--- ANIMATABLE PROPERTY
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                    // animatable // property
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Property type for animatable properties
 data PropertyType
@@ -497,9 +497,9 @@ instance FromJSON a => FromJSON (AnimatableProperty a) where
           else return kfs
     return (AnimatableProperty id_ name typ val animated keyframes mGroup mExpr)
 
--- ============================================================================
--- CLIPBOARD KEYFRAME
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                     // clipboard // keyframe
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Clipboard keyframe entry with property path context
 data ClipboardKeyframe = ClipboardKeyframe
@@ -528,9 +528,9 @@ instance FromJSON ClipboardKeyframe where
       Right kfs -> return kfs
     return (ClipboardKeyframe layerId propPath keyframes)
 
--- ============================================================================
--- VALIDATION FUNCTIONS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                   // validation // functions
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Maximum keyframes per property (matches Zod schema)
 maxKeyframesPerProperty :: Int
@@ -552,9 +552,9 @@ validateKeyframesSorted (k1:k2:ks) =
       return (k1:rest)
     else Left "Keyframes must be sorted by frame when animated"
 
--- ============================================================================
--- HELPER FUNCTIONS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                       // helper // functions
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Create a new animatable property with default values
 -- Note: ID generation should be done by the caller or use a proper ID generator
@@ -579,7 +579,7 @@ createAnimatableProperty id_ name val typ mGroup =
 
 -- | Create a default keyframe
 -- 
--- BEZIER HANDLE DEFAULTS:
+--                                              // bezier // handle // defaults
 -- - inHandle: { frame: -5, value: 0, enabled: True }
 -- - outHandle: { frame: 5, value: 0, enabled: True }
 -- 

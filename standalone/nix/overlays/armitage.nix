@@ -22,7 +22,7 @@ let
   # Source directory
   armitage-src = ../../src/armitage;
 
-  # GHC 9.12 with all required packages
+  #                                                                  // ghc // 9
   hs-pkgs = final.haskell.packages.ghc912;
 
   # Dependencies for armitage modules
@@ -65,10 +65,10 @@ let
       hourglass
     ]);
 
-  # GHC with armitage deps
+  #                                                                       // ghc
   ghc-with-armitage = hs-pkgs.ghcWithPackages armitage-deps;
 
-  # GHC with proxy deps
+  #                                                                       // ghc
   ghc-with-proxy = hs-pkgs.ghcWithPackages proxy-deps;
 
   # Build armitage CLI
@@ -139,7 +139,7 @@ in
       proto = armitage-src + "/proto";
     };
 
-    # GHC environments for development
+    #                                                                       // ghc
     ghc = ghc-with-armitage;
     ghc-proxy = ghc-with-proxy;
   };

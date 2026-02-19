@@ -20,9 +20,9 @@ import Data.Maybe (mapMaybe)
 import Data.Text (Text)
 import Lattice.Types.Layer (Layer(..))
 
--- ============================================================================
--- ORDERING OPERATIONS
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                    // ordering // operations
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Move specified layers to the front (index 0)
 -- Pure function: takes list of layer IDs and layers list, returns reordered layers

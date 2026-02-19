@@ -58,9 +58,9 @@ import GHC.Generics (Generic)
 import Lattice.Types.Animation (PropertyValue (..))
 import Lattice.Schema.SharedValidation (validateBoundedArray)
 
--- ============================================================================
--- PRESET CATEGORIES
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                      // preset // categories
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Preset category
 data PresetCategory
@@ -97,9 +97,9 @@ instance FromJSON PresetCategory where
       t | t == T.pack "color-palette" -> return PresetCategoryColorPalette
       _ -> fail "Invalid PresetCategory"
 
--- ============================================================================
--- BASE PRESET METADATA
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                // base // preset // metadata
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Base preset metadata
 data PresetMetadata = PresetMetadata
@@ -150,9 +150,9 @@ instance FromJSON PresetMetadata where
     version <- o .:? "version"
     return (PresetMetadata id_ name category description tags author createdAt updatedAt thumbnail isBuiltIn version)
 
--- ============================================================================
--- PARTICLE PRESET
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                        // particle // preset
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Combined particle preset config (system + emitter settings)
 data ParticlePresetConfig = ParticlePresetConfig
@@ -231,9 +231,9 @@ instance FromJSON ParticlePreset where
     config <- o .: "config"
     return (ParticlePreset metadata config)
 
--- ============================================================================
--- EFFECT PRESET
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                          // effect // preset
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Effect preset item (single effect in preset)
 data EffectPresetItem = EffectPresetItem
@@ -296,12 +296,12 @@ instance FromJSON EffectPreset where
       Right es -> return es
     return (EffectPreset metadata effects)
 
--- ============================================================================
--- PATH EFFECT PRESET
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                  // path // effect // preset
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Path effect preset
--- NOTE: Uses Text placeholder for SplinePathEffectInstance - will be updated when spline types are migrated
+--                                                                      // note
 data PathEffectPreset = PathEffectPreset
   { pathEffectPresetMetadata :: PresetMetadata,
     pathEffectPresetEffects :: [Text] -- TODO: Use SplinePathEffectInstance when spline.ts is migrated
@@ -337,12 +337,12 @@ instance FromJSON PathEffectPreset where
       Right es -> return es
     return (PathEffectPreset metadata effects)
 
--- ============================================================================
--- CAMERA SHAKE PRESET
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                 // camera // shake // preset
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Camera shake preset
--- NOTE: Uses Text placeholder for CameraShakeConfig - will be updated when cameraEnhancements service is migrated
+--                                                                      // note
 data CameraShakePreset = CameraShakePreset
   { cameraShakePresetMetadata :: PresetMetadata,
     cameraShakePresetConfig :: Text -- TODO: Use Partial CameraShakeConfig when cameraEnhancements.ts is migrated
@@ -374,12 +374,12 @@ instance FromJSON CameraShakePreset where
     config <- o .: "config"
     return (CameraShakePreset metadata config)
 
--- ============================================================================
--- CAMERA TRAJECTORY PRESET
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                            // camera // trajectory // preset
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Camera trajectory preset
--- NOTE: Uses Text placeholder for TrajectoryConfig - will be updated when cameraTrajectory service is migrated
+--                                                                      // note
 data CameraTrajectoryPreset = CameraTrajectoryPreset
   { cameraTrajectoryPresetMetadata :: PresetMetadata,
     cameraTrajectoryPresetConfig :: Text -- TODO: Use Partial TrajectoryConfig when cameraTrajectory.ts is migrated
@@ -411,9 +411,9 @@ instance FromJSON CameraTrajectoryPreset where
     config <- o .: "config"
     return (CameraTrajectoryPreset metadata config)
 
--- ============================================================================
--- TEXT STYLE PRESET
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                   // text // style // preset
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Text align
 data TextAlign
@@ -509,9 +509,9 @@ instance FromJSON TextStylePreset where
     style <- o .: "style"
     return (TextStylePreset metadata style)
 
--- ============================================================================
--- COLOR PALETTE PRESET
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                // color // palette // preset
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Color palette preset
 data ColorPalettePreset = ColorPalettePreset
@@ -549,9 +549,9 @@ instance FromJSON ColorPalettePreset where
       Right cs -> return cs
     return (ColorPalettePreset metadata colors)
 
--- ============================================================================
--- ANIMATION PRESET
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                       // animation // preset
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Animation preset keyframe
 data AnimationPresetKeyframe = AnimationPresetKeyframe
@@ -641,9 +641,9 @@ instance FromJSON AnimationPreset where
       Right kfs -> return kfs
     return (AnimationPreset metadata keyframes duration)
 
--- ============================================================================
--- PRESET UNION TYPE
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                   // preset // union // type
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Preset union type (all preset types)
 data Preset
@@ -681,9 +681,9 @@ instance FromJSON Preset where
       _ | category == T.pack "animation" -> PresetAnimation <$> parseJSON (Object o)
       _ -> fail ("Invalid Preset category: " ++ T.unpack category)
 
--- ============================================================================
--- PRESET COLLECTION
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                      // preset // collection
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Preset collection (for export/import)
 data PresetCollection = PresetCollection

@@ -693,6 +693,6 @@ distortDefinitions =
             defFragmentShader = Nothing
           }
       )
-      -- NOTE: "mesh-deform" effect skipped - uses MeshWarp types (WarpMesh, WarpPin)
+      --                                                                      // note
       -- Will be added when meshWarp.ts is migrated (Phase 4.1)
     ]

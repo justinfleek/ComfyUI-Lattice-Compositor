@@ -38,9 +38,9 @@ import Lattice.Types.Primitives
   )
 import Lattice.Types.Transform (LayerTransform(..))
 
--- ============================================================================
--- PROPERTY VALUE OPERATIONS
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                           // property // value // operations
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Set a property's value (for direct editing in timeline)
 -- Pure function: takes layer ID, property path, value, current frame, and layers list
@@ -222,9 +222,9 @@ setPropertyValue layerId propertyPath value currentFrame layers =
                 in
                   Right updatedLayers
 
--- ============================================================================
--- PROPERTY ANIMATION STATE OPERATIONS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                              // property // animation // state // operations
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Set a property's animated state
 -- Pure function: takes layer ID, property path, animated flag, current frame, ID generator, and layers list

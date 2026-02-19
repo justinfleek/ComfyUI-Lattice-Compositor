@@ -30,9 +30,9 @@ import Data.Int (toNumber) as Int
 import Data.Tuple (Tuple(..))
 import Math (sqrt, atan2, cos, sin, pi)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Center-Relative Coordinates
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Calculate vector from center to pixel.
 vectorFromCenter :: Number -> Number -> Number -> Number -> Tuple Number Number
@@ -46,9 +46,9 @@ distanceFromCenter dx dy = sqrt (dx * dx + dy * dy)
 angleFromCenter :: Number -> Number -> Number
 angleFromCenter dx dy = atan2 dy dx
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Spin Blur
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Calculate rotated position for spin blur.
 spinBlurPosition :: Number -> Number -> Number -> Number -> Tuple Number Number
@@ -65,9 +65,9 @@ spinSampleAngle baseAngle maxAngle sampleIndex sampleCount =
 spinMaxAngle :: Number -> Number
 spinMaxAngle amount = (amount / 100.0) * pi * 0.5
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Zoom Blur
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Calculate scaled position for zoom blur.
 zoomBlurPosition :: Number -> Number -> Number -> Number -> Number -> Tuple Number Number
@@ -84,9 +84,9 @@ zoomSampleScale maxZoom sampleIndex sampleCount =
 zoomMaxAmount :: Number -> Number
 zoomMaxAmount amount = amount / 100.0
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Center Point Conversion
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Convert center point from percentage to pixels.
 centerToPixels :: Number -> Int -> Number
@@ -98,9 +98,9 @@ normalizedCenterToPixels :: Number -> Int -> Number
 normalizedCenterToPixels centerNorm dimension =
   centerNorm * Int.toNumber dimension
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Quality Settings
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Get sample count from quality setting.
 qualitySampleCount :: String -> Int

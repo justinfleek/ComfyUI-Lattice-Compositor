@@ -31,9 +31,9 @@ import Prelude
 import Data.Tuple (Tuple(..))
 import Math (cos, pi, sin, sqrt)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Light Direction
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Calculate light direction X component.
 lightX :: Number -> Number
@@ -56,9 +56,9 @@ lightDirection :: Number -> Number -> { x :: Number, y :: Number, z :: Number }
 lightDirection angleDeg altitudeDeg =
   { x: lightX angleDeg, y: lightY angleDeg, z: lightZ altitudeDeg }
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Surface Normal from Gradients
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Calculate alpha gradient in X direction.
 gradientX :: Number -> Number -> Number
@@ -84,9 +84,9 @@ normalZ = 1.0
 normalLength :: Number -> Number -> Number -> Number
 normalLength nx ny nz = sqrt (nx * nx + ny * ny + nz * nz)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Lighting Calculation
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Calculate dot product for Lambertian lighting.
 lightingDot :: Number -> Number -> Number -> Number -> Number -> Number -> Number
@@ -110,9 +110,9 @@ shadowIntensity dotVal opacity pixelAlpha =
   then min 255.0 ((-dotVal) * opacity * pixelAlpha * 255.0)
   else 0.0
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Full Bevel Calculation
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Calculate bevel lighting for a single pixel.
 bevelLighting :: Number -> Number -> Number -> Number -> Number

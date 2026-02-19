@@ -1,4 +1,4 @@
-// FFI bindings for CanvasPool.purs
+//                                                                       // ffi
 
 export const createCanvas = (width) => (height) => () => {
   const canvas = document.createElement("canvas");

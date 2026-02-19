@@ -39,9 +39,9 @@ import Data.Aeson.Types (Parser)
 import Data.Vector ((!))
 import qualified Data.Vector as V
 
--- ============================================================================
--- TYPES
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                                     // types
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | ComfyUI node connection (nodeId, outputIndex)
 data NodeConnection = NodeConnection
@@ -105,9 +105,9 @@ data WorkflowValidationResult = WorkflowValidationResult
 -- | ComfyUI workflow (map of node ID to node)
 type ComfyUIWorkflow = Map Text ComfyUINode
 
--- ============================================================================
--- VALIDATION CONSTANTS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                   // validation // constants
+-- ════════════════════════════════════════════════════════════════════════════
 
 minDimension :: Int
 minDimension = 64
@@ -121,9 +121,9 @@ maxFrameCount = 10000
 maxFps :: Double
 maxFps = 120.0
 
--- ============================================================================
--- VALIDATION FUNCTIONS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                   // validation // functions
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Validate workflow parameters
 -- Pure function: same inputs → same outputs
@@ -217,9 +217,9 @@ checkOutputNodes workflow =
         ) (Map.elems workflow)
   in if hasOutput then [] else ["Workflow has no output/save nodes"]
 
--- ============================================================================
--- NODE CREATION FUNCTIONS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                             // node // creation // functions
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Create a ComfyUI node
 -- Pure function: same inputs → same outputs
@@ -236,9 +236,9 @@ createNode classType inputs title =
 createConnection :: Text -> Int -> NodeConnection
 createConnection nodeId outputIndex = NodeConnection nodeId outputIndex
 
--- ============================================================================
--- ANALYSIS FUNCTIONS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                     // analysis // functions
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Get input nodes in workflow (LoadImage nodes)
 -- Pure function: same inputs → same outputs

@@ -18,9 +18,9 @@ import qualified Data.Text.Encoding as TE
 import Foreign.C.String (CString, peekCString, newCString)
 import Lattice.State.Cache (computeProjectHash)
 
--- ============================================================================
--- JSON HELPERS
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                           // json // helpers
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Create success response JSON
 successResponse :: ToJSON a => a -> BSL.ByteString
@@ -34,9 +34,9 @@ errorResponse msg = encode $ object ["status" .= ("error" :: T.Text), "message" 
 jsonToCString :: BSL.ByteString -> IO CString
 jsonToCString = newCString . T.unpack . TE.decodeUtf8 . BSL.toStrict
 
--- ============================================================================
--- HELPER FUNCTIONS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                       // helper // functions
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | FFI: Compute project hash
 foreign export ccall compute_project_hash_ffi :: CString -> IO CString

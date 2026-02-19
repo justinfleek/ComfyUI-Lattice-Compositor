@@ -28,9 +28,9 @@ import Data.Int (round) as Int
 import Data.Tuple (Tuple(..))
 import Math (atan2, cos, pi, sin, sqrt)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Sobel Kernels
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Sobel X kernel for horizontal gradient detection.
 sobelX :: Int -> Int -> Int
@@ -58,9 +58,9 @@ sobelY kx ky =
 sobelWeights :: Int -> Int -> Tuple Int Int
 sobelWeights kx ky = Tuple (sobelX kx ky) (sobelY kx ky)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Gradient Calculation
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Calculate gradient magnitude from X and Y components.
 gradientMagnitude :: Number -> Number -> Number
@@ -80,9 +80,9 @@ blendWithOriginal :: Number -> Number -> Number -> Number
 blendWithOriginal edgeMag original blend =
   min 255.0 (edgeMag * (1.0 - blend) + original * blend)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Emboss
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Calculate emboss sample offset from light direction.
 embossOffset :: Number -> Number -> Tuple Int Int
@@ -98,9 +98,9 @@ embossValue sample1 sample2 factor =
   let diff = (sample1 - sample2) * factor
   in max 0.0 (min 255.0 (128.0 + diff))
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Kernel Index Helpers
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Convert kernel offset (-1, 0, 1) to flat index (0-8).
 kernelIndex :: Int -> Int -> Int

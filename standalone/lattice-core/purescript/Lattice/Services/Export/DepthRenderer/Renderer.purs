@@ -38,9 +38,9 @@ import Lattice.Services.Export.DepthRenderer.Types
   , Colormap(..)
   )
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Opaque Handles
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Opaque handle to Float32Array depth buffer
 foreign import data DepthBufferHandle :: Type
@@ -48,9 +48,9 @@ foreign import data DepthBufferHandle :: Type
 -- | Opaque handle to ImageData
 foreign import data ImageDataHandle :: Type
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Rendering
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Render depth frame from layer data
 -- | Note: Actual implementation requires browser engine context
@@ -75,9 +75,9 @@ renderDepthFrameFromEngine
   -> Effect { result :: DepthRenderResult, buffer :: DepthBufferHandle }
 renderDepthFrameFromEngine = renderDepthFrameFromEngineImpl
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Format Conversion
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Convert depth buffer to export format
 foreign import convertDepthToFormatImpl
@@ -121,9 +121,9 @@ applyColormapToBuffer
 applyColormapToBuffer buffer result colormap =
   applyColormapToBufferImpl buffer result (colormapToString colormap)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Export
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Export depth sequence as PNG files
 foreign import exportDepthSequenceImpl
@@ -155,9 +155,9 @@ exportDepthSequence opts =
     , outputDir: opts.outputDir
     })
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Metadata
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Generate depth metadata for export
 generateDepthMetadata
@@ -186,9 +186,9 @@ generateDepthMetadata format frameCount width height minDepth maxDepth =
     , generator: "Lattice Compositor"
     }
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Format Specifications
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Get format specification
 getFormatSpec :: DepthMapFormat -> DepthFormatSpec
@@ -236,9 +236,9 @@ getFormatSpec = case _ of
     , normalize: true
     }
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Helpers
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Convert format to string
 formatToString :: DepthMapFormat -> String

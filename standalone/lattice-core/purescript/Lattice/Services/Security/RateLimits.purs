@@ -49,9 +49,9 @@ import Data.Tuple (Tuple(..))
 import Data.Generic.Rep (class Generic)
 import Data.Show.Generic (genericShow)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Types
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Rate limit configuration for a tool
 type RateLimitConfig =
@@ -95,9 +95,9 @@ type StoredRateLimits =
   , lastReset :: String          -- Last reset timestamp
   }
 
---------------------------------------------------------------------------------
--- FFI Types and Imports
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
+--                                                                  // ffi // t
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Current UTC date string (YYYY-MM-DD)
 foreign import getCurrentDateUTC :: Effect String
@@ -129,9 +129,9 @@ foreign import parseCountsJson :: String -> Maybe (Map String Int)
 -- | Stringify Map String Int to JSON
 foreign import stringifyCountsJson :: Map String Int -> String
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Constants
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 storageKey :: String
 storageKey = "lattice_rate_limits"
@@ -156,9 +156,9 @@ defaultLimits = Map.fromFoldable
       }
   ]
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- State (in-memory refs)
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Custom limits (override defaults)
 -- | Must be initialized at module load
@@ -167,9 +167,9 @@ foreign import customLimitsRef :: Ref (Map String RateLimitConfig)
 -- | Session counts (in-memory, cleared on page refresh)
 foreign import sessionCountsRef :: Ref (Map String Int)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Storage Functions
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Load rate limits from localStorage
 loadStoredLimits :: Effect StoredRateLimits
@@ -232,9 +232,9 @@ saveSessionCounts :: Map String Int -> Effect Unit
 saveSessionCounts counts =
   sessionStorageSetItem sessionKey (stringifyCountsJson counts)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Public API
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Check if a tool call is allowed under rate limits
 checkRateLimit :: String -> Effect RateLimitStatus
@@ -425,9 +425,9 @@ checkRateLimitWarnings = do
                 _ -> []
           in dailyWarnings <> sessionWarnings
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Helpers
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Traverse effect over array
 for :: forall a b. Array a -> (a -> Effect b) -> Effect (Array b)

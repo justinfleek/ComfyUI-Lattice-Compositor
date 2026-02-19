@@ -104,9 +104,9 @@ import Lattice.Schema.SharedValidation
   )
 import qualified Data.Text as T
 
--- ============================================================================
--- VALIDATION FUNCTIONS
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                   // validation // functions
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Validate that gradient stops are sorted by position (non-decreasing)
 -- Matches Zod schema refinement: "stops must be sorted by position"
@@ -117,9 +117,9 @@ validateGradientStopsSorted (s1:s2:ss) =
   gradientStopPosition s2 >= gradientStopPosition s1 &&
   validateGradientStopsSorted (s2:ss)
 
--- ============================================================================
--- BASE TYPES
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                             // base // types
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | 2D Point
 data Point2D = Point2D
@@ -298,9 +298,9 @@ instance FromJSON GradientDef where
       then return (GradientDef gType stops startPoint endPoint mHighlightLength mHighlightAngle)
       else fail "GradientDef: startPoint and endPoint must be normalized [0,1], highlightLength must be in [0,100]"
 
--- ============================================================================
--- SHAPE GENERATORS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                       // shape // generators
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Shape direction
 data ShapeDirection
@@ -484,9 +484,9 @@ instance FromJSON PathShape where
     direction <- o .: "direction"
     return (PathShape "path" name path direction)
 
--- ============================================================================
--- SHAPE MODIFIERS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                        // shape // modifiers
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Fill rule
 data FillRule
@@ -724,9 +724,9 @@ instance FromJSON GradientStrokeShape where
       then return (GradientStrokeShape "gradientStroke" name gradient opacity width lineCap lineJoin miterLimit dashPattern dashOffset blendMode)
       else fail "GradientStrokeShape: miterLimit must be finite and non-negative"
 
--- ============================================================================
--- PATH OPERATORS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                         // path // operators
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Trim mode
 data TrimMode
@@ -1054,9 +1054,9 @@ instance FromJSON RoundedCornersOperator where
     radius <- o .: "radius"
     return (RoundedCornersOperator "roundedCorners" name radius)
 
--- ============================================================================
--- TRANSFORM AND REPEATER
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                              // transform // and // repeater
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Shape transform
 data ShapeTransform = ShapeTransform
@@ -1178,9 +1178,9 @@ instance FromJSON RepeaterOperator where
     transform <- o .: "transform"
     return (RepeaterOperator "repeater" name copies offset composite transform)
 
--- ============================================================================
--- ILLUSTRATOR OPERATORS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                  // illustrator // operators
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Simplify path operator
 data SimplifyPathOperator = SimplifyPathOperator
@@ -1372,9 +1372,9 @@ instance FromJSON TraceOperator where
       then return (TraceOperator "trace" name mode threshold colors cornerAngle pathFitting noiseReduction mSourceLayerId mSourceFrame)
       else fail "TraceOperator: colors must be >= 1, cornerAngle must be in [0,180], sourceFrame must be finite and non-negative"
 
--- ============================================================================
--- SHAPE GROUP
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                            // shape // group
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Shape group (non-recursive: groups cannot contain other groups)
 data ShapeGroup = ShapeGroup
@@ -1408,9 +1408,9 @@ instance FromJSON ShapeGroup where
       Right cs -> return cs
     return (ShapeGroup "group" name contents transform blendMode)
 
--- ============================================================================
--- SHAPE CONTENT UNION TYPES
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                        // shape // content // union // types
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Non-group shape content (used inside ShapeGroup.contents to avoid circular dependency)
 data NonGroupShapeContent
@@ -1560,9 +1560,9 @@ instance FromJSON ShapeContent where
         ng <- parseJSON (Object o)
         return (ShapeContentNonGroup ng)
 
--- ============================================================================
--- SHAPE LAYER DATA
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                    // shape // layer // data
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Shape quality
 data ShapeQuality

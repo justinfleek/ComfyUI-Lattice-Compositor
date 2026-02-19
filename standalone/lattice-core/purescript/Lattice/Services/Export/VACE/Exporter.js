@@ -1,4 +1,4 @@
-// FFI stubs for Lattice.Services.Export.VACE.Exporter
+//                                                                       // ffi
 
 "use strict";
 

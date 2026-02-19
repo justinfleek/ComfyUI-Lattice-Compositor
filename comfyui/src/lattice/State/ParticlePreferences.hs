@@ -34,9 +34,9 @@ import qualified Data.Text as T
 import GHC.Generics (Generic)
 import Lattice.Utils.NumericSafety (ensureFinite, isFinite)
 
--- ============================================================================
--- RENDERING BACKEND
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                      // rendering // backend
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Rendering backend preference
 data RenderingBackend
@@ -61,9 +61,9 @@ instance FromJSON RenderingBackend where
       "cpu" -> return RenderingBackendCPU
       _ -> fail ("Invalid RenderingBackend: " ++ T.unpack t)
 
--- ============================================================================
--- COMPUTED FUNCTIONS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                     // computed // functions
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Calculate actual rendering backend to use based on preference and detected backend
 -- Pure function: takes preference and detected backend, returns active backend
@@ -107,9 +107,9 @@ supportsHighParticleCounts backend =
     RenderingBackendCPU -> False
     _ -> True
 
--- ============================================================================
--- VALIDATION FUNCTIONS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                   // validation // functions
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Validate and sanitize max particles per layer
 -- Pure function: takes value, returns sanitized value (between 1000 and 500000)

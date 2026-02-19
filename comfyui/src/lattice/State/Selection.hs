@@ -47,9 +47,9 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import GHC.Generics (Generic)
 
--- ============================================================================
--- TYPES
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                                     // types
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Control point selection info
 data ControlPointSelection = ControlPointSelection
@@ -75,9 +75,9 @@ instance FromJSON ControlPointSelection where
     mGroupId <- o .:? "groupId"
     return (ControlPointSelection layerId pointIndex mGroupId)
 
--- ============================================================================
--- PURE QUERIES (GETTERS)
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                           // pure // queries
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Check if any layers are selected
 -- Pure function: takes selected layer IDs set, returns boolean
@@ -127,9 +127,9 @@ selectedControlPointCount ::
   Int
 selectedControlPointCount = length
 
--- ============================================================================
--- PURE QUERY ACTIONS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                  // pure // query // actions
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Check if a layer is selected
 -- Pure function: takes selected layer IDs set and layer ID, returns boolean
@@ -167,9 +167,9 @@ getSelectedControlPointsForLayer ::
 getSelectedControlPointsForLayer selectedControlPoints layerId =
   filter (\p -> controlPointSelectionLayerId p == layerId) selectedControlPoints
 
--- ============================================================================
--- PURE CALCULATION HELPERS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                            // pure // calculation // helpers
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Compute range selection between two layer IDs
 -- Pure function: takes start ID, end ID, and ordered layer IDs list, returns new selection
@@ -254,9 +254,9 @@ computeLayerBelowSelection selectedLayerIds orderedLayerIds =
                     layerId:_ -> Just layerId
                   else Nothing
 
--- ============================================================================
--- INTERNAL HELPERS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                       // internal // helpers
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Find index of element in list (returns Nothing if not found)
 findIndexInList ::

@@ -75,9 +75,9 @@ import Lattice.Types.Primitives
   , validateNormalized01
   )
 
--- ============================================================================
--- MODEL LAYER DATA
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                    // model // layer // data
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Model format
 data ModelFormat
@@ -379,9 +379,9 @@ instance FromJSON ModelLayerData where
       then return (ModelLayerData assetId format scale uniformScale mMaterialOverride mAnimation mBoundingBox castShadow receiveShadow frustumCulled renderOrder showBoundingBox showSkeleton envMapIntensity mLOD)
       else fail "ModelLayerData: renderOrder must be finite, envMapIntensity must be in range [0, 1]"
 
--- ============================================================================
--- POINT CLOUD LAYER DATA
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                           // point // cloud // layer // data
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Point cloud format
 data PointCloudFormat
@@ -688,9 +688,9 @@ instance FromJSON PointCloudLayerData where
       then return (PointCloudLayerData assetId format pointCount pointSize sizeAttenuation minPointSize maxPointSize colorMode uniformColor mColorGradient renderMode opacity depthTest depthWrite mBoundingBox showBoundingBox mLOD mOctree pointBudget mEDL mClipPlanes mClassificationFilter mIntensityRange)
       else fail "PointCloudLayerData: numeric values must be finite and within valid ranges"
 
--- ============================================================================
--- CAMERA LAYER DATA
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                   // camera // layer // data
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Camera type
 data CameraType

@@ -57,9 +57,9 @@ import Lattice.Types.Primitives
   , validateNonNegative
   )
 
--- ============================================================================
--- IMAGE LAYER DATA
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                    // image // layer // data
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Image fit mode
 data ImageFit
@@ -167,9 +167,9 @@ instance FromJSON ImageLayerData where
     segMaskId <- o .: "segmentationMaskId"
     return (ImageLayerData assetId source fit cropEnabled cropRect sourceType segMaskId)
 
--- ============================================================================
--- AUDIO LAYER DATA
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                    // audio // layer // data
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Audio marker for cue points
 data AudioMarker = AudioMarker
@@ -248,9 +248,9 @@ instance FromJSON AudioLayerData where
       then return (AudioLayerData mAssetId level muted solo pan startTime loop speed showWaveform waveformColor exposeFeatures mWaveform mBeats mTempo mAmplitude mMarkers)
       else fail "AudioLayerData: numeric values must be finite and non-negative"
 
--- ============================================================================
--- VIDEO DATA
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                             // video // data
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Timewarp method
 data TimewarpMethod
@@ -369,9 +369,9 @@ instance FromJSON VideoData where
               else fail "VideoData: endTime must be >= startTime"
       else fail "VideoData: numeric values must be finite and within valid ranges"
 
--- ============================================================================
--- DEPTH LAYER DATA
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                    // depth // layer // data
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Depth visualization mode
 data DepthVisualizationMode
@@ -475,9 +475,9 @@ instance FromJSON DepthLayerData where
       then return (DepthLayerData mAssetId visMode colorMap invert minDepth maxDepth autoNorm contourLevels contourColor contourWidth meshDisp meshRes wireframe)
       else fail "DepthLayerData: numeric values must be finite and within valid ranges, and maxDepth must be greater than minDepth"
 
--- ============================================================================
--- NORMAL LAYER DATA
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                   // normal // layer // data
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Normal visualization mode
 data NormalVisualizationMode
@@ -565,9 +565,9 @@ instance FromJSON NormalLayerData where
       then return (NormalLayerData mAssetId visMode format flipX flipY flipZ arrowDensity arrowScale arrowColor lightDir lightIntensity ambientIntensity)
       else fail "NormalLayerData: numeric values must be finite and non-negative"
 
--- ============================================================================
--- NESTED COMP DATA
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                    // nested // comp // data
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Nested comp data - nested composition reference
 data NestedCompData = NestedCompData

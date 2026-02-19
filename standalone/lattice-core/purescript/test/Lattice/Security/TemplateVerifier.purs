@@ -23,9 +23,9 @@ import Lattice.Services.Security.TemplateVerifier
   , officialPublicKey, supportedVersions
   )
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Helpers
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Create a VerificationResult with the given status and flags.
 -- | signerPublicKey and signedAt default to Nothing.
@@ -33,9 +33,9 @@ mkResult :: VerificationStatus -> Boolean -> Boolean -> Boolean -> String -> Ver
 mkResult status isSigned isValid isOfficial message =
   { isSigned, isValid, isOfficial, status, message, signerPublicKey: Nothing, signedAt: Nothing }
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Test Spec
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 spec :: Spec Unit
 spec = do
@@ -45,9 +45,9 @@ spec = do
     getLoadingWarningTests
     constantTests
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- getVerificationBadge
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 getVerificationBadgeTests :: Spec Unit
 getVerificationBadgeTests = do
@@ -79,9 +79,9 @@ getVerificationBadgeTests = do
       badge.color `shouldEqual` ColorGray
       badge.icon `shouldEqual` "question"
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- shouldWarnBeforeLoading
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 shouldWarnBeforeLoadingTests :: Spec Unit
 shouldWarnBeforeLoadingTests = do
@@ -100,9 +100,9 @@ shouldWarnBeforeLoadingTests = do
         let result = mkResult entry.status entry.isSigned entry.isValid false "Test"
         shouldWarnBeforeLoading result `shouldEqual` true
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- getLoadingWarning
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 getLoadingWarningTests :: Spec Unit
 getLoadingWarningTests = do
@@ -147,9 +147,9 @@ getLoadingWarningTests = do
         Left _ ->
           fail "Expected Right for unsigned template, got Left"
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Constants
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 constantTests :: Spec Unit
 constantTests = do

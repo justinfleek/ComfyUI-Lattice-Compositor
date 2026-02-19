@@ -23,9 +23,9 @@ import Lattice.State.Keyframe.Query (findNextKeyframeFrame, findPrevKeyframeFram
 import Lattice.Types.Layer (Layer(..))
 import Lattice.Types.Project (Composition(..), CompositionSettings(..))
 
--- ============================================================================
--- NAVIGATION OPERATIONS
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                  // navigation // operations
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Jump to first frame (frame 0)
 -- Pure function: takes composition, returns new composition with currentFrame = 0
@@ -61,7 +61,7 @@ goToEnd comp =
 -- | Jump to the next keyframe (K key behavior)
 -- Pure function: takes composition, optional layer ID, selected layer IDs, and layers list
 -- Returns new composition with currentFrame set to next keyframe, or unchanged if no next keyframe
--- NOTE: Keyframes use 1-indexed frames, Composition uses 0-indexed frames - conversion handled here
+--                                                                      // note
 jumpToNextKeyframe ::
   Composition -> -- Current composition
   Maybe Text -> -- Optional layer ID (if provided, only search this layer)
@@ -100,7 +100,7 @@ jumpToNextKeyframe comp mLayerId selectedLayerIds layers =
 -- | Jump to the previous keyframe (J key behavior)
 -- Pure function: takes composition, optional layer ID, selected layer IDs, and layers list
 -- Returns new composition with currentFrame set to previous keyframe, or unchanged if no previous keyframe
--- NOTE: Keyframes use 1-indexed frames, Composition uses 0-indexed frames - conversion handled here
+--                                                                      // note
 jumpToPrevKeyframe ::
   Composition -> -- Current composition
   Maybe Text -> -- Optional layer ID (if provided, only search this layer)

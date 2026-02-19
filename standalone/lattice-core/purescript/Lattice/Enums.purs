@@ -57,9 +57,9 @@ import Prelude
 import Data.Generic.Rep (class Generic)
 import Data.Show.Generic (genericShow)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Layer Types
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 data LayerType
   = LTShape | LTText | LTImage | LTVideo | LTAudio
@@ -69,9 +69,9 @@ derive instance Eq LayerType
 derive instance Generic LayerType _
 instance Show LayerType where show = genericShow
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Blend Modes
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 data BlendMode
   = BMNormal | BMMultiply | BMScreen | BMOverlay
@@ -84,9 +84,9 @@ derive instance Eq BlendMode
 derive instance Generic BlendMode _
 instance Show BlendMode where show = genericShow
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Mask Modes
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 data MaskMode = MMAdd | MMSubtract | MMIntersect | MMDifference
 
@@ -94,9 +94,9 @@ derive instance Eq MaskMode
 derive instance Generic MaskMode _
 instance Show MaskMode where show = genericShow
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Layer Status
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 data LayerStatus = LSActive | LSHidden | LSLocked | LSDisabled
 
@@ -104,9 +104,9 @@ derive instance Eq LayerStatus
 derive instance Generic LayerStatus _
 instance Show LayerStatus where show = genericShow
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Interpolation
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 data InterpolationType
   = ITLinear | ITBezier | ITHold | ITEaseIn | ITEaseOut | ITEaseInOut | ITCustom
@@ -138,9 +138,9 @@ derive instance Eq KeyframeType
 derive instance Generic KeyframeType _
 instance Show KeyframeType where show = genericShow
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Effects
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 data EffectCategory
   = ECBlurSharpen | ECColorCorrection | ECDistort | ECGenerate
@@ -167,9 +167,9 @@ derive instance Eq EffectType
 derive instance Generic EffectType _
 instance Show EffectType where show = genericShow
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Color
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 data ColorSpace
   = CSSRGB | CSLinearSRGB | CSWideGamutRGB | CSDisplayP3
@@ -194,9 +194,9 @@ derive instance Eq TransferFunction
 derive instance Generic TransferFunction _
 instance Show TransferFunction where show = genericShow
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Export
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 data ExportFormat
   = EFMP4 | EFMOV | EFAVI | EFWebM
@@ -226,9 +226,9 @@ derive instance Eq ExportTarget
 derive instance Generic ExportTarget _
 instance Show ExportTarget where show = genericShow
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Camera
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 data CameraType = CTPerspective | CTOrthographic | CTFisheye | CTSpherical
 
@@ -248,9 +248,9 @@ derive instance Eq DepthOfFieldMode
 derive instance Generic DepthOfFieldMode _
 instance Show DepthOfFieldMode where show = genericShow
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Text
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 data TextAlign = TALeft | TACenter | TARight | TAJustify
 
@@ -298,9 +298,9 @@ derive instance Eq TextRangeShape
 derive instance Generic TextRangeShape _
 instance Show TextRangeShape where show = genericShow
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Job Status
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 data JobStatus = JSQueued | JSRunning | JSCompleted | JSFailed | JSCancelled
 
@@ -320,9 +320,9 @@ derive instance Eq QualityMode
 derive instance Generic QualityMode _
 instance Show QualityMode where show = genericShow
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Validation
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 data ValidationResult = VRValid | VRInvalid | VRWarning
 
@@ -336,9 +336,9 @@ derive instance Eq Severity
 derive instance Generic Severity _
 instance Show Severity where show = genericShow
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Particles
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 data EmitterShape
   = ESPoint | ESLine | ESCircle | ESBox | ESSphere | ESRing
@@ -361,9 +361,9 @@ derive instance Eq CollisionType
 derive instance Generic CollisionType _
 instance Show CollisionType where show = genericShow
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Material
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 data MaterialType
   = MTStandard | MTPhysical | MTToon | MTEmissive | MTTransparent | MTCustom
@@ -372,9 +372,9 @@ derive instance Eq MaterialType
 derive instance Generic MaterialType _
 instance Show MaterialType where show = genericShow
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Audio
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 data AudioFormat = AFMP3 | AFWav | AFOgg | AFAac | AFFlac | AFM4a
 
@@ -394,9 +394,9 @@ derive instance Eq BeatDetectionMethod
 derive instance Generic BeatDetectionMethod _
 instance Show BeatDetectionMethod where show = genericShow
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Model
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 data ModelType = MTMesh | MTPointCloud | MTVolume | MTProcedural
 
@@ -404,9 +404,9 @@ derive instance Eq ModelType
 derive instance Generic ModelType _
 instance Show ModelType where show = genericShow
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Preprocessing
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 data PreprocessorType
   = PPDepth | PPNormal | PPPose | PPEdge | PPLineart
@@ -422,9 +422,9 @@ derive instance Eq SegmentationMode
 derive instance Generic SegmentationMode _
 instance Show SegmentationMode where show = genericShow
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- System
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 data AuditCategory
   = ACSecurity | ACPerformance | ACError | ACAccess | ACModification | ACSystem

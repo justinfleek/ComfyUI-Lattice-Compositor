@@ -1,4 +1,4 @@
-// FFI for Lattice.Services.Export.FlowGenerators.Noise
+//                                                                       // ffi
 // Bitwise operations and imul for hash functions
 
 export const zshr = (a) => (b) => a >>> b;

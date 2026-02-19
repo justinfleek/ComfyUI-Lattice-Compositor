@@ -44,9 +44,9 @@ import Lattice.Types.Animation
   )
 import Lattice.Types.Primitives (Vec2(..), Vec3(..), validateFinite)
 
--- ============================================================================
--- TYPES
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                                     // types
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | View state for the curve editor (frame/value range and zoom)
 data CurveViewState = CurveViewState
@@ -71,9 +71,9 @@ data CurveMargin = CurveMargin
 defaultCurveMargin :: CurveMargin
 defaultCurveMargin = CurveMargin 10 10 10 10
 
--- ============================================================================
--- COORDINATE CONVERSION
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                  // coordinate // conversion
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Convert frame number to screen X coordinate
 frameToScreenX
@@ -127,9 +127,9 @@ screenYToValue screenY viewState canvasHeight margin =
       valueRange = curveViewStateValueMax viewState - curveViewStateValueMin viewState
   in curveViewStateValueMin viewState + t * valueRange
 
--- ============================================================================
--- KEYFRAME POSITION HELPERS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                           // keyframe // position // helpers
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Get screen X coordinate for a keyframe
 getKeyframeScreenX
@@ -178,9 +178,9 @@ getKeyframeDisplayValue :: Maybe (Keyframe PropertyValue) -> Double
 getKeyframeDisplayValue Nothing = 0
 getKeyframeDisplayValue (Just kf) = getNumericValue (keyframeValue kf)
 
--- ============================================================================
--- HANDLE POSITION HELPERS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                             // handle // position // helpers
+-- ════════════════════════════════════════════════════════════════════════════
 
 outHandleEnabled :: Keyframe a -> Bool
 outHandleEnabled kf = bezierHandleEnabled (keyframeOutHandle kf)
@@ -260,9 +260,9 @@ getInHandleY prop kfIndex viewState canvasHeight margin =
              in valueToScreenY val viewState canvasHeight margin
         else valueToScreenY (getNumericValue (keyframeValue kf)) viewState canvasHeight margin
 
--- ============================================================================
--- UTILITIES
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                                 // utilities
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Check if a keyframe is within the current view bounds
 isKeyframeInView :: Keyframe PropertyValue -> CurveViewState -> Bool

@@ -35,7 +35,7 @@ class Permission(Enum):
     MASTODON_READ = auto()
     MASTODON_WRITE = auto()
 
-    # LLM
+    #                                                                       // llm
     LLM_LOCAL = auto()
     LLM_API = auto()
     LLM_EXPENSIVE = auto()
@@ -251,7 +251,7 @@ class BudgetExceeded(Exception):
         super().__init__(f"Budget exceeded: ${amount:.4f} requested, ${remaining:.2f} remaining")
 
 
-# JSON-compatible types
+#                                                                      // json
 JSONPrimitive = str | int | float | bool | None
 JSONValue = JSONPrimitive | dict[str, "JSONValue"] | list["JSONValue"]
 JSONObject = dict[str, JSONValue]

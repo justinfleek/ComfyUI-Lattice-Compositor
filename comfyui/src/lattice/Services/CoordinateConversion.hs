@@ -27,9 +27,9 @@ import Lattice.Utils.NumericSafety
   )
 import Lattice.Utils.ArrayUtils (safeArrayGet)
 
--- ============================================================================
--- TYPES
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                                     // types
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Transform matrix for coordinate conversion
 -- Note: Parent transform handled separately (not included here for purity)
@@ -46,9 +46,9 @@ safeGet arr idx defaultVal =
   let val = safeArrayGet arr idx defaultVal
   in if isFinite val then val else defaultVal
 
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 -- 3D ORIENTATION FUNCTIONS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Calculate rotation to face a target point
 -- Pure function: same inputs → same outputs
@@ -77,9 +77,9 @@ orientToPathFromTangent tangentVector =
       pitch = (-atan2 dy dist) * 180 / pi
   in [pitch, yaw, 0]
 
--- ============================================================================
--- COORDINATE CONVERSION FUNCTIONS (LOCAL TRANSFORM ONLY)
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                     // coordinate // conversion // functions
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Convert point from layer space to composition space (local transform only)
 -- Pure function: same inputs → same outputs

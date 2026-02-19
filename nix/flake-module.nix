@@ -20,7 +20,7 @@
       };
       
       # Python environment with packages available in nixpkgs
-      # NOTE: Explicit package references per RFC-001 (no 'with ps;')
+      #                                                                      // note
       pythonEnv = pkgs.python3.withPackages (ps: [
         ps.pytest
         ps.pytest-cov
@@ -65,7 +65,7 @@
         ps.lxml
         # Network/async
         ps.anyio
-        # ML/AI
+        #                                                                        // ml
         ps.transformers
         ps.huggingface-hub
         # Monitoring
@@ -80,7 +80,7 @@
     {
       # Dev shell: Python + uv, Bun with comprehensive package set
       # Note: CUDA support enabled via flake.nix nixpkgs.config
-      # NOTE: Explicit package references per RFC-001 (no 'with pkgs;')
+      #                                                                      // note
       devShells.default = pkgs.mkShell {
         packages = [
           pythonEnv
@@ -162,7 +162,7 @@
         '';
       };
 
-      # UI package built with bun2nix v2
+      #                                                                        // ui
       # bun2nix v2: use packages.${system}.default instead of lib
       packages.ui = pkgs.callPackage ./packages/ui.nix {
         bun2nix = inputs.bun2nix.packages.${system}.default;

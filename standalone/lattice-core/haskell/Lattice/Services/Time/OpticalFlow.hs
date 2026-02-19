@@ -38,9 +38,9 @@ module Lattice.Services.Time.OpticalFlow
   , blockCount
   ) where
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Luminance Calculation
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Calculate luminance from RGB using BT.601 coefficients.
 --   Y = 0.299*R + 0.587*G + 0.114*B
@@ -50,9 +50,9 @@ luminance :: Double  -- ^ R
           -> Double
 luminance r g b = r * 0.299 + g * 0.587 + b * 0.114
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Sum of Absolute Differences (SAD)
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Calculate absolute difference between two luminance values.
 pixelSAD :: Double -> Double -> Double
@@ -65,9 +65,9 @@ normalizeSAD :: Double  -- ^ Total SAD
 normalizeSAD _ 0 = 1.0 / 0.0  -- Infinity
 normalizeSAD totalSAD validPixels = totalSAD / fromIntegral validPixels
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Block Coordinates
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Calculate block index from pixel coordinates.
 pixelToBlockIndex :: Int  -- ^ X
@@ -101,9 +101,9 @@ inBounds :: Int  -- ^ X
 inBounds x y width height =
   x >= 0 && y >= 0 && x < width && y < height
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Motion Vector
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Motion vector (displacement in pixels).
 data MotionVector = MotionVector
@@ -120,9 +120,9 @@ motionMagnitude :: MotionVector -> Double
 motionMagnitude (MotionVector x y) =
   sqrt (fromIntegral x ^ (2 :: Int) + fromIntegral y ^ (2 :: Int))
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Motion-Compensated Sampling Coordinates
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Calculate forward-compensated source position.
 --   Used to sample from frame1 with motion compensation.
@@ -148,9 +148,9 @@ backwardSamplePosition x y (MotionVector mx my) blend =
   , y - fromIntegral my * blend
   )
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Search Window
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Generate search offsets for motion estimation.
 --   Returns list of (dx, dy) offsets within search radius.
@@ -177,9 +177,9 @@ isValidSearchOffset blockStartX blockStartY dx dy blockSize width height =
      endX <= width &&
      endY <= height
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Best Match Selection
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Update best match if current SAD is lower.
 updateBestMatch :: (MotionVector, Double)  -- ^ Current best (vector, SAD)
@@ -195,9 +195,9 @@ updateBestMatch currentBest candidate sad =
 initialBestMatch :: (MotionVector, Double)
 initialBestMatch = (zeroMotion, 1.0 / 0.0)  -- Infinity
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Block Matching Parameters
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Default block size for motion estimation.
 defaultBlockSize :: Int

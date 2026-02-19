@@ -48,7 +48,7 @@ instance Exception DuckDBError
 -- Returns connection handle or throws DuckDBError
 connect :: FilePath -> IO DuckDBConnection
 connect dbPath = do
-  -- TODO: Initialize actual DuckDB connection
+  --                                                                      // todo
   -- For now, return placeholder connection
   return $ DuckDBConnection
     { connPath = dbPath
@@ -58,20 +58,20 @@ connect dbPath = do
 -- | Disconnect from DuckDB database
 disconnect :: DuckDBConnection -> IO ()
 disconnect DuckDBConnection{..} = do
-  -- TODO: Close actual DuckDB connection
+  --                                                                      // todo
   return ()
 
 -- | Execute a SQL statement (no return value)
 execute :: DuckDBConnection -> Text -> IO (Either DuckDBError ())
 execute DuckDBConnection{..} sql = do
-  -- TODO: Execute SQL via DuckDB
+  --                                                                      // todo
   -- For now, return success
   return (Right ())
 
 -- | Execute a SQL query and return all rows as JSON
 query :: DuckDBConnection -> Text -> IO (Either DuckDBError [Value])
 query DuckDBConnection{..} sql = do
-  -- TODO: Execute SQL query via DuckDB and return JSON rows
+  --                                                                      // todo
   -- For now, return empty result
   return (Right [])
 

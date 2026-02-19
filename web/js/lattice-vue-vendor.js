@@ -205,7 +205,7 @@ function looseEqual(a, b) {
 **/
 let activeEffectScope;
 class EffectScope {
-  // TODO isolatedDeclarations "__v_skip"
+  //                                                                      // todo
   constructor(detached = false) {
     this.detached = detached;
     this._active = true;
@@ -610,7 +610,7 @@ class Link {
   }
 }
 class Dep {
-  // TODO isolatedDeclarations "__v_skip"
+  //                                                                      // todo
   constructor(computed2) {
     this.computed = computed2;
     this.version = 0;

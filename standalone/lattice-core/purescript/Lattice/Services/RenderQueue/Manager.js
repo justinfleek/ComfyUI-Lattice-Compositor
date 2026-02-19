@@ -1,4 +1,4 @@
-// FFI bindings for Lattice.Services.RenderQueue.Manager
+//                                                                       // ffi
 // Timer and utility operations
 
 // Get current timestamp

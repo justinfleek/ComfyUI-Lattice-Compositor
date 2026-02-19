@@ -41,9 +41,9 @@ import Lattice.Types.Project
   , CompositionSettings(..)
   )
 
--- ============================================================================
--- JSON Response Helpers
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                                 // json // r
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Convert JSON Value to CString
 jsonToCString :: Value -> IO CString
@@ -60,9 +60,9 @@ errorResponse msg = object ["status" .= ("error" :: T.Text), "message" .= msg]
 successResponse :: ToJSON a => a -> Value
 successResponse result = object ["status" .= ("success" :: T.Text), "result" .= result]
 
--- ============================================================================
--- PURE QUERIES
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                           // pure // queries
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Get a composition by ID
 foreign export ccall "get_composition"
@@ -83,9 +83,9 @@ c_get_composition compositionsJson compIdJson = do
       jsonToCString (successResponse result)
     _ -> jsonToCString (errorResponse "Invalid JSON: expected HashMap Text Composition and Text")
 
--- ============================================================================
--- PURE CALCULATIONS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                      // pure // calculations
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Calculate duration from frame count and fps
 foreign export ccall "calculate_duration"

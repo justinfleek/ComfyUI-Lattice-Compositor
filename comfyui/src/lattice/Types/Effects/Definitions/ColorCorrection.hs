@@ -16,7 +16,7 @@ import Lattice.Types.Effects.Core (EffectCategory (..), EffectDefinition (..), E
 -- | Color Correction effect definitions (Basic)
 -- Migrated from ui/src/types/effects.ts EFFECT_DEFINITIONS (color-correction category)
 -- First 11 effects (basic color correction)
--- NOTE: File split at 678 lines - remaining 4 complex effects moved to ColorCorrectionAdvanced.hs
+--                                                                      // note
 colorCorrectionBasicDefinitions :: HashMap String EffectDefinition
 colorCorrectionBasicDefinitions =
   HM.fromList

@@ -10,7 +10,7 @@
 # For projects needing mathlib, we use lake with elan to handle
 # toolchain version requirements automatically.
 #
-# NOTE: This overlay must be applied after the prelude overlay.
+#                                                                      // note
 #
 final: prev:
 let
@@ -23,13 +23,13 @@ let
   call-package = get' "callPackage" prev;
   fetch-from-github = get' "fetchFromGitHub" prev;
   rust-platform = get' "rustPlatform" prev;
-  # TODO: need a aleph.build-rust-package wrapper
+  #                                                                      // todo
   build-rust-package = get' "buildRustPackage" rust-platform;
 in
 {
   # Elan - Lean version manager (like rustup for Rust)
   # This allows lake to download the correct Lean version for each project
-  # NOTE: Using prev.elan from nixpkgs (no custom build needed)
+  #                                                                      // note
   elan = prev.elan;
 
   # lean4-mathlib-env - Lean 4 environment with mathlib cache

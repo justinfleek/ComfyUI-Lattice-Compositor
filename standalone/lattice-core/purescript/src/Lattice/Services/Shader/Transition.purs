@@ -31,9 +31,9 @@ import Prelude
 import Data.Tuple (Tuple(..))
 import Math (atan2, cos, floor, pi, sin, sqrt)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Smoothstep (Hermite interpolation)
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Clamp value to [0, 1] range.
 clamp01 :: Number -> Number
@@ -50,9 +50,9 @@ smoothstep edge0 edge1 x
   where
     t = clamp01 ((x - edge0) / (edge1 - edge0))
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Dissolve Transition
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Calculate dissolve edge value.
 dissolveEdge :: Number -> Number -> Number -> Number
@@ -63,9 +63,9 @@ dissolveEdge noiseValue progress softness =
 dissolveBlend :: Number -> Number -> Number -> Number
 dissolveBlend = dissolveEdge
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Wipe Transition
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Calculate directional wipe projection.
 wipeProjection :: Number -> Number -> Number -> Number
@@ -87,9 +87,9 @@ wipeEdge uvX uvY angleDeg progress softness =
 wipeBlend :: Number -> Number -> Number -> Number -> Number -> Number
 wipeBlend = wipeEdge
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Radial Wipe
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Calculate radial wipe distance from center.
 radialDistance :: Number -> Number -> Number -> Number -> Number
@@ -106,9 +106,9 @@ radialWipeEdge uvX uvY centerX centerY progress softness maxRadius invert =
       threshold = if invert then 1.0 - progress else progress
   in smoothstep (threshold - softness) (threshold + softness) normalizedDist
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Clock Wipe
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Calculate angle from center (in radians).
 angleFromCenter :: Number -> Number -> Number -> Number -> Number
@@ -129,9 +129,9 @@ clockWipeEdge uvX uvY centerX centerY startAngleDeg progress softness clockwise 
       directedAngle = if clockwise then 1.0 - normalizedAngle else normalizedAngle
   in smoothstep (progress - softness) (progress + softness) directedAngle
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Linear Interpolation
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Linear interpolation between two values.
 lerp :: Number -> Number -> Number -> Number

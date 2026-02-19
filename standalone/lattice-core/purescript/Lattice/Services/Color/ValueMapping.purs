@@ -33,9 +33,9 @@ import Data.Int (toNumber)
 import Data.Maybe (Maybe(..))
 import Math (abs, max, min, sqrt) as Math
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Types
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Configuration for value mapping.
 type ValueMappingConfig =
@@ -79,9 +79,9 @@ defaultDepthMappingConfig =
   , invert: false
   }
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Core Mapping Functions
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Clamp a value to 0-1 range.
 clamp01 :: Number -> Number
@@ -114,9 +114,9 @@ applySmoothing currentValue previousValue smoothing =
   if smoothing <= 0.0 then currentValue
   else previousValue * smoothing + currentValue * (1.0 - smoothing)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Complete Value Mapping
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Apply complete value mapping pipeline.
 -- |
@@ -146,9 +146,9 @@ mapValue rawValue config mPreviousValue =
 mapValueSimple :: Number -> ValueMappingConfig -> Number
 mapValueSimple rawValue config = mapValue rawValue config Nothing
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Depth Mapping
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Normalize depth value to near/far range.
 -- |
@@ -188,9 +188,9 @@ mapDepthValue depthValue config mPreviousValue =
        Nothing -> mapped
        Just prev -> applySmoothing mapped prev config.smoothing
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Motion Detection Math
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Calculate per-pixel color difference (0-1).
 -- |
@@ -225,9 +225,9 @@ mapMotionValue motionValue sensitivity minVal maxVal mPreviousValue smoothing =
        Nothing -> mapped
        Just prev -> applySmoothing mapped prev smoothing
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Gradient Calculation
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Calculate gradient magnitude from dx and dy.
 gradientMagnitude :: Number -> Number -> Number
@@ -243,9 +243,9 @@ calculateGradient left right top bottom =
       dy = bottom - top
   in gradientMagnitude dx dy
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Statistics
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Calculate variance of an array of values.
 calculateVariance :: Array Number -> Number

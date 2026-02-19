@@ -2,7 +2,7 @@
 
 -- | Check Type Escapes
 -- Check for type escapes across the codebase
--- BANNED: any, unknown without guards, unsafeCoerce, as any, as unknown as
+--                                                                    // banned
 module Main where
 
 import Aleph.Script

@@ -31,9 +31,9 @@ import Lattice.Services.Export.CameraExport.Formats.Common
   )
 import Lattice.Services.Export.CameraExport.Matrix (computeViewMatrix)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- MotionCtrl Format
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Export camera animation to MotionCtrl format (4x4 RT matrices)
 exportToMotionCtrl

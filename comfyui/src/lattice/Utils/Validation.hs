@@ -45,9 +45,9 @@ import Data.Aeson (Value(..), ToJSON(..))
 import Lattice.Utils.ArrayUtils (safeArrayGet)
 import Lattice.Utils.NumericSafety (isFinite)
 
--- ============================================================================
--- VALIDATION RESULT TYPE
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                              // validation // result // type
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Validation result - either success with typed value, or failure with error message
 data ValidationResult a
@@ -91,9 +91,9 @@ isOk :: ValidationResult a -> Bool
 isOk (Ok _) = True
 isOk (Fail _) = False
 
--- ============================================================================
--- PRIMITIVE VALIDATORS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                   // primitive // validators
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | String validation options
 data StringOptions = StringOptions
@@ -180,9 +180,9 @@ validateEnum value name allowed =
     then Ok value
     else Fail (name <> " must be one of [" <> T.intercalate ", " allowed <> "], got \"" <> value <> "\"")
 
--- ============================================================================
--- ARRAY VALIDATORS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                       // array // validators
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Array validation options
 data ArrayOptions = ArrayOptions
@@ -229,9 +229,9 @@ validateNumberArray arr name arrOpts numOpts =
     checkMaxLength
     mapM (\idx -> validateFiniteNumber (safeArrayGet arr idx 0.0) (name <> "[" <> T.pack (show idx) <> "]") numOpts) [0 .. len - 1]
 
--- ============================================================================
--- OBJECT VALIDATORS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                      // object // validators
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Validate that value is a non-null object
 validateObject :: HashMap Text Value -> Text -> ValidationResult (HashMap Text Value)
@@ -290,9 +290,9 @@ validateColor obj name = do
     _ -> return Nothing
   return (r, g, b, a)
 
--- ============================================================================
--- OPTIONAL VALIDATORS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                    // optional // validators
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Make a validator optional - returns Nothing if value is Nothing
 optional :: (a -> Text -> ValidationResult b) -> Maybe a -> Text -> ValidationResult (Maybe b)
@@ -306,9 +306,9 @@ withDefault :: (a -> Text -> ValidationResult b) -> b -> Maybe a -> Text -> Vali
 withDefault validator def Nothing _ = Ok def
 withDefault validator _ (Just val) name = validator val name
 
--- ============================================================================
--- COMPOSITION HELPERS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                    // composition // helpers
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Validate all fields of an object schema
 validateSchema :: HashMap Text (Value -> Text -> ValidationResult a) -> HashMap Text Value -> Text -> ValidationResult (HashMap Text a)

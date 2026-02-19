@@ -35,9 +35,9 @@ import Math (pi, cos, sin) as Math
 
 import Lattice.Services.ShapeOperations.Point2D as P2D
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Types
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Direction for shape winding
 data WindingDirection
@@ -67,9 +67,9 @@ type BezierPath =
 mkBezierPath :: Array BezierVertex -> Boolean -> BezierPath
 mkBezierPath vertices closed = { vertices, closed }
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Constants
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Magic number for circular Bezier approximation.
 kappa :: Number
@@ -79,9 +79,9 @@ kappa = 0.5522847498
 degToRad :: Number -> Number
 degToRad deg = deg * Math.pi / 180.0
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Vertex Helpers
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Create a corner vertex (no handles)
 cornerVertex :: P2D.Point2D -> BezierVertex
@@ -104,9 +104,9 @@ cloneVertex v = { point: P2D.clone v.point
 clonePath :: BezierPath -> BezierPath
 clonePath p = { vertices: map cloneVertex p.vertices, closed: p.closed }
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Rectangle
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Generate a rectangle path.
 generateRectangle :: P2D.Point2D -> P2D.Point2D -> Number -> WindingDirection -> BezierPath
@@ -158,9 +158,9 @@ generateRectangle position size roundness direction =
 
        in { vertices, closed: true }
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Ellipse
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Generate an ellipse path using 4-point Bezier approximation.
 generateEllipse :: P2D.Point2D -> P2D.Point2D -> WindingDirection -> BezierPath
@@ -198,9 +198,9 @@ generateEllipse position size direction =
 
   in { vertices, closed: true }
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Regular Polygon
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Generate a regular polygon (n-gon).
 generatePolygon :: P2D.Point2D -> Int -> Number -> Number -> Number -> WindingDirection -> BezierPath
@@ -238,9 +238,9 @@ generatePolygon position points radius roundness rotation direction =
 
   in { vertices, closed: true }
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Star
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Generate a star shape.
 generateStar :: P2D.Point2D -> Int -> Number -> Number -> Number -> Number
@@ -285,9 +285,9 @@ generateStar position points outerRadius innerRadius outerRoundness innerRoundne
 
   in { vertices, closed: true }
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Path from Points
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Create a path from an array of points (sharp corners)
 pathFromPoints :: Array P2D.Point2D -> Boolean -> BezierPath

@@ -30,9 +30,9 @@ module Lattice.Services.Time.DisplacementMap
   , calculateTargetFrame
   ) where
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Horizontal Gradient
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Generate horizontal gradient displacement value.
 --   Returns 0 at left edge, 1 at right edge.
@@ -42,9 +42,9 @@ gradientH :: Int  -- ^ X coordinate
 gradientH _ 0 = 0.5
 gradientH x width = fromIntegral x / fromIntegral width
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Vertical Gradient
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Generate vertical gradient displacement value.
 --   Returns 0 at top edge, 1 at bottom edge.
@@ -54,9 +54,9 @@ gradientV :: Int  -- ^ Y coordinate
 gradientV _ 0 = 0.5
 gradientV y height = fromIntegral y / fromIntegral height
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Diagonal Gradient
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Generate diagonal gradient displacement value.
 --   Averages horizontal and vertical gradients.
@@ -64,9 +64,9 @@ diagonal :: Int -> Int -> Int -> Int -> Double
 diagonal x y width height =
   (gradientH x width + gradientV y height) / 2.0
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Radial Distance
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Calculate distance from center, normalized to [0, 1].
 --   Returns 0 at center, 1 at corners.
@@ -94,9 +94,9 @@ radial = radialDistance
 centerOut :: Int -> Int -> Int -> Int -> Double
 centerOut x y width height = 1.0 - radialDistance x y width height
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Sinusoidal Patterns
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Horizontal sine wave displacement.
 --   scale controls number of wave periods.
@@ -120,9 +120,9 @@ sineV y height scale =
   let normalizedY = fromIntegral y / fromIntegral height
   in 0.5 + 0.5 * sin (normalizedY * pi * 2.0 * scale)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Map Types
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Map type enum.
 data MapType
@@ -153,9 +153,9 @@ getDisplacementValue mapType x y width height scale = case mapType of
   Diagonal  -> diagonal x y width height
   CenterOut -> centerOut x y width height
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Frame Offset Calculation
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Apply bias to displacement value.
 --   Shifts the 0.5 neutral point.

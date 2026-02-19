@@ -31,9 +31,9 @@ import Lattice.Services.SVGPathParsing
   , ControlPointType(..)
   )
 
--- ============================================================================
--- JSON INSTANCES FOR FFI
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                           // json // instances // for // ffi
+-- ════════════════════════════════════════════════════════════════════════════
 
 instance ToJSON ControlPointHandle where
   toJSON (ControlPointHandle x y) = object
@@ -64,9 +64,9 @@ instance ToJSON ParsedPath where
     , fromText "closed" .= closed
     ]
 
--- ============================================================================
--- PARSING FUNCTIONS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                      // parsing // functions
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Export parseSVGToPaths as C function
 -- C signature: char* parse_svg_to_paths(char* svg_string, int img_width, int img_height)

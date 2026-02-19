@@ -24,9 +24,9 @@ import Data.Generic.Rep (class Generic)
 import Data.Show.Generic (genericShow)
 import Lattice.Primitives
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Asset Type
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 data AssetType
   = ATDepthMap     -- Depth map image
@@ -47,9 +47,9 @@ derive instance Eq AssetType
 derive instance Generic AssetType _
 instance Show AssetType where show = genericShow
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Texture Map Type
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 data TextureMapType
   = TMTAlbedo     -- Base color / diffuse
@@ -66,9 +66,9 @@ derive instance Eq TextureMapType
 derive instance Generic TextureMapType _
 instance Show TextureMapType where show = genericShow
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Model Format
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 data ModelFormat
   = MFGltf | MFGlb | MFObj | MFFbx | MFUsd | MFUsda | MFUsdc | MFUsdz
@@ -77,9 +77,9 @@ derive instance Eq ModelFormat
 derive instance Generic ModelFormat _
 instance Show ModelFormat where show = genericShow
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Point Cloud Format
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 data PointCloudFormat
   = PCFPly | PCFPcd | PCFLas | PCFLaz | PCFXyz | PCFPts
@@ -88,9 +88,9 @@ derive instance Eq PointCloudFormat
 derive instance Generic PointCloudFormat _
 instance Show PointCloudFormat where show = genericShow
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Texture Color Space
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 data TextureColorSpace = TCSSrgb | TCSLinear
 
@@ -98,9 +98,9 @@ derive instance Eq TextureColorSpace
 derive instance Generic TextureColorSpace _
 instance Show TextureColorSpace where show = genericShow
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Asset Source
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 data AssetSource
   = ASComfyuiNode | ASFile | ASGenerated | ASUrl
@@ -109,9 +109,9 @@ derive instance Eq AssetSource
 derive instance Generic AssetSource _
 instance Show AssetSource where show = genericShow
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Model Bounding Box
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 type ModelBoundingBox =
   { minX    :: FiniteFloat
@@ -128,9 +128,9 @@ type ModelBoundingBox =
   , sizeZ   :: FiniteFloat
   }
 
---------------------------------------------------------------------------------
--- SVG View Box
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
+--                                                                  // svg // v
+-- ────────────────────────────────────────────────────────────────────────────
 
 type SvgViewBox =
   { x      :: FiniteFloat
@@ -139,9 +139,9 @@ type SvgViewBox =
   , height :: PositiveFloat
   }
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Sprite Validation
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 type SpriteValidation =
   { isPowerOfTwo   :: Boolean
@@ -150,9 +150,9 @@ type SpriteValidation =
   , warnings       :: Array String
   }
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Material Maps
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 type MaterialMaps =
   { albedo    :: Maybe NonEmptyString
@@ -165,9 +165,9 @@ type MaterialMaps =
   , opacity   :: Maybe NonEmptyString
   }
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Asset Reference
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 type AssetReference =
   { id                  :: NonEmptyString
@@ -199,10 +199,10 @@ type AssetReference =
   , textureColorSpace   :: Maybe TextureColorSpace
   -- Material definition
   , materialMaps        :: Maybe MaterialMaps
-  -- HDRI metadata
+  --                                                                      // hdri
   , hdriExposure        :: Maybe FiniteFloat
   , hdriRotation        :: Maybe FiniteFloat
-  -- SVG metadata
+  --                                                                       // svg
   , svgPaths            :: Maybe Int
   , svgViewBox          :: Maybe SvgViewBox
   -- Sprite sheet metadata
@@ -213,9 +213,9 @@ type AssetReference =
   , spriteValidation    :: Maybe SpriteValidation
   }
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Data Asset
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 data DataAssetType = DATJson | DATCsv | DATTsv | DATMgjson
 

@@ -26,9 +26,9 @@ import Lattice.Services.Export.CameraExport.Formats.Common
   )
 import Lattice.Services.Export.CameraExport.MotionAnalysis (analyzeCameraMotion)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Uni3C Format
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Detect Uni3C trajectory type
 detectUni3CTrajectoryType :: Array CameraKeyframe -> Uni3CTrajType

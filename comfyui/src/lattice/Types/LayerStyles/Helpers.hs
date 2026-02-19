@@ -69,12 +69,12 @@ import Lattice.Types.LayerStyles.Core
   )
 import Lattice.Types.Primitives (BlendMode (..))
 
--- ============================================================================
--- UTILITY FUNCTIONS
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                      // utility // functions
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Create a default animatable property for layer styles
--- NOTE: ID generation should be handled by caller (no IO in pure functions)
+--                                                                      // note
 createStyleProperty ::
   Text ->
   a ->
@@ -92,9 +92,9 @@ createStyleProperty name value propType =
 createRGBA :: Double -> Double -> Double -> Double -> RGBAColor
 createRGBA r g b a = RGBAColor r g b a
 
--- ============================================================================
--- STYLE FACTORIES
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                        // style // factories
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Create default layer styles (all disabled)
 createDefaultLayerStyles :: LayerStyles
@@ -339,9 +339,9 @@ createDefaultStroke =
       strokeStylePatternLinkWithLayer = Nothing
     }
 
--- ============================================================================
--- BLENDING OPTIONS FACTORY
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                            // blending // options // factory
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Create default blending options
 createDefaultBlendingOptions :: StyleBlendingOptions
@@ -359,9 +359,9 @@ createDefaultBlendingOptions =
       styleBlendingOptionsUnderlyingLayerRange = Nothing
     }
 
--- ============================================================================
--- GLOBAL LIGHT FACTORY
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                // global // light // factory
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Create default global light settings
 createDefaultGlobalLight :: GlobalLightSettings

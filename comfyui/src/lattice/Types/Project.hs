@@ -52,9 +52,9 @@ import Lattice.Types.Core (ColorSpace(..), ViewTransform(..))
 import Lattice.Types.Layer (Layer(..))
 import Lattice.Types.Primitives (validateFinite, validateNonNegative)
 
--- ============================================================================
--- PROJECT META
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                           // project // meta
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Project metadata
 data ProjectMeta = ProjectMeta
@@ -82,9 +82,9 @@ instance FromJSON ProjectMeta where
     mAuthor <- o .:? "author"
     return (ProjectMeta name created modified mAuthor)
 
--- ============================================================================
--- MARKER
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                                    // marker
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Timeline marker for navigation, beat sync, and annotation
 data Marker = Marker
@@ -118,9 +118,9 @@ instance FromJSON Marker where
       then return (Marker id_ frame label color mDuration mComment)
       else fail "Marker frame and duration must be finite numbers"
 
--- ============================================================================
--- COLOR SETTINGS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                         // color // settings
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Color management settings
 data ColorSettings = ColorSettings
@@ -152,9 +152,9 @@ instance FromJSON ColorSettings where
       _ -> Left <$> parseJSON exportVal
     return (ColorSettings working view export_ linear)
 
--- ============================================================================
--- COMPOSITION SETTINGS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                   // composition // settings
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Composition settings (timeline, resolution, etc.)
 data CompositionSettings = CompositionSettings
@@ -209,9 +209,9 @@ instance FromJSON CompositionSettings where
       then return (CompositionSettings w h fc fps dur bg autoResize frameBlend mColor mBlur mShutter mSamples)
       else fail "CompositionSettings: all numeric values must be finite and non-negative where applicable"
 
--- ============================================================================
--- WORKFLOW TYPES (ComfyUI integration)
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                         // workflow // types
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Workflow input mapping
 data WorkflowInput = WorkflowInput
@@ -308,9 +308,9 @@ instance FromJSON WorkflowOutput where
     outputName <- o .: "outputName"
     return (WorkflowOutput name typ nodeId outputName)
 
--- ============================================================================
--- ASSET TYPES
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                            // asset // types
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Asset types supported by the compositor
 data AssetType
@@ -516,9 +516,9 @@ instance FromJSON DataAssetReference where
       then return (DataAssetReference id_ name typ rawContent lastMod mSourceData mHeaders mRows mNumRows mNumCols)
       else fail "DataAssetReference: lastModified must be finite and non-negative"
 
--- ============================================================================
--- COMPOSITION
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                               // composition
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Composition - independent timeline with its own layers
 data Composition = Composition
@@ -571,9 +571,9 @@ instance FromJSON Composition where
       then return (Composition id_ name settings layers currentFrame isNested mParent mWorkflowId mInputs mOutputs mTemplate mGlobalLight mMarkers)
       else fail "Composition: currentFrame must be finite and non-negative"
 
--- ============================================================================
--- LATTICE PROJECT (Root Type)
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                        // lattice // project
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Lattice project root type
 data LatticeProject = LatticeProject

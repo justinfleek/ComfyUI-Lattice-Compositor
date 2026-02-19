@@ -2654,7 +2654,7 @@ class Vector3 {
   dot(v) {
     return this.x * v.x + this.y * v.y + this.z * v.z;
   }
-  // TODO lengthSquared?
+  //                                                                      // todo
   lengthSq() {
     return this.x * this.x + this.y * this.y + this.z * this.z;
   }
@@ -8780,7 +8780,7 @@ const UniformsLib = {
       skyColor: {},
       groundColor: {}
     } },
-    // TODO (abelnation): RectAreaLight BRDF data needs to be moved from example to main src
+    //                                                                      // todo
     rectAreaLights: { value: [], properties: {
       color: {},
       position: {},
@@ -10508,7 +10508,7 @@ function _getCommonVertexShader() {
 
 		varying vec3 vOutputDirection;
 
-		// RH coordinate system; PMREM face-indexing convention
+		//                                                                        // rh
 		vec3 getDirection( vec2 uv, float face ) {
 
 			uv = 2.0 * uv - 1.0;
@@ -21602,7 +21602,7 @@ class CurvePath extends Curve {
     return null;
   }
   // We cannot use the default THREE.Curve getPoint() with getLength() because in
-  // THREE.Curve, getLength() depends on getPoint() but in THREE.CurvePath
+  //                                                                     // three
   // getPoint() depends on getLength
   getLength() {
     const lens = this.getCurveLengths();
@@ -25219,7 +25219,7 @@ class KeyframeTrack {
     return this;
   }
   // removes keyframes before and after animation without changing any values within the range [startTime, endTime].
-  // IMPORTANT: We do not shift around keys to the start of the track time, because for interpolated keys this will change their values
+  //                                                                 // important
   trim(startTime, endTime) {
     const times = this.times, nKeys = times.length;
     let from = 0, to = nKeys - 1;
@@ -33768,10 +33768,10 @@ class SVGLoader extends Loader {
 		}
 
 		// check for self intersecting paths
-		// TODO
+		//                                                                      // todo
 
 		// check intersecting paths
-		// TODO
+		//                                                                      // todo
 
 		// prepare paths for hole detection
 		let scanlineMinX = BIGNUMBER;
@@ -34775,7 +34775,7 @@ class RGBELoader extends DataTextureLoader {
 					format_re = /^\s*FORMAT=(\S+)\s*$/,
 					dimensions_re = /^\s*\-Y\s+(\d+)\s+\+X\s+(\d+)\s*$/,
 
-					// RGBE format header struct
+					//                                                                      // rgbe
 					header = {
 
 						valid: 0, /* indicate which fields are valid */
@@ -35592,16 +35592,16 @@ function unzipSync(data, opts) {
 //       names of its contributors may be used to endorse or promote products
 //       derived from this software without specific prior written permission.
 
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-// ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-// WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-// DISCLAIMED. IN NO EVENT SHALL <COPYRIGHT HOLDER> BE LIABLE FOR ANY
-// DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+// // this // software // is // provided // by // the // copyright // holders // and // contributors
+//                             // any // express // or // implied // warranties
+// // warranties // of // merchantability // and // fitness // for // a // particular // purpose // are
+//                                                                // disclaimed
+//                                                                    // direct
 // (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-// LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
-// ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+//                                                         // loss // of // use
+//                                    // on // any // theory // of // liability
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-// SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+//                                                                  // software
 // */
 
 // // TinyEXR contains some OpenEXR code, which is licensed under ------------
@@ -37908,7 +37908,7 @@ class EXRLoader extends DataTextureLoader {
 
 			}
 
-			// RGB images will be converted to RGBA format, preventing software emulation in select devices.
+			//                                                                       // rgb
 			let fillAlpha = false;
 
 			if ( channels.R && channels.G && channels.B ) {
@@ -38257,7 +38257,7 @@ class ShaderPass extends Pass {
 		} else {
 
 			renderer.setRenderTarget( writeBuffer );
-			// TODO: Avoid using autoClear properties, see https://github.com/mrdoob/three.js/pull/15571#issuecomment-465669600
+			//                                                                      // todo
 			if ( this.clear ) renderer.clear( renderer.autoClearColor, renderer.autoClearDepth, renderer.autoClearStencil );
 			this.fsQuad.render( renderer );
 
@@ -38654,7 +38654,7 @@ class RenderPass extends Pass {
 
 		if ( this.clear === true ) {
 
-			// TODO: Avoid using autoClear properties, see https://github.com/mrdoob/three.js/pull/15571#issuecomment-465669600
+			//                                                                      // todo
 			renderer.clear( renderer.autoClearColor, renderer.autoClearDepth, renderer.autoClearStencil );
 
 		}
@@ -39266,13 +39266,13 @@ class SimplexNoise {
 
 				i1 = 1; j1 = 0; k1 = 0; i2 = 1; j2 = 1; k2 = 0;
 
-				// X Y Z order
+				//                                                               // x // y // z
 
 			} else if ( x0 >= z0 ) {
 
 				i1 = 1; j1 = 0; k1 = 0; i2 = 1; j2 = 0; k2 = 1;
 
-				// X Z Y order
+				//                                                               // x // z // y
 
 			} else {
 
@@ -39286,13 +39286,13 @@ class SimplexNoise {
 
 				i1 = 0; j1 = 0; k1 = 1; i2 = 0; j2 = 1; k2 = 1;
 
-				// Z Y X order
+				//                                                               // z // y // x
 
 			} else if ( x0 < z0 ) {
 
 				i1 = 0; j1 = 1; k1 = 0; i2 = 0; j2 = 1; k2 = 1;
 
-				// Y Z X order
+				//                                                               // y // z // x
 
 			} else {
 
@@ -41680,7 +41680,7 @@ var exports$1 = (function (exports$1) {
           console.info(expectedResult, testResult);
         }
       } catch (err) {
-        // TODO if it threw due to webgl context loss, should we maybe leave isSupported as null and try again later?
+        //                                                                      // todo
         supported = false;
         failReason = err.message;
       }
@@ -42098,7 +42098,7 @@ var bidi = (function (exports$1) {
 
           // Isolates: 3.3.2 X5a - X5c
           else if (charType & ISOLATE_INIT_TYPES) {
-            // X5c - FSI becomes either RLI or LRI
+            //                                                                        // x5
             if (charType & TYPE_FSI) {
               charType = determineAutoEmbedLevel(i$2 + 1, true) === 1 ? TYPE_RLI : TYPE_LRI;
             }
@@ -42169,7 +42169,7 @@ var bidi = (function (exports$1) {
         // Non-formatting characters: 3.3.2 X6
         else {
           embedLevels[i$2] = stackTop._level;
-          // NOTE: This exclusion of BN seems to go against what section 5.2 says, but is required for test passage
+          //                                                                      // note
           if (stackTop._override && charType !== TYPE_BN) {
             changeCharType(i$2, stackTop._override);
           }
@@ -42270,7 +42270,7 @@ var bidi = (function (exports$1) {
 
         // === 3.3.4 Resolving Weak Types ===
 
-        // W1 + 5.2. Search backward from each NSM to the first character in the isolating run sequence whose
+        //                                                                        // w1
         // bidirectional type is not BN, and set the NSM to ON if it is an isolate initiator or PDI, and to its
         // type otherwise. If the NSM is the first non-BN character, change the NSM to the type of sos.
         if (charTypeCounts.get(TYPE_NSM)) {
@@ -42289,7 +42289,7 @@ var bidi = (function (exports$1) {
           }
         }
 
-        // W2. Search backward from each instance of a European number until the first strong type (R, L, AL, or sos)
+        //                                                                        // w2
         // is found. If an AL is found, change the type of the European number to Arabic number.
         if (charTypeCounts.get(TYPE_EN)) {
           for (var si$1 = 0; si$1 < seqIndices$1.length; si$1++) {
@@ -42308,7 +42308,7 @@ var bidi = (function (exports$1) {
           }
         }
 
-        // W3. Change all ALs to R
+        //                                                                        // w3
         if (charTypeCounts.get(TYPE_AL)) {
           for (var si$2 = 0; si$2 < seqIndices$1.length; si$2++) {
             var i$10 = seqIndices$1[si$2];
@@ -42318,7 +42318,7 @@ var bidi = (function (exports$1) {
           }
         }
 
-        // W4. A single European separator between two European numbers changes to a European number. A single common
+        //                                                                        // w4
         // separator between two numbers of the same type changes to that type.
         if (charTypeCounts.get(TYPE_ES) || charTypeCounts.get(TYPE_CS)) {
           for (var si$3 = 1; si$3 < seqIndices$1.length - 1; si$3++) {
@@ -42344,7 +42344,7 @@ var bidi = (function (exports$1) {
           }
         }
 
-        // W5. A sequence of European terminators adjacent to European numbers changes to all European numbers.
+        //                                                                        // w5
         if (charTypeCounts.get(TYPE_EN)) {
           for (var si$4 = 0; si$4 < seqIndices$1.length; si$4++) {
             var i$12 = seqIndices$1[si$4];
@@ -42361,7 +42361,7 @@ var bidi = (function (exports$1) {
           }
         }
 
-        // W6. Otherwise, separators and terminators change to Other Neutral.
+        //                                                                        // w6
         if (charTypeCounts.get(TYPE_ET) || charTypeCounts.get(TYPE_ES) || charTypeCounts.get(TYPE_CS)) {
           for (var si$5 = 0; si$5 < seqIndices$1.length; si$5++) {
             var i$13 = seqIndices$1[si$5];
@@ -42378,9 +42378,9 @@ var bidi = (function (exports$1) {
           }
         }
 
-        // W7. Search backward from each instance of a European number until the first strong type (R, L, or sos)
+        //                                                                        // w7
         // is found. If an L is found, then change the type of the European number to L.
-        // NOTE: implemented in single forward pass for efficiency
+        //                                                                      // note
         if (charTypeCounts.get(TYPE_EN)) {
           for (var si$6 = 0, prevStrongType = sosType; si$6 < seqIndices$1.length; si$6++) {
             var i$14 = seqIndices$1[si$6];
@@ -42398,7 +42398,7 @@ var bidi = (function (exports$1) {
         // === 3.3.5 Resolving Neutral and Isolate Formatting Types ===
 
         if (charTypeCounts.get(NEUTRAL_ISOLATE_TYPES)) {
-          // N0. Process bracket pairs in an isolating run sequence sequentially in the logical order of the text
+          //                                                                        // n0
           // positions of the opening paired brackets using the logic given below. Within this scope, bidirectional
           // types EN and AN are treated as R.
           var R_TYPES_FOR_N_STEPS = (TYPE_R | TYPE_EN | TYPE_AN);
@@ -42409,7 +42409,7 @@ var bidi = (function (exports$1) {
           {
             var openerStack = [];
             for (var si$7 = 0; si$7 < seqIndices$1.length; si$7++) {
-              // NOTE: for any potential bracket character we also test that it still carries a NI
+              //                                                                      // note
               // type, as that may have been changed earlier. This doesn't seem to be explicitly
               // called out in the spec, but is required for passage of certain tests.
               if (charTypes[seqIndices$1[si$7]] & NEUTRAL_ISOLATE_TYPES) {
@@ -42511,9 +42511,9 @@ var bidi = (function (exports$1) {
             }
           }
 
-          // N1. A sequence of NIs takes the direction of the surrounding strong text if the text on both sides has the
+          //                                                                        // n1
           // same direction.
-          // N2. Any remaining NIs take the embedding direction.
+          //                                                                        // n2
           for (var si$12 = 0; si$12 < seqIndices$1.length; si$12++) {
             if (charTypes[seqIndices$1[si$12]] & NEUTRAL_ISOLATE_TYPES) {
               var niRunStart = si$12, niRunEnd = si$12;
@@ -42549,13 +42549,13 @@ var bidi = (function (exports$1) {
       for (var i$17 = paragraph.start; i$17 <= paragraph.end; i$17++) {
         var level$3 = embedLevels[i$17];
         var type$1 = charTypes[i$17];
-        // I2. For all characters with an odd (right-to-left) embedding level, those of type L, EN or AN go up one level.
+        //                                                                        // i2
         if (level$3 & 1) {
           if (type$1 & (TYPE_L | TYPE_EN | TYPE_AN)) {
             embedLevels[i$17]++;
           }
         }
-          // I1. For all characters with an even (left-to-right) embedding level, those of type R go up one level
+          //                                                                        // i1
         // and those of type AN or EN go up two levels.
         else {
           if (type$1 & TYPE_R) {
@@ -42573,7 +42573,7 @@ var bidi = (function (exports$1) {
 
         // 3.4 L1.1-4: Reset the embedding level of segment/paragraph separators, and any sequence of whitespace or
         // isolate formatting characters preceding them or the end of the paragraph, to the paragraph level.
-        // NOTE: this will also need to be applied to each individual line ending after line wrapping occurs.
+        //                                                                      // note
         if (i$17 === paragraph.end || getBidiCharType(string[i$17]) & (TYPE_S | TYPE_B)) {
           for (var j$1 = i$17; j$1 >= 0 && (getBidiCharType(string[j$1]) & TRAILING_TYPES); j$1--) {
             embedLevels[j$1] = paragraph.level;
@@ -42582,7 +42582,7 @@ var bidi = (function (exports$1) {
       }
     }
 
-    // DONE! The resolved levels can then be used, after line wrapping, to flip runs of characters
+    //                                                                      // done
     // according to section 3.4 Reordering Resolved Levels
     return {
       levels: embedLevels,
@@ -42706,7 +42706,7 @@ var bidi = (function (exports$1) {
           lineLevels[i] = paragraph.level;
         }
 
-        // L2. From the highest level found in the text to the lowest odd level on each line, including intermediate levels
+        //                                                                        // l2
         // not actually present in the text, reverse any contiguous sequence of characters that are at that level or higher.
         var maxLevel = paragraph.level;
         var minOddLevel = Infinity;
@@ -50201,7 +50201,7 @@ class GLTFCubicSplineInterpolant extends Interpolant {
 	copySampleValue_( index ) {
 
 		// Copies a sample value to the result buffer. See description of glTF
-		// CUBICSPLINE values layout in interpolate_() function below.
+		//                                                               // cubicspline
 
 		const result = this.resultBuffer,
 			values = this.sampleValues,
@@ -52632,7 +52632,7 @@ class GLTFParser {
 
 		track.createInterpolant = function InterpolantFactoryMethodGLTFCubicSpline( result ) {
 
-			// A CUBICSPLINE keyframe in glTF has three output values for each input value,
+			//                                                          // a // cubicspline
 			// representing inTangent, splineVertex, and outTangent. As a result, track.getValueSize()
 			// must be divided by three to get the interpolant's sampleSize argument.
 
@@ -53456,7 +53456,7 @@ class OBJLoader extends Loader {
 				// or
 				// g group_name
 
-				// WORKAROUND: https://bugs.chromium.org/p/v8/issues/detail?id=2869
+				//                                                                // workaround
 				// let name = result[ 0 ].slice( 1 ).trim();
 				const name = ( ' ' + result[ 0 ].slice( 1 ).trim() ).slice( 1 );
 
@@ -53510,7 +53510,7 @@ class OBJLoader extends Loader {
 
 				} else {
 
-					// ZBrush can produce "s" lines #11707
+					//                                                                        // zb
 					state.object.smooth = true;
 
 				}
@@ -54678,7 +54678,7 @@ class FBXTreeParser {
 
 	// Parse single node in FBXTree.Objects.Material
 	// Materials are connected to texture maps in FBXTree.Objects.Textures
-	// FBX format currently only supports Lambert and Phong shading models
+	//                                                                       // fbx
 	parseMaterial( materialNode, textureMap ) {
 
 		const ID = materialNode.id;
@@ -55387,7 +55387,7 @@ class FBXTreeParser {
 
 			}
 
-			// TODO: could this be calculated linearly from FarAttenuationStart to FarAttenuationEnd?
+			//                                                                      // todo
 			const decay = 1;
 
 			switch ( type ) {
@@ -55412,7 +55412,7 @@ class FBXTreeParser {
 					let penumbra = 0;
 					if ( lightAttribute.OuterAngle !== undefined ) {
 
-						// TODO: this is not correct - FBX calculates outer and inner angle in degrees
+						//                                                                      // todo
 						// with OuterAngle > InnerAngle && OuterAngle <= Math.PI
 						// while three.js uses a penumbra between (0, 1) to attenuate the inner angle
 						penumbra = MathUtils.degToRad( lightAttribute.OuterAngle.value );
@@ -55519,7 +55519,7 @@ class FBXTreeParser {
 
 		}, null );
 
-		// FBX does not list materials for Nurbs lines, so we'll just put our own in here.
+		//                                                                       // fbx
 		const material = new LineBasicMaterial( {
 			name: Loader.DEFAULT_MATERIAL_NAME,
 			color: 0x3300ff,
@@ -56438,7 +56438,7 @@ class GeometryParser {
 
 		}
 
-		// TODO: add morph normal support
+		//                                                                      // todo
 		const morphGeoInfo = {
 			vertexIndices: baseIndices,
 			vertexPositions: morphPositions,
@@ -56719,7 +56719,7 @@ class AnimationParser {
 
 		const rawCurves = fbxTree.Objects.AnimationCurve;
 
-		// TODO: Many values are identical up to roundoff error, but won't be optimised
+		//                                                                      // todo
 		// e.g. position times: [0, 0.4, 0. 8]
 		// position values: [7.23538335023477e-7, 93.67518615722656, -0.9982695579528809, 7.23538335023477e-7, 93.67518615722656, -0.9982695579528809, 7.235384487103147e-7, 93.67520904541016, -0.9982695579528809]
 		// clearly, this should be optimised to
@@ -57200,7 +57200,7 @@ class AnimationParser {
 
 	// Rotations are defined as Euler angles which can have values  of any size
 	// These will be converted to quaternions which don't support values greater than
-	// PI, so we'll interpolate large rotations
+	//                                                                        // pi
 	interpolateRotations( curvex, curvey, curvez, eulerOrder ) {
 
 		const times = [];
@@ -57627,7 +57627,7 @@ class TextParser {
 
 		}
 
-		// CAUTION: these props must append to parent's parent
+		//                                                                   // caution
 		this.getPrevNode()[ innerPropName ] = {
 
 			'type': innerPropType1,
@@ -58070,7 +58070,7 @@ class BinaryReader {
 	// 1 << 32 will return 1 so using multiply operation instead here.
 	// There's a possibility that this method returns wrong value if the value
 	// is out of the range between Number.MAX_SAFE_INTEGER and Number.MIN_SAFE_INTEGER.
-	// TODO: safely handle 64-bit integer
+	//                                                                      // todo
 	getInt64() {
 
 		let low, high;
@@ -58208,7 +58208,7 @@ class BinaryReader {
 
 }
 
-// FBXTree holds a representation of the FBX data, returned by the TextParser ( FBX ASCII format)
+//                                                                      // fbxt
 // and BinaryParser( FBX Binary format)
 class FBXTree {
 
@@ -58619,7 +58619,7 @@ class TGALoader extends DataTextureLoader {
 					c = data[ offset ++ ];
 					count = ( c & 0x7f ) + 1;
 
-					// RLE pixels
+					//                                                                       // rle
 
 					if ( c & 0x80 ) {
 
@@ -58913,7 +58913,7 @@ class TGALoader extends DataTextureLoader {
 
 		}
 
-		// TGA constants
+		//                                                                       // tga
 
 		const TGA_TYPE_NO_DATA = 0,
 			TGA_TYPE_INDEXED = 1,
@@ -61860,10 +61860,10 @@ function DRACOWorker() {
 			let attribute;
 			let attributeID;
 
-			// A Draco file may be created with default vertex attributes, whose attribute IDs
+			//                                                                    // a // d
 			// are mapped 1:1 from their semantic name (POSITION, NORMAL, ...). Alternatively,
 			// a Draco file may contain a custom set of attributes, identified by known unique
-			// IDs. glTF files always do the latter, and `.drc` files typically do the former.
+			//                                                                        // id
 			if ( taskConfig.useUniqueIDs ) {
 
 				attributeID = attributeIDs[ attributeName ];
@@ -62466,7 +62466,7 @@ class PLYLoader extends Loader {
 
 		function parseASCII( data, header ) {
 
-			// PLY ascii format specification, as per http://en.wikipedia.org/wiki/PLY_(file_format)
+			//                                                                       // ply
 
 			const buffer = createBuffer();
 
@@ -63463,7 +63463,7 @@ class TransformControls extends Controls {
 		const rotationAngle = 0;
 		const eye = new Vector3();
 
-		// TODO: remove properties unused in plane and gizmo
+		//                                                                      // todo
 
 		defineProperty( 'worldPosition', worldPosition );
 		defineProperty( 'worldPositionStart', worldPositionStart );
@@ -63929,7 +63929,7 @@ class TransformControls extends Controls {
 
 	}
 
-	// TODO: deprecate
+	//                                                                      // todo
 
 	getMode() {
 
@@ -64588,7 +64588,7 @@ class TransformControlsGizmo extends Object3D {
 
 			handle.scale.set( 1, 1, 1 ).multiplyScalar( factor * this.size / 4 );
 
-			// TODO: simplify helpers and consider decoupling from gizmo
+			//                                                                      // todo
 
 			if ( handle.tag === 'helper' ) {
 
@@ -65151,7 +65151,7 @@ class USDZLoader extends Loader {
 			let isCrate = false;
 
 			// As per the USD specification, the first entry in the zip archive is used as the main file ("UsdStage").
-			// ASCII files can end in either .usda or .usd.
+			//                                                                     // ascii
 			// See https://openusd.org/release/spec_usdz.html#layout
 			if ( firstFileName.endsWith( 'usda' ) ) return zip[ firstFileName ];
 

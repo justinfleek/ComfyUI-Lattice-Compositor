@@ -56,9 +56,9 @@ import Lattice.Services.Security.AuditLog.Encode (encodeEntry, encodeQuery)
 import Lattice.Services.Security.AuditLog.Decode (decodeEntry)
 import Lattice.Services.Security.AuditLog.Logging (logSecurityWarning)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Query Functions
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Query audit log entries
 queryAuditLog :: AuditLogQuery -> Aff (Array AuditLogEntry)
@@ -78,9 +78,9 @@ getAuditStats = do
   let stats = foldl aggregateEntry emptyStats entries
   pure stats { totalEntries = length entries }
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Export Functions
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Export audit log as JSON string
 exportAuditLog :: AuditLogQuery -> Aff String
@@ -107,9 +107,9 @@ downloadAuditLog query = do
   let filename = "lattice-audit-" <> SCU.take 10 timestamp <> ".json"
   liftEffect $ downloadBlobImpl json filename
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Maintenance
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Clear audit log (requires confirmation code)
 clearAuditLog :: String -> Aff Boolean
@@ -129,9 +129,9 @@ clearAuditLog confirmationCode =
           liftEffect $ log "[AUDIT] Cleared"
           pure true
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Internal
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 emptyStats :: AuditLogStats
 emptyStats =

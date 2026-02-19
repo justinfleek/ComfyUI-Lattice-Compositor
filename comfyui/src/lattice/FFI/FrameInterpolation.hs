@@ -30,9 +30,9 @@ import Lattice.Services.FrameInterpolation
   )
 import Lattice.Utils.NumericSafety (validateFinite)
 
--- ============================================================================
--- SIMPLE FUNCTIONS (Direct Type Mapping)
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                       // simple // functions
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Export slowdownToFactor as C function
 -- C signature: int slowdown_to_factor(double slowdown)
@@ -43,9 +43,9 @@ foreign export ccall "slowdown_to_factor"
 c_slowdown_to_factor :: CDouble -> CInt
 c_slowdown_to_factor (CDouble slowdown) = CInt (fromIntegral (slowdownToFactor slowdown))
 
--- ============================================================================
--- COMPLEX FUNCTIONS (JSON-based)
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                      // complex // functions
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Export validateInterpolationParams as C function
 -- C signature: char* validate_interpolation_params(char* json_input)
@@ -101,7 +101,7 @@ c_validate_interpolation_params jsonInput = do
   -- Parse JSON input
   case decode (BSL.fromStrict inputBS) :: Maybe InterpolationParamsInput of
     Nothing -> do
-      -- JSON parse error
+      --                                                                      // json
       let errorResult = encodeResult (Left (T.pack "Invalid JSON input"))
       let resultJSON = BSL.toStrict (encode errorResult)
       -- Convert ByteString to CString (UTF-8 decode then CString)

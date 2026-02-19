@@ -42,9 +42,9 @@ import Data.Maybe (Maybe(..))
 import Data.Tuple (Tuple(..))
 import Math (acos, cos, pi, sin, sqrt, tan)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Types
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Result of spawn position calculation
 type SpawnResult =
@@ -58,18 +58,18 @@ data BoxEdge = TopEdge | RightEdge | BottomEdge | LeftEdge
 
 derive instance eqBoxEdge :: Eq BoxEdge
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Point Emission
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Emit from a single point.
 emitPoint :: Number -> Number -> SpawnResult
 emitPoint emitterX emitterY =
   { x: emitterX, y: emitterY, direction: Nothing }
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Line Emission
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Emit from a line perpendicular to emitter direction.
 emitLine :: Number -> Number -> Number -> Number -> Number -> SpawnResult
@@ -81,9 +81,9 @@ emitLine emitterX emitterY direction halfWidth t =
       offset = (t - 0.5) * halfWidth * 2.0
   in { x: emitterX + perpX * offset, y: emitterY + perpY * offset, direction: Nothing }
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Circle Emission
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Emit from a filled circle with uniform area distribution.
 -- |
@@ -100,9 +100,9 @@ emitCircleEdge emitterX emitterY radius randomAngle =
   let angle = randomAngle * pi * 2.0
   in { x: emitterX + cos angle * radius, y: emitterY + sin angle * radius, direction: Nothing }
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Ring Emission
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Emit from a ring (donut) with uniform area distribution.
 emitRing :: Number -> Number -> Number -> Number -> Number -> Number -> SpawnResult
@@ -113,9 +113,9 @@ emitRing emitterX emitterY innerRadius outerRadius randomAngle randomRadius =
       r = sqrt (randomRadius * (outerSq - innerSq) + innerSq)
   in { x: emitterX + cos angle * r, y: emitterY + sin angle * r, direction: Nothing }
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Box Emission
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Emit from a filled box.
 emitBoxFilled :: Number -> Number -> Number -> Number -> Number -> Number -> SpawnResult
@@ -146,9 +146,9 @@ emitBoxEdge emitterX emitterY width height randomT =
        BottomEdge -> { x: emitterX + halfW - edgePos, y: emitterY + halfH, direction: Nothing }
        LeftEdge   -> { x: emitterX - halfW, y: emitterY + halfH - edgePos, direction: Nothing }
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Sphere Emission (3D projected to 2D)
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Emit from sphere surface.
 -- |
@@ -168,9 +168,9 @@ emitSphereVolume :: Number -> Number -> Number -> Number -> Number -> SpawnResul
 emitSphereVolume emitterX emitterY radius unitX unitY =
   { x: emitterX + unitX * radius, y: emitterY + unitY * radius, direction: Nothing }
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Cone Emission
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Emit from a cone volume.
 -- |
@@ -191,9 +191,9 @@ emitCone emitterX emitterY direction coneAngle coneRadius coneLength randomT ran
      , y: emitterY + localX * sinDir + localY * cosDir
      , direction: Nothing }
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Collision Response
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Elastic collision response between two particles.
 -- |

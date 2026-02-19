@@ -38,9 +38,9 @@ import Lattice.Utils.NumericSafety (isFinite)
 import Lattice.Types.Primitives (Vec2(..))
 import Lattice.Utils.NumericSafety (ensureFinite, safeSqrt)
 
--- ============================================================================
--- VECTOR CREATION
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                        // vector // creation
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Create a 2D vector from x and y components
 -- Pure function: same inputs → same outputs
@@ -52,9 +52,9 @@ vec2Create x y = Vec2 (ensureFinite x 0.0) (ensureFinite y 0.0)
 vec2Clone :: Vec2 -> Vec2
 vec2Clone v = Vec2 (vec2X v) (vec2Y v)
 
--- ============================================================================
--- VECTOR ARITHMETIC
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                      // vector // arithmetic
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Add two vectors
 -- Pure function: same inputs → same outputs
@@ -75,9 +75,9 @@ vec2Scale v s =
   let finiteS = ensureFinite s 0.0
   in Vec2 (ensureFinite (vec2X v * finiteS) 0.0) (ensureFinite (vec2Y v * finiteS) 0.0)
 
--- ============================================================================
--- VECTOR PROPERTIES
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                      // vector // properties
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Calculate vector length (magnitude)
 -- Pure function: same inputs → same outputs
@@ -101,9 +101,9 @@ vec2Normalize v =
      then Vec2 0.0 0.0
      else vec2Scale v (1.0 / len)
 
--- ============================================================================
--- VECTOR PRODUCTS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                        // vector // products
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Dot product of two vectors
 -- Pure function: same inputs → same outputs
@@ -115,9 +115,9 @@ vec2Dot a b = ensureFinite (vec2X a * vec2X b + vec2Y a * vec2Y b) 0.0
 vec2Cross :: Vec2 -> Vec2 -> Double
 vec2Cross a b = ensureFinite (vec2X a * vec2Y b - vec2Y a * vec2X b) 0.0
 
--- ============================================================================
--- VECTOR TRANSFORMATIONS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                 // vector // transformations
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Get perpendicular vector (rotated 90 degrees counterclockwise)
 -- Pure function: same inputs → same outputs
@@ -137,9 +137,9 @@ vec2Rotate v angle =
       newY = x * sinAngle + y * cosAngle
   in Vec2 (ensureFinite newX 0.0) (ensureFinite newY 0.0)
 
--- ============================================================================
--- VECTOR INTERPOLATION
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                   // vector // interpolation
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Linear interpolation between two vectors
 -- Pure function: same inputs → same outputs
@@ -154,9 +154,9 @@ vec2Lerp a b t =
       newY = y1 + (y2 - y1) * finiteT
   in Vec2 (ensureFinite newX 0.0) (ensureFinite newY 0.0)
 
--- ============================================================================
--- VECTOR DISTANCE
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                        // vector // distance
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Distance between two vectors
 -- Pure function: same inputs → same outputs

@@ -1,6 +1,6 @@
 """Constants and state for layer decomposition."""
 
-# JSON-compatible value types
+#                                                                      // json
 JSONValue = str | int | float | bool | None | list | dict
 
 # Key model files and their expected hashes (placeholder hashes - need real values)

@@ -3,7 +3,7 @@
 -- Description : Schema validation security utilities
 --
 -- Migrated from ui/src/utils/schemaValidation.ts (pure parts)
--- SECURITY: Prototype pollution prevention, path/string sanitization
+--                                                                  // security
 -- No forbidden patterns; errors as Either Text a.
 --
 
@@ -32,9 +32,9 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Text.Regex.TDFA ((=~))
 
--- ============================================================================
--- OPTIONS
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                                   // options
+-- ════════════════════════════════════════════════════════════════════════════
 
 data SafeParseOptions = SafeParseOptions
   { safeParseMaxDepth        :: Int
@@ -55,9 +55,9 @@ defaultSafeParseOptions = SafeParseOptions
   , safeParseContext         = "JSON"
   }
 
--- ============================================================================
--- DANGEROUS KEYS (prototype pollution)
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                         // dangerous // keys
+-- ════════════════════════════════════════════════════════════════════════════
 
 dangerousKeys :: Set Text
 dangerousKeys = Set.fromList
@@ -73,9 +73,9 @@ dangerousKeys = Set.fromList
 isDangerousKey :: Text -> Bool
 isDangerousKey k = Set.member k dangerousKeys
 
--- ============================================================================
--- ERROR CODES
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                            // error // codes
+-- ════════════════════════════════════════════════════════════════════════════
 
 data SafeParseErrorCode
   = ParseError
@@ -88,9 +88,9 @@ data SafeParseErrorCode
   | Unknown
   deriving (Eq, Show, Enum, Bounded)
 
--- ============================================================================
--- STRING SANITIZATION OPTIONS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                         // string // sanitization // options
+-- ════════════════════════════════════════════════════════════════════════════
 
 data SanitizeStringOptions = SanitizeStringOptions
   { sanitizeMaxLength      :: Int

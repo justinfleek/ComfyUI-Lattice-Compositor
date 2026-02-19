@@ -15,7 +15,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const projectRoot = join(__dirname, '..');
 
-// ANSI color codes
+//                                                                      // ansi
 const colors = {
   reset: '\x1b[0m',
   green: '\x1b[32m',

@@ -34,9 +34,9 @@ import Data.Maybe (Maybe(..))
 import Data.Tuple (Tuple(..))
 import Math (sqrt, min, max)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Types
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Types of force fields
 data ForceFieldType
@@ -72,26 +72,26 @@ instance showForceResult :: Show ForceResult where
   show (ImpulseApplied ix iy) = "ImpulseApplied " <> show ix <> " " <> show iy
   show NoForce = "NoForce"
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Gravity
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Calculate gravity force.
 calculateGravity :: Number -> Number -> Number -> Tuple Number Number
 calculateGravity gx gy mass = Tuple (gx * mass) (gy * mass)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Wind
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Calculate wind force with turbulence.
 calculateWind :: Number -> Number -> Number -> Number -> Number -> Tuple Number Number
 calculateWind baseX baseY noiseX noiseY turbulence =
   Tuple (baseX + noiseX * turbulence) (baseY + noiseY * turbulence)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Attraction/Repulsion
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Calculate attraction force toward a point.
 calculateAttraction
@@ -122,9 +122,9 @@ calculateAttraction cx cy px py strength radius mass falloff =
                 dirY = dy / dist
             in Just (Tuple (dirX * forceMag * mass) (dirY * forceMag * mass))
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Explosion
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Calculate explosion impulse.
 calculateExplosion
@@ -144,9 +144,9 @@ calculateExplosion ex ey px py strength radius =
               ny = if dist > 0.0001 then dy / dist else 0.0
           in Just (Tuple (nx * strength * falloff) (ny * strength * falloff))
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Buoyancy
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Calculate buoyancy force.
 calculateBuoyancy
@@ -170,9 +170,9 @@ calculateBuoyancy surfaceLevel bodyY density mass radius velX velY linearDrag =
            dragY = -linearDrag * velY * submergedRatio
        in Just (Tuple dragX (buoyancyForce + dragY))
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Vortex
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Calculate vortex force.
 calculateVortex
@@ -201,9 +201,9 @@ calculateVortex cx cy px py tangentialStrength inwardStrength radius mass =
            inwardY = -ny * inwardStrength * falloff * mass
        in Just (Tuple (tangentialX + inwardX) (tangentialY + inwardY))
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Drag
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Calculate drag force.
 calculateDrag
@@ -221,9 +221,9 @@ calculateDrag velX velY linear quadratic =
            dragMag = linear * speed + quadratic * speed * speed
        in Just (Tuple (-nx * dragMag) (-ny * dragMag))
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Utility Functions
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Linear falloff from 1 at center to 0 at radius
 falloffLinear :: Number -> Number -> Number

@@ -74,20 +74,20 @@ instance FromJSON ChatMessage where
 -- | Save a chat message to database
 saveChatMessage :: DuckDBConnection -> ChatMessage -> IO (Either Text ())
 saveChatMessage conn msg = do
-  -- TODO: Execute INSERT INTO chat_messages
+  --                                                                      // todo
   -- For now, return success
   return (Right ())
 
 -- | Get chat history for a project
 getChatHistory :: DuckDBConnection -> Maybe Text -> Int -> IO (Either Text [ChatMessage])
 getChatHistory conn mProjectId limit = do
-  -- TODO: Execute SELECT * FROM chat_messages WHERE project_id = ? ORDER BY timestamp DESC LIMIT ?
+  --                                                                      // todo
   -- For now, return empty
   return (Right [])
 
 -- | Search chat history using full-text search
 searchChatHistory :: DuckDBConnection -> Maybe Text -> Text -> Int -> IO (Either Text [ChatMessage])
 searchChatHistory conn mProjectId queryText limit = do
-  -- TODO: Execute SELECT * FROM chat_messages WHERE project_id = ? AND content MATCH ? ORDER BY timestamp DESC LIMIT ?
+  --                                                                      // todo
   -- For now, return empty
   return (Right [])

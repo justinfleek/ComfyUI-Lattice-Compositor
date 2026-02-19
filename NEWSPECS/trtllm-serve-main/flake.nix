@@ -20,7 +20,7 @@
   inputs = {
     flake-parts.url = "github:hercules-ci/flake-parts";
 
-    # NVIDIA SDK provides CUDA, cuDNN, NCCL, TensorRT, Triton
+    #                                                             // nvidia // sdk
     # Follow nvidia-sdk's nixpkgs to ensure cache hits
     nvidia-sdk.url = "github:weyl-ai/nvidia-sdk";
     nixpkgs.follows = "nvidia-sdk/nixpkgs";
@@ -78,7 +78,7 @@
               cudnn
               nccl
               tensorrt
-              # TRT-LLM Python wrappers
+              #                                                                       // trt
               trtllm-python
               trtllm-build
               trtllm-env
@@ -131,7 +131,7 @@
                 echo "  tritonserver     — NVIDIA Triton Inference Server"
                 echo ""
 
-                # TRT-LLM Python environment
+                #                                                                       // trt
                 export PYTHONPATH="${pkgs'.tritonserver-trtllm}/python''${PYTHONPATH:+:$PYTHONPATH}"
                 export LD_LIBRARY_PATH="/run/opengl-driver/lib:${pkgs'.tritonserver-trtllm}/lib:${pkgs'.tritonserver-trtllm}/python/tensorrt_llm/libs:${pkgs'.cuda}/lib64:${pkgs'.cudnn}/lib:${pkgs'.nccl}/lib:${pkgs'.tensorrt}/lib:${pkgs'.openmpi}/lib:${pkgs'.python312}/lib''${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
                 export CUDA_HOME="${pkgs'.cuda}"
@@ -166,7 +166,7 @@
               meta.description = "NVIDIA Triton Inference Server with TRT-LLM backend";
             };
 
-            # TRT-LLM Python environment
+            #                                                                       // trt
             trtllm-python = {
               type = "app";
               program = "${pkgs'.trtllm-python}/bin/python";
@@ -196,7 +196,7 @@
             openai-proxy-hs = final.callPackage ./nix/openai-proxy-hs.nix { };
             trtllm-validate = final.haskellPackages.callPackage ./nix/trtllm-validate.nix { };
 
-            # TRT-LLM engine building infrastructure (function set, not a package)
+            #                                                                       // trt
             trtllm-engine = final.callPackage ./nix/trtllm-engine.nix {
               tritonserver-trtllm = final.tritonserver-trtllm;
               cuda = final.cuda;
@@ -207,7 +207,7 @@
             };
 
             # ════════════════════════════════════════════════════════════════════
-            # TRT-LLM Python environment wrappers
+            #                                                                       // trt
             # ════════════════════════════════════════════════════════════════════
 
             # Python with TensorRT-LLM environment
@@ -219,7 +219,7 @@
               exec ${final.python312}/bin/python "$@"
             '';
 
-            # TRT-LLM build command wrapper
+            #                                                                       // trt
             trtllm-build = final.writeShellScriptBin "trtllm-build" ''
               export PYTHONPATH="${final.tritonserver-trtllm}/python''${PYTHONPATH:+:$PYTHONPATH}"
               export LD_LIBRARY_PATH="/run/opengl-driver/lib:${final.tritonserver-trtllm}/lib:${final.tritonserver-trtllm}/python/tensorrt_llm/libs:${final.cuda}/lib64:${final.cudnn}/lib:${final.nccl}/lib:${final.tensorrt}/lib:${final.openmpi}/lib:${final.python312}/lib''${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
@@ -263,7 +263,7 @@ while True:
 "
             '';
 
-            # TRT-LLM Serve (PyTorch backend with speculative decoding)
+            #                                                                       // trt
             mkTrtllmServe = args: final.callPackage ./nix/trtllm-serve.nix ({
               tritonserver-trtllm = final.tritonserver-trtllm;
               cuda = final.cuda;

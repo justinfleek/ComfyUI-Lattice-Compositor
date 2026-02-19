@@ -18,9 +18,9 @@ import qualified Data.Text.Encoding as TE
 import Foreign.C.String (CString, peekCString, newCString)
 import Lattice.State.Expression (getDriversForLayer, PropertyDriver(..))
 
--- ============================================================================
--- JSON HELPERS
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                           // json // helpers
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Create success response JSON
 successResponse :: ToJSON a => a -> BSL.ByteString
@@ -34,9 +34,9 @@ errorResponse msg = encode $ object ["status" .= ("error" :: T.Text), "message" 
 jsonToCString :: BSL.ByteString -> IO CString
 jsonToCString = newCString . T.unpack . TE.decodeUtf8 . BSL.toStrict
 
--- ============================================================================
--- QUERY FUNCTIONS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                        // query // functions
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | FFI: Get drivers for layer
 foreign export ccall get_drivers_for_layer_ffi :: CString -> IO CString

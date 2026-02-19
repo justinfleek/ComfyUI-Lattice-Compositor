@@ -34,9 +34,9 @@ module Lattice.Services.NumericalIntegration
 import Data.Vector (Vector)
 import qualified Data.Vector as V
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Constants
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Default tolerance for binary search
 defaultTolerance :: Double
@@ -46,9 +46,9 @@ defaultTolerance = 0.01
 minSamples :: Int
 minSamples = 10
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Basic Integration
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Trapezoidal rule for very short intervals.
 -- Averages function at endpoints and multiplies by interval width.
@@ -90,9 +90,9 @@ optimalSampleCount span minPerFrame =
   let raw = max minSamples (floor span * minPerFrame)
   in if raw `mod` 2 == 0 then raw + 1 else raw
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Numerical Integration with Function
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Integrate a function from a to b using Simpson's rule.
 integrateSimpsons :: (Double -> Double) -> Double -> Double -> Int -> Double
@@ -123,9 +123,9 @@ integrateTrapezoidal f a b numSamples =
            total = V.sum samples
        in h * total
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Binary Search Root Finding
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Binary search to find x where cumulative integral equals target.
 --
@@ -143,9 +143,9 @@ binarySearchIntegral integrator target low high tolerance =
                else search lo mid (fuel - 1)
   in search low high (100 :: Int)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Frame Blending
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Result of frame blend calculation
 data FrameBlend = FrameBlend
@@ -176,9 +176,9 @@ blendFrameValues :: Double -> Double -> FrameBlend -> Double
 blendFrameValues valueAtFloor valueAtCeil blend =
   lerp valueAtFloor valueAtCeil (blendFactor blend)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Speed-Based Integration (Timewarp)
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Convert speed percentage to rate multiplier.
 -- 100% = 1x, 200% = 2x, 50% = 0.5x

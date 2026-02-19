@@ -267,7 +267,7 @@ let
             # // armitage builder (OCI container via nix2gpu) //
             # ──────────────────────────────────────────────────────────────────────
             #
-            # OCI container with Nimi + Armitage + Nix for witnessed builds.
+            #                                                                       // oci
             # All network fetches go through Armitage proxy (TLS MITM).
             # Attestation log written to /var/log/armitage/fetches.jsonl
             #
@@ -405,7 +405,7 @@ let
               # // armitage builder //
               # ──────────────────────────────────────────────────────────────────
               #
-              # OCI container with Nimi + Armitage for witnessed builds.
+              #                                                                       // oci
               # Built via nix2gpu module - see nix2gpu.armitage-builder below.
               # Usage: nix build .#armitage-builder
             };
@@ -414,7 +414,7 @@ let
             # // nix2gpu container definitions //
             # ──────────────────────────────────────────────────────────────────────
             #
-            # OCI containers built via nix2gpu with Ubuntu 24.04 base.
+            #                                                                       // oci
             # These containers work on Fly.io, Docker, Podman, Kubernetes.
             #
             # Build:   nix build .#armitage-builder

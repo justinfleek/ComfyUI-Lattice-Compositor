@@ -73,10 +73,10 @@ import GHC.Generics (Generic)
 
 import qualified Armitage.Builder as Builder
 
--- -----------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Architecture Types (mirror src/armitage/dhall/Triple.dhall)
 -- Dhall uses lowercase constructors, so we match exactly
--- -----------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 data Arch = Arch_x86_64 | Arch_aarch64 | Arch_riscv64 | Arch_wasm32 | Arch_armv7
     deriving stock (Show, Eq, Generic)
@@ -222,9 +222,9 @@ data Triple = Triple
     deriving stock (Show, Eq, Generic)
     deriving anyclass (FromDhall)
 
--- -----------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Compiler Types (mirror src/armitage/dhall/Toolchain.dhall)
--- -----------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 data Compiler
     = Compiler_Clang {version :: Text}
@@ -248,9 +248,9 @@ instance FromDhall Compiler where
                 <> constructor "Lean" (record (Compiler_Lean <$> field "version" auto))
             )
 
--- -----------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Flag Types (mirror src/armitage/dhall/CFlags.dhall, LDFlags.dhall)
--- -----------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 data OptLevel = O0 | O1 | O2 | O3 | Os | Oz | Og
     deriving stock (Show, Eq, Generic)
@@ -445,9 +445,9 @@ instance FromDhall LDFlag where
                 <> constructor "Raw" (LDFlag_Raw <$> auto)
             )
 
--- -----------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Toolchain (mirror src/armitage/dhall/Toolchain.dhall)
--- -----------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 data Toolchain = Toolchain
     { compiler :: Compiler
@@ -461,9 +461,9 @@ data Toolchain = Toolchain
     deriving stock (Show, Eq, Generic)
     deriving anyclass (FromDhall)
 
--- -----------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Resource Types (mirror src/armitage/dhall/Resource.dhall)
--- -----------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 data Resource
     = Resource_Pure
@@ -483,9 +483,9 @@ instance FromDhall Resource where
                 <> constructor "Filesystem" (Resource_Filesystem <$> auto)
             )
 
--- -----------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Build Target Types (mirror src/armitage/dhall/Build.dhall)
--- -----------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 data Dep
     = Dep_Local Text
@@ -537,9 +537,9 @@ instance FromDhall Target where
                 <*> field "requires" auto
             )
 
--- -----------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Loading from Dhall
--- -----------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Load a single target from a Dhall file
 loadTarget :: FilePath -> IO Target
@@ -553,9 +553,9 @@ loadTargets = inputFile auto
 loadToolchain :: FilePath -> IO Toolchain
 loadToolchain = inputFile auto
 
--- -----------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Conversion to Builder Types
--- -----------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Convert Resource to Builder.Coeffect
 resourceToCoeffect :: Resource -> Builder.Coeffect
@@ -615,9 +615,9 @@ targetToDerivation Target{..} =
         Compiler_GHC{} -> "ghc"
         Compiler_Lean{} -> "lean"
 
--- -----------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Rendering
--- -----------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Render Triple to LLVM triple string
 renderTriple :: Triple -> Text

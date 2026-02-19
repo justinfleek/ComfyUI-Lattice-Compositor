@@ -34,9 +34,9 @@ import Lattice.Services.AudioStemSeparation
   , Attribution(..)
   )
 
--- ============================================================================
--- MODEL CONFIGURATION (JSON-based)
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                    // model // configuration
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Export getModelConfig as C function
 -- C signature: char* get_model_config(char* model_name)
@@ -118,9 +118,9 @@ c_get_attribution_info = do
   let resultText = TE.decodeUtf8 resultBS
   newCString (T.unpack resultText)
 
--- ============================================================================
--- PARAMETER VALIDATION
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                   // parameter // validation
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Input JSON structure for validateStemSeparationParams
 -- Expected format: {"modelName": "htdemucs", "segmentLength": 10.0, "overlap": 0.1, "stems": null}

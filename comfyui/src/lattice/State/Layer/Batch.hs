@@ -40,9 +40,9 @@ import Lattice.Types.Primitives
   )
 import Lattice.Types.Transform (LayerTransform(..))
 
--- ============================================================================
--- BATCH OPERATIONS
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                       // batch // operations
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Sequence layers - arrange them one after another in timeline
 -- Pure function: takes layer IDs, sequencing options, and layers list

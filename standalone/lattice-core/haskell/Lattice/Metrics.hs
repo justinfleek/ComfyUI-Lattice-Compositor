@@ -51,9 +51,9 @@ module Lattice.Metrics
 import GHC.Generics (Generic)
 import Lattice.Primitives
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Enumerations
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 data AggregationType = ATSum | ATAverage | ATMin | ATMax | ATCount | ATLast
   deriving stock (Eq, Show, Generic)
@@ -68,9 +68,9 @@ data MetricCategory
   = MCRendering | MCPerformance | MCQuality | MCResource | MCUser | MCAI
   deriving stock (Eq, Show, Generic)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Metric Definition
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 data MetricDefinition = MetricDefinition
   { mdId          :: !NonEmptyString
@@ -84,9 +84,9 @@ data MetricDefinition = MetricDefinition
   , mdTimeGrain   :: !TimeGrain
   } deriving stock (Eq, Show, Generic)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Rendering Metrics
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 data FrameRenderTime = FrameRenderTime
   { frtValue       :: !PositiveFloat  -- Milliseconds
@@ -114,9 +114,9 @@ data CacheSize = CacheSize
   { csValue :: !NonNegativeFloat  -- Bytes
   } deriving stock (Eq, Show, Generic)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Performance Metrics
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 data Fps = Fps
   { fpsValue :: !NonNegativeFloat
@@ -134,9 +134,9 @@ data ScrubLatency = ScrubLatency
   { slValue :: !NonNegativeFloat  -- Milliseconds
   } deriving stock (Eq, Show, Generic)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Quality Metrics
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 data CompressionRatio = CompressionRatio
   { crValue :: !PositiveFloat
@@ -154,9 +154,9 @@ data MotionBlurQuality = MotionBlurQuality
   { mbqValue :: !UnitFloat  -- 0-1
   } deriving stock (Eq, Show, Generic)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Resource Metrics
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 data VramUsage = VramUsage
   { vuValue :: !NonNegativeFloat  -- Bytes
@@ -174,9 +174,9 @@ data StorageUsed = StorageUsed
   { suValue :: !NonNegativeFloat  -- Bytes
   } deriving stock (Eq, Show, Generic)
 
---------------------------------------------------------------------------------
--- AI Metrics
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
+--                                                                   // ai // m
+-- ────────────────────────────────────────────────────────────────────────────
 
 data InferenceTime = InferenceTime
   { itValue :: !PositiveFloat  -- Milliseconds

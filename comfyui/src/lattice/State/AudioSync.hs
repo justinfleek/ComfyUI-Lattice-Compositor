@@ -28,9 +28,9 @@ import Data.Maybe (Maybe)
 import Data.Text (Text)
 import GHC.Generics (Generic)
 
--- ============================================================================
--- AUDIO STATE (Minimal type for comparison)
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                            // audio // state
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Audio state with minimal fields for sync comparison
 -- In TypeScript, this compares by reference, but in Haskell we compare by ID/value
@@ -53,9 +53,9 @@ instance FromJSON AudioState where
     fileId <- o .:? "audioFileId"
     return (AudioState bufferId fileId)
 
--- ============================================================================
--- COMPARISON FUNCTIONS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                   // comparison // functions
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Check if two audio states are in sync
 -- Pure function: takes two audio states, returns Bool

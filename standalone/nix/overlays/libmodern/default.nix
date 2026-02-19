@@ -20,7 +20,7 @@ let
   inherit (prev) lib;
 
   # ══════════════════════════════════════════════════════════════════════════════
-  # HASKELL DEPENDENCIES
+  #                                                   // haskell // dependencies
   # ══════════════════════════════════════════════════════════════════════════════
 
   # Use the consolidated GHC 9.12 from aleph.script
@@ -28,7 +28,7 @@ let
   ghc-with-deps = final.aleph.script.ghc;
 
   # ══════════════════════════════════════════════════════════════════════════════
-  # HELPER SCRIPTS
+  #                                                         // helper // scripts
   # ══════════════════════════════════════════════════════════════════════════════
 
   # combine-archive: Use Buck2-built version from aleph.script.compiled
@@ -62,7 +62,7 @@ let
     });
 
   # ══════════════════════════════════════════════════════════════════════════════
-  # BUILDER HELPER
+  #                                                         // builder // helper
   # ══════════════════════════════════════════════════════════════════════════════
 
   # Standard CMake flags for all libmodern packages
@@ -154,7 +154,7 @@ let
     );
 
   # ══════════════════════════════════════════════════════════════════════════════
-  # PACKAGES
+  #                                                                  // packages
   # ══════════════════════════════════════════════════════════════════════════════
 
   fmt = import ./fmt.nix { inherit final lib mk-static-cpp; };

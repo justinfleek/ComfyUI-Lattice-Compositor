@@ -27,9 +27,9 @@ import Data.String.CodeUnits (length, take) as SCU
 import Data.String.Regex (Regex, regex, replace)
 import Data.String.Regex.Flags (global, noFlags)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Types
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Serialization mode: minimal sends less data, full sends everything
 data SerializationMode = Minimal | Full
@@ -40,9 +40,9 @@ instance showSerializationMode :: Show SerializationMode where
   show Minimal = "Minimal"
   show Full = "Full"
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Internal Helpers
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Build a regex with the global flag, returning a fallback identity
 -- | if the pattern is invalid (which should never happen with our literals).
@@ -75,9 +75,9 @@ crlfRegex = mkGlobalRegex "\\r\\n"
 multipleWhitespaceRegex :: Regex
 multipleWhitespaceRegex = mkGlobalRegex "\\s+"
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Public API
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Sanitize a string for safe inclusion in LLM prompts.
 -- |

@@ -192,9 +192,9 @@ data PoseExportOptions = PoseExportOptions
   , peoBackgroundColor :: !RGBA
   } deriving stock (Eq, Show, Generic)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Camera Motion Types
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Single pose for MotionCtrl (18 keypoints)
 data MotionCtrlPose = MotionCtrlPose
@@ -247,9 +247,9 @@ data Uni3CCameraData = Uni3CCameraData
   , uni3cFps        :: !PositiveFloat
   } deriving stock (Eq, Show, Generic)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- ComfyUI Types
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | ComfyUI node input value
 data ComfyUIInputValue
@@ -280,9 +280,9 @@ data ComfyUIWorkflow = ComfyUIWorkflow
   , cuiOutputNodeId :: !NonEmptyString
   } deriving stock (Eq, Show, Generic)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Export Types
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Main export configuration
 data ExportConfig = ExportConfig
@@ -311,9 +311,9 @@ data ExportResult = ExportResult
   , erErrorMessage :: !(Maybe Text)
   } deriving stock (Eq, Show, Generic)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Default Values
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Default video encoder options
 defaultVideoOptions :: PositiveFloat -> VideoEncoderOptions

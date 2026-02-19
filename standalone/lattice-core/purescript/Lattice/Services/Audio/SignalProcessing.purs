@@ -53,9 +53,9 @@ import Data.Ord (abs) as Ord
 import Data.Tuple (Tuple(..))
 import Math (cos, exp, log, pi, sin, sqrt) as Math
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Window Functions
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Hanning window coefficient for sample i of window size n.
 -- |
@@ -71,9 +71,9 @@ applyHanningWindow samples =
   let n = length samples
   in mapWithIndex (\i s -> s * hanningCoeff i n) samples
 
---------------------------------------------------------------------------------
--- DFT (Discrete Fourier Transform)
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
+--                                                                       // dft
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Compute magnitude at frequency bin k using DFT.
 -- |
@@ -101,9 +101,9 @@ simpleDFT samples =
       windowed = applyHanningWindow samples
   in map (computeBinMagnitude windowed) (range 0 (halfN - 1))
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Spectral Features
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Spectral centroid: frequency-weighted mean of spectrum.
 -- |
@@ -155,9 +155,9 @@ spectralFlatness magnitudes =
            arithmeticMean = foldl (+) 0.0 nonZero / nf
        in if arithmeticMean > 0.0 then geometricMean / arithmeticMean else 0.0
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Zero Crossing Rate
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Zero crossing rate: number of sign changes per sample.
 zeroCrossingRate :: Array Number -> Number
@@ -173,9 +173,9 @@ zeroCrossingRate samples
           ) 0.0 (range 0 (n - 2))
       in crossings / toNumber (n - 1)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Mel Scale Conversion
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Convert frequency in Hz to Mel scale.
 -- |
@@ -212,9 +212,9 @@ hzToPitchClass hz =
       rounded = toInt midi
   in rounded `mod` 12
 
---------------------------------------------------------------------------------
--- DCT (Discrete Cosine Transform)
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
+--                                                                       // dct
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | DCT-II coefficient at index c for input of length N.
 -- |
@@ -235,9 +235,9 @@ computeMFCC :: Array Number -> Int -> Array Number
 computeMFCC logMelEnergies numCoeffs =
   map (dctCoeff logMelEnergies) (range 0 (numCoeffs - 1))
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Feature Curves
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Curve type for feature transformation.
 data FeatureCurve
@@ -258,9 +258,9 @@ applyFeatureCurve value curve =
        CurveLogarithmic -> Math.sqrt clamped
        CurveSmoothstep  -> clamped * clamped * (3.0 - 2.0 * clamped)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Normalization
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Normalize array to [minOut, maxOut] range.
 normalizeArray :: Array Number -> Number -> Number -> Array Number
@@ -277,9 +277,9 @@ normalizeArray values minOut maxOut
 normalize01 :: Array Number -> Array Number
 normalize01 values = normalizeArray values 0.0 1.0
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Envelope Follower
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Apply envelope follower (attack/release smoothing).
 applyEnvelopeFollower :: Array Number -> Number -> Array Number
@@ -296,9 +296,9 @@ applyEnvelopeFollower samples smoothing
           ) { result: [], env: 0.0 } samples
       in result.result
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Adaptive Threshold
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Calculate adaptive threshold using local statistics.
 calculateAdaptiveThreshold :: Array Number -> Int -> Number -> Array Number
@@ -319,9 +319,9 @@ calculateAdaptiveThreshold flux windowSize sensitivityFactor =
                std = Math.sqrt (sqDiffSum / nf)
            in mean + sensitivityFactor * std
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Peak Detection
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Detect local maxima above threshold.
 detectLocalMaxima :: Array Number -> Number -> Array (Tuple Int Number)
@@ -355,9 +355,9 @@ enforceMinPeakDistance peaks minDistance =
                  else filtered
                Nothing -> filtered
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Chroma Features
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Pitch class names for display.
 pitchClassNames :: Array String
@@ -379,9 +379,9 @@ computeChroma magnitudes binFrequency =
       ) initChroma magnitudes
   in result
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Utilities
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Convert Int to Number (pure implementation)
 toNumber :: Int -> Number

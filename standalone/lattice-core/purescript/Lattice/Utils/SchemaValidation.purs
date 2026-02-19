@@ -21,7 +21,7 @@ module Lattice.Utils.SchemaValidation
   , ParseErrorCode(..)
   , ParseError
   , mkParseError
-    -- JSON Value
+    --                                                                 // json // v
   , JSONValue(..)
   , hasPrototypePollution
   , jsonDepth
@@ -60,9 +60,9 @@ import Data.Tuple (Tuple(..), snd)
 import Data.Generic.Rep (class Generic)
 import Data.Show.Generic (genericShow)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Configuration
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Options for safe JSON parsing
 type SafeParseOptions =
@@ -83,9 +83,9 @@ defaultSafeParseOptions =
   , context: "JSON"
   }
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Dangerous Keys
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Keys that can be used for prototype pollution attacks
 dangerousKeys :: Set String
@@ -103,9 +103,9 @@ dangerousKeys = Set.fromFoldable
 isDangerousKey :: String -> Boolean
 isDangerousKey = flip Set.member dangerousKeys
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Validation Errors
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Error codes for safe parse failures
 data ParseErrorCode
@@ -134,9 +134,9 @@ type ParseError =
 mkParseError :: ParseErrorCode -> String -> String -> ParseError
 mkParseError code message context = { code, message, context }
 
---------------------------------------------------------------------------------
--- JSON Value
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
+--                                                                 // json // v
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Simple JSON value type
 data JSONValue
@@ -222,9 +222,9 @@ maxArrayLength = case _ of
     if Array.null fields then 0
     else foldl max 0 (map (maxArrayLength <<< snd) fields)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Validation
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Validate JSON depth
 validateDepth :: JSONValue -> SafeParseOptions -> Either ParseError Unit
@@ -270,9 +270,9 @@ validateJSON val opts = do
   -- Check array lengths
   validateArrayLengths val opts
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Path Security
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Dangerous path prefixes
 dangerousPathPrefixes :: Array String
@@ -309,9 +309,9 @@ sanitizePath basePath userPath =
      then Left "Path traversal pattern detected"
      else Right $ normalizedBase <> "/" <> normalizedUser
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- String Sanitization
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Options for string sanitization
 type SanitizeStringOptions =
@@ -365,9 +365,9 @@ sanitizeFilename filename =
       s4 = String.take 200 s3
   in if String.null s4 || s4 == "_" then "unnamed" else s4
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Malicious Payload Detection
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Check if a string looks like a potential injection payload
 looksLikeMaliciousPayload :: String -> Boolean
@@ -376,7 +376,7 @@ looksLikeMaliciousPayload value =
   in -- Script injection
      String.contains (Pattern "<script") lower ||
      String.contains (Pattern "javascript:") lower ||
-     -- SQL injection
+     --                                                                       // sql
      String.contains (Pattern "' or '") lower ||
      String.contains (Pattern "; drop table") lower ||
      String.contains (Pattern "; delete from") lower ||

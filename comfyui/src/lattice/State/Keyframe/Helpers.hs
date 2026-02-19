@@ -36,9 +36,9 @@ import Lattice.Types.Primitives
   )
 import Lattice.Types.Transform (LayerTransform(..))
 
--- ============================================================================
--- FRAME VALIDATION
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                       // frame // validation
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Validate and sanitize frame number, returning fallback if invalid
 -- Pure function: takes frame and fallback, returns valid frame
@@ -59,9 +59,9 @@ safeFrame mFrame fallback =
       Nothing -> validateAndClamp fallback
       Just frame -> validateAndClamp frame
 
--- ============================================================================
--- TYPE CONVERSIONS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                       // type // conversions
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Convert Position2DOr3D to PropertyValue
 positionToPropertyValue :: Position2DOr3D -> PropertyValue
@@ -95,9 +95,9 @@ convertPropertyToPropertyValue prop convertValue =
     , animatablePropertyExpression = animatablePropertyExpression prop
     }
 
--- ============================================================================
--- PROPERTY LOOKUP
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                        // property // lookup
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Find a property by its path on a layer
 -- Pure function: takes layer and property path, returns property or Nothing

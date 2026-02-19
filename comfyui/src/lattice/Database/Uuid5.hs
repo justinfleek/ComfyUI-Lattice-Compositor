@@ -2,7 +2,7 @@
 -- Module      : Lattice.Database.Uuid5
 -- Description : UUID5 (Deterministic Name-Based UUID) Implementation
 -- 
--- RFC 4122 compliant UUID5 generation for deterministic ID tracking.
+--                                                               // rfc // 4122
 -- All IDs in the system use UUID5 for deterministic tracking.
 --
 
@@ -466,7 +466,7 @@ generatePhysicsRigidBodyId physicsBodyId =
   in uuid5 latticeNamespace name
 
 -- | Generate UUID5 for an individual particle
--- CRITICAL: Every particle needs UUID5 for determinism at scale.
+--                                                                  // critical
 -- For 400k particles per layer, this ensures:
 -- - Same seed + index = same particle ID
 -- - Deterministic tracking across frames

@@ -43,9 +43,9 @@ import Effect (Effect)
 import Halogen.HTML as HH
 import Halogen.HTML.Properties as HP
 
--- ============================================================
--- UTILITY FUNCTIONS
--- ============================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                      // utility // functions
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Combine class names, filtering empty strings
 classes :: Array String -> String
@@ -55,9 +55,9 @@ classes = intercalate " " <<< filter (_ /= "")
 cls :: forall r i. Array String -> HH.IProp (class :: String | r) i
 cls = HP.class_ <<< HH.ClassName <<< classes
 
--- ============================================================
--- LAYOUT PRIMITIVES
--- ============================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                      // layout // primitives
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Flex container with direction
 flex :: forall w i. String -> Array (HH.HTML w i) -> HH.HTML w i
@@ -83,9 +83,9 @@ spacer = HH.div [ cls [ "lattice-spacer" ] ] []
 divider :: forall w i. HH.HTML w i
 divider = HH.hr [ cls [ "lattice-divider" ] ]
 
--- ============================================================
--- SURFACE COMPONENTS
--- ============================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                     // surface // components
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Panel container (surface-1 background, rounded)
 panel :: forall w i. String -> Array (HH.HTML w i) -> HH.HTML w i
@@ -96,9 +96,9 @@ surface :: forall w i. Int -> String -> Array (HH.HTML w i) -> HH.HTML w i
 surface level className = 
   HH.div [ cls [ "lattice-surface-" <> show level, className ] ]
 
--- ============================================================
--- BUTTON COMPONENTS
--- ============================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                      // button // components
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Base button
 btn :: forall w i. String -> Array (HH.HTML w i) -> HH.HTML w i
@@ -120,9 +120,9 @@ toolBtn className active =
     , HP.attr (HH.AttrName "data-state") (if active then "active" else "inactive")
     ]
 
--- ============================================================
--- INPUT COMPONENTS
--- ============================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                       // input // components
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Text input
 input :: forall w i. String -> HH.HTML w i
@@ -150,9 +150,9 @@ slider value =
         ]
     ]
 
--- ============================================================
--- MENU COMPONENTS
--- ============================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                        // menu // components
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Menu container
 menu :: forall w i. Array (HH.HTML w i) -> HH.HTML w i
@@ -168,9 +168,9 @@ menuItem label shortcut =
         else HH.span [ cls [ "lattice-menu-shortcut" ] ] [ HH.text shortcut ]
     ]
 
--- ============================================================
--- COLLAPSIBLE PANEL COMPONENTS
--- ============================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                        // collapsible // panel // components
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Collapsible section header
 collapsibleHeader :: forall w i. String -> Boolean -> HH.HTML w i
@@ -185,9 +185,9 @@ collapsibleHeader title expanded =
         [ HH.text title ]
     ]
 
--- ============================================================
--- TYPOGRAPHY
--- ============================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                                // typography
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Primary text
 text :: forall w i. String -> HH.HTML w i
@@ -214,9 +214,9 @@ heading level content = case level of
   4 -> HH.h4 [ cls [ "lattice-heading lattice-h4" ] ] [ HH.text content ]
   _ -> HH.h5 [ cls [ "lattice-heading lattice-h5" ] ] [ HH.text content ]
 
--- ============================================================
--- ICONS
--- ============================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                                     // icons
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Icon placeholder (replace with actual icon library)
 icon :: forall w i. String -> String -> HH.HTML w i
@@ -227,9 +227,9 @@ icon name size =
     ] 
     []
 
--- ============================================================
--- THEMING
--- ============================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                                   // theming
+-- ════════════════════════════════════════════════════════════════════════════
 
 data Theme
   = Violet

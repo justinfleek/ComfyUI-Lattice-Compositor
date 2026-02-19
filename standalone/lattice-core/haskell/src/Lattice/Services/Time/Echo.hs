@@ -28,9 +28,9 @@ module Lattice.Services.Time.Echo
   , echoRequiresCurrentOnTop
   ) where
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Types
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Echo operator - how echoes are composited.
 data EchoOperator
@@ -66,9 +66,9 @@ echoOperatorToComposite op = case op of
   EchoCompositeFront -> "source-over"
   EchoBlend -> "source-over"
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Parameter Validation
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Validate and clamp number of echoes to [1, 50].
 validateNumEchoes :: Int -> Int
@@ -87,9 +87,9 @@ validateEchoTime :: Double -> Double -> Double
 validateEchoTime echoTime fps =
   if echoTime == 0.0 then -1.0 / fps else echoTime
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Intensity Calculation
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Minimum intensity threshold for rendering echo.
 intensityThreshold :: Double
@@ -104,9 +104,9 @@ calculateEchoIntensities startingIntensity decay numEchoes =
       calcIntensity i = startingIntensity * base ^^ i
   in map calcIntensity [0..(numEchoes - 1)]
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Echo Ordering
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Check if echoes should be drawn behind current frame.
 shouldDrawEchosBehind :: EchoOperator -> Bool

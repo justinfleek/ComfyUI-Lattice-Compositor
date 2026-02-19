@@ -35,9 +35,9 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Vector as V
 
--- ============================================================================
--- TYPES
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                                     // types
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Validation error with path and message
 data ValidationError = ValidationError
@@ -59,9 +59,9 @@ data ValidationResult = ValidationResult
 -- | JSON object type (HashMap String Value)
 type JSONObject = KeyMap.KeyMap Value
 
--- ============================================================================
--- TYPE GUARDS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                            // type // guards
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Check if value is a non-null object (not array)
 isObject :: Value -> Bool
@@ -88,9 +88,9 @@ isBoolean :: Value -> Bool
 isBoolean (Bool _) = True
 isBoolean _ = False
 
--- ============================================================================
--- SANITIZATION FUNCTIONS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                 // sanitization // functions
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Sanitize a string to prevent XSS
 sanitizeString :: Text -> Text
@@ -130,9 +130,9 @@ sanitizeFileName name =
       result = T.take 200 step3
   in result
 
--- ============================================================================
--- VALIDATION FUNCTIONS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                   // validation // functions
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Validate Lattice Template structure
 validateLatticeTemplate :: Value -> ValidationResult

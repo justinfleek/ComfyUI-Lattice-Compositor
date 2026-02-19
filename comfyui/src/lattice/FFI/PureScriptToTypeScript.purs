@@ -5,7 +5,7 @@
 -- Pure functions for converting between PureScript and TypeScript types.
 -- All conversions use JSON serialization for type safety.
 --
--- CRITICAL: All types must have Extractable instances in Lean4 with proven
+--                                                                  // critical
 -- round-trip theorems. No proof, no conversion.
 --
 
@@ -22,9 +22,9 @@ import Data.Argonaut
 import Data.Either (Either(..))
 import Data.String (String)
 
--- ============================================================================
--- CONVERSION PROTOCOL
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                    // conversion // protocol
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Convert PureScript type to TypeScript type via JSON string
 -- 
@@ -43,20 +43,20 @@ tsToPs jsonStr =
     Right psValue -> Right psValue
     Left err -> Left $ "Failed to convert TypeScript to PureScript: " <> err
 
--- ============================================================================
--- JSON STRING HELPERS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                 // json // string // helpers
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Stringify JSON value to string
 -- 
 -- This is a placeholder - actual implementation depends on Argonaut API
 foreign import stringify :: forall a. a -> String
 
--- ============================================================================
--- TYPE-SPECIFIC CONVERTERS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                                      // type
+-- ════════════════════════════════════════════════════════════════════════════
 
--- NOTE: Type-specific converters will be generated from Lean4 Extractable
+--                                                                      // note
 -- instances. For now, this module provides the generic conversion protocol.
 --
 -- Example generated converters:

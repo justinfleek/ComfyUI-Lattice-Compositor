@@ -25,9 +25,9 @@ import Data.Int (Int32)
 import Lattice.Utils.NumericSafety (isFinite)
 import Lattice.Utils.NumericSafety (ensureFinite, safeSqrt, safeLog)
 
--- ============================================================================
--- TYPES
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                                     // types
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | State for deterministic random number generator
 -- Uses Word32 for Mulberry32 algorithm compatibility
@@ -41,9 +41,9 @@ data PhysicsRandomState = PhysicsRandomState
 initialPhysicsRandomState :: Word32 -> PhysicsRandomState
 initialPhysicsRandomState seed = PhysicsRandomState seed seed
 
--- ============================================================================
--- MULBERRY32 ALGORITHM
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                   // mulberry32 // algorithm
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Mulberry32 hash function for deterministic random
 -- Pure function: same inputs → same outputs

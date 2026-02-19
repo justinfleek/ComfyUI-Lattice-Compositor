@@ -5,7 +5,7 @@
 -- Migrated from ui/src/utils/debounce.ts
 -- Pure functions for performance optimization
 -- 
--- CRITICAL: No forbidden patterns - explicit types, no null/undefined, no type escapes
+--                                                                  // critical
 -- Note: These utilities are primarily for TypeScript interop via FFI.
 -- For pure Haskell code, consider using STM or other concurrency primitives.
 --
@@ -30,9 +30,9 @@ import Control.Concurrent.MVar (MVar, newMVar, readMVar, modifyMVar_)
 import Data.Time.Clock (NominalDiffTime, diffUTCTime, getCurrentTime, UTCTime)
 import Lattice.Utils.NumericSafety (isFinite)
 
--- ============================================================================
--- TYPES
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                                     // types
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Debounced function - delays execution until after a period of inactivity
 -- 
@@ -50,9 +50,9 @@ type DebouncedFunction a = a -> IO ()
 -- Mathematical proof: Deterministic throttle calculation
 type ThrottledFunction a = a -> IO ()
 
--- ============================================================================
--- INTERNAL STATE TYPES
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                // internal // state // types
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Internal state for debounced function
 data DebounceState = DebounceState
@@ -69,9 +69,9 @@ data ThrottleState = ThrottleState
   , throttleDelay :: Int  -- milliseconds (must be > 0)
   }
 
--- ============================================================================
--- DEBOUNCE IMPLEMENTATION
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                // debounce // implementation
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Debounce a function - delays execution until after a period of inactivity
 -- 
@@ -128,9 +128,9 @@ debounce fn delay immediate = do
 debounceLeading :: forall a. (a -> IO ()) -> Int -> IO (DebouncedFunction a)
 debounceLeading fn delay = debounce fn delay True
 
--- ============================================================================
--- THROTTLE IMPLEMENTATION
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                // throttle // implementation
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Throttle a function - limits execution to at most once per time period
 -- 

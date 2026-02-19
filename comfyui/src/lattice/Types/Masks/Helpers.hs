@@ -28,12 +28,12 @@ import Lattice.Types.Masks.Core
     MaskVertex (..),
   )
 
--- ============================================================================
--- HELPER FUNCTIONS
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                       // helper // functions
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Create a mask AnimatableProperty
--- NOTE: ID generation should be handled by caller (no IO in pure functions)
+--                                                                      // note
 createMaskAnimatableProperty ::
   Text ->
   a ->
@@ -47,9 +47,9 @@ createMaskAnimatableProperty name value propType =
     propType
     Nothing
 
--- ============================================================================
--- MASK FACTORIES
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                         // mask // factories
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Create a default rectangular mask covering the full layer
 createDefaultMask :: Text -> Double -> Double -> LayerMask

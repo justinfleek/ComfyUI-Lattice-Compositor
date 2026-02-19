@@ -47,9 +47,9 @@ import Lattice.Types.Primitives
   )
 import Lattice.Types.Transform (LayerTransform(..))
 
--- ============================================================================
--- PATH OPERATIONS
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                        // path // operations
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Copy a path from a spline layer and paste it as position keyframes on a target layer
 -- Pure function: takes source spline layer ID, target layer ID, options, ID generators, and layers list
@@ -163,9 +163,9 @@ copyPathToPosition sourceSplineLayerId targetLayerId useFullDuration mStartFrame
                   Right (length keyframes, newLayers)
         _ -> Left ("Source layer is not a spline layer: " <> sourceSplineLayerId)
 
--- ============================================================================
--- PATH CALCULATIONS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                      // path // calculations
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Sampled point along a path
 data SampledPoint = SampledPoint

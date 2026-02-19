@@ -34,9 +34,9 @@ import Test.Spec.Assertions (shouldEqual, fail)
 import Lattice.Services.Security.JsonSanitizer (parseAndSanitize, defaultOptions)
 import Lattice.Services.Security.UrlValidator (URLContext(..), validateURL)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Helpers
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Build a deeply nested JSON string: {"nested": {"nested": ... {"value": 1} ... }}
 buildNestedJson :: Int -> String
@@ -78,9 +78,9 @@ validFrameRange :: Int -> Int -> Boolean
 validFrameRange startFrame endFrame =
   startFrame >= 0 && endFrame > startFrame
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Test Spec
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 spec :: Spec Unit
 spec = do
@@ -91,9 +91,9 @@ spec = do
     prototypePollutionDefenseTests
     urlInjectionDefenseTests
 
---------------------------------------------------------------------------------
--- JSON Bomb Defense
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
+--                                                                 // json // b
+-- ────────────────────────────────────────────────────────────────────────────
 
 jsonBombDefenseTests :: Spec Unit
 jsonBombDefenseTests = do
@@ -132,9 +132,9 @@ jsonBombDefenseTests = do
       result.valid `shouldEqual` true
       result.stats.prototypeKeysRemoved `shouldEqual` 1
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Path Traversal Defense
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 pathTraversalDefenseTests :: Spec Unit
 pathTraversalDefenseTests = do
@@ -155,9 +155,9 @@ pathTraversalDefenseTests = do
       -- Clean path should not trigger
       hasEncodedTraversal "images/photo.png" `shouldEqual` false
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Input Validation Defense
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 inputValidationDefenseTests :: Spec Unit
 inputValidationDefenseTests = do
@@ -196,9 +196,9 @@ inputValidationDefenseTests = do
       Number.isFinite 0.0 `shouldEqual` true
       Number.isFinite (-3.14) `shouldEqual` true
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Prototype Pollution Defense
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 prototypePollutionDefenseTests :: Spec Unit
 prototypePollutionDefenseTests = do
@@ -222,9 +222,9 @@ prototypePollutionDefenseTests = do
       result.valid `shouldEqual` true
       result.stats.prototypeKeysRemoved `shouldEqual` 1
 
---------------------------------------------------------------------------------
--- URL Injection Defense
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
+--                                                                  // url // i
+-- ────────────────────────────────────────────────────────────────────────────
 
 urlInjectionDefenseTests :: Spec Unit
 urlInjectionDefenseTests = do

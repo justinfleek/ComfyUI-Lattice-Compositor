@@ -40,9 +40,9 @@ import Lattice.State.Marker
   , Marker(..)
   )
 
--- ============================================================================
--- JSON Response Helpers
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                                 // json // r
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Convert JSON Value to CString
 jsonToCString :: Value -> IO CString
@@ -59,9 +59,9 @@ errorResponse msg = object ["status" .= ("error" :: T.Text), "message" .= msg]
 successResponse :: ToJSON a => a -> Value
 successResponse result = object ["status" .= ("success" :: T.Text), "result" .= result]
 
--- ============================================================================
--- PURE HELPER FUNCTIONS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                               // pure // helper // functions
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Compare two frame values safely
 foreign export ccall "frames_equal"
@@ -82,9 +82,9 @@ c_frames_equal frameAJson frameBJson = do
       jsonToCString (successResponse result)
     _ -> jsonToCString (errorResponse "Invalid JSON: expected Double and Double")
 
--- ============================================================================
--- PURE QUERIES
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                           // pure // queries
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Get all markers
 foreign export ccall "get_markers"

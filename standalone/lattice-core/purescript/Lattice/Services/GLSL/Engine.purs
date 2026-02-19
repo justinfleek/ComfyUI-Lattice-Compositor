@@ -41,9 +41,9 @@ import Lattice.Services.GLSL.Types
   )
 import Lattice.Services.GLSL.Library (glslLibrary, shaderHeader, shaderFooter)
 
---------------------------------------------------------------------------------
--- FFI Types
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
+--                                                                  // ffi // t
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Opaque WebGL engine handle
 foreign import data GLSLEngine :: Type
@@ -51,9 +51,9 @@ foreign import data GLSLEngine :: Type
 -- | Opaque canvas handle
 foreign import data CanvasElement :: Type
 
---------------------------------------------------------------------------------
--- FFI Imports
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
+--                                                                  // ffi // i
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Check if WebGL is available
 foreign import isWebGLAvailableImpl :: Effect Boolean
@@ -113,9 +113,9 @@ foreign import renderWithUniformsImpl
 -- | Get singleton instance
 foreign import getEngineImpl :: Effect GLSLEngine
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Public API
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Check if WebGL is available in the browser
 isWebGLAvailable :: Effect Boolean

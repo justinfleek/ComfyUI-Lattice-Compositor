@@ -38,9 +38,9 @@ import Lattice.Types.Animation
   , PropertyValue(..)
   )
 
--- ============================================================================
--- PROPERTY COLORS (match TS PROPERTY_COLORS)
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                        // property // colors
+-- ════════════════════════════════════════════════════════════════════════════
 
 propertyColorDefault :: Text
 propertyColorDefault = "#7c9cff"
@@ -66,9 +66,9 @@ getPropertyColor propName =
     Just c -> c
     Nothing -> propertyColorDefault
 
--- ============================================================================
--- GRID LINE DATA (pure: list of (value, screenCoord) for UI to draw)
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                      // grid // line // data
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Frame grid: list of (frame, screenX) for vertical lines
 gridFrameLines
@@ -110,9 +110,9 @@ gridValueLines viewState _canvasWidth canvasHeight margin minSpacing =
             in go (value + valueStep) ((value, y) : acc)
   in reverse (go firstValue [])
 
--- ============================================================================
--- CURVE SEGMENT DATA (for UI to draw: hold / linear / bezier with control points)
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                  // curve // segment // data
+-- ════════════════════════════════════════════════════════════════════════════
 
 data CurveSegmentType
   = SegmentHold { segmentEndX :: Double, segmentEndY :: Double, segmentHoldY :: Double }

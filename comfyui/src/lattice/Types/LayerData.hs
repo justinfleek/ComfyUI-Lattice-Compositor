@@ -72,9 +72,9 @@ import Lattice.Types.Primitives
   , validateNormalized01
   )
 
--- ============================================================================
--- NULL LAYER DATA
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                     // null // layer // data
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Null layer data - invisible transform controller
 data NullLayerData = NullLayerData
@@ -96,9 +96,9 @@ instance FromJSON NullLayerData where
 createDefaultNullLayerData :: NullLayerData
 createDefaultNullLayerData = NullLayerData { nullLayerDataSize = 40.0 }
 
--- ============================================================================
--- CONTROL LAYER DATA
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                  // control // layer // data
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Control layer data - null object / transform controller
 data ControlLayerData = ControlLayerData
@@ -154,9 +154,9 @@ instance FromJSON ControlLayerData where
       then return (ControlLayerData size showAxes showIcon shape color)
       else fail "ControlLayerData: size must be finite and non-negative"
 
--- ============================================================================
--- EFFECT LAYER DATA
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                   // effect // layer // data
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Effect layer data - effects apply to layers below
 -- (Previously called Adjustment Layer - renamed for trade dress)
@@ -191,9 +191,9 @@ createDefaultEffectLayerData =
     , effectLayerDataColor = "#FF6B6B"  -- Default red color for effect layers
     }
 
--- ============================================================================
--- SOLID LAYER DATA
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                    // solid // layer // data
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Motion path keyframe for solid layer
 data MotionPathKeyframe = MotionPathKeyframe
@@ -323,9 +323,9 @@ createDefaultSolidLayerData width height =
     , solidLayerDataMotionPath = Nothing
     }
 
--- ============================================================================
--- GROUP LAYER DATA
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                    // group // layer // data
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Group layer data - layer folder/group
 data GroupLayerData = GroupLayerData
@@ -351,9 +351,9 @@ instance FromJSON GroupLayerData where
     isolate <- o .: "isolate"
     return (GroupLayerData collapsed mColor passThrough isolate)
 
--- ============================================================================
--- LIGHT LAYER DATA
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                    // light // layer // data
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Light type
 data LightType
@@ -471,9 +471,9 @@ createDefaultLightLayerData =
     , lightLayerDataTarget = Nothing
     }
 
--- ============================================================================
--- POSE LAYER DATA
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                     // pose // layer // data
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Pose format
 data PoseFormat
@@ -593,9 +593,9 @@ instance FromJSON PoseLayerData where
       then return (PoseLayerData poses format normalized boneWidth keypointRadius showKeypoints showBones showLabels useDefaultColors customBoneColor customKeypointColor selectedKeypoint selectedPose)
       else fail "PoseLayerData: boneWidth and keypointRadius must be finite and non-negative"
 
--- ============================================================================
--- GENERATED LAYER DATA
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                // generated // layer // data
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Generation type
 data GenerationType
@@ -686,9 +686,9 @@ instance FromJSON GeneratedLayerData where
     mLastGen <- o .:? "lastGenerated"
     return (GeneratedLayerData genType mSourceLayerId model params mGeneratedAssetId status mErrorMsg autoRegen mLastGen)
 
--- ============================================================================
--- MATTE LAYER DATA
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                    // matte // layer // data
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Matte extraction method
 data MatteType
@@ -777,9 +777,9 @@ instance FromJSON MatteLayerData where
       then return (MatteLayerData matteType invert threshold feather expansion mSourceLayerId previewMode)
       else fail "MatteLayerData: numeric values must be finite, feather and expansion must be non-negative"
 
--- ============================================================================
--- LEGACY PARTICLE LAYER DATA
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                       // legacy // particle // layer // data
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Legacy emitter type
 data LegacyEmitterType

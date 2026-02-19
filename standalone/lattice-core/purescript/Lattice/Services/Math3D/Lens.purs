@@ -27,9 +27,9 @@ module Lattice.Services.Math3D.Lens
 import Prelude
 import Math (pi, atan, tan, sqrt) as Math
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Constants
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Full frame sensor width in mm (35mm film equivalent)
 fullFrameSensorWidth :: Number
@@ -51,9 +51,9 @@ apscSensorWidth = 22.3
 standardFocalLength :: Number
 standardFocalLength = 50.0
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Angle Conversion
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Convert degrees to radians
 degToRad :: Number -> Number
@@ -63,9 +63,9 @@ degToRad degrees = degrees * (Math.pi / 180.0)
 radToDeg :: Number -> Number
 radToDeg radians = radians * (180.0 / Math.pi)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Focal Length / FOV Conversion
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Convert focal length to field of view
 -- |
@@ -87,9 +87,9 @@ fovToFocalLength fov sensorSize
   | fov <= 0.0 || fov >= Math.pi = sensorSize  -- Return standard equivalent
   | otherwise = sensorSize / (2.0 * Math.tan (fov / 2.0))
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Zoom / Focal Length Conversion
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Convert AE zoom value to focal length
 -- |
@@ -113,9 +113,9 @@ focalLengthToZoom focalLength compWidth filmSize
   | filmSize <= 0.0 = compWidth  -- Default to 1:1 zoom ratio
   | otherwise = (focalLength * compWidth) / filmSize
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Convenience Functions
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Calculate horizontal FOV for a given focal length using full frame sensor
 horizontalFOV :: Number -> Number

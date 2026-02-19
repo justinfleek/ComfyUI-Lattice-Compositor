@@ -1,4 +1,4 @@
-// FFI stubs for Lattice.Services.Path.BezierCore
+//                                                                       // ffi
 "use strict";
 
 export const toNumberImpl = function (n) {

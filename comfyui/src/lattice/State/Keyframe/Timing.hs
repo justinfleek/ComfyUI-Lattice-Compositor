@@ -39,9 +39,9 @@ import Lattice.Types.Primitives
   )
 import Lattice.Utils.NumericSafety (safeLerp)
 
--- ============================================================================
--- KEYFRAME TIMING SCALE
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                               // keyframe // timing // scale
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Scale keyframe timing by a factor
 -- Pure function: takes layer ID, property path (Nothing = all transform properties), scale factor, anchor frame, and layers list
@@ -112,9 +112,9 @@ scaleKeyframeTiming layerId mPropertyPath scaleFactor anchorFrame layers =
           in
             Right (scaledCount, updatedLayers)
 
--- ============================================================================
--- KEYFRAME TIME REVERSE
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                               // keyframe // time // reverse
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Reverse keyframe timing (values swap, frames stay same)
 -- Pure function: takes layer ID, property path (Nothing = all transform properties), and layers list
@@ -169,9 +169,9 @@ timeReverseKeyframes layerId mPropertyPath layers =
       in
         Right (reversedCount, updatedLayers)
 
--- ============================================================================
--- INSERT KEYFRAME ON PATH
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                          // insert // keyframe // on // path
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Insert a keyframe at a specific position along a motion path
 -- Pure function: takes layer ID, frame, ID generator, and layers list
@@ -246,9 +246,9 @@ insertKeyframeOnPath layerId frame genId layers =
                                         Left err -> Left err
                                         Right (createdKf, updatedLayers) -> Right (keyframeId createdKf, updatedLayers)
 
--- ============================================================================
--- ROVING KEYFRAMES
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                       // roving // keyframes
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Check if roving would significantly change keyframe timing
 -- Pure function: takes layer ID and layers list

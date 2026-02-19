@@ -30,9 +30,9 @@ import Data.Maybe (Maybe(..))
 import Data.Tuple (Tuple(..))
 import Math (abs, floor, min, pow)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Timewarp Methods
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Timewarp interpolation method.
 data TimewarpMethod
@@ -42,17 +42,17 @@ data TimewarpMethod
 
 derive instance eqTimewarpMethod :: Eq TimewarpMethod
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Whole Frame Selection
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Select which frame to use based on blend factor.
 selectWholeFrame :: Number -> Boolean
 selectWholeFrame blendFactor = blendFactor < 0.5
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Frame Mix (Cross-fade)
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Calculate blended pixel value.
 mixPixelValue :: Number -> Number -> Number -> Number
@@ -70,9 +70,9 @@ mixPixelRGBA r1 g1 b1 a1 r2 g2 b2 a2 blend =
       (Tuple (mixPixelValue b1 b2 blend)
         (mixPixelValue a1 a2 blend)))
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Echo Intensity Decay
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Calculate echo intensity at a given echo index.
 echoIntensity :: Number -> Number -> Int -> Number
@@ -83,9 +83,9 @@ echoIntensity startingIntensity decay echoIndex =
 isSignificantEcho :: Number -> Boolean
 isSignificantEcho intensity = intensity > 0.001
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Posterize Time
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Calculate the posterized frame number.
 posterizedFrame :: Int -> Number -> Number -> Int
@@ -103,9 +103,9 @@ isNewPosterizedFrame currentFrame sourceFps targetFps =
       diff = abs (toNumber currentFrame - toNumber posterized)
   in diff < 0.5
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Motion Blur Adjustment
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Calculate motion blur factor from motion vector magnitude.
 motionBlurFactor :: Number -> Number -> Number
@@ -117,9 +117,9 @@ adjustedBlendForMotion :: Number -> Number -> Number
 adjustedBlendForMotion blend blurFactor =
   blend * (1.0 - blurFactor * 0.5)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Frame Blending Decision
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Determine if blending is needed based on blend factor.
 needsBlending :: Number -> Maybe Number

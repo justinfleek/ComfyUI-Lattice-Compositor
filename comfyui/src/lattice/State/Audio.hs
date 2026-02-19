@@ -64,9 +64,9 @@ import Lattice.State.Audio.Types
   )
 import Lattice.Utils.NumericSafety (ensureFinite)
 
--- ============================================================================
--- PURE QUERIES (GETTERS)
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                           // pure // queries
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Check if audio is loaded
 -- Pure function: takes audio state, returns boolean
@@ -192,9 +192,9 @@ activeBuffer state =
     audioStateAudioBuffer state
   else audioStateAudioBuffer state
 
--- ============================================================================
--- PURE FEATURE QUERIES
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                // pure // feature // queries
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Get audio feature value at frame (wrapper for AudioFeatures service)
 -- Pure function: takes audio state, feature name, frame, returns feature value

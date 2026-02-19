@@ -101,7 +101,7 @@ loadConfig = do
   metricsEnabled <- maybe False (== "1") <$> lookupEnv "METRICS_ENABLED"
   clickhouseUrl <- maybe "http://localhost:8123" T.pack <$> lookupEnv "CLICKHOUSE_URL"
   clickhouseDb <- maybe "ai_services" T.pack <$> lookupEnv "CLICKHOUSE_DATABASE"
-  -- STRIP_THINKING: "0" or "false" to show thinking, default is to strip
+  --                                                         // strip // thinking
   stripThinking <- maybe True (\v -> v /= "0" && v /= "false") <$> lookupEnv "STRIP_THINKING"
   pure $ defaultConfig
     { cfgPort = port
@@ -419,7 +419,7 @@ applyChatTemplate msgs = CT.renderChat chat
 
 
 -- ════════════════════════════════════════════════════════════════════════════════
--- HTTP Clients
+--                                                                 // http // c
 -- ════════════════════════════════════════════════════════════════════════════════
 
 createManager :: IO HC.Manager
@@ -584,7 +584,7 @@ readJina mgr url = do
 
 
 -- ════════════════════════════════════════════════════════════════════════════════
--- WAI Application
+--                                                                  // wai // a
 -- ════════════════════════════════════════════════════════════════════════════════
 
 app :: Config -> HC.Manager -> MetricsState -> Application

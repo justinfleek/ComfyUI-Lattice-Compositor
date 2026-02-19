@@ -39,9 +39,9 @@ spec :: Spec Unit
 spec = do
   describe "URL Validator - Security" do
 
-    ---------------------------------------------------------------------------
+    -- ────────────────────────────────────────────────────────────────────────────
     -- validateURL - Blocked Protocols
-    ---------------------------------------------------------------------------
+    -- ────────────────────────────────────────────────────────────────────────────
     describe "validateURL - Blocked Protocols" do
       it "should BLOCK javascript: URLs" do
         let result = validateURL "javascript:alert(1)" CtxAsset
@@ -81,9 +81,9 @@ spec = do
         result.valid `shouldEqual` false
         result.riskLevel `shouldEqual` RiskBlocked
 
-    ---------------------------------------------------------------------------
+    -- ────────────────────────────────────────────────────────────────────────────
     -- validateURL - Data URLs
-    ---------------------------------------------------------------------------
+    -- ────────────────────────────────────────────────────────────────────────────
     describe "validateURL - Data URLs" do
       it "should BLOCK data:text/html (XSS vector)" do
         let result = validateURL "data:text/html,<script>alert(1)</script>" CtxAsset
@@ -138,9 +138,9 @@ spec = do
         result.valid `shouldEqual` false
         result.riskLevel `shouldEqual` RiskBlocked
 
-    ---------------------------------------------------------------------------
+    -- ────────────────────────────────────────────────────────────────────────────
     -- validateURL - Safe Protocols
-    ---------------------------------------------------------------------------
+    -- ────────────────────────────────────────────────────────────────────────────
     describe "validateURL - Safe Protocols" do
       it "should ALLOW https: URLs" do
         let result = validateURL "https://example.com/image.png" CtxAsset
@@ -177,9 +177,9 @@ spec = do
         result.valid `shouldEqual` true
         result.riskLevel `shouldEqual` RiskSafe
 
-    ---------------------------------------------------------------------------
+    -- ────────────────────────────────────────────────────────────────────────────
     -- validateURL - Edge Cases
-    ---------------------------------------------------------------------------
+    -- ────────────────────────────────────────────────────────────────────────────
     describe "validateURL - Edge Cases" do
       it "should BLOCK empty string and whitespace" do
         (validateURL "" CtxAsset).valid `shouldEqual` false
@@ -213,9 +213,9 @@ spec = do
         (validateURL "JavaScript:alert(1)" CtxAsset).valid `shouldEqual` false
         (validateURL "HTTPS://example.com" CtxAsset).valid `shouldEqual` true
 
-    ---------------------------------------------------------------------------
+    -- ────────────────────────────────────────────────────────────────────────────
     -- sanitizeURLForHTML
-    ---------------------------------------------------------------------------
+    -- ────────────────────────────────────────────────────────────────────────────
     describe "sanitizeURLForHTML" do
       it "should return Left for blocked URLs" do
         let result = sanitizeURLForHTML "javascript:alert(1)"
@@ -233,9 +233,9 @@ spec = do
             sanitized `StringAssert.shouldContain` "&gt;"
             sanitized `StringAssert.shouldContain` "&quot;"
 
-    ---------------------------------------------------------------------------
+    -- ────────────────────────────────────────────────────────────────────────────
     -- validateURLs - Batch Validation
-    ---------------------------------------------------------------------------
+    -- ────────────────────────────────────────────────────────────────────────────
     describe "validateURLs - Batch Validation" do
       it "should validate multiple URLs and return map" do
         let urls =
@@ -257,9 +257,9 @@ spec = do
           Just r -> r.valid `shouldEqual` true
           Nothing -> fail "Expected result for data:image/png;base64,ABC"
 
-    ---------------------------------------------------------------------------
+    -- ────────────────────────────────────────────────────────────────────────────
     -- isTrustedDomain
-    ---------------------------------------------------------------------------
+    -- ────────────────────────────────────────────────────────────────────────────
     describe "isTrustedDomain" do
       let trustedDomains = ["example.com", "cdn.trusted.org"]
 
@@ -281,9 +281,9 @@ spec = do
         isTrustedDomain "not-a-url" trustedDomains
           `shouldEqual` false
 
-    ---------------------------------------------------------------------------
+    -- ────────────────────────────────────────────────────────────────────────────
     -- extractAndValidateURLs
-    ---------------------------------------------------------------------------
+    -- ────────────────────────────────────────────────────────────────────────────
     describe "extractAndValidateURLs" do
       it "should extract and validate URLs from text" do
         let text = "Check out https://safe.com/image.png and also http://another.com/video.mp4 Also here is data:image/png;base64,ABC"

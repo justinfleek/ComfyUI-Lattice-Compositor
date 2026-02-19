@@ -156,9 +156,9 @@ data CameraTrackingSolve = CameraTrackingSolve
   , ctsEndFrame               :: !FrameNumber
   } deriving stock (Eq, Show, Generic)
 
---------------------------------------------------------------------------------
--- COLMAP Format Types
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
+--                                                               // colmap // f
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | COLMAP camera model
 data COLMAPCameraModel
@@ -212,9 +212,9 @@ data COLMAPPoint3DEntry = COLMAPPoint3DEntry
   , colmapTrackIds  :: !(Vector (Int, Int))  -- ^ (imageId, point2DIdx)
   } deriving stock (Eq, Show, Generic)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Blender Format Types
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Blender tracking marker
 data BlenderTrackingMarker = BlenderTrackingMarker

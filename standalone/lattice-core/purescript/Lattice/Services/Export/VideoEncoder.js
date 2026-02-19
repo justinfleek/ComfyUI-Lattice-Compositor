@@ -1,4 +1,4 @@
-// FFI implementation for Lattice.Services.Export.VideoEncoder
+//                                                                       // ffi
 // Uses WebCodecs API with mp4-muxer/webm-muxer
 
 "use strict";

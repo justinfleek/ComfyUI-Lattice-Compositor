@@ -39,9 +39,9 @@ import Math (abs, sqrt) as Math
 
 import Lattice.Services.ShapeOperations.Point2D as P2D
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Types
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | A cubic Bezier curve defined by 4 control points
 type CubicBezier =
@@ -67,9 +67,9 @@ type BoundingBox =
 mkBoundingBox :: Number -> Number -> Number -> Number -> BoundingBox
 mkBoundingBox minX minY maxX maxY = { minX, minY, maxX, maxY }
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Point Evaluation
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Evaluate cubic Bezier at parameter t ∈ [0, 1].
 -- | Uses the explicit form:
@@ -92,9 +92,9 @@ evalPoint curve t =
 cubicBezierPoint :: P2D.Point2D -> P2D.Point2D -> P2D.Point2D -> P2D.Point2D -> Number -> P2D.Point2D
 cubicBezierPoint p0 p1 p2 p3 t = evalPoint { p0, p1, p2, p3 } t
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Derivative (Tangent)
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Evaluate first derivative (tangent) of cubic Bezier at t.
 -- | B'(t) = 3(1-t)²(P₁-P₀) + 6(1-t)t(P₂-P₁) + 3t²(P₃-P₂)
@@ -120,9 +120,9 @@ evalTangent curve t = P2D.normalize (evalDerivative curve t)
 evalNormal :: CubicBezier -> Number -> P2D.Point2D
 evalNormal curve t = P2D.perpendicular (evalTangent curve t)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- De Casteljau Subdivision
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Split a cubic Bezier at t using de Casteljau's algorithm.
 -- | Returns (leftCurve, rightCurve)
@@ -152,9 +152,9 @@ splitCubicBezier p0 p1 p2 p3 t =
   in Tuple [left.p0, left.p1, left.p2, left.p3]
            [right.p0, right.p1, right.p2, right.p3]
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Arc Length
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Approximate arc length using subdivision.
 arcLength :: CubicBezier -> Int -> Number
@@ -174,9 +174,9 @@ cubicBezierLength :: P2D.Point2D -> P2D.Point2D -> P2D.Point2D -> P2D.Point2D ->
 cubicBezierLength p0 p1 p2 p3 subdivisions =
   arcLength { p0, p1, p2, p3 } subdivisions
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Point at Arc Length
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Find parameter t corresponding to a given arc length distance.
 parameterAtArcLength :: CubicBezier -> Number -> Number -> Number -> Number
@@ -198,9 +198,9 @@ parameterAtArcLength curve targetDistance totalLength tolerance =
                     else search lo mid (fuel - 1)
        in search 0.0 1.0 50
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Bounding Box
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Calculate tight bounding box of cubic Bezier.
 boundingBox :: CubicBezier -> BoundingBox
@@ -251,9 +251,9 @@ boundingBox curve =
 
   in { minX: xBounds.mn, minY: yBounds.mn, maxX: xBounds.mx, maxY: yBounds.mx }
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Flatten
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Convert Bezier curve to polyline with specified number of segments
 flatten :: CubicBezier -> Int -> Array P2D.Point2D
@@ -261,9 +261,9 @@ flatten curve segments =
   let n = max 2 segments
   in map (\i -> evalPoint curve (toNumber i / toNumber n)) (range 0 n)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Curvature
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Calculate curvature at parameter t.
 -- | κ = |B'(t) × B''(t)| / |B'(t)|³

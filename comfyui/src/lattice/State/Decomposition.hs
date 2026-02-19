@@ -17,9 +17,9 @@ import Data.List (sortBy)
 import Data.Ord (comparing)
 import Lattice.Utils.NumericSafety (ensureFinite)
 
--- ============================================================================
--- TYPES (Minimal types for pure sorting)
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                                     // types
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Decomposed layer with depth information
 -- Minimal type sufficient for pure sorting function
@@ -29,9 +29,9 @@ data LayerWithDepth a = LayerWithDepth
   }
   deriving (Eq, Show)
 
--- ============================================================================
--- HELPER FUNCTIONS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                       // helper // functions
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Sort decomposed layers by depth (farthest first)
 -- Pure function: takes list of layers with depths, returns sorted list

@@ -158,8 +158,8 @@ class PermissionChecker:
                 self._cache[cache_key] = (result, datetime.now(timezone.utc))
                 return result
 
-            # API key can only use permissions it has in its scopes
-            # AND that the user has
+            #                                                                       // api
+            #                                                                       // and
             for permission in tool.permissions_required:
                 if permission not in api_key.scopes:
                     result = PermissionCheck(

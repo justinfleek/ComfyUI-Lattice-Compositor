@@ -50,9 +50,9 @@ import qualified Data.List as L
 import Lattice.Primitives
 import Lattice.Entities (BezierHandle(..), ControlMode(..))
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Full Interpolation Type
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 data FullInterpolationType
   -- Base types
@@ -88,9 +88,9 @@ isBaseInterpolation _         = False
 isEasingInterpolation :: FullInterpolationType -> Bool
 isEasingInterpolation = not . isBaseInterpolation
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Spatial Tangent
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 data SpatialTangent = SpatialTangent
   { stX :: !FiniteFloat
@@ -110,9 +110,9 @@ mkSpatialTangent x y z = do
 defaultSpatialTangent :: SpatialTangent
 defaultSpatialTangent = SpatialTangent 0 0 0
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Extended Keyframe
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 data ExtendedKeyframe = ExtendedKeyframe
   { ekId               :: !NonEmptyString
@@ -126,9 +126,9 @@ data ExtendedKeyframe = ExtendedKeyframe
   , ekSpatialOutTangent :: !(Maybe SpatialTangent)
   } deriving stock (Eq, Show, Generic)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Property Value
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 data PropertyValue
   = PVNumber !Double
@@ -139,9 +139,9 @@ data PropertyValue
   | PVRGBA !Int !Int !Int !Double
   deriving stock (Eq, Show, Generic)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Clipboard
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 data ClipboardKeyframeEntry = ClipboardKeyframeEntry
   { ckeLayerId      :: !NonEmptyString
@@ -160,9 +160,9 @@ isClipboardEmpty = V.null . kcEntries
 clipboardLayerIds :: KeyframeClipboard -> Vector NonEmptyString
 clipboardLayerIds kc = V.fromList $ L.nub $ V.toList $ V.map ckeLayerId (kcEntries kc)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Selection
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 data KeyframeSelection = KeyframeSelection
   { ksLayerId      :: !NonEmptyString
@@ -188,9 +188,9 @@ isKeyframeSelected kss layerId propPath kfId =
                 && ksPropertyPath sel == propPath
                 && ksKeyframeId sel == kfId
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Defaults
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Default in handle. Uses Num instance for FiniteFloat (safe for literals).
 defaultInHandle :: BezierHandle

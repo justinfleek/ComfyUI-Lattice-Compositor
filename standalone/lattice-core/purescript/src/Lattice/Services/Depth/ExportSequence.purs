@@ -43,9 +43,9 @@ import Data.Int (toNumber)
 import Data.String (length, take) as String
 import Data.String.CodeUnits (fromCharArray, toCharArray)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Types
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Depth map format enumeration.
 data DepthMapFormat
@@ -107,9 +107,9 @@ type FrameExportResult =
   , outputPath :: String
   }
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Frame Calculations
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Calculate total frame count in sequence.
 totalFrames :: Int -> Int -> Int
@@ -125,9 +125,9 @@ frameFromIndex startFrame index = startFrame + index
 frameIndices :: Int -> Int -> Array Int
 frameIndices startFrame endFrame = range 0 (totalFrames startFrame endFrame - 1)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Filename Generation
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Pad number with leading zeros.
 padNumber :: Int -> Int -> String
@@ -153,9 +153,9 @@ allOutputPaths options =
   let total = totalFrames options.startFrame options.endFrame
   in map (depthOutputPath options.outputDir) (range 0 (total - 1))
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Format Specification Lookup
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Get bit depth for format.
 formatBitDepth :: DepthMapFormat -> Int
@@ -190,9 +190,9 @@ formatInverted format = case format of
   FormatDepthAnything -> true
   _                   -> false
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Metadata Generation
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Generator name constant.
 generatorName :: String
@@ -230,9 +230,9 @@ metadataFromOptions options minDepth maxDepth timestamp =
     maxDepth
     timestamp
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Progress Tracking
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Create progress event.
 createProgress :: Int -> Int -> ExportProgress
@@ -251,9 +251,9 @@ progressPercent progress
 isComplete :: ExportProgress -> Boolean
 isComplete progress = progress.currentFrame >= progress.totalFrames
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Export Validation
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Validate export options.
 validateOptions :: DepthExportOptions -> Boolean

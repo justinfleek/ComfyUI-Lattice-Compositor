@@ -20,9 +20,9 @@ import qualified Data.Text as T
 import Lattice.Services.TimelineSnap (SnapConfig(..), SnapType(..))
 import Lattice.State.Animation.Types (AnimationState(..))
 
--- ============================================================================
--- SNAP TYPE TOGGLE
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                    // snap // type // toggle
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Snap type for toggling
 data SnapTypeToggle
@@ -34,9 +34,9 @@ data SnapTypeToggle
   | SnapTypeTogglePlayhead
   deriving (Eq, Show)
 
--- ============================================================================
--- SNAP CONFIGURATION OPERATIONS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                       // snap // configuration // operations
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Set snap configuration (partial update)
 -- Pure function: takes animation state and partial snap config, returns new state
@@ -84,9 +84,9 @@ toggleSnapType state snapType =
   in
     state {animationStateSnapConfig = updatedConfig}
 
--- ============================================================================
--- NOTE: findSnapPoint
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                                      // note
+-- ════════════════════════════════════════════════════════════════════════════
 --
 -- The findSnapPoint function requires findNearestSnap from TimelineSnap service,
 -- which has not been migrated yet. This function will be added when TimelineSnap

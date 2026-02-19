@@ -40,9 +40,9 @@ import GHC.Generics (Generic)
 import Lattice.Types.LayerData3D (Camera3D(..))
 import Lattice.Utils.NumericSafety (ensureFinite)
 
--- ============================================================================
--- CAMERA KEYFRAME (Minimal type for pure queries)
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                        // camera // keyframe
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Camera keyframe for animation
 -- Minimal type sufficient for pure query functions
@@ -61,9 +61,9 @@ instance FromJSON CameraKeyframe where
     frame <- o .: "frame"
     return (CameraKeyframe frame)
 
--- ============================================================================
--- VIEWPORT STATE (Minimal type for pure queries)
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                         // viewport // state
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Viewport state for 3D viewport management
 -- Minimal type sufficient for pure query functions
@@ -87,9 +87,9 @@ instance FromJSON ViewportState where
     activeIndex <- o .: "activeViewIndex"
     return (ViewportState layout activeIndex)
 
--- ============================================================================
--- VIEW OPTIONS (Minimal type for pure queries)
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                           // view // options
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | View options for 3D viewport display
 -- Minimal type sufficient for pure query functions
@@ -113,9 +113,9 @@ instance FromJSON ViewOptions where
     showGrid <- o .: "showGrid"
     return (ViewOptions cameraWireframes showGrid)
 
--- ============================================================================
--- CAMERA STATE
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                           // camera // state
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Camera store state
 data CameraState = CameraState
@@ -146,9 +146,9 @@ instance FromJSON CameraState where
     viewOptions <- o .: "viewOptions"
     return (CameraState cameras keyframes activeId viewport viewOptions)
 
--- ============================================================================
--- HELPER FUNCTIONS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                       // helper // functions
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Safely compare frame numbers, handling NaN values
 -- Pure function: takes two frame numbers, returns boolean
@@ -166,9 +166,9 @@ safeFrame mFrame fallback =
     Nothing -> fallback
     Just frame -> ensureFinite frame fallback
 
--- ============================================================================
--- QUERY FUNCTIONS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                        // query // functions
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Get all cameras as list
 -- Pure function: takes camera map, returns list of cameras

@@ -31,9 +31,9 @@ import Lattice.Utils.NumericSafety
   , safeLerp
   )
 
--- ============================================================================
--- TYPES
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                                     // types
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Control point handle (bezier control point relative to main point)
 data ControlPointHandle = ControlPointHandle
@@ -63,9 +63,9 @@ data ParsedPath = ParsedPath
   , parsedPathClosed :: Bool
   } deriving (Eq, Show)
 
--- ============================================================================
--- SVG PATH PARSING
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                    // svg // path // parsing
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Parse SVG string and extract paths with control points
 --
@@ -328,9 +328,9 @@ parsePathData d pathIdx =
   in
     processCommands commands
 
--- ============================================================================
--- INTERNAL STATE
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                         // internal // state
+-- ════════════════════════════════════════════════════════════════════════════
 
 data PathState = PathState
   { pathStatePathIdx :: Int  -- Path index for ID generation
@@ -345,9 +345,9 @@ data PathState = PathState
   , pathStateClosed :: Bool
   } deriving (Eq, Show)
 
--- ============================================================================
--- COMMAND PROCESSORS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                     // command // processors
+-- ════════════════════════════════════════════════════════════════════════════
 
 processMoveTo :: PathState -> Bool -> [Double] -> PathState
 processMoveTo state isRelative args =
@@ -587,8 +587,8 @@ processQuadraticBezier state isRelative args =
         absY = y + (if isRelative then pathStateCurrentY s else 0.0)
         
         -- Convert quadratic to cubic control points
-        -- CP1 = P0 + 2/3 * (Q - P0)
-        -- CP2 = P1 + 2/3 * (Q - P1)
+        --                                                                       // cp1
+        --                                                                       // cp2
         cp1x = pathStateCurrentX s + (2/3) * (absQx - pathStateCurrentX s)
         cp1y = pathStateCurrentY s + (2/3) * (absQy - pathStateCurrentY s)
         cp2x = absX + (2/3) * (absQx - absX)

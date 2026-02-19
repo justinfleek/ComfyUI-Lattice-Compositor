@@ -24,7 +24,7 @@ module Lattice.Types.Primitives
   , ColorValue(..)
   -- Geometry types
   , Rect(..)
-  -- ID types
+  --                                                                        // id
   , EntityId(..)
   , NullableEntityId(..)
   -- Enum types
@@ -58,9 +58,9 @@ import GHC.Generics (Generic)
 import Text.Regex.TDFA ((=~))
 import Lattice.Utils.NumericSafety (isFinite)
 
--- ============================================================================
--- VALIDATION FUNCTIONS
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                   // validation // functions
+-- ════════════════════════════════════════════════════════════════════════════
 -- These enforce the .finite() constraint from TypeScript
 -- In Haskell, we use smart constructors or validation at JSON parse time
 
@@ -96,9 +96,9 @@ validateNonNegativeInt x = x >= 0
 validateFrameNumber :: Int -> Bool
 validateFrameNumber = validateNonNegativeInt
 
--- ============================================================================
--- VECTOR TYPES
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                           // vector // types
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | 2D vector with x and y components (finite numbers)
 data Vec2 = Vec2
@@ -165,9 +165,9 @@ instance FromJSON Position2DOr3D where
       then return (Position2DOr3D x y mz)
       else fail "Position2DOr3D components must be finite numbers"
 
--- ============================================================================
--- COLOR TYPES
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                            // color // types
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | RGBA color with values 0-1 (normalized)
 data RGBAColor = RGBAColor
@@ -262,9 +262,9 @@ instance FromJSON ColorValue where
   parseJSON v@(Object _) = ColorValueRGBA <$> parseJSON v
   parseJSON _ = fail "ColorValue must be hex string or RGBA object"
 
--- ============================================================================
--- GEOMETRY TYPES
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                         // geometry // types
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Rectangle with x, y, width, height
 data Rect = Rect
@@ -295,9 +295,9 @@ instance FromJSON Rect where
       then return (Rect x y w h)
       else fail "Rect: x,y must be finite; width,height must be non-negative finite"
 
--- ============================================================================
--- ID TYPES
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                               // id // types
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Valid entity ID (non-empty string)
 newtype EntityId = EntityId { unEntityId :: Text }
@@ -313,9 +313,9 @@ instance FromJSON EntityId where
 -- | Nullable entity ID (null means no reference)
 type NullableEntityId = Maybe EntityId
 
--- ============================================================================
--- ENUM TYPES
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                             // enum // types
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Blend modes (industry standard compatibility)
 data BlendMode

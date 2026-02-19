@@ -20,7 +20,7 @@ import os
 
 logger = logging.getLogger("lattice.api_proxy")
 
-# API key cache (loaded from environment on first use).
+#                                                                       // api
 _api_keys: dict[str, str | None] = {"openai": None, "anthropic": None}
 _api_keys_loaded: bool = False
 
@@ -673,12 +673,12 @@ try:
       logger.error(f"Anthropic agent request failed: {e}")
       return web.json_response({"status": "error", "message": f"Network error: {e!s}"}, status=502)
 
-  # ========================================================================
-  # AI MODEL ENDPOINTS (Depth, Normal, Segment)
-  # ========================================================================
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  #                                                  // ai // model // endpoints
+  # ════════════════════════════════════════════════════════════════════════════
 
   # Model cache for lazy loading
-  # JSON-compatible value types
+  #                                                                      // json
   JSONValue = str | int | float | bool | None | list | dict
   _loaded_models: dict[str, JSONValue] = {}
 
@@ -795,7 +795,7 @@ try:
         # Auto-load model
         _loaded_models[model_type] = {"type": model_type, "loaded_at": __import__("time").time()}
 
-      # TODO: Actual depth estimation implementation
+      #                                                                      // todo
       # This would use ComfyUI's DepthAnything nodes or PyTorch models
       # For now, return placeholder indicating implementation needed
 
@@ -848,7 +848,7 @@ try:
       model_type = options.get("model", "normal-crafter")
       logger.info(f"Normal map generation requested with model: {model_type}")
 
-      # TODO: Actual normal map generation implementation
+      #                                                                      // todo
       return web.json_response(
         {
           "status": "error",
@@ -897,7 +897,7 @@ try:
 
       logger.info(f"Segmentation requested with model: {model_type}, point: {point}, box: {box}")
 
-      # TODO: Actual segmentation implementation
+      #                                                                      // todo
       return web.json_response(
         {
           "status": "error",

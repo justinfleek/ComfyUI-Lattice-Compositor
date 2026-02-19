@@ -48,9 +48,9 @@ import Data.Number (isFinite, isNaN) as Number
 import Lattice.Primitives
 import Lattice.Utils.Validation (ValidationResult(..), validateVec2, validateVec3, validateRGB, validateRGBA)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Primitive Type Guards
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Check if Number is finite (not NaN, not Infinity)
 isFiniteNumber :: Number -> Boolean
@@ -64,9 +64,9 @@ isNonEmptyString = not <<< String.null
 isNonEmptyArray :: forall a. Array a -> Boolean
 isNonEmptyArray = not <<< Array.null
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Numeric Type Guards
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Check if value is positive
 isPositive :: Number -> Boolean
@@ -88,9 +88,9 @@ isPercentageRange x = isFiniteNumber x && x >= 0.0 && x <= 100.0
 isColorChannel :: Number -> Boolean
 isColorChannel x = isFiniteNumber x && x >= 0.0 && x <= 255.0
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Vector Type Guards
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Check if Vec2 has valid coordinates
 isValidVec2 :: Vec2 -> Boolean
@@ -104,9 +104,9 @@ isValidVec3 v = isFiniteNumber (unFiniteFloat v.x) && isFiniteNumber (unFiniteFl
 isValidVec4 :: Vec4 -> Boolean
 isValidVec4 v = isFiniteNumber (unFiniteFloat v.x) && isFiniteNumber (unFiniteFloat v.y) && isFiniteNumber (unFiniteFloat v.z) && isFiniteNumber (unFiniteFloat v.w)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Bounding Box
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Bounding box with validated dimensions
 type BoundingBox =
@@ -123,9 +123,9 @@ mkBoundingBox x y width height
       Just { x: FiniteFloat x, y: FiniteFloat y, width: PositiveFloat width, height: PositiveFloat height }
   | otherwise = Nothing
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Color Type Guards
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Check if RGB has valid channel values
 isValidRGB :: RGB -> Boolean
@@ -135,9 +135,9 @@ isValidRGB c = isColorChannel (unUnitFloat c.r) && isColorChannel (unUnitFloat c
 isValidRGBA :: RGBA -> Boolean
 isValidRGBA c = isColorChannel (unUnitFloat c.r) && isColorChannel (unUnitFloat c.g) && isColorChannel (unUnitFloat c.b) && isUnitRange (unUnitFloat c.a)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Safe Defaults
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Safe coordinate default - allows negative, zero, positive
 safeCoordinateDefault :: Maybe Number -> FiniteFloat -> FiniteFloat
@@ -186,9 +186,9 @@ safeStringDefault (Just v) def
   | String.null v = def
   | otherwise = NonEmptyString v
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Assertions
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Assert and extract finite number
 assertFinite :: Number -> String -> Either String FiniteFloat
@@ -220,9 +220,9 @@ assertNonEmptyArray arr name
   | Array.null arr = Left (name <> " cannot be empty")
   | otherwise = Right arr
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Checked Constructors
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Create Vec2 with validation
 mkVec2Checked :: Number -> Number -> String -> ValidationResult Vec2

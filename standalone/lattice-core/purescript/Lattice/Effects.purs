@@ -59,9 +59,9 @@ import Lattice.Primitives
 import Lattice.Enums
 import Lattice.MeshWarp
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Effect Parameter Type
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 data EffectParameterType
   = EPTNumber | EPTColor | EPTPoint | EPTPoint3D | EPTAngle
@@ -78,9 +78,9 @@ derive instance Eq EffectAnimatableType
 derive instance Generic EffectAnimatableType _
 instance Show EffectAnimatableType where show = genericShow
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Blur Enums
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 data BlurDimension = BDHorizontal | BDVertical | BDBoth
 
@@ -100,9 +100,9 @@ derive instance Eq AntialiasingQuality
 derive instance Generic AntialiasingQuality _
 instance Show AntialiasingQuality where show = genericShow
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Distortion Enums
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 data RampShape = RSLinear | RSRadial
 
@@ -140,9 +140,9 @@ derive instance Eq EdgeBehavior
 derive instance Generic EdgeBehavior _
 instance Show EdgeBehavior where show = genericShow
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Glow Enums
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 data GlowCompositeMode = GCMOnTop | GCMBehind | GCMNone
 
@@ -180,9 +180,9 @@ derive instance Eq BloomBlendMode
 derive instance Generic BloomBlendMode _
 instance Show BloomBlendMode where show = genericShow
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Noise Enums
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 data FractalType = FTBasic | FTTurbulentBasic | FTSoftLinear | FTTurbulentSoft
 
@@ -196,9 +196,9 @@ derive instance Eq NoiseType
 derive instance Generic NoiseType _
 instance Show NoiseType where show = genericShow
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Time Enums
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 data EchoOperator
   = EOAdd | EOScreen | EOMaximum | EOMinimum
@@ -214,9 +214,9 @@ derive instance Eq TimeResolution
 derive instance Generic TimeResolution _
 instance Show TimeResolution where show = genericShow
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Mesh Enums
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 data PinFalloff = PFInverseDistance | PFRadialBasis
 
@@ -238,9 +238,9 @@ derive instance Eq PinningMode
 derive instance Generic PinningMode _
 instance Show PinningMode where show = genericShow
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Stylize Enums
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 data ScanlinesDirection = SDHorizontal | SDVertical
 
@@ -298,9 +298,9 @@ derive instance Eq HSLChannel
 derive instance Generic HSLChannel _
 instance Show HSLChannel where show = genericShow
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Parameter Types
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 type EffectPoint2D =
   { x :: FiniteFloat
@@ -371,9 +371,9 @@ type EffectParameter =
   , group         :: Maybe NonEmptyString
   }
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Effect Types
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 type Effect =
   { id             :: NonEmptyString

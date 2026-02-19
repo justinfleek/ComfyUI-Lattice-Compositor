@@ -24,9 +24,9 @@ import Prelude
 import Data.Tuple (Tuple(..))
 import Math (atan2, cos, pi, sin, sqrt)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Angle Conventions
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Convert degrees to radians.
 degreesToRadians :: Number -> Number
@@ -36,9 +36,9 @@ degreesToRadians degrees = degrees * pi / 180.0
 photoshopAngleToRad :: Number -> Number
 photoshopAngleToRad angleDeg = degreesToRadians (angleDeg - 90.0)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Offset Calculation
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Calculate X offset from angle and distance.
 offsetX :: Number -> Number -> Number
@@ -57,9 +57,9 @@ angleToOffset :: Number -> Number -> Tuple Number Number
 angleToOffset angleDeg distance =
   Tuple (offsetX angleDeg distance) (offsetY angleDeg distance)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Inverse Operations
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Calculate angle from X/Y offsets.
 offsetToAngle :: Number -> Number -> Number
@@ -72,9 +72,9 @@ offsetToAngle x y =
 offsetToDistance :: Number -> Number -> Number
 offsetToDistance x y = sqrt (x * x + y * y)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Global Light
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Apply global light angle if enabled.
 resolveAngle :: Number -> Number -> Boolean -> Number

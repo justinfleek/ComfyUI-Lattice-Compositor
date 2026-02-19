@@ -61,9 +61,9 @@ module Lattice.Schemas.Imports.CameraSchema
 import GHC.Generics (Generic)
 import Data.Text (Text)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Camera Type
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Camera type (one-node vs two-node)
 data CameraType
@@ -80,9 +80,9 @@ cameraTypeToText :: CameraType -> Text
 cameraTypeToText CameraOneNode = "one-node"
 cameraTypeToText CameraTwoNode = "two-node"
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Auto Orient Mode
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Auto-orient mode for cameras
 data AutoOrientMode
@@ -102,9 +102,9 @@ autoOrientModeToText AutoOrientOff = "off"
 autoOrientModeToText AutoOrientAlongPath = "orient-along-path"
 autoOrientModeToText AutoOrientTowardsPoi = "orient-towards-poi"
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Measure Film Size
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | How to measure film size
 data MeasureFilmSize
@@ -124,9 +124,9 @@ measureFilmSizeToText MeasureHorizontal = "horizontal"
 measureFilmSizeToText MeasureVertical = "vertical"
 measureFilmSizeToText MeasureDiagonal = "diagonal"
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Spatial Interpolation
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Spatial interpolation types
 data SpatialInterpolation
@@ -149,9 +149,9 @@ spatialInterpolationToText SpatialBezier = "bezier"
 spatialInterpolationToText SpatialAutoBezier = "auto-bezier"
 spatialInterpolationToText SpatialContinuousBezier = "continuous-bezier"
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Temporal Interpolation
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Temporal interpolation types
 data TemporalInterpolation
@@ -171,9 +171,9 @@ temporalInterpolationToText TemporalLinear = "linear"
 temporalInterpolationToText TemporalBezier = "bezier"
 temporalInterpolationToText TemporalHold = "hold"
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Constants
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 maxFocalLength :: Double
 maxFocalLength = 10000.0
@@ -199,9 +199,9 @@ maxAperture = 100.0
 maxKeyframes :: Int
 maxKeyframes = 100000
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Structures
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | 2D vector
 data Vector2 = Vector2
@@ -247,9 +247,9 @@ data Highlight = Highlight
   }
   deriving stock (Eq, Show, Generic)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Validation
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Check if 2D vector has finite values
 isValidVector2 :: Vector2 -> Bool

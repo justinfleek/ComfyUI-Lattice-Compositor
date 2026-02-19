@@ -75,9 +75,9 @@ import Text.Regex.TDFA ((=~))
 import Control.Monad (void)
 import Control.Concurrent.MVar (MVar, newMVar, readMVar, swapMVar)
 
--- ============================================================================
--- VALIDATION CONSTANTS (Fixed - Security Critical)
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                   // validation // constants
+-- ════════════════════════════════════════════════════════════════════════════
 
 maxNameLength :: Int
 maxNameLength = 200
@@ -127,9 +127,9 @@ maxAnimationNameLength = 100
 maxWarningLength :: Int
 maxWarningLength = 500
 
--- ============================================================================
--- CONFIGURABLE LIMITS (Runtime-updatable)
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                    // configurable // limits
+-- ════════════════════════════════════════════════════════════════════════════
 
 data ValidationLimits = ValidationLimits
   { limitsMaxDimension :: Int
@@ -232,9 +232,9 @@ getMaxFPSPure = limitsMaxFPS
 getMaxFPS :: MVar ValidationLimits -> IO Int
 getMaxFPS limits = limitsMaxFPS <$> readMVar limits
 
--- ============================================================================
--- VALIDATION FUNCTIONS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                   // validation // functions
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Validate non-empty string with max length and trimming
 validateNonEmptyString :: Int -> Text -> Either Text Text

@@ -1,4 +1,4 @@
-// FFI bindings for Lattice.Services.Video.Transitions
+//                                                                       // ffi
 // Canvas-based video transition rendering
 
 // Power function for easing

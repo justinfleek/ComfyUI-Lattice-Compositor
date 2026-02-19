@@ -41,9 +41,9 @@ import Lattice.Utils.NumericSafety
   , safeLerp
   )
 
--- ============================================================================
--- TYPES
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                                     // types
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Audio analysis data structure
 -- Analysis is computed once at load time, then only read
@@ -120,9 +120,9 @@ data AudioFeatureType
   | FeaturePeaks
   deriving (Eq, Show)
 
--- ============================================================================
--- PURE LOOKUP FUNCTIONS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                               // pure // lookup // functions
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Get audio feature value at a specific frame
 -- Pure function: same inputs → same outputs
@@ -169,9 +169,9 @@ isBeatAtFrame (Just analysis) frame =
 isPeakAtFrame :: [Int] -> Int -> Bool  -- Simplified: peaks as list of frame indices
 isPeakAtFrame peaks frame = frame `elem` peaks
 
--- ============================================================================
--- PURE CALCULATION FUNCTIONS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                          // pure // calculation // functions
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Get BPM from analysis
 -- Pure getter function

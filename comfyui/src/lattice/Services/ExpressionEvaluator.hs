@@ -40,9 +40,9 @@ import Lattice.Utils.NumericSafety (isFinite)
 import Lattice.Utils.NumericSafety (ensureFinite, safeSqrt, safeLog)
 import Lattice.Utils.ArrayUtils (safeArrayGet)
 
--- ============================================================================
--- TIME EXPRESSIONS
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                       // time // expressions
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Linear interpolation over time range
 -- Pure function: same inputs → same outputs
@@ -148,9 +148,9 @@ pulse time frequency dutyCycle amplitude =
   where
     floatMod a b = a - b * fromIntegral (floor (a / b) :: Int)
 
--- ============================================================================
--- MATH EXPRESSIONS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                       // math // expressions
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Linear interpolation
 -- Pure function: same inputs → same outputs
@@ -325,9 +325,9 @@ gaussRandom mean stdDev seed =
         result = finiteMean + z0 * finiteStdDev
     in ensureFinite result 0.0
 
--- ============================================================================
--- EXPRESSION EASING FUNCTIONS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                         // expression // easing // functions
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Expression ease function (cubic ease in/out)
 -- Pure function: same inputs → same outputs

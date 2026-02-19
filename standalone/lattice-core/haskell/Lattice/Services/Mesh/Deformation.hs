@@ -47,9 +47,9 @@ module Lattice.Services.Mesh.Deformation
 import Data.Vector (Vector)
 import qualified Data.Vector as V
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Types
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | 2D point
 data Point2D = Point2D
@@ -99,9 +99,9 @@ defaultPinRestState pos = PinRestState
   , prsStiffness = 0.0
   }
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Point Operations
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Distance between two points
 distance :: Point2D -> Point2D -> Double
@@ -134,9 +134,9 @@ translatePoint point delta = Point2D
   (p2dX point + p2dX delta)
   (p2dY point + p2dY delta)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Weight Calculation
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Calculate weight for a single vertex-pin pair.
 --
@@ -179,9 +179,9 @@ calculateWeights vertices pinRestStates options
             in normalizedWeights
       in V.concatMap processVertex vertices
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Deformation Application
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Apply a single pin's transformation to a vertex.
 --
@@ -249,9 +249,9 @@ deformMesh :: Vector Point2D -> Vector PinState -> Vector PinRestState
 deformMesh vertices pinStates pinRestStates weights =
   V.imap (\i vertex -> deformVertex vertex i pinStates pinRestStates weights) vertices
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Utilities
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Create pin state from current and rest positions
 createPinState :: Point2D -> Double -> Double -> Point2D -> PinState

@@ -30,9 +30,9 @@ import GHC.Generics (Generic)
 import Lattice.Types.Animation (ClipboardKeyframe(..))
 import Lattice.Types.Primitives (validateFinite)
 
--- ============================================================================
--- VELOCITY SETTINGS
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                      // velocity // settings
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Velocity settings for keyframe handles
 data VelocitySettings = VelocitySettings
@@ -67,9 +67,9 @@ instance FromJSON VelocitySettings where
       else fail "VelocitySettings: velocities must be finite, influences must be in [0, 100]"
     )
 
--- ============================================================================
--- KEYFRAME SELECTION
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                     // keyframe // selection
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Keyframe selection for bulk operations
 data KeyframeSelection = KeyframeSelection
@@ -95,9 +95,9 @@ instance FromJSON KeyframeSelection where
     return (KeyframeSelection layerId propertyPath keyframeId)
     )
 
--- ============================================================================
--- KEYFRAME STORE STATE
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                // keyframe // store // state
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Keyframe store state
 -- Maintains clipboard state for keyframe copy/paste

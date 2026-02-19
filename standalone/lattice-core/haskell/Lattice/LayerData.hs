@@ -74,9 +74,9 @@ import qualified Data.Vector as V
 import Lattice.Primitives
 import Lattice.DataAsset (JSONValue)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Image Layer
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 data ImageFit = FitNone | FitContain | FitCover | FitFill
   deriving stock (Eq, Show, Generic)
@@ -101,9 +101,9 @@ data ImageLayerData = ImageLayerData
   , imgSegmentationMaskId :: !Text
   } deriving stock (Eq, Show, Generic)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Depth Layer
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 data DepthVisualizationMode
   = DVMGrayscale | DVMColormap | DVMContour | DVMMesh3D
@@ -129,9 +129,9 @@ data DepthLayerData = DepthLayerData
   , depthWireframe                :: !Bool
   } deriving stock (Eq, Show, Generic)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Normal Layer
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 data NormalVisualizationMode
   = NVMRgb | NVMHemisphere | NVMArrows | NVMLit
@@ -157,9 +157,9 @@ data NormalLayerData = NormalLayerData
   , normalAmbientIntensity   :: !NonNegativeFloat
   } deriving stock (Eq, Show, Generic)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Audio Layer
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 data AudioLayerData = AudioLayerData
   { audioAssetId        :: !(Maybe NonEmptyString)
@@ -175,9 +175,9 @@ data AudioLayerData = AudioLayerData
   , audioExposeFeatures :: !Bool
   } deriving stock (Eq, Show, Generic)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Video Data
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 data FrameBlendingMode = FBMNone | FBMFrameMix | FBMPixelMotion
   deriving stock (Eq, Show, Generic)
@@ -203,9 +203,9 @@ data VideoData = VideoData
   , videoPosterFrame         :: !FrameNumber
   } deriving stock (Eq, Show, Generic)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Nested Comp Data
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 data NestedCompData = NestedCompData
   { nestedCompId              :: !NonEmptyString
@@ -219,9 +219,9 @@ data NestedCompData = NestedCompData
   , nestedFrameRate           :: !(Maybe PositiveFloat)
   } deriving stock (Eq, Show, Generic)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Generated Layer
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 data GeneratedMapType
   = GMTDepth | GMTNormal | GMTEdge | GMTPose | GMTSegment | GMTLineart | GMTSoftedge
@@ -247,9 +247,9 @@ data GeneratedLayerData = GeneratedLayerData
   , genLastGenerated   :: !(Maybe NonEmptyString)
   } deriving stock (Eq, Show, Generic)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Matte Layer
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 data MatteType
   = MTLuminance | MTAlpha | MTRed | MTGreen | MTBlue | MTHue | MTSaturation
@@ -268,9 +268,9 @@ data MatteLayerData = MatteLayerData
   , mattePreviewMode  :: !MattePreviewMode
   } deriving stock (Eq, Show, Generic)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Control Layer
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 data ControlIconShape = CISCrosshair | CISDiamond | CISCircle | CISSquare
   deriving stock (Eq, Show, Generic)
@@ -283,9 +283,9 @@ data ControlLayerData = ControlLayerData
   , ctrlIconColor :: !HexColor
   } deriving stock (Eq, Show, Generic)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Solid Layer
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 data SolidLayerData = SolidLayerData
   { solidColor         :: !HexColor
@@ -297,9 +297,9 @@ data SolidLayerData = SolidLayerData
   , solidReceiveShadow :: !Bool
   } deriving stock (Eq, Show, Generic)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Group Layer
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 data GroupLayerData = GroupLayerData
   { groupCollapsed   :: !Bool
@@ -308,9 +308,9 @@ data GroupLayerData = GroupLayerData
   , groupIsolate     :: !Bool
   } deriving stock (Eq, Show, Generic)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Effect Layer
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 data EffectLayerData = EffectLayerData
   { effectLayerFlag     :: !Bool
@@ -318,9 +318,9 @@ data EffectLayerData = EffectLayerData
   , effectColor         :: !HexColor
   } deriving stock (Eq, Show, Generic)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Model Layer
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 data ModelInstanceData = ModelInstanceData
   { instPosX   :: !FiniteFloat
@@ -355,9 +355,9 @@ data ModelLayerData = ModelLayerData
   , modelInstanceData           :: !(Vector ModelInstanceData)
   } deriving stock (Eq, Show, Generic)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Point Cloud Layer
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 data PointCloudColorMode = PCCMVertex | PCCMHeight | PCCMIntensity | PCCMSolid
   deriving stock (Eq, Show, Generic)
@@ -383,9 +383,9 @@ data PointCloudLayerData = PointCloudLayerData
   , pcClipMaxZ        :: !(Maybe FiniteFloat)
   } deriving stock (Eq, Show, Generic)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Pose Layer
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 data PoseFormat = PFOpenpose | PFCoco | PFDwpose
   deriving stock (Eq, Show, Generic)
@@ -407,9 +407,9 @@ data PoseLayerData = PoseLayerData
   , poseMirror         :: !Bool
   } deriving stock (Eq, Show, Generic)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- OpenPose Constants
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | OpenPose skeleton connections
 openposeConnections :: Vector (Int, Int)

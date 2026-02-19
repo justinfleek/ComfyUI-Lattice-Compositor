@@ -47,9 +47,9 @@ import Data.Aeson (ToJSON(..), FromJSON(..), Value(..), Options(..), defaultOpti
 import Data.Aeson.Key (fromString)
 import GHC.Generics (Generic)
 
--- ============================================================================
--- MONITOR TYPE
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                           // monitor // type
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Monitor type enumeration
 data MonitorType = OLED | LCD
@@ -74,9 +74,9 @@ lcdMinBlack = 0.02  -- 2% typical minimum
 oledBlackBalanceOffset :: Double
 oledBlackBalanceOffset = 0.0
 
--- ============================================================================
--- BLACK BALANCE CALCULATION
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                           // black // balance // calculation
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | LCD black balance function
 -- Maps requested lightness to actual display lightness accounting for backlight
@@ -85,7 +85,7 @@ lcdBlackBalance (Lightness v) =
   validateLightness (max lcdMinBlack v)
 
 -- | OLED black balance function
--- OLED can achieve true black, but may have slight calibration offset
+--                                                                      // oled
 oledBlackBalance :: Lightness -> Lightness
 oledBlackBalance (Lightness v) =
   validateLightness (max 0.0 (v - oledBlackBalanceOffset))
@@ -105,9 +105,9 @@ recommendedBackgroundLightness :: MonitorType -> Lightness
 recommendedBackgroundLightness OLED = validateLightness 0.11  -- OLED-safe (prevents burn-in)
 recommendedBackgroundLightness LCD = validateLightness 0.16  -- LCD minimum for contrast
 
--- ============================================================================
--- THEME CONFIGURATION
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                    // theme // configuration
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | User-selected base color (from color wheel)
 data BaseColor = BaseColor
@@ -135,9 +135,9 @@ data ThemeConfig = ThemeConfig
   }
   deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
--- ============================================================================
--- THEME VARIANT GENERATION
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                            // theme // variant // generation
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Theme variant with name, background lightness, and color palette
 data ThemeVariant = ThemeVariant
@@ -198,9 +198,9 @@ generateLightThemeVariants _config =
      , ThemeVariant "paper" (validateLightness 0.96) emptyColors
      ]
 
--- ============================================================================
--- COLOR ADJUSTMENT FOR BLACK BALANCE
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                            // color // adjustment // for // black // balance
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Adjust HSL color to account for monitor black balance
 adjustColorForMonitor :: MonitorType -> HSL -> HSL

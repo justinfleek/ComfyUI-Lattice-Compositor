@@ -52,9 +52,9 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import GHC.Generics (Generic)
 
--- ============================================================================
--- TYPES
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                                     // types
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Material side
 data MaterialSide
@@ -352,9 +352,9 @@ instance FromJSON AssetState where
       <*> o .:? "isLoadingSpriteSheet" .!= False
       <*> o .:? "isLoadingEnvironment" .!= False
 
--- ============================================================================
--- PURE QUERIES (GETTERS)
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                           // pure // queries
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Get material list
 -- Pure function: takes asset state, returns list of materials
@@ -436,9 +436,9 @@ isLoading state =
     || assetStateIsLoadingSpriteSheet state
     || assetStateIsLoadingEnvironment state
 
--- ============================================================================
--- PURE CALCULATIONS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                      // pure // calculations
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Create default material config
 -- Pure function: takes id and name, returns default config

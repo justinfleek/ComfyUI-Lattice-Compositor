@@ -38,9 +38,9 @@ module Lattice.Services.LayerTime
   , safeTimeStretch, safeFps, safeMod
   ) where
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Types
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Result of source time calculation
 data SourceTimeResult = SourceTimeResult
@@ -68,9 +68,9 @@ defaultSourceTimeOptions = SourceTimeOptions
   , optPingPong = False
   }
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Constants
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Normal time stretch (100%)
 normalStretch :: Double
@@ -80,9 +80,9 @@ normalStretch = 100.0
 defaultFps :: Double
 defaultFps = 30.0
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Helper Functions
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Ensure time stretch is valid
 safeTimeStretch :: Double -> Double
@@ -102,9 +102,9 @@ safeMod a b
   | b == 0 = a
   | otherwise = a - b * fromIntegral (floor (a / b) :: Int)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Core Functions
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Calculate effective speed from time stretch percentage.
 -- 100% = 1x speed, 200% = 0.5x speed (slower), 50% = 2x speed (faster)
@@ -136,9 +136,9 @@ getSourceDuration stretchedDuration timeStretch =
   in if safe == 0 then stretchedDuration
      else (stretchedDuration * normalStretch) / abs safe
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Loop/Clamp Functions
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Apply simple loop to source frame
 loopFrame :: Double -> Double -> (Double, Bool)
@@ -170,9 +170,9 @@ clampFrame sourceFrameVal sourceDuration
       let adjusted = max 0 (min sourceFrameVal (sourceDuration - 1))
       in (adjusted, adjusted /= sourceFrameVal)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Source Time Calculation
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Calculate source time from composition frame.
 getSourceTime :: Double             -- ^ compFrame
@@ -239,9 +239,9 @@ getSourceFrame compFrame layerStartFrame timeStretch fps sourceDuration =
       result = getSourceTime compFrame layerStartFrame timeStretch options
   in sourceFrame result
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Stretch Anchor Calculations
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Calculate new endpoints after time stretch, anchored at start
 stretchFromStart :: Double -> Double -> Double -> Double -> (Double, Double)

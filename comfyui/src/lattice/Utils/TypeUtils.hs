@@ -5,7 +5,7 @@
 -- Migrated from ui/src/utils/typeUtils.ts
 -- Pure functions for type-safe object operations
 -- 
--- CRITICAL: No forbidden patterns - explicit types, no null/undefined, no type escapes
+--                                                                  // critical
 --
 
 {-# LANGUAGE OverloadedStrings #-}
@@ -23,9 +23,9 @@ import Data.HashSet (HashSet)
 import qualified Data.HashSet as Set
 import Data.Hashable (Hashable)
 
--- ============================================================================
--- OBJECT MANIPULATION
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                    // object // manipulation
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Type-safe omit - removes specified keys from object
 -- Returns new HashMap without specified keys

@@ -49,9 +49,9 @@ import Lattice.Types.Color
   , lightnessValue
   )
 
--- ============================================================================
--- JSON HELPER FUNCTIONS
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                               // json // helper // functions
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Convert JSON string to ThemeConfig
 parseThemeConfig :: T.Text -> Maybe ThemeConfig
@@ -65,9 +65,9 @@ themeVariantsToJSON :: [ThemeVariant] -> T.Text
 themeVariantsToJSON variants =
   TE.decodeUtf8 (BL.toStrict (encode variants))
 
--- ============================================================================
--- THEME GENERATION
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                       // theme // generation
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Generate base16 theme from user configuration
 generateThemeFromConfig :: ThemeConfig -> Base16Palette
@@ -98,9 +98,9 @@ generateAllVariants config =
           }
   in map convertVariant variants
 
--- ============================================================================
--- FFI EXPORTS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                            // ffi // exports
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | FFI: Generate theme variants from JSON config
 -- Input: JSON string with ThemeConfig

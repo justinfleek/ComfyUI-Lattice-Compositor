@@ -64,9 +64,9 @@ import Lattice.Types.LayerDataShapes
   ( ShapeLayerData(..)
   )
 
--- ============================================================================
--- COMPOSITION GETTERS
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                    // composition // getters
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Get compositions that are currently open (in tabs)
 -- Pure function: takes project and open composition IDs, returns compositions
@@ -111,9 +111,9 @@ getActiveCompositionLayers ::
 getActiveCompositionLayers project activeId =
   maybe [] compositionLayers (getActiveComposition project activeId)
 
--- ============================================================================
--- COMPOSITION PROPERTY GETTERS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                        // composition // property // getters
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Get composition width (default: 1024)
 -- Pure function: takes project and active composition ID, returns width
@@ -190,9 +190,9 @@ getCurrentTime project activeId =
         then compositionCurrentFrame comp / fps
         else 0.0
 
--- ============================================================================
--- PROJECT STATE QUERIES
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                               // project // state // queries
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Check if project has source image (hasProject)
 -- Pure function: takes source image string, returns boolean
@@ -201,9 +201,9 @@ hasProject ::
   Bool
 hasProject = maybe False (const True)
 
--- ============================================================================
--- ASSET UTILITIES
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                        // asset // utilities
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Find all asset IDs used in project
 -- Pure function: traverses all compositions and layers, returns set of used asset IDs
@@ -236,7 +236,7 @@ findUsedAssetIds project =
           HS.singleton (pointCloudLayerDataAssetId d)
         -- ShapeLayerData doesn't have assetId (vector-based)
         Just (LayerDataShape _) -> HS.empty
-        -- TODO: Add more layer data types as needed (materials, textures, etc.)
+        --                                                                      // todo
         _ -> HS.empty
     
     -- Collect asset IDs from all layers in all compositions
@@ -276,9 +276,9 @@ getExtensionForAsset asset =
       AssetTypeLUT -> "cube"
       _ -> "bin"
 
--- ============================================================================
--- PROJECT CREATION
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                       // project // creation
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Create default project structure
 -- Pure function: creates a new project with default settings

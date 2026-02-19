@@ -54,9 +54,9 @@ import Lattice.Types.Primitives
     validateNonNegative,
   )
 
--- ============================================================================
--- LAYER SOURCE REPLACEMENT
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                            // layer // source // replacement
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Layer source replacement type
 data LayerSourceReplacementType
@@ -117,9 +117,9 @@ instance FromJSON LayerSourceReplacement where
     data_ <- o .:? "data"
     return (LayerSourceReplacement typ name path id_ assetId data_)
 
--- ============================================================================
--- LAYER CREATION OPTIONS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                              // layer // creation // options
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Options for creating a new layer
 data CreateLayerOptions = CreateLayerOptions
@@ -173,12 +173,12 @@ instance FromJSON CreateLayerOptions where
       Nothing -> return ()
     return (CreateLayerOptions name position size data_ parentId insertIndex)
 
--- ============================================================================
--- LAYER DELETION OPTIONS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                              // layer // deletion // options
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Options for deleting a layer
--- NOTE: onRemoveFromSelection callback is not migrated (side effect, handled at FFI boundary)
+--                                                                      // note
 data DeleteLayerOptions = DeleteLayerOptions
   { deleteLayerOptionsSkipHistory :: Maybe Bool,
     deleteLayerOptionsDeleteChildren :: Maybe Bool
@@ -203,9 +203,9 @@ instance FromJSON DeleteLayerOptions where
     deleteChildren <- o .:? "deleteChildren"
     return (DeleteLayerOptions skipHistory deleteChildren)
 
--- ============================================================================
--- LAYER DUPLICATION OPTIONS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                           // layer // duplication // options
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Options for duplicating a layer
 data DuplicateLayerOptions = DuplicateLayerOptions
@@ -237,9 +237,9 @@ instance FromJSON DuplicateLayerOptions where
     includeChildren <- o .:? "includeChildren"
     return (DuplicateLayerOptions newName offsetPosition includeChildren)
 
--- ============================================================================
--- BATCH OPERATION OPTIONS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                             // batch // operation // options
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Options for sequencing layers
 data SequenceLayersOptions = SequenceLayersOptions
@@ -380,9 +380,9 @@ instance FromJSON ExponentialScaleOptions where
       Nothing -> return ()
     return (ExponentialScaleOptions startScale endScale startFrame endFrame keyframeCount axis)
 
--- ============================================================================
--- TIME MANIPULATION OPTIONS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                           // time // manipulation // options
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Hold in place option for time stretch
 data TimeStretchHoldInPlace
@@ -443,12 +443,12 @@ instance FromJSON TimeStretchOptions where
       then return (TimeStretchOptions stretchFactor holdInPlace reverse_ newStartFrame newEndFrame speed_)
       else fail "TimeStretchOptions: numeric values must be finite and within valid ranges, and endFrame >= startFrame"
 
--- ============================================================================
--- LAYER STORE STATE
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                   // layer // store // state
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Layer store state
--- NOTE: Layers are stored in project.compositions[x].layers
+--                                                                      // note
 -- This store provides methods to access/modify them
 -- Clipboard is the only state managed by the layer store itself
 data LayerState = LayerState

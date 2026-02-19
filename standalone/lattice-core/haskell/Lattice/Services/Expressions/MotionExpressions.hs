@@ -39,9 +39,9 @@ module Lattice.Services.Expressions.MotionExpressions
 import Data.Vector (Vector)
 import qualified Data.Vector as V
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Constants
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Default inertia amplitude
 defaultAmplitude :: Double
@@ -71,9 +71,9 @@ defaultPeriod = 0.3
 maxBounces :: Int
 maxBounces = 10
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Helper Functions
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Ensure amplitude is valid
 safeAmplitude :: Double -> Double
@@ -105,9 +105,9 @@ safePeriod :: Double -> Double
 safePeriod p = if isFinite p && p > 0 then p else defaultPeriod
   where isFinite x = not (isNaN x || isInfinite x)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Inertia Oscillation
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Damped sine wave oscillation for inertia effect.
 --
@@ -140,9 +140,9 @@ inertiaVector :: Vector Double -> Vector Double -> Double -> Double -> Double ->
 inertiaVector values velocities amplitude frequency decay t =
   V.zipWith (\v vel -> v + inertiaOscillation vel amplitude frequency decay t) values velocities
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Bounce Physics
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Calculate bounce position given time and parameters.
 --
@@ -188,9 +188,9 @@ bounceVector values t elasticity gravity =
   let offset = bouncePhysics t elasticity gravity
   in V.map (\v -> v - offset) values
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Elastic Oscillation
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Elastic spring-like oscillation.
 --
@@ -222,9 +222,9 @@ elasticVector values t amplitude period =
   let oscillation = elasticOscillation t amplitude period
   in V.map (+ oscillation) values
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Main API
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Inertia expression for scalar values
 inertia :: Double -> Double -> Double -> Double -> Double -> Double -> Double

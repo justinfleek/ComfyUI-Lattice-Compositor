@@ -52,9 +52,9 @@ import Data.Text (Text)
 import Data.Vector (Vector)
 import Lattice.Primitives
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Enumerations
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 data ExpressionControlType
   = ECTSlider | ECTCheckbox | ECTDropdown | ECTColor | ECTPoint | ECTAngle
@@ -85,9 +85,9 @@ data TemplateAssetType
   | TATTexture | TATMaterial | TATHDRI | TATSVG | TATSprite | TATSpritesheet | TATLUT
   deriving stock (Eq, Show, Generic)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Dropdown
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 data DropdownValue
   = DVString !Text
@@ -99,9 +99,9 @@ data DropdownOption = DropdownOption
   , doValue :: !DropdownValue
   } deriving stock (Eq, Show, Generic)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Expression Control
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 data ExpressionControlConfig = ExpressionControlConfig
   { eccMin          :: !(Maybe FiniteFloat)
@@ -122,9 +122,9 @@ data ExpressionControl = ExpressionControl
   , ecExpanded        :: !Bool
   } deriving stock (Eq, Show, Generic)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Exposed Property
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 data ExposedPropertyConfig = ExposedPropertyConfig
   { epcMin              :: !(Maybe FiniteFloat)
@@ -162,9 +162,9 @@ data ExposedProperty = ExposedProperty
   , epDefaultValue      :: !(Maybe ExposedPropertyDefault)
   } deriving stock (Eq, Show, Generic)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Groups and Comments
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 data PropertyGroup = PropertyGroup
   { pgId       :: !NonEmptyString
@@ -181,9 +181,9 @@ data TemplateComment = TemplateComment
   , tcGroupId :: !(Maybe NonEmptyString)
   } deriving stock (Eq, Show, Generic)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Template Config
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 data TemplateExportSettings = TemplateExportSettings
   { tesIncludeFonts        :: !Bool
@@ -208,9 +208,9 @@ data TemplateConfig = TemplateConfig
   , tcfgModified            :: !NonEmptyString  -- ISO 8601
   } deriving stock (Eq, Show, Generic)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Assets and Fonts
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 data TemplateAsset = TemplateAsset
   { taId        :: !NonEmptyString
@@ -228,9 +228,9 @@ data TemplateFont = TemplateFont
   , tfSource   :: !(Maybe FontSource)
   } deriving stock (Eq, Show, Generic)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Template
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 data SerializedComposition = SerializedComposition
   { scId                    :: !NonEmptyString

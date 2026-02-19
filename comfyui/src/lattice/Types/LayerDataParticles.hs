@@ -96,9 +96,9 @@ import Lattice.Types.Primitives
   , validateNormalized01
   )
 
--- ============================================================================
--- BASIC ENUMS AND TYPES
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                            // basic // enums // and // types
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Emitter shape
 data EmitterShape
@@ -584,9 +584,9 @@ instance FromJSON ParticleModulationProperty where
       "colorB" -> return ParticleModulationPropertyColorB
       _ -> fail "Invalid ParticleModulationProperty"
 
--- ============================================================================
--- CONFIGURATION TYPES
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                    // configuration // types
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Particle LOD config
 data ParticleLODConfig = ParticleLODConfig
@@ -715,9 +715,9 @@ instance FromJSON ParticleVisualizationConfig where
       then return (ParticleVisualizationConfig showHorizon showGrid showAxis gridSize gridDepth)
       else fail "ParticleVisualizationConfig: gridSize and gridDepth must be finite and non-negative"
 
--- ============================================================================
--- EMISSION TYPES
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                         // emission // types
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Depth map emission
 data DepthMapEmission = DepthMapEmission
@@ -875,9 +875,9 @@ instance FromJSON SpriteConfig where
       then return (SpriteConfig enabled mImageUrl isSheet columns rows totalFrames frameRate playMode billboard rotationEnabled rotationSpeed rotationSpeedVariance alignToVelocity)
       else fail "SpriteConfig: numeric values must be finite, non-negative, and within valid ranges"
 
--- ============================================================================
--- PARTICLE EMITTER CONFIG
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                             // particle // emitter // config
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Particle emitter config (very complex with many optional fields)
 data ParticleEmitterConfig = ParticleEmitterConfig
@@ -1046,9 +1046,9 @@ instance FromJSON ParticleEmitterConfig where
       then return (ParticleEmitterConfig id_ name x y mZ direction spread speed speedVar size sizeVar (r, g, b) emissionRate initialBurst lifetime lifetimeVar enabled burstOnBeat burstCount shape shapeRadius shapeWidth shapeHeight shapeDepth shapeInnerRadius emitFromEdge emitFromVolume mSplinePath mDepthMap mMask sprite mConeAngle mConeRadius mConeLength mImageSource mEmissionThreshold mEmitFromMaskEdge mDepthSource mDepthEdgeThreshold mDepthScale mLifespan mStartSize mEndSize mStartColor mEndColor mStartOpacity mEndOpacity mVelocitySpread mMeshVertices mMeshNormals)
       else fail "ParticleEmitterConfig: numeric values must be finite and within valid ranges"
 
--- ============================================================================
--- SYSTEM CONFIG
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                          // system // config
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Particle system layer config
 data ParticleSystemLayerConfig = ParticleSystemLayerConfig
@@ -1094,9 +1094,9 @@ instance FromJSON ParticleSystemLayerConfig where
       then return (ParticleSystemLayerConfig maxParticles gravity windStrength windDirection warmupPeriod respectMask boundaryBehavior friction mTurbulenceFields mSubEmitters mUseGPU)
       else fail "ParticleSystemLayerConfig: numeric values must be finite and within valid ranges"
 
--- ============================================================================
--- FORCE FIELDS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                           // force // fields
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Gravity well config
 data GravityWellConfig = GravityWellConfig
@@ -1184,9 +1184,9 @@ instance FromJSON VortexConfig where
       then return (VortexConfig id_ name x y strength radius rotationSpeed inwardPull enabled)
       else fail "VortexConfig: numeric values must be finite, radius and strength must be non-negative"
 
--- ============================================================================
--- PHYSICS TYPES
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                          // physics // types
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Turbulence field config
 data TurbulenceFieldConfig = TurbulenceFieldConfig
@@ -1372,9 +1372,9 @@ instance FromJSON CollisionConfig where
       then return (CollisionConfig enabled particleCollision particleRadius bounciness friction boundaryEnabled boundaryBehavior boundaryPadding mFloorEnabled mFloorY mFloorBehavior mFloorFriction mCeilingEnabled mCeilingY mPlanes)
       else fail "CollisionConfig: numeric values must be finite and within valid ranges"
 
--- ============================================================================
--- RENDERING TYPES
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                        // rendering // types
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Connection render config
 data ConnectionRenderConfig = ConnectionRenderConfig
@@ -1530,9 +1530,9 @@ instance FromJSON ParticleRenderOptions where
       then return (ParticleRenderOptions blendMode renderTrails trailLength trailOpacityFalloff particleShape glowEnabled glowRadius glowIntensity motionBlur motionBlurStrength motionBlurSamples connections mSpriteEnabled mSpriteImageUrl mSpriteColumns mSpriteRows mSpriteAnimate mSpriteFrameRate mSpriteRandomStart mLODEnabled mLODDistances mLODSizeMultipliers mDOFEnabled mDOFFocusDistance mDOFFocusRange mDOFMaxBlur mShadowsEnabled mCastShadows mReceiveShadows mShadowSoftness mMeshMode mMeshGeometry)
       else fail "ParticleRenderOptions: numeric values must be finite and within valid ranges"
 
--- ============================================================================
--- ADVANCED FEATURES
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                      // advanced // features
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Spring structure
 data SpringStructure = SpringStructure
@@ -1665,9 +1665,9 @@ instance FromJSON SPHFluidConfig where
       then return (SPHFluidConfig enabled preset smoothingRadius restDensity gasConstant viscosity surfaceTension gravity boundaryDamping)
       else fail "SPHFluidConfig: numeric values must be finite and within valid ranges"
 
--- ============================================================================
--- AUDIO TYPES
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                            // audio // types
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Audio binding config
 data AudioBindingConfig = AudioBindingConfig
@@ -1752,9 +1752,9 @@ instance FromJSON AudioParticleMapping where
       then return (AudioParticleMapping feature parameter mEmitterId sensitivity smoothing)
       else fail "AudioParticleMapping: sensitivity and smoothing must be finite and within valid ranges"
 
--- ============================================================================
--- SUB-EMITTERS AND MODULATION
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                                       // sub
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Sub-emitter config
 data SubEmitterConfig = SubEmitterConfig
@@ -1850,9 +1850,9 @@ instance FromJSON ParticleModulationConfig where
       then return (ParticleModulationConfig id_ emitterId property startValue endValue easing)
       else fail "ParticleModulationConfig: startValue and endValue must be finite"
 
--- ============================================================================
--- MAIN PARTICLE LAYER DATA
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                         // main // particle // layer // data
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Particle layer data
 data ParticleLayerData = ParticleLayerData

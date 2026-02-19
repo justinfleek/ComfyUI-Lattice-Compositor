@@ -19,9 +19,9 @@ module Lattice.State.Video
 
 import Lattice.Utils.NumericSafety (ensureFinite)
 
--- ============================================================================
--- CALCULATION FUNCTIONS
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                  // calculation // functions
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Calculate time stretch percentage from video fps and composition fps
 -- Pure function: takes video fps and composition fps, returns stretch percentage

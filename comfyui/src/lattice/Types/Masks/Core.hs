@@ -45,9 +45,9 @@ import Lattice.Types.Animation
 import Lattice.Schema.SharedValidation (validateBoundedArray)
 import Lattice.Types.Primitives (validateFinite, validateNonNegative)
 
--- ============================================================================
--- TRACK MATTE TYPES
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                   // track // matte // types
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Track matte type (uses layer above as matte source)
 data TrackMatteType
@@ -75,9 +75,9 @@ instance FromJSON TrackMatteType where
       t | t == T.pack "luma_inverted" -> return TrackMatteTypeLumaInverted
       _ -> fail "Invalid TrackMatteType"
 
--- ============================================================================
--- MASK MODE
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                              // mask // mode
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Mask mode determines how multiple masks combine
 data MaskMode
@@ -111,9 +111,9 @@ instance FromJSON MaskMode where
       t | t == T.pack "none" -> return MaskModeNone
       _ -> fail "Invalid MaskMode"
 
--- ============================================================================
--- MASK PATH AND VERTICES
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                           // mask // path // and // vertices
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Mask vertex - point with optional bezier handles
 -- Position is relative to layer bounds (0-1 or pixel coordinates)
@@ -180,9 +180,9 @@ instance FromJSON MaskPath where
           else return vs
     return (MaskPath closed vertices)
 
--- ============================================================================
--- LAYER MASK
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                             // layer // mask
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Layer mask - bezier path that clips layer content
 data LayerMask = LayerMask

@@ -2,7 +2,7 @@
 
 -- | Check Banned Patterns
 -- Check for banned patterns across the codebase
--- BANNED: undefined, error, head/tail, unsafeCoerce, ??/|| defaults, ! assertions
+--                                                                    // banned
 --
 -- Exit code: 0 if no violations, 1 if violations found
 module Main where
@@ -50,9 +50,9 @@ main = script $ do
       uiSrcDir = projectRoot </> "ui" </> "src"
   
   violations <- do
-    -- ============================================================================
-    -- HASKELL BANNED PATTERNS
-    -- ============================================================================
+    -- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    --                                             // haskell // banned // patterns
+    -- ════════════════════════════════════════════════════════════════════════════
     echo "Checking Haskell files..."
     
     -- Check for undefined
@@ -88,9 +88,9 @@ main = script $ do
       echo "❌ ERROR: Found 'head' or 'tail' (partial functions) in Haskell code"
       M.mapM_ echo headTailMatches
     
-    -- ============================================================================
-    -- PURESCRIPT BANNED PATTERNS
-    -- ============================================================================
+    -- ════════════════════════════════════════════════════════════════════════════
+    --                                          // purescript // banned // patterns
+    -- ════════════════════════════════════════════════════════════════════════════
     echo "Checking PureScript files..."
     
     -- Check for unsafeCoerce
@@ -104,9 +104,9 @@ main = script $ do
       echo "❌ ERROR: Found 'unsafeCoerce' in PureScript code"
       M.mapM_ echo unsafeCoerceMatches
     
-    -- ============================================================================
-    -- TYPESCRIPT BANNED PATTERNS
-    -- ============================================================================
+    -- ════════════════════════════════════════════════════════════════════════════
+    --                                          // typescript // banned // patterns
+    -- ════════════════════════════════════════════════════════════════════════════
     echo "Checking TypeScript files..."
     
     -- Check for ?? (nullish coalescing as default)

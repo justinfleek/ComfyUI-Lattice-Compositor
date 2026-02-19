@@ -2,7 +2,7 @@
 
 -- | Check File Size
 -- Checks that all files are under 500 lines
--- REQUIRED: All files <500 lines (enforced by architecture)
+--                                                                  // required
 --
 -- Exit code: 0 if no violations, 1 if violations found
 module Main where

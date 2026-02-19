@@ -30,9 +30,9 @@ import Data.Aeson
   )
 import GHC.Generics (Generic)
 
--- ============================================================================
--- TYPES
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                                     // types
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | History State (for pure queries)
 -- Note: We don't store the actual project stack here, just metadata
@@ -51,9 +51,9 @@ instance FromJSON HistoryState where
   parseJSON = withObject "HistoryState" $ \o ->
     HistoryState <$> o .: "index" <*> o .: "stackSize"
 
--- ============================================================================
--- PURE QUERIES (GETTERS)
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                           // pure // queries
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Check if undo is possible
 -- Pure function: takes history state, returns boolean

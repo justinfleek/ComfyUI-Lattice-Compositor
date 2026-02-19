@@ -32,9 +32,9 @@ import Data.String (Pattern(..), split, drop, take)
 import Data.String.CodeUnits as String
 import Lattice.Primitives (RGB, RGBA, FiniteFloat(..), UnitFloat(..), mkUnitFloat, unUnitFloat)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Color Types
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | HSV color (Hue 0-360, Saturation 0-1, Value 0-1)
 type HSV =
@@ -63,9 +63,9 @@ instance Show HexParseResult where
   show (HexOkWithAlpha rgba) = "HexOkWithAlpha " <> show rgba
   show (HexInvalid err) = "HexInvalid " <> err
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Helper Functions
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Clamp value to range
 clamp :: Number -> Number -> Number -> Number
@@ -85,9 +85,9 @@ normalizeHue h =
 clampUnit :: Number -> UnitFloat
 clampUnit n = UnitFloat (clamp 0.0 1.0 n)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Color Space Conversions
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Convert HSV to RGB
 hsvToRgb :: HSV -> RGB
@@ -160,9 +160,9 @@ rgbToHsl { r: UnitFloat rr, g: UnitFloat gg, b: UnitFloat bb } =
           in { h: h', s: s' }
   in { h: normalizeHue h, s: clampUnit s, l: clampUnit l }
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Hex Conversion
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Parse hex color string to RGB
 hexToRgb :: String -> HexParseResult
@@ -258,9 +258,9 @@ hexToHsv hex = case hexToRgb hex of
   HexOkWithAlpha { r, g, b } -> Just (rgbToHsv { r, g, b })
   HexInvalid _ -> Nothing
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Color Manipulation
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Linear interpolation between two RGB colors
 lerpRgb :: RGB -> RGB -> UnitFloat -> RGB
@@ -279,9 +279,9 @@ getContrastColor { r: UnitFloat rr, g: UnitFloat gg, b: UnitFloat bb } =
      then { r: UnitFloat 0.0, g: UnitFloat 0.0, b: UnitFloat 0.0 }          -- black
      else { r: UnitFloat 255.0, g: UnitFloat 255.0, b: UnitFloat 255.0 }    -- white
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Standard Swatches
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Standard color swatch hex values
 standardSwatches :: Array String

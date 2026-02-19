@@ -31,9 +31,9 @@ import Math (abs, max, min) as Math
 import Lattice.Services.ShapeOperations.Point2D as P2D
 import Lattice.Services.ShapeOperations.Generators (BezierVertex, BezierPath, cornerVertex)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Perpendicular Distance
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Calculate perpendicular distance from a point to a line segment.
 perpendicularDistance :: P2D.Point2D -> P2D.Point2D -> P2D.Point2D -> Number
@@ -52,9 +52,9 @@ perpendicularDistance point lineStart lineEnd =
                         }
        in P2D.distance point projection
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Douglas-Peucker Algorithm
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Douglas-Peucker line simplification algorithm.
 douglasPeucker :: Array P2D.Point2D -> Number -> Array P2D.Point2D
@@ -92,9 +92,9 @@ douglasPeucker points tolerance
 rdpSimplify :: Array P2D.Point2D -> Number -> Array P2D.Point2D
 rdpSimplify = douglasPeucker
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Polygon Simplification
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Simplify a closed polygon using Douglas-Peucker.
 simplifyPolygon :: Array P2D.Point2D -> Number -> Array P2D.Point2D
@@ -102,9 +102,9 @@ simplifyPolygon points tolerance
   | length points <= 3 = points
   | otherwise = douglasPeucker points tolerance
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Fit Bezier to Polygon
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Fit smooth Bezier curves to a polygon.
 fitBezierToPolygon :: Array P2D.Point2D -> Boolean -> BezierPath
@@ -149,9 +149,9 @@ fitBezierToPolygon points closed
 
       in { vertices, closed }
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Path Simplification (High-Level)
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Simplify a Bezier path.
 simplifyPath :: BezierPath -> Number -> Boolean -> BezierPath
@@ -164,9 +164,9 @@ simplifyPath path tolerance straightLines
          then { vertices: map cornerVertex simplified, closed: path.closed }
          else fitBezierToPolygon simplified path.closed
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Path Smoothing
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Smooth a path by adjusting handle lengths.
 smoothPath :: BezierPath -> Number -> BezierPath
@@ -203,9 +203,9 @@ smoothPath path amount
 
       in { vertices, closed: path.closed }
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Visvalingam-Whyatt Algorithm
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Calculate area of triangle formed by three points.
 triangleArea :: P2D.Point2D -> P2D.Point2D -> P2D.Point2D -> Number

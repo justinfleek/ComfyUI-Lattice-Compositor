@@ -1,4 +1,4 @@
-// FFI implementation for Lattice.Services.Export.FrameSequence
+//                                                                       // ffi
 // Frame sequence export with ZIP packaging
 
 "use strict";
@@ -14,7 +14,7 @@ async function loadJSZip() {
   return JSZip;
 }
 
-// MIME types for browser formats
+//                                                                      // mime
 const FORMAT_MIME = {
   png: "image/png",
   jpg: "image/jpeg",

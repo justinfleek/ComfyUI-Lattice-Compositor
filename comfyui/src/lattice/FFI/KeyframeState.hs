@@ -29,9 +29,9 @@ import Lattice.State.Keyframe
   )
 import Lattice.State.Keyframe.Evaluation (getPropertyValueAtFrame)
 
--- ============================================================================
--- JSON HELPERS
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                           // json // helpers
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Create success response JSON
 successResponse :: ToJSON a => a -> BSL.ByteString
@@ -45,9 +45,9 @@ errorResponse msg = encode $ object ["status" .= ("error" :: T.Text), "message" 
 jsonToCString :: BSL.ByteString -> IO CString
 jsonToCString = newCString . T.unpack . TE.decodeUtf8 . BSL.toStrict
 
--- ============================================================================
--- HELPER FUNCTIONS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                       // helper // functions
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | FFI: Safe frame validation
 foreign export ccall safe_frame_ffi :: CString -> IO CString
@@ -71,9 +71,9 @@ find_property_by_path_ffi inputCStr = do
       let result = findPropertyByPath layer propertyPath
       jsonToCString (successResponse result)
 
--- ============================================================================
--- QUERY FUNCTIONS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                        // query // functions
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | FFI: Find surrounding keyframes
 foreign export ccall find_surrounding_keyframes_ffi :: CString -> IO CString

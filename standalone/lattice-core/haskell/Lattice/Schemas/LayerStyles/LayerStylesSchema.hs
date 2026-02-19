@@ -63,9 +63,9 @@ module Lattice.Schemas.LayerStyles.LayerStylesSchema
 import GHC.Generics (Generic)
 import Data.Text (Text)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Gradient Type
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Gradient type options
 data GradientType
@@ -82,9 +82,9 @@ gradientTypeToText :: GradientType -> Text
 gradientTypeToText GradientLinear = "linear"
 gradientTypeToText GradientRadial = "radial"
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Glow Technique
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Glow technique options
 data GlowTechnique
@@ -101,9 +101,9 @@ glowTechniqueToText :: GlowTechnique -> Text
 glowTechniqueToText GlowSofter = "softer"
 glowTechniqueToText GlowPrecise = "precise"
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Inner Glow Source
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Inner glow source options
 data InnerGlowSource
@@ -120,9 +120,9 @@ innerGlowSourceToText :: InnerGlowSource -> Text
 innerGlowSourceToText GlowSourceCenter = "center"
 innerGlowSourceToText GlowSourceEdge = "edge"
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Bevel Style
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Bevel style options
 data BevelStyle
@@ -148,9 +148,9 @@ bevelStyleToText BevelEmboss = "emboss"
 bevelStyleToText BevelPillowEmboss = "pillow-emboss"
 bevelStyleToText BevelStrokeEmboss = "stroke-emboss"
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Bevel Technique
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Bevel technique options
 data BevelTechnique
@@ -170,9 +170,9 @@ bevelTechniqueToText BevelSmooth = "smooth"
 bevelTechniqueToText BevelChiselHard = "chisel-hard"
 bevelTechniqueToText BevelChiselSoft = "chisel-soft"
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Bevel Direction
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Bevel direction options
 data BevelDirection
@@ -189,9 +189,9 @@ bevelDirectionToText :: BevelDirection -> Text
 bevelDirectionToText BevelUp = "up"
 bevelDirectionToText BevelDown = "down"
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Gradient Overlay Type
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Gradient overlay type options
 data GradientOverlayType
@@ -217,9 +217,9 @@ gradientOverlayTypeToText OverlayAngle = "angle"
 gradientOverlayTypeToText OverlayReflected = "reflected"
 gradientOverlayTypeToText OverlayDiamond = "diamond"
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Stroke Position
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Stroke position options
 data StrokePosition
@@ -239,9 +239,9 @@ strokePositionToText StrokeOutside = "outside"
 strokePositionToText StrokeInside = "inside"
 strokePositionToText StrokeCenter = "center"
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Stroke Fill Type
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Stroke fill type options
 data StrokeFillType
@@ -261,9 +261,9 @@ strokeFillTypeToText FillColor = "color"
 strokeFillTypeToText FillGradient = "gradient"
 strokeFillTypeToText FillPattern = "pattern"
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Constants
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 maxGradientStops :: Int
 maxGradientStops = 100

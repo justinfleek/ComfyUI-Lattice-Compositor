@@ -19,7 +19,7 @@ import Lattice.Types.Animation
   )
 import Lattice.Types.Primitives (RGBAColor (..), Vec2 (..), Vec3 (..))
 
--- NOTE: EffectInstance.instanceParameters uses AnimatableProperty without type parameter
+--                                                                      // note
 -- This assumes AnimatableProperty PropertyValue - Core.hs may need updating to be explicit
 import Lattice.Types.Effects.Core
   ( EffectDefinition (..),
@@ -102,7 +102,7 @@ createEffectInstance definitionKey =
 
 -- | Create a mesh-deform effect instance with empty pins array
 -- Migrated from ui/src/types/effects.ts createMeshDeformEffectInstance function
--- NOTE: Uses String placeholders for WarpPin - will be updated when MeshWarp types are migrated
+--                                                                      // note
 createMeshDeformEffectInstance :: Maybe MeshDeformEffectInstance
 createMeshDeformEffectInstance =
   case createEffectInstance "mesh-deform" of

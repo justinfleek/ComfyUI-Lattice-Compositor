@@ -39,11 +39,11 @@
 
         in
         {
-          # =================================================================
-          # DEV SHELL - Use this for Lean development
+          # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+          #                                                              // dev // shell
           # Lean/Lake builds are done manually, not through Nix
           # (Lake's non-deterministic builds break Nix's FOD model)
-          # =================================================================
+          # ════════════════════════════════════════════════════════════════════════════
           devShells.default = pkgs.mkShell {
             packages = [
               elan

@@ -17,9 +17,9 @@ module Lattice.State.Layer.Toggle
 import Data.Text (Text)
 import Lattice.Types.Layer (Layer(..))
 
--- ============================================================================
--- TOGGLE OPERATIONS
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                      // toggle // operations
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Toggle locked state for specified layers
 -- Pure function: takes list of layer IDs and layers list, returns new layers list with toggled locked state

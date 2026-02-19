@@ -1,3 +1,3 @@
-// FFI for Lattice.Services.Export.CameraExport.Interpolation
+//                                                                       // ffi
 
 export const floor = (x) => Math.floor(x);

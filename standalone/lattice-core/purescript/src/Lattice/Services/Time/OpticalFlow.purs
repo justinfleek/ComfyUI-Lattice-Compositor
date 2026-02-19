@@ -38,17 +38,17 @@ import Data.Tuple (Tuple(..), snd)
 import Global (infinity)
 import Math (abs, sqrt)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Luminance Calculation
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Calculate luminance from RGB using BT.601 coefficients.
 luminance :: Number -> Number -> Number -> Number
 luminance r g b = r * 0.299 + g * 0.587 + b * 0.114
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Sum of Absolute Differences (SAD)
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Calculate absolute difference between two luminance values.
 pixelSAD :: Number -> Number -> Number
@@ -59,9 +59,9 @@ normalizeSAD :: Number -> Int -> Number
 normalizeSAD _ 0 = infinity
 normalizeSAD totalSAD validPixels = totalSAD / toNumber validPixels
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Block Coordinates
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Calculate block index from pixel coordinates.
 pixelToBlockIndex :: Int -> Int -> Int -> Int -> Int
@@ -84,9 +84,9 @@ inBounds :: Int -> Int -> Int -> Int -> Boolean
 inBounds x y width height =
   x >= 0 && y >= 0 && x < width && y < height
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Motion Vector
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Motion vector (displacement in pixels).
 type MotionVector = { x :: Int, y :: Int }
@@ -100,9 +100,9 @@ motionMagnitude :: MotionVector -> Number
 motionMagnitude mv =
   sqrt (toNumber mv.x * toNumber mv.x + toNumber mv.y * toNumber mv.y)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Motion-Compensated Sampling Coordinates
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Calculate forward-compensated source position.
 forwardSamplePosition :: Number -> Number -> MotionVector -> Number -> Tuple Number Number
@@ -116,9 +116,9 @@ backwardSamplePosition x y mv blend =
   Tuple (x - toNumber mv.x * blend)
         (y - toNumber mv.y * blend)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Search Window
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Generate search offsets for motion estimation.
 searchOffsets :: Int -> Array (Tuple Int Int)
@@ -136,9 +136,9 @@ isValidSearchOffset blockStartX blockStartY dx dy blockSize width height =
      endX <= width &&
      endY <= height
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Best Match Selection
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Update best match if current SAD is lower.
 updateBestMatch :: Tuple MotionVector Number -> MotionVector -> Number -> Tuple MotionVector Number
@@ -151,9 +151,9 @@ updateBestMatch currentBest candidate sad =
 initialBestMatch :: Tuple MotionVector Number
 initialBestMatch = Tuple zeroMotion infinity
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Block Matching Parameters
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Default block size for motion estimation.
 defaultBlockSize :: Int

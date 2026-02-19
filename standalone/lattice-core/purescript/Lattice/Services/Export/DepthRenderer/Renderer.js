@@ -1,4 +1,4 @@
-// FFI for Lattice.Services.Export.DepthRenderer.Renderer
+//                                                                       // ffi
 // Depth map rendering using browser APIs
 
 // Placeholder implementations - actual rendering requires engine context

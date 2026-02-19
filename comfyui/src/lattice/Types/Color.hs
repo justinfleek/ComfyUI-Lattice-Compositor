@@ -56,7 +56,7 @@ module Lattice.Types.Color
   , parseHex
   , rgbToHex
   , rgbaToHex
-  -- CSS parsing
+  --                                                                       // css
   , parseCSSColor
   , rgbToCSS
   , rgbaToCSS
@@ -89,9 +89,9 @@ import Lattice.Utils.NumericSafety
   , ensureFinite
   )
 
--- ============================================================================
--- CORE COLOR TYPES WITH INVARIANTS
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                              // core // color // types // with // invariants
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Hue: 0-360 degrees (wraps around)
 -- Invariant: 0 ≤ h < 360
@@ -189,9 +189,9 @@ data XYZ = XYZ
   }
   deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
--- ============================================================================
--- HERO HUE: 211° LOCK
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                               // hero // hue
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Hero hue constant: 211° (from ono-sendai color scheme)
 -- This is the "hero" color hue used throughout the system
@@ -206,9 +206,9 @@ hslWithHeroHue s l = HSL
   , hslLightness = l
   }
 
--- ============================================================================
--- VALIDATION FUNCTIONS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                   // validation // functions
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Validate and create Hue (wraps around 360)
 validateHue :: Double -> Hue
@@ -234,9 +234,9 @@ validateAlpha a = Alpha (clamp01 (ensureFinite a 1.0))
 validateRGB8 :: Int -> RGB8
 validateRGB8 v = RGB8 (max 0 (min 255 v))
 
--- ============================================================================
--- CONVERSION FUNCTIONS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                   // conversion // functions
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Convert RGB8 to normalized (0-1)
 rgb8ToNorm :: RGB8 -> Double
@@ -387,24 +387,24 @@ rgbToLAB rgb =
 -- | LAB to RGB conversion
 labToRGB :: LAB -> RGB
 labToRGB (LAB l a b) =
-  -- TODO: Implement using LabColorUtils
+  --                                                                      // todo
   RGB (RGB8 0) (RGB8 0) (RGB8 0)
 
 -- | RGB to XYZ conversion
 rgbToXYZ :: RGB -> XYZ
 rgbToXYZ rgb =
-  -- TODO: Implement using ColorProfile.hs
+  --                                                                      // todo
   XYZ { xyzX = 0.0, xyzY = 0.0, xyzZ = 0.0 }
 
 -- | XYZ to RGB conversion
 xyzToRGB :: XYZ -> RGB
 xyzToRGB (XYZ x y z) =
-  -- TODO: Implement using ColorProfile.hs
+  --                                                                      // todo
   RGB (RGB8 0) (RGB8 0) (RGB8 0)
 
--- ============================================================================
--- HEX COLOR PARSING
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                   // hex // color // parsing
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Parse hex digit
 parseHexDigit :: Char -> Maybe Int
@@ -474,9 +474,9 @@ rgbaToHex (RGBA rgb (Alpha a)) =
       aHex = T.pack (printf "%02x" (round (a * 255.0) :: Int))
   in T.init hex <> aHex
 
--- ============================================================================
--- CSS COLOR PARSING
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                   // css // color // parsing
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Parse CSS color (rgb(), rgba(), hsl(), hsla())
 parseCSSColor :: Text -> Either Text RGB
@@ -491,13 +491,13 @@ parseCSSColor s =
 -- | Parse CSS rgb() or rgba() format
 parseCSSRGB :: Text -> Either Text RGB
 parseCSSRGB s =
-  -- TODO: Implement CSS RGB parsing
+  --                                                                      // todo
   Left "CSS RGB parsing not yet implemented"
 
 -- | Parse CSS hsl() or hsla() format
 parseCSSHSL :: Text -> Either Text RGB
 parseCSSHSL s =
-  -- TODO: Implement CSS HSL parsing
+  --                                                                      // todo
   Left "CSS HSL parsing not yet implemented"
 
 -- | Convert RGB to CSS rgb() format
@@ -520,9 +520,9 @@ hslaToCSS :: HSVA -> Text
 hslaToCSS (HSVA (HSV (Hue h) (Saturation s) (Lightness v)) (Alpha a)) =
   "hsla(" <> T.pack (show (round h :: Int)) <> ", " <> T.pack (show (round (s * 100.0) :: Int)) <> "%, " <> T.pack (show (round (v * 100.0) :: Int)) <> "%, " <> T.pack (show a) <> ")"
 
--- ============================================================================
--- TAILWIND COLOR NAMES
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                // tailwind // color // names
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Parse Tailwind color name
 parseTailwindColor :: Text -> Maybe RGB
@@ -531,12 +531,12 @@ parseTailwindColor name =
     "red-500" -> Just (RGB (RGB8 239) (RGB8 68) (RGB8 68))
     "blue-500" -> Just (RGB (RGB8 59) (RGB8 130) (RGB8 246))
     "green-500" -> Just (RGB (RGB8 34) (RGB8 197) (RGB8 94))
-    -- TODO: Add more Tailwind colors
+    --                                                                      // todo
     _ -> Nothing
 
--- ============================================================================
--- COLOR OPERATIONS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                       // color // operations
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Linear interpolation between two colors
 lerpColor :: RGB -> RGB -> Double -> RGB

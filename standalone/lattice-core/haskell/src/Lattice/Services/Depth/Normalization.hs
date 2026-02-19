@@ -31,9 +31,9 @@ module Lattice.Services.Depth.Normalization
   , depthBufferUpdate
   ) where
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Depth Range Normalization
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Calculate safe depth range, avoiding division by zero.
 --   Returns 1.0 if minDepth == maxDepth.
@@ -61,9 +61,9 @@ clampNormalized value
 invertDepth :: Double -> Double
 invertDepth normalized = 1.0 - clampNormalized normalized
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Bit Depth Conversion
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Convert normalized [0, 1] to 8-bit [0, 255].
 toUint8 :: Double -> Int
@@ -85,9 +85,9 @@ fromUint8 value = fromIntegral value / 255.0
 fromUint16 :: Int -> Double
 fromUint16 value = fromIntegral value / 65535.0
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Metric Depth Conversion
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Convert normalized depth to world units.
 --   worldDepth = nearClip + normalized * (farClip - nearClip)
@@ -108,9 +108,9 @@ scaleByFarClip :: Double -> Double -> Double
 scaleByFarClip normalized farClip =
   clampNormalized normalized * farClip
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Complete Depth Conversion Pipeline
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Full depth conversion: world → normalized → inverted (optional) → quantized.
 --   This matches the convertDepthToFormat pipeline.

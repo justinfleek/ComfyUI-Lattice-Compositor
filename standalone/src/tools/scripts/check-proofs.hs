@@ -2,7 +2,7 @@
 
 -- | Check Proofs
 -- Check for proof requirements in Lean4 code
--- BANNED: sorry without TODO, unproven axiom
+--                                                                    // banned
 module Main where
 
 import Aleph.Script

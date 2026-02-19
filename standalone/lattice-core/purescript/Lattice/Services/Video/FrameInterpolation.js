@@ -1,4 +1,4 @@
-// FFI bindings for Lattice.Services.Video.FrameInterpolation
+//                                                                       // ffi
 // Canvas operations and API calls for frame interpolation
 
 // Fetch available interpolation models

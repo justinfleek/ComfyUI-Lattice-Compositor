@@ -80,7 +80,7 @@ function A9(fun, a, b, c, d, e, f, g, h, i) {
 
 
 
-// EQUALITY
+//                                                                  // equality
 
 function _Utils_eq(x, y)
 {
@@ -149,7 +149,7 @@ var _Utils_notEqual = F2(function(a, b) { return !_Utils_eq(a,b); });
 
 
 
-// COMPARISONS
+//                                                               // comparisons
 
 // Code in Generate/JavaScript.hs, Basics.js, and List.js depends on
 // the particular integer values assigned to LT, EQ, and GT.
@@ -201,7 +201,7 @@ var _Utils_compare = F2(function(x, y)
 });
 
 
-// COMMON VALUES
+//                                                          // common // values
 
 var _Utils_Tuple0 = 0;
 var _Utils_Tuple0_UNUSED = { $: '#0' };
@@ -216,7 +216,7 @@ function _Utils_chr(c) { return c; }
 function _Utils_chr_UNUSED(c) { return new String(c); }
 
 
-// RECORDS
+//                                                                   // records
 
 function _Utils_update(oldRecord, updatedFields)
 {
@@ -236,7 +236,7 @@ function _Utils_update(oldRecord, updatedFields)
 }
 
 
-// APPEND
+//                                                                    // append
 
 var _Utils_append = F2(_Utils_ap);
 
@@ -497,7 +497,7 @@ var _JsArray_appendN = F3(function(n, dest, source)
 
 
 
-// LOG
+//                                                                       // log
 
 var _Debug_log = F2(function(tag, value)
 {
@@ -511,7 +511,7 @@ var _Debug_log_UNUSED = F2(function(tag, value)
 });
 
 
-// TODOS
+//                                                                     // todos
 
 function _Debug_todo(moduleName, region)
 {
@@ -528,7 +528,7 @@ function _Debug_todoCase(moduleName, region, value)
 }
 
 
-// TO STRING
+//                                                              // to // string
 
 function _Debug_toString(value)
 {
@@ -717,7 +717,7 @@ function _Debug_toHexDigit(n)
 }
 
 
-// CRASH
+//                                                                     // crash
 
 
 function _Debug_crash(identifier)
@@ -793,7 +793,7 @@ function _Debug_regionToString(region)
 
 
 
-// MATH
+//                                                                      // math
 
 var _Basics_add = F2(function(a, b) { return a + b; });
 var _Basics_sub = F2(function(a, b) { return a - b; });
@@ -817,7 +817,7 @@ var _Basics_modBy = F2(function(modulus, x)
 });
 
 
-// TRIGONOMETRY
+//                                                              // trigonometry
 
 var _Basics_pi = Math.PI;
 var _Basics_e = Math.E;
@@ -830,7 +830,7 @@ var _Basics_atan = Math.atan;
 var _Basics_atan2 = F2(Math.atan2);
 
 
-// MORE MATH
+//                                                              // more // math
 
 function _Basics_toFloat(x) { return x; }
 function _Basics_truncate(n) { return n | 0; }
@@ -844,7 +844,7 @@ var _Basics_log = Math.log;
 var _Basics_isNaN = isNaN;
 
 
-// BOOLEANS
+//                                                                  // booleans
 
 function _Basics_not(bool) { return !bool; }
 var _Basics_and = F2(function(a, b) { return a && b; });
@@ -1111,7 +1111,7 @@ var _String_indexes = F2(function(sub, str)
 });
 
 
-// TO STRING
+//                                                              // to // string
 
 function _String_fromNumber(number)
 {
@@ -1119,7 +1119,7 @@ function _String_fromNumber(number)
 }
 
 
-// INT CONVERSIONS
+//                                                        // int // conversions
 
 function _String_toInt(str)
 {
@@ -1143,7 +1143,7 @@ function _String_toInt(str)
 }
 
 
-// FLOAT CONVERSIONS
+//                                                      // float // conversions
 
 function _String_toFloat(s)
 {
@@ -1220,7 +1220,7 @@ function _Json_errorToString(error)
 //*/
 
 
-// CORE DECODERS
+//                                                          // core // decoders
 
 function _Json_succeed(msg)
 {
@@ -1337,7 +1337,7 @@ function _Json_oneOf(decoders)
 }
 
 
-// DECODING OBJECTS
+//                                                       // decoding // objects
 
 var _Json_map1 = F2(function(f, d1)
 {
@@ -1380,7 +1380,7 @@ var _Json_map8 = F9(function(f, d1, d2, d3, d4, d5, d6, d7, d8)
 });
 
 
-// DECODE
+//                                                                    // decode
 
 var _Json_runOnString = F2(function(decoder, string)
 {
@@ -1455,7 +1455,7 @@ function _Json_runHelp(decoder, value)
 			}
 
 			var keyValuePairs = _List_Nil;
-			// TODO test perf of Object.keys and switch when support is good enough
+			//                                                                      // todo
 			for (var key in value)
 			{
 				if (value.hasOwnProperty(key))
@@ -1543,7 +1543,7 @@ function _Json_expecting(type, value)
 }
 
 
-// EQUALITY
+//                                                                  // equality
 
 function _Json_equality(x, y)
 {
@@ -1609,7 +1609,7 @@ function _Json_listEquality(aDecoders, bDecoders)
 }
 
 
-// ENCODE
+//                                                                    // encode
 
 var _Json_encode = F2(function(indentLevel, value)
 {
@@ -1644,7 +1644,7 @@ var _Json_encodeNull = _Json_wrap(null);
 
 
 
-// TASKS
+//                                                                     // tasks
 
 function _Scheduler_succeed(value)
 {
@@ -1698,7 +1698,7 @@ function _Scheduler_receive(callback)
 }
 
 
-// PROCESSES
+//                                                                 // processes
 
 var _Scheduler_guid = 0;
 
@@ -1849,7 +1849,7 @@ function _Process_sleep(time)
 
 
 
-// PROGRAMS
+//                                                                  // programs
 
 
 var _Platform_worker = F4(function(impl, flagDecoder, debugMetadata, args)
@@ -1866,7 +1866,7 @@ var _Platform_worker = F4(function(impl, flagDecoder, debugMetadata, args)
 
 
 
-// INITIALIZE A PROGRAM
+//                                                // initialize // a // program
 
 
 function _Platform_initialize(flagDecoder, args, init, update, subscriptions, stepperBuilder)
@@ -1893,7 +1893,7 @@ function _Platform_initialize(flagDecoder, args, init, update, subscriptions, st
 
 
 
-// TRACK PRELOADS
+//                                                         // track // preloads
 //
 // This is used by code in elm/browser and elm/http
 // to register any HTTP requests that are triggered by init.
@@ -1910,7 +1910,7 @@ function _Platform_registerPreload(url)
 
 
 
-// EFFECT MANAGERS
+//                                                        // effect // managers
 
 
 var _Platform_effectManagers = {};
@@ -1984,7 +1984,7 @@ function _Platform_instantiateManager(info, sendToApp)
 
 
 
-// ROUTING
+//                                                                   // routing
 
 
 var _Platform_sendToApp = F2(function(router, msg)
@@ -2007,7 +2007,7 @@ var _Platform_sendToSelf = F2(function(router, msg)
 
 
 
-// BAGS
+//                                                                      // bags
 
 
 function _Platform_leaf(home)
@@ -2043,7 +2043,7 @@ var _Platform_map = F2(function(tagger, bag)
 
 
 
-// PIPE BAGS INTO EFFECT MANAGERS
+//                                // pipe // bags // into // effect // managers
 //
 // Effects must be queued!
 //
@@ -2166,7 +2166,7 @@ function _Platform_insert(isCmd, newEffect, effects)
 
 
 
-// PORTS
+//                                                                     // ports
 
 
 function _Platform_checkPortName(name)
@@ -2179,7 +2179,7 @@ function _Platform_checkPortName(name)
 
 
 
-// OUTGOING PORTS
+//                                                         // outgoing // ports
 
 
 function _Platform_outgoingPort(name, converter)
@@ -2202,7 +2202,7 @@ function _Platform_setupOutgoingPort(name)
 	var subs = [];
 	var converter = _Platform_effectManagers[name].u;
 
-	// CREATE MANAGER
+	//                                                         // create // manager
 
 	var init = _Process_sleep(0);
 
@@ -2222,7 +2222,7 @@ function _Platform_setupOutgoingPort(name)
 		return init;
 	});
 
-	// PUBLIC API
+	//                                                             // public // api
 
 	function subscribe(callback)
 	{
@@ -2249,7 +2249,7 @@ function _Platform_setupOutgoingPort(name)
 
 
 
-// INCOMING PORTS
+//                                                         // incoming // ports
 
 
 function _Platform_incomingPort(name, converter)
@@ -2278,7 +2278,7 @@ function _Platform_setupIncomingPort(name, sendToApp)
 	var subs = _List_Nil;
 	var converter = _Platform_effectManagers[name].u;
 
-	// CREATE MANAGER
+	//                                                         // create // manager
 
 	var init = _Scheduler_succeed(null);
 
@@ -2289,7 +2289,7 @@ function _Platform_setupIncomingPort(name, sendToApp)
 		return init;
 	});
 
-	// PUBLIC API
+	//                                                             // public // api
 
 	function send(incomingValue)
 	{
@@ -2309,7 +2309,7 @@ function _Platform_setupIncomingPort(name, sendToApp)
 
 
 
-// EXPORT ELM MODULES
+//                                                  // export // elm // modules
 //
 // Have DEBUG and PROD versions so that we can (1) give nicer errors in
 // debug mode and (2) not pay for the bits needed for that in prod mode.
@@ -2360,7 +2360,7 @@ function _Platform_mergeExportsDebug(moduleName, obj, exports)
 
 
 
-// HELPERS
+//                                                                   // helpers
 
 
 var _VirtualDom_divertHrefToApp;
@@ -2375,7 +2375,7 @@ function _VirtualDom_appendChild(parent, child)
 
 var _VirtualDom_init = F4(function(virtualNode, flagDecoder, debugMetadata, args)
 {
-	// NOTE: this function needs _Platform_export available to work
+	//                                                                      // note
 
 	/**/
 	var node = args['node'];
@@ -2394,7 +2394,7 @@ var _VirtualDom_init = F4(function(virtualNode, flagDecoder, debugMetadata, args
 
 
 
-// TEXT
+//                                                                      // text
 
 
 function _VirtualDom_text(string)
@@ -2407,7 +2407,7 @@ function _VirtualDom_text(string)
 
 
 
-// NODE
+//                                                                      // node
 
 
 var _VirtualDom_nodeNS = F2(function(namespace, tag)
@@ -2438,7 +2438,7 @@ var _VirtualDom_node = _VirtualDom_nodeNS(undefined);
 
 
 
-// KEYED NODE
+//                                                             // keyed // node
 
 
 var _VirtualDom_keyedNodeNS = F2(function(namespace, tag)
@@ -2469,7 +2469,7 @@ var _VirtualDom_keyedNode = _VirtualDom_keyedNodeNS(undefined);
 
 
 
-// CUSTOM
+//                                                                    // custom
 
 
 function _VirtualDom_custom(factList, model, render, diff)
@@ -2485,7 +2485,7 @@ function _VirtualDom_custom(factList, model, render, diff)
 
 
 
-// MAP
+//                                                                       // map
 
 
 var _VirtualDom_map = F2(function(tagger, node)
@@ -2500,7 +2500,7 @@ var _VirtualDom_map = F2(function(tagger, node)
 
 
 
-// LAZY
+//                                                                      // lazy
 
 
 function _VirtualDom_thunk(refs, thunk)
@@ -2571,7 +2571,7 @@ var _VirtualDom_lazy8 = F9(function(func, a, b, c, d, e, f, g, h)
 
 
 
-// FACTS
+//                                                                     // facts
 
 
 var _VirtualDom_on = F2(function(key, handler)
@@ -2617,7 +2617,7 @@ var _VirtualDom_attributeNS = F3(function(namespace, key, value)
 
 
 
-// XSS ATTACK VECTOR CHECKS
+//                                         // xss // attack // vector // checks
 //
 // For some reason, tabs can appear in href protocols and it still works.
 // So '\tjava\tSCRIPT:alert("!!!")' and 'javascript:alert("!!!")' are the same
@@ -2676,7 +2676,7 @@ function _VirtualDom_noJavaScriptOrHtmlJson(value)
 
 
 
-// MAP FACTS
+//                                                              // map // facts
 
 
 var _VirtualDom_mapAttribute = F2(function(func, attr)
@@ -2727,7 +2727,7 @@ var _VirtualDom_mapEventRecord = F2(function(func, record)
 
 
 
-// ORGANIZE FACTS
+//                                                         // organize // facts
 
 
 function _VirtualDom_organizeFacts(factList)
@@ -2766,7 +2766,7 @@ function _VirtualDom_addClass(object, key, newClass)
 
 
 
-// RENDER
+//                                                                    // render
 
 
 function _VirtualDom_render(vNode, eventNode)
@@ -2833,7 +2833,7 @@ function _VirtualDom_render(vNode, eventNode)
 
 
 
-// APPLY FACTS
+//                                                            // apply // facts
 
 
 function _VirtualDom_applyFacts(domNode, eventNode, facts)
@@ -2860,7 +2860,7 @@ function _VirtualDom_applyFacts(domNode, eventNode, facts)
 
 
 
-// APPLY STYLES
+//                                                           // apply // styles
 
 
 function _VirtualDom_applyStyles(domNode, styles)
@@ -2875,7 +2875,7 @@ function _VirtualDom_applyStyles(domNode, styles)
 
 
 
-// APPLY ATTRS
+//                                                            // apply // attrs
 
 
 function _VirtualDom_applyAttrs(domNode, attrs)
@@ -2891,7 +2891,7 @@ function _VirtualDom_applyAttrs(domNode, attrs)
 
 
 
-// APPLY NAMESPACED ATTRS
+//                                              // apply // namespaced // attrs
 
 
 function _VirtualDom_applyAttrsNS(domNode, nsAttrs)
@@ -2910,7 +2910,7 @@ function _VirtualDom_applyAttrsNS(domNode, nsAttrs)
 
 
 
-// APPLY EVENTS
+//                                                           // apply // events
 
 
 function _VirtualDom_applyEvents(domNode, eventNode, events)
@@ -2951,7 +2951,7 @@ function _VirtualDom_applyEvents(domNode, eventNode, events)
 
 
 
-// PASSIVE EVENTS
+//                                                         // passive // events
 
 
 var _VirtualDom_passiveSupported;
@@ -2966,7 +2966,7 @@ catch(e) {}
 
 
 
-// EVENT HANDLERS
+//                                                         // event // handlers
 
 
 function _VirtualDom_makeCallback(eventNode, initialHandler)
@@ -3028,10 +3028,10 @@ function _VirtualDom_equalEvents(x, y)
 
 
 
-// DIFF
+//                                                                      // diff
 
 
-// TODO: Should we do patches like in iOS?
+//                                                                      // todo
 //
 // type Patch
 //   = At Int Patch
@@ -3223,10 +3223,10 @@ function _VirtualDom_diffNodes(x, y, patches, index, diffKids)
 
 
 
-// DIFF FACTS
+//                                                             // diff // facts
 
 
-// TODO Instead of creating a new diff object, it's possible to just test if
+//                                                                 // todo // i
 // there *is* a diff. During the actual patch, do the diff again and make the
 // modifications directly. This way, there's no new allocations. Worth it?
 function _VirtualDom_diffFacts(x, y, category)
@@ -3295,7 +3295,7 @@ function _VirtualDom_diffFacts(x, y, category)
 
 
 
-// DIFF KIDS
+//                                                              // diff // kids
 
 
 function _VirtualDom_diffKids(xParent, yParent, patches, index)
@@ -3306,7 +3306,7 @@ function _VirtualDom_diffKids(xParent, yParent, patches, index)
 	var xLen = xKids.length;
 	var yLen = yKids.length;
 
-	// FIGURE OUT IF THERE ARE INSERTS OR REMOVALS
+	//          // figure // out // if // there // are // inserts // or // removals
 
 	if (xLen > yLen)
 	{
@@ -3323,7 +3323,7 @@ function _VirtualDom_diffKids(xParent, yParent, patches, index)
 		});
 	}
 
-	// PAIRWISE DIFF EVERYTHING ELSE
+	//                                    // pairwise // diff // everything // else
 
 	for (var minLen = xLen < yLen ? xLen : yLen, i = 0; i < minLen; i++)
 	{
@@ -3335,7 +3335,7 @@ function _VirtualDom_diffKids(xParent, yParent, patches, index)
 
 
 
-// KEYED DIFF
+//                                                             // keyed // diff
 
 
 function _VirtualDom_diffKeyedKids(xParent, yParent, patches, rootIndex)
@@ -3499,7 +3499,7 @@ function _VirtualDom_diffKeyedKids(xParent, yParent, patches, rootIndex)
 
 
 
-// CHANGES FROM KEYED DIFF
+//                                          // changes // from // keyed // diff
 
 
 var _VirtualDom_POSTFIX = '_elmW6BL';
@@ -3587,7 +3587,7 @@ function _VirtualDom_removeNode(changes, localPatches, key, vnode, index)
 
 
 
-// ADD DOM NODES
+//                                                       // add // dom // nodes
 //
 // Each DOM node has an "index" assigned in order of traversal. It is important
 // to minimize our crawl over the actual DOM, so these indexes (along with the
@@ -3694,7 +3694,7 @@ function _VirtualDom_addDomNodesHelp(domNode, vNode, patches, i, low, high, even
 
 
 
-// APPLY PATCHES
+//                                                          // apply // patches
 
 
 function _VirtualDom_applyPatches(rootDomNode, oldVirtualNode, patches, eventNode)
@@ -3871,7 +3871,7 @@ function _VirtualDom_applyPatchReorderEndInsertsHelp(endInserts, patch)
 
 function _VirtualDom_virtualize(node)
 {
-	// TEXT NODES
+	//                                                             // text // nodes
 
 	if (node.nodeType === 3)
 	{
@@ -3879,7 +3879,7 @@ function _VirtualDom_virtualize(node)
 	}
 
 
-	// WEIRD NODES
+	//                                                            // weird // nodes
 
 	if (node.nodeType !== 1)
 	{
@@ -3887,7 +3887,7 @@ function _VirtualDom_virtualize(node)
 	}
 
 
-	// ELEMENT NODES
+	//                                                          // element // nodes
 
 	var attrList = _List_Nil;
 	var attrs = node.attributes;
@@ -3933,7 +3933,7 @@ function _VirtualDom_dekey(keyedNode)
 
 
 
-// ELEMENT
+//                                                                   // element
 
 
 var _Debugger_element;
@@ -3969,7 +3969,7 @@ var _Browser_element = _Debugger_element || F4(function(impl, flagDecoder, debug
 
 
 
-// DOCUMENT
+//                                                                  // document
 
 
 var _Debugger_document;
@@ -4005,7 +4005,7 @@ var _Browser_document = _Debugger_document || F4(function(impl, flagDecoder, deb
 
 
 
-// ANIMATION
+//                                                                 // animation
 
 
 var _Browser_cancelAnimationFrame =
@@ -4048,7 +4048,7 @@ function _Browser_makeAnimator(model, draw)
 
 
 
-// APPLICATION
+//                                                               // application
 
 
 function _Browser_application(impl)
@@ -4125,7 +4125,7 @@ var _Browser_replaceUrl = F2(function(key, url)
 
 
 
-// GLOBAL EVENTS
+//                                                          // global // events
 
 
 var _Browser_fakeNode = { addEventListener: function() {}, removeEventListener: function() {} };
@@ -4150,7 +4150,7 @@ var _Browser_decodeEvent = F2(function(decoder, event)
 
 
 
-// PAGE VISIBILITY
+//                                                        // page // visibility
 
 
 function _Browser_visibilityInfo()
@@ -4171,7 +4171,7 @@ function _Browser_visibilityInfo()
 
 
 
-// ANIMATION FRAMES
+//                                                       // animation // frames
 
 
 function _Browser_rAF()
@@ -4199,7 +4199,7 @@ function _Browser_now()
 
 
 
-// DOM STUFF
+//                                                              // dom // stuff
 
 
 function _Browser_withNode(id, doStuff)
@@ -4228,7 +4228,7 @@ function _Browser_withWindow(doStuff)
 }
 
 
-// FOCUS and BLUR
+//                                                                     // focus
 
 
 var _Browser_call = F2(function(functionName, id)
@@ -4241,7 +4241,7 @@ var _Browser_call = F2(function(functionName, id)
 
 
 
-// WINDOW VIEWPORT
+//                                                        // window // viewport
 
 
 function _Browser_getViewport()
@@ -4278,7 +4278,7 @@ var _Browser_setViewport = F2(function(x, y)
 
 
 
-// ELEMENT VIEWPORT
+//                                                       // element // viewport
 
 
 function _Browser_getViewportOf(id)
@@ -4313,7 +4313,7 @@ var _Browser_setViewportOf = F3(function(id, x, y)
 
 
 
-// ELEMENT
+//                                                                   // element
 
 
 function _Browser_getElement(id)
@@ -4343,7 +4343,7 @@ function _Browser_getElement(id)
 
 
 
-// LOAD and RELOAD
+//                                                                      // load
 
 
 function _Browser_reload(skipCache)
@@ -5072,7 +5072,7 @@ function _WebGL_setUniforms(setters, values) {
   });
 }
 
-// VIRTUAL-DOM WIDGET
+//                                                                   // virtual
 
 // eslint-disable-next-line no-unused-vars
 var _WebGL_toHtml = F3(function (options, factList, entities) {

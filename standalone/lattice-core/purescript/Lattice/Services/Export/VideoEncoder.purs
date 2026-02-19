@@ -39,9 +39,9 @@ import Data.Show.Generic (genericShow)
 import Data.Eq.Generic (genericEq)
 import Foreign (Foreign)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Types
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Video codec options
 data VideoCodec
@@ -91,9 +91,9 @@ type EncodedVideoResult =
   , size :: Int
   }
 
---------------------------------------------------------------------------------
--- FFI Types
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
+--                                                                  // ffi // t
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Opaque handle to WebCodecs encoder
 foreign import data VideoEncoderHandle :: Type
@@ -101,9 +101,9 @@ foreign import data VideoEncoderHandle :: Type
 -- | Opaque handle to frame data (ImageData, Canvas, etc.)
 foreign import data FrameData :: Type
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Support Check
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Check if WebCodecs API is supported
 foreign import isWebCodecsSupported :: Effect Boolean
@@ -114,9 +114,9 @@ foreign import getSupportedCodecsImpl :: EffectFnAff (Array String)
 getSupportedCodecs :: Aff (Array String)
 getSupportedCodecs = fromEffectFnAff getSupportedCodecsImpl
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Encoder Operations
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Create a new encoder instance
 foreign import createEncoderImpl :: Foreign -> Effect VideoEncoderHandle
@@ -149,9 +149,9 @@ foreign import cancelEncoderImpl :: VideoEncoderHandle -> Effect Unit
 cancelEncoder :: VideoEncoderHandle -> Effect Unit
 cancelEncoder = cancelEncoderImpl
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Convenience Functions
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Encode a sequence of frames to video
 foreign import encodeFrameSequenceImpl
@@ -171,9 +171,9 @@ encodeFrameSequence frames config onProgress =
 -- | Download encoded video to user's device
 foreign import downloadVideo :: EncodedVideoResult -> String -> Effect Unit
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Internal Helpers
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Convert codec to string
 codecToString :: VideoCodec -> String

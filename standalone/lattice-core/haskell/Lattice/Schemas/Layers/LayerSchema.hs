@@ -32,9 +32,9 @@ module Lattice.Schemas.Layers.LayerSchema
 import GHC.Generics (Generic)
 import Data.Text (Text)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Layer Type
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | All layer types supported by the compositor
 data LayerType
@@ -135,9 +135,9 @@ getModernReplacement LayerNull = Just LayerControl
 getModernReplacement LayerAdjustment = Just LayerEffectLayer
 getModernReplacement _ = Nothing
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Constants
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 maxMasksPerLayer :: Int
 maxMasksPerLayer = 100

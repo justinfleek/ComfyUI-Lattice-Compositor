@@ -27,9 +27,9 @@ import Lattice.Types.Transform
   , Position2DOr3D(..)
   )
 
--- ============================================================================
--- HIERARCHY OPERATIONS
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                   // hierarchy // operations
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Set a layer's parent for parenting/hierarchy
 -- Pure function: takes layer ID, parent ID (or Nothing to unparent), and layers list

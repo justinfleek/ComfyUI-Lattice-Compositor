@@ -1,4 +1,4 @@
-// FFI stubs for Lattice.Services.RenderQueue.Manager.Types
+//                                                                       // ffi
 "use strict";
 
 export const now = function () {

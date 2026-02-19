@@ -4,9 +4,9 @@ from .types import JSONValue, PreprocessorCategory
 
 # Part 2: EDGE, LINEART, SCRIBBLE, SEGMENTATION, OTHER
 REGISTRY_PART2: dict[str, dict[str, JSONValue]] = {
-  # ========================================================================
-  # EDGE (from comfyui_controlnet_aux - Fannovel16)
-  # ========================================================================
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  #                                                                      // edge
+  # ════════════════════════════════════════════════════════════════════════════
   "canny": {
     "node_class": "CannyEdgePreprocessor",
     "display_name": "Canny Edge",
@@ -85,9 +85,9 @@ REGISTRY_PART2: dict[str, dict[str, JSONValue]] = {
     },
     "outputs": ["IMAGE"],
   },
-  # ========================================================================
-  # LINEART (from comfyui_controlnet_aux - Fannovel16)
-  # ========================================================================
+  # ════════════════════════════════════════════════════════════════════════════
+  #                                                                   // lineart
+  # ════════════════════════════════════════════════════════════════════════════
   "lineart": {
     "node_class": "LineArtPreprocessor",
     "display_name": "Lineart",
@@ -174,9 +174,9 @@ REGISTRY_PART2: dict[str, dict[str, JSONValue]] = {
     },
     "outputs": ["IMAGE"],
   },
-  # ========================================================================
-  # SCRIBBLE (from comfyui_controlnet_aux - Fannovel16)
-  # ========================================================================
+  # ════════════════════════════════════════════════════════════════════════════
+  #                                                                  // scribble
+  # ════════════════════════════════════════════════════════════════════════════
   "scribble_hed": {
     "node_class": "ScribblePreprocessor",
     "display_name": "Scribble (HED)",
@@ -222,9 +222,9 @@ REGISTRY_PART2: dict[str, dict[str, JSONValue]] = {
     },
     "outputs": ["IMAGE"],
   },
-  # ========================================================================
-  # SEGMENTATION (from comfyui_controlnet_aux - Fannovel16)
-  # ========================================================================
+  # ════════════════════════════════════════════════════════════════════════════
+  #                                                              // segmentation
+  # ════════════════════════════════════════════════════════════════════════════
   "sam": {
     "node_class": "SAMPreprocessor",
     "display_name": "Segment Anything (SAM)",
@@ -277,9 +277,9 @@ REGISTRY_PART2: dict[str, dict[str, JSONValue]] = {
     },
     "outputs": ["IMAGE"],
   },
-  # ========================================================================
-  # OTHER (from comfyui_controlnet_aux - Fannovel16)
-  # ========================================================================
+  # ════════════════════════════════════════════════════════════════════════════
+  #                                                                     // other
+  # ════════════════════════════════════════════════════════════════════════════
   "color_palette": {
     "node_class": "ColorPreprocessor",
     "display_name": "Color Palette",

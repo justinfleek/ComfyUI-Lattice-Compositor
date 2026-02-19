@@ -25,9 +25,9 @@ import Data.Text (Text)
 import Lattice.Utils.NumericSafety (isFinite)
 import qualified Data.Text as T
 
--- ============================================================================
--- ZOOM
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                                      // zoom
+-- ════════════════════════════════════════════════════════════════════════════
 
 minZoom, maxZoom :: Double
 minZoom = 0.1
@@ -56,9 +56,9 @@ setZoomChecked z
   | z <= 0 = Left $ "Invalid zoom: must be positive (" <> T.pack (show z) <> ")"
   | otherwise = Right (clampZoom z)
 
--- ============================================================================
--- FIT / CENTER
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                                       // fit
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Fit zoom with padding (e.g. 0.85). Returns Nothing if any dimension <= 0.
 fitZoomWithPadding
@@ -93,9 +93,9 @@ viewportTransformFromFit compW compH viewW viewH padding = do
       panY = (viewH - scaledH) / 2
   pure [fitZ, 0, 0, fitZ, panX, panY]
 
--- ============================================================================
--- COORDINATE CONVERSION
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                  // coordinate // conversion
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Viewport transform: [scaleX, skewX, skewY, scaleY, panX, panY]
 -- Convert screen (pixel) to scene coordinates.

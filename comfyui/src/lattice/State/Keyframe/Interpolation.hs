@@ -32,9 +32,9 @@ import Lattice.Types.Layer (Layer(..))
 import Lattice.Types.Primitives (validateFinite)
 import Lattice.Types.Transform (LayerTransform(..))
 
--- ============================================================================
--- HELPER FUNCTIONS FOR PROPERTY UPDATES
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                         // helper // functions // for // property // updates
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Update a keyframe in a property
 -- Pure function: takes property, keyframe ID, and update function
@@ -133,9 +133,9 @@ updatePropertyInLayer layer propertyPath updateFunc =
                         else
                           Nothing
 
--- ============================================================================
--- KEYFRAME INTERPOLATION
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                 // keyframe // interpolation
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Set keyframe interpolation type
 -- Pure function: takes layer ID, property path, keyframe ID, interpolation type, and layers list
@@ -229,9 +229,9 @@ setKeyframeControlMode targetLayerId propertyPath targetKeyframeId controlMode l
           in
             Right updatedLayers
 
--- ============================================================================
--- HANDLE WITH CONTROL MODE (BREAK HANDLES)
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                         // handle // with // control // mode
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Calculate handle length (magnitude)
 handleLength :: BezierHandle -> Double

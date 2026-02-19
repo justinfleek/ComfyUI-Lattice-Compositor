@@ -66,9 +66,9 @@ import Data.Tuple (Tuple(..))
 import Global (infinity, isFinite)
 import Math (abs)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Types
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Screen bounds rectangle.
 type ScreenBounds =
@@ -170,9 +170,9 @@ drMinDepth r = r.minDepth
 drMaxDepth :: DepthResult -> Number
 drMaxDepth r = r.maxDepth
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Z-Buffer Initialization
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Initial depth value (far clip).
 initDepth :: Number -> Number
@@ -182,9 +182,9 @@ initDepth farClip = farClip
 initialMinMax :: Tuple Number Number
 initialMinMax = Tuple infinity (-infinity)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Depth Testing
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Test if new depth is closer (smaller) than current.
 isCloser :: Number -> Number -> Boolean
@@ -199,9 +199,9 @@ updateDepth newDepth currentDepth =
 updateMinMax :: Number -> Number -> Number -> Tuple Number Number
 updateMinMax depth minD maxD = Tuple (min minD depth) (max maxD depth)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Layer Depth Calculation
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Calculate relative depth from camera.
 --   relativeDepth = |layerZ - cameraZ|
@@ -219,9 +219,9 @@ calculateLayerDepth layerZ cameraZ nearClip farClip =
   let relative = relativeDepth layerZ cameraZ
   in clampToClipRange relative nearClip farClip
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Screen Bounds Calculation
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Calculate final layer dimensions with scale.
 scaledDimensions :: Number -> Number -> Number -> Number -> Tuple Number Number
@@ -263,9 +263,9 @@ calculateScreenBounds transform layerWidth layerHeight screenWidth screenHeight 
                                 screenWidth screenHeight
   in clipToScreen screenX screenY finalWidth finalHeight screenWidth screenHeight
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Pixel Index Calculation
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Calculate linear pixel index from 2D coordinates.
 pixelIndex :: Int -> Int -> Int -> Int
@@ -284,9 +284,9 @@ fillBounds bounds screenWidth screenHeight =
       endY = min screenHeight (floor (bounds.y + bounds.height) + 1)
   in { startX, startY, endX, endY }
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Circular Splat (for Particles)
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Check if point is within circular radius (for particle splats).
 inCircle :: Int -> Int -> Int -> Boolean
@@ -298,9 +298,9 @@ splatRadius particleSize =
   let half = particleSize / 2.0
   in if half < 1.0 then 1 else floor half
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Depth Map Sampling
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Sample depth from depth map at UV coordinates.
 --   Maps bounds-relative position to depth map coordinates.
@@ -320,9 +320,9 @@ normalizedToWorld :: Number -> Number -> Number -> Number
 normalizedToWorld normalized nearClip farClip =
   nearClip + normalized * (farClip - nearClip)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Result Validation
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Validate and normalize min/max depth result.
 --   Handles empty scenes and ensures minDepth <= maxDepth.

@@ -30,9 +30,9 @@ module Lattice.Services.Time.FrameBlending
   , needsBlending
   ) where
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Timewarp Methods
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Timewarp interpolation method.
 data TimewarpMethod
@@ -41,9 +41,9 @@ data TimewarpMethod
   | PixelMotion   -- ^ Optical flow-based
   deriving (Show, Eq)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Whole Frame Selection
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Select which frame to use based on blend factor.
 --   Returns True if frame1 should be used, False for frame2.
@@ -51,9 +51,9 @@ selectWholeFrame :: Double  -- ^ Blend factor (0-1)
                  -> Bool
 selectWholeFrame blendFactor = blendFactor < 0.5
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Frame Mix (Cross-fade)
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Calculate blended pixel value using linear interpolation.
 --   frame1Value * (1 - blend) + frame2Value * blend
@@ -77,9 +77,9 @@ mixPixelRGBA r1 g1 b1 a1 r2 g2 b2 a2 blend =
   , mixPixelValue a1 a2 blend
   )
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Echo Intensity Decay
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Calculate echo intensity at a given echo index.
 --   Uses exponential decay: startingIntensity * (1 - decay)^echoIndex
@@ -95,9 +95,9 @@ echoIntensity startingIntensity decay echoIndex =
 isSignificantEcho :: Double -> Bool
 isSignificantEcho intensity = intensity > 0.001
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Posterize Time
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Calculate the posterized frame number.
 --   Quantizes time to target frame rate.
@@ -120,9 +120,9 @@ isNewPosterizedFrame currentFrame sourceFps targetFps =
       diff = abs (currentFrame - posterized)
   in fromIntegral diff < 0.5
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Motion Blur Adjustment
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Calculate motion blur factor from motion vector magnitude.
 --   motionBlurAmount: base blur amount (0-1)
@@ -141,9 +141,9 @@ adjustedBlendForMotion :: Double  -- ^ Original blend
 adjustedBlendForMotion blend blurFactor =
   blend * (1.0 - blurFactor * 0.5)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Frame Blending Decision
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Determine if blending is needed based on blend factor.
 --   Returns Nothing if exact frame (0 or 1), Just blend otherwise.

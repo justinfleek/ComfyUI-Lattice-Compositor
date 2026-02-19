@@ -49,9 +49,9 @@ import Lattice.State.Selection
   , ControlPointSelection(..)
   )
 
--- ============================================================================
--- JSON Response Helpers
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                                 // json // r
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Convert JSON Value to CString
 jsonToCString :: Value -> IO CString
@@ -68,9 +68,9 @@ errorResponse msg = object ["status" .= ("error" :: T.Text), "message" .= msg]
 successResponse :: ToJSON a => a -> Value
 successResponse result = object ["status" .= ("success" :: T.Text), "result" .= result]
 
--- ============================================================================
--- PURE QUERIES (GETTERS)
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                           // pure // queries
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Check if any layers are selected
 foreign export ccall "has_selection"
@@ -172,9 +172,9 @@ c_selected_control_point_count selectedControlPointsJson = do
       jsonToCString (successResponse result)
     Nothing -> jsonToCString (errorResponse "Invalid JSON: expected [ControlPointSelection]")
 
--- ============================================================================
--- PURE QUERY ACTIONS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                  // pure // query // actions
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Check if a layer is selected
 foreign export ccall "is_layer_selected"
@@ -255,9 +255,9 @@ c_get_selected_control_points_for_layer selectedControlPointsJson layerIdJson = 
       jsonToCString (successResponse result)
     _ -> jsonToCString (errorResponse "Invalid JSON: expected [ControlPointSelection] and Text")
 
--- ============================================================================
--- PURE CALCULATION HELPERS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                            // pure // calculation // helpers
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Compute range selection between two layer IDs
 foreign export ccall "compute_range_selection"

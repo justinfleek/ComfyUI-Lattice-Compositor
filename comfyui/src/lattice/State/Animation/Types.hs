@@ -30,12 +30,12 @@ import GHC.Generics (Generic)
 import Lattice.Services.TimelineSnap (SnapConfig(..), defaultSnapConfig)
 import Lattice.Types.Primitives (validateFinite, validateNonNegative)
 
--- ============================================================================
--- ANIMATION STATE
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                        // animation // state
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | State for animation store
--- EVERY VALUE HAS EXPLICIT DEFAULTS - NO Maybe/Nothing
+--                             // every // value // has // explicit // defaults
 data AnimationState = AnimationState
   { animationStateLoopPlayback :: Bool  -- Default: True
   , animationStateWorkAreaStart :: Double  -- Default: 0.0 (min: 0.0, max: no upper bound)
@@ -87,11 +87,11 @@ defaultAnimationState = AnimationState
   , animationStateSnapConfig = defaultSnapConfig
   }
 
--- ============================================================================
--- ACCESS INTERFACES
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                      // access // interfaces
+-- ════════════════════════════════════════════════════════════════════════════
 --
--- NOTE: Access interfaces (AnimationStoreAccess, FrameEvaluationAccess, SnapPointAccess)
+--                                                                      // note
 -- are not represented as Haskell types because they are TypeScript interfaces used for
 -- dependency injection. In Haskell, we pass the required data directly as function parameters.
 --

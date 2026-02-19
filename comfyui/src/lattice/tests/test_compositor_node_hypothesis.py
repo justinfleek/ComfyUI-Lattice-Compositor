@@ -253,16 +253,16 @@ class TestJSONSerializationProperty:
         assert restored['name'] == layer['name']
 
 
-# ==============================================================================
-# EDGE CASE TESTS (specific values that have caused bugs)
-# ==============================================================================
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+#                                                     // edge // case // tests
+# ════════════════════════════════════════════════════════════════════════════
 
 class TestEdgeCases:
     """Tests for specific edge cases that have caused bugs."""
     
     def test_zero_dimension_rejected(self):
         """Zero width/height should be rejected."""
-        # BUG: Some systems accept 0 dimensions
+        #                                                                       // bug
         pass
         
     def test_negative_fps_rejected(self):

@@ -75,9 +75,9 @@ This is an index into the host's value table.
 -}
 type ValueId = Word32
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Panic and warnings
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Abort evaluation with an error message. Does not return.
 foreign import ccall unsafe "panic"
@@ -87,9 +87,9 @@ foreign import ccall unsafe "panic"
 foreign import ccall unsafe "warn"
     c_warn :: Ptr Word8 -> CSize -> IO ()
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Type inspection
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 {- | Get the type tag of a value.
 Returns: 1=Int, 2=Float, 3=Bool, 4=String, 5=Path, 6=Null, 7=Attrs, 8=List, 9=Function
@@ -97,9 +97,9 @@ Returns: 1=Int, 2=Float, 3=Bool, 4=String, 5=Path, 6=Null, 7=Attrs, 8=List, 9=Fu
 foreign import ccall unsafe "get_type"
     c_get_type :: ValueId -> IO Word32
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Integers
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Create a Nix integer value.
 foreign import ccall unsafe "make_int"
@@ -109,9 +109,9 @@ foreign import ccall unsafe "make_int"
 foreign import ccall unsafe "get_int"
     c_get_int :: ValueId -> IO Int64
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Floats
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Create a Nix float value.
 foreign import ccall unsafe "make_float"
@@ -121,9 +121,9 @@ foreign import ccall unsafe "make_float"
 foreign import ccall unsafe "get_float"
     c_get_float :: ValueId -> IO CDouble
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Strings
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Create a Nix string value from a UTF-8 buffer.
 foreign import ccall unsafe "make_string"
@@ -140,9 +140,9 @@ foreign import ccall unsafe "copy_string"
 foreign import ccall unsafe "get_string_len"
     c_get_string_len :: ValueId -> IO Word32
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Booleans
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Create a Nix boolean value.
 foreign import ccall unsafe "make_bool"
@@ -152,17 +152,17 @@ foreign import ccall unsafe "make_bool"
 foreign import ccall unsafe "get_bool"
     c_get_bool :: ValueId -> IO CBool
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Null
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Create the Nix null value.
 foreign import ccall unsafe "make_null"
     c_make_null :: IO ValueId
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Paths
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Create a Nix path value from a UTF-8 buffer.
 foreign import ccall unsafe "make_path"
@@ -174,9 +174,9 @@ Returns the actual length. If len > max_len, only max_len bytes are copied.
 foreign import ccall unsafe "copy_path"
     c_copy_path :: ValueId -> Ptr Word8 -> CSize -> IO CSize
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Lists
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Create a Nix list from an array of value handles.
 foreign import ccall unsafe "make_list"
@@ -196,9 +196,9 @@ foreign import ccall unsafe "get_list_len"
 foreign import ccall unsafe "get_list_elem"
     c_get_list_elem :: ValueId -> Word32 -> IO ValueId
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Attribute sets
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 {- | Create a Nix attrset from an array of (name_ptr, name_len, value) tuples.
 The layout in memory is: [ptr1, len1, val1, ptr2, len2, val2, ...]
@@ -236,9 +236,9 @@ foreign import ccall unsafe "has_attr"
 foreign import ccall unsafe "get_attr"
     c_get_attr :: ValueId -> Ptr Word8 -> CSize -> IO Word32
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Function calls
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 {- | Call a Nix function with arguments.
 @call_function fun args_ptr args_len@ applies fun to the given arguments.

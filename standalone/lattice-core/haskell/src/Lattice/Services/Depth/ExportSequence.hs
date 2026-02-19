@@ -52,9 +52,9 @@ module Lattice.Services.Depth.ExportSequence
 
 import Data.List (replicate)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Types
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Depth map format enumeration.
 data DepthMapFormat
@@ -106,9 +106,9 @@ data FrameExportResult = FrameExportResult
   , ferOutputPath :: String
   } deriving (Show, Eq)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Frame Calculations
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Calculate total frame count in sequence.
 totalFrames :: Int -> Int -> Int
@@ -124,9 +124,9 @@ frameFromIndex startFrame index = startFrame + index
 frameIndices :: Int -> Int -> [Int]
 frameIndices startFrame endFrame = [0 .. totalFrames startFrame endFrame - 1]
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Filename Generation
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Pad number with leading zeros.
 padNumber :: Int -> Int -> String
@@ -151,9 +151,9 @@ allOutputPaths options =
   let total = totalFrames (deoStartFrame options) (deoEndFrame options)
   in [depthOutputPath (deoOutputDir options) i | i <- [0 .. total - 1]]
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Format Specification Lookup
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Get bit depth for format.
 formatBitDepth :: DepthMapFormat -> Int
@@ -188,9 +188,9 @@ formatInverted format = case format of
   FormatDepthAnything -> True
   _                   -> False
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Metadata Generation
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Generator name constant.
 generatorName :: String
@@ -229,9 +229,9 @@ metadataFromOptions options minDepth maxDepth timestamp =
     maxDepth
     timestamp
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Progress Tracking
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Create progress event.
 createProgress :: Int -> Int -> ExportProgress
@@ -249,9 +249,9 @@ progressPercent progress
 isComplete :: ExportProgress -> Bool
 isComplete progress = epCurrentFrame progress >= epTotalFrames progress
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Export Validation
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Validate export options.
 validateOptions :: DepthExportOptions -> Bool

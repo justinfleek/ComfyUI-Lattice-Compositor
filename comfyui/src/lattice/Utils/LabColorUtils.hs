@@ -5,7 +5,7 @@
 -- Migrated from ui/src/utils/labColorUtils.ts
 -- Pure color space conversion functions for professional color correction
 -- Uses D65 illuminant (standard for sRGB)
--- LAB L* range: 0-100, a* and b* range: -128 to +127
+--                                                                  // lab // l
 --
 
 module Lattice.Utils.LabColorUtils
@@ -20,23 +20,23 @@ module Lattice.Utils.LabColorUtils
   -- sRGB <-> Linear RGB
   , sRGBToLinear
   , linearToSRGB
-  -- RGB <-> XYZ
+  --                                                                       // rgb
   , rgbToXyz
   , xyzToRgb
-  -- XYZ <-> LAB
+  --                                                                       // xyz
   , xyzToLab
   , labToXyz
-  -- RGB <-> LAB Direct
+  --                                                                       // rgb
   , rgbToLab
   , labToRgb
   -- Color Difference (Delta E)
   , deltaE76
   , deltaE94
   , deltaE2000
-  -- RGB <-> YUV
+  --                                                                       // rgb
   , rgbToYuv
   , yuvToRgb
-  -- RGB <-> HSL (for HSL Secondary)
+  --                                                                       // rgb
   , rgbToHslLab
   , hslToRgbLab
   -- Utility Functions
@@ -53,9 +53,9 @@ import Lattice.Utils.ArrayUtils (safeArrayGet)
 import Prelude hiding (pi)
 import qualified Prelude as P
 
--- ============================================================================
--- TYPES
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                                     // types
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | LAB color type
 data LAB = LAB
@@ -78,11 +78,11 @@ data YUV = YUV
   , yuvV :: Double  -- Red-Cyan chrominance (-0.5 to +0.5)
   } deriving (Eq, Show)
 
--- ============================================================================
--- CONSTANTS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                                 // constants
+-- ════════════════════════════════════════════════════════════════════════════
 
--- D65 white point reference values
+--                                                                       // d65
 d65_X :: Double
 d65_X = 95.047
 
@@ -100,7 +100,7 @@ sRGBToXYZMatrix =
   , [0.0193339, 0.119192, 0.9503041]
   ]
 
--- XYZ to sRGB conversion matrix (D65)
+--                                                                       // xyz
 xyzToSRGBMatrix :: [[Double]]
 xyzToSRGBMatrix =
   [ [3.2404542, -1.5371385, -0.4985314]
@@ -108,7 +108,7 @@ xyzToSRGBMatrix =
   , [0.0556434, -0.2040259, 1.0572252]
   ]
 
--- BT.709 luminance coefficients
+--                                                                        // bt
 bt709R :: Double
 bt709R = 0.2126
 
@@ -118,9 +118,9 @@ bt709G = 0.7152
 bt709B :: Double
 bt709B = 0.0722
 
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 -- sRGB <-> Linear RGB Conversion
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Convert sRGB component (0-255) to linear RGB (0-1)
 -- Applies inverse gamma correction
@@ -140,9 +140,9 @@ linearToSRGB value =
         else 1.055 * value ** (1 / 2.4) - 0.055
   in fromIntegral (round (clamp 0 255 (v * 255)))
 
--- ============================================================================
--- RGB <-> XYZ Conversion
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                                       // rgb
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Safe matrix element access for 3x3 matrices
 matrixGet :: [[Double]] -> Int -> Int -> Double -> Double
@@ -188,9 +188,9 @@ xyzToRgb x y z =
                 z' * matrixGet xyzToSRGBMatrix 2 2 0.0
   in (linearToSRGB rLinear, linearToSRGB gLinear, linearToSRGB bLinear)
 
--- ============================================================================
--- XYZ <-> LAB Conversion
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                                       // xyz
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Lab f(t) function for XYZ to LAB conversion
 labF :: Double -> Double
@@ -236,9 +236,9 @@ labToXyz l a b =
     , xyzZ = d65_Z * labFInverse fz
     }
 
--- ============================================================================
--- RGB <-> LAB Direct Conversion
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                                       // rgb
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Convert RGB (0-255) directly to CIE LAB
 rgbToLab :: Double -> Double -> Double -> LAB
@@ -252,9 +252,9 @@ labToRgb l a b =
   let xyz = labToXyz l a b
   in xyzToRgb (xyzX xyz) (xyzY xyz) (xyzZ xyz)
 
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 -- Color Difference (Delta E)
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Calculate Delta E (CIE76) - basic Euclidean distance in LAB space
 -- Values interpretation:
@@ -360,9 +360,9 @@ deltaE2000 lab1 lab2 =
      (dHp / (kH * sH)) ** 2 +
      rT * (dCp / (kC * sC)) * (dHp / (kH * sH)))
 
--- ============================================================================
--- RGB <-> YUV Conversion (for Vectorscope)
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                                       // rgb
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Convert RGB (0-255) to YUV (BT.709)
 -- Used for vectorscope display
@@ -371,7 +371,7 @@ rgbToYuv r g b =
   let rn = r / 255
       gn = g / 255
       bn = b / 255
-      -- BT.709 coefficients
+      --                                                                        // bt
       y = bt709R * rn + bt709G * gn + bt709B * bn
       u = (0.5 * (bn - y)) / (1 - bt709B)
       v = (0.5 * (rn - y)) / (1 - bt709R)
@@ -390,9 +390,9 @@ yuvToRgb y u v =
      , fromIntegral (round (clamp 0 255 (b * 255)))
      )
 
--- ============================================================================
--- RGB <-> HSL Conversion (for HSL Secondary)
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                                       // rgb
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Convert RGB (0-255) to HSL
 -- H: 0-360, S: 0-1, L: 0-1
@@ -436,9 +436,9 @@ hslToRgbLab h s l =
        , fromIntegral (round (hue2rgb p q (h' - 1 / 3) * 255))
        )
 
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 -- Utility Functions
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Calculate luminance (BT.709) from RGB (0-255)
 -- Returns 0-255

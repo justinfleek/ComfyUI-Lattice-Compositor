@@ -61,7 +61,7 @@ if routes is not None:
       # Get project ID or generate one
       project_id = data.get("project_id")
       if project_id:
-        # SECURITY: Validate provided project ID
+        #                                                                  // security
         if not validate_project_id(project_id):
           security_logger.warning(f"SECURITY: Invalid project ID in save: {project_id[:50]}")
           return web.json_response(
@@ -70,14 +70,14 @@ if routes is not None:
       else:
         # Generate ID from project name and timestamp
         name = data.get("project", {}).get("meta", {}).get("name", "untitled")
-        # SECURITY: Sanitize name for filesystem
+        #                                                                  // security
         safe_name = "".join(c if c.isalnum() or c in "-_" else "_" for c in name[:50])
         project_id = f"{safe_name}_{int(time.time())}"
 
       # Get project data
       project_data = data.get("project", data)
 
-      # SECURITY: Validate project before saving
+      #                                                                  // security
       try:
         project_json = json.dumps(project_data)
         validated_project, _errors, warnings = validate_project(project_data, len(project_json))
@@ -116,7 +116,7 @@ if routes is not None:
     try:
       project_id = request.match_info["project_id"]
 
-      # SECURITY: Validate project ID to prevent path traversal
+      #                                                                  // security
       if not validate_project_id(project_id):
         security_logger.warning(f"SECURITY: Invalid project ID attempted: {project_id[:50]}")
         return web.json_response({"status": "error", "message": "Invalid project ID"}, status=400)
@@ -135,7 +135,7 @@ if routes is not None:
       with project_path.open(encoding="utf-8") as f:
         project = json.load(f)
 
-      # SECURITY: Validate project structure and content
+      #                                                                  // security
       try:
         validated_project, _errors, warnings = validate_project(project, file_size)
       except ProjectValidationError as e:

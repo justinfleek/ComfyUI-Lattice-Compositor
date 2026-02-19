@@ -31,9 +31,9 @@ import Lattice.Services.Export.ATI
   )
 import Lattice.Services.Export.Types (WanMoveTrajectory)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Helpers
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Build a test trajectory matching ATI module's WanMoveTrajectory type
 -- | tracks :: Array (Array (Array Number))  -- [track][frame][x,y]
@@ -57,9 +57,9 @@ assertNonEmpty s =
     then pure unit
     else fail "Expected non-empty string"
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Test Spec
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 spec :: Spec Unit
 spec = do
@@ -71,9 +71,9 @@ spec = do
     exportPackageTests
     exportNormalizedTests
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- 1. Constants
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 constantTests :: Spec Unit
 constantTests = do
@@ -85,9 +85,9 @@ constantTests = do
     it "atiFixedFrames is a positive number" do
       (atiFixedFrames > 0) `shouldEqual` true
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- 2. createATITrajectory
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 createTrajectoryTests :: Spec Unit
 createTrajectoryTests = do
@@ -119,9 +119,9 @@ createTrajectoryTests = do
       let traj = createATITrajectory [] 512 512 16
       length traj.tracks `shouldEqual` 0
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- 3. validateForATI
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 validateTests :: Spec Unit
 validateTests = do
@@ -162,9 +162,9 @@ validateTests = do
       let result = validateForATI traj
       length result.errors `shouldEqual` 0
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- 4. exportATITrackCoordsJSON
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 exportJSONTests :: Spec Unit
 exportJSONTests = do
@@ -178,19 +178,19 @@ exportJSONTests = do
     it "result contains coordinate data" do
       let traj = mkTestTrajectory 2 10 512 512
       let json = exportATITrackCoordsJSON traj
-      -- JSON output should contain bracket notation from array serialization
+      --                                                                      // json
       (SCU.length json > 2) `shouldEqual` true
 
     it "tracks are padded/truncated to 121 frames" do
-      -- ATI fixed frames is 121; exported JSON should reflect this frame count
+      --                                                                       // ati
       let traj = mkTestTrajectory 2 10 512 512
       let pkg = exportATIPackage traj
       -- The package track coords JSON should be built for atiFixedFrames
       assertNonEmpty pkg.tracks
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- 5. exportATIPackage
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 exportPackageTests :: Spec Unit
 exportPackageTests = do
@@ -212,9 +212,9 @@ exportPackageTests = do
       let pkg = exportATIPackage traj
       assertNonEmpty pkg.tracks
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- 6. exportAsNormalizedATI
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 exportNormalizedTests :: Spec Unit
 exportNormalizedTests = do

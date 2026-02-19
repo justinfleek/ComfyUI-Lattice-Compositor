@@ -3,7 +3,7 @@
 -- Description : Centralized logging with configurable log levels
 --
 -- Migrated from ui/src/utils/logger.ts
--- IO-based logger; config via MVar. No forbidden patterns.
+--                                                                        // io
 --
 
 {-# LANGUAGE OverloadedStrings #-}
@@ -33,9 +33,9 @@ import qualified Data.Text as T
 import Data.Time.Clock (getCurrentTime)
 import Data.Time.Format (defaultTimeLocale, formatTime)
 
--- ============================================================================
--- TYPES
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                                     // types
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Log level ordering: debug < info < warn < error < none
 data LogLevel
@@ -90,9 +90,9 @@ data Logger = Logger
   , loggerTimeEnd   :: Text -> IO ()
   }
 
--- ============================================================================
--- PURE HELPERS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                           // pure // helpers
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Whether a message at this level should be logged given current config level
 shouldLog :: LogLevel -> LogLevel -> Bool
@@ -111,9 +111,9 @@ formatMessageIO cfg level context message = do
         else return ""
   return (ts <> prefix <> ctx <> message)
 
--- ============================================================================
--- CONFIG (IO)
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                                    // config
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Create a new mutable logger config (default: warn, no timestamp)
 newLoggerConfig :: IO (MVar LoggerConfig)
@@ -139,9 +139,9 @@ getLogLevel ref = configLevel <$> readMVar ref
 getLoggerConfig :: MVar LoggerConfig -> IO LoggerConfig
 getLoggerConfig = readMVar
 
--- ============================================================================
--- CREATE LOGGER
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                          // create // logger
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Create a logger instance with a specific context.
 -- Pass the same MVar to all loggers that should share config.

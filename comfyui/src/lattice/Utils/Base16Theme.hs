@@ -46,9 +46,9 @@ import Lattice.Types.Color
   , rgb8Value
   )
 
--- ============================================================================
--- BASE16 COLOR STRUCTURE
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                              // base16 // color // structure
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Base16 color palette (16 colors)
 data Base16Palette = Base16Palette
@@ -71,9 +71,9 @@ data Base16Palette = Base16Palette
   }
   deriving (Eq, Show)
 
--- ============================================================================
--- ACCENT COLORS WITH 211° HERO HUE
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                           // accent // colors // with // 211
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Generate accent colors with 211° hero hue
 -- Creates systematic relationships to hero blue
@@ -98,9 +98,9 @@ generateAccentColors =
   , HSL heroHue (validateSaturation 0.86) (validateLightness 0.53)
   ]
 
--- ============================================================================
--- BASE16 THEME GENERATOR
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                              // base16 // theme // generator
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Generate base16 palette with 211° hero hue
 generateBase16Theme :: Double -> Base16Palette
@@ -139,43 +139,43 @@ generateBase16Theme backgroundLightness =
     , base0F = hslToRGB (safeGet 7)
     }
 
--- ============================================================================
--- PREDEFINED THEMES
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                      // predefined // themes
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Generate ono-sendai tuned theme (L=11% background)
--- HSL(211° 12% 11%) - OLED-safe background
+--                                                                       // hsl
 onoSendaiTuned :: Base16Palette
 onoSendaiTuned = generateBase16Theme 0.11
 
 -- | Generate ono-sendai github theme (L=16% background)
--- HSL(211° 12% 16%) - GitHub's de-facto default dark mode
+--                                                                       // hsl
 onoSendaiGithub :: Base16Palette
 onoSendaiGithub = generateBase16Theme 0.16
 
 -- | Generate ono-sendai memphis theme (L=0% background - pure black)
--- HSL(211° 0% 0%) - Pure black
+--                                                                       // hsl
 onoSendaiMemphis :: Base16Palette
 onoSendaiMemphis = generateBase16Theme 0.0
 
 -- | Generate ono-sendai chiba theme (L=4% background)
--- HSL(211° 12% 4%) - Problematic on Samsung panels
+--                                                                       // hsl
 onoSendaiChiba :: Base16Palette
 onoSendaiChiba = generateBase16Theme 0.04
 
 -- | Generate ono-sendai razorgirl theme (L=8% background)
--- HSL(211° 12% 8%) - Attempt to preserve strokes
+--                                                                       // hsl
 onoSendaiRazorgirl :: Base16Palette
 onoSendaiRazorgirl = generateBase16Theme 0.08
 
 -- | Generate ono-sendai sprawl theme (L=11% background - best compromise)
--- HSL(211° 12% 11%) - Best compromise
+--                                                                       // hsl
 onoSendaiSprawl :: Base16Palette
 onoSendaiSprawl = generateBase16Theme 0.11
 
--- ============================================================================
--- EXPORT FUNCTIONS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                       // export // functions
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Convert palette to hex format (for CSS/HTML)
 paletteToHex :: Base16Palette -> [(Text, Text)]

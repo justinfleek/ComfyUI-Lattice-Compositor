@@ -22,9 +22,9 @@ import qualified Data.Text as T
 import Lattice.Types.Primitives (validateFinite, validateNonNegative)
 import Lattice.Types.Project (Composition(..), CompositionSettings(..))
 
--- ============================================================================
--- FRAME OPERATIONS
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                       // frame // operations
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Set current frame in composition
 -- Pure function: takes composition and frame, returns new composition with updated currentFrame
@@ -109,9 +109,9 @@ jumpFrames comp n =
       in
         Right (updatedComp, shouldClear)
 
--- ============================================================================
--- HELPER FUNCTIONS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                       // helper // functions
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Check if temporal state should be cleared based on frame delta
 -- Pure function: takes old frame and new frame, returns True if delta > 1

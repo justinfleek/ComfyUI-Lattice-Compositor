@@ -65,9 +65,9 @@ module Lattice.Schemas.TemplateBuilder.TemplateBuilderSchema
 import GHC.Generics (Generic)
 import Data.Text (Text)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Expression Control Type
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Expression control types for expression parameters
 data ExpressionControlType
@@ -96,9 +96,9 @@ expressionControlTypeToText CtrlColor = "color"
 expressionControlTypeToText CtrlPoint = "point"
 expressionControlTypeToText CtrlAngle = "angle"
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Display Unit
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Display units for angle controls
 data DisplayUnit
@@ -118,9 +118,9 @@ displayUnitToText UnitDegrees = "degrees"
 displayUnitToText UnitRadians = "radians"
 displayUnitToText UnitRotations = "rotations"
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Exposed Property Type
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Exposed property types for template controls
 data ExposedPropertyType
@@ -158,9 +158,9 @@ exposedPropertyTypeToText PropMedia = "media"
 exposedPropertyTypeToText PropFont = "font"
 exposedPropertyTypeToText PropLayer = "layer"
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Accepted Media Type
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Accepted media types for media controls
 data AcceptedMediaType
@@ -177,9 +177,9 @@ acceptedMediaTypeToText :: AcceptedMediaType -> Text
 acceptedMediaTypeToText MediaImage = "image"
 acceptedMediaTypeToText MediaVideo = "video"
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Poster Quality
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Poster export quality levels
 data PosterQuality
@@ -199,9 +199,9 @@ posterQualityToText QualityLow = "low"
 posterQualityToText QualityMedium = "medium"
 posterQualityToText QualityHigh = "high"
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Template Asset Type
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Template asset types
 data TemplateAssetType
@@ -251,9 +251,9 @@ templateAssetTypeToText AssetSprite = "sprite"
 templateAssetTypeToText AssetSpritesheet = "spritesheet"
 templateAssetTypeToText AssetLut = "lut"
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Font Source
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Font sources for embedded fonts
 data FontSource
@@ -276,9 +276,9 @@ fontSourceToText SourceCloud = "cloud"
 fontSourceToText SourceLocal = "local"
 fontSourceToText SourceSystem = "system"
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Template Builder Tab
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Template builder panel tabs
 data TemplateBuilderTab
@@ -295,9 +295,9 @@ templateBuilderTabToText :: TemplateBuilderTab -> Text
 templateBuilderTabToText TabBrowse = "browse"
 templateBuilderTabToText TabEdit = "edit"
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Constants
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 maxNameLength :: Int
 maxNameLength = 200

@@ -32,17 +32,17 @@ import Prelude
 import Math (abs, round, max, min) as Math
 import Lattice.Services.BlendModes.ColorSpace (RGB(..), HSL(..), rgbToHsl, hslToRgb, getLuminance)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Helpers
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Clamp value to 0-255 range
 clamp :: Number -> Number
 clamp = Math.max 0.0 <<< Math.min 255.0 <<< Math.round
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Basic Blend Modes
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Normal blend (returns blend value)
 blendNormal :: Number -> Number -> Number
@@ -108,9 +108,9 @@ blendExclusion base blend = base + blend - (2.0 * base * blend) / 255.0
 blendAdd :: Number -> Number -> Number
 blendAdd base blend = Math.min 255.0 (base + blend)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Extended Blend Modes
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Linear Burn: Base + Blend - 255
 blendLinearBurn :: Number -> Number -> Number
@@ -155,9 +155,9 @@ blendDivide base blend
   | blend == 0.0 = 255.0
   | otherwise = clamp ((base * 256.0) / blend)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Luminance-Based Blend Modes
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Darker Color: Return color with lower luminance
 blendDarkerColor :: Number -> Number -> Number -> Number -> Number -> Number -> RGB
@@ -177,9 +177,9 @@ blendLighterColor baseR baseG baseB blendR blendG blendB =
      then RGB { r: baseR, g: baseG, b: baseB }
      else RGB { r: blendR, g: blendG, b: blendB }
 
---------------------------------------------------------------------------------
--- HSL Component Blend Modes
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
+--                                                                  // hsl // c
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Hue blend: Take hue from blend, saturation and luminance from base
 blendHue :: Number -> Number -> Number -> Number -> Number -> Number -> RGB
@@ -209,9 +209,9 @@ blendLuminosity baseR baseG baseB blendR blendG blendB =
     HSL baseHsl -> case rgbToHsl blendR blendG blendB of
       HSL blendHsl -> hslToRgb (HSL { h: baseHsl.h, s: baseHsl.s, l: blendHsl.l })
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Alpha Blend Modes
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Stencil Alpha: Multiply base alpha by blend alpha
 blendStencilAlpha :: Number -> Number -> Number

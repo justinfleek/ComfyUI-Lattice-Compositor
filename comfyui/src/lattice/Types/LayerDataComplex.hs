@@ -48,9 +48,9 @@ import Lattice.Types.Primitives
   , validateNonNegative
   )
 
--- ============================================================================
--- GENERATED MAP DATA
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                  // generated // map // data
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Generated map type
 data GeneratedMapType
@@ -113,9 +113,9 @@ instance FromJSON GeneratedMapData where
     mLastGen <- o .:? "lastGenerated"
     return (GeneratedMapData sourceLayerId mapType modelId params mCachedResult mLastGen)
 
--- ============================================================================
--- PROCEDURAL MATTE DATA
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                               // procedural // matte // data
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Procedural matte type
 data ProceduralMatteType
@@ -367,9 +367,9 @@ instance FromJSON ProceduralMatteData where
     levels <- o .: "levels"
     return (ProceduralMatteData patternType params animation inverted levels)
 
--- ============================================================================
--- DEPTHFLOW LAYER DATA
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                // depthflow // layer // data
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Depthflow preset
 data DepthflowPreset

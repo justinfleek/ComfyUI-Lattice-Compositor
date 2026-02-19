@@ -1,4 +1,4 @@
-// FFI stubs for Lattice.Services.Security.AuditLog.FFI
+//                                                                       // ffi
 "use strict";
 
 export const getSessionId = function () {

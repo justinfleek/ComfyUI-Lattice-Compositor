@@ -24,14 +24,14 @@ let
     overrideCabal
     ;
 
-  # CUDA libraries needed for libtorch at runtime
+  #                                                                      // cuda
   # Use nvidia-sdk (CUDA 13.0) which has SONAME 12 matching libtorch 2.9.0
   nvidia-sdk = prev.nvidia-sdk or (throw "nvidia-sdk not available - enable aleph.nixpkgs.nv");
   cuda-lib-path = "${nvidia-sdk}/lib";
   # Patch for proto-lens-setup to fix Cabal 3.14+ SymbolicPath API changes
   proto-lens-setup-patch = ./patches/proto-lens-setup-cabal-3.14.patch;
 
-  # GHC 9.12 package set with overrides
+  #                                                                  // ghc // 9
   hs-pkgs = prev.haskell.packages.ghc912.override {
     overrides = hself: hsuper: {
       # ────────────────────────────────────────────────────────────────────────

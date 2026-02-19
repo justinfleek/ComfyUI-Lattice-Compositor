@@ -39,9 +39,9 @@ import Lattice.Services.AudioFeatures
 import Lattice.Services.PropertyEvaluator (AudioMapping(..))
 import Lattice.Types.LayerDataParticles (AudioParticleMapping(..))
 
--- ============================================================================
--- TYPES
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                                     // types
+-- ════════════════════════════════════════════════════════════════════════════
 
 data LoadingState
   = LoadingStateIdle

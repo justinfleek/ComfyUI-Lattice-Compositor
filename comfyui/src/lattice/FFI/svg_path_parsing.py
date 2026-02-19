@@ -7,7 +7,7 @@ Python wrappers for Haskell SVG path parsing functions.
 import json
 from typing import Dict, List
 
-# JSON-compatible value types
+#                                                                      // json
 JSONValue = str | int | float | bool | None | list | dict
 JSONDict = Dict[str, JSONValue]
 import ctypes

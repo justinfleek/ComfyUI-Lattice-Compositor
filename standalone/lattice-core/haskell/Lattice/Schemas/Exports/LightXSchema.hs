@@ -44,9 +44,9 @@ import Data.Text (Text)
 import Data.Vector (Vector)
 import qualified Data.Vector as V
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Light-X Motion Style
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Light-X motion style options
 data LightXMotionStyle
@@ -69,9 +69,9 @@ lightXMotionStyleToText MotionBullet = "bullet"
 lightXMotionStyleToText MotionDirect = "direct"
 lightXMotionStyleToText MotionDollyZoom = "dolly-zoom"
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Light-X Relight Source
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Light-X relighting source options
 data LightXRelightSource
@@ -94,9 +94,9 @@ lightXRelightSourceToText RelightReference = "reference"
 lightXRelightSourceToText RelightHDR = "hdr"
 lightXRelightSourceToText RelightBackground = "background"
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Constants
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 maxFrames :: Int
 maxFrames = 100000
@@ -113,9 +113,9 @@ maxClip = 100000.0
 maxDimension :: Int
 maxDimension = 16384
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Structures
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Camera trajectory metadata
 data CameraTrajectoryMetadata = CameraTrajectoryMetadata
@@ -154,9 +154,9 @@ data LightXExport = LightXExport
   }
   deriving stock (Eq, Show, Generic)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Validation
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Check if camera trajectory metadata is valid
 isValidCameraMetadata :: CameraTrajectoryMetadata -> Bool

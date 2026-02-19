@@ -33,9 +33,9 @@ import qualified Data.Text.Encoding as TE
 import Data.Bits ((.&.))
 import GHC.Generics (Generic)
 
--- ============================================================================
--- CACHE STATE
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                            // cache // state
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Cache store state
 data CacheState = CacheState
@@ -57,9 +57,9 @@ instance FromJSON CacheState where
     hash <- o .: "projectStateHash"
     return (CacheState enabled hash)
 
--- ============================================================================
--- HELPER FUNCTIONS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                       // helper // functions
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Compute hash of project state for cache invalidation
 -- Pure function: takes composition ID, modified timestamp, layer count, layer IDs, settings, returns hash

@@ -69,9 +69,9 @@ module Lattice.Utils.NumericSafety
 import Data.Text (Text)
 import qualified Data.Text as T
 
--- ============================================================================
--- BASIC SAFETY
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                           // basic // safety
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Finite number check (not NaN, not ±Infinity). Re-exported for modules that cannot use Data.Float.
 isFinite :: Double -> Bool
@@ -95,9 +95,9 @@ requireFinite value name
   | not (isFinite value) = Left (name <> " must be finite, got " <> T.pack (show value))
   | otherwise = Right value
 
--- ============================================================================
--- SAFE ARITHMETIC
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                        // safe // arithmetic
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Safe division - returns fallback instead of Infinity or NaN
 safeDivide :: Double -> Double -> Double -> Double
@@ -135,9 +135,9 @@ safeLog value fallback
   | otherwise = let result = log value
                 in if isFinite result then result else fallback
 
--- ============================================================================
--- CLAMPING
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                                  // clamping
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Clamp a value between min and max
 clamp :: Double -> Double -> Double -> Double
@@ -163,9 +163,9 @@ clamp0255 value = clamp value 0 255
 clampNeg1To1 :: Double -> Double
 clampNeg1To1 value = clamp value (-1) 1
 
--- ============================================================================
--- INTERPOLATION
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                             // interpolation
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Safe linear interpolation - clamps t to [0, 1] and ensures finite result
 safeLerp :: Double -> Double -> Double -> Double
@@ -223,9 +223,9 @@ smootherStep a b t =
       smooth = safeT * safeT * safeT * (safeT * (safeT * 6 - 15) + 10)
   in safeLerp a b smooth
 
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 -- 2D VECTOR SAFETY
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Safe 2D vector normalization - returns zero vector for zero-length input
 safeNormalize2D :: Double -> Double -> (Double, Double)
@@ -261,9 +261,9 @@ safeDot2D x1 y1 x2 y2 =
                ensureFinite y1 0 * ensureFinite y2 0
   in ensureFinite result 0
 
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 -- 3D VECTOR SAFETY
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Safe 3D vector normalization
 safeNormalize3D :: Double -> Double -> Double -> (Double, Double, Double)
@@ -295,9 +295,9 @@ safeLength3D x y z =
       safeZ = ensureFinite z 0
   in safeSqrt (safeX * safeX + safeY * safeY + safeZ * safeZ)
 
--- ============================================================================
--- ANGLE SAFETY
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                           // angle // safety
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Normalize angle to [0, 360) degrees
 normalizeAngleDegrees :: Double -> Double
@@ -342,9 +342,9 @@ lerpAngleDegrees from to t =
   let diff = shortestAngleDifferenceDegrees from to
   in normalizeAngleDegrees (from + diff * clamp01 (ensureFinite t 0))
 
--- ============================================================================
--- COMPARISON
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                                // comparison
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Check if two numbers are approximately equal
 approximately :: Double -> Double -> Double -> Bool
@@ -361,9 +361,9 @@ approximately a b epsilon =
 isApproximatelyZero :: Double -> Double -> Bool
 isApproximatelyZero value epsilon = abs (ensureFinite value 0) < epsilon
 
--- ============================================================================
--- ROUNDING
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                                  // rounding
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Round to specified decimal places
 roundTo :: Double -> Int -> Double
@@ -394,9 +394,9 @@ snapTo value step
                     safeStep = ensureFinite step 1
                 in fromIntegral (round (safe / safeStep)) * safeStep
 
--- ============================================================================
--- RANGE UTILITIES
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                        // range // utilities
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Check if value is in range [min, max] inclusive
 inRange :: Double -> Double -> Double -> Bool

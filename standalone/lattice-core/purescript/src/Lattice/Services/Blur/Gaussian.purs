@@ -29,9 +29,9 @@ import Data.Foldable (sum)
 import Data.Int (toNumber) as Int
 import Math (exp)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Gaussian Function
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Calculate Gaussian weight for a given distance from center.
 --
@@ -49,9 +49,9 @@ gaussianWeight x sigma
 sigmaFromRadius :: Number -> Number
 sigmaFromRadius radius = max (radius / 2.0) 1.0
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Kernel Generation
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Calculate the sum of Gaussian weights for normalization.
 gaussianWeightSum :: Int -> Number -> Number
@@ -78,9 +78,9 @@ generateKernel1D radius sigma =
        in normalizedGaussianWeight x sigma totalWeight
      ) indices
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Separable Gaussian
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Check if separable Gaussian blur is valid for given dimensions.
 isValidSeparableBlur :: Number -> Number -> Boolean
@@ -91,9 +91,9 @@ isValidSeparableBlur radiusX radiusY =
 kernelSize :: Int -> Int
 kernelSize radius = radius * 2 + 1
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Blur Quality Estimation
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Estimate blur quality based on kernel size and sigma.
 estimateQuality :: Int -> Number -> Number

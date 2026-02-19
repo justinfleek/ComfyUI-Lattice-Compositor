@@ -1,4 +1,4 @@
-// FFI bindings for Lattice.Services.RenderQueue.Database
+//                                                                       // ffi
 // IndexedDB operations for render queue persistence
 
 const DB_VERSION = 1;

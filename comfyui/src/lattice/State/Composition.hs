@@ -30,9 +30,9 @@ import Lattice.Utils.FpsUtils
   , calculateDuration
   )
 
--- ============================================================================
--- PURE QUERIES
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                           // pure // queries
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Get a composition by ID from compositions map
 -- Pure function: takes compositions map and composition ID, returns composition or Nothing
@@ -42,9 +42,9 @@ getComposition ::
   Maybe Composition
 getComposition compositions compId = HM.lookup compId compositions
 
--- ============================================================================
--- PURE CALCULATIONS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                      // pure // calculations
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- Note: calculateDuration is imported from Lattice.Utils.FpsUtils
 

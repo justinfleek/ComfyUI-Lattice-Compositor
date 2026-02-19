@@ -2,7 +2,7 @@
 -- Module      : Lattice.Utils.Defaults
 -- Description : Common default value patterns
 -- 
--- EVERY VALUE HAS EXPLICIT DEFAULTS - NO Maybe/Nothing
+--                             // every // value // has // explicit // defaults
 -- All values are deterministic with min/max bounds
 --
 
@@ -31,9 +31,9 @@ import qualified Data.HashMap.Strict as HM
 import Data.Text (Text)
 import qualified Data.Text as T
 
--- ============================================================================
--- TEXT DEFAULTS
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                          // text // defaults
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Default text value (empty string)
 -- Default: "" (min: 0 chars, max: no upper bound)
@@ -46,9 +46,9 @@ defaultText = T.pack ""
 defaultTextNonEmpty :: Text
 defaultTextNonEmpty = T.pack "default"
 
--- ============================================================================
--- NUMERIC DEFAULTS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                       // numeric // defaults
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Default double value
 -- Default: 0.0 (min: -Infinity, max: +Infinity, but must be finite)
@@ -68,9 +68,9 @@ defaultDoubleBounded minVal maxVal =
   then 0.0
   else minVal  -- If 0.0 not in range, use minVal
 
--- ============================================================================
--- COLLECTION DEFAULTS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                    // collection // defaults
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Default list (empty list)
 -- Default: [] (min: 0 elements, max: no upper bound)
@@ -82,18 +82,18 @@ defaultList = []
 defaultHashMap :: HashMap k v
 defaultHashMap = HM.empty
 
--- ============================================================================
--- BOOLEAN DEFAULTS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                       // boolean // defaults
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Default boolean value
 -- Default: False
 defaultBool :: Bool
 defaultBool = False
 
--- ============================================================================
--- COMMON PATTERNS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                        // common // patterns
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Convert Maybe to explicit value with default
 -- Pattern: Maybe a -> (a, Bool)

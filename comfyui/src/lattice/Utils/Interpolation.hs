@@ -51,9 +51,9 @@ import Lattice.Utils.NumericSafety
 import Data.Text (Text)
 import qualified Data.Text as T
 
--- ============================================================================
--- BEZIER FUNCTIONS
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                       // bezier // functions
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Cubic bezier point calculation
 -- Pure function: p(t) = (1-t)³p₀ + 3(1-t)²tp₁ + 3(1-t)t²p₂ + t³p₃
@@ -130,15 +130,15 @@ cubicBezierEasing t outHandle inHandle frameDuration valueDelta
           guessT = newtonRaphson t 0
       in bezierPoint guessT 0 y1 y2 1
 
--- ============================================================================
--- KEYFRAME SEARCH
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                        // keyframe // search
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Binary search to find the keyframe index where frame falls between [i] and [i+1]
 -- Returns the index of the keyframe just before or at the given frame
 -- Assumes keyframes are sorted by frame (ascending)
 --
--- PROOF OF CORRECTNESS:
+--                                                // proof // of // correctness
 -- Given: length keyframes >= 2 (handled by case match above)
 -- Given: l >= 0, h <= length keyframes - 2, l <= h
 -- Prove: mid <= length keyframes - 2 AND mid + 1 <= length keyframes - 1
@@ -164,10 +164,10 @@ findKeyframeIndex keyframes frame =
             | l > h = max 0 (min l (length keyframes - 2))
             | otherwise =
                 let mid = (l + h) `div` 2
-                    -- PROOF: mid <= length keyframes - 2 (from invariants: l <= mid <= h <= length keyframes - 2)
-                    -- PROOF: mid + 1 <= length keyframes - 1
-                    -- PROOF: length (drop mid keyframes) = length keyframes - mid >= 2
-                    -- PROOF: length (drop (mid + 1) keyframes) = length keyframes - (mid + 1) >= 1
+                    --                                                                     // proof
+                    --                                                                     // proof
+                    --                                                                     // proof
+                    --                                                                     // proof
                     -- Therefore both drops are non-empty - extract elements directly
                     (beforeMid, fromMid) = splitAt mid keyframes
                     (_, fromNext) = splitAt (mid + 1) keyframes
@@ -187,9 +187,9 @@ findKeyframeIndex keyframes frame =
                        else search (mid + 1) h
       in search low high
 
--- ============================================================================
--- VALUE INTERPOLATION
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                    // value // interpolation
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Calculate the scalar delta between two values for bezier normalization
 -- For numbers: returns v2 - v1
@@ -220,9 +220,9 @@ interpolateVec3 :: Vec3 -> Vec3 -> Double -> Vec3
 interpolateVec3 (Vec3 x1 y1 z1) (Vec3 x2 y2 z2) t =
   Vec3 (safeLerp x1 x2 t) (safeLerp y1 y2 t) (safeLerp z1 z2 t)
 
--- ============================================================================
--- COLOR INTERPOLATION
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                    // color // interpolation
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Normalize a hex color to 6-digit format
 -- Handles: #rgb → #rrggbb, #rgba → #rrggbbaa, #rrggbb → #rrggbb, #rrggbbaa → #rrggbbaa

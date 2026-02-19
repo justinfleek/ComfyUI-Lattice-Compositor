@@ -39,9 +39,9 @@ import Lattice.Utils.NumericSafety (isFinite)
 import Lattice.Utils.NumericSafety (ensureFinite, safeSqrt)
 import Text.Regex.TDFA ((=~))
 
--- ============================================================================
--- TYPES
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                                     // types
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Driver source type
 data DriverSourceType
@@ -84,9 +84,9 @@ data DriverTransform
   | TransformOscillate Double Double Double  -- frequency, amplitude, phase
   deriving (Eq, Show)
 
--- ============================================================================
--- PATH PARSING FUNCTIONS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                              // path // parsing // functions
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Check if a property path is a spline control point path
 -- Pure function: same inputs → same outputs
@@ -153,9 +153,9 @@ createSplineControlPointPath index property =
         SplinePropertyDepth -> "depth"
   in "spline.controlPoint." <> T.pack (show index) <> "." <> propStr
 
--- ============================================================================
--- TRANSFORM FUNCTIONS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                    // transform // functions
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Apply a single transform to a value
 -- Pure function: same inputs → same outputs
@@ -252,9 +252,9 @@ blendValue base driven mode amount =
       blended = base * (1.0 - finiteAmount) + result * finiteAmount
   in ensureFinite blended base
 
--- ============================================================================
--- PATH UTILITY FUNCTIONS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                              // path // utility // functions
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Get display name for property path
 -- Pure function: same inputs → same outputs

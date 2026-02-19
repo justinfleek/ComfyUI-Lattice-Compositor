@@ -45,9 +45,9 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import GHC.Generics (Generic)
 
--- ============================================================================
--- PRESET CATEGORY
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                        // preset // category
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Preset category type
 data PresetCategory
@@ -84,9 +84,9 @@ instance FromJSON PresetCategory where
       "color-palette" -> return PresetCategoryColorPalette
       _ -> fail "Invalid PresetCategory"
 
--- ============================================================================
--- PRESET (Minimal type for pure queries)
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                                    // preset
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Preset with minimal fields for pure query functions
 -- Full type definition will be migrated in schema phase
@@ -122,9 +122,9 @@ instance FromJSON Preset where
     isBuiltIn <- o .:? "isBuiltIn" .!= False
     return (Preset id_ name category mDesc mTags isBuiltIn)
 
--- ============================================================================
--- PRESET COLLECTION
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                      // preset // collection
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Preset collection for import/export
 data PresetCollection = PresetCollection
@@ -149,9 +149,9 @@ instance FromJSON PresetCollection where
     exportedAt <- o .: "exportedAt"
     return (PresetCollection version presets exportedAt)
 
--- ============================================================================
--- QUERY FUNCTIONS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                        // query // functions
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Get all presets including built-ins
 -- Pure function: takes built-in particle presets, built-in path effect presets, and user presets, returns combined list

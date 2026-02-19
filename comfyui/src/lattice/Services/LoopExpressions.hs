@@ -19,9 +19,9 @@ module Lattice.Services.LoopExpressions
 import Lattice.Utils.NumericSafety (isFinite)
 import Lattice.Utils.ArrayUtils (safeArrayGet)
 
--- ============================================================================
--- TYPES
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                                     // types
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Loop type for animation repetition
 data LoopType
@@ -49,9 +49,9 @@ safeGet arr idx =
   let val = safeArrayGet arr idx 0.0
   in if isFinite val then val else 0.0
 
--- ============================================================================
--- LOOP EXPRESSIONS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                       // loop // expressions
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Repeat After expression
 -- Pure function: same inputs → same outputs

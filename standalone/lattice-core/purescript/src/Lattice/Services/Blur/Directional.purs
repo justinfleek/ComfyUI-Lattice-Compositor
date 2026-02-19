@@ -26,9 +26,9 @@ import Data.Int (toNumber, ceil) as Int
 import Data.Tuple (Tuple(..))
 import Math (cos, sin, abs, pi)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Direction Vector
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Calculate direction vector from angle in radians.
 directionVector :: Number -> Tuple Number Number
@@ -42,9 +42,9 @@ degreesToRadians degrees = degrees * pi / 180.0
 directionVectorDeg :: Number -> Tuple Number Number
 directionVectorDeg angleDeg = directionVector (degreesToRadians angleDeg)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Sample Position Calculation
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Calculate sample position along blur direction.
 samplePosition :: Number -> Number -> Number -> Number -> Number -> Tuple Number Number
@@ -60,9 +60,9 @@ directionalSamplePosition x y dx dy blurLength sampleCount sampleIndex =
       offset = i * step
   in samplePosition x y dx dy offset
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Sample Weight
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Calculate weight for directional blur sample.
 sampleWeight :: Int -> Int -> Boolean -> Number
@@ -82,9 +82,9 @@ optimalSampleCount blurLength =
   let samples = Int.ceil blurLength
   in max 3 samples
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Bounds Clamping
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Clamp sample position to image bounds.
 clampSamplePosition :: Number -> Number -> Int -> Int -> Tuple Number Number

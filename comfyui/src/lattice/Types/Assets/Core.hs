@@ -4,7 +4,7 @@
 -- 
 -- Migrated from ui/src/types/assets.ts
 -- Complete asset reference types with all optional metadata fields
--- NOTE: Project.hs has a simplified AssetReference - this is the full version
+--                                                                      // note
 --
 
 {-# LANGUAGE OverloadedStrings #-}
@@ -49,9 +49,9 @@ import Lattice.Types.Primitives
   )
 import Lattice.Schema.SharedValidation (validateBoundedArray)
 
--- ============================================================================
--- ASSET TYPE DEFINITIONS
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                              // asset // type // definitions
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Asset types supported by the compositor
 data AssetType
@@ -344,9 +344,9 @@ instance FromJSON SpriteValidation where
     warnings <- o .:? "warnings"
     return (SpriteValidation isPowerOfTwo hasAlpha originalFormat warnings)
 
--- ============================================================================
--- ASSET SOURCE
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                           // asset // source
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Asset source type
 data AssetSource
@@ -371,12 +371,12 @@ instance FromJSON AssetSource where
       "url" -> return AssetSourceURL
       _ -> fail "Invalid AssetSource"
 
--- ============================================================================
--- ASSET REFERENCE
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                        // asset // reference
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Complete asset reference with all optional metadata fields
--- NOTE: Project.hs has a simplified version - this is the full version
+--                                                                      // note
 data AssetReference = AssetReference
   { assetReferenceId :: Text,
     assetReferenceType :: AssetType,
@@ -407,10 +407,10 @@ data AssetReference = AssetReference
     assetReferenceTextureColorSpace :: Maybe TextureColorSpace,
     -- Material definition (references other texture assets)
     assetReferenceMaterialMaps :: Maybe MaterialMaps,
-    -- HDRI metadata
+    --                                                                      // hdri
     assetReferenceHDRIExposure :: Maybe Double,
     assetReferenceHDRIRotation :: Maybe Double,
-    -- SVG metadata (for extrusion)
+    --                                                                       // svg
     assetReferenceSVGPaths :: Maybe Double, -- Number of paths in SVG
     assetReferenceSVGViewBox :: Maybe SVGViewBox,
     -- Sprite sheet metadata

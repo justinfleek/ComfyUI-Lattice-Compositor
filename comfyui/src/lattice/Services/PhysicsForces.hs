@@ -37,9 +37,9 @@ import Lattice.Services.PhysicsVectorMath
   )
 import Lattice.Utils.NumericSafety (ensureFinite, safeSqrt)
 
--- ============================================================================
--- TYPES
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                                     // types
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Attraction force falloff type
 data AttractionFalloff
@@ -48,9 +48,9 @@ data AttractionFalloff
   | FalloffConstant
   deriving (Eq, Show)
 
--- ============================================================================
--- GRAVITY FORCE
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                          // gravity // force
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Calculate gravity force
 -- Pure function: same inputs → same outputs
@@ -64,9 +64,9 @@ calculateGravityForce gravity mass =
       forceY = finiteGravityY * finiteMass
   in Right (Vec2 (ensureFinite forceX 0.0) (ensureFinite forceY 0.0))
 
--- ============================================================================
--- WIND FORCE
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                             // wind // force
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Calculate wind force with turbulence
 -- Pure function: same inputs → same outputs
@@ -95,9 +95,9 @@ calculateWindForce direction turbulence frequency seed bodyPos frame =
       forceY = dirY + noiseY
   in Right (Vec2 (ensureFinite forceX 0.0) (ensureFinite forceY 0.0))
 
--- ============================================================================
--- ATTRACTION FORCE
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                       // attraction // force
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Calculate attraction/repulsion force
 -- Pure function: same inputs → same outputs
@@ -148,9 +148,9 @@ calculateAttractionForce center bodyPos strength mass radius falloff =
                           scaledForce = vec2Scale normalizedDiff (forceMag * finiteMass)
                       in Right scaledForce
 
--- ============================================================================
--- VORTEX FORCE
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                           // vortex // force
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Calculate vortex force (rotational + inward pull)
 -- Pure function: same inputs → same outputs
@@ -193,9 +193,9 @@ calculateVortexForce center bodyPos strength inwardForce mass radius =
                 combined = vec2Add tangentialForce inward
             in Right combined
 
--- ============================================================================
--- DRAG FORCE
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                             // drag // force
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Calculate drag force (air/fluid resistance)
 -- Pure function: same inputs → same outputs
@@ -224,9 +224,9 @@ calculateDragForce velocity linear quadratic =
                 dragForce = vec2Scale normalizedVel (-dragMag)
             in Right dragForce
 
--- ============================================================================
--- BUOYANCY FORCE
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                         // buoyancy // force
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Calculate buoyancy force (fluid simulation)
 -- Pure function: same inputs → same outputs

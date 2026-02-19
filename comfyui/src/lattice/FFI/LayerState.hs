@@ -59,9 +59,9 @@ import Lattice.Types.Primitives
   ( Vec2(..)
   )
 
--- ============================================================================
--- JSON Response Helpers
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                                 // json // r
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Convert JSON Value to CString
 jsonToCString :: Value -> IO CString
@@ -78,9 +78,9 @@ errorResponse msg = object ["status" .= ("error" :: T.Text), "message" .= msg]
 successResponse :: ToJSON a => a -> Value
 successResponse result = object ["status" .= ("success" :: T.Text), "result" .= result]
 
--- ============================================================================
--- HIERARCHY QUERIES
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                      // hierarchy // queries
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Get a layer by ID
 foreign export ccall "get_layer_by_id"
@@ -235,9 +235,9 @@ c_get_selected_layer layersJson selectedIdsJson = do
       jsonToCString (successResponse (encode result))
     _ -> jsonToCString (errorResponse "Invalid JSON: expected [Layer] and [Text]")
 
--- ============================================================================
--- SPLINE QUERIES
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                         // spline // queries
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Check if a spline layer has animation enabled
 foreign export ccall "is_spline_animated"
@@ -272,9 +272,9 @@ c_has_spline_point_keyframes layerJson pointIdJson = do
       jsonToCString (successResponse (encode result))
     _ -> jsonToCString (errorResponse "Invalid JSON: expected Layer and Text")
 
--- ============================================================================
--- PATH CALCULATIONS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                      // path // calculations
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Sample points along a path
 foreign export ccall "sample_path_points"

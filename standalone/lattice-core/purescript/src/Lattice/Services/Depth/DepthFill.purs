@@ -49,9 +49,9 @@ import Data.Number (isFinite, isNaN)
 import Data.Tuple (Tuple(..))
 import Math (abs)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Types
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Screen bounds for depth fill operations.
 type FillBounds =
@@ -91,9 +91,9 @@ type DepthflowParams =
   , farClip :: Number
   }
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Depth Sampling
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Calculate sample coordinates from depth map.
 -- | Maps screen position to depth map position.
@@ -130,9 +130,9 @@ screenToBufferIndex :: Int -> Int -> Int -> Int
 screenToBufferIndex screenX screenY screenWidth =
   screenY * screenWidth + screenX
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Depthflow Sampling Logic
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Calculate depthflow sample position for a screen pixel.
 depthflowSamplePosition :: Number -> Number -> DepthflowParams -> Tuple Int Int
@@ -151,9 +151,9 @@ boundsToScreen boundsX boundsY localX localY =
 shouldWriteDepth :: Number -> Number -> Boolean
 shouldWriteDepth newDepth existingDepth = newDepth < existingDepth
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Particle Depth Logic
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Calculate particle depth relative to camera.
 particleRelativeDepth :: Number -> Number -> Number
@@ -193,9 +193,9 @@ isValidParticle p =
 particleScreenPosition :: ParticleData -> Tuple Int Int
 particleScreenPosition p = Tuple (floor p.x) (floor p.y)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Uniform Depth Fill Logic
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Calculate fill region from bounds.
 -- | Returns (startX, startY, endX, endY).
@@ -220,9 +220,9 @@ generateFillPixels startX startY endX endY =
      x <- range startX (endX - 1)
      pure (Tuple x y)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Depth Buffer Operations
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Initialize depth buffer value (far clip).
 initDepthValue :: Number -> Number
@@ -246,9 +246,9 @@ handleEmptyScene minDepth maxDepth farClip
     not (isFinite maxDepth) || isNaN maxDepth = Tuple farClip farClip
   | otherwise = validateDepthRange minDepth maxDepth
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Float32 Precision
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Round to Float32 precision for buffer consistency.
 -- | In PureScript, we approximate by using the value directly.

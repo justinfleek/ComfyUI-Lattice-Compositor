@@ -3,8 +3,8 @@
 -- Script: check-no-maybe.hs
 -- Purpose: CI/CD check to prevent Maybe/Nothing in Haskell code
 -- 
--- BANNED: Maybe, Nothing, Just (except in imports)
--- REQUIRED: Explicit defaults with loaded flags
+--                                                                    // banned
+--                                                                  // required
 --
 -- Usage: runhaskell scripts/check-no-maybe.hs
 
@@ -62,7 +62,7 @@ main = do
       ]
   
   -- For now, check specific critical files
-  -- TODO: Expand to check all files recursively
+  --                                                                      // todo
   let criticalFiles = [
         "src/lattice/State/Animation/Types.hs",
         "src/lattice/State/Expression.hs",

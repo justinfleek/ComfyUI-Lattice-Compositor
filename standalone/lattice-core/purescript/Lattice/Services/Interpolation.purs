@@ -37,9 +37,9 @@ import Data.String.CodeUnits (charAt, singleton, toCharArray)
 import Global (isNaN, isFinite) as Global
 import Math (abs, max, min) as Math
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Types
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | 2D vector
 newtype Vec2 = Vec2 { x :: Number, y :: Number }
@@ -70,9 +70,9 @@ derive instance Generic EasingPreset _
 derive newtype instance Eq EasingPreset
 instance Show EasingPreset where show = genericShow
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Linear Interpolation
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Linear interpolation between two numbers
 lerp :: Number -> Number -> Number -> Number
@@ -107,9 +107,9 @@ lerpColor (Color c1) (Color c2) t = Color
   , b: Int.toNumber (Int.round (safeLerp c1.b c2.b t))
   , a: Int.toNumber (Int.round (safeLerp c1.a c2.a t)) }
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Bezier Curve Math
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Cubic bezier point calculation
 bezierPoint :: Number -> Number -> Number -> Number -> Number -> Number
@@ -153,9 +153,9 @@ cubicBezierEasing t x1 y1 x2 y2 =
   let solvedT = solveBezierX t x1 x2 8
   in bezierPoint solvedT 0.0 y1 y2 1.0
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Color Parsing
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Parse hex digit to number
 hexDigitToInt :: Char -> Int
@@ -227,9 +227,9 @@ colorToHex (Color c) includeAlpha =
      then rgb <> toHex2 (clamp' c.a)
      else rgb
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Easing Presets
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Linear easing
 easeLinear :: EasingPreset
@@ -259,9 +259,9 @@ applyEasingPreset ratio (EasingPreset preset) =
   let t = Math.max 0.0 (Math.min 1.0 ratio)
   in cubicBezierEasing t preset.outX preset.outY preset.inX preset.inY
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Binary Search for Keyframes
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Binary search to find index where arr[i] <= value < arr[i+1]
 findKeyframeIndex :: Array Number -> Number -> Int

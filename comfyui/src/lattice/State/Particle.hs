@@ -38,9 +38,9 @@ import qualified Data.Text.Encoding as TE
 import qualified Data.ByteString.Lazy as BSL
 import GHC.Generics (Generic)
 
--- ============================================================================
--- PARTICLE KEYFRAME
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                      // particle // keyframe
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Keyframe data for a particle trajectory
 data ParticleKeyframe = ParticleKeyframe
@@ -86,9 +86,9 @@ instance FromJSON ParticleKeyframe where
     b <- o .: "b"
     return (ParticleKeyframe frame x y z size opacity rotation r g b)
 
--- ============================================================================
--- BAKED PARTICLE TRAJECTORY
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                           // baked // particle // trajectory
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Baked particle trajectory for export
 data BakedParticleTrajectory = BakedParticleTrajectory
@@ -119,9 +119,9 @@ instance FromJSON BakedParticleTrajectory where
     keyframes <- o .: "keyframes"
     return (BakedParticleTrajectory particleId emitterId birthFrame deathFrame keyframes)
 
--- ============================================================================
--- EXPORT FORMAT
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                          // export // format
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Export format type
 data ExportFormat
@@ -140,9 +140,9 @@ instance FromJSON ExportFormat where
       "shapeLayers" -> return ExportFormatShapeLayers
       _ -> fail "Invalid ExportFormat"
 
--- ============================================================================
--- PARTICLE BAKE RESULT
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                // particle // bake // result
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Result of particle baking
 data ParticleBakeResult = ParticleBakeResult
@@ -173,9 +173,9 @@ instance FromJSON ParticleBakeResult where
     exportFormat <- o .: "exportFormat"
     return (ParticleBakeResult layerId trajectories totalFrames totalParticles exportFormat)
 
--- ============================================================================
--- EXPORT JSON STRUCTURE (Abbreviated format)
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                               // export // json // structure
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Abbreviated keyframe format for export
 data TrajectoryKeyframeExport = TrajectoryKeyframeExport
@@ -267,9 +267,9 @@ instance FromJSON ParticleTrajectoryJSON where
     trajectories <- o .: "trajectories"
     return (ParticleTrajectoryJSON version layerId totalFrames totalParticles trajectories)
 
--- ============================================================================
--- EXPORT FUNCTIONS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                       // export // functions
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Convert trajectory keyframe to export format
 keyframeToExport :: ParticleKeyframe -> TrajectoryKeyframeExport

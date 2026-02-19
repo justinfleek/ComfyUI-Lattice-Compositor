@@ -12,7 +12,7 @@ import sys
 from pathlib import Path
 from typing import Optional
 
-# RTS initialization flag
+#                                                                       // rts
 _rts_initialized = False
 _lib = None
 
@@ -73,7 +73,7 @@ def _load_library() -> Optional[ctypes.CDLL]:
         return None
 
 
-# RTS initialization function (from GHC RTS)
+#                                                                       // rts
 # hs_init must be called before any Haskell functions
 def init_haskell_rts() -> bool:
     """
@@ -96,7 +96,7 @@ def init_haskell_rts() -> bool:
     
     try:
         # Try to find hs_init in the library
-        # GHC RTS exports this function
+        #                                                                // ghc // rts
         hs_init = getattr(lib, "hs_init", None)
         if hs_init is None:
             # Try alternative name (some GHC versions)
@@ -305,7 +305,7 @@ def get_available_functions() -> list[str]:
         List of function names
     """
     # Registry of known FFI functions
-    # TODO: Auto-generate this from Haskell FFI modules
+    #                                                                      // todo
     return [
         # KeyframeState functions
         "safe_frame_ffi",

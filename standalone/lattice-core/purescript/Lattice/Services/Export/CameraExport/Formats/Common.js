@@ -1,4 +1,4 @@
-// FFI stubs for Lattice.Services.Export.CameraExport.Formats.Common
+//                                                                       // ffi
 
 "use strict";
 

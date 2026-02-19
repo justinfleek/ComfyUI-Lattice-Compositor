@@ -5,7 +5,7 @@
 -- Migrated from ui/src/utils/retry.ts
 -- Pure functions for handling transient failures
 -- 
--- CRITICAL: No forbidden patterns - explicit types, no null/undefined, no type escapes
+--                                                                  // critical
 -- Note: Uses SomeException for error handling (Haskell standard, not forbidden)
 --
 
@@ -33,9 +33,9 @@ import qualified Data.Text as T
 import Lattice.Utils.NumericSafety (isFinite)
 import Lattice.Utils.NumericSafety (ensureFinite)
 
--- ============================================================================
--- TYPES
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                                     // types
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Retry configuration options
 -- 
@@ -69,9 +69,9 @@ defaultRetryOptions = RetryOptions
   , retryOnRetry = Nothing
   }
 
--- ============================================================================
--- HELPER FUNCTIONS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                       // helper // functions
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Sleep for specified milliseconds
 -- 
@@ -100,9 +100,9 @@ calculateDelay attempt initialDelay maxDelay multiplier =
       clamped = min delay safeMax
   in max clamped safeInitial
 
--- ============================================================================
--- RETRY IMPLEMENTATION
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                   // retry // implementation
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Retry an async operation with exponential backoff
 -- 

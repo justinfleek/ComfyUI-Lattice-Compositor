@@ -5,7 +5,7 @@
 -- Migrated from ui/src/utils/circuitBreaker.ts
 -- Pure functions for service resilience
 -- 
--- CRITICAL: No forbidden patterns - explicit types, no null/undefined, no type escapes
+--                                                                  // critical
 --
 
 {-# LANGUAGE OverloadedStrings #-}
@@ -35,9 +35,9 @@ import Lattice.Utils.NumericSafety (isFinite)
 import Data.Text (Text)
 import qualified Data.Text as T
 
--- ============================================================================
--- TYPES
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                                     // types
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Circuit breaker state
 -- 
@@ -83,9 +83,9 @@ data CircuitBreaker a = CircuitBreaker
   , cbStateVar :: MVar CircuitBreakerState
   }
 
--- ============================================================================
--- DEFAULT OPTIONS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                        // default // options
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Default circuit breaker options
 -- 
@@ -101,9 +101,9 @@ defaultCircuitBreakerOptions = CircuitBreakerOptions
   , cbOnHalfOpen = Nothing
   }
 
--- ============================================================================
--- STATE MANAGEMENT
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                       // state // management
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Update circuit state based on current conditions
 -- 
@@ -163,9 +163,9 @@ recordSuccess now state =
         recentFailures = filter (\f -> diffUTCTime now (failureTimestamp f) < windowSeconds) (cbFailures state)
     in state { cbFailures = recentFailures }
 
--- ============================================================================
--- CIRCUIT BREAKER OPERATIONS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                          // circuit // breaker // operations
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Create a circuit breaker instance
 -- 

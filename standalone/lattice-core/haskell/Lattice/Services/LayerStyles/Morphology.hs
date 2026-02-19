@@ -21,9 +21,9 @@ module Lattice.Services.LayerStyles.Morphology
   , blurAfterMorphology
   ) where
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Distance Calculation
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Calculate Euclidean distance between two points.
 --
@@ -42,9 +42,9 @@ distance dx dy = sqrt (dx * dx + dy * dy)
 withinRadius :: Double -> Double -> Double -> Bool
 withinRadius dx dy radius = distance dx dy <= radius
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Coordinate Bounds
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Clamp coordinate to valid range.
 --
@@ -66,9 +66,9 @@ clampCoord coord maxVal
 pixelIndex :: Int -> Int -> Int -> Int
 pixelIndex x y width = y * width + x
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Dilation (Expand Alpha)
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Dilation kernel value at a single neighbor.
 --
@@ -89,9 +89,9 @@ dilateKernel neighborAlpha currentMax = max currentMax neighborAlpha
 dilationRadius :: Double -> Double -> Double
 dilationRadius spreadPercent size = (spreadPercent / 100.0) * size
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Erosion (Shrink Alpha)
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Erosion kernel value at a single neighbor.
 --
@@ -112,9 +112,9 @@ erodeKernel neighborAlpha currentMin = min currentMin neighborAlpha
 erosionRadius :: Double -> Double -> Double
 erosionRadius chokePercent size = (chokePercent / 100.0) * size
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Blur After Morphology
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Calculate blur radius after spread/choke.
 --

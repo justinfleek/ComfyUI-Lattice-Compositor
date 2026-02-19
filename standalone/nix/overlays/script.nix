@@ -70,7 +70,7 @@ let
       time
     ];
 
-  # GHC with Aleph.Script dependencies
+  #                                                                       // ghc
   ghc-with-script = hs-pkgs.ghcWithPackages hs-deps;
 
   # QuickCheck deps for property tests
@@ -180,7 +180,7 @@ in
       # // ghc //
       # ──────────────────────────────────────────────────────────────────────
 
-      # GHC with Aleph.Script modules available
+      #                                                                       // ghc
       ghc = ghc-with-script;
       ghc-with-tests = ghc-with-tests;
 
@@ -241,7 +241,7 @@ in
         name = "aleph-script-shell";
         "buildInputs" = [
           ghc-with-tests
-          # CLI tools for testing wrappers
+          #                                                                       // cli
           final.ripgrep
           final.fd
           final.bat
@@ -283,7 +283,7 @@ in
           "taplo"
           "zoxide"
         ];
-        # GNU getopt_long tools
+        #                                                                       // gnu
         gnu = [
           "ls"
           "grep"
@@ -350,7 +350,7 @@ in
           deps = [ final.duckdb final.nodejs_20 ];
         };
 
-        # VFIO scripts - PCI device binding for GPU passthrough
+        #                                                                      // vfio
         vfio-bind = mk-compiled-script {
           name = "vfio-bind";
           deps = [ final.pciutils ]; # lspci for device info
@@ -400,7 +400,7 @@ in
           ];
         };
 
-        # FHS/GPU scripts - namespace environment wrappers
+        #                                                                       // fhs
         fhs-run = mk-compiled-script {
           name = "fhs-run";
           deps = [ final.bubblewrap ];
@@ -443,7 +443,7 @@ in
           ];
         };
 
-        # NVIDIA SDK extraction - pull from NGC, extract CUDA/cuDNN/TensorRT
+        #                                                             // nvidia // sdk
         nvidia-extract = mk-compiled-script {
           name = "nvidia-extract";
           deps = [
@@ -454,7 +454,7 @@ in
           ];
         };
 
-        # NVIDIA SDK extraction v2 - comprehensive extraction from containers/tarballs
+        #                                                             // nvidia // sdk
         # Handles CUDA, cuDNN, NCCL, TensorRT, cuTensor, Tritonserver
         nvidia-sdk-extract = mk-compiled-script {
           name = "nvidia-sdk-extract";
@@ -468,7 +468,7 @@ in
           ];
         };
 
-        # NVIDIA wheel extraction - extract from PyPI wheels (no redistribution issues)
+        #                                                                    // nvidia
         nvidia-wheel-extract = mk-compiled-script {
           name = "nvidia-wheel-extract";
           deps = [
@@ -479,7 +479,7 @@ in
           ];
         };
 
-        # NVIDIA SDK - unified extraction (wheels + containers)
+        #                                                             // nvidia // sdk
         # Typed Haskell replacement for packages.nix shell scripts
         nvidia-sdk = mk-compiled-script {
           name = "nvidia-sdk";

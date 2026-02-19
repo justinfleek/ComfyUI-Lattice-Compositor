@@ -256,7 +256,7 @@ async def handle_download_starvector(request: web.Request) -> web.Response:
     print(f"[Lattice Vectorize] Downloading StarVector model: {model_name}")
 
     # Download and load model
-    # SECURITY: trust_remote_code=False prevents arbitrary code execution
+    #                                                                  // security
     # from downloaded models. See AUDIT/SECURITY_ARCHITECTURE.md
     STARVECTOR_MODEL = AutoModelForCausalLM.from_pretrained(
       model_name, torch_dtype=torch.float16, trust_remote_code=False

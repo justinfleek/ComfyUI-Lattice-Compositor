@@ -28,9 +28,9 @@ module Lattice.Services.Blur.Sharpen
   , adaptiveAmount
   ) where
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Unsharp Mask
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Apply unsharp mask formula to a single value.
 --
@@ -59,9 +59,9 @@ unsharpMask original blurred amount =
 highPassComponent :: Double -> Double -> Double
 highPassComponent original blurred = original - blurred
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Threshold Application
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Check if difference exceeds threshold.
 --
@@ -89,9 +89,9 @@ unsharpMaskWithThreshold original blurred amount threshold
   | exceedsThreshold original blurred threshold = unsharpMask original blurred amount
   | otherwise = original
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Amount Conversion
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Convert percentage amount to multiplier.
 --
@@ -110,9 +110,9 @@ percentToMultiplier percent = percent / 100.0
 clampAmount :: Double -> Double
 clampAmount amount = max 0.0 (min 5.0 amount)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Edge Detection Estimation
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Estimate edge strength at a pixel.
 --
@@ -135,9 +135,9 @@ isEdgePixel :: Double -> Double -> Double -> Bool
 isEdgePixel original blurred edgeThreshold =
   edgeStrength original blurred >= edgeThreshold
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Adaptive Sharpening
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Calculate adaptive sharpening amount based on local contrast.
 --

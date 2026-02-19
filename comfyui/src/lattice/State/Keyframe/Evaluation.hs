@@ -44,9 +44,9 @@ import Lattice.Utils.Interpolation
   )
 import Lattice.Utils.NumericSafety (safeLerp)
 
--- ============================================================================
--- PROPERTY EVALUATION
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                    // property // evaluation
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Interpolate an AnimatableProperty Double at a specific frame
 -- Pure function: takes property, frame, returns interpolated value

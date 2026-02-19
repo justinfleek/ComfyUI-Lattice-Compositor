@@ -81,12 +81,12 @@ import Lattice.Schema.SharedValidation
   )
 import qualified Data.Text as T
 
--- ============================================================================
--- BASE TYPES
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                             // base // types
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | RGBA color with alpha
--- RGB values: 0-255, Alpha: 0-1
+--                                                                       // rgb
 data RGBAColor = RGBAColor
   { rgbaR :: Double, -- 0-255
     rgbaG :: Double, -- 0-255
@@ -218,9 +218,9 @@ instance FromJSON ContourCurve where
       Right ps -> return ps
     return (ContourCurve points)
 
--- ============================================================================
--- BASE STYLE INTERFACE
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                // base // style // interface
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Base interface for all layer styles
 data BaseLayerStyle = BaseLayerStyle
@@ -245,9 +245,9 @@ instance FromJSON BaseLayerStyle where
     opacity <- o .: "opacity"
     return (BaseLayerStyle enabled blendMode opacity)
 
--- ============================================================================
--- DROP SHADOW
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                            // drop // shadow
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Drop shadow style
 data DropShadowStyle = DropShadowStyle
@@ -303,9 +303,9 @@ instance FromJSON DropShadowStyle where
     let base = BaseLayerStyle enabled blendMode opacity
     return (DropShadowStyle base color angle useGlobalLight distance spread size noise contour antiAliased layerKnocksOut)
 
--- ============================================================================
--- INNER SHADOW
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                           // inner // shadow
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Inner shadow style
 data InnerShadowStyle = InnerShadowStyle
@@ -358,9 +358,9 @@ instance FromJSON InnerShadowStyle where
     let base = BaseLayerStyle enabled blendMode opacity
     return (InnerShadowStyle base color angle useGlobalLight distance choke size noise contour antiAliased)
 
--- ============================================================================
--- OUTER GLOW
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                             // outer // glow
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Glow rendering technique
 data GlowTechnique
@@ -436,9 +436,9 @@ instance FromJSON OuterGlowStyle where
     let base = BaseLayerStyle enabled blendMode opacity
     return (OuterGlowStyle base color gradient useGradient technique spread size range jitter noise contour antiAliased)
 
--- ============================================================================
--- INNER GLOW
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                             // inner // glow
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Where inner glow originates from
 data InnerGlowSource
@@ -517,9 +517,9 @@ instance FromJSON InnerGlowStyle where
     let base = BaseLayerStyle enabled blendMode opacity
     return (InnerGlowStyle base color gradient useGradient technique source choke size range jitter noise contour antiAliased)
 
--- ============================================================================
--- BEVEL AND EMBOSS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                    // bevel // and // emboss
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Bevel style type
 data BevelStyle
@@ -689,9 +689,9 @@ instance FromJSON BevelEmbossStyle where
     let base = BaseLayerStyle enabled blendMode opacity
     return (BevelEmbossStyle base style technique depth direction size soften angle useGlobalLight altitude glossContour glossAntiAliased highlightMode highlightColor highlightOpacity shadowMode shadowColor shadowOpacity contourEnabled contour contourAntiAliased contourRange textureEnabled texturePattern textureScale textureDepth textureInvert textureLinkWithLayer)
 
--- ============================================================================
--- SATIN
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                                     // satin
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Satin style
 data SatinStyle = SatinStyle
@@ -738,9 +738,9 @@ instance FromJSON SatinStyle where
     let base = BaseLayerStyle enabled blendMode opacity
     return (SatinStyle base color angle distance size contour antiAliased invert)
 
--- ============================================================================
--- COLOR OVERLAY
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                          // color // overlay
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Color overlay style
 data ColorOverlayStyle = ColorOverlayStyle
@@ -767,9 +767,9 @@ instance FromJSON ColorOverlayStyle where
     let base = BaseLayerStyle enabled blendMode opacity
     return (ColorOverlayStyle base color)
 
--- ============================================================================
--- GRADIENT OVERLAY
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                       // gradient // overlay
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Gradient overlay style type
 data GradientOverlayType
@@ -845,9 +845,9 @@ instance FromJSON GradientOverlayStyle where
     let base = BaseLayerStyle enabled blendMode opacity
     return (GradientOverlayStyle base gradient style angle scale alignWithLayer reverse offset dither)
 
--- ============================================================================
--- PATTERN OVERLAY
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                        // pattern // overlay
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Pattern overlay style
 data PatternOverlayStyle = PatternOverlayStyle
@@ -889,9 +889,9 @@ instance FromJSON PatternOverlayStyle where
     let base = BaseLayerStyle enabled blendMode opacity
     return (PatternOverlayStyle base pattern scale angle linkWithLayer snapToOrigin offset)
 
--- ============================================================================
--- STROKE
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                                    // stroke
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Stroke position relative to edge
 data StrokePosition
@@ -987,9 +987,9 @@ instance FromJSON StrokeStyle where
     let base = BaseLayerStyle enabled blendMode opacity
     return (StrokeStyle base color gradient pattern fillType size position gradientAngle gradientScale patternScale patternLinkWithLayer)
 
--- ============================================================================
--- STYLE BLENDING OPTIONS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                              // style // blending // options
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Channel blend options
 data ChannelBlendRange = ChannelBlendRange
@@ -1067,9 +1067,9 @@ instance FromJSON StyleBlendingOptions where
     underlyingLayerRange <- o .:? "underlyingLayerRange"
     return (StyleBlendingOptions fillOpacity blendInteriorStylesAsGroup blendClippedLayersAsGroup transparencyShapesLayer layerMaskHidesEffects vectorMaskHidesEffects blendIfEnabled thisLayerRange underlyingLayerRange)
 
--- ============================================================================
--- MAIN LAYER STYLES CONTAINER
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                      // main // layer // styles // container
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Complete Layer Styles definition
 -- Renders in fixed order (back to front):
@@ -1133,9 +1133,9 @@ instance FromJSON LayerStyles where
     stroke <- o .:? "stroke"
     return (LayerStyles enabled blendingOptions dropShadow innerShadow outerGlow innerGlow bevelEmboss satin colorOverlay gradientOverlay patternOverlay stroke)
 
--- ============================================================================
--- GLOBAL LIGHT
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                           // global // light
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Global Light settings for a composition
 -- Styles with useGlobalLight=true share these values

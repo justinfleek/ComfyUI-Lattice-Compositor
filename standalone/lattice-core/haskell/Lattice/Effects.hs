@@ -77,9 +77,9 @@ import Lattice.Primitives
 import Lattice.Enums
 import Lattice.MeshWarp
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Effect Parameter Type
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 data EffectParameterType
   = EPTNumber | EPTColor | EPTPoint | EPTPoint3D | EPTAngle
@@ -90,9 +90,9 @@ data EffectAnimatableType
   = EATNumber | EATPosition | EATColor | EATEnum | EATVector3
   deriving stock (Eq, Show, Generic)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Blur Enums
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 data BlurDimension = BDHorizontal | BDVertical | BDBoth
   deriving stock (Eq, Show, Generic)
@@ -103,9 +103,9 @@ data RadialBlurType = RBTSpin | RBTZoom
 data AntialiasingQuality = AAQLow | AAQMedium | AAQHigh
   deriving stock (Eq, Show, Generic)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Distortion Enums
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 data RampShape = RSLinear | RSRadial
   deriving stock (Eq, Show, Generic)
@@ -128,9 +128,9 @@ data DisplacementChannel
 data EdgeBehavior = EBOff | EBTiles | EBMirror
   deriving stock (Eq, Show, Generic)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Glow Enums
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 data GlowCompositeMode = GCMOnTop | GCMBehind | GCMNone
   deriving stock (Eq, Show, Generic)
@@ -150,9 +150,9 @@ data TonemapMode = TMNone | TMACES | TMReinhard | TMHable
 data BloomBlendMode = BBMAdd | BBMScreen | BBMOverlay | BBMSoftLight
   deriving stock (Eq, Show, Generic)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Noise Enums
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 data FractalType = FTBasic | FTTurbulentBasic | FTSoftLinear | FTTurbulentSoft
   deriving stock (Eq, Show, Generic)
@@ -160,9 +160,9 @@ data FractalType = FTBasic | FTTurbulentBasic | FTSoftLinear | FTTurbulentSoft
 data NoiseType = NTBlock | NTLinear | NTSoftLinear | NTSpline
   deriving stock (Eq, Show, Generic)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Time Enums
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 data EchoOperator
   = EOAdd | EOScreen | EOMaximum | EOMinimum
@@ -172,9 +172,9 @@ data EchoOperator
 data TimeResolution = TRFrame | TRHalf | TRQuarter
   deriving stock (Eq, Show, Generic)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Mesh Enums
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 data PinFalloff = PFInverseDistance | PFRadialBasis
   deriving stock (Eq, Show, Generic)
@@ -187,9 +187,9 @@ data TurbulentDisplaceType
 data PinningMode = PMNone | PMAll | PMHorizontal | PMVertical
   deriving stock (Eq, Show, Generic)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Stylize Enums
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 data ScanlinesDirection = SDHorizontal | SDVertical
   deriving stock (Eq, Show, Generic)
@@ -220,9 +220,9 @@ data HSLChannel
   | HSLCyans | HSLBlues | HSLMagentas
   deriving stock (Eq, Show, Generic)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Parameter Types
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 data EffectPoint2D = EffectPoint2D
   { ep2dX :: !FiniteFloat
@@ -290,9 +290,9 @@ data EffectParameter = EffectParameter
   , epGroup         :: !(Maybe NonEmptyString)
   } deriving stock (Eq, Show, Generic)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Effect Types
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 data Effect = Effect
   { efId             :: !NonEmptyString

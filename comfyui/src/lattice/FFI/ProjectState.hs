@@ -51,9 +51,9 @@ import Lattice.Types.Project
   , AssetReference(..)
   )
 
--- ============================================================================
--- JSON Response Helpers
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                                 // json // r
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Convert JSON Value to CString
 jsonToCString :: Value -> IO CString
@@ -70,9 +70,9 @@ errorResponse msg = object ["status" .= ("error" :: T.Text), "message" .= msg]
 successResponse :: ToJSON a => a -> Value
 successResponse result = object ["status" .= ("success" :: T.Text), "result" .= result]
 
--- ============================================================================
--- COMPOSITION GETTERS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                    // composition // getters
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Export getOpenCompositions as C function
 -- C signature: char* get_open_compositions(char* project_json, char* open_ids_json)
@@ -156,9 +156,9 @@ c_get_active_composition_layers projectJsonPtr activeIdPtr = do
       let layers = getActiveCompositionLayers project (T.pack activeIdStr)
       jsonToCString (successResponse layers)
 
--- ============================================================================
--- COMPOSITION PROPERTY GETTERS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                        // composition // property // getters
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Export getWidth as C function
 -- C signature: char* get_width(char* project_json, char* active_id)
@@ -281,9 +281,9 @@ c_get_current_time projectJsonPtr activeIdPtr = do
       let currentTime = getCurrentTime project (T.pack activeIdStr)
       jsonToCString (successResponse currentTime)
 
--- ============================================================================
--- PROJECT STATE QUERIES
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                               // project // state // queries
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Export hasProject as C function
 -- C signature: char* has_project(char* source_image_json)
@@ -303,9 +303,9 @@ c_has_project sourceImageJsonPtr = do
       let result = hasProject mSourceImage
       jsonToCString (successResponse result)
 
--- ============================================================================
--- ASSET UTILITIES
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                        // asset // utilities
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Export findUsedAssetIds as C function
 -- C signature: char* find_used_asset_ids(char* project_json)
@@ -343,9 +343,9 @@ c_get_extension_for_asset assetJsonPtr = do
       let extension = getExtensionForAsset asset
       jsonToCString (successResponse extension)
 
--- ============================================================================
--- PROJECT CREATION
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                       // project // creation
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Export createDefaultProject as C function
 -- C signature: char* create_default_project(char* main_comp_id)

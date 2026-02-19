@@ -30,9 +30,9 @@ import Data.Int (floor, ceil, toNumber)
 import Data.Maybe (Maybe(..))
 import Math (max) as Math
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Constants
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Default tolerance for binary search
 defaultTolerance :: Number
@@ -42,9 +42,9 @@ defaultTolerance = 0.01
 minSamples :: Int
 minSamples = 10
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Basic Integration
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Trapezoidal rule for very short intervals.
 -- | Averages function at endpoints and multiplies by interval width.
@@ -92,9 +92,9 @@ optimalSampleCount span minPerFrame =
   let raw = max minSamples (floor span * minPerFrame)
   in if raw `mod` 2 == 0 then raw + 1 else raw
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Numerical Integration with Function
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Integrate a function from a to b using Simpson's rule.
 integrateSimpsons :: (Number -> Number) -> Number -> Number -> Int -> Number
@@ -125,9 +125,9 @@ integrateTrapezoidal f a b numSamples =
            total = foldl (+) 0.0 samples
        in h * total
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Binary Search Root Finding
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Binary search to find x where cumulative integral equals target.
 -- |
@@ -145,9 +145,9 @@ binarySearchIntegral integrator target low high tolerance =
                else search lo mid (fuel - 1)
   in search low high 100
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Frame Blending
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Result of frame blend calculation
 type FrameBlend =
@@ -177,9 +177,9 @@ blendFrameValues :: Number -> Number -> FrameBlend -> Number
 blendFrameValues valueAtFloor valueAtCeil blend =
   lerp valueAtFloor valueAtCeil blend.blendFactor
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Speed-Based Integration (Timewarp)
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Convert speed percentage to rate multiplier.
 -- | 100% = 1x, 200% = 2x, 50% = 0.5x

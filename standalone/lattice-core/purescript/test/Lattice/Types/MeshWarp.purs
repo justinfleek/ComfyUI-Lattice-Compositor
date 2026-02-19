@@ -28,9 +28,9 @@ import Lattice.MeshWarp
   , warpPinTypeDefaultStiffness
   )
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Test Spec
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 spec :: Spec Unit
 spec = do
@@ -42,16 +42,16 @@ spec = do
     usesOverlapTests
     defaultStiffnessTests
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- All pin types for exhaustive testing
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 allPinTypes :: Array WarpPinType
 allPinTypes = [WPTPosition, WPTRotation, WPTStarch, WPTOverlap, WPTBend, WPTAdvanced]
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- 1. warpPinTypeUsesPosition
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 usesPositionTests :: Spec Unit
 usesPositionTests = do
@@ -67,9 +67,9 @@ usesPositionTests = do
       warpPinTypeUsesPosition WPTOverlap `shouldEqual` false
       warpPinTypeUsesPosition WPTBend `shouldEqual` false
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- 2. warpPinTypeUsesRotation
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 usesRotationTests :: Spec Unit
 usesRotationTests = do
@@ -85,9 +85,9 @@ usesRotationTests = do
       warpPinTypeUsesRotation WPTStarch `shouldEqual` false
       warpPinTypeUsesRotation WPTOverlap `shouldEqual` false
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- 3. warpPinTypeUsesScale
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 usesScaleTests :: Spec Unit
 usesScaleTests = do
@@ -103,9 +103,9 @@ usesScaleTests = do
       warpPinTypeUsesScale WPTStarch `shouldEqual` false
       warpPinTypeUsesScale WPTOverlap `shouldEqual` false
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- 4. warpPinTypeUsesStiffness
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 usesStiffnessTests :: Spec Unit
 usesStiffnessTests = do
@@ -121,9 +121,9 @@ usesStiffnessTests = do
       warpPinTypeUsesStiffness WPTBend `shouldEqual` false
       warpPinTypeUsesStiffness WPTAdvanced `shouldEqual` false
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- 5. warpPinTypeUsesOverlap
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 usesOverlapTests :: Spec Unit
 usesOverlapTests = do
@@ -139,9 +139,9 @@ usesOverlapTests = do
       warpPinTypeUsesOverlap WPTBend `shouldEqual` false
       warpPinTypeUsesOverlap WPTAdvanced `shouldEqual` false
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- 6. warpPinTypeDefaultStiffness
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 defaultStiffnessTests :: Spec Unit
 defaultStiffnessTests = do

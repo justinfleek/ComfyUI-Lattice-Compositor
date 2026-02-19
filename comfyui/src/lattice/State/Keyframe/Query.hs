@@ -32,9 +32,9 @@ import Lattice.Types.Animation
 import Lattice.Types.Layer (Layer(..))
 import Lattice.Types.Primitives (validateFinite)
 
--- ============================================================================
--- TYPES
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                                     // types
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Keyframe at a specific frame with property path
 data KeyframeAtFrame = KeyframeAtFrame
@@ -43,9 +43,9 @@ data KeyframeAtFrame = KeyframeAtFrame
   }
   deriving (Eq, Show)
 
--- ============================================================================
--- KEYFRAME QUERY UTILITIES
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                            // keyframe // query // utilities
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Get keyframes at a specific frame across all animated properties of a layer
 -- Pure function: takes layer ID, frame, and layers list

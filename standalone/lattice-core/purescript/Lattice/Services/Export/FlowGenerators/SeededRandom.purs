@@ -29,9 +29,9 @@ import Data.Number (sqrt, log, cos, pi)
 import Data.Array (snoc, (..))
 import Data.Foldable (foldl)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Seeded Random State
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Seeded random state (immutable)
 type SeededRandomState =
@@ -42,9 +42,9 @@ type SeededRandomState =
 initialState :: Int -> SeededRandomState
 initialState seed = { state: seed }
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Core Operations
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Integer multiplication with overflow behavior (JavaScript imul equivalent)
 -- | This simulates 32-bit integer multiplication
@@ -131,9 +131,9 @@ gaussianWithState mean stdDev s =
 gaussian :: Number -> Number -> SeededRandomState -> Number
 gaussian mean stdDev s = (gaussianWithState mean stdDev s).value
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Sequence Generation
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Generate a sequence of random values
 randomSequence :: Int -> SeededRandomState -> Array Number

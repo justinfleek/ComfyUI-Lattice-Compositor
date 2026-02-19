@@ -40,9 +40,9 @@ import Lattice.Types.Animation
   )
 import Lattice.Types.Layer (Layer(..), LayerType(..))
 
--- ============================================================================
--- TYPES
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                                     // types
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Exposed property type
 data ExposedPropertyType
@@ -80,9 +80,9 @@ data OrganizedProperties = OrganizedProperties
   }
   deriving (Eq, Show)
 
--- ============================================================================
--- EXPOSABLE PROPERTIES CONSTANT
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                       // exposable // properties // constant
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Common exposable properties (transform properties for all layers)
 exposableCommon :: [ExposablePropertyDef]
@@ -140,9 +140,9 @@ exposableByType layerType = case layerType of
     ]
   _ -> []
 
--- ============================================================================
--- PROPERTY DISCOVERY
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                     // property // discovery
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Determine the exposed property type from an AnimatableProperty
 -- Pure function: same inputs → same outputs
@@ -170,9 +170,9 @@ getExposableProperties layer =
       -- For now, return common + type-specific properties
   in commonProps ++ typeProps
 
--- ============================================================================
--- PROPERTY PREDICATES
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                    // property // predicates
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Check if an item is an ExposedProperty
 -- Pure function: same inputs → same outputs
@@ -186,9 +186,9 @@ isExposedProperty _ = True  -- Placeholder - needs ExposedProperty type
 isTemplateComment :: Text -> Bool
 isTemplateComment _ = False  -- Placeholder - needs TemplateComment type
 
--- ============================================================================
--- PROPERTY PATH OPERATIONS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                            // property // path // operations
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Get the value of a property at a path
 -- Pure function: same inputs → same outputs
@@ -201,9 +201,9 @@ getPropertyValue layer path =
      then Left "Empty property path"
      else Left "Property path traversal not yet implemented"  -- TODO: Implement full traversal
 
--- ============================================================================
--- TEMPLATE VALIDATION
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                    // template // validation
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Validate template configuration
 -- Pure function: same inputs → same outputs
@@ -217,9 +217,9 @@ validateTemplate configName compositionId =
       valid = null errors
   in TemplateValidationResult valid errors warnings
 
--- ============================================================================
--- PROPERTY ORGANIZATION
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                  // property // organization
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Get organized properties grouped by their groups
 -- Pure function: same inputs → same outputs
@@ -228,9 +228,9 @@ getOrganizedProperties :: Text -> OrganizedProperties
 getOrganizedProperties _config =
   OrganizedProperties [] []  -- Placeholder - needs TemplateConfig type
 
--- ============================================================================
--- EXPRESSION CONTROLS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                    // expression // controls
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Get all expression control effects on a layer
 -- Pure function: same inputs → same outputs

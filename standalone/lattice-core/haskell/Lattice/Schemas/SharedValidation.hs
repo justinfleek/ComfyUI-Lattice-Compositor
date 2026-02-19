@@ -63,9 +63,9 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Char (isAlphaNum, isHexDigit)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Fixed Constants (Security Critical)
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 maxNameLength :: Int
 maxNameLength = 200
@@ -115,9 +115,9 @@ maxAnimationNameLength = 100
 maxWarningLength :: Int
 maxWarningLength = 500
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Configurable Limits
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Configurable validation limits
 data ValidationLimitsConfig = ValidationLimitsConfig
@@ -145,9 +145,9 @@ defaultLimits = ValidationLimitsConfig
   , limitsMaxFPS = 120
   }
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Validation Error
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Validation error with field and message
 data ValidationError = ValidationError
@@ -163,9 +163,9 @@ mkError field message = ValidationError
   , errorMessage = message
   }
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- String Validation
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Validate non-empty string with max length
 validateNonEmptyString :: Text -> Int -> Text -> Either ValidationError Text
@@ -214,9 +214,9 @@ validateFilename field value
     invalidChars :: [Char]
     invalidChars = ['<', '>', ':', '"', '|', '?', '*']
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Number Validation
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Validate positive integer with max
 validatePositiveInt :: Text -> Int -> Int -> Either ValidationError Int
@@ -248,9 +248,9 @@ validateNonNegativeFloat field maxVal value
   | value > maxVal = Left $ mkError field $ "must be at most " <> T.pack (show maxVal)
   | otherwise = Right value
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Array Validation
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Validate array length
 validateArrayLength :: Text -> Int -> [a] -> Either ValidationError [a]
@@ -265,9 +265,9 @@ validateNonEmptyArray field arr
   | null arr = Left $ mkError field "must not be empty"
   | otherwise = Right arr
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Date/Time Validation
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Validate ISO 8601 datetime format (simplified)
 validateDateTime :: Text -> Text -> Either ValidationError Text

@@ -34,9 +34,9 @@ import Lattice.Types.Animation
 import Lattice.Types.Layer (Layer(..))
 import Lattice.Types.Primitives (validateFinite)
 
--- ============================================================================
--- KEYFRAME VELOCITY
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                      // keyframe // velocity
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Apply velocity settings to a keyframe
 -- Pure function: takes layer ID, property path, keyframe ID, velocity settings, FPS, and layers list

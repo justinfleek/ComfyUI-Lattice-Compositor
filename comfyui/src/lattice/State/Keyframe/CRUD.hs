@@ -48,9 +48,9 @@ import Lattice.Types.Primitives
   )
 import Lattice.Types.Transform (LayerTransform(..))
 
--- ============================================================================
--- HELPER FUNCTIONS FOR PROPERTY UPDATES
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                         // helper // functions // for // property // updates
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Add keyframe to a Position2DOr3D property
 addKeyframeToPositionProperty ::
@@ -319,9 +319,9 @@ addKeyframeToDoubleProperty layerId propertyPath value frame genId layer =
         in
           Right (keyframe, updatedLayer)
 
--- ============================================================================
--- KEYFRAME CREATION
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                      // keyframe // creation
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Add a keyframe using PropertyValue (convenience function)
 -- Pure function: converts PropertyValue to appropriate type and calls type-specific function
@@ -404,9 +404,9 @@ addKeyframeWithPropertyValue layerId propertyPath propValue mAtFrame currentFram
                           Right (propKf, updatedLayers)
                 _ -> Left ("addKeyframeWithPropertyValue: PropertyValue must be Number for property: " <> T.unpack propertyPath)
 
--- ============================================================================
--- KEYFRAME REMOVAL
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                       // keyframe // removal
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Remove a keyframe by ID from a Position2DOr3D property
 removeKeyframeFromPositionProperty ::
@@ -737,9 +737,9 @@ clearKeyframes layerId propertyPath layers =
       in
         Right updatedLayers
 
--- ============================================================================
--- KEYFRAME MOVEMENT
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                      // keyframe // movement
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Move a keyframe to a new frame position
 -- Pure function: takes layer ID, property path, keyframe ID, new frame, and layers list
@@ -897,14 +897,14 @@ moveKeyframe layerId propertyPath keyframeId newFrame layers =
           in
             Right updatedLayers
 
--- ============================================================================
--- KEYFRAME VALUE UPDATES
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                              // keyframe // value // updates
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Update a keyframe's value
 -- Pure function: takes layer ID, property path, keyframe ID, new value, and layers list
 -- Returns updated layers list or error
--- NOTE: Value type must match property type
+--                                                                      // note
 setKeyframeValue ::
   Text -> -- Layer ID
   Text -> -- Property path
@@ -1082,7 +1082,7 @@ updateKeyframe layerId propertyPath keyframeId mNewFrame mNewValue layers =
                               (filtered, updated)
                   
                   -- Handle value update
-                  -- NOTE: Value validation depends on type - for numeric types, should validate finite
+                  --                                                                      // note
                   -- For now, we accept the value as-is (type system ensures correctness)
                   finalKeyframe =
                     case mNewValue of

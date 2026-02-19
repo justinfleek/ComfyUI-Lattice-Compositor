@@ -52,9 +52,9 @@ import Lattice.Services.ExpressionEvaluator
   , expressionEaseOut
   )
 
--- ============================================================================
--- JSON HELPERS
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                           // json // helpers
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Convert ByteString to CString
 jsonToCString :: BSL.ByteString -> IO CString
@@ -68,9 +68,9 @@ successResponse result = encode $ object [fromString "status" .= T.pack "success
 errorResponse :: Text -> BSL.ByteString
 errorResponse msg = encode $ object [fromString "status" .= T.pack "error", fromString "message" .= msg]
 
--- ============================================================================
--- TIME EXPRESSIONS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                       // time // expressions
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Input for timeRamp
 data TimeRampInput = TimeRampInput
@@ -241,9 +241,9 @@ c_pulse jsonInput = do
       let result = pulse (puTime input) (puFrequency input) (puDutyCycle input) (puAmplitude input)
       jsonToCString $ successResponse (toJSON result)
 
--- ============================================================================
--- MATH EXPRESSIONS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                       // math // expressions
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Input for lerp
 data LerpInput = LerpInput
@@ -553,9 +553,9 @@ c_gauss_random jsonInput = do
       let result = gaussRandom (grMean input) (grStdDev input) (grSeed input)
       jsonToCString $ successResponse (toJSON result)
 
--- ============================================================================
--- EASING EXPRESSIONS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                     // easing // expressions
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Input for easing functions (supports scalar or array)
 data EasingValue = EasingScalar Double | EasingArray [Double]

@@ -1,4 +1,4 @@
-// FFI bindings for AuditLog.purs
+//                                                                       // ffi
 // IndexedDB operations for audit logging
 
 const DB_NAME = "LatticeSecurityAudit";

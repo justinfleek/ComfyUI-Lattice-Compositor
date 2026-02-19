@@ -63,9 +63,9 @@ import Data.List (isPrefixOf)
 import Data.Set (Set)
 import qualified Data.Set as Set
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Configuration
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Options for safe JSON parsing
 data SafeParseOptions = SafeParseOptions
@@ -87,9 +87,9 @@ defaultSafeParseOptions = SafeParseOptions
   , optContext = "JSON"
   }
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Dangerous Keys
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Keys that can be used for prototype pollution attacks
 dangerousKeys :: Set Text
@@ -107,9 +107,9 @@ dangerousKeys = Set.fromList
 isDangerousKey :: Text -> Bool
 isDangerousKey = (`Set.member` dangerousKeys)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Validation Errors
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Error codes for safe parse failures
 data ParseErrorCode
@@ -138,9 +138,9 @@ mkParseError code msg ctx = ParseErr
   , parseErrorContext = ctx
   }
 
---------------------------------------------------------------------------------
--- JSON Value
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
+--                                                                 // json // v
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Simple JSON value type
 data JSONValue
@@ -196,9 +196,9 @@ maxArrayLength (JSONArray items) =
 maxArrayLength (JSONObject fields) =
   if null fields then 0 else maximum (map (maxArrayLength . snd) fields)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Validation
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Validate JSON depth
 validateDepth :: JSONValue -> SafeParseOptions -> Either ParseError ()
@@ -244,9 +244,9 @@ validateJSON val opts = do
   -- Check array lengths
   validateArrayLengths val opts
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Path Security
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Dangerous path prefixes
 dangerousPathPrefixes :: [Text]
@@ -283,9 +283,9 @@ sanitizePath basePath userPath =
      then Left "Path traversal pattern detected"
      else Right $ normalizedBase <> "/" <> normalizedUser
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- String Sanitization
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Options for string sanitization
 data SanitizeStringOptions = SanitizeStringOptions
@@ -344,9 +344,9 @@ sanitizeFilename filename =
       s4 = T.take 200 s3
   in if T.null s4 || s4 == "_" then "unnamed" else s4
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Malicious Payload Detection
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Check if a string looks like a potential injection payload
 looksLikeMaliciousPayload :: Text -> Bool
@@ -355,7 +355,7 @@ looksLikeMaliciousPayload value =
   in -- Script injection
      T.isInfixOf "<script" lower ||
      T.isInfixOf "javascript:" lower ||
-     -- SQL injection
+     --                                                                       // sql
      T.isInfixOf "' or '" lower ||
      T.isInfixOf "; drop table" lower ||
      T.isInfixOf "; delete from" lower ||

@@ -1,4 +1,4 @@
-// FFI stubs for Lattice.Services.Particles.Emitter
+//                                                                       // ffi
 "use strict";
 
 export const isNaN = function (n) {

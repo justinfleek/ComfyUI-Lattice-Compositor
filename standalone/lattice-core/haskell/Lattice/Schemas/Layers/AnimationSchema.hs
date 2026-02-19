@@ -51,9 +51,9 @@ module Lattice.Schemas.Layers.AnimationSchema
 import GHC.Generics (Generic)
 import Data.Text (Text)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Base Interpolation Type
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Base interpolation types
 data BaseInterpolationType
@@ -73,9 +73,9 @@ baseInterpolationTypeToText InterpLinear = "linear"
 baseInterpolationTypeToText InterpBezier = "bezier"
 baseInterpolationTypeToText InterpHold = "hold"
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Easing Type
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | All easing function names
 data EasingType
@@ -176,9 +176,9 @@ easingTypeToText EaseInBounce = "easeInBounce"
 easingTypeToText EaseOutBounce = "easeOutBounce"
 easingTypeToText EaseInOutBounce = "easeInOutBounce"
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Control Mode
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Control mode for bezier handles
 data ControlMode
@@ -198,9 +198,9 @@ controlModeToText CtrlSymmetric = "symmetric"
 controlModeToText CtrlSmooth = "smooth"
 controlModeToText CtrlCorner = "corner"
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Property Type
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Property type enum
 data PropertyType
@@ -226,9 +226,9 @@ propertyTypeToText PropColor = "color"
 propertyTypeToText PropEnum = "enum"
 propertyTypeToText PropVector3 = "vector3"
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Expression Type
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Expression type (preset vs custom)
 data ExpressionType
@@ -245,9 +245,9 @@ expressionTypeToText :: ExpressionType -> Text
 expressionTypeToText ExprPreset = "preset"
 expressionTypeToText ExprCustom = "custom"
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Constants
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 maxKeyframesPerProperty :: Int
 maxKeyframesPerProperty = 10000
@@ -261,9 +261,9 @@ maxStringLength = 10000
 maxExpressionParams :: Int
 maxExpressionParams = 1000
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Structures
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Bezier handle for keyframe curves
 data BezierHandle = BezierHandle
@@ -281,9 +281,9 @@ data Vec3 = Vec3
   }
   deriving stock (Eq, Show, Generic)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Validation
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Check if bezier handle has finite values
 isValidBezierHandle :: BezierHandle -> Bool

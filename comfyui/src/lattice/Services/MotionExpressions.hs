@@ -20,9 +20,9 @@ import Lattice.Utils.NumericSafety (isFinite)
 import Lattice.Utils.NumericSafety (safeSqrt)
 import Lattice.Utils.ArrayUtils (safeArrayGet)
 
--- ============================================================================
--- TYPES
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                                     // types
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Parameters for motion expressions
 -- Simplified from MotionExpressionContext - only what's needed for pure calculations
@@ -40,9 +40,9 @@ safeGet arr idx =
   let val = safeArrayGet arr idx 0.0
   in if isFinite val then val else 0.0
 
--- ============================================================================
--- MOTION EXPRESSIONS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                     // motion // expressions
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Inertia/Overshoot expression
 -- Pure function: same inputs → same outputs

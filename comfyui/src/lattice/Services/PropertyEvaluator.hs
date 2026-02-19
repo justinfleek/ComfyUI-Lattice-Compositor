@@ -35,9 +35,9 @@ import Lattice.Types.Animation (AnimatableProperty(..), PropertyExpression(..))
 import Lattice.Utils.NumericSafety (ensureFinite, clamp)
 import Lattice.Utils.ArrayUtils (safeArrayGet)
 
--- ============================================================================
--- TYPES
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                                     // types
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Property value source type
 data PropertyValueSource
@@ -79,9 +79,9 @@ data AudioMapping = AudioMapping
   }
   deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
--- ============================================================================
--- PURE PREDICATES
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                        // pure // predicates
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Check if a property has keyframes
 -- Pure function: same inputs → same outputs
@@ -104,9 +104,9 @@ getPropertyValueSource prop
   | propertyHasKeyframes prop = Keyframes
   | otherwise = Static
 
--- ============================================================================
--- AUDIO REACTIVE MAPPING
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                              // audio // reactive // mapping
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Apply audio reactive mapping to a property value
 -- Pure function: same inputs → same outputs

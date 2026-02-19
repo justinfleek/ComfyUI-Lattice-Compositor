@@ -160,7 +160,7 @@ class TestLatticeVectorizeRouteRegistration(unittest.TestCase):
     file_path = _src_dir / "lattice" / "nodes" / "lattice_vectorize.py"
     _module, _route_count = import_module_directly("lattice_vectorize", str(file_path), self.mock_server)
 
-    # VERIFY ROUTES IN MOCK (not just count)
+    #                                            // verify // routes // in // mock
     routes = self.mock_server.routes.registered_routes
     self.assertEqual(len(routes), 5, f"Expected 5 routes in mock, got {len(routes)}: {routes}")
 
@@ -191,7 +191,7 @@ class TestLatticeApiProxyRouteRegistration(unittest.TestCase):
     file_path = _src_dir / "lattice" / "nodes" / "lattice_api_proxy.py"
     _module, _route_count = import_module_directly("lattice_api_proxy", str(file_path), self.mock_server)
 
-    # VERIFY ROUTES IN MOCK
+    #                                            // verify // routes // in // mock
     routes = self.mock_server.routes.registered_routes
     self.assertEqual(len(routes), 10, f"Expected 10 routes in mock, got {len(routes)}: {routes}")
 
@@ -212,7 +212,7 @@ class TestLatticeLayerDecompositionRouteRegistration(unittest.TestCase):
       "lattice_layer_decomposition", file_path, self.mock_server
     )
 
-    # VERIFY ROUTES IN MOCK
+    #                                            // verify // routes // in // mock
     routes = self.mock_server.routes.registered_routes
     self.assertEqual(len(routes), 7, f"Expected 7 routes in mock, got {len(routes)}: {routes}")
 
@@ -233,7 +233,7 @@ class TestLatticeFrameInterpolationRouteRegistration(unittest.TestCase):
       "lattice_frame_interpolation", file_path, self.mock_server
     )
 
-    # VERIFY ROUTES IN MOCK
+    #                                            // verify // routes // in // mock
     routes = self.mock_server.routes.registered_routes
     self.assertEqual(len(routes), 5, f"Expected 5 routes in mock, got {len(routes)}: {routes}")
 
@@ -254,7 +254,7 @@ class TestControlnetPreprocessorsRouteRegistration(unittest.TestCase):
       "controlnet_preprocessors", file_path, self.mock_server
     )
 
-    # VERIFY ROUTES IN MOCK
+    #                                            // verify // routes // in // mock
     routes = self.mock_server.routes.registered_routes
     self.assertEqual(len(routes), 5, f"Expected 5 routes in mock, got {len(routes)}: {routes}")
 
@@ -275,7 +275,7 @@ class TestLatticeStemSeparationRouteRegistration(unittest.TestCase):
       "lattice_stem_separation", file_path, self.mock_server
     )
 
-    # VERIFY ROUTES IN MOCK
+    #                                            // verify // routes // in // mock
     routes = self.mock_server.routes.registered_routes
     self.assertEqual(len(routes), 4, f"Expected 4 routes in mock, got {len(routes)}: {routes}")
 
@@ -294,7 +294,7 @@ class TestCompositorNodeRouteRegistration(unittest.TestCase):
     file_path = _src_dir / "lattice" / "nodes" / "compositor_node.py"
     _module, _route_count = import_module_directly("compositor_node", str(file_path), self.mock_server)
 
-    # VERIFY ROUTES IN MOCK
+    #                                            // verify // routes // in // mock
     routes = self.mock_server.routes.registered_routes
     self.assertEqual(len(routes), 11, f"Expected 11 routes in mock, got {len(routes)}: {routes}")
 
@@ -329,7 +329,7 @@ class TestAllModulesTotalRouteCount(unittest.TestCase):
       file_path = _src_dir / "lattice" / "nodes" / f"{module_name}.py"
       import_module_directly(module_name, str(file_path), self.mock_server)
 
-    # VERIFY TOTAL ROUTES IN MOCK
+    #                                   // verify // total // routes // in // mock
     total_routes = len(self.mock_server.routes.registered_routes)
     self.assertEqual(total_routes, 47, f"Expected 47 total routes in mock, got {total_routes}")
 

@@ -62,9 +62,9 @@ import Lattice.Services.Midi.Types
   , MIDIMapping
   )
 
---------------------------------------------------------------------------------
--- FFI Types
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
+--                                                                  // ffi // t
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Opaque MIDI service handle
 foreign import data MIDIServiceHandle :: Type
@@ -72,9 +72,9 @@ foreign import data MIDIServiceHandle :: Type
 -- | MIDI event callback
 type MIDIEventCallback = MIDIMessage -> Effect Unit
 
---------------------------------------------------------------------------------
--- FFI Imports
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
+--                                                                  // ffi // i
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Check if Web MIDI API is available
 foreign import isWebMIDIAvailable :: Effect Boolean
@@ -121,9 +121,9 @@ foreign import getServiceInstanceImpl :: Effect MIDIServiceHandle
 -- | Check if initialized
 foreign import isInitializedImpl :: MIDIServiceHandle -> Effect Boolean
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Service Type
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | MIDI service wrapper
 newtype MIDIService = MIDIService
@@ -131,9 +131,9 @@ newtype MIDIService = MIDIService
   , smoothedValues :: Ref (Map String Number)
   }
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Initialization
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Get the singleton MIDI service instance
 getMIDIService :: Effect MIDIService
@@ -162,9 +162,9 @@ isReady :: MIDIService -> Effect Boolean
 isReady (MIDIService { handle }) =
   isInitializedImpl handle
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Device Management
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Get all connected MIDI devices
 getDevices :: MIDIService -> Effect (Array MIDIDeviceInfo)
@@ -183,9 +183,9 @@ getOutputDevices service = do
   devices <- getDevices service
   pure (filter (\d -> d.deviceType == MIDIOutput) devices)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Listeners
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Add a listener for all MIDI messages
 addGlobalListener :: MIDIService -> MIDIEventCallback -> Effect Unit
@@ -217,9 +217,9 @@ addFilteredListener service midiFilter callback = do
   addGlobalListener service wrappedCallback
   pure (removeGlobalListener service wrappedCallback)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Message Filtering
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Check if a message passes a filter
 matchesFilter :: MIDIMessage -> MIDIFilter -> Boolean
@@ -257,9 +257,9 @@ matchesFilter msg midiFilter =
         Nothing -> true
         Just c -> c `elem` controllers
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Value Access
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Get the current value of a CC controller
 getCCValue :: MIDIService -> Int -> Int -> Effect (Maybe Int)
@@ -287,9 +287,9 @@ getMessageHistory :: MIDIService -> Maybe Int -> Effect (Array MIDIMessage)
 getMessageHistory (MIDIService { handle }) limit =
   getMessageHistoryImpl handle limit
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Property Mapping
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Calculate mapped value from MIDI input
 getMappedValue :: MIDIService -> MIDIMapping -> Maybe MIDIMessage -> Effect Number
@@ -332,9 +332,9 @@ getInputFromMessage msg mapping =
         Just _ -> 0.0  -- Would need to look up stored CC value
         Nothing -> 0.0
 
---------------------------------------------------------------------------------
--- MIDI Output
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
+--                                                                 // midi // o
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Send a raw MIDI message to an output device
 sendMessage :: MIDIService -> String -> Array Int -> Effect Boolean
@@ -359,9 +359,9 @@ sendCC service deviceId channel controller value =
   let status = 0xB0 + (channel - 1)
   in sendMessage service deviceId [status, controller, value]
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Helpers
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 max :: Number -> Number -> Number
 max a b = if a > b then a else b

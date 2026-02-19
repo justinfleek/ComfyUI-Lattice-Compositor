@@ -113,7 +113,7 @@ function analyzeFile(file: string): void {
     // Skip comments
     if (trimmed.startsWith("//") || trimmed.startsWith("*")) return;
 
-    // HIGH: Type escapes
+    //                                                                      // high
     if (/\bas any\b/.test(line)) {
       flagPattern(
         file,
@@ -150,7 +150,7 @@ function analyzeFile(file: string): void {
       );
     }
 
-    // MEDIUM: Suspicious defensive guards
+    //                                                                    // medium
     for (const pattern of INVALID_ZERO_PATTERNS) {
       if (pattern.test(line)) {
         flagPattern(
@@ -166,7 +166,7 @@ function analyzeFile(file: string): void {
       }
     }
 
-    // MEDIUM: Division operations that could produce NaN/Infinity
+    //                                                                    // medium
     for (const pattern of DIVISION_PATTERNS) {
       if (pattern.test(line) && !line.includes("Number.isFinite")) {
         flagPattern(
@@ -182,7 +182,7 @@ function analyzeFile(file: string): void {
       }
     }
 
-    // MEDIUM: Optional chaining where null check exists before
+    //                                                                    // medium
     if (/\?\./.test(line)) {
       // Check if there's a null check in previous lines (simple heuristic)
       const context = lines.slice(Math.max(0, index - 3), index + 1).join(" ");
@@ -202,7 +202,7 @@ function analyzeFile(file: string): void {
       }
     }
 
-    // LOW: Functions that might should return values
+    //                                                                       // low
     if (/:\s*void\s*[={]/.test(line) && /function|const\s+\w+\s*=\s*\(/.test(line)) {
       // Heuristic: functions with "get", "find", "calculate" might should return
       if (/get|find|calculate|compute|check|has|is/.test(line)) {

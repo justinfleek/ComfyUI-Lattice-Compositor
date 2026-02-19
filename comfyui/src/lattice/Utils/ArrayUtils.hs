@@ -5,7 +5,7 @@
 -- Migrated from ui/src/utils/arrayUtils.ts
 -- Pure functions for array manipulation
 -- 
--- CRITICAL: No forbidden patterns - explicit types, no null/undefined, no type escapes
+--                                                                  // critical
 --
 
 {-# LANGUAGE OverloadedStrings #-}
@@ -23,9 +23,9 @@ module Lattice.Utils.ArrayUtils
 import Lattice.Utils.NumericSafety (isFinite)
 import Lattice.Utils.NumericSafety (ensureFinite)
 
--- ============================================================================
--- ARRAY OPERATIONS
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                       // array // operations
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Safe index into a list: returns element at index or default if out of bounds.
 safeArrayGet :: [a] -> Int -> a -> a

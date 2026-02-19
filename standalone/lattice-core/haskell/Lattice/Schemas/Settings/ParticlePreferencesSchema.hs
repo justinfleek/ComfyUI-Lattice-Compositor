@@ -43,9 +43,9 @@ import Lattice.Schemas.SharedValidation
   , validatePositiveInt
   )
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Enums
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Rendering backend options
 data RenderingBackend = BackendAuto | BackendWebGPU | BackendWebGL2 | BackendCPU
@@ -79,9 +79,9 @@ simulationModeToText ModeRealtime = "realtime"
 simulationModeToText ModeCached = "cached"
 simulationModeToText ModeBaked = "baked"
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Constants
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 maxCheckpointInterval :: Int
 maxCheckpointInterval = 10000
@@ -98,9 +98,9 @@ maxTargetFPS = 120
 minTargetFPS :: Int
 minTargetFPS = 1
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Particle Preferences
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Particle preferences structure
 data ParticlePreferences = ParticlePreferences
@@ -134,9 +134,9 @@ defaultParticlePreferences = ParticlePreferences
   , ppLodEnabled = True
   }
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Validation
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Validate ParticlePreferences
 validateParticlePreferences :: ParticlePreferences -> Either ValidationError ParticlePreferences

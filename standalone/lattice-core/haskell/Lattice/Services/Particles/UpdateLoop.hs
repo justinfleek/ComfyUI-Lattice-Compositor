@@ -45,9 +45,9 @@ import Lattice.Services.Particles.Lifecycle
 import Lattice.Services.Particles.Modulation
 import Lattice.Services.Particles.Collision (CollisionConfig)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Types
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Global particle system configuration
 data SystemConfig = SystemConfig
@@ -87,9 +87,9 @@ data StepResult = StepResult
   , srNewParticleCount :: Int        -- ^ Count of new particles spawned
   } deriving (Show, Eq)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Main Update
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Step a single particle through one frame.
 --
@@ -161,9 +161,9 @@ stepSystem config state input particles =
        , srNewParticleCount = 0  -- Emission handled separately
        }
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Force Application
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Apply all force fields to a particle.
 applyAllForces
@@ -201,9 +201,9 @@ calculateTotalForce x y wells vortices attractors dt =
       lor = applyLorenzAttractors x y attractors dt
   in Vec2 (vx well + vx vort + vx lor) (vy well + vy vort + vy lor)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Global Properties
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Get effective gravity (with audio override).
 effectiveGravity :: SystemConfig -> Maybe Double -> Double
@@ -248,9 +248,9 @@ applyTurbulenceForce p noiseX noiseY dt =
     , pVy = pVy p + noiseY * 0.001 * dt
     }
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Lifecycle
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Separate particles into alive and dead.
 filterExpired :: [Particle] -> ([Particle], [Particle])

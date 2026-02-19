@@ -25,9 +25,9 @@ import qualified Data.Text as T
 import Data.Char (isControl, isSpace)
 import Data.Maybe (Maybe(..))
 
--- ============================================================================
--- TYPES
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                                     // types
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Serialization mode
 data SerializationMode
@@ -35,13 +35,13 @@ data SerializationMode
   | SerializationFull
   deriving (Eq, Show)
 
--- ============================================================================
--- SECURITY FUNCTIONS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                     // security // functions
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Sanitize user-controlled strings before sending to LLM
 -- Pure function: same inputs → same outputs
--- SECURITY: Critical - prevents prompt injection attacks
+--                                                                  // security
 -- Defense layers:
 -- 1. Strip control characters
 -- 2. Collapse whitespace (prevents layout manipulation)
@@ -63,7 +63,7 @@ sanitizeForLLM value maxLength =
 
 -- | Sanitize text content (allows more length, preserves structure)
 -- Pure function: same inputs → same outputs
--- SECURITY: Critical - prevents prompt injection
+--                                                                  // security
 sanitizeTextContent :: Text -> Text
 sanitizeTextContent value =
   let maxTextLength = 1000
@@ -78,7 +78,7 @@ sanitizeTextContent value =
 
 -- | Wrap serialized state in security boundary tags
 -- Pure function: same inputs → same outputs
--- SECURITY: Critical - marks data as untrusted
+--                                                                  // security
 wrapInSecurityBoundary :: Text -> Text
 wrapInSecurityBoundary jsonState = T.unlines
   [ "<user_project_data>"
@@ -89,13 +89,13 @@ wrapInSecurityBoundary jsonState = T.unlines
   , "</user_project_data>"
   ]
 
--- ============================================================================
--- ANALYSIS FUNCTIONS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                     // analysis // functions
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Check if user request requires full data access
 -- Pure function: same inputs → same outputs
--- SECURITY: Returns true only if request explicitly mentions
+--                                                                  // security
 -- text content, specific parameter values, or detailed configuration
 requiresFullDataAccess :: Text -> Bool
 requiresFullDataAccess userRequest =
@@ -120,7 +120,7 @@ requiresFullDataAccess userRequest =
 
 -- | Get recommended serialization mode based on user request
 -- Pure function: same inputs → same outputs
--- SECURITY: Defaults to minimal. Only returns 'full' if request
+--                                                                  // security
 -- explicitly needs access to potentially sensitive data
 getRecommendedSerializationMode :: Text -> SerializationMode
 getRecommendedSerializationMode userRequest =

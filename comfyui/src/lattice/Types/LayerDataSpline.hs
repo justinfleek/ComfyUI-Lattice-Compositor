@@ -36,7 +36,7 @@ module Lattice.Types.LayerDataSpline
   , ZigZagEffect(..)
   , WaveEffect(..)
   , WaveType(..)
-  -- LOD
+  --                                                                       // lod
   , SplineLODSettings(..)
   , SplineLODMode(..)
   , LODLevel(..)
@@ -69,9 +69,9 @@ import Lattice.Types.Primitives
   , validateNormalized01
   )
 
--- ============================================================================
--- CONTROL POINTS
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                         // control // points
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Control point type
 data ControlPointType
@@ -202,9 +202,9 @@ instance FromJSON AnimatableControlPoint where
     mGroup <- o .:? "group"
     return (AnimatableControlPoint id_ x y mDepth mHandleIn mHandleOut cType mGroup)
 
--- ============================================================================
--- SPLINE DATA
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                            // spline // data
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Stroke type
 data SplineStrokeType
@@ -475,9 +475,9 @@ instance FromJSON SplineData where
       then return (SplineData pathData controlPoints closed mStrokeType stroke mStrokeGradient strokeWidth mStrokeOpacity mLineCap mLineJoin mStrokeMiterLimit mDashArray mDashOffset mFill mFillOpacity mTrimStart mTrimEnd mTrimOffset mPathEffects mAnimatedControlPoints mAnimated mLOD mWarpPins mPuppetPins mAudioReactive)
       else fail "SplineData: numeric values must be finite and within valid ranges"
 
--- ============================================================================
--- PATH LAYER DATA
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                     // path // layer // data
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Path layer data (motion path for text-on-path, camera paths, particle emitters)
 data PathLayerData = PathLayerData
@@ -522,9 +522,9 @@ instance FromJSON PathLayerData where
           then return (PathLayerData pathData controlPoints closed showGuide guideColor dash mAnimatedControlPoints mAnimated)
           else fail "PathLayerData: guideDashPattern values must be finite and non-negative"
 
--- ============================================================================
--- PATH EFFECTS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                           // path // effects
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Path effect type
 data SplinePathEffectType
@@ -838,9 +838,9 @@ instance FromJSON SplinePathEffectInstance where
         return (SplinePathEffectInstanceWave e)
       _ -> fail "Invalid SplinePathEffectInstance type"
 
--- ============================================================================
--- LEVEL OF DETAIL
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                     // level // of // detail
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | LOD mode
 data SplineLODMode
@@ -932,9 +932,9 @@ instance FromJSON SplineLODSettings where
       then return (SplineLODSettings enabled mode levels maxPoints tolerance cullingEnabled cullMargin)
       else fail "SplineLODSettings: numeric values must be finite and non-negative"
 
--- ============================================================================
--- AUDIO REACTIVE
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                         // audio // reactive
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Audio-reactive animation configuration
 data SplineAudioReactive = SplineAudioReactive

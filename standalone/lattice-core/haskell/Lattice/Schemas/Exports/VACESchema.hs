@@ -49,9 +49,9 @@ module Lattice.Schemas.Exports.VACESchema
 import GHC.Generics (Generic)
 import Data.Text (Text)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Path Follower Shape
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Path follower shape options
 data PathFollowerShape
@@ -80,9 +80,9 @@ pathFollowerShapeToText ShapeDiamond = "diamond"
 pathFollowerShapeToText ShapeArrow = "arrow"
 pathFollowerShapeToText ShapeCustom = "custom"
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Path Follower Easing
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Path follower easing options
 data PathFollowerEasing
@@ -111,9 +111,9 @@ pathFollowerEasingToText EasingEaseInOut = "ease-in-out"
 pathFollowerEasingToText EasingEaseInCubic = "ease-in-cubic"
 pathFollowerEasingToText EasingEaseOutCubic = "ease-out-cubic"
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Loop Mode
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Loop mode options
 data LoopMode
@@ -130,9 +130,9 @@ loopModeToText :: LoopMode -> Text
 loopModeToText LoopRestart = "restart"
 loopModeToText LoopPingPong = "pingpong"
 
---------------------------------------------------------------------------------
--- VACE Output Format
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
+--                                                                 // vace // o
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | VACE output format options
 data VACEOutputFormat
@@ -152,9 +152,9 @@ vaceOutputFormatToText VACECanvas = "canvas"
 vaceOutputFormatToText VACEWebM = "webm"
 vaceOutputFormatToText VACEFrames = "frames"
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Structures
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | 2D/3D control point for splines
 data SplineControlPoint = SplineControlPoint
@@ -176,9 +176,9 @@ data PathFollowerState = PathFollowerState
   }
   deriving stock (Eq, Show, Generic)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Constants
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 maxControlPoints :: Int
 maxControlPoints = 100000

@@ -52,9 +52,9 @@ module Lattice.Services.Particles.Shapes
   , separateParticles
   ) where
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Types
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Result of spawn position calculation
 data SpawnResult = SpawnResult
@@ -67,18 +67,18 @@ data SpawnResult = SpawnResult
 data BoxEdge = TopEdge | RightEdge | BottomEdge | LeftEdge
   deriving (Show, Eq)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Point Emission
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Emit from a single point.
 emitPoint :: Double -> Double -> SpawnResult
 emitPoint emitterX emitterY =
   SpawnResult emitterX emitterY Nothing
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Line Emission
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Emit from a line perpendicular to emitter direction.
 emitLine :: Double -> Double -> Double -> Double -> Double -> SpawnResult
@@ -90,9 +90,9 @@ emitLine emitterX emitterY direction halfWidth t =
       offset = (t - 0.5) * halfWidth * 2
   in SpawnResult (emitterX + perpX * offset) (emitterY + perpY * offset) Nothing
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Circle Emission
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Emit from a filled circle with uniform area distribution.
 --
@@ -109,9 +109,9 @@ emitCircleEdge emitterX emitterY radius randomAngle =
   let angle = randomAngle * pi * 2
   in SpawnResult (emitterX + cos angle * radius) (emitterY + sin angle * radius) Nothing
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Ring Emission
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Emit from a ring (donut) with uniform area distribution.
 emitRing :: Double -> Double -> Double -> Double -> Double -> Double -> SpawnResult
@@ -122,9 +122,9 @@ emitRing emitterX emitterY innerRadius outerRadius randomAngle randomRadius =
       r = sqrt (randomRadius * (outerSq - innerSq) + innerSq)
   in SpawnResult (emitterX + cos angle * r) (emitterY + sin angle * r) Nothing
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Box Emission
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Emit from a filled box.
 emitBoxFilled :: Double -> Double -> Double -> Double -> Double -> Double -> SpawnResult
@@ -155,9 +155,9 @@ emitBoxEdge emitterX emitterY width height randomT =
        BottomEdge -> SpawnResult (emitterX + halfW - edgePos) (emitterY + halfH) Nothing
        LeftEdge   -> SpawnResult (emitterX - halfW) (emitterY + halfH - edgePos) Nothing
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Sphere Emission (3D projected to 2D)
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Emit from sphere surface.
 --
@@ -177,9 +177,9 @@ emitSphereVolume :: Double -> Double -> Double -> Double -> Double -> SpawnResul
 emitSphereVolume emitterX emitterY radius unitX unitY =
   SpawnResult (emitterX + unitX * radius) (emitterY + unitY * radius) Nothing
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Cone Emission
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Emit from a cone volume.
 --
@@ -200,9 +200,9 @@ emitCone emitterX emitterY direction coneAngle coneRadius coneLength randomT ran
                  (emitterY + localX * sinDir + localY * cosDir)
                  Nothing
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Collision Response
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Elastic collision response between two particles.
 --

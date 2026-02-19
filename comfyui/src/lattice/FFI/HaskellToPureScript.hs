@@ -5,7 +5,7 @@
 -- Pure functions for converting between Haskell and PureScript types.
 -- All conversions use JSON serialization for type safety.
 --
--- CRITICAL: All types must have Extractable instances in Lean4 with proven
+--                                                                  // critical
 -- round-trip theorems. No proof, no conversion.
 --
 
@@ -23,9 +23,9 @@ import qualified Data.ByteString.Lazy as BSL
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
 
--- ============================================================================
--- CONVERSION PROTOCOL
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                    // conversion // protocol
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Convert Haskell type to PureScript type via JSON
 -- 
@@ -47,11 +47,11 @@ psToHs psValue =
     Just hsValue -> Right hsValue
     Nothing -> Left "Failed to convert PureScript to Haskell: JSON decode failed"
 
--- ============================================================================
--- TYPE-SPECIFIC CONVERTERS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                                      // type
+-- ════════════════════════════════════════════════════════════════════════════
 
--- NOTE: Type-specific converters will be generated from Lean4 Extractable
+--                                                                      // note
 -- instances. For now, this module provides the generic conversion protocol.
 --
 -- Example generated converters:

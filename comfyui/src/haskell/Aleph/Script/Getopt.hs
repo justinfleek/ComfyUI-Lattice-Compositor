@@ -43,9 +43,9 @@ import Data.Void
 import Text.Megaparsec
 import Text.Megaparsec.Char (char, digitChar, letterChar, string)
 
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 -- Types
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | A CLI option/flag
 data GetoptOption = GetoptOption
@@ -71,9 +71,9 @@ data GetoptHelp = GetoptHelp
     }
     deriving (Show, Eq)
 
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 -- Parser
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 
 type Parser = Parsec Void Text
 
@@ -137,7 +137,7 @@ Formats:
 -}
 optionLine :: Parser GetoptOption
 optionLine = do
-    -- GNU style: 2-6 spaces indentation before - or --
+    --                                                                       // gnu
     spaces <- takeWhile1P Nothing (== ' ')
     let indent = T.length spaces
     if indent < 2 || indent > 8
@@ -194,9 +194,9 @@ parseHelp input =
         (u : _) -> Just u
         [] -> Nothing
 
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 -- Code Generation Utilities
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Convert option long name to valid Haskell identifier
 optionToHaskellName :: Text -> Text
@@ -322,9 +322,9 @@ fieldType opt = case optArg opt of
                 then "Maybe " <> baseType -- Optional arg: Maybe (Maybe T) would be weird, just Maybe T
                 else "Maybe " <> baseType
 
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 -- Code Generation
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Names exported by Aleph.Script that might conflict with command names
 straylightScriptExports :: [Text]

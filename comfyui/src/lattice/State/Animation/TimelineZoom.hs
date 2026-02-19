@@ -17,9 +17,9 @@ import qualified Data.Text as T
 import Lattice.State.Animation.Types (AnimationState(..))
 import Lattice.Types.Primitives (validateFinite)
 
--- ============================================================================
--- TIMELINE ZOOM OPERATIONS
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                            // timeline // zoom // operations
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Set timeline zoom level
 -- Pure function: takes animation state and zoom level, returns new state

@@ -53,9 +53,9 @@ import Lattice.Types.Primitives
   )
 import Lattice.Schema.SharedValidation (validateBoundedArray)
 
--- ============================================================================
--- PIN TYPES
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                              // pin // types
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Type of warp pin
 data WarpPinType
@@ -184,9 +184,9 @@ instance FromJSON WarpPinRestState where
       then return (WarpPinRestState pinId position rotation scale inFront)
       else fail "WarpPinRestState: rotation, scale, and inFront must be finite and within valid ranges"
 
--- ============================================================================
--- MESH TYPES
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                             // mesh // types
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Control point for path reconstruction after deformation
 data WarpControlPoint = WarpControlPoint
@@ -241,7 +241,7 @@ instance FromJSON WarpDeformationResult where
     return (WarpDeformationResult vertices controlPoints)
 
 -- | A triangulated mesh for warp deformation
--- NOTE: Float32Array in TypeScript is represented as [Double] in Haskell
+--                                                                      // note
 -- The weights array stores pinCount weights per vertex
 data WarpMesh = WarpMesh
   { warpMeshLayerId :: Text, -- Layer this mesh belongs to
@@ -287,9 +287,9 @@ instance FromJSON WarpMesh where
       Right ws -> return ws
     return (WarpMesh layerId pins triangulation weights originalVertices pinRestStates vertexCount dirty)
 
--- ============================================================================
--- WEIGHT CALCULATION
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                     // weight // calculation
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Method for calculating pin influence weights
 data WarpWeightMethod

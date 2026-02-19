@@ -29,9 +29,9 @@ import Lattice.State.Camera
 import Lattice.Types.LayerData3D (Camera3D(..))
 import qualified Data.HashMap.Strict as HM
 
--- ============================================================================
--- JSON HELPERS
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                           // json // helpers
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Create success response JSON
 successResponse :: ToJSON a => a -> BSL.ByteString
@@ -45,9 +45,9 @@ errorResponse msg = encode $ object ["status" .= ("error" :: T.Text), "message" 
 jsonToCString :: BSL.ByteString -> IO CString
 jsonToCString = newCString . T.unpack . TE.decodeUtf8 . BSL.toStrict
 
--- ============================================================================
--- HELPER FUNCTIONS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                       // helper // functions
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | FFI: Compare two frame numbers safely
 foreign export ccall frames_equal_ffi :: CDouble -> CDouble -> IO CString
@@ -67,9 +67,9 @@ safe_frame_ffi inputCStr fallback = do
       let result = safeFrame mFrame (realToFrac fallback)
       jsonToCString (successResponse result)
 
--- ============================================================================
--- QUERY FUNCTIONS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                        // query // functions
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | FFI: Get all cameras as list
 foreign export ccall all_cameras_ffi :: CString -> IO CString

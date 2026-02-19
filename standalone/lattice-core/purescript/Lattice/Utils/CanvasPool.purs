@@ -52,9 +52,9 @@ import Data.Maybe (Maybe(..))
 import Data.DateTime.Instant (unInstant)
 import Data.Time.Duration (Milliseconds(..))
 
---------------------------------------------------------------------------------
--- FFI Types
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
+--                                                                  // ffi // t
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | HTML Canvas element (opaque FFI type)
 foreign import data HTMLCanvasElement :: Type
@@ -62,9 +62,9 @@ foreign import data HTMLCanvasElement :: Type
 -- | Canvas 2D rendering context (opaque FFI type)
 foreign import data CanvasRenderingContext2D :: Type
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Types
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Result of acquiring a canvas from the pool
 -- |
@@ -120,18 +120,18 @@ newtype CanvasPool = CanvasPool
   , config :: PoolConfig
   }
 
---------------------------------------------------------------------------------
--- FFI Imports
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
+--                                                                  // ffi // i
+-- ────────────────────────────────────────────────────────────────────────────
 
 foreign import createCanvas :: Int -> Int -> Effect HTMLCanvasElement
 foreign import getContext2D :: HTMLCanvasElement -> Effect CanvasRenderingContext2D
 foreign import clearRect :: CanvasRenderingContext2D -> Int -> Int -> Int -> Int -> Effect Unit
 foreign import canvasEquals :: HTMLCanvasElement -> HTMLCanvasElement -> Boolean
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Pool Operations
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Default pool configuration
 -- |

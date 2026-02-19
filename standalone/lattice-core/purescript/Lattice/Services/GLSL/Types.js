@@ -1,3 +1,3 @@
-// FFI bindings for Lattice.Services.GLSL.Types
+//                                                                       // ffi
 
 export const toNumber = (n) => n;

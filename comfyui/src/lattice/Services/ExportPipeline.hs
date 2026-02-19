@@ -30,9 +30,9 @@ import Data.List (replicate)
 import Lattice.Utils.ArrayUtils (safeArrayGet)
 import Lattice.Utils.NumericSafety (safeSqrt)
 
--- ============================================================================
--- TYPES
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                                     // types
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Export target type
 data ExportTarget
@@ -63,9 +63,9 @@ data ExportConfigValidation = ExportConfigValidation
   }
   deriving (Eq, Show)
 
--- ============================================================================
--- VALIDATION FUNCTIONS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                   // validation // functions
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Validate export configuration
 -- Pure function: same inputs → same outputs
@@ -132,9 +132,9 @@ needsPrompt target = case target of
   TargetControlNetLineart -> False
   _ -> True
 
--- ============================================================================
--- IMAGE PROCESSING FUNCTIONS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                          // image // processing // functions
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Apply Sobel-like edge detection to image data
 -- Pure function: same inputs → same outputs

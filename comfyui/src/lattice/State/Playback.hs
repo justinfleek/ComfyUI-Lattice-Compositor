@@ -40,12 +40,12 @@ import Lattice.Utils.NumericSafety
   ( ensureFinite
   )
 
--- ============================================================================
--- TYPES
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                                     // types
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Playback state (for pure queries)
--- EVERY VALUE HAS EXPLICIT DEFAULTS - NO Maybe/Nothing
+--                             // every // value // has // explicit // defaults
 data PlaybackState = PlaybackState
   { playbackStateIsPlaying :: Bool  -- Default: False
   , playbackStateWorkAreaStart :: Double  -- Default: 0.0 (min: 0.0, max: no upper bound)
@@ -72,9 +72,9 @@ instance FromJSON PlaybackState where
     endSet <- o .:? "workAreaEndSet" .!= False
     return (PlaybackState isPlaying start startSet end_ endSet)
 
--- ============================================================================
--- PURE QUERIES (GETTERS)
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                           // pure // queries
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Check if playback is currently playing
 -- Pure function: takes playback state, returns boolean
@@ -126,9 +126,9 @@ effectiveEndFrame state frameCount =
       in if finiteEnd >= 0 then finiteEnd else defaultEnd
     else defaultEnd
 
--- ============================================================================
--- PURE CALCULATIONS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                      // pure // calculations
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Clamp frame to valid range [0, frameCount - 1]
 -- Pure function: takes frame and frameCount, returns clamped frame

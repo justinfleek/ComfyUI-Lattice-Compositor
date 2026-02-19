@@ -39,9 +39,9 @@ import qualified Data.Text as T
 import Lattice.Schemas.SharedValidation
   ( ValidationError, mkError, validatePositiveInt )
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Absolute Maximums (Security Critical)
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 maxDimensionAbsolute :: Int
 maxDimensionAbsolute = 16384
@@ -67,9 +67,9 @@ maxStringLengthAbsolute = 1000000
 maxFpsAbsolute :: Int
 maxFpsAbsolute = 120
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Validation Limits
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Validation limits with configurable and absolute values
 data ValidationLimits = ValidationLimits
@@ -113,9 +113,9 @@ defaultValidationLimits = ValidationLimits
   , vlMaxFPSAbsolute = maxFpsAbsolute
   }
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Validation
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Validate that configurable limits don't exceed absolute limits
 validateLimitsConstraint :: ValidationLimits -> Either ValidationError ()

@@ -28,9 +28,9 @@ import Data.Int (floor, toNumber)
 import Global (isNaN, isFinite) as Global
 import Math (pi, sin) as Math
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Constants
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Maximum octaves to prevent excessive computation
 maxOctaves :: Int
@@ -44,9 +44,9 @@ defaultFrequency = 5.0
 defaultAmplitude :: Number
 defaultAmplitude = 50.0
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Helper Functions
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Clamp octaves to valid range [1, maxOctaves]
 clampOctaves :: Number -> Int
@@ -61,9 +61,9 @@ safeFrequency freq
   | Global.isNaN freq || not (Global.isFinite freq) || freq <= 0.0 = defaultFrequency
   | otherwise = freq
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Simple Noise (Sine-based)
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Generate noise value from sine waves with multiple octaves.
 sineNoise :: Number -> Number -> Number -> Int -> Number -> Number
@@ -81,9 +81,9 @@ sineNoise seed t frequency octaves ampMultiplier =
      then result
      else result / denominator
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Jitter Function
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Jitter: Add noise to a scalar value
 jitterScalar :: Number -> Number -> Number -> Number -> Int -> Number -> Number
@@ -98,9 +98,9 @@ jitterVector values t frequency amplitude octaves ampMultiplier =
     let noise = sineNoise (toNumber i) t frequency octaves ampMultiplier
     in v + noise * amplitude) values
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Smooth Noise (Catmull-Rom Interpolated)
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Deterministic random from integer index and seed
 deterministicRand :: Number -> Number -> Number
@@ -130,9 +130,9 @@ smoothNoise seed t frequency =
       v3 = deterministicRand (index + 2.0) seed * 2.0 - 1.0
   in catmullRom v0 v1 v2 v3 frac
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Temporal Jitter Function
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Temporal jitter: Smooth noise on a scalar value
 temporalJitterScalar :: Number -> Number -> Number -> Number -> Int -> Number
@@ -158,9 +158,9 @@ temporalJitterVector values t frequency amplitude octaves =
         result = go octaves 0.0 amplitude frequency
     in v + result) values
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Main API
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Jitter expression for scalar values
 jitter :: Number -> Number -> Number -> Number -> Number -> Number -> Number

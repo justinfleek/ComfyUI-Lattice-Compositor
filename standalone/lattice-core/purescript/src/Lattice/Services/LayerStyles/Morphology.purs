@@ -25,9 +25,9 @@ import Prelude
 
 import Math (sqrt)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Distance Calculation
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Calculate Euclidean distance between two points.
 distance :: Number -> Number -> Number
@@ -37,9 +37,9 @@ distance dx dy = sqrt (dx * dx + dy * dy)
 withinRadius :: Number -> Number -> Number -> Boolean
 withinRadius dx dy radius = distance dx dy <= radius
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Coordinate Bounds
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Clamp coordinate to valid range.
 clampCoord :: Int -> Int -> Int
@@ -52,9 +52,9 @@ clampCoord coord maxVal
 pixelIndex :: Int -> Int -> Int -> Int
 pixelIndex x y width = y * width + x
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Dilation (Expand Alpha)
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Dilation kernel value at a single neighbor.
 dilateKernel :: Int -> Int -> Int
@@ -64,9 +64,9 @@ dilateKernel neighborAlpha currentMax = max currentMax neighborAlpha
 dilationRadius :: Number -> Number -> Number
 dilationRadius spreadPercent size = (spreadPercent / 100.0) * size
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Erosion (Shrink Alpha)
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Erosion kernel value at a single neighbor.
 erodeKernel :: Int -> Int -> Int
@@ -76,9 +76,9 @@ erodeKernel neighborAlpha currentMin = min currentMin neighborAlpha
 erosionRadius :: Number -> Number -> Number
 erosionRadius chokePercent size = (chokePercent / 100.0) * size
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Blur After Morphology
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Calculate blur radius after spread/choke.
 blurAfterMorphology :: Number -> Number -> Number

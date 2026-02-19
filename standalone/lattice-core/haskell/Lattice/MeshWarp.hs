@@ -41,9 +41,9 @@ import GHC.Generics (Generic)
 import Data.Vector (Vector)
 import Lattice.Primitives
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Pin Type Enum
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Type of warp pin
 data WarpPinType
@@ -55,9 +55,9 @@ data WarpPinType
   | WPTAdvanced   -- ^ Advanced pin: Full transform control
   deriving stock (Eq, Show, Generic)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Weight Method Enum
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Method for calculating pin influence weights
 data WarpWeightMethod
@@ -67,9 +67,9 @@ data WarpWeightMethod
   | WWMBounded          -- ^ Bounded biharmonic weights
   deriving stock (Eq, Show, Generic)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Warp Pin
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | A control pin for mesh warp deformation
 data WarpPin = WarpPin
@@ -86,9 +86,9 @@ data WarpPin = WarpPin
   , wpInFront   :: !(Maybe NonEmptyString)  -- ^ AnimatableProperty ID for overlap depth
   } deriving stock (Eq, Show, Generic)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Pin Rest State
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Initial/rest state of a pin (before animation)
 data WarpPinRestState = WarpPinRestState
@@ -100,9 +100,9 @@ data WarpPinRestState = WarpPinRestState
   , wprsInFront   :: !(Maybe FiniteFloat)
   } deriving stock (Eq, Show, Generic)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Warp Mesh
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | A triangulated mesh for warp deformation
 data WarpMesh = WarpMesh
@@ -116,9 +116,9 @@ data WarpMesh = WarpMesh
   , wmDirty            :: !Bool
   } deriving stock (Eq, Show, Generic)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Deformation Result
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Control point with handles (for path reconstruction)
 data DeformedControlPoint = DeformedControlPoint
@@ -136,9 +136,9 @@ data WarpDeformationResult = WarpDeformationResult
   , wdrControlPoints :: !(Vector DeformedControlPoint)
   } deriving stock (Eq, Show, Generic)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Weight Options
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Options for weight calculation
 data WarpWeightOptions = WarpWeightOptions
@@ -148,9 +148,9 @@ data WarpWeightOptions = WarpWeightOptions
   , wwoMinWeight    :: !NonNegativeFloat  -- ^ Minimum weight threshold
   } deriving stock (Eq, Show, Generic)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Pin Type Helpers
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Check if pin type uses position animation
 warpPinTypeUsesPosition :: WarpPinType -> Bool

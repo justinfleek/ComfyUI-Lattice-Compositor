@@ -45,9 +45,9 @@ import Data.Int (toNumber)
 
 import Lattice.Services.Export.Types (WanMoveTrajectory)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Types
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Depth buffer format
 data MeshDepthFormat
@@ -113,9 +113,9 @@ type MaskExportFrame =
   , mask :: ImageDataHandle
   }
 
---------------------------------------------------------------------------------
--- FFI Types
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
+--                                                                  // ffi // t
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Opaque depth buffer handle
 foreign import data DepthBuffer :: Type
@@ -126,9 +126,9 @@ foreign import data ImageDataHandle :: Type
 -- | Opaque deformed vertices handle
 foreign import data DeformedVertices :: Type
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Pin Trajectory Export
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Export pins as trajectory (pure computation, delegates to FFI for interpolation)
 foreign import exportPinsAsTrajectoryImpl
@@ -198,9 +198,9 @@ exportPinPositionsPerFrame
   -> Effect (Array { frame :: Int, positions :: Array { id :: String, x :: Number, y :: Number } })
 exportPinPositionsPerFrame = exportPinPositionsPerFrameImpl
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Depth Export
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Export overlap pins as depth map
 foreign import exportOverlapAsDepthImpl
@@ -258,9 +258,9 @@ exportOverlapDepthSequence
 exportOverlapDepthSequence mesh verticesPerFrame pins frameRange width height format =
   exportOverlapDepthSequenceImpl mesh verticesPerFrame pins frameRange width height (formatToString format)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Mask Export
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Export deformed mesh as mask
 foreign import exportDeformedMeshMask

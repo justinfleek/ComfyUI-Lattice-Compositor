@@ -28,9 +28,9 @@ import Lattice.State.ParticlePreferences
   , RenderingBackend(..)
   )
 
--- ============================================================================
--- JSON HELPERS
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                           // json // helpers
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Create success response JSON
 successResponse :: ToJSON a => a -> BSL.ByteString
@@ -44,9 +44,9 @@ errorResponse msg = encode $ object ["status" .= ("error" :: T.Text), "message" 
 jsonToCString :: BSL.ByteString -> IO CString
 jsonToCString = newCString . T.unpack . TE.decodeUtf8 . BSL.toStrict
 
--- ============================================================================
--- COMPUTED FUNCTIONS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                     // computed // functions
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | FFI: Calculate active backend
 foreign export ccall active_backend_ffi :: CString -> IO CString
@@ -92,9 +92,9 @@ supports_high_particle_counts_ffi inputCStr = do
       let result = supportsHighParticleCounts backend
       jsonToCString (successResponse result)
 
--- ============================================================================
--- VALIDATION FUNCTIONS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                   // validation // functions
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | FFI: Sanitize max particles per layer
 foreign export ccall sanitize_max_particles_per_layer_ffi :: CString -> IO CString

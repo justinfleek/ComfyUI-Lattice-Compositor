@@ -30,9 +30,9 @@ import Lattice.Utils.NumericSafety
   ( validateFinite
   )
 
--- ============================================================================
--- MODEL CONFIGURATION
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                    // model // configuration
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Demucs model configuration
 data DemucsModel = DemucsModel
@@ -90,9 +90,9 @@ getModelConfig name = Map.lookup name demucsModels
 getAvailableModels :: [DemucsModel]
 getAvailableModels = Map.elems demucsModels
 
--- ============================================================================
--- ATTRIBUTION
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                               // attribution
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Attribution information for open source dependencies
 data Attribution = Attribution
@@ -129,9 +129,9 @@ sourceAttribution = Map.fromList
 getAttributionInfo :: Map Text Attribution
 getAttributionInfo = sourceAttribution
 
--- ============================================================================
--- PARAMETER VALIDATION
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                   // parameter // validation
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Validated stem separation parameters
 data StemSeparationParams = StemSeparationParams

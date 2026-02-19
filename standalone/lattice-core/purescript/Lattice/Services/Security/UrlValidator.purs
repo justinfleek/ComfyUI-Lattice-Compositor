@@ -42,9 +42,9 @@ import Data.String.Regex.Flags (ignoreCase)
 import Data.Generic.Rep (class Generic)
 import Data.Show.Generic (genericShow)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Types
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | URL validation context
 data URLContext = CtxAsset | CtxFetch | CtxEmbed
@@ -70,9 +70,9 @@ type URLValidationResult =
   , riskLevel :: URLRiskLevel
   }
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Constants
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Maximum URL length (2MB for data URLs)
 maxURLLength :: Int
@@ -96,9 +96,9 @@ blockedProtocols =
   , "view-source:" -- Source viewing
   ]
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Regex Patterns (compiled once)
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Protocol extraction regex
 protocolRegex :: Maybe Regex
@@ -149,9 +149,9 @@ safeDataPatterns = mapMaybe mkRegex
       Right r -> Just r
       Left _ -> Nothing
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Validation Functions
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Validate a URL for safe loading
 validateURL :: String -> URLContext -> URLValidationResult
@@ -177,10 +177,10 @@ validateURL url _context =
       -- Handle blob: URLs (created by browser, generally safe)
       else if protocol == "blob:"
         then mkSafe trimmedUrl "blob:"
-      -- HTTPS is safe
+      --                                                                     // https
       else if protocol == "https:"
         then mkSafe trimmedUrl "https:"
-      -- HTTP is allowed with warning
+      --                                                                      // http
       else if protocol == "http:"
         then mkWarning trimmedUrl "http:" "Unencrypted HTTP connection - data may be intercepted"
       -- Relative URLs are safe
@@ -208,9 +208,9 @@ validateURLs :: Array String -> Map String URLValidationResult
 validateURLs urls =
   foldl (\m url -> Map.insert url (validateURL url CtxAsset) m) Map.empty urls
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Sanitization
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Sanitize a URL for safe use in HTML attributes
 -- | Returns Either with error on invalid URL (no exceptions)
@@ -235,9 +235,9 @@ escapeHTML s = s
   # Str.replaceAll (Pattern "\"") (Str.Replacement "&quot;")
   # Str.replaceAll (Pattern "'") (Str.Replacement "&#x27;")
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Trust Checking
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Check if URL is from a trusted domain
 isTrustedDomain :: String -> Array String -> Boolean
@@ -259,9 +259,9 @@ extractAndValidateURLs text =
   let urls = extractURLsFromText text
   in map (\u -> validateURL u CtxAsset) urls
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Internal Helpers
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Create a blocked result
 mkBlocked :: String -> String -> URLValidationResult

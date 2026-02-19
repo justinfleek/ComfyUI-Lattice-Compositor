@@ -60,9 +60,9 @@ import Lattice.Types.Primitives
   , validateNormalized01
   )
 
--- ============================================================================
--- TEXT DATA
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                              // text // data
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Font style
 data TextFontStyle
@@ -356,9 +356,9 @@ instance FromJSON TextData where
       then return (TextData text fontFamily fontSize fontWeight fontStyle fill stroke strokeWidth tracking lineSpacing lineAnchor charOffset charValue blur letterSpacing lineHeight textAlign pathLayerId pathReversed pathPerp pathForce pathFirstMargin pathLastMargin pathOffset pathAlign mAnchorGroup mGroupAlign mFillStroke mInterChar mPerChar3D mBaselineShift mTextCase mVertAlign mKerning mLigatures mDiscLigatures mSmallCaps mStylisticSet mFirstIndent mSpaceBefore mSpaceAfter mAnimators)
       else fail "TextData: numeric values must be finite and within valid ranges"
 
--- ============================================================================
--- TEXT ANIMATOR
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                          // text // animator
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Range selector mode
 data TextRangeSelectorMode

@@ -52,9 +52,9 @@ import Lattice.Schema.SharedValidation
   , ValidationLimits(..)
   )
 
--- ============================================================================
--- JSON Response Helpers
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                                 // json // r
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Convert validation result to JSON CString
 validationResultToCString :: Either T.Text T.Text -> IO CString
@@ -72,9 +72,9 @@ jsonToCString resultJSON = do
   let resultText = TE.decodeUtf8 resultBS
   newCString (T.unpack resultText)
 
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 -- String Validation Functions
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 
 foreign export ccall "validate_non_empty_string"
   c_validate_non_empty_string :: CString -> CInt -> IO CString
@@ -157,9 +157,9 @@ c_validate_shader_code strPtr = do
   str <- peekCString strPtr
   validationResultToCString (validateShaderCode (T.pack str))
 
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 -- Array Validation Functions (JSON-based)
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 
 foreign export ccall "validate_bounded_array"
   c_validate_bounded_array :: CString -> CInt -> IO CString
@@ -225,9 +225,9 @@ c_validate_json_serializable jsonPtr = do
           let resultJSON = object ["status" .= ("success" :: T.Text)]
           jsonToCString resultJSON
 
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 -- Limits Management Functions
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 
 foreign export ccall "update_validation_limits"
   c_update_validation_limits :: CString -> IO CInt
@@ -238,7 +238,7 @@ c_update_validation_limits jsonPtr = do
   case decode @Value (BL.fromStrict (TE.encodeUtf8 (T.pack jsonStr))) of
     Nothing -> return (CInt 0)  -- Error
     Just val -> do
-      -- TODO: Parse ValidationLimits from JSON
+      --                                                                      // todo
       -- For now, return success
       return (CInt 1)
 

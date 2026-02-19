@@ -40,9 +40,9 @@ module Lattice.Schemas.Exports.NormalSchema
 import GHC.Generics (Generic)
 import Data.Text (Text)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Normal Generation Method
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Normal generation method options
 data NormalGenerationMethod
@@ -59,9 +59,9 @@ normalGenerationMethodToText :: NormalGenerationMethod -> Text
 normalGenerationMethodToText MethodAlgebraic = "algebraic"
 normalGenerationMethodToText MethodNormalcrafter = "normalcrafter"
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Normal Depth Model
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Normal depth model options
 data NormalDepthModel
@@ -81,9 +81,9 @@ normalDepthModelToText DA3_LARGE_1_1 = "DA3-LARGE-1.1"
 normalDepthModelToText DA3_GIANT_1_1 = "DA3-GIANT-1.1"
 normalDepthModelToText DA3NESTED_GIANT_LARGE_1_1 = "DA3NESTED-GIANT-LARGE-1.1"
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Generation Status
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Generation status options
 data GenerationStatus
@@ -100,16 +100,16 @@ generationStatusToText :: GenerationStatus -> Text
 generationStatusToText StatusSuccess = "success"
 generationStatusToText StatusError = "error"
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Constants
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 maxDimension :: Int
 maxDimension = 16384
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Structures
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Normal generation options
 data NormalGenerationOptions = NormalGenerationOptions
@@ -137,9 +137,9 @@ data NormalGenerationResult = NormalGenerationResult
   }
   deriving stock (Eq, Show, Generic)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Validation
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Check if metadata is valid
 isValidMetadata :: NormalGenerationMetadata -> Bool

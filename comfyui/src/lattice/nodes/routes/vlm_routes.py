@@ -133,7 +133,7 @@ Consider:
 
       print(f"[Lattice VLM] Loading {model_path} on {device}...")
 
-      # SECURITY: trust_remote_code=False prevents arbitrary code execution
+      #                                                                  // security
       # from downloaded models. If a model requires custom code, it must be
       # audited and added to an allowlist, or use a safe alternative.
       # See AUDIT/SECURITY_ARCHITECTURE.md for details.

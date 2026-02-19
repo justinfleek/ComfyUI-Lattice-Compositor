@@ -29,9 +29,9 @@ import Lattice.Services.Export.WanMoveExport.Types
 import Lattice.Services.Export.FlowGenerators.SeededRandom (SeededRandomState, initialState, next, rangeWithState) as SRng
 import Lattice.Services.Export.FlowGenerators.SeededRandom (SeededRandomState, initialState, next)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Generic Attractor
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Generate attractor based on type
 generateAttractor :: AttractorConfig -> WanMoveTrajectory
@@ -43,9 +43,9 @@ generateAttractor config =
     AttractorThomas -> generateLorenzAttractor config  -- Fallback
     AttractorHalvorsen -> generateLorenzAttractor config  -- Fallback
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Lorenz Attractor
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Generate Lorenz attractor trajectories
 -- | Creates the famous "butterfly" chaotic pattern
@@ -162,9 +162,9 @@ generateLorenzTrack initial dt sigma rho beta scale center w h numFrames =
     ) { state: initial, points: [], vis: [] } (range 0 (numFrames - 1))
   in { points: result.points, vis: result.vis }
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Rossler Attractor
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Generate Rossler attractor trajectories
 -- | Creates a simpler spiral-like chaotic pattern
@@ -273,9 +273,9 @@ generateRosslerTrack initial dt a b c scale center w h numFrames =
         ) { state: initial, points: [], vis: [] } (range 0 (numFrames - 1))
     in { points: result.points, vis: result.vis }
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Aizawa Attractor
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Generate Aizawa attractor (beautiful 3D torus-like chaos)
 generateAizawaAttractor :: AttractorConfig -> WanMoveTrajectory

@@ -36,9 +36,9 @@ import Lattice.Services.RenderQueue.Manager.Types
   )
 import Lattice.Services.RenderQueue.Manager.QueueControl (startQueue, cancelCurrentJob)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Job Management
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Add a new render job to the queue
 -- |

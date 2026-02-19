@@ -1,4 +1,4 @@
-// FFI bindings for RateLimits.purs
+//                                                                       // ffi
 
 // Date utilities
 export const getCurrentDateUTC = () => () => {
@@ -74,7 +74,7 @@ export const sessionStorageSetItem = (key) => (value) => () => {
   }
 };
 
-// JSON parsing for counts (Map String Int)
+//                                                                      // json
 export const parseCountsJson = (json) => {
   try {
     const parsed = JSON.parse(json);
@@ -97,7 +97,7 @@ export const stringifyCountsJson = (counts) => {
   return JSON.stringify(obj);
 };
 
-// JSON field extraction helpers
+//                                                                      // json
 export const extractDateFromJson = (json) => {
   try {
     const parsed = JSON.parse(json);

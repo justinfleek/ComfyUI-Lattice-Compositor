@@ -3,7 +3,7 @@
 -- Description : UUID5 (deterministic name-based UUID) implementation
 --
 -- Migrated from ui/src/utils/uuid5.ts
--- RFC 4122 compliant; pure SHA-1 in-module. No forbidden patterns.
+--                                                               // rfc // 4122
 --
 
 {-# LANGUAGE OverloadedStrings #-}
@@ -33,9 +33,9 @@ import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Data.Word (Word32, Word8)
 
--- ============================================================================
--- NAMESPACES (RFC 4122)
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                                // namespaces
+-- ════════════════════════════════════════════════════════════════════════════
 
 uuid5NamespaceDns :: Text
 uuid5NamespaceDns = "6ba7b810-9dad-11d1-80b4-00c04fd430c8"
@@ -52,9 +52,9 @@ uuid5NamespaceX500 = "6ba7b814-9dad-11d1-80b4-00c04fd430c8"
 latticeNamespace :: Text
 latticeNamespace = "a1b2c3d4-e5f6-4789-a012-3456789abcde"
 
--- ============================================================================
--- UUID <-> BYTES
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                                      // uuid
+-- ════════════════════════════════════════════════════════════════════════════
 
 hexDigit :: Char -> Int
 hexDigit c
@@ -84,9 +84,9 @@ bytesToUuid bs
   let seg a b = T.concat (map (hexByte . BS.index bs) [a .. b])
   in seg 0 3 <> "-" <> seg 4 5 <> "-" <> seg 6 7 <> "-" <> seg 8 9 <> "-" <> seg 10 15
 
--- ============================================================================
--- SHA-1 (pure, for UUID5)
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                                       // sha
+-- ════════════════════════════════════════════════════════════════════════════
 
 processChunk :: (Word32, Word32, Word32, Word32, Word32) -> ByteString -> (Word32, Word32, Word32, Word32, Word32)
 processChunk (h0, h1, h2, h3, h4) chunk =
@@ -130,9 +130,9 @@ sha1Final msg =
       toBytes h = BS.pack [ fromIntegral (h `shiftR` 24), fromIntegral (h `shiftR` 16), fromIntegral (h `shiftR` 8), fromIntegral h ]
   in BS.concat (map toBytes [fh0, fh1, fh2, fh3, fh4])
 
--- ============================================================================
--- UUID5
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                                     // uuid5
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Generate UUID5 from name and namespace (default: latticeNamespace)
 uuid5 :: Text -> Text -> Text
@@ -151,9 +151,9 @@ uuid5 name namespace =
         <> BS.drop 9 uuidBytes
   in bytesToUuid modified
 
--- ============================================================================
--- GENERATORS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                                // generators
+-- ════════════════════════════════════════════════════════════════════════════
 
 generateLayerId :: Text -> Maybe Text -> Int -> Text
 generateLayerId layerName mParentId index =

@@ -1,4 +1,4 @@
-// FFI bindings for Lattice.Services.Midi.Service
+//                                                                       // ffi
 // Web MIDI API integration
 
 // Singleton instance

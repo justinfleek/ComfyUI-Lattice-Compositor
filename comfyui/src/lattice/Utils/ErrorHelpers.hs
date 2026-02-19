@@ -5,7 +5,7 @@
 -- Migrated from ui/src/utils/errorHelpers.ts
 -- Pure functions for error creation
 -- 
--- CRITICAL: No forbidden patterns - explicit types, no null/undefined, no type escapes
+--                                                                  // critical
 --
 
 {-# LANGUAGE OverloadedStrings #-}
@@ -20,9 +20,9 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Aeson (Value(..))
 
--- ============================================================================
--- ERROR CREATION
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                         // error // creation
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Create a contextual error with standard format:
 -- [Context] Action failed: Reason. How to fix.

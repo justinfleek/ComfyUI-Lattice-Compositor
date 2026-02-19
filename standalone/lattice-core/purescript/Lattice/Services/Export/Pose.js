@@ -1,9 +1,9 @@
-// FFI implementation for Lattice.Services.Export.Pose
+//                                                                       // ffi
 // Renders pose skeletons to canvas for ControlNet conditioning
 
 "use strict";
 
-// COCO bone connections
+//                                                                      // coco
 const COCO_BONES = [
   [0, 1], [0, 2], [1, 3], [2, 4],           // Head
   [5, 6], [5, 7], [7, 9], [6, 8], [8, 10],  // Arms

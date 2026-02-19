@@ -20,9 +20,9 @@ import Lattice.Utils.NumericSafety (isFinite)
 import Lattice.Utils.NumericSafety (safeLerp)
 import Lattice.Utils.ArrayUtils (safeArrayGet)
 
--- ============================================================================
--- VALUE TYPE
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                             // value // type
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Expression value: either a number or an array of numbers
 data Value
@@ -48,9 +48,9 @@ valueToArray :: Value -> [Double]
 valueToArray (ValueNumber n) = [n]
 valueToArray (ValueArray arr) = arr
 
--- ============================================================================
--- VALUE OPERATIONS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                       // value // operations
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Subtract two values (numbers or arrays)
 -- Pure function: same inputs → same outputs
