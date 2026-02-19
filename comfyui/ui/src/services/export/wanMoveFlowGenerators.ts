@@ -13,9 +13,9 @@
 import { isFiniteNumber } from "@/utils/typeGuards";
 import type { GenerativeFlowConfig, WanMoveTrajectory } from "./wanMoveExport";
 
-// ============================================================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // SEEDED RANDOM (for deterministic generation)
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 export class SeededRandom {
   private state: number;
@@ -43,9 +43,9 @@ export class SeededRandom {
   }
 }
 
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // SIMPLEX NOISE (for organic motion)
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 export function simplexNoise2D(x: number, y: number, seed: number): number {
   // Simplified Perlin-style noise
@@ -89,9 +89,9 @@ export function simplexNoise2D(x: number, y: number, seed: number): number {
   return lerp(lerp(n00, n10, u), lerp(n01, n11, u), v) * 0.5 + 0.5;
 }
 
-// ============================================================================
-// ANADOL-STYLE FLOW GENERATORS
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
+//                                    // anadol // style // flow // generators
+// ═══════════════════════════════════════════════════════════════════════════
 
 /**
  * Generate spiral galaxy flow pattern

@@ -168,7 +168,7 @@ const CURVE_COLORS: Record<string, string> = {
 };
 
 // ═══════════════════════════════════════════════════════════════════
-// TYPES
+//                                                                    // types
 // ═══════════════════════════════════════════════════════════════════
 
 interface CurveData {
@@ -201,7 +201,7 @@ const selectionStore = useSelectionStore();
 const keyframeStore = useKeyframeStore();
 
 // ═══════════════════════════════════════════════════════════════════
-// REFS
+//                                                                     // refs
 // ═══════════════════════════════════════════════════════════════════
 
 const containerRef = ref<HTMLDivElement | null>(null);
@@ -216,7 +216,7 @@ const zoomLevel = ref(5.0); // Pixels per frame
 const scrollOffset = ref(0); // Frame at left edge
 
 // ═══════════════════════════════════════════════════════════════════
-// COORDINATE TRANSFORMS
+//                                                 // coordinate // transforms
 // ═══════════════════════════════════════════════════════════════════
 
 function frameToPixel(frame: number): number {
@@ -623,7 +623,7 @@ function cubicBezierValue(
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// DRAWING
+//                                                                  // drawing
 // ═══════════════════════════════════════════════════════════════════
 
 function draw() {
@@ -788,7 +788,7 @@ function drawSpeedCurve(
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// POSITIONING HELPERS
+//                                                   // positioning // helpers
 // ═══════════════════════════════════════════════════════════════════
 
 function getKeyframeStyle(_curve: CurveData, kf: Keyframe<PropertyValue>) {
@@ -1022,7 +1022,7 @@ function selectKeyframe(id: string, event: MouseEvent) {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// LIFECYCLE
+//                                                                // lifecycle
 // ═══════════════════════════════════════════════════════════════════
 
 watch(

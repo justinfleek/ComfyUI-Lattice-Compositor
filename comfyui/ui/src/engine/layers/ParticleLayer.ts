@@ -91,9 +91,9 @@ export class ParticleLayer extends BaseLayer {
   /** Last evaluated frame (for determinism) */
   private lastEvaluatedFrame: number = -1;
 
-  // ============================================================================
-  // EMITTER GIZMO VISUALIZATION
-  // ============================================================================
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  //                                        // emitter // gizmo // visualization
+  // ═══════════════════════════════════════════════════════════════════════════
 
   /** Emitter visualization icons */
   private emitterGizmos: Map<string, THREE.Group> = new Map();
@@ -1098,9 +1098,9 @@ export class ParticleLayer extends BaseLayer {
     this.fps = Number.isFinite(fps) && fps > 0 ? fps : 16;
   }
 
-  // ============================================================================
-  // EMITTER MANAGEMENT
-  // ============================================================================
+  // ═══════════════════════════════════════════════════════════════════════════
+  //                                                    // emitter // management
+  // ═══════════════════════════════════════════════════════════════════════════
 
   /**
    * Add a new emitter
@@ -1128,9 +1128,9 @@ export class ParticleLayer extends BaseLayer {
     this.particleSystem.removeEmitter(id);
   }
 
-  // ============================================================================
-  // FORCE FIELD MANAGEMENT
-  // ============================================================================
+  // ═══════════════════════════════════════════════════════════════════════════
+  //                                             // force // field // management
+  // ═══════════════════════════════════════════════════════════════════════════
 
   /**
    * Add a force field
@@ -1161,9 +1161,9 @@ export class ParticleLayer extends BaseLayer {
     this.particleSystem.removeForceField(id);
   }
 
-  // ============================================================================
-  // AUDIO REACTIVITY
-  // ============================================================================
+  // ═══════════════════════════════════════════════════════════════════════════
+  //                                                      // audio // reactivity
+  // ═══════════════════════════════════════════════════════════════════════════
 
   /**
    * Set audio feature value for reactivity
@@ -1209,9 +1209,9 @@ export class ParticleLayer extends BaseLayer {
     }
   }
 
-  // ============================================================================
-  // SIMULATION
-  // ============================================================================
+  // ═══════════════════════════════════════════════════════════════════════════
+  //                                                               // simulation
+  // ═══════════════════════════════════════════════════════════════════════════
 
   /**
    * Step the particle simulation
@@ -1306,9 +1306,9 @@ export class ParticleLayer extends BaseLayer {
     this.particleSystem.setCacheInterval(interval);
   }
 
-  // ============================================================================
+  // ═══════════════════════════════════════════════════════════════════════════
   // BAKE TO KEYFRAMES / TRAJECTORY EXPORT
-  // ============================================================================
+  // ═══════════════════════════════════════════════════════════════════════════
 
   /**
    * Export particle trajectories for a frame range
@@ -1339,9 +1339,9 @@ export class ParticleLayer extends BaseLayer {
     return this.particleSystem.getActiveParticles();
   }
 
-  // ============================================================================
-  // ABSTRACT IMPLEMENTATIONS
-  // ============================================================================
+  // ═══════════════════════════════════════════════════════════════════════════
+  //                                              // abstract // implementations
+  // ═══════════════════════════════════════════════════════════════════════════
 
   /**
    * Calculate time-remapped frame for particle simulation
@@ -1413,7 +1413,7 @@ export class ParticleLayer extends BaseLayer {
     // - Sequential playback (single step)
     // - Forward scrubbing (continue from current)
     // - Backward/random scrubbing (restore from nearest cache or reset)
-    // - Automatic caching every N frames
+    //                                          — Automatic caching every N frames
     const stepsPerformed = this.particleSystem.simulateToFrame(simulationFrame, this.fps);
 
     this.lastEvaluatedFrame = frame;
@@ -1647,9 +1647,9 @@ export class ParticleLayer extends BaseLayer {
     this.disposeGizmos();
   }
 
-  // ============================================================================
-  // EMITTER GIZMO VISUALIZATION
-  // ============================================================================
+  // ═══════════════════════════════════════════════════════════════════════════
+  //                                        // emitter // gizmo // visualization
+  // ═══════════════════════════════════════════════════════════════════════════
 
   /**
    * Create visual gizmos for all emitters and force fields
@@ -2151,9 +2151,9 @@ export class ParticleLayer extends BaseLayer {
     }
   }
 
-  // ============================================================================
+  // ═══════════════════════════════════════════════════════════════════════════
   // CC PARTICLE WORLD STYLE VISUALIZATION (Horizon, Grid, Axis)
-  // ============================================================================
+  // ═══════════════════════════════════════════════════════════════════════════
 
   /**
    * Create or update horizon line at floor position (CC Particle World style)
@@ -2428,9 +2428,9 @@ export class ParticleLayer extends BaseLayer {
     };
   }
 
-  // ============================================================================
-  // ACCESSORS
-  // ============================================================================
+  // ═══════════════════════════════════════════════════════════════════════════
+  //                                                                // accessors
+  // ═══════════════════════════════════════════════════════════════════════════
 
   /**
    * Get the underlying particle system for advanced operations

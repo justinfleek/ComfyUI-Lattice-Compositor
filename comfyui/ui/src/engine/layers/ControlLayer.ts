@@ -148,9 +148,9 @@ export class ControlLayer extends BaseLayer {
     this.indicator = null;
   }
 
-  // ============================================================================
-  // ABSTRACT IMPLEMENTATIONS
-  // ============================================================================
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  //                                              // abstract // implementations
+  // ═══════════════════════════════════════════════════════════════════════════
 
   protected onEvaluateFrame(_frame: number): void {
     // Control layers have no frame-specific content

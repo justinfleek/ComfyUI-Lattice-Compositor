@@ -36,9 +36,9 @@ import {
   MAX_URL_LENGTH,
 } from "../shared-validation";
 
-// ============================================================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // Image Layer Data
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 export const ImageFitModeSchema = z.enum(["none", "contain", "cover", "fill"]);
 
@@ -53,9 +53,9 @@ export const ImageLayerDataSchema = z.object({
 
 export type ImageLayerData = z.infer<typeof ImageLayerDataSchema>;
 
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // Video Layer Data
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 export const TimewarpMethodSchema = z.enum(["whole-frames", "frame-mix", "pixel-motion"]);
 export const FrameBlendingSchema = z.enum(["none", "frame-mix", "pixel-motion"]);
@@ -91,9 +91,9 @@ export const VideoDataSchema = z.object({
 
 export type VideoData = z.infer<typeof VideoDataSchema>;
 
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // Depth Layer Data
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 export const DepthVisualizationModeSchema = z.enum([
   "grayscale",
@@ -135,9 +135,9 @@ export const DepthLayerDataSchema = z.object({
 
 export type DepthLayerData = z.infer<typeof DepthLayerDataSchema>;
 
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // Normal Layer Data
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 export const NormalVisualizationModeSchema = z.enum([
   "rgb",
@@ -163,9 +163,9 @@ export const NormalLayerDataSchema = z.object({
 
 export type NormalLayerData = z.infer<typeof NormalLayerDataSchema>;
 
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // Audio Layer Data
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 export const AudioMarkerSchema = z.object({
   frame: frameNumber,
@@ -193,9 +193,9 @@ export const AudioLayerDataSchema = z.object({
 
 export type AudioLayerData = z.infer<typeof AudioLayerDataSchema>;
 
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // Generated Layer Data
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 export const GenerationTypeSchema = z.enum([
   "depth",
@@ -225,9 +225,9 @@ export const GeneratedLayerDataSchema = z.object({
 
 export type GeneratedLayerData = z.infer<typeof GeneratedLayerDataSchema>;
 
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // Solid Layer Data
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 export const SolidLayerDataSchema = z.object({
   color: HexColorSchema,
@@ -241,9 +241,9 @@ export const SolidLayerDataSchema = z.object({
 
 export type SolidLayerData = z.infer<typeof SolidLayerDataSchema>;
 
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // Control Layer Data (Null replacement)
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 export const ControlLayerDataSchema = z.object({
   size: positiveFinite.max(10000), // Max 10k units
@@ -255,9 +255,9 @@ export const ControlLayerDataSchema = z.object({
 
 export type ControlLayerData = z.infer<typeof ControlLayerDataSchema>;
 
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // Null Layer Data (Deprecated)
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 export const NullLayerDataSchema = z.object({
   size: positiveFinite.max(10000), // Max 10k units
@@ -265,9 +265,9 @@ export const NullLayerDataSchema = z.object({
 
 export type NullLayerData = z.infer<typeof NullLayerDataSchema>;
 
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // Group Layer Data
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 export const GroupLayerDataSchema = z.object({
   collapsed: z.boolean(),
@@ -278,9 +278,9 @@ export const GroupLayerDataSchema = z.object({
 
 export type GroupLayerData = z.infer<typeof GroupLayerDataSchema>;
 
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // Effect Layer Data (Adjustment Layer)
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 export const EffectLayerDataSchema = z.object({
   effectLayer: z.boolean(),
@@ -291,9 +291,9 @@ export const EffectLayerDataSchema = z.object({
 
 export type EffectLayerData = z.infer<typeof EffectLayerDataSchema>;
 
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // Nested Comp Data
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 export const NestedCompDataSchema = z.object({
   compositionId: entityId.nullable(),
@@ -311,9 +311,9 @@ export const NestedCompDataSchema = z.object({
 
 export type NestedCompData = z.infer<typeof NestedCompDataSchema>;
 
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // Camera Layer Data
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 export const CameraTypeSchema = z.enum(["one-node", "two-node"]);
 
@@ -458,9 +458,9 @@ export const CameraLayerDataSchema = z.object({
 
 export type CameraLayerData = z.infer<typeof CameraLayerDataSchema>;
 
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // Light Layer Data
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 export const LightTypeSchema = z.enum([
   "point",
@@ -487,9 +487,9 @@ export const LightLayerDataSchema = z.object({
 
 export type LightLayerData = z.infer<typeof LightLayerDataSchema>;
 
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // Pose Layer Data (OpenPose)
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 // Keypoint in a pose
 export const PoseKeypointSchema = z.object({
@@ -527,9 +527,9 @@ export const PoseLayerDataSchema = z.object({
 
 export type PoseLayerData = z.infer<typeof PoseLayerDataSchema>;
 
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // Model Layer Data (3D models)
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 export const ModelLayerDataSchema = z.object({
   assetId: NullableEntityIdSchema,
@@ -552,9 +552,9 @@ export const ModelLayerDataSchema = z.object({
 
 export type ModelLayerData = z.infer<typeof ModelLayerDataSchema>;
 
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // Point Cloud Layer Data
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 export const PointCloudLayerDataSchema = z.object({
   assetId: NullableEntityIdSchema,
@@ -579,9 +579,9 @@ export const PointCloudLayerDataSchema = z.object({
 
 export type PointCloudLayerData = z.infer<typeof PointCloudLayerDataSchema>;
 
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // Matte Layer Data
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 export const MatteTypeEnumSchema = z.enum([
   "luminance",
@@ -605,9 +605,9 @@ export const MatteLayerDataSchema = z.object({
 
 export type MatteLayerData = z.infer<typeof MatteLayerDataSchema>;
 
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // Procedural Matte Data (animated patterns for track mattes)
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 export const ProceduralMatteTypeSchema = z.enum([
   "linear_gradient",
@@ -687,9 +687,9 @@ export const ProceduralMatteDataSchema = z.object({
 
 export type ProceduralMatteData = z.infer<typeof ProceduralMatteDataSchema>;
 
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // Depthflow Layer Data
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 export const DepthflowPresetSchema = z.enum([
   "static",
@@ -759,9 +759,9 @@ export const DepthflowLayerDataSchema = z.object({
 
 export type DepthflowLayerData = z.infer<typeof DepthflowLayerDataSchema>;
 
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // Generated Map Data (AI preprocessors)
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 export const GeneratedMapDataSchema = z.object({
   mapType: z.enum(["depth", "normal", "edge", "segment", "pose", "flow"]),
@@ -780,9 +780,9 @@ export const GeneratedMapDataSchema = z.object({
 
 export type GeneratedMapData = z.infer<typeof GeneratedMapDataSchema>;
 
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // Spline/Path Common Types
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 export const ControlPointTypeSchema = z.enum(["corner", "smooth", "symmetric"]);
 
@@ -804,9 +804,9 @@ export const ControlPointSchema = z.object({
 
 export type ControlPoint = z.infer<typeof ControlPointSchema>;
 
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // Spline Layer Data (visible bezier paths)
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 export const RGBAColorObjectSchema = z.object({
   r: normalized01,
@@ -1038,9 +1038,9 @@ export const SplineDataSchema = z.object({
 
 export type SplineData = z.infer<typeof SplineDataSchema>;
 
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // Path Layer Data (invisible motion paths)
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 export const PathLayerDataSchema = z.object({
   pathData: z.string().max(MAX_STRING_LENGTH), // Max path data length
@@ -1063,9 +1063,9 @@ export const PathLayerDataSchema = z.object({
 
 export type PathLayerData = z.infer<typeof PathLayerDataSchema>;
 
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // Text Layer Data
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 export const TextAlignSchema = z.enum(["left", "center", "right"]);
 export const TextBaselineSchema = z.enum(["top", "middle", "bottom"]);
@@ -1219,9 +1219,9 @@ export const TextDataSchema = z.object({
 
 export type TextData = z.infer<typeof TextDataSchema>;
 
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // Shape Layer Data
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 // Import the correct ShapeLayerData schema from shapes-schema.ts
 import { ShapeLayerDataSchema } from "./shapes-schema";
@@ -1229,9 +1229,9 @@ import { ShapeLayerDataSchema } from "./shapes-schema";
 export { ShapeLayerDataSchema };
 export type ShapeLayerData = z.infer<typeof ShapeLayerDataSchema>;
 
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // Particle Layer Data (Legacy)
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 export const EmitterShapeSchema = z.enum([
   "point",
@@ -1261,9 +1261,9 @@ export const LegacyParticleLayerDataSchema = z.object({
 
 export type LegacyParticleLayerData = z.infer<typeof LegacyParticleLayerDataSchema>;
 
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // Particle Layer Data (New system - matching RyanOnTheInside)
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 // Sprite configuration
 export const SpriteConfigSchema = z.object({
@@ -1705,9 +1705,9 @@ export const ParticleLayerDataSchema = z.object({
 
 export type ParticleLayerData = z.infer<typeof ParticleLayerDataSchema>;
 
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // Union of all layer data types
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 export const LayerDataSchema = z.union([
   ImageLayerDataSchema,

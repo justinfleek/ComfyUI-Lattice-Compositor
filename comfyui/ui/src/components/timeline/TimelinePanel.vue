@@ -462,9 +462,9 @@ function handleAudioSeek(frame: number) {
   audioStore.scrubAudio(frame, projectStore.getFps());
 }
 
-// ============================================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // DRAG & DROP FROM PROJECT PANEL
-// ============================================================
+// ═══════════════════════════════════════════════════════════════════════════
 function onDragOver(event: DragEvent) {
   // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
   const dataTransfer = (event != null && typeof event === "object" && "dataTransfer" in event && event.dataTransfer != null && typeof event.dataTransfer === "object") ? event.dataTransfer : undefined;

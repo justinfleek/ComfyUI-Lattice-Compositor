@@ -58,9 +58,9 @@ describe('Tutorial 10: Deterministic Scrubbing - Time Travel Particles', () => {
     vi.clearAllMocks();
   });
 
-  // ============================================================================
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   // PHASE 1: BASIC SCRUBBING TEST (Steps 1-50)
-  // ============================================================================
+  // ═══════════════════════════════════════════════════════════════════════════
 
   describe('Phase 1: Basic Scrubbing Test (Steps 1-50)', () => {
     test('Step 1-25: Forward scrubbing produces consistent results', async () => {
@@ -152,9 +152,9 @@ describe('Tutorial 10: Deterministic Scrubbing - Time Travel Particles', () => {
     });
   });
 
-  // ============================================================================
+  // ═══════════════════════════════════════════════════════════════════════════
   // PHASE 2: FRAME CACHE VERIFICATION (Steps 51-100)
-  // ============================================================================
+  // ═══════════════════════════════════════════════════════════════════════════
 
   describe('Phase 2: Frame Cache Verification (Steps 51-100)', () => {
     test('Step 51-75: Verify frames are cached at intervals', async () => {
@@ -241,9 +241,9 @@ describe('Tutorial 10: Deterministic Scrubbing - Time Travel Particles', () => {
     });
   });
 
-  // ============================================================================
+  // ═══════════════════════════════════════════════════════════════════════════
   // PHASE 3: RANDOM SCRUBBING (Steps 101-150)
-  // ============================================================================
+  // ═══════════════════════════════════════════════════════════════════════════
 
   describe('Phase 3: Random Scrubbing (Steps 101-150)', () => {
     test('Step 101-125: Random frame jumps maintain determinism', async () => {
@@ -334,9 +334,9 @@ describe('Tutorial 10: Deterministic Scrubbing - Time Travel Particles', () => {
     });
   });
 
-  // ============================================================================
+  // ═══════════════════════════════════════════════════════════════════════════
   // PHASE 4: CACHE EFFICIENCY (Steps 151-200)
-  // ============================================================================
+  // ═══════════════════════════════════════════════════════════════════════════
 
   describe('Phase 4: Cache Efficiency (Steps 151-200)', () => {
     test('Step 151-175: Verify cache doesn\'t grow unbounded', async () => {
@@ -424,9 +424,9 @@ describe('Tutorial 10: Deterministic Scrubbing - Time Travel Particles', () => {
     });
   });
 
-  // ============================================================================
+  // ═══════════════════════════════════════════════════════════════════════════
   // PHASE 5: COMPLEX SCRUBBING SCENARIOS (Steps 201-250)
-  // ============================================================================
+  // ═══════════════════════════════════════════════════════════════════════════
 
   describe('Phase 5: Complex Scrubbing Scenarios (Steps 201-250)', () => {
     test('Step 201-225: Test scrubbing with audio reactivity', async () => {
@@ -546,9 +546,9 @@ describe('Tutorial 10: Deterministic Scrubbing - Time Travel Particles', () => {
     });
   });
 
-  // ============================================================================
+  // ═══════════════════════════════════════════════════════════════════════════
   // PHASE 6: COMPLETE TIME TRAVEL EFFECT (Steps 251-300)
-  // ============================================================================
+  // ═══════════════════════════════════════════════════════════════════════════
 
   describe('Phase 6: Complete Time Travel Effect (Steps 251-300)', () => {
     test('Step 251-300: Create complete time travel particle visualization', async () => {

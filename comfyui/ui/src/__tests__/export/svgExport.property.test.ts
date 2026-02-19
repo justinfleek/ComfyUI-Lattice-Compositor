@@ -23,9 +23,9 @@ import type { Layer } from "@/types/project";
 import { createAnimatableProperty } from "@/types/animation";
 import { createDefaultTransform } from "@/types/transform";
 
-// ============================================================
-// ARBITRARIES
-// ============================================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//                                                              // arbitraries
+// ═══════════════════════════════════════════════════════════════════════════
 
 const controlPointArb: fc.Arbitrary<ControlPoint> = fc.record({
   id: fc.string({ minLength: 1 }),
@@ -91,9 +91,9 @@ function createSplineLayer(
   };
 }
 
-// ============================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // controlPointsToPathData TESTS
-// ============================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 describe("PROPERTY: controlPointsToPathData", () => {
   it("returns empty string for empty points array", () => {
@@ -222,9 +222,9 @@ describe("PROPERTY: controlPointsToPathData", () => {
   });
 });
 
-// ============================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // SVGExportService TESTS
-// ============================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 describe("PROPERTY: SVGExportService", () => {
   it("constructor accepts custom options", () => {
@@ -362,9 +362,9 @@ describe("PROPERTY: SVGExportService", () => {
   });
 });
 
-// ============================================================
-// SIMPLE EXPORT FUNCTIONS TESTS
-// ============================================================
+// ═══════════════════════════════════════════════════════════════════════════
+//                                   // simple // export // functions // tests
+// ═══════════════════════════════════════════════════════════════════════════
 
 describe("PROPERTY: exportSplineLayer (simple)", () => {
   it("returns SVG string directly", () => {
@@ -495,9 +495,9 @@ describe("PROPERTY: exportLayers (simple)", () => {
   });
 });
 
-// ============================================================
-// EDGE CASES
-// ============================================================
+// ═══════════════════════════════════════════════════════════════════════════
+//                                                            // edge // cases
+// ═══════════════════════════════════════════════════════════════════════════
 
 describe("PROPERTY: SVG Export Edge Cases", () => {
   it("handles very large coordinates", () => {

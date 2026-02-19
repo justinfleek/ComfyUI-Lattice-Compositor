@@ -565,9 +565,9 @@ const snapIndicatorY = ref<number | null>(null);
 const compWidth = computed(() => projectStore.getWidth());
 const compHeight = computed(() => projectStore.getHeight());
 
-// ========================================================================
-// KEYBOARD SHORTCUTS COMPOSABLE
-// ========================================================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//                                      // keyboard // shortcuts // composable
+// ═══════════════════════════════════════════════════════════════════════════
 const keyboard = useKeyboardShortcuts({
   showExportDialog,
   showCompositionSettingsDialog,
@@ -657,9 +657,9 @@ const _compositionInfo = computed(() => {
 const _canUndo = computed(() => projectStore.canUndo);
 const _canRedo = computed(() => projectStore.canRedo);
 
-// ========================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // GUIDES SYSTEM (using composable)
-// ========================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 const {
   guides,
   guideContextMenu,
@@ -692,9 +692,9 @@ provide("captureFrame", async (): Promise<string | null> => {
   throw new Error("[WorkspaceLayout] Cannot capture frame: ThreeCanvas is not available or captureFrame method is not accessible");
 });
 
-// ========================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // SNAP POINT CALCULATION (uses both guides and keyboard composable state)
-// ========================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 function getSnapPoint(
   x: number,
   y: number,
@@ -1404,9 +1404,9 @@ function handleZoomChange() {
   }
 }
 
-// ========================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // MENU BAR ACTION HANDLER (using composable)
-// ========================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 const { handleMenuAction } = useMenuActions({
   showExportDialog,
   showPrecomposeDialog,

@@ -24,9 +24,9 @@ import type { WorkflowParams } from "@/services/comfyui/workflowTemplates";
 import { createAnimatableProperty } from "@/types/animation";
 import { createDefaultTransform } from "@/types/transform";
 
-// ============================================================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // TEST HELPERS - Production-Grade Type Safety
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 /**
  * Create a complete ExportConfig with sensible defaults for testing.
@@ -87,9 +87,9 @@ function createTestLayer(overrides: Partial<Layer> = {}): Layer {
   };
 }
 
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // CATEGORY 1: STATE CORRUPTION & RACE CONDITIONS
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 describe("ATTACK: State Corruption - Abort Mid-Export", () => {
   it("should clean up partial files when aborted", async () => {
@@ -233,9 +233,9 @@ describe("ATTACK: State Corruption - Resume After Error", () => {
   });
 });
 
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // CATEGORY 2: MEMORY EXHAUSTION / DoS
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 describe("ATTACK: Memory Exhaustion", () => {
   it("should reject 4K × 4K × 1000 frames (would be 64GB+)", async () => {
@@ -353,9 +353,9 @@ describe("ATTACK: Memory Exhaustion", () => {
   });
 });
 
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // CATEGORY 3: MALICIOUS INPUT INJECTION
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 describe("ATTACK: Path Traversal", () => {
   it("should reject path traversal in output directory", async () => {
@@ -506,9 +506,9 @@ describe("ATTACK: Workflow JSON Injection", () => {
   });
 });
 
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // CATEGORY 4: BINARY FORMAT CORRUPTION
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 describe("ATTACK: NPY Binary Corruption", () => {
   it("should produce valid NPY header for edge case shapes", async () => {
@@ -584,9 +584,9 @@ describe("ATTACK: NPY Binary Corruption", () => {
   });
 });
 
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // CATEGORY 5: DETERMINISM FAILURES
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 // SKIP: Tests require camera API changes not yet implemented
 describe.skip("ATTACK: Non-Deterministic Output", () => {
@@ -721,9 +721,9 @@ describe.skip("ATTACK: Non-Deterministic Output", () => {
   });
 });
 
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // CATEGORY 6: CROSS-EXPORT STATE LEAKAGE
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 // SKIP: Tests require camera.depthOfField API not yet implemented
 describe.skip("ATTACK: Cross-Export State Leakage", () => {
@@ -807,9 +807,9 @@ describe.skip("ATTACK: Cross-Export State Leakage", () => {
   });
 });
 
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // CATEGORY 7: EDGE VALUES THAT LOOK VALID
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 // SKIP: Tests require ExportPipeline and workflow validation not yet implemented
 describe.skip("ATTACK: Edge Values That Look Valid", () => {
@@ -915,9 +915,9 @@ describe.skip("ATTACK: Edge Values That Look Valid", () => {
   });
 });
 
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // CATEGORY 8: LAYER-SPECIFIC ATTACKS
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 describe("ATTACK: Layer Edge Cases", () => {
   it("should handle layer with 0% scale (potential div by zero)", async () => {
@@ -998,9 +998,9 @@ describe("ATTACK: Layer Edge Cases", () => {
   });
 });
 
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // CATEGORY 9: EXPORT-SPECIFIC STATE ATTACKS
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 // SKIP: Tests require export error messages not yet implemented
 describe.skip("ATTACK: Export-Specific Edge Cases", () => {
@@ -1077,9 +1077,9 @@ describe.skip("ATTACK: Export-Specific Edge Cases", () => {
   });
 });
 
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // CATEGORY 10: RESOLUTION MISMATCH ATTACKS
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 describe("ATTACK: Resolution Mismatch", () => {
   it("should handle layer larger than export resolution", async () => {

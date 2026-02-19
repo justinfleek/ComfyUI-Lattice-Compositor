@@ -120,9 +120,9 @@ describe('Tutorial 07: Verified Particle System Basics - Cosmic Nebula', () => {
     return projectStore.getActiveCompLayers().find(l => l.name === name);
   };
 
-  // ============================================================================
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   // PHASE 1: PROJECT SETUP & VERIFIED SYSTEM ENABLEMENT (Steps 1-25)
-  // ============================================================================
+  // ═══════════════════════════════════════════════════════════════════════════
 
   describe('Phase 1: Project Setup & Verified System Enablement (Steps 1-25)', () => {
     test('Step 1: Create new project', () => {
@@ -222,9 +222,9 @@ describe('Tutorial 07: Verified Particle System Basics - Cosmic Nebula', () => {
     });
   });
 
-  // ============================================================================
+  // ═══════════════════════════════════════════════════════════════════════════
   // PHASE 2: BASIC EMITTER SETUP - DETERMINISM TEST (Steps 26-75)
-  // ============================================================================
+  // ═══════════════════════════════════════════════════════════════════════════
 
   describe('Phase 2: Basic Emitter Setup - Determinism Test (Steps 26-75)', () => {
     test('Step 26: Add point emitter "Core_Emitter"', () => {
@@ -388,9 +388,9 @@ describe('Tutorial 07: Verified Particle System Basics - Cosmic Nebula', () => {
     });
   });
 
-  // ============================================================================
+  // ═══════════════════════════════════════════════════════════════════════════
   // PHASE 3: FORCE FIELDS - PHYSICS PROOFS (Steps 76-150)
-  // ============================================================================
+  // ═══════════════════════════════════════════════════════════════════════════
 
   describe('Phase 3: Force Fields - Physics Proofs (Steps 76-150)', () => {
     test('Step 76-100: Add gravity force field and verify drag opposes velocity', async () => {
@@ -550,9 +550,9 @@ describe('Tutorial 07: Verified Particle System Basics - Cosmic Nebula', () => {
     });
   });
 
-  // ============================================================================
+  // ═══════════════════════════════════════════════════════════════════════════
   // PHASE 4: AUDIO REACTIVITY - ANTI-COMPOUNDING PROOF (Steps 151-225)
-  // ============================================================================
+  // ═══════════════════════════════════════════════════════════════════════════
 
   describe('Phase 4: Audio Reactivity - Anti-Compounding Proof (Steps 151-225)', () => {
     test('Step 151-175: Configure audio-reactive emitter and verify no compounding', async () => {
@@ -732,9 +732,9 @@ describe('Tutorial 07: Verified Particle System Basics - Cosmic Nebula', () => {
     });
   });
 
-  // ============================================================================
+  // ═══════════════════════════════════════════════════════════════════════════
   // PHASE 5: LIFETIME MODULATION - NO COMPOUNDING (Steps 226-300)
-  // ============================================================================
+  // ═══════════════════════════════════════════════════════════════════════════
 
   describe('Phase 5: Lifetime Modulation - No Compounding (Steps 226-300)', () => {
     test('Step 226-250: Configure size over lifetime curve', async () => {
@@ -863,9 +863,9 @@ describe('Tutorial 07: Verified Particle System Basics - Cosmic Nebula', () => {
     });
   });
 
-  // ============================================================================
+  // ═══════════════════════════════════════════════════════════════════════════
   // PHASE 6: SPATIAL HASHING - COMPLETENESS PROOF (Steps 301-375)
-  // ============================================================================
+  // ═══════════════════════════════════════════════════════════════════════════
 
   describe('Phase 6: Spatial Hashing - Completeness Proof (Steps 301-375)', () => {
     test('Step 301-325: Enable particle connections and verify neighbor queries', async () => {
@@ -1017,9 +1017,9 @@ describe('Tutorial 07: Verified Particle System Basics - Cosmic Nebula', () => {
     });
   });
 
-  // ============================================================================
+  // ═══════════════════════════════════════════════════════════════════════════
   // PHASE 7: FRAME CACHING - DETERMINISTIC SCRUBBING (Steps 376-400)
-  // ============================================================================
+  // ═══════════════════════════════════════════════════════════════════════════
 
   describe('Phase 7: Frame Caching - Deterministic Scrubbing (Steps 376-400)', () => {
     test('Step 376-400: Test deterministic timeline scrubbing', async () => {
@@ -1069,9 +1069,9 @@ describe('Tutorial 07: Verified Particle System Basics - Cosmic Nebula', () => {
     });
   });
 
-  // ============================================================================
+  // ═══════════════════════════════════════════════════════════════════════════
   // PHASE 8: EDGE CASES & ERROR HANDLING (Steps 401-450)
-  // ============================================================================
+  // ═══════════════════════════════════════════════════════════════════════════
 
   describe('Phase 8: Edge Cases & Error Handling (Steps 401-450)', () => {
     test('Step 401-425: Test with zero particles', async () => {
@@ -1156,9 +1156,9 @@ describe('Tutorial 07: Verified Particle System Basics - Cosmic Nebula', () => {
     });
   });
 
-  // ============================================================================
+  // ═══════════════════════════════════════════════════════════════════════════
   // PHASE 9: PERFORMANCE BENCHMARKS (Steps 451-475)
-  // ============================================================================
+  // ═══════════════════════════════════════════════════════════════════════════
 
   describe('Phase 9: Performance Benchmarks (Steps 451-475)', () => {
     test('Step 451-475: Benchmark with 100K particles', async () => {
@@ -1202,9 +1202,9 @@ describe('Tutorial 07: Verified Particle System Basics - Cosmic Nebula', () => {
     });
   });
 
-  // ============================================================================
+  // ═══════════════════════════════════════════════════════════════════════════
   // PHASE 10: VISUAL VERIFICATION (Steps 476-500)
-  // ============================================================================
+  // ═══════════════════════════════════════════════════════════════════════════
 
   describe('Phase 10: Visual Verification (Steps 476-500)', () => {
     test('Step 476-500: Create complete "Cosmic Nebula" effect', async () => {

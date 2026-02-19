@@ -7,9 +7,9 @@
 import type { FootageDataAccessor } from "@/types/dataAsset";
 import type { Keyframe } from "@/types/project";
 
-// ============================================================
-// EXPRESSION CONTEXT
-// ============================================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//                                                    // expression // context
+// ═══════════════════════════════════════════════════════════════════════════
 
 export interface ExpressionContext {
   // Time
@@ -89,9 +89,9 @@ export interface ExpressionContext {
   ) => number | number[] | string | boolean | null;
 }
 
-// ============================================================
-// EXPRESSION DEFINITION
-// ============================================================
+// ═══════════════════════════════════════════════════════════════════════════
+//                                                 // expression // definition
+// ═══════════════════════════════════════════════════════════════════════════
 
 export interface Expression {
   type: "preset" | "function" | "custom";
@@ -101,9 +101,9 @@ export interface Expression {
   code?: string; // For custom expressions - JavaScript code string
 }
 
-// ============================================================
-// EXPRESSION VALIDATION
-// ============================================================
+// ═══════════════════════════════════════════════════════════════════════════
+//                                                 // expression // validation
+// ═══════════════════════════════════════════════════════════════════════════
 
 export interface ExpressionValidationResult {
   valid: boolean;
@@ -112,9 +112,9 @@ export interface ExpressionValidationResult {
   errorColumn?: number;
 }
 
-// ============================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // SOURCE RECT (for sourceRectAtTime)
-// ============================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 /**
  * Source rectangle interface matching industry standards
@@ -126,9 +126,9 @@ export interface SourceRect {
   height: number; // Height of content
 }
 
-// ============================================================
-// TEXT SOURCE INFO
-// ============================================================
+// ═══════════════════════════════════════════════════════════════════════════
+//                                                   // text // source // info
+// ═══════════════════════════════════════════════════════════════════════════
 
 export interface TextSourceInfo {
   text: string;
@@ -142,9 +142,9 @@ export interface TextSourceInfo {
   leading: number;
 }
 
-// ============================================================
-// TEXT ANIMATOR CONTEXT
-// ============================================================
+// ═══════════════════════════════════════════════════════════════════════════
+//                                              // text // animator // context
+// ═══════════════════════════════════════════════════════════════════════════
 
 /**
  * Text animator context for per-character expressions

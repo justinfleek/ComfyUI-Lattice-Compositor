@@ -13,9 +13,9 @@ import { useAnimationStore } from "../animationStore";
 import { useLayerStore } from "../layerStore";
 import { generateKeyframeId } from "@/utils/uuid5";
 
-// ============================================================================
-// PROPERTY ANIMATION STATE
-// ============================================================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//                                           // property // animation // state
+// ═══════════════════════════════════════════════════════════════════════════
 
 /**
  * Set a property's value (for direct editing in timeline).

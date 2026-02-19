@@ -25,9 +25,9 @@ export interface KeyframeShapeDefinition {
  * Centered at (width/2, height/2), designed for 24px height
  */
 export const KEYFRAME_SHAPES: Record<string, KeyframeShapeDefinition> = {
-  // ========================================
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   // BAR SHAPES (for holds/markers)
-  // ========================================
+  // ═══════════════════════════════════════════════════════════════════════════
 
   /** Mini - Short vertical bar for subtle keyframes */
   mini: {
@@ -53,9 +53,9 @@ export const KEYFRAME_SHAPES: Record<string, KeyframeShapeDefinition> = {
     stroke: true,
   },
 
-  // ========================================
+  // ═══════════════════════════════════════════════════════════════════════════
   // ROUND HEAD SHAPES (for smooth starts)
-  // ========================================
+  // ═══════════════════════════════════════════════════════════════════════════
 
   /** Round Head - Circle top for smooth interpolation start */
   roundHead: {
@@ -90,9 +90,9 @@ export const KEYFRAME_SHAPES: Record<string, KeyframeShapeDefinition> = {
     fill: "none",
   },
 
-  // ========================================
+  // ═══════════════════════════════════════════════════════════════════════════
   // WIDE SHAPES (for timing windows)
-  // ========================================
+  // ═══════════════════════════════════════════════════════════════════════════
 
   /** Wide - Horizontal bar for wide timing window */
   wide: {
@@ -108,9 +108,9 @@ export const KEYFRAME_SHAPES: Record<string, KeyframeShapeDefinition> = {
     height: 24,
   },
 
-  // ========================================
+  // ═══════════════════════════════════════════════════════════════════════════
   // EASE SHAPES (for interpolation types)
-  // ========================================
+  // ═══════════════════════════════════════════════════════════════════════════
 
   /** Pill - Rounded rectangle for eased transitions */
   pill: {
@@ -147,9 +147,9 @@ export const KEYFRAME_SHAPES: Record<string, KeyframeShapeDefinition> = {
     height: 24,
   },
 
-  // ========================================
+  // ═══════════════════════════════════════════════════════════════════════════
   // POINT SHAPES (for discrete keyframes)
-  // ========================================
+  // ═══════════════════════════════════════════════════════════════════════════
 
   /** Radio - Filled circle point */
   radio: {

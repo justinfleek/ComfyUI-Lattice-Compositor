@@ -14,9 +14,9 @@ import {
 import { useLayerStore } from "@/stores/layerStore";
 import { useProjectStore } from "../projectStore";
 
-// ============================================================================
-// SEPARATE DIMENSIONS
-// ============================================================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//                                                   // separate // dimensions
+// ═══════════════════════════════════════════════════════════════════════════
 
 /**
  * Separate position into individual X, Y, Z properties for independent keyframing.

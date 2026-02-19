@@ -29,9 +29,9 @@ import {
   MAX_ARRAY_LENGTH,
 } from "../shared-validation";
 
-// ============================================================================
-// BASE TYPES
-// ============================================================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//                                                            // base // types
+// ═══════════════════════════════════════════════════════════════════════════
 
 /**
  * 2D Point (alias for Vec2Schema)
@@ -121,9 +121,9 @@ export const GradientDefSchema = z.object({
 
 export type GradientDef = z.infer<typeof GradientDefSchema>;
 
-// ============================================================================
-// ANIMATABLE PROPERTY SCHEMAS FOR SHAPES
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
+//                       // animatable // property // schemas // for // shapes
+// ═══════════════════════════════════════════════════════════════════════════
 
 /**
  * Animatable Point2D property
@@ -162,9 +162,9 @@ export const AnimatableNumberArraySchema = createAnimatablePropertySchema(
 
 export type AnimatableNumberArray = z.infer<typeof AnimatableNumberArraySchema>;
 
-// ============================================================================
-// SHAPE GENERATORS
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
+//                                                      // shape // generators
+// ═══════════════════════════════════════════════════════════════════════════
 
 export const RectangleShapeSchema = z.object({
   type: z.literal("rectangle"),
@@ -234,9 +234,9 @@ export const ShapeGeneratorSchema = z.discriminatedUnion("type", [
 
 export type ShapeGenerator = z.infer<typeof ShapeGeneratorSchema>;
 
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // SHAPE MODIFIERS (Fill/Stroke)
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 export const FillRuleSchema = z.enum(["nonzero", "evenodd"]);
 export const LineCapSchema = z.enum(["butt", "round", "square"]);
@@ -314,9 +314,9 @@ export const ShapeModifierSchema = z.discriminatedUnion("type", [
 
 export type ShapeModifier = z.infer<typeof ShapeModifierSchema>;
 
-// ============================================================================
-// PATH OPERATORS
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
+//                                                        // path // operators
+// ═══════════════════════════════════════════════════════════════════════════
 
 export const TrimModeSchema = z.enum(["simultaneously", "individually"]);
 
@@ -428,9 +428,9 @@ export const PathOperatorSchema = z.discriminatedUnion("type", [
 
 export type PathOperator = z.infer<typeof PathOperatorSchema>;
 
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // TRANSFORM & REPEATER
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 export const ShapeTransformSchema = z.object({
   type: z.literal("transform"),
@@ -467,9 +467,9 @@ export const RepeaterOperatorSchema = z.object({
 
 export type RepeaterOperator = z.infer<typeof RepeaterOperatorSchema>;
 
-// ============================================================================
-// ILLUSTRATOR-SPECIFIC OPERATORS
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
+//                                     // illustrator // specific // operators
+// ═══════════════════════════════════════════════════════════════════════════
 
 export const SimplifyPathOperatorSchema = z.object({
   type: z.literal("simplifyPath"),
@@ -530,9 +530,9 @@ export const IllustratorOperatorSchema = z.discriminatedUnion("type", [
 
 export type IllustratorOperator = z.infer<typeof IllustratorOperatorSchema>;
 
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // NON-GROUP SHAPE CONTENT (for use inside ShapeGroup.contents)
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 // Non-recursive shape content (groups cannot contain other groups)
 // This breaks the circular dependency while allowing groups at root level
@@ -569,9 +569,9 @@ export const NonGroupShapeContentSchema = z.discriminatedUnion("type", [
 
 export type NonGroupShapeContent = z.infer<typeof NonGroupShapeContentSchema>;
 
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // SHAPE GROUP (non-recursive - groups cannot contain other groups)
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 export const ShapeGroupSchema = z.object({
   type: z.literal("group"),
@@ -584,9 +584,9 @@ export const ShapeGroupSchema = z.object({
 
 export type ShapeGroup = z.infer<typeof ShapeGroupSchema>;
 
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // FULL SHAPE CONTENT (includes groups for root-level ShapeLayerData.contents)
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 // Full shape content union (includes groups for root level)
 export const ShapeContentSchema = z.union([
@@ -596,9 +596,9 @@ export const ShapeContentSchema = z.union([
 
 export type ShapeContent = z.infer<typeof ShapeContentSchema>;
 
-// ============================================================================
-// SHAPE LAYER DATA
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
+//                                                   // shape // layer // data
+// ═══════════════════════════════════════════════════════════════════════════
 
 export const ShapeLayerDataSchema = z.object({
   /** Root contents (groups, shapes, operators) */

@@ -11,9 +11,9 @@
 
 import { z } from "zod";
 
-// ============================================================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // Validation Constants (Fixed - Security Critical)
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 export const MAX_NAME_LENGTH = 200;
 export const MAX_DESCRIPTION_LENGTH = 2000;
@@ -32,9 +32,9 @@ export const MAX_FILENAME_LENGTH = 255;
 export const MAX_ANIMATION_NAME_LENGTH = 100;
 export const MAX_WARNING_LENGTH = 500;
 
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // Configurable Limits (Default values - updated from store at runtime)
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 // Default values matching existing codebase constants
 // These will be updated from validationLimitsStore when it loads
@@ -155,9 +155,9 @@ export function getMaxFPS(): number {
 export const MAX_STRING_LENGTH = _maxStringLength;
 export const MAX_ARRAY_LENGTH = _maxArrayLength;
 
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // Helper Schema Factories
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 /** Non-empty string with max length and trimming */
 export const nonEmptyString = (maxLength: number) =>

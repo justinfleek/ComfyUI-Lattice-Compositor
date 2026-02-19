@@ -15,15 +15,15 @@ import {
 import { Vec3Schema } from "../layers/primitives-schema";
 import { normalized01, finiteNumber, positiveFinite, nonNegativeFinite } from "../layers/primitives-schema";
 
-// ============================================================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // Primitives
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 const positiveInt = z.number().int().positive();
 
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // Control Point Schema
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 /**
  * Bezier handle (2D, not 3D)
@@ -50,9 +50,9 @@ export const ControlPointSchema = z.object({
 
 export type ControlPoint = z.infer<typeof ControlPointSchema>;
 
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // Camera Motion Type Schema
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 export const CameraMotionTypeSchema = z.enum([
   "dolly",
@@ -71,9 +71,9 @@ export const CameraMotionTypeSchema = z.enum([
 
 export type CameraMotionType = z.infer<typeof CameraMotionTypeSchema>;
 
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // Motion Intensity Schema
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 export const MotionIntensitySchema = z.enum([
   "very_subtle",
@@ -85,9 +85,9 @@ export const MotionIntensitySchema = z.enum([
 
 export type MotionIntensity = z.infer<typeof MotionIntensitySchema>;
 
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // Easing Type Schema
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 export const EasingTypeSchema = z.enum([
   "linear",
@@ -100,9 +100,9 @@ export const EasingTypeSchema = z.enum([
 
 export type EasingType = z.infer<typeof EasingTypeSchema>;
 
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // Camera Motion Intent Schema
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 export const CameraMotionIntentSchema = z.object({
   type: CameraMotionTypeSchema,
@@ -117,9 +117,9 @@ export const CameraMotionIntentSchema = z.object({
 
 export type CameraMotionIntent = z.infer<typeof CameraMotionIntentSchema>;
 
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // Spline Usage Schema
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 export const SplineUsageSchema = z.enum([
   "camera_path",
@@ -130,9 +130,9 @@ export const SplineUsageSchema = z.enum([
 
 export type SplineUsage = z.infer<typeof SplineUsageSchema>;
 
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // Spline Motion Intent Schema
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 export const SplineMotionIntentSchema = z.object({
   usage: SplineUsageSchema,
@@ -145,9 +145,9 @@ export const SplineMotionIntentSchema = z.object({
 
 export type SplineMotionIntent = z.infer<typeof SplineMotionIntentSchema>;
 
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // Particle Behavior Schema
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 export const ParticleBehaviorSchema = z.enum([
   "flow",
@@ -165,9 +165,9 @@ export const ParticleBehaviorSchema = z.enum([
 
 export type ParticleBehavior = z.infer<typeof ParticleBehaviorSchema>;
 
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // Particle Motion Intent Schema
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 export const ParticleMotionIntentSchema = z.object({
   behavior: ParticleBehaviorSchema,
@@ -181,9 +181,9 @@ export const ParticleMotionIntentSchema = z.object({
 
 export type ParticleMotionIntent = z.infer<typeof ParticleMotionIntentSchema>;
 
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // Layer Motion Type Schema
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 export const LayerMotionTypeSchema = z.enum([
   "parallax",
@@ -199,9 +199,9 @@ export const LayerMotionTypeSchema = z.enum([
 
 export type LayerMotionType = z.infer<typeof LayerMotionTypeSchema>;
 
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // Layer Motion Intent Schema
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 export const LayerMotionIntentSchema = z.object({
   targetLayerId: entityId.optional(),
@@ -215,9 +215,9 @@ export const LayerMotionIntentSchema = z.object({
 
 export type LayerMotionIntent = z.infer<typeof LayerMotionIntentSchema>;
 
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // Motion Intent Result Schema (Main Schema)
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 /**
  * Motion Intent Result
@@ -235,9 +235,9 @@ export const MotionIntentResultSchema = z.object({
 
 export type MotionIntentResult = z.infer<typeof MotionIntentResultSchema>;
 
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // Motion Suggestion Schema (Alias for AI Response)
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 /**
  * Motion Suggestion Schema
@@ -247,9 +247,9 @@ export const MotionSuggestionSchema = MotionIntentResultSchema;
 
 export type MotionSuggestion = z.infer<typeof MotionSuggestionSchema>;
 
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // Validation Helpers
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 export function validateMotionIntentResult(data: unknown): MotionIntentResult {
   return MotionIntentResultSchema.parse(data);

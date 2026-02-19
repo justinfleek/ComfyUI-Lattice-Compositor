@@ -57,9 +57,9 @@ describe('Tutorial 08: Audio-Reactive Particles - Audio Galaxy', () => {
     vi.clearAllMocks();
   });
 
-  // ============================================================================
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   // PHASE 1: BASIC AUDIO BINDING SETUP (Steps 1-50)
-  // ============================================================================
+  // ═══════════════════════════════════════════════════════════════════════════
 
   describe('Phase 1: Basic Audio Binding Setup (Steps 1-50)', () => {
     test('Step 1-25: Create audio-reactive emitter with bass binding', async () => {
@@ -171,9 +171,9 @@ describe('Tutorial 08: Audio-Reactive Particles - Audio Galaxy', () => {
     });
   });
 
-  // ============================================================================
+  // ═══════════════════════════════════════════════════════════════════════════
   // PHASE 2: MULTI-PARAMETER AUDIO BINDING (Steps 51-100)
-  // ============================================================================
+  // ═══════════════════════════════════════════════════════════════════════════
 
   describe('Phase 2: Multi-Parameter Audio Binding (Steps 51-100)', () => {
     test('Step 51-75: Bind size, speed, and rate to different audio features', async () => {
@@ -298,9 +298,9 @@ describe('Tutorial 08: Audio-Reactive Particles - Audio Galaxy', () => {
     });
   });
 
-  // ============================================================================
+  // ═══════════════════════════════════════════════════════════════════════════
   // PHASE 3: AUDIO CURVES & RESPONSE SHAPES (Steps 101-150)
-  // ============================================================================
+  // ═══════════════════════════════════════════════════════════════════════════
 
   describe('Phase 3: Audio Curves & Response Shapes (Steps 101-150)', () => {
     test('Step 101-125: Test exponential audio curve', async () => {
@@ -405,9 +405,9 @@ describe('Tutorial 08: Audio-Reactive Particles - Audio Galaxy', () => {
     });
   });
 
-  // ============================================================================
+  // ═══════════════════════════════════════════════════════════════════════════
   // PHASE 4: TRIGGER MODES (Steps 151-200)
-  // ============================================================================
+  // ═══════════════════════════════════════════════════════════════════════════
 
   describe('Phase 4: Trigger Modes (Steps 151-200)', () => {
     test('Step 151-175: Test onThreshold trigger mode', async () => {
@@ -517,9 +517,9 @@ describe('Tutorial 08: Audio-Reactive Particles - Audio Galaxy', () => {
     });
   });
 
-  // ============================================================================
+  // ═══════════════════════════════════════════════════════════════════════════
   // PHASE 5: MULTI-EMITTER AUDIO REACTIVITY (Steps 201-250)
-  // ============================================================================
+  // ═══════════════════════════════════════════════════════════════════════════
 
   describe('Phase 5: Multi-Emitter Audio Reactivity (Steps 201-250)', () => {
     test('Step 201-225: Create multiple emitters with different audio bindings', async () => {
@@ -685,9 +685,9 @@ describe('Tutorial 08: Audio-Reactive Particles - Audio Galaxy', () => {
     });
   });
 
-  // ============================================================================
+  // ═══════════════════════════════════════════════════════════════════════════
   // PHASE 6: LONG-TERM STABILITY TEST (Steps 251-300)
-  // ============================================================================
+  // ═══════════════════════════════════════════════════════════════════════════
 
   describe('Phase 6: Long-Term Stability Test (Steps 251-300)', () => {
     test('Step 251-300: Run for 10 seconds with constant audio - verify no compounding', async () => {
@@ -754,9 +754,9 @@ describe('Tutorial 08: Audio-Reactive Particles - Audio Galaxy', () => {
     });
   });
 
-  // ============================================================================
+  // ═══════════════════════════════════════════════════════════════════════════
   // PHASE 7: COMPLETE AUDIO GALAXY EFFECT (Steps 301-400)
-  // ============================================================================
+  // ═══════════════════════════════════════════════════════════════════════════
 
   describe('Phase 7: Complete Audio Galaxy Effect (Steps 301-400)', () => {
     test('Step 301-400: Create beautiful audio-reactive galaxy visualization', async () => {

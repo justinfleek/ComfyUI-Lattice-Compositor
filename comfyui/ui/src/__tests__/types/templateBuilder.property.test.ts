@@ -18,9 +18,9 @@ import {
   type ExposedPropertyType,
 } from "@/types/templateBuilder";
 
-// ============================================================
-// ARBITRARIES
-// ============================================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//                                                              // arbitraries
+// ═══════════════════════════════════════════════════════════════════════════
 
 const expressionControlTypeArb = fc.constantFrom(
   "slider", "checkbox", "dropdown", "color", "point", "angle"
@@ -30,9 +30,9 @@ const exposedPropertyTypeArb = fc.constantFrom(
   "number", "point", "color", "checkbox", "dropdown", "sourceText"
 ) as fc.Arbitrary<ExposedPropertyType>;
 
-// ============================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // createDefaultTemplateConfig TESTS
-// ============================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 describe("PROPERTY: createDefaultTemplateConfig", () => {
   it("returns TemplateConfig with all required properties", () => {
@@ -110,9 +110,9 @@ describe("PROPERTY: createDefaultTemplateConfig", () => {
   });
 });
 
-// ============================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // createExpressionControl TESTS
-// ============================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 describe("PROPERTY: createExpressionControl", () => {
   it("returns ExpressionControl with all required properties", () => {
@@ -223,9 +223,9 @@ describe("PROPERTY: createExpressionControl", () => {
   });
 });
 
-// ============================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // createExposedProperty TESTS
-// ============================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 describe("PROPERTY: createExposedProperty", () => {
   it("returns ExposedProperty with all required properties", () => {
@@ -306,9 +306,9 @@ describe("PROPERTY: createExposedProperty", () => {
   });
 });
 
-// ============================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // createPropertyGroup TESTS
-// ============================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 describe("PROPERTY: createPropertyGroup", () => {
   it("returns PropertyGroup with all required properties", () => {
@@ -365,9 +365,9 @@ describe("PROPERTY: createPropertyGroup", () => {
   });
 });
 
-// ============================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // createTemplateComment TESTS
-// ============================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 describe("PROPERTY: createTemplateComment", () => {
   it("returns TemplateComment with all required properties", () => {

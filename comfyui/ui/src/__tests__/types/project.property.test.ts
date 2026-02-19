@@ -31,9 +31,9 @@ import {
 import { createDefaultTransform } from '@/types/transform';
 import { createAnimatableProperty } from '@/types/animation';
 
-// ============================================================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // ARBITRARIES (Generators)
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 // All valid layer types
 const ALL_LAYER_TYPES: LayerType[] = [
@@ -106,9 +106,9 @@ function createMinimalLayer(type: LayerType): Layer {
 
 const layerArb = layerTypeArb.map(type => createMinimalLayer(type));
 
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // PROPERTY TESTS: isLayerOfType
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 describe('PROPERTY: isLayerOfType', () => {
   test.prop([layerArb])('always returns boolean', (layer) => {
@@ -137,9 +137,9 @@ describe('PROPERTY: isLayerOfType', () => {
   });
 });
 
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // PROPERTY TESTS: getLayerData
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 describe('PROPERTY: getLayerData', () => {
   test.prop([layerArb])('returns data when types match', (layer) => {
@@ -174,9 +174,9 @@ describe('PROPERTY: getLayerData', () => {
   });
 });
 
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // PROPERTY TESTS: createDefaultEffectLayerData
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 describe('PROPERTY: createDefaultEffectLayerData', () => {
   test.prop([fc.constant(null)])('always returns valid structure', () => {
@@ -211,9 +211,9 @@ describe('PROPERTY: createDefaultEffectLayerData', () => {
   });
 });
 
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // PROPERTY TESTS: createDefaultLightLayerData
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 describe('PROPERTY: createDefaultLightLayerData', () => {
   test.prop([fc.constant(null)])('always returns valid structure', () => {
@@ -237,9 +237,9 @@ describe('PROPERTY: createDefaultLightLayerData', () => {
   });
 });
 
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // PROPERTY TESTS: createDefaultSolidLayerData
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 describe('PROPERTY: createDefaultSolidLayerData', () => {
   test.prop([positiveDimensionArb, positiveDimensionArb])(
@@ -281,9 +281,9 @@ describe('PROPERTY: createDefaultSolidLayerData', () => {
   );
 });
 
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // PROPERTY TESTS: createDefaultNullLayerData
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 describe('PROPERTY: createDefaultNullLayerData', () => {
   test.prop([fc.constant(null)])('always returns valid structure', () => {
@@ -302,9 +302,9 @@ describe('PROPERTY: createDefaultNullLayerData', () => {
   });
 });
 
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // PROPERTY TESTS: createDefaultPoseLayerData
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 describe('PROPERTY: createDefaultPoseLayerData', () => {
   test.prop([fc.constant(null)])('always returns exactly 18 keypoints (COCO18)', () => {
@@ -348,9 +348,9 @@ describe('PROPERTY: createDefaultPoseLayerData', () => {
   });
 });
 
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // PROPERTY TESTS: createDefaultProceduralMatteData
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 describe('PROPERTY: createDefaultProceduralMatteData', () => {
   test.prop([patternTypeArb])('preserves pattern type', (patternType) => {
@@ -408,9 +408,9 @@ describe('PROPERTY: createDefaultProceduralMatteData', () => {
   });
 });
 
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // PROPERTY TESTS: normalizeLayerTiming
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 describe('PROPERTY: normalizeLayerTiming', () => {
   test.prop([frameArb, frameArb])('is idempotent: f(f(x)) = f(x)', (start, end) => {
@@ -468,9 +468,9 @@ describe('PROPERTY: normalizeLayerTiming', () => {
   });
 });
 
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // PROPERTY TESTS: createEmptyProject
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 describe('PROPERTY: createEmptyProject', () => {
   test.prop([positiveDimensionArb, positiveDimensionArb])(
@@ -538,9 +538,9 @@ describe('PROPERTY: createEmptyProject', () => {
   );
 });
 
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // PROPERTY TESTS: BLEND_MODE_CATEGORIES
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 describe('PROPERTY: BLEND_MODE_CATEGORIES', () => {
   test.prop([fc.constant(null)])('all modes are strings', () => {

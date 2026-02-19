@@ -38,9 +38,9 @@ export const DEFAULT_CURVE_MARGIN: CurveMargin = {
   left: 10,
 };
 
-// ============================================================
-// COORDINATE CONVERSION
-// ============================================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//                                                 // coordinate // conversion
+// ═══════════════════════════════════════════════════════════════════════════
 
 /**
  * Convert frame number to screen X coordinate
@@ -101,9 +101,9 @@ export function screenYToValue(
   return viewState.valueMin + t * (viewState.valueMax - viewState.valueMin);
 }
 
-// ============================================================
-// KEYFRAME POSITION HELPERS
-// ============================================================
+// ═══════════════════════════════════════════════════════════════════════════
+//                                          // keyframe // position // helpers
+// ═══════════════════════════════════════════════════════════════════════════
 
 /**
  * Get screen X coordinate for a keyframe
@@ -186,9 +186,9 @@ export function getKeyframeDisplayValue(
   return 0;
 }
 
-// ============================================================
-// HANDLE POSITION HELPERS
-// ============================================================
+// ═══════════════════════════════════════════════════════════════════════════
+//                                            // handle // position // helpers
+// ═══════════════════════════════════════════════════════════════════════════
 
 /**
  * Get screen X coordinate for outgoing handle
@@ -276,9 +276,9 @@ export function getInHandleY(
   return valueToScreenY(handleValue, viewState, canvasHeight, margin);
 }
 
-// ============================================================
-// UTILITY FUNCTIONS
-// ============================================================
+// ═══════════════════════════════════════════════════════════════════════════
+//                                                     // utility // functions
+// ═══════════════════════════════════════════════════════════════════════════
 
 /**
  * Check if a keyframe is within the current view bounds
@@ -322,9 +322,9 @@ export function getPropertyPath(prop: AnimatableProperty<PropertyValue>): string
   return prop.id; // Custom properties use ID
 }
 
-// ============================================================
-// COMPOSABLE EXPORT
-// ============================================================
+// ═══════════════════════════════════════════════════════════════════════════
+//                                                     // composable // export
+// ═══════════════════════════════════════════════════════════════════════════
 
 export function useCurveEditorCoords() {
   return {

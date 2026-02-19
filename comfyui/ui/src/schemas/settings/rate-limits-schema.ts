@@ -11,16 +11,16 @@ import {
   MAX_NAME_LENGTH,
 } from "../shared-validation";
 
-// ============================================================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // Primitives
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 const nonNegativeInt = z.number().int().nonnegative();
 const positiveFinite = z.number().finite().positive();
 
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // Rate Limit Config Schema
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 export const RateLimitConfigSchema = z.object({
   toolName: z.string().min(1).max(MAX_NAME_LENGTH).trim(),
@@ -31,9 +31,9 @@ export const RateLimitConfigSchema = z.object({
 
 export type RateLimitConfig = z.infer<typeof RateLimitConfigSchema>;
 
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // Rate Limit Status Schema
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 export const RateLimitStatusSchema = z.object({
   toolName: z.string().min(1).max(MAX_NAME_LENGTH).trim(),
@@ -64,9 +64,9 @@ export const RateLimitStatusSchema = z.object({
 
 export type RateLimitStatus = z.infer<typeof RateLimitStatusSchema>;
 
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // Stored Rate Limits Schema
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 /**
  * Rate limits stored in localStorage
@@ -82,9 +82,9 @@ export const StoredRateLimitsSchema = z.object({
 
 export type StoredRateLimits = z.infer<typeof StoredRateLimitsSchema>;
 
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // Validation Helpers
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 export function validateStoredRateLimits(data: unknown): StoredRateLimits {
   return StoredRateLimitsSchema.parse(data);

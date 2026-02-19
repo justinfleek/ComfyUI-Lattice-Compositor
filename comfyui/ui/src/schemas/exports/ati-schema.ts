@@ -14,9 +14,9 @@ import {
   MAX_STRING_LENGTH,
 } from "../shared-validation";
 
-// ============================================================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // Constants
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 /** ATI format requires exactly 121 frames */
 export const ATI_FIXED_FRAMES = 121;
@@ -27,9 +27,9 @@ export const ATI_MAX_DIMENSION = 8192;
 /** Minimum supported resolution */
 export const ATI_MIN_DIMENSION = 1;
 
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // Primitive Schemas
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 /** Finite number that rejects NaN and Infinity */
 const finiteNumber = z.number().finite();
@@ -44,9 +44,9 @@ const positiveDimension = z
 /** Non-negative integer for counts */
 const nonNegativeInt = z.number().int().nonnegative();
 
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // Track Point Schemas
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 /**
  * A single 2D point in pixel coordinates.
@@ -67,9 +67,9 @@ export const ATIPointTupleSchema = z.tuple([finiteNumber, finiteNumber]);
 
 export type ATIPointTuple = z.infer<typeof ATIPointTupleSchema>;
 
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // Track Data Schemas
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 /**
  * A single track's trajectory across all 121 frames.
@@ -93,9 +93,9 @@ export const ATITracksArraySchema = boundedArray(ATITrackFramesSchema, 10000).mi
 
 export type ATITracksArray = z.infer<typeof ATITracksArraySchema>;
 
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // Visibility Schema
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 /**
  * Visibility data for each track at each frame.
@@ -110,9 +110,9 @@ export const ATIVisibilitySchema = boundedArray(
 
 export type ATIVisibility = z.infer<typeof ATIVisibilitySchema>;
 
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // Export Result Schema
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 /**
  * The result of an ATI export operation.
@@ -137,9 +137,9 @@ export const ATIExportResultSchema = z.object({
 
 export type ATIExportResult = z.infer<typeof ATIExportResultSchema>;
 
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // Export Configuration Schema
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 /**
  * Configuration options for ATI export.
@@ -169,9 +169,9 @@ export const ATIExportConfigSchema = z.object({
 
 export type ATIExportConfig = z.infer<typeof ATIExportConfigSchema>;
 
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // Import/Validation Schema
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 /**
  * Schema for validating imported ATI track data (parsed from JSON string).

@@ -13,18 +13,18 @@ import {
   MAX_ARRAY_LENGTH,
 } from "../shared-validation";
 
-// ============================================================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // Primitives
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 const finiteNumber = z.number().finite();
 const nonNegativeInt = z.number().int().nonnegative();
 const positiveInt = z.number().int().positive();
 const normalized01 = z.number().finite().min(0).max(1);
 
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // Particle Position Schema
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 export const ParticlePositionSchema = z.object({
   frame: nonNegativeInt.max(100000), // Max 100k frames
@@ -35,9 +35,9 @@ export const ParticlePositionSchema = z.object({
 
 export type ParticlePosition = z.infer<typeof ParticlePositionSchema>;
 
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // Particle Velocity Schema
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 export const ParticleVelocitySchema = z.object({
   frame: nonNegativeInt.max(100000), // Max 100k frames
@@ -48,9 +48,9 @@ export const ParticleVelocitySchema = z.object({
 
 export type ParticleVelocity = z.infer<typeof ParticleVelocitySchema>;
 
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // Particle Color Schema
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 export const ParticleColorSchema = z.object({
   r: normalized01,
@@ -60,9 +60,9 @@ export const ParticleColorSchema = z.object({
 
 export type ParticleColor = z.infer<typeof ParticleColorSchema>;
 
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // Particle Data Schema
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 export const ParticleDataSchema = z.object({
   id: z.number().int().max(10000000), // Max 10M particle ID
@@ -90,9 +90,9 @@ export const ParticleDataSchema = z.object({
 
 export type ParticleData = z.infer<typeof ParticleDataSchema>;
 
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // Emitter Config Schema
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 export const EmitterConfigSchema = z.object({
   type: z.string().min(1).max(MAX_NAME_LENGTH).trim(),
@@ -107,9 +107,9 @@ export const EmitterConfigSchema = z.object({
 
 export type EmitterConfig = z.infer<typeof EmitterConfigSchema>;
 
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // Particle Trajectory Export Schema
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 /**
  * Particle trajectory export.
@@ -135,9 +135,9 @@ export type ParticleTrajectoryExport = z.infer<
   typeof ParticleTrajectoryExportSchema
 >;
 
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // Validation Helpers
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 export function validateParticleTrajectoryExport(
   data: unknown,

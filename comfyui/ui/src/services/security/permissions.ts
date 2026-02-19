@@ -17,7 +17,7 @@ export enum Permission {
   MASTODON_READ = "MASTODON_READ",
   MASTODON_WRITE = "MASTODON_WRITE",
 
-  // LLM
+  //                                                                      // llm
   LLM_LOCAL = "LLM_LOCAL",
   LLM_API = "LLM_API",
   LLM_EXPENSIVE = "LLM_EXPENSIVE",

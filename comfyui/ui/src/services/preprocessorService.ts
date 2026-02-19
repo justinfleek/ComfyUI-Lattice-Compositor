@@ -122,7 +122,7 @@ export const ATTRIBUTION_SOURCES = {
 
 // All available preprocessors with their metadata (mirrors Python backend)
 export const PREPROCESSOR_REGISTRY: Record<string, PreprocessorInfo> = {
-  // DEPTH
+  //                                                                    // depth
   depth_anything_v2: {
     id: "depth_anything_v2",
     display_name: "Depth Anything V2",
@@ -198,7 +198,7 @@ export const PREPROCESSOR_REGISTRY: Record<string, PreprocessorInfo> = {
     },
   },
 
-  // NORMAL
+  //                                                                   // normal
   normal_bae: {
     id: "normal_bae",
     display_name: "Normal BAE",
@@ -218,7 +218,7 @@ export const PREPROCESSOR_REGISTRY: Record<string, PreprocessorInfo> = {
     },
   },
 
-  // POSE
+  //                                                                     // pose
   dwpose: {
     id: "dwpose",
     display_name: "DWPose",
@@ -284,7 +284,7 @@ export const PREPROCESSOR_REGISTRY: Record<string, PreprocessorInfo> = {
     },
   },
 
-  // EDGE DETECTION
+  //                                                        // edge // detection
   canny: {
     id: "canny",
     display_name: "Canny Edge",
@@ -347,7 +347,7 @@ export const PREPROCESSOR_REGISTRY: Record<string, PreprocessorInfo> = {
     },
   },
 
-  // LINEART
+  //                                                                  // lineart
   lineart: {
     id: "lineart",
     display_name: "LineArt",
@@ -395,7 +395,7 @@ export const PREPROCESSOR_REGISTRY: Record<string, PreprocessorInfo> = {
     },
   },
 
-  // SCRIBBLE
+  //                                                                 // scribble
   scribble_hed: {
     id: "scribble_hed",
     display_name: "Scribble HED",
@@ -437,7 +437,7 @@ export const PREPROCESSOR_REGISTRY: Record<string, PreprocessorInfo> = {
     },
   },
 
-  // SEGMENTATION
+  //                                                             // segmentation
   sam: {
     id: "sam",
     display_name: "SAM",
@@ -484,7 +484,7 @@ export const PREPROCESSOR_REGISTRY: Record<string, PreprocessorInfo> = {
     },
   },
 
-  // OTHER
+  //                                                                    // other
   mlsd: {
     id: "mlsd",
     display_name: "M-LSD",
@@ -517,10 +517,10 @@ export const PREPROCESSOR_REGISTRY: Record<string, PreprocessorInfo> = {
     },
   },
 
-  // ========================================================================
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   // NORMALCRAFTER (from Binyr/NormalCrafter + AIWarper/ComfyUI-NormalCrafterWrapper)
   // Video-to-Normal diffusion model - temporally consistent normal sequences
-  // ========================================================================
+  // ═══════════════════════════════════════════════════════════════════════════
   normalcrafter: {
     id: "normalcrafter",
     display_name: "NormalCrafter (Video)",
@@ -541,10 +541,10 @@ export const PREPROCESSOR_REGISTRY: Record<string, PreprocessorInfo> = {
     },
   },
 
-  // ========================================================================
+  // ═══════════════════════════════════════════════════════════════════════════
   // VIDEO POSE (ComfyUI-WanAnimatePreprocess)
   // For Wan 2.2 video animation preprocessing
-  // ========================================================================
+  // ═══════════════════════════════════════════════════════════════════════════
   vitpose: {
     id: "vitpose",
     display_name: "ViTPose + Face (Video)",

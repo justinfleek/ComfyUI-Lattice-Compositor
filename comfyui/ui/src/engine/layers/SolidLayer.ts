@@ -292,9 +292,9 @@ export class SolidLayer extends BaseLayer {
     return this.shadowCatcher;
   }
 
-  // ============================================================================
-  // ABSTRACT IMPLEMENTATIONS
-  // ============================================================================
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  //                                              // abstract // implementations
+  // ═══════════════════════════════════════════════════════════════════════════
 
   protected onEvaluateFrame(frame: number): void {
     // Evaluate animated color if present (only for non-shadow catcher)

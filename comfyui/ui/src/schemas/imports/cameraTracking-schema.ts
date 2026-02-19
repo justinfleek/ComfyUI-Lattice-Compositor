@@ -17,9 +17,9 @@ import {
   MAX_STRING_LENGTH,
 } from "../shared-validation";
 
-// ============================================================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // Primitive Schemas with Validation
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 /** Finite number that rejects NaN and Infinity */
 const finiteNumber = z.number().finite();
@@ -36,9 +36,9 @@ const normalized = z.number().finite().min(0).max(1);
 /** RGB color value 0-255 */
 const colorChannel = z.number().finite().int().min(0).max(255);
 
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // Vector Schemas
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 export const Vector2Schema = z.object({
   x: finiteNumber,
@@ -71,9 +71,9 @@ export const RGBColorSchema = z.object({
   b: colorChannel,
 }).strict();
 
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // Track Point Schemas
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 export const TrackPoint2DSchema = z.object({
   id: entityId,
@@ -92,9 +92,9 @@ export const TrackPoint3DSchema = z.object({
   error: nonNegativeFinite.max(100000).optional(), // Max 100k units error
 }).strict();
 
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // Camera Schemas
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 export const DistortionSchema = z.object({
   k1: finiteNumber.max(10).optional(), // Max reasonable distortion
@@ -128,9 +128,9 @@ export const CameraPoseSchema = z.object({
   fov: positiveFinite.max(180).optional(), // Max 180 degrees FOV
 }).strict();
 
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // Ground Plane Schema
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 export const GroundPlaneSchema = z.object({
   normal: Vector3Schema,
@@ -139,9 +139,9 @@ export const GroundPlaneSchema = z.object({
   scale: positiveFinite.max(100000).optional(), // Max 100k units scale
 }).strict();
 
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // Metadata Schema
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 export const TrackingMetadataSchema = z.object({
   sourceWidth: z.number().int().positive().max(16384), // Max reasonable dimension
@@ -153,9 +153,9 @@ export const TrackingMetadataSchema = z.object({
   solveDate: iso8601DateTime.optional(),
 }).strict();
 
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // Main Camera Tracking Solve Schema
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 export const CameraTrackingSolveSchema = z.object({
   version: z.string().min(1).max(50).trim(), // Version string
@@ -173,9 +173,9 @@ export const CameraTrackingSolveSchema = z.object({
 
 export type CameraTrackingSolve = z.infer<typeof CameraTrackingSolveSchema>;
 
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // Blender Format Schemas
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 export const BlenderMarkerSchema = z.object({
   frame: z.number().int().nonnegative().max(100000), // Max 100k frames
@@ -221,9 +221,9 @@ export type BlenderMotionTrackingData = z.infer<
   typeof BlenderMotionTrackingDataSchema
 >;
 
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 // Format Detection Schemas (looser for detection only)
-// ============================================================================
+// ═══════════════════════════════════════════════════════════════════════════
 
 /** Schema for detecting Lattice format - checks key fields exist */
 export const LatticeFormatDetectionSchema = z.object({
