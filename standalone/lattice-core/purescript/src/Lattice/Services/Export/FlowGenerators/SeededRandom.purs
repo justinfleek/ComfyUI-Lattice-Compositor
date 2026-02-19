@@ -25,7 +25,7 @@ module Lattice.Services.Export.FlowGenerators.SeededRandom
 
 import Prelude
 import Data.Int (floor, toNumber)
-import Data.Int.Bits (xor, (.&.), (.|.), shl, zshr) as Bits
+import Data.Int.Bits as Bits
 import Data.Number (sqrt, log, cos, pi)
 import Data.Array (snoc, (..))
 import Data.Foldable (foldl)
@@ -52,12 +52,12 @@ initialState seed = { state: seed }
 imul :: Int -> Int -> Int
 imul a b =
   let
-    ah = (a `Bits.zshr` 16) Bits..&. 0xFFFF
-    al = a Bits..&. 0xFFFF
-    bh = (b `Bits.zshr` 16) Bits..&. 0xFFFF
-    bl = b Bits..&. 0xFFFF
+    ah = Bits.(.&.) (Bits.zshr a 16) 0xFFFF
+    al = Bits.(.&.) a 0xFFFF
+    bh = Bits.(.&.) (Bits.zshr b 16) 0xFFFF
+    bl = Bits.(.&.) b 0xFFFF
   in
-    ((al * bl) + (((ah * bl + al * bh) `Bits.shl` 16) Bits..|. 0)) Bits..|. 0
+    Bits.(.|.) (Bits.(.|.) ((al * bl) + (Bits.(.|.) (Bits.shl (ah * bl + al * bh) 16) 0)) 0) 0
 
 -- | Bitwise zero-fill right shift
 zshr :: Int -> Int -> Int
@@ -66,6 +66,14 @@ zshr = Bits.zshr
 -- | Bitwise XOR
 xor :: Int -> Int -> Int
 xor = Bits.xor
+
+-- | Bitwise OR
+or :: Int -> Int -> Int
+or = Bits.(.|.)
+
+-- | Bitwise AND
+and :: Int -> Int -> Int
+and = Bits.(.&.)
 
 -- | Generate next random value (0 to 1)
 -- | Returns new state and random value

@@ -7,6 +7,13 @@
 -- | to the Haskell backend over WebSocket. This replaces all JS FFI.
 module Lattice.Services.Bridge.Client
   ( BridgeClient
+  , Request(..)
+  , Response(..)
+  , RenderOp(..)
+  , StorageOp(..)
+  , ExportOp(..)
+  , MathOp(..)
+  , GenerateOp(..)
   , connect
   , disconnect
   , isConnected
@@ -18,6 +25,10 @@ module Lattice.Services.Bridge.Client
   , compileShader
   , storageGet
   , storagePut
+  , storageDelete
+  , storageGetAll
+  , storageCount
+  , storageClear
   , storageLocalGet
   , storageLocalSet
   , storageSessionGet
@@ -69,10 +80,12 @@ import Effect.Ref as Ref
 import Web.Event.Event (Event)
 import Web.Event.EventTarget (EventTarget, addEventListener, eventListener, removeEventListener)
 import Web.Socket.WebSocket as WS
-import Web.Socket.Event.EventTypes as WSE
+import Web.Socket.Event.EventTypes (onOpen, onMessage, onError, onClose) as WSE
 import Web.Socket.Event.MessageEvent as ME
 import Foreign (Foreign, unsafeFromForeign)
 import Web.Socket.ReadyState (ReadyState(..))
+import Effect.Exception (Error, error)
+import Data.Array (uncons, fromFoldable)
 
 -- ════════════════════════════════════════════════════════════════════════════
 --                                                                      // types
@@ -83,7 +96,7 @@ newtype BridgeClient = BridgeClient
   { socket :: Ref (Maybe WS.WebSocket)
   , url :: String
   , messageId :: Ref Int
-  , pending :: Ref (Map Int (Either String Response -> Effect Unit))
+  , pending :: Ref (Map Int (Either Error Response -> Effect Unit))
   , disconnectCallbacks :: Ref (Array (Effect Unit))
   }
 
@@ -248,7 +261,7 @@ connect url = makeAff \callback -> do
   openListener <- eventListener \_ -> do
     Console.log $ "Bridge connected to " <> url
     callback (Right client)
-  addEventListener WSE.open openListener false target
+  addEventListener WSE.onOpen openListener false target
   
   -- On message
   messageListener <- eventListener \event -> do
@@ -267,7 +280,7 @@ connect url = makeAff \callback -> do
               Just cb -> do
                 Ref.modify_ (Map.delete msgId) pending
                 cb (Right resp)
-  addEventListener WSE.message messageListener false target
+  addEventListener WSE.onMessage messageListener false target
   
   -- On close
   closeListener <- eventListener \_ -> do
@@ -279,15 +292,15 @@ connect url = makeAff \callback -> do
     -- Reject all pending requests
     pendingMap <- Ref.read pending
     Ref.write Map.empty pending
-    for_ (Map.values pendingMap) \cb ->
-      cb (Left "Connection closed")
-  addEventListener WSE.close closeListener false target
+    for_ (fromFoldable (Map.values pendingMap)) \cb ->
+      cb (Left (error "Connection closed"))
+  addEventListener WSE.onClose closeListener false target
   
   -- On error
   errorListener <- eventListener \_ -> do
     Console.error "Bridge WebSocket error"
     callback (Left (error "WebSocket connection failed"))
-  addEventListener WSE.error errorListener false target
+  addEventListener WSE.onError errorListener false target
   
   pure nonCanceler
 
@@ -379,6 +392,7 @@ getResponseId = case _ of
   RespText id _ -> id
   RespError id _ -> id
   RespPong id -> id
+  RespProgress id _ _ -> id
 
 -- | Parse JSON from string
 parseJsonString :: String -> Either JsonDecodeError Json
@@ -464,6 +478,50 @@ storageSessionSet :: BridgeClient -> String -> String -> Aff Boolean
 storageSessionSet client key value = do
   msgId <- liftEffect $ nextMessageId client
   resp <- send client (ReqStorage msgId (StorageSessionSet key value))
+  pure $ case resp of
+    RespOk _ -> true
+    _ -> false
+
+-- | Delete from object store
+storageDelete :: BridgeClient -> String -> String -> Aff Boolean
+storageDelete client store key = do
+  msgId <- liftEffect $ nextMessageId client
+  resp <- send client (ReqStorage msgId (StorageDelete store key))
+  pure $ case resp of
+    RespOk _ -> true
+    _ -> false
+
+-- | Get all entries from object store
+-- | Returns array of JSON-encoded entries
+storageGetAll :: BridgeClient -> String -> Aff (Array String)
+storageGetAll client store = do
+  msgId <- liftEffect $ nextMessageId client
+  resp <- send client (ReqStorage msgId (StorageGetAll store))
+  pure $ case resp of
+    RespText _ json -> parseJsonArray json
+    _ -> []
+  where
+    -- Parse JSON array string to Array String
+    -- Each element is a JSON-encoded entry
+    parseJsonArray :: String -> Array String
+    parseJsonArray str = case decodeJson =<< parseJsonString str of
+      Right arr -> arr
+      Left _ -> []
+
+-- | Count entries in object store
+storageCount :: BridgeClient -> String -> Aff Int
+storageCount client store = do
+  msgId <- liftEffect $ nextMessageId client
+  resp <- send client (ReqStorage msgId (StorageCount store))
+  pure $ case resp of
+    RespNumber _ n -> floor n
+    _ -> 0
+
+-- | Clear all entries from object store
+storageClear :: BridgeClient -> String -> Aff Boolean
+storageClear client store = do
+  msgId <- liftEffect $ nextMessageId client
+  resp <- send client (ReqStorage msgId (StorageClear store))
   pure $ case resp of
     RespOk _ -> true
     _ -> false
@@ -619,5 +677,6 @@ decodeGenerateResult = case _ of
 -- ════════════════════════════════════════════════════════════════════════════
 
 for_ :: forall a. Array a -> (a -> Effect Unit) -> Effect Unit
-for_ [] _ = pure unit
-for_ (x : xs) f = f x *> for_ xs f
+for_ arr f = case uncons arr of
+  Nothing -> pure unit
+  Just { head: x, tail: xs } -> f x *> for_ xs f

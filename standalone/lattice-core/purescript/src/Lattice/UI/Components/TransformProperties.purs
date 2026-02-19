@@ -8,6 +8,7 @@
 -- | - Opacity
 module Lattice.UI.Components.TransformProperties
   ( component
+  , Transform
   , Input
   , Output(..)
   , Query

@@ -25,7 +25,7 @@ isNaN = N.isNaN
 
 -- | Parse a float from string, returns NaN on failure
 readFloat :: String -> Number
-readFloat s = fromMaybe N.nan (N.fromString s)
+readFloat s = fromMaybe nan (N.fromString s)
   where
     nan = 0.0 / 0.0
 

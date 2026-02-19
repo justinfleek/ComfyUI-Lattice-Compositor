@@ -20,7 +20,8 @@ module Lattice.UI.Components.PropertyLink
 
 import Prelude
 
-import Data.Maybe (Maybe(..))
+import Data.Int as Int
+import Data.Maybe (Maybe(..), isJust)
 import Effect.Aff.Class (class MonadAff)
 import Halogen as H
 import Halogen.HTML as HH
@@ -182,12 +183,8 @@ containerStyle =
 linkHandleState :: State -> String
 linkHandleState state
   | state.isDragging = "dragging"
-  | isLinked state = "linked"
+  | isJust state.linkedTo = "linked"
   | otherwise = "idle"
-  where
-    isLinked s = case s.linkedTo of
-      Just _ -> true
-      Nothing -> false
 
 handleStyle :: State -> String
 handleStyle state =
@@ -256,5 +253,3 @@ handleAction = case _ of
 
 toNumber :: Int -> Number
 toNumber = Int.toNumber
-  where
-    import Data.Int as Int

@@ -26,6 +26,8 @@ import Data.Maybe (Maybe(..))
 import Data.Generic.Rep (class Generic)
 import Data.Show.Generic (genericShow)
 import Data.Eq.Generic (genericEq)
+import Data.Argonaut.Encode (class EncodeJson)
+import Data.Argonaut.Encode.Generic (genericEncodeJson)
 
 -- ────────────────────────────────────────────────────────────────────────────
 -- Core Types
@@ -76,6 +78,7 @@ data DepthMapFormat
 derive instance Generic DepthMapFormat _
 instance Show DepthMapFormat where show = genericShow
 instance Eq DepthMapFormat where eq = genericEq
+instance EncodeJson DepthMapFormat where encodeJson = genericEncodeJson
 
 -- | Depth format specification
 type DepthFormatSpec =
@@ -98,6 +101,7 @@ data Colormap
 derive instance Generic Colormap _
 instance Show Colormap where show = genericShow
 instance Eq Colormap where eq = genericEq
+instance EncodeJson Colormap where encodeJson = genericEncodeJson
 
 -- ────────────────────────────────────────────────────────────────────────────
 -- Metadata Types

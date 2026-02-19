@@ -147,7 +147,7 @@ render state =
 renderPage :: forall m. MonadAff m => Route -> H.ComponentHTML AppAction AppSlots m
 renderPage = case _ of
   Workspace -> 
-    HH.slot_ _workspace unit WorkspaceLayout.component unit
+    HH.slot_ _workspace unit WorkspaceLayout.component { bridgeClient: Nothing }
   
   Project ->
     HH.slot_ _project unit Project.component unit

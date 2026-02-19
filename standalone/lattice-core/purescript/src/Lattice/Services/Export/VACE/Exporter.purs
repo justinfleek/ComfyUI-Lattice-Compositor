@@ -26,8 +26,7 @@ module Lattice.Services.Export.VACE.Exporter
 
 import Prelude
 import Data.Maybe (Maybe(..))
-import Data.Int (toNumber)
-import Data.Number (floor, ceil)
+import Data.Int (toNumber, floor, ceil) as Int
 import Data.Generic.Rep (class Generic)
 import Data.Show.Generic (genericShow)
 import Data.Argonaut.Encode (class EncodeJson)
@@ -122,14 +121,14 @@ calculateDurationForSpeed pathLength pixelsPerFrame =
   let
     raw = pathLength / pixelsPerFrame
   in
-    -- Using floor from Data.Number
-    if raw > 0.0 then max 1 (floor (ceil raw)) else 1
+    -- Using ceil from Data.Int
+    if raw > 0.0 then max 1 (Int.ceil raw) else 1
 
 -- | Calculate speed given path length and duration
 calculateSpeed :: Number -> Int -> Number
 calculateSpeed pathLength durationFrames =
   if durationFrames > 0
-  then pathLength / toNumber durationFrames
+  then pathLength / Int.toNumber durationFrames
   else 0.0
 
 -- | Convert SplineLayer data to PathFollowerConfig

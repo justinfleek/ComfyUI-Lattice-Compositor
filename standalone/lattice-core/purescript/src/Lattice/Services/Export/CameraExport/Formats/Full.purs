@@ -116,3 +116,21 @@ exportCameraForTarget target camera keyframes frameCount compWidth compHeight fp
     TargetFullMatrices ->
       let result = exportCameraMatrices camera keyframes { frameCount, width: compWidth, height: compHeight, fps }
       in { format: "full-matrices", data: "frames=" <> show (length result.frames) }
+    TargetControlNetDepth ->
+      let result = exportCameraMatrices camera keyframes { frameCount, width: compWidth, height: compHeight, fps }
+      in { format: "controlnet-depth", data: "frames=" <> show (length result.frames) }
+    TargetControlNetNormal ->
+      let result = exportCameraMatrices camera keyframes { frameCount, width: compWidth, height: compHeight, fps }
+      in { format: "controlnet-normal", data: "frames=" <> show (length result.frames) }
+    TargetWanMove ->
+      let result = exportCameraMatrices camera keyframes { frameCount, width: compWidth, height: compHeight, fps }
+      in { format: "wan-move", data: "frames=" <> show (length result.frames) }
+    TargetWanCamera ->
+      let result = mapToWan22FunCamera keyframes
+      in { format: "wan-camera", data: show result.cameraMotion }
+    TargetCogVideoX ->
+      let result = exportCameraMatrices camera keyframes { frameCount, width: compWidth, height: compHeight, fps }
+      in { format: "cogvideo-x", data: "frames=" <> show (length result.frames) }
+    TargetCustom customFormat ->
+      let result = exportCameraMatrices camera keyframes { frameCount, width: compWidth, height: compHeight, fps }
+      in { format: customFormat, data: "frames=" <> show (length result.frames) }

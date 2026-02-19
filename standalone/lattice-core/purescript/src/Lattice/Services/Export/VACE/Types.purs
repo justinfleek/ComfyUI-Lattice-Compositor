@@ -29,6 +29,8 @@ import Data.Maybe (Maybe(..))
 import Data.Generic.Rep (class Generic)
 import Data.Show.Generic (genericShow)
 import Data.Eq.Generic (genericEq)
+import Data.Argonaut.Encode (class EncodeJson)
+import Data.Argonaut.Encode.Generic (genericEncodeJson)
 
 -- ────────────────────────────────────────────────────────────────────────────
 -- Shape Types
@@ -46,6 +48,7 @@ data PathFollowerShape
 derive instance Generic PathFollowerShape _
 instance Show PathFollowerShape where show = genericShow
 instance Eq PathFollowerShape where eq = genericEq
+instance EncodeJson PathFollowerShape where encodeJson = genericEncodeJson
 
 -- | Easing function options
 data PathFollowerEasing
@@ -59,6 +62,7 @@ data PathFollowerEasing
 derive instance Generic PathFollowerEasing _
 instance Show PathFollowerEasing where show = genericShow
 instance Eq PathFollowerEasing where eq = genericEq
+instance EncodeJson PathFollowerEasing where encodeJson = genericEncodeJson
 
 -- | Loop mode options
 data LoopMode
@@ -68,6 +72,7 @@ data LoopMode
 derive instance Generic LoopMode _
 instance Show LoopMode where show = genericShow
 instance Eq LoopMode where eq = genericEq
+instance EncodeJson LoopMode where encodeJson = genericEncodeJson
 
 -- | Output format options
 data OutputFormat
@@ -78,6 +83,7 @@ data OutputFormat
 derive instance Generic OutputFormat _
 instance Show OutputFormat where show = genericShow
 instance Eq OutputFormat where eq = genericEq
+instance EncodeJson OutputFormat where encodeJson = genericEncodeJson
 
 -- ────────────────────────────────────────────────────────────────────────────
 -- Configuration Types

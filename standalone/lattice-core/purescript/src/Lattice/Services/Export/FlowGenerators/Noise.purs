@@ -13,7 +13,7 @@ module Lattice.Services.Export.FlowGenerators.Noise
 
 import Prelude
 import Data.Int (floor, toNumber)
-import Data.Int.Bits (xor, (.&.), (.|.), zshr) as Bits
+import Data.Int.Bits as Bits
 
 -- ────────────────────────────────────────────────────────────────────────────
 --                                                               // bitwise ops
@@ -25,7 +25,7 @@ zshr = Bits.zshr
 
 -- | Bitwise AND
 and :: Int -> Int -> Int
-and = (Bits..&.)
+and = Bits.(.&.)
 
 -- | Bitwise XOR
 xor :: Int -> Int -> Int
@@ -33,7 +33,7 @@ xor = Bits.xor
 
 -- | Integer multiplication with overflow (JavaScript imul equivalent)
 imul :: Int -> Int -> Int
-imul a b = (a * b) Bits..&. 0x7FFFFFFF
+imul a b = Bits.(.&.) (a * b) 0x7FFFFFFF
 
 -- ────────────────────────────────────────────────────────────────────────────
 -- Simplex Noise

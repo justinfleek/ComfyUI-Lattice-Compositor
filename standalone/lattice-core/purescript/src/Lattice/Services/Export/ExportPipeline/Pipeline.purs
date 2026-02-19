@@ -307,6 +307,12 @@ formatToString = case _ of
 -- | Convert target to string
 targetToString :: ExportTarget -> String
 targetToString = case _ of
+  TargetMotionCtrl -> "motionctrl"
+  TargetMotionCtrlSVD -> "motionctrl-svd"
+  TargetWan22FunCamera -> "wan22-fun-camera"
+  TargetUni3CCamera -> "uni3c-camera"
+  TargetUni3CMotion -> "uni3c-motion"
+  TargetAnimateDiffCameraCtrl -> "animatediff-cameractrl"
   TargetControlNetDepth -> "controlnet-depth"
   TargetControlNetNormal -> "controlnet-normal"
   TargetWanMove -> "wan-move"

@@ -7,14 +7,17 @@
 
 module Lattice.Services.Security.AuditLog.Encode
   ( encodeEntry
+  , encodeEntryToString
+  , encodeEntryRecord
   , encodeQuery
   ) where
 
 import Prelude
-import Data.Argonaut.Core (Json)
+import Data.Argonaut.Core (Json, stringify)
 import Data.Argonaut.Encode (encodeJson)
 import Data.Maybe (fromMaybe)
 import Data.Tuple (Tuple(..))
+import Foreign.Object (Object)
 import Foreign.Object as Obj
 
 import Lattice.Services.Security.AuditLog.Types
@@ -26,8 +29,17 @@ import Lattice.Services.Security.AuditLog.Types
 
 -- | Encode entry to JSON for storage
 encodeEntry :: AuditLogEntry -> Json
-encodeEntry entry = encodeJson $ Obj.fromFoldable
-  [ Tuple "timestamp" (encodeJson entry.timestamp)
+encodeEntry entry = encodeJson $ encodeEntryRecord entry
+
+-- | Encode entry to JSON string for storage
+encodeEntryToString :: AuditLogEntry -> String
+encodeEntryToString entry = stringify (encodeEntry entry)
+
+-- | Encode entry to Object for composition
+encodeEntryRecord :: AuditLogEntry -> Object Json
+encodeEntryRecord entry = Obj.fromFoldable
+  [ Tuple "id" (encodeJson entry.id)
+  , Tuple "timestamp" (encodeJson entry.timestamp)
   , Tuple "category" (encodeJson (categoryToString entry.category))
   , Tuple "severity" (encodeJson (severityToString entry.severity))
   , Tuple "toolName" (encodeJson entry.toolName)

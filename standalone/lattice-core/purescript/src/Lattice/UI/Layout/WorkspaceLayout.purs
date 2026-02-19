@@ -33,7 +33,7 @@ module Lattice.UI.Layout.WorkspaceLayout
 
 import Prelude
 
-import Data.Array ((:))
+import Data.Array (uncons) as Array
 import Data.Const (Const)
 import Data.Either (Either(..))
 import Data.Int (floor, toNumber)
@@ -1270,8 +1270,9 @@ lastOrFirst arr = case arr of
   _ -> go arr
   where
     go [x] = x
-    go (_ : xs) = go xs
-    go [] = ""
+    go xs = case Array.uncons xs of
+      Nothing -> ""
+      Just { head: _, tail: rest } -> go rest
 
 clamp :: Number -> Number -> Number -> Number
 clamp minVal maxVal val = max minVal (min maxVal val)

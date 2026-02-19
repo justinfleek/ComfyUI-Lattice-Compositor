@@ -82,7 +82,7 @@ xorBitwise = Bits.xor
 
 -- | Bitwise OR  
 orBitwise :: Int -> Int -> Int
-orBitwise = (Bits..|.)
+orBitwise = Bits.(.|.)
 
 -- | Wrap to uint32 (simulate >>> 0 in JS)
 wrap32Impl :: Number -> Number

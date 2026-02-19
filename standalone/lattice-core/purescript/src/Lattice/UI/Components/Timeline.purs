@@ -13,7 +13,8 @@ module Lattice.UI.Components.Timeline
 
 import Prelude
 
-import Data.Array (mapWithIndex, length)
+import Data.Array (mapWithIndex, length, filter, uncons)
+import Data.Int as Int
 import Data.Maybe (Maybe(..))
 import Effect.Aff.Class (class MonadAff)
 import Halogen as H
@@ -235,7 +236,7 @@ renderLayerRow state _index layer =
 renderTimeRuler :: forall m. State -> H.ComponentHTML Action () m
 renderTimeRuler state =
   let
-    rulerWidth = show (state.totalFrames * state.zoom) <> "px"
+    rulerWidth = show (Int.toNumber state.totalFrames * state.zoom) <> "px"
   in
   HH.div
     [ cls [ "lattice-time-ruler" ]
@@ -277,7 +278,7 @@ renderMark state frame =
 renderTracks :: forall m. State -> H.ComponentHTML Action () m
 renderTracks state =
   let
-    trackWidth = show (state.totalFrames * state.zoom) <> "px"
+    trackWidth = show (Int.toNumber state.totalFrames * state.zoom) <> "px"
   in
   HH.div
     [ cls [ "lattice-tracks" ]
@@ -325,29 +326,26 @@ formatTimecode :: Int -> Number -> String
 formatTimecode frame fps =
   let
     totalSeconds = toNumber frame / fps
-    hours = floor (totalSeconds / 3600.0)
-    minutes = floor ((totalSeconds - hours * 3600.0) / 60.0)
-    seconds = floor (totalSeconds - hours * 3600.0 - minutes * 60.0)
-    frames = frame `mod` (floor fps)
+    hours = Int.floor (totalSeconds / 3600.0)
+    hoursNum = Int.toNumber hours
+    minutes = Int.floor ((totalSeconds - hoursNum * 3600.0) / 60.0)
+    minutesNum = Int.toNumber minutes
+    seconds = Int.floor (totalSeconds - hoursNum * 3600.0 - minutesNum * 60.0)
+    fpsInt = Int.floor fps
+    frames = if fpsInt > 0 then frame `mod` fpsInt else 0
   in
   padZero hours <> ":" <> padZero minutes <> ":" <> padZero seconds <> ":" <> padZero frames
   where
     padZero n = if n < 10 then "0" <> show n else show n
-    floor = \x -> x - (x `mod'` 1.0)
-    mod' a b = a - b * (floor (a / b))
 
 unwrapFrame :: FrameNumber -> Int
 unwrapFrame (FrameNumber n) = n
 
 toNumber :: Int -> Number
-toNumber n = n * 1.0
+toNumber n = Int.toNumber n
 
 elem :: forall a. Eq a => a -> Array a -> Boolean
 elem x arr = length (filter (_ == x) arr) > 0
-  where
-    filter f = \xs -> case xs of
-      [] -> []
-      (y : ys) -> if f y then [y] <> filter f ys else filter f ys
 
 -- ════════════════════════════════════════════════════════════════════════════
 --                                                          // inline // styles

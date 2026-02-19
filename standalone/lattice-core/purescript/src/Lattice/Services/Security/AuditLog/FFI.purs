@@ -27,6 +27,10 @@ import Prelude
 import Data.Generic.Rep (class Generic)
 import Data.Show.Generic (genericShow)
 
+-- ────────────────────────────────────────────────────────────────────────────
+-- Request Types
+-- ────────────────────────────────────────────────────────────────────────────
+
 -- | Request to open a database
 data OpenDatabaseRequest = OpenDatabaseRequest
   { dbName :: String

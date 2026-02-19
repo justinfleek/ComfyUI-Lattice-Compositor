@@ -5,7 +5,10 @@ module Lattice.UI.Components.CurveEditor where
 import Prelude
 import Data.Int as Data.Int
 import Data.Maybe (Maybe(..))
-import Data.Array (mapWithIndex)
+import Data.Array (mapWithIndex, uncons, length, index)
+import Data.Array as Array
+import Data.Foldable (foldl)
+import Data.String as String
 import Effect.Aff.Class (class MonadAff)
 import Halogen as H
 import Halogen.HTML as HH
@@ -86,13 +89,13 @@ render state =
 
 renderGrid :: forall m. State -> H.ComponentHTML Action () m
 renderGrid state =
-  HH.svg
+  HH.element (HH.ElemName "svg")
     [ HP.attr (HH.AttrName "class") "lattice-curve-grid"
     , HP.attr (HH.AttrName "width") (show state.width)
     , HP.attr (HH.AttrName "height") (show state.height)
     , HP.attr (HH.AttrName "style") gridStyle
     ]
-    [ HH.g []
+    [ HH.element (HH.ElemName "g") []
         [ gridLine 0.0 (state.height / 2.0) state.width (state.height / 2.0)
         , gridLine (state.width / 2.0) 0.0 (state.width / 2.0) state.height
         ]
@@ -112,7 +115,7 @@ gridLine x1 y1 x2 y2 =
 
 renderCurves :: forall m. State -> H.ComponentHTML Action () m
 renderCurves state =
-  HH.svg
+  HH.element (HH.ElemName "svg")
     [ HP.attr (HH.AttrName "class") "lattice-curve-paths"
     , HP.attr (HH.AttrName "width") (show state.width)
     , HP.attr (HH.AttrName "height") (show state.height)
@@ -127,19 +130,77 @@ renderCurves state =
         []
     ]
 
+-- | Build SVG path string for bezier curves connecting keyframes
+-- |
+-- | Each keyframe pair is connected with a cubic bezier curve.
+-- | The path format is: M x0 y0 C cp1x cp1y cp2x cp2y x1 y1 ...
 buildCurvePath :: State -> String
 buildCurvePath state =
-  case state.keyframes of
-    [] -> ""
-    [kf] -> "M " <> show (frameToX state kf.frame) <> " " <> show (valueToY state kf.value)
-    kfs -> buildPath state kfs
+  case uncons state.keyframes of
+    Nothing -> ""
+    Just { head: first, tail: rest } ->
+      let 
+        -- Start at first keyframe
+        startX = frameToX state first.frame
+        startY = valueToY state first.value
+        moveTo = "M " <> show startX <> " " <> show startY
+        
+        -- Build cubic bezier segments between consecutive keyframes
+        segments = buildBezierSegments state state.keyframes
+      in
+        moveTo <> segments
 
-buildPath :: State -> Array Keyframe -> String
-buildPath state kfs =
-  case kfs of
-    [] -> ""
-    (first : _) ->
-      "M " <> show (frameToX state first.frame) <> " " <> show (valueToY state first.value)
+-- | Build bezier curve segments between consecutive keyframes
+-- |
+-- | For each pair of keyframes (k1, k2):
+-- | - Control point 1 is k1.outHandle relative to k1
+-- | - Control point 2 is k2.inHandle relative to k2
+-- | - End point is k2's position
+buildBezierSegments :: State -> Array Keyframe -> String
+buildBezierSegments state keyframes =
+  let
+    pairs = zipWithNext keyframes
+  in
+    foldl (\acc pair -> acc <> buildSegment state pair) "" pairs
+
+-- | Zip array with its shifted self to get consecutive pairs
+zipWithNext :: forall a. Array a -> Array { prev :: a, curr :: a }
+zipWithNext arr =
+  let
+    len = length arr
+    indices = Array.range 0 (len - 2)
+  in
+    Array.mapMaybe (\i -> do
+      prev <- index arr i
+      curr <- index arr (i + 1)
+      pure { prev, curr }
+    ) indices
+
+-- | Build a single cubic bezier segment between two keyframes
+buildSegment :: State -> { prev :: Keyframe, curr :: Keyframe } -> String
+buildSegment state { prev, curr } =
+  let
+    -- Previous keyframe position
+    x0 = frameToX state prev.frame
+    y0 = valueToY state prev.value
+    
+    -- Control point 1: prev's out handle (relative to prev position)
+    -- Handle values are normalized, scale by control distance
+    controlDistance = 50.0
+    cp1x = x0 + prev.outHandle.x * controlDistance
+    cp1y = y0 - prev.outHandle.y * controlDistance  -- Y inverted in screen coords
+    
+    -- Current keyframe position
+    x1 = frameToX state curr.frame
+    y1 = valueToY state curr.value
+    
+    -- Control point 2: curr's in handle (relative to curr position)
+    cp2x = x1 + curr.inHandle.x * controlDistance
+    cp2y = y1 - curr.inHandle.y * controlDistance
+  in
+    " C " <> show cp1x <> " " <> show cp1y <> " " <>
+            show cp2x <> " " <> show cp2y <> " " <>
+            show x1 <> " " <> show y1
 
 frameToX :: State -> Int -> Number
 frameToX state frame = (toNumber frame / 100.0) * state.width
@@ -180,7 +241,7 @@ renderHandles state _index kf =
     outX = kfX + kf.outHandle.x * 50.0
     outY = kfY - kf.outHandle.y * 50.0
   in
-  HH.g []
+  HH.span []
     [ HH.div
         [ cls [ "lattice-curve-handle-line" ]
         , HP.attr (HH.AttrName "style") (handleLineStyle kfX kfY inX inY)

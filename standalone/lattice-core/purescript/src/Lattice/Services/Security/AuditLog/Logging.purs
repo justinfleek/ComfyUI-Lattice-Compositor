@@ -3,6 +3,10 @@
 -- | @module Lattice.Services.Security.AuditLog.Logging
 -- | @description Functions for writing audit log entries.
 -- |
+-- | All logging functions require a LoggingContext which provides:
+-- | - Session ID for correlating entries
+-- | - Bridge client for persisting to IndexedDB
+-- |
 -- | Source: ui/src/services/security/auditLog.ts
 
 module Lattice.Services.Security.AuditLog.Logging
@@ -19,12 +23,19 @@ module Lattice.Services.Security.AuditLog.Logging
 
 import Prelude
 import Data.Functor (void)
+import Data.Int (round)
+import Data.Traversable (traverse)
 import Effect (Effect)
 import Effect.Aff (Aff, attempt, launchAff_)
 import Effect.Class (liftEffect)
 import Effect.Console (log, warn, error)
+import Effect.Now as Now
 import Data.Argonaut.Core (Json, stringify)
+import Data.Argonaut.Decode (decodeJson, JsonDecodeError(..))
 import Data.Argonaut.Encode (encodeJson)
+import Data.Argonaut.Parser (jsonParser)
+import Data.DateTime.Instant (unInstant)
+import Data.Time.Duration (Milliseconds(..))
 import Data.Either (Either(..))
 import Data.Maybe (Maybe(..))
 import Data.Array as Array
@@ -41,14 +52,15 @@ import Lattice.Services.Security.AuditLog.Types
   , storeName
   , maxEntries
   )
-import Lattice.Services.Security.AuditLog.FFI
-  ( getSessionId
+import Lattice.Services.Security.AuditLog.Context
+  ( LoggingContext
+  , getSessionId
+  , getBridgeClient
   , getCurrentISOTimestamp
-  , addEntryImpl
-  , countEntriesImpl
-  , deleteOldEntriesImpl
   )
-import Lattice.Services.Security.AuditLog.Encode (encodeEntry)
+import Lattice.Services.Security.AuditLog.Encode (encodeEntryToString)
+import Lattice.Services.Bridge.Client as Bridge
+import Lattice.Utils.Uuid5.Core (uuid5Default)
 
 -- ────────────────────────────────────────────────────────────────────────────
 -- Core Logging
@@ -56,9 +68,11 @@ import Lattice.Services.Security.AuditLog.Encode (encodeEntry)
 
 -- | Log an audit entry
 -- |
+-- | @param ctx Logging context with session ID and Bridge client
 -- | @param entry Entry to log
 -- | @postcondition Entry is written to IndexedDB and console
-logAuditEntry :: { category :: AuditCategory
+logAuditEntry :: LoggingContext
+              -> { category :: AuditCategory
                  , severity :: AuditSeverity
                  , toolName :: Maybe String
                  , toolArguments :: Maybe (Object Json)
@@ -66,13 +80,15 @@ logAuditEntry :: { category :: AuditCategory
                  , success :: Maybe Boolean
                  , userAction :: Maybe String
                  , metadata :: Maybe AuditLogMetadata
-                 } -> Aff Unit
-logAuditEntry entry = do
-  sessionId <- liftEffect getSessionId
+                 }
+              -> Aff Unit
+logAuditEntry ctx entry = do
   timestamp <- liftEffect getCurrentISOTimestamp
+  entryId <- liftEffect generateEntryId
 
-  let fullEntry =
-        { id: Nothing
+  let sessionId = getSessionId ctx
+      fullEntry =
+        { id: Just entryId
         , timestamp
         , category: entry.category
         , severity: entry.severity
@@ -87,21 +103,34 @@ logAuditEntry entry = do
 
   liftEffect $ logToConsole entry.severity entry.category entry.message entry.toolArguments
 
-  result <- attempt $ addEntryImpl storeName (encodeEntry fullEntry)
+  -- Persist to IndexedDB via Bridge
+  let bridgeClient = getBridgeClient ctx
+      entryJson = encodeEntryToString fullEntry
+  result <- attempt $ Bridge.storagePut bridgeClient storeName entryId entryJson
   case result of
     Left err -> liftEffect $ warn ("[SECURITY AUDIT] Failed to log: " <> show err)
-    Right _ -> pure unit
+    Right false -> liftEffect $ warn "[SECURITY AUDIT] Storage returned false"
+    Right true -> pure unit
 
-  liftEffect $ launchAff_ (void pruneOldEntries)
+  -- Prune old entries asynchronously
+  liftEffect $ launchAff_ (void $ pruneOldEntries ctx)
+
+-- | Generate a unique entry ID using UUID5 with timestamp
+generateEntryId :: Effect String
+generateEntryId = do
+  instant <- Now.now
+  let (Milliseconds ms) = unInstant instant
+      name = "audit-entry:" <> show (round ms :: Int)
+  pure (uuid5Default name)
 
 -- ────────────────────────────────────────────────────────────────────────────
 -- Specialized Logging
 -- ────────────────────────────────────────────────────────────────────────────
 
 -- | Log tool call
-logToolCall :: String -> Object Json -> Maybe String -> Aff Unit
-logToolCall toolName args userAction =
-  logAuditEntry
+logToolCall :: LoggingContext -> String -> Object Json -> Maybe String -> Aff Unit
+logToolCall ctx toolName args userAction =
+  logAuditEntry ctx
     { category: CatToolCall
     , severity: SevInfo
     , toolName: Just toolName
@@ -113,9 +142,9 @@ logToolCall toolName args userAction =
     }
 
 -- | Log tool result
-logToolResult :: String -> Boolean -> String -> Maybe AuditLogMetadata -> Aff Unit
-logToolResult toolName success message metadata =
-  logAuditEntry
+logToolResult :: LoggingContext -> String -> Boolean -> String -> Maybe AuditLogMetadata -> Aff Unit
+logToolResult ctx toolName success message metadata =
+  logAuditEntry ctx
     { category: CatToolResult
     , severity: if success then SevInfo else SevWarning
     , toolName: Just toolName
@@ -127,9 +156,9 @@ logToolResult toolName success message metadata =
     }
 
 -- | Log rate limit event
-logRateLimit :: String -> Int -> Int -> Aff Unit
-logRateLimit toolName current maxCount =
-  logAuditEntry
+logRateLimit :: LoggingContext -> String -> Int -> Int -> Aff Unit
+logRateLimit ctx toolName current maxCount =
+  logAuditEntry ctx
     { category: CatRateLimit
     , severity: SevWarning
     , toolName: Just toolName
@@ -144,9 +173,9 @@ logRateLimit toolName current maxCount =
     }
 
 -- | Log VRAM check
-logVRAMCheck :: String -> Boolean -> Int -> Int -> Aff Unit
-logVRAMCheck toolName passed required available =
-  logAuditEntry
+logVRAMCheck :: LoggingContext -> String -> Boolean -> Int -> Int -> Aff Unit
+logVRAMCheck ctx toolName passed required available =
+  logAuditEntry ctx
     { category: CatVRAMCheck
     , severity: if passed then SevInfo else SevWarning
     , toolName: Just toolName
@@ -161,9 +190,9 @@ logVRAMCheck toolName passed required available =
     }
 
 -- | Log user confirmation
-logUserConfirmation :: String -> Boolean -> Aff Unit
-logUserConfirmation toolName confirmed =
-  logAuditEntry
+logUserConfirmation :: LoggingContext -> String -> Boolean -> Aff Unit
+logUserConfirmation ctx toolName confirmed =
+  logAuditEntry ctx
     { category: CatUserConfirmation
     , severity: if confirmed then SevInfo else SevWarning
     , toolName: Just toolName
@@ -175,9 +204,9 @@ logUserConfirmation toolName confirmed =
     }
 
 -- | Log security warning
-logSecurityWarning :: String -> Maybe AuditLogMetadata -> Aff Unit
-logSecurityWarning message metadata =
-  logAuditEntry
+logSecurityWarning :: LoggingContext -> String -> Maybe AuditLogMetadata -> Aff Unit
+logSecurityWarning ctx message metadata =
+  logAuditEntry ctx
     { category: CatSecurityWarning
     , severity: SevCritical
     , toolName: Nothing
@@ -213,9 +242,40 @@ sanitizeArguments args = Obj.mapWithKey sanitizeArg args
       | isSensitive key = encodeJson "[REDACTED]"
       | otherwise = val
 
-pruneOldEntries :: Aff Int
-pruneOldEntries = do
-  count <- countEntriesImpl storeName
+-- | Prune old entries to keep storage bounded
+-- |
+-- | Queries current count and deletes oldest entries if over maxEntries.
+-- | Gets all entries, sorts by timestamp, deletes oldest ones.
+pruneOldEntries :: LoggingContext -> Aff Int
+pruneOldEntries ctx = do
+  let bridgeClient = getBridgeClient ctx
+  count <- Bridge.storageCount bridgeClient storeName
   if count > maxEntries
-    then deleteOldEntriesImpl storeName storeName (count - maxEntries)
+    then do
+      -- Get all entries to find oldest ones to delete
+      allEntries <- Bridge.storageGetAll bridgeClient storeName
+      let entriesToDelete = count - maxEntries
+          -- Entries are stored with timestamp-based keys
+          -- Sort by key (which contains timestamp) and take oldest
+          sortedKeys = Array.take entriesToDelete (Array.sort (extractKeys allEntries))
+      -- Delete each old entry
+      deletedCounts <- traverse (deleteEntry bridgeClient) sortedKeys
+      pure (Array.length (Array.filter identity deletedCounts))
     else pure 0
+  where
+    -- Extract keys from JSON entries (assumes id field contains key)
+    extractKeys :: Array String -> Array String
+    extractKeys entries = Array.mapMaybe extractId entries
+    
+    extractId :: String -> Maybe String
+    extractId jsonStr = case decodeJson =<< parseJsonString jsonStr of
+      Right (obj :: { id :: Maybe String }) -> obj.id
+      Left _ -> Nothing
+    
+    parseJsonString :: String -> Either JsonDecodeError Json
+    parseJsonString str = case jsonParser str of
+      Left err -> Left (TypeMismatch err)
+      Right json -> Right json
+    
+    deleteEntry :: Bridge.BridgeClient -> String -> Aff Boolean
+    deleteEntry client key = Bridge.storageDelete client storeName key

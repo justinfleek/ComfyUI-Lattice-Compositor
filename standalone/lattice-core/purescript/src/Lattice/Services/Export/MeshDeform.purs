@@ -223,8 +223,7 @@ exportPinsAsTrajectoryWithMetadata pins =
     -- This just returns the metadata portion
   in
     { trajectory:
-        { version: "1.0"
-        , width: 0      -- Set by backend
+        { width: 0      -- Set by backend
         , height: 0     -- Set by backend
         , frameCount: 0 -- Set by backend
         , tracks: []    -- Computed by backend

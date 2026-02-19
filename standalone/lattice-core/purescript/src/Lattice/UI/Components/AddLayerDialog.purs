@@ -73,23 +73,92 @@ initialState input =
 
 render :: forall m. MonadAff m => State -> H.ComponentHTML Action Slots m
 render state =
-  HH.slot _dialog unit Dialog.component
-    { isOpen: state.isOpen
-    , title: "Add Layer"
-    , description: "Choose a layer type to add"
-    }
-    HandleDialogOutput
-  `withContent`
-    [ renderCategoryTabs state
-    , renderLayerGrid state
-    , renderNameInput state
+  let
+    dialogContent :: { trigger :: H.ComponentHTML Dialog.Action Dialog.Slots m
+                     , title :: H.ComponentHTML Dialog.Action Dialog.Slots m
+                     , description :: H.ComponentHTML Dialog.Action Dialog.Slots m
+                     , body :: H.ComponentHTML Dialog.Action Dialog.Slots m
+                     , close :: H.ComponentHTML Dialog.Action Dialog.Slots m
+                     }
+    dialogContent =
+      { trigger: HH.text ""  -- No trigger, dialog is controlled externally
+      , title: HH.text "Add Layer"
+      , description: HH.text "Choose a layer type to add"
+      , body: renderDialogBody state
+      , close: HH.text "×"
+      }
+    
+    dialogInput :: Dialog.Input
+    dialogInput = Dialog.defaultInput { open = Just state.isOpen }
+  in
+  HH.slot _dialog unit (Dialog.component dialogContent) dialogInput HandleDialogOutput
+
+-- | Render the dialog body content (needs to be typed for Dialog's internal slots)
+renderDialogBody :: forall m. State -> H.ComponentHTML Dialog.Action Dialog.Slots m
+renderDialogBody state =
+  HH.div [ cls [ "lattice-add-layer-dialog-body" ] ]
+    [ renderCategoryTabsInternal state
+    , renderLayerGridInternal state
+    , renderNameInputInternal state
     ]
 
-withContent :: forall m. H.ComponentHTML Action Slots m -> Array (H.ComponentHTML Action Slots m) -> H.ComponentHTML Action Slots m
-withContent dialog content =
-  HH.div [ cls [ "lattice-add-layer-dialog" ] ]
-    ([ dialog ] <> content)
+-- | Internal versions that use Dialog's Action type
+renderCategoryTabsInternal :: forall m. State -> H.ComponentHTML Dialog.Action Dialog.Slots m
+renderCategoryTabsInternal state =
+  HH.div
+    [ cls [ "lattice-layer-categories" ]
+    , HP.attr (HH.AttrName "style") categoriesStyle
+    ]
+    [ categoryTabInternal "Visual" CatVisual state.selectedCategory
+    , categoryTabInternal "Shape" CatShape state.selectedCategory
+    , categoryTabInternal "Audio" CatAudio state.selectedCategory
+    , categoryTabInternal "3D" Cat3D state.selectedCategory
+    , categoryTabInternal "Control" CatControl state.selectedCategory
+    , categoryTabInternal "Generated" CatGenerated state.selectedCategory
+    ]
 
+categoryTabInternal :: forall m. String -> LayerCategory -> LayerCategory -> H.ComponentHTML Dialog.Action Dialog.Slots m
+categoryTabInternal label cat selectedCat =
+  HH.button
+    [ cls (if cat == selectedCat then [ "lattice-category-tab", "active" ] else [ "lattice-category-tab" ])
+    , HP.attr (HH.AttrName "style") (categoryTabStyle (cat == selectedCat))
+    ]
+    [ HH.text label ]
+
+renderLayerGridInternal :: forall m. State -> H.ComponentHTML Dialog.Action Dialog.Slots m
+renderLayerGridInternal state =
+  HH.div
+    [ cls [ "lattice-layer-grid" ]
+    , HP.attr (HH.AttrName "style") gridStyle
+    ]
+    (map layerTypeButtonInternal (getLayerTypesForCategory state.selectedCategory))
+
+layerTypeButtonInternal :: forall m. { layerType :: LayerType, label :: String, icon :: String } -> H.ComponentHTML Dialog.Action Dialog.Slots m
+layerTypeButtonInternal { label, icon } =
+  HH.button
+    [ cls [ "lattice-layer-type-button" ]
+    , HP.attr (HH.AttrName "style") layerButtonStyle
+    ]
+    [ HH.span [ cls [ "lattice-layer-icon" ] ] [ HH.text icon ]
+    , HH.span [ cls [ "lattice-layer-label" ] ] [ HH.text label ]
+    ]
+
+renderNameInputInternal :: forall m. State -> H.ComponentHTML Dialog.Action Dialog.Slots m
+renderNameInputInternal state =
+  HH.div
+    [ cls [ "lattice-layer-name-input" ]
+    , HP.attr (HH.AttrName "style") nameInputContainerStyle
+    ]
+    [ HH.label [ cls [ "lattice-input-label" ] ] [ HH.text "Layer Name" ]
+    , HH.input
+        [ cls [ "lattice-text-input" ]
+        , HP.type_ HP.InputText
+        , HP.value state.layerName
+        , HP.attr (HH.AttrName "style") nameInputStyle
+        ]
+    ]
+
+-- | External render functions that use our Action type
 renderCategoryTabs :: forall m. State -> H.ComponentHTML Action Slots m
 renderCategoryTabs state =
   HH.div
@@ -107,8 +176,8 @@ renderCategoryTabs state =
 categoryTab :: forall m. String -> LayerCategory -> LayerCategory -> H.ComponentHTML Action Slots m
 categoryTab label cat selectedCat =
   HH.button
-    [ cls [ "lattice-category-tab" ]
-    , HP.attr (HH.AttrName "style") (tabStyle (cat == selectedCat))
+    [ cls (if cat == selectedCat then [ "lattice-category-tab", "active" ] else [ "lattice-category-tab" ])
+    , HP.attr (HH.AttrName "style") (categoryTabStyle (cat == selectedCat))
     , HE.onClick \_ -> SetCategory cat
     ]
     [ HH.text label ]
@@ -119,110 +188,104 @@ renderLayerGrid state =
     [ cls [ "lattice-layer-grid" ]
     , HP.attr (HH.AttrName "style") gridStyle
     ]
-    (map renderLayerOption (layersForCategory state.selectedCategory))
+    (map layerTypeButton (getLayerTypesForCategory state.selectedCategory))
 
-renderLayerOption :: forall m. { layerType :: LayerType, name :: String, icon :: String, desc :: String } -> H.ComponentHTML Action Slots m
-renderLayerOption opt =
+layerTypeButton :: forall m. { layerType :: LayerType, label :: String, icon :: String } -> H.ComponentHTML Action Slots m
+layerTypeButton { layerType, label, icon } =
   HH.button
-    [ cls [ "lattice-layer-option" ]
-    , HP.attr (HH.AttrName "style") optionStyle
-    , HE.onClick \_ -> SelectLayerType opt.layerType
+    [ cls [ "lattice-layer-type-button" ]
+    , HP.attr (HH.AttrName "style") layerButtonStyle
+    , HE.onClick \_ -> SelectLayerType layerType
     ]
-    [ HH.span [ cls [ "lattice-layer-icon" ] ] [ HH.text opt.icon ]
-    , HH.span [ cls [ "lattice-layer-name" ] ] [ HH.text opt.name ]
-    , HH.span [ cls [ "lattice-layer-desc" ] ] [ HH.text opt.desc ]
+    [ HH.span [ cls [ "lattice-layer-icon" ] ] [ HH.text icon ]
+    , HH.span [ cls [ "lattice-layer-label" ] ] [ HH.text label ]
     ]
 
 renderNameInput :: forall m. State -> H.ComponentHTML Action Slots m
 renderNameInput state =
   HH.div
     [ cls [ "lattice-layer-name-input" ]
-    , HP.attr (HH.AttrName "style") nameInputStyle
+    , HP.attr (HH.AttrName "style") nameInputContainerStyle
     ]
-    [ HH.label_ [ HH.text "Layer Name" ]
+    [ HH.label [ cls [ "lattice-input-label" ] ] [ HH.text "Layer Name" ]
     , HH.input
-        [ cls [ "lattice-input" ]
+        [ cls [ "lattice-text-input" ]
+        , HP.type_ HP.InputText
         , HP.value state.layerName
+        , HP.attr (HH.AttrName "style") nameInputStyle
         , HE.onValueInput SetLayerName
         ]
     ]
 
-layersForCategory :: LayerCategory -> Array { layerType :: LayerType, name :: String, icon :: String, desc :: String }
-layersForCategory = case _ of
+getLayerTypesForCategory :: LayerCategory -> Array { layerType :: LayerType, label :: String, icon :: String }
+getLayerTypesForCategory = case _ of
   CatVisual ->
-    [ { layerType: LTImage, name: "Image", icon: "🖼", desc: "Import image file" }
-    , { layerType: LTVideo, name: "Video", icon: "🎬", desc: "Import video file" }
-    , { layerType: LTSolid, name: "Solid", icon: "■", desc: "Solid color layer" }
-    , { layerType: LTText, name: "Text", icon: "T", desc: "Text layer" }
+    [ { layerType: LTImage, label: "Image", icon: "🖼" }
+    , { layerType: LTVideo, label: "Video", icon: "🎬" }
+    , { layerType: LTText, label: "Text", icon: "T" }
+    , { layerType: LTSolid, label: "Solid", icon: "■" }
     ]
   CatShape ->
-    [ { layerType: LTShape, name: "Shape", icon: "◇", desc: "Vector shape" }
-    , { layerType: LTSpline, name: "Spline", icon: "〰", desc: "Bezier spline" }
-    , { layerType: LTPath, name: "Path", icon: "✏", desc: "Motion path" }
+    [ { layerType: LTShape, label: "Shape", icon: "◆" }
     ]
   CatAudio ->
-    [ { layerType: LTAudio, name: "Audio", icon: "🔊", desc: "Audio track" }
+    [ { layerType: LTAudio, label: "Audio", icon: "🔊" }
     ]
   Cat3D ->
-    [ { layerType: LTCamera, name: "Camera", icon: "📷", desc: "3D camera" }
-    , { layerType: LTLight, name: "Light", icon: "💡", desc: "3D light source" }
-    , { layerType: LTModel, name: "3D Model", icon: "🎲", desc: "Import 3D model" }
-    , { layerType: LTPointCloud, name: "Point Cloud", icon: "⁘", desc: "Point cloud data" }
+    [ { layerType: LTCamera, label: "Camera", icon: "📷" }
+    , { layerType: LTLight, label: "Light", icon: "💡" }
     ]
   CatControl ->
-    [ { layerType: LTNull, name: "Null", icon: "◎", desc: "Null object" }
-    , { layerType: LTControl, name: "Control", icon: "⊕", desc: "Control point" }
-    , { layerType: LTGroup, name: "Group", icon: "📂", desc: "Layer group" }
-    , { layerType: LTAdjustment, name: "Adjustment", icon: "◐", desc: "Adjustment layer" }
+    [ { layerType: LTNull, label: "Null", icon: "◯" }
+    , { layerType: LTAdjustment, label: "Adjustment", icon: "⚙" }
     ]
   CatGenerated ->
-    [ { layerType: LTDepth, name: "Depth", icon: "▦", desc: "Depth map" }
-    , { layerType: LTNormal, name: "Normal", icon: "↗", desc: "Normal map" }
-    , { layerType: LTGenerated, name: "Generated", icon: "⚡", desc: "AI generated" }
-    , { layerType: LTMatte, name: "Matte", icon: "◧", desc: "Matte layer" }
-    , { layerType: LTPose, name: "Pose", icon: "🦴", desc: "Pose skeleton" }
-    , { layerType: LTParticle, name: "Particle", icon: "✨", desc: "Particle system" }
+    [ { layerType: LTPreComp, label: "Precomp", icon: "📦" }
     ]
 
+-- Styles
 categoriesStyle :: String
 categoriesStyle =
-  "display: flex; gap: var(--lattice-space-1); padding: var(--lattice-space-3); " <>
-  "border-bottom: 1px solid var(--lattice-border-subtle);"
+  "display: flex; gap: 4px; padding: 8px; border-bottom: 1px solid var(--lattice-border-subtle);"
 
-tabStyle :: Boolean -> String
-tabStyle active =
-  "padding: var(--lattice-space-2) var(--lattice-space-3); " <>
-  "border-radius: var(--lattice-radius-sm); border: none; cursor: pointer; " <>
-  "background: " <> (if active then "var(--lattice-accent)" else "transparent") <> "; " <>
-  "color: " <> (if active then "white" else "var(--lattice-text-secondary)") <> ";"
+categoryTabStyle :: Boolean -> String
+categoryTabStyle isActive =
+  "padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; " <>
+  if isActive
+    then "background: var(--lattice-accent); color: white;"
+    else "background: transparent; color: var(--lattice-text-secondary);"
 
 gridStyle :: String
 gridStyle =
-  "display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); " <>
-  "gap: var(--lattice-space-2); padding: var(--lattice-space-3); " <>
-  "max-height: 300px; overflow-y: auto;"
+  "display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 8px; padding: 16px;"
 
-optionStyle :: String
-optionStyle =
-  "display: flex; flex-direction: column; align-items: center; gap: var(--lattice-space-1); " <>
-  "padding: var(--lattice-space-3); border-radius: var(--lattice-radius-md); " <>
-  "background: var(--lattice-surface-2); border: 1px solid var(--lattice-border-subtle); " <>
-  "cursor: pointer; transition: all 0.15s ease;"
+layerButtonStyle :: String
+layerButtonStyle =
+  "display: flex; flex-direction: column; align-items: center; gap: 4px; " <>
+  "padding: 12px; border: 1px solid var(--lattice-border-subtle); border-radius: 8px; " <>
+  "background: var(--lattice-surface-2); cursor: pointer; transition: all 0.15s ease;"
+
+nameInputContainerStyle :: String
+nameInputContainerStyle =
+  "padding: 16px; border-top: 1px solid var(--lattice-border-subtle);"
 
 nameInputStyle :: String
 nameInputStyle =
-  "display: flex; flex-direction: column; gap: var(--lattice-space-1); " <>
-  "padding: var(--lattice-space-3); border-top: 1px solid var(--lattice-border-subtle);"
+  "width: 100%; padding: 8px 12px; border: 1px solid var(--lattice-border); " <>
+  "border-radius: 4px; background: var(--lattice-surface-1); color: var(--lattice-text);"
 
 handleAction :: forall m. MonadAff m => Action -> H.HalogenM State Action Slots Output m Unit
 handleAction = case _ of
   Initialize -> pure unit
 
-  Receive input -> H.modify_ _ { isOpen = input.isOpen }
+  Receive input -> do
+    H.modify_ _ { isOpen = input.isOpen }
 
-  SetCategory cat -> H.modify_ _ { selectedCategory = cat }
+  SetCategory cat -> do
+    H.modify_ _ { selectedCategory = cat }
 
-  SetLayerName name -> H.modify_ _ { layerName = name }
+  SetLayerName name -> do
+    H.modify_ _ { layerName = name }
 
   SelectLayerType layerType -> do
     state <- H.get

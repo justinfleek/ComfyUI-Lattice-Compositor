@@ -14,7 +14,7 @@ module Lattice.UI.Store.ProjectStore
 
 import Prelude
 
-import Data.Array (filter, find)
+import Data.Array (filter, find, take, drop)
 import Data.Maybe (Maybe(..))
 import Lattice.Project (LatticeProject, LayerBase, Composition, createEmptyProject)
 import Lattice.Primitives (NonEmptyString, mkNonEmptyString)
@@ -224,21 +224,6 @@ reorderArray layers layerId targetIndex =
         after = drop targetIndex without
       in
       before <> [layer] <> after
-  where
-    take n arr = case n of
-      0 -> []
-      _ -> case arr of
-        [] -> []
-        [x] -> if n > 0 then [x] else []
-        xs -> takeImpl n xs []
-    takeImpl n xs acc = case xs of
-      [] -> acc
-      (x : rest) -> if n <= 0 then acc else takeImpl (n - 1) rest (acc <> [x])
-    drop n arr = case n of
-      0 -> arr
-      _ -> case arr of
-        [] -> []
-        (_ : rest) -> drop (n - 1) rest
 
 -- | Check if element is in array
 elem :: forall a. Eq a => a -> Array a -> Boolean

@@ -46,6 +46,8 @@ import Data.Maybe (Maybe(..))
 import Data.Generic.Rep (class Generic)
 import Data.Show.Generic (genericShow)
 import Data.Eq.Generic (genericEq)
+import Data.Argonaut.Encode (class EncodeJson)
+import Data.Argonaut.Encode.Generic (genericEncodeJson)
 
 -- ────────────────────────────────────────────────────────────────────────────
 -- Core Types
@@ -116,10 +118,17 @@ data ExportTarget
   | TargetUni3CMotion
   | TargetAnimateDiffCameraCtrl
   | TargetFullMatrices
+  | TargetControlNetDepth
+  | TargetControlNetNormal
+  | TargetWanMove
+  | TargetWanCamera
+  | TargetCogVideoX
+  | TargetCustom String
 
 derive instance Generic ExportTarget _
 instance Show ExportTarget where show = genericShow
 instance Eq ExportTarget where eq = genericEq
+instance EncodeJson ExportTarget where encodeJson = genericEncodeJson
 
 -- ────────────────────────────────────────────────────────────────────────────
 -- MotionCtrl Types

@@ -9,6 +9,8 @@ module Lattice.Services.RenderQueue.Database
   ( -- * Database Handle
     RenderQueueDB
   , mkRenderQueueDB
+  , openDatabase
+  , closeDatabase
     -- * Request Types
   , DatabaseRequest(..)
   , JobOperation(..)
@@ -24,6 +26,7 @@ module Lattice.Services.RenderQueue.Database
   ) where
 
 import Prelude
+import Effect (Effect)
 import Effect.Aff (Aff)
 import Data.Maybe (Maybe(..))
 import Data.Generic.Rep (class Generic)
@@ -49,6 +52,20 @@ derive newtype instance Show RenderQueueDB
 -- | Create a database handle
 mkRenderQueueDB :: String -> RenderQueueDB
 mkRenderQueueDB name = RenderQueueDB { dbName: name, isOpen: false }
+
+-- | Open a database connection
+-- |
+-- | In pure mode, this creates a handle marked as open.
+-- | The actual connection is managed by the runtime/backend via Bridge.
+openDatabase :: String -> Aff RenderQueueDB
+openDatabase name = pure $ RenderQueueDB { dbName: name, isOpen: true }
+
+-- | Close a database connection
+-- |
+-- | In pure mode, this is a no-op.
+-- | The actual close happens via Bridge to the backend.
+closeDatabase :: RenderQueueDB -> Effect Unit
+closeDatabase _ = pure unit
 
 -- | Job-related database operations
 data JobOperation

@@ -24,6 +24,7 @@ module Lattice.UI.Radix.Dialog
   , Query(..)
   , Input
   , Output(..)
+  , Action
   , Slot
   , Slots
   , _trigger
@@ -37,7 +38,9 @@ module Lattice.UI.Radix.Dialog
 import Prelude
 
 import Data.Foldable (for_)
+import Data.Const (Const)
 import Data.Maybe (Maybe(..), fromMaybe)
+import Data.Void (Void)
 -- Data.Symbol.SProxy is deprecated; using Type.Proxy.Proxy instead
 import Effect (Effect)
 import Effect.Aff.Class (class MonadAff)
@@ -110,11 +113,11 @@ _close = Proxy
 
 -- | Child slots type - parents render content into these slots
 type Slots =
-  ( trigger :: H.Slot (H.Const Void) Void Unit
-  , title :: H.Slot (H.Const Void) Void Unit  
-  , description :: H.Slot (H.Const Void) Void Unit
-  , body :: H.Slot (H.Const Void) Void Unit
-  , close :: H.Slot (H.Const Void) Void Unit
+  ( trigger :: H.Slot (Const Void) Void Unit
+  , title :: H.Slot (Const Void) Void Unit  
+  , description :: H.Slot (Const Void) Void Unit
+  , body :: H.Slot (Const Void) Void Unit
+  , close :: H.Slot (Const Void) Void Unit
   )
 
 -- | Internal state

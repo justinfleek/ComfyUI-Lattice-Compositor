@@ -140,7 +140,7 @@ type AuditLogMetadata = Object Json
 -- | @field userAction User action that triggered event
 -- | @field metadata Additional structured data
 type AuditLogEntry =
-  { id :: Maybe Int
+  { id :: Maybe String
   , timestamp :: String
   , category :: AuditCategory
   , severity :: AuditSeverity

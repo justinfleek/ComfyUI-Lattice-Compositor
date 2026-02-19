@@ -13,19 +13,37 @@ module Lattice.Services.RenderQueue.Manager.Types
     RenderQueueManager
   , FrameRenderer
   , ManagerState
+    -- * Re-exports
+  , module Effect.Timer
     -- * Request Types
   , TimerRequest(..)
   , TimerAction(..)
+    -- * Timer Operations
+  , setIntervalImpl
+  , clearIntervalImpl
+    -- * Time Operations
+  , now
+    -- * ID Generation
+  , generateId
   ) where
 
 import Prelude
 import Effect (Effect)
 import Effect.Aff (Aff)
 import Effect.Ref (Ref)
+import Effect.Now as Now
+import Effect.Timer (IntervalId, setInterval, clearInterval)
+import Data.DateTime.Instant (unInstant)
+import Data.Time.Duration (Milliseconds(..))
 import Data.Map (Map)
 import Data.Maybe (Maybe)
 import Data.Generic.Rep (class Generic)
 import Data.Show.Generic (genericShow)
+import Data.Int (round)
+
+import Lattice.Utils.Uuid5.Core (uuid5Default)
+import Lattice.Utils.Uuid5.EntityType (EntityType(..))
+
 
 import Lattice.Services.RenderQueue.Types
   ( RenderJob
@@ -89,7 +107,7 @@ type RenderQueueManager =
   , onJobCompleteCb :: Ref (Maybe (String -> Array RenderedFrame -> Effect Unit))
   , onJobErrorCb :: Ref (Maybe (String -> String -> Effect Unit))
   , onQueueEmptyCb :: Ref (Maybe (Effect Unit))
-  , autoSaveTimer :: Ref (Maybe Int)
+  , autoSaveTimer :: Ref (Maybe IntervalId)
   }
 
 -- | Timer actions
@@ -114,3 +132,55 @@ data TimerRequest = TimerRequest
 derive instance Eq TimerRequest
 derive instance Generic TimerRequest _
 instance Show TimerRequest where show = genericShow
+
+-- ────────────────────────────────────────────────────────────────────────────
+-- Timer Operations
+-- ────────────────────────────────────────────────────────────────────────────
+
+-- | Set an interval timer
+-- |
+-- | @param callback The callback to run on each interval
+-- | @param ms The interval in milliseconds
+-- | @returns The timer ID (use with clearIntervalImpl to cancel)
+-- |
+-- | Note: This wraps Effect.Timer.setInterval. For strict Zero FFI compliance,
+-- | timer operations could be routed through the Bridge to Haskell backend.
+setIntervalImpl :: Effect Unit -> Int -> Effect IntervalId
+setIntervalImpl callback ms = setInterval ms callback
+
+-- | Clear an interval timer
+-- |
+-- | @param timerId The timer ID returned from setIntervalImpl
+clearIntervalImpl :: IntervalId -> Effect Unit
+clearIntervalImpl = clearInterval
+
+-- ────────────────────────────────────────────────────────────────────────────
+-- Time Operations
+-- ────────────────────────────────────────────────────────────────────────────
+
+-- | Get current time as milliseconds since epoch
+-- |
+-- | This is a read-only browser query, which is allowed per Zero FFI rules.
+-- | Uses Effect.Now from the standard library.
+now :: Effect Number
+now = do
+  instant <- Now.now
+  let (Milliseconds ms) = unInstant instant
+  pure ms
+
+-- ────────────────────────────────────────────────────────────────────────────
+-- ID Generation
+-- ────────────────────────────────────────────────────────────────────────────
+
+-- | Generate a unique job ID
+-- |
+-- | Uses UUID5 (deterministic) with current timestamp as the name.
+-- | This produces unique IDs as long as timestamps differ.
+-- | Pure computation - no FFI required.
+generateId :: Effect String
+generateId = do
+  instant <- Now.now
+  let (Milliseconds ms) = unInstant instant
+      -- Use timestamp + "job" prefix as the name for UUID5
+      name = "job:" <> show (round ms :: Int)
+  pure (uuid5Default name)

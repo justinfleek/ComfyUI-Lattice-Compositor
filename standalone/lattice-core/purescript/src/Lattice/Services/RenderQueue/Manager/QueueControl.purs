@@ -51,7 +51,8 @@ startQueue mgr = do
   when (not state.isRunning) $ do
     Ref.modify_ (\s -> s { isRunning = true, isPaused = false }) mgr.state
     startAutoSave mgr
-    launchAff_ $ processNextJob mgr
+    currentTime <- now
+    launchAff_ $ processNextJob mgr currentTime
 
 -- | Pause the queue
 -- |
@@ -95,7 +96,8 @@ resumeQueue mgr = do
             notifyProgress mgr jobId resumedJob.progress
           Nothing -> pure unit
       Nothing -> pure unit
-    launchAff_ $ processNextJob mgr
+    currentTime <- now
+    launchAff_ $ processNextJob mgr currentTime
 
 -- | Stop the queue entirely
 -- |
