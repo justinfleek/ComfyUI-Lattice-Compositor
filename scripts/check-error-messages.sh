@@ -22,7 +22,7 @@ echo "📋 Checking Lean 4 error messages..."
 LEAN_ERRORS=0
 
 # Check for throwError without "Fix:" or "fix:"
-if grep -rn --include="*.lean" "throwError" "$PROJECT_ROOT/leancomfy/lean" 2>/dev/null | grep -v "Fix:" | grep -v "fix:" | grep -v "\.lake" | grep -v "^Binary" > /tmp/lean_errors.txt; then
+if grep -rn --include="*.lean" "throwError" "$PROJECT_ROOT/lattice-core/lean" 2>/dev/null | grep -v "Fix:" | grep -v "fix:" | grep -v "\.lake" | grep -v "^Binary" > /tmp/lean_errors.txt; then
   echo "❌ ERROR: Found Lean error messages without 'Fix:' or 'fix:' directive"
   echo ""
   echo "PROTOCOL VIOLATION: All error messages must include:"
@@ -41,7 +41,7 @@ if grep -rn --include="*.lean" "throwError" "$PROJECT_ROOT/leancomfy/lean" 2>/de
 fi
 
 # Check for error messages that are too short (likely missing context)
-if grep -rn --include="*.lean" "throwError.*\"" "$PROJECT_ROOT/leancomfy/lean" 2>/dev/null | grep -v "\.lake" | grep -v "^Binary" | awk -F'"' '{print length($2)}' | awk '$1 < 50' > /tmp/short_errors.txt && [ -s /tmp/short_errors.txt ]; then
+if grep -rn --include="*.lean" "throwError.*\"" "$PROJECT_ROOT/lattice-core/lean" 2>/dev/null | grep -v "\.lake" | grep -v "^Binary" | awk -F'"' '{print length($2)}' | awk '$1 < 50' > /tmp/short_errors.txt && [ -s /tmp/short_errors.txt ]; then
   echo "⚠️  WARNING: Found potentially too-short error messages (< 50 chars)"
   echo "   Error messages should be descriptive. Consider adding more context."
 fi
