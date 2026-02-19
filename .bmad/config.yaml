@@ -21,7 +21,7 @@ agents:
 # Quality gates - run on every change
 quality:
   pre_commit:
-    - "npx biome check ui/src"
+    - "npx biome check comfyui/ui/src"
     - "npx tsc --noEmit"
 
 # Paths
@@ -29,4 +29,4 @@ paths:
   docs: "docs/"
   stories: "docs/stories/"
   agents: ".bmad/agents/"
-  tests: "ui/src/__tests__/"
+  tests: "comfyui/ui/src/__tests__/"

@@ -20,6 +20,26 @@
   (major1) == 2 && (major2) <  2 || \
   (major1) == 2 && (major2) == 2 && (minor) <= 3)
 #endif /* MIN_VERSION_aeson */
+/* package array-0.5.8.0 */
+#ifndef VERSION_array
+#define VERSION_array "0.5.8.0"
+#endif /* VERSION_array */
+#ifndef MIN_VERSION_array
+#define MIN_VERSION_array(major1,major2,minor) (\
+  (major1) <  0 || \
+  (major1) == 0 && (major2) <  5 || \
+  (major1) == 0 && (major2) == 5 && (minor) <= 8)
+#endif /* MIN_VERSION_array */
+/* package async-2.2.6 */
+#ifndef VERSION_async
+#define VERSION_async "2.2.6"
+#endif /* VERSION_async */
+#ifndef MIN_VERSION_async
+#define MIN_VERSION_async(major1,major2,minor) (\
+  (major1) <  2 || \
+  (major1) == 2 && (major2) <  2 || \
+  (major1) == 2 && (major2) == 2 && (minor) <= 6)
+#endif /* MIN_VERSION_async */
 /* package base-4.20.2.0 */
 #ifndef VERSION_base
 #define VERSION_base "4.20.2.0"
@@ -40,15 +60,15 @@
   (major1) == 0 && (major2) <  12 || \
   (major1) == 0 && (major2) == 12 && (minor) <= 2)
 #endif /* MIN_VERSION_bytestring */
-/* package containers-0.6.8 */
+/* package containers-0.7 */
 #ifndef VERSION_containers
-#define VERSION_containers "0.6.8"
+#define VERSION_containers "0.7"
 #endif /* VERSION_containers */
 #ifndef MIN_VERSION_containers
 #define MIN_VERSION_containers(major1,major2,minor) (\
   (major1) <  0 || \
-  (major1) == 0 && (major2) <  6 || \
-  (major1) == 0 && (major2) == 6 && (minor) <= 8)
+  (major1) == 0 && (major2) <  7 || \
+  (major1) == 0 && (major2) == 7 && (minor) <= 0)
 #endif /* MIN_VERSION_containers */
 /* package cryptohash-sha1-0.11.101.0 */
 #ifndef VERSION_cryptohash_sha1
@@ -70,26 +90,86 @@
   (major1) == 0 && (major2) <  11 || \
   (major1) == 0 && (major2) == 11 && (minor) <= 102)
 #endif /* MIN_VERSION_cryptohash_sha256 */
-/* package filepath-1.4.301.0 */
+/* package cryptonite-0.30 */
+#ifndef VERSION_cryptonite
+#define VERSION_cryptonite "0.30"
+#endif /* VERSION_cryptonite */
+#ifndef MIN_VERSION_cryptonite
+#define MIN_VERSION_cryptonite(major1,major2,minor) (\
+  (major1) <  0 || \
+  (major1) == 0 && (major2) <  30 || \
+  (major1) == 0 && (major2) == 30 && (minor) <= 0)
+#endif /* MIN_VERSION_cryptonite */
+/* package dhall-1.42.3 */
+#ifndef VERSION_dhall
+#define VERSION_dhall "1.42.3"
+#endif /* VERSION_dhall */
+#ifndef MIN_VERSION_dhall
+#define MIN_VERSION_dhall(major1,major2,minor) (\
+  (major1) <  1 || \
+  (major1) == 1 && (major2) <  42 || \
+  (major1) == 1 && (major2) == 42 && (minor) <= 3)
+#endif /* MIN_VERSION_dhall */
+/* package directory-1.3.8.5 */
+#ifndef VERSION_directory
+#define VERSION_directory "1.3.8.5"
+#endif /* VERSION_directory */
+#ifndef MIN_VERSION_directory
+#define MIN_VERSION_directory(major1,major2,minor) (\
+  (major1) <  1 || \
+  (major1) == 1 && (major2) <  3 || \
+  (major1) == 1 && (major2) == 3 && (minor) <= 8)
+#endif /* MIN_VERSION_directory */
+/* package filepath-1.5.4.0 */
 #ifndef VERSION_filepath
-#define VERSION_filepath "1.4.301.0"
+#define VERSION_filepath "1.5.4.0"
 #endif /* VERSION_filepath */
 #ifndef MIN_VERSION_filepath
 #define MIN_VERSION_filepath(major1,major2,minor) (\
   (major1) <  1 || \
-  (major1) == 1 && (major2) <  4 || \
-  (major1) == 1 && (major2) == 4 && (minor) <= 301)
+  (major1) == 1 && (major2) <  5 || \
+  (major1) == 1 && (major2) == 5 && (minor) <= 4)
 #endif /* MIN_VERSION_filepath */
-/* package hashable-1.4.7.0 */
+/* package foldl-1.4.18 */
+#ifndef VERSION_foldl
+#define VERSION_foldl "1.4.18"
+#endif /* VERSION_foldl */
+#ifndef MIN_VERSION_foldl
+#define MIN_VERSION_foldl(major1,major2,minor) (\
+  (major1) <  1 || \
+  (major1) == 1 && (major2) <  4 || \
+  (major1) == 1 && (major2) == 4 && (minor) <= 18)
+#endif /* MIN_VERSION_foldl */
+/* package hashable-1.5.1.0 */
 #ifndef VERSION_hashable
-#define VERSION_hashable "1.4.7.0"
+#define VERSION_hashable "1.5.1.0"
 #endif /* VERSION_hashable */
 #ifndef MIN_VERSION_hashable
 #define MIN_VERSION_hashable(major1,major2,minor) (\
   (major1) <  1 || \
-  (major1) == 1 && (major2) <  4 || \
-  (major1) == 1 && (major2) == 4 && (minor) <= 7)
+  (major1) == 1 && (major2) <  5 || \
+  (major1) == 1 && (major2) == 5 && (minor) <= 1)
 #endif /* MIN_VERSION_hashable */
+/* package megaparsec-9.7.0 */
+#ifndef VERSION_megaparsec
+#define VERSION_megaparsec "9.7.0"
+#endif /* VERSION_megaparsec */
+#ifndef MIN_VERSION_megaparsec
+#define MIN_VERSION_megaparsec(major1,major2,minor) (\
+  (major1) <  9 || \
+  (major1) == 9 && (major2) <  7 || \
+  (major1) == 9 && (major2) == 7 && (minor) <= 0)
+#endif /* MIN_VERSION_megaparsec */
+/* package process-1.6.26.1 */
+#ifndef VERSION_process
+#define VERSION_process "1.6.26.1"
+#endif /* VERSION_process */
+#ifndef MIN_VERSION_process
+#define MIN_VERSION_process(major1,major2,minor) (\
+  (major1) <  1 || \
+  (major1) == 1 && (major2) <  6 || \
+  (major1) == 1 && (major2) == 6 && (minor) <= 26)
+#endif /* MIN_VERSION_process */
 /* package regex-tdfa-1.3.2.5 */
 #ifndef VERSION_regex_tdfa
 #define VERSION_regex_tdfa "1.3.2.5"
@@ -110,15 +190,25 @@
   (major1) == 0 && (major2) <  3 || \
   (major1) == 0 && (major2) == 3 && (minor) <= 8)
 #endif /* MIN_VERSION_scientific */
-/* package text-2.1.4 */
+/* package shelly-1.12.1.1 */
+#ifndef VERSION_shelly
+#define VERSION_shelly "1.12.1.1"
+#endif /* VERSION_shelly */
+#ifndef MIN_VERSION_shelly
+#define MIN_VERSION_shelly(major1,major2,minor) (\
+  (major1) <  1 || \
+  (major1) == 1 && (major2) <  12 || \
+  (major1) == 1 && (major2) == 12 && (minor) <= 1)
+#endif /* MIN_VERSION_shelly */
+/* package text-2.1.3 */
 #ifndef VERSION_text
-#define VERSION_text "2.1.4"
+#define VERSION_text "2.1.3"
 #endif /* VERSION_text */
 #ifndef MIN_VERSION_text
 #define MIN_VERSION_text(major1,major2,minor) (\
   (major1) <  2 || \
   (major1) == 2 && (major2) <  1 || \
-  (major1) == 2 && (major2) == 1 && (minor) <= 4)
+  (major1) == 2 && (major2) == 1 && (minor) <= 3)
 #endif /* MIN_VERSION_text */
 /* package time-1.12.2 */
 #ifndef VERSION_time
@@ -130,6 +220,16 @@
   (major1) == 1 && (major2) <  12 || \
   (major1) == 1 && (major2) == 12 && (minor) <= 2)
 #endif /* MIN_VERSION_time */
+/* package unix-2.8.7.0 */
+#ifndef VERSION_unix
+#define VERSION_unix "2.8.7.0"
+#endif /* VERSION_unix */
+#ifndef MIN_VERSION_unix
+#define MIN_VERSION_unix(major1,major2,minor) (\
+  (major1) <  2 || \
+  (major1) == 2 && (major2) <  8 || \
+  (major1) == 2 && (major2) == 8 && (minor) <= 7)
+#endif /* MIN_VERSION_unix */
 /* package unordered-containers-0.2.21 */
 #ifndef VERSION_unordered_containers
 #define VERSION_unordered_containers "0.2.21"
@@ -221,6 +321,16 @@
   (major1) == 0 && (major2) <  68 || \
   (major1) == 0 && (major2) == 68 && (minor) <= 10)
 #endif /* MIN_TOOL_VERSION_hsc2hs */
+/* tool pkg-config-0.29.2 */
+#ifndef TOOL_VERSION_pkg_config
+#define TOOL_VERSION_pkg_config "0.29.2"
+#endif /* TOOL_VERSION_pkg_config */
+#ifndef MIN_TOOL_VERSION_pkg_config
+#define MIN_TOOL_VERSION_pkg_config(major1,major2,minor) (\
+  (major1) <  0 || \
+  (major1) == 0 && (major2) <  29 || \
+  (major1) == 0 && (major2) == 29 && (minor) <= 2)
+#endif /* MIN_TOOL_VERSION_pkg_config */
 /* tool runghc-9.10.3 */
 #ifndef TOOL_VERSION_runghc
 #define TOOL_VERSION_runghc "9.10.3"

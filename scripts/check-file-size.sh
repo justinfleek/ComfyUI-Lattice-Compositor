@@ -58,7 +58,7 @@ while IFS= read -r -d '' file; do
     echo "❌ ERROR: $file exceeds $MAX_LINES lines ($lines lines)"
     VIOLATIONS=$((VIOLATIONS + 1))
   fi
-done < <(find "$PROJECT_ROOT/lattice-core/lean" -name "*.lean" -type f -print0 2>/dev/null | grep -v "\.lake" || true)
+done < <(find "$PROJECT_ROOT/standalone/lattice-core/lean" -name "*.lean" -type f -print0 2>/dev/null | grep -v "\.lake" || true)
 
 # ============================================================================
 # SUMMARY

@@ -96,12 +96,12 @@ getSysconfDir :: IO FilePath
 
 
 bindir, libdir, dynlibdir, datadir, libexecdir, sysconfdir :: FilePath
-bindir     = "/home/jpyxal/.cabal/bin"
-libdir     = "/home/jpyxal/.cabal/lib/x86_64-linux-ghc-9.10.3-d332/lattice-0.1.0-inplace"
-dynlibdir  = "/home/jpyxal/.cabal/lib/x86_64-linux-ghc-9.10.3-d332"
-datadir    = "/home/jpyxal/.cabal/share/x86_64-linux-ghc-9.10.3-d332/lattice-0.1.0"
-libexecdir = "/home/jpyxal/.cabal/libexec/x86_64-linux-ghc-9.10.3-d332/lattice-0.1.0"
-sysconfdir = "/home/jpyxal/.cabal/etc"
+bindir     = "/home/justin/.cabal/bin"
+libdir     = "/home/justin/.cabal/lib/x86_64-linux-ghc-9.10.3-d332/lattice-0.1.0-inplace"
+dynlibdir  = "/home/justin/.cabal/lib/x86_64-linux-ghc-9.10.3-d332"
+datadir    = "/home/justin/.cabal/share/x86_64-linux-ghc-9.10.3-d332/lattice-0.1.0"
+libexecdir = "/home/justin/.cabal/libexec/x86_64-linux-ghc-9.10.3-d332/lattice-0.1.0"
+sysconfdir = "/home/justin/.cabal/etc"
 
 getBinDir     = catchIO (getEnv "lattice_bindir")     (\_ -> return bindir)
 getLibDir     = catchIO (getEnv "lattice_libdir")     (\_ -> return libdir)

@@ -19,12 +19,12 @@ dependencies = [
 ]
 
 [tool.hatchling.build]
-packages = ["src/lattice"]
+packages = ["comfyui/src/lattice"]
 
 [tool.pyright]
-include = ["src"]
+include = ["comfyui/src"]
 exclude = ["**/__pycache__", "**/node_modules", ".venv", "venv", "build", "dist"]
-extraPaths = ["src"]
+extraPaths = ["comfyui/src"]
 pythonVersion = "3.13"
 typeCheckingMode = "basic"
 reportMissingImports = true
@@ -33,7 +33,7 @@ reportUnusedImport = false
 reportGeneralTypeIssues = "warning"
 reportOptionalMemberAccess = "none"
 reportOptionalSubscript = "none"
-stubPath = "src/lattice-stubs"
+stubPath = "comfyui/src/lattice-stubs"
 # Use project venv so aiohttp and other deps resolve from real install
 venvPath = "."
 venv = ".venv"

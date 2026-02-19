@@ -74,7 +74,7 @@ for file in $HS_FILES; do
 done
 
 # Lean4: Check for docstrings (/-- ... --/)
-LEAN_FILES=$(find "$PROJECT_ROOT/lattice-core/lean" -name "*.lean" 2>/dev/null | grep -v ".lake\|build" | head -20)
+LEAN_FILES=$(find "$PROJECT_ROOT/standalone/lattice-core/lean" -name "*.lean" 2>/dev/null | grep -v ".lake\|build" | head -20)
 for file in $LEAN_FILES; do
   if [ -f "$file" ]; then
     # Check for def/theorem without docstring
@@ -137,7 +137,7 @@ done; then
 fi
 
 # Lean4: Check for sorry (incomplete proofs)
-if grep -rn --include="*.lean" "\bsorry\b" "$PROJECT_ROOT/lattice-core/lean" 2>/dev/null | grep -v ".lake\|build\|test" | head -20 | while read -r line; do
+if grep -rn --include="*.lean" "\bsorry\b" "$PROJECT_ROOT/standalone/lattice-core/lean" 2>/dev/null | grep -v ".lake\|build\|test" | head -20 | while read -r line; do
   echo "  ❌ $line - Incomplete proof (sorry) detected"
   PARTIAL_VIOLATIONS=$((PARTIAL_VIOLATIONS + 1))
 done; then
@@ -382,7 +382,7 @@ done; then
 fi
 
 # Lean4: Check for unsafe operations
-if grep -rn --include="*.lean" "unsafe" "$PROJECT_ROOT/lattice-core/lean" 2>/dev/null | grep -v "import\|test\|\.lake\|build\|--.*unsafe" | head -20 | while read -r line; do
+if grep -rn --include="*.lean" "unsafe" "$PROJECT_ROOT/standalone/lattice-core/lean" 2>/dev/null | grep -v "import\|test\|\.lake\|build\|--.*unsafe" | head -20 | while read -r line; do
   echo "  ⚠️  $line - Unsafe operation detected (ensure proper justification)"
   SECURITY_VIOLATIONS=$((SECURITY_VIOLATIONS + 1))
 done; then

@@ -1,7 +1,5 @@
 {
-  "include": [
-    "src"
-  ],
+  "include": ["comfyui/src"],
   "exclude": [
     "**/__pycache__",
     "**/node_modules",
@@ -10,9 +8,7 @@
     "build",
     "dist"
   ],
-  "extraPaths": [
-    "src"
-  ],
+  "extraPaths": ["comfyui/src"],
   "pythonVersion": "3.13",
   "pythonPlatform": "Linux",
   "typeCheckingMode": "basic",
@@ -26,8 +22,7 @@
   "reportOptionalMemberAccess": "none",
   "reportOptionalSubscript": "none",
   "reportPrivateImportUsage": "none",
-  "stubPath": "src/lattice-stubs",
+  "stubPath": "comfyui/src/lattice-stubs",
   "venvPath": ".",
   "venv": ".venv"
 }
-
