@@ -28,7 +28,7 @@ let
   # Patch for proto-lens-setup to fix Cabal 3.14+ SymbolicPath API changes
   proto-lens-setup-patch = ./patches/proto-lens-setup-cabal-3.14.patch;
 
-  # CUDA libraries needed for libtorch at runtime
+  #                                                                      // cuda
   # Use nvidia-sdk (CUDA 13.0) which has SONAME 12 matching libtorch 2.9.0
   # Must come from prev (nixpkgs overlay), not inputs.nvidia-sdk, to match cache
   #
@@ -37,7 +37,7 @@ let
   has-nvidia-sdk = prev ? nvidia-sdk;
   nvidia-sdk = prev.nvidia-sdk or null;
 
-  # GHC 9.12 package set with overrides
+  #                                                                  // ghc // 9
   hs-pkgs = prev.haskell.packages.ghc912.override {
     overrides =
       hself: hsuper:
@@ -135,7 +135,7 @@ let
         # proper RPATH for OpenBLAS and other dependencies. On x86_64-linux,
         # nixpkgs libtorch-bin already has the correct dependencies.
         #
-        # NOTE: These packages are only available when nvidia-sdk is present.
+        #                                                                      // note
         # On platforms where nvidia-sdk has issues, hasktorch will not be available.
         # ────────────────────────────────────────────────────────────────────────
         libtorch-ffi-helper = do-jailbreak hsuper.libtorch-ffi-helper;
@@ -151,7 +151,7 @@ let
             # Determinate Nix uses /nix/var/nix/builds/ instead of /build, so
             # the sandbox detection fails. Also, the configurePhase tees output
             # to $NIX_BUILD_TOP/cabal-configure.log which fails if we just set
-            # NIX_BUILD_TOP=/build (permission denied to create /build).
+            #                                                       // nix // build // top
             #
             # Solution: Set LIBTORCH_SKIP_DOWNLOAD=1 to tell Setup.hs to assume
             # libtorch is provided externally (via --extra-lib-dirs from Nix).

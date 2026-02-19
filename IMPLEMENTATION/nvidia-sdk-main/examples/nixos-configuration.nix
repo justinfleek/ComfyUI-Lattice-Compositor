@@ -17,7 +17,7 @@
   ];
 
   # ════════════════════════════════════════════════════════════════════════════
-  # NVIDIA SDK Configuration
+  #                                                        // nvidia // sdk // c
   # ════════════════════════════════════════════════════════════════════════════
 
   hardware.nvidia-sdk = {
@@ -40,7 +40,7 @@
     # Add nvidia-sdk to PATH (nvcc, cuda-gdb, etc.) and set CUDA_PATH/CUDA_HOME
     systemPackages = true;  # default
 
-    # GPU monitoring tools (nvtop + btop with NVML)
+    #                                                                       // gpu
     monitoring = true;  # default
 
     # ──────────────────────────────────────────────────────────────────────────

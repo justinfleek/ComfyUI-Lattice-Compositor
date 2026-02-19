@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
-# SPDX-FileCopyrightText: Copyright (c) 2023-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-# SPDX-License-Identifier: MIT
+#                                                                      // spdx
+#                                                                      // spdx
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the "Software"),
@@ -13,13 +13,13 @@
 # The above copyright notice and this permission notice shall be included in
 # all copies or substantial portions of the Software.
 #
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
-# THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-# DEALINGS IN THE SOFTWARE.
+#                                         // the // software // is // provided
+#                                                                   // implied
+#    // fitness // for // a // particular // purpose // and // noninfringement
+# // the // authors // or // copyright // holders // be // liable // for // any // claim
+#                                                                 // liability
+#                                                                      // from
+#                                         // dealings // in // the // software
 
 # Converts OpenRM binhex-encoded images to Nouveau-compatible binary blobs
 # See nouveau_firmware_layout.ods for documentation on the file format
@@ -114,7 +114,7 @@ def getbytes(filename, array):
             raise MyException(f"array {array} in {filename} should be {data_size} bytes but is actually {len(output)}.")
         return output
 
-# GSP bootloader
+#                                                                       // gsp
 def bootloader(gpu, fuse):
     global outputpath
     global version
@@ -147,7 +147,7 @@ def bootloader(gpu, fuse):
         # Finally, the actual bootloader image
         f.write(firmware)
 
-# GSP Booter load and unload
+#                                                                  // gsp // b
 def booter(gpu, load, sigsize, fuse = "prod"):
     global outputpath
     global version
@@ -217,7 +217,7 @@ def booter(gpu, load, sigsize, fuse = "prod"):
         # And finally, the actual booter image
         f.write(firmware)
 
-# GPU memory scrubber, needed for some GPUs and configurations
+#                                                                       // gpu
 def scrubber(gpu, sigsize, fuse = "prod"):
     global outputpath
     global version
@@ -576,7 +576,7 @@ def symlinks():
             os.rmdir(d)
         symlink('ad102', d, target_is_directory = True)
 
-    # TU11x uses the same bootloader as TU10x
+    #                                                                      // tu11
     symlink(f"../../tu102/gsp/bootloader-{version}.bin", f"tu116/gsp/bootloader-{version}.bin")
 
     # Blackwell is only supported with GSP, so we can symlink the top-level directories
@@ -739,7 +739,7 @@ def main():
 
     os.makedirs(f"{outputpath}/nvidia", exist_ok = True)
 
-    # TU10x and GA100 do not have debug-fused versions of the bootloader
+    #                                                                      // tu10
     if args.debug_fused:
         print("Generation images for debug-fused GPUs")
         bootloader_fuse = "_dbg_"
@@ -756,7 +756,7 @@ def main():
 
     booter("tu116", "load", 16, booter_fuse)
     booter("tu116", "unload", 16, booter_fuse)
-    # TU11x uses the same bootloader as TU10x
+    #                                                                      // tu11
 
     booter("ga100", "load", 384, booter_fuse)
     booter("ga100", "unload", 384, booter_fuse)

@@ -109,9 +109,9 @@ import           GHC.Generics (Generic)
 import           Compass.Core.Types
 import           Compass.Inference.TieredRouter
 
--------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Warming Engine
--------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | The speculative warming engine. Runs as a background service
 -- alongside the main COMPASS request path.
@@ -230,9 +230,9 @@ shutdownWarmingEngine engine = do
   workers <- atomically $ readTVar (weWorkers engine)
   mapM_ cancel workers
 
--------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Warming Strategies
--------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | A warming task to be executed by the worker pool
 data WarmingTask = WarmingTask
@@ -290,9 +290,9 @@ data SessionContext = SessionContext
   , scWarmCache    :: HashSet ContentAddr  -- what we've already warmed
   } deriving stock (Generic)
 
--------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Query Prediction
--------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | The query prediction model. Combines multiple signals:
 --   1. Historical frequency (what does this user usually ask?)
@@ -458,9 +458,9 @@ walkReverseDeps dag addr =
     -- In production, terminal nodes in the reverse dep walk are widgets
     -- This placeholder recurses; real impl checks if dep is a widget registration
 
--------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Warming Execution
--------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Warm the cache for a user's session start.
 -- Called on login/session-resume. Runs within the session budget.
@@ -634,9 +634,9 @@ warmSpecificQueries engine queries root = do
           }
     enqueueTask engine task
 
--------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Worker Pool
--------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Worker loop: pull tasks from the queue and execute them.
 -- Each worker runs warming through the tiered router, which
@@ -711,9 +711,9 @@ cascadeListener engine = do
           loop
   loop
 
--------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Budget Management
--------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Time budget for a warming phase
 data WarmingBudget = WarmingBudget
@@ -765,9 +765,9 @@ waitForBudget budget = do
   when (remaining > 0) $ do
     threadDelay (round $ remaining * 1000)  -- microseconds
 
--------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Monitoring
--------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Warming outcome for a single task
 data WarmingOutcome
@@ -839,9 +839,9 @@ recordWarmingTier engine tier =
     { wmTierDistribution = Map.insertWith (+) tier 1 (wmTierDistribution wm)
     }
 
--------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Internal Helpers
--------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Check if a (query, root) pair has already been warmed in this session
 isAlreadyWarmed :: SessionContext -> QueryIntent -> MerkleRoot -> Bool

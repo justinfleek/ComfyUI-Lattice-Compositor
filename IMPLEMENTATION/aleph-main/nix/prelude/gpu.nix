@@ -13,7 +13,7 @@
 #
 #                                                         — Neuromancer
 #
-# GPU architecture definitions. The silicon geometry that determines
+#                                                                       // gpu
 # what's possible. Each generation unlocks new instructions, new
 # precisions, new memory hierarchies.
 #

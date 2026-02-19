@@ -16,9 +16,9 @@ import {
   type ControlPoint,
 } from "@/types/spline";
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-//                                                              // arbitraries
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================
+// ARBITRARIES
+// ============================================================
 
 const handleArb = fc.oneof(
   fc.constant(null),
@@ -41,9 +41,9 @@ const controlPointArb: fc.Arbitrary<ControlPoint> = fc.record({
   group: fc.option(fc.string({ minLength: 1, maxLength: 20 }), { nil: undefined }),
 });
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================
 // controlPointToAnimatable TESTS
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================
 
 describe("PROPERTY: controlPointToAnimatable", () => {
   it("preserves id", () => {
@@ -156,9 +156,9 @@ describe("PROPERTY: controlPointToAnimatable", () => {
   });
 });
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================
 // animatableToControlPoint TESTS
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================
 
 describe("PROPERTY: animatableToControlPoint", () => {
   it("preserves id", () => {
@@ -250,9 +250,9 @@ describe("PROPERTY: animatableToControlPoint", () => {
   });
 });
 
-// ═══════════════════════════════════════════════════════════════════════════
-//                                       // round // trip // property // tests
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================
+// ROUND-TRIP PROPERTY TESTS
+// ============================================================
 
 describe("PROPERTY: Round-trip conversion", () => {
   it("controlPoint → animatable → controlPoint preserves all data", () => {
@@ -284,9 +284,9 @@ describe("PROPERTY: Round-trip conversion", () => {
   });
 });
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================
 // createDefaultSplineData TESTS
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================
 
 describe("PROPERTY: createDefaultSplineData", () => {
   it("returns SplineData with all required properties", () => {
@@ -344,9 +344,9 @@ describe("PROPERTY: createDefaultSplineData", () => {
   });
 });
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================
 // createDefaultPathLayerData TESTS
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================
 
 describe("PROPERTY: createDefaultPathLayerData", () => {
   it("returns PathLayerData with all required properties", () => {

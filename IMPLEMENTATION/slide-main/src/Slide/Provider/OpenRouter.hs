@@ -230,7 +230,7 @@ buildProviderPrefs config = case openrouterProviderOrder config of
         ]
 
 -- ════════════════════════════════════════════════════════════════════════════════
--- SSE Processing
+--                                                                  // sse // p
 -- ════════════════════════════════════════════════════════════════════════════════
 
 -- | Handle a single SSE event

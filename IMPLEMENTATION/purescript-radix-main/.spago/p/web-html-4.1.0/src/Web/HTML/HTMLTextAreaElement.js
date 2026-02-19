@@ -12,7 +12,7 @@ export function setAutocomplete(autocomplete) {
   };
 }
 
-// ----------------------------------------------------------------------------
+// ────────────────────────────────────────────────────────────────────────────
 
 export function autofocus(textarea) {
   return function () {
@@ -28,7 +28,7 @@ export function setAutofocus(autofocus) {
   };
 }
 
-// ----------------------------------------------------------------------------
+// ────────────────────────────────────────────────────────────────────────────
 
 export function cols(textarea) {
   return function () {
@@ -44,7 +44,7 @@ export function setCols(cols) {
   };
 }
 
-// ----------------------------------------------------------------------------
+// ────────────────────────────────────────────────────────────────────────────
 
 export function dirName(textarea) {
   return function () {
@@ -60,7 +60,7 @@ export function setDirName(dirName) {
   };
 }
 
-// ----------------------------------------------------------------------------
+// ────────────────────────────────────────────────────────────────────────────
 
 export function disabled(textarea) {
   return function () {
@@ -76,7 +76,7 @@ export function setDisabled(disabled) {
   };
 }
 
-// ----------------------------------------------------------------------------
+// ────────────────────────────────────────────────────────────────────────────
 
 export function _form(textarea) {
   return function () {
@@ -84,7 +84,7 @@ export function _form(textarea) {
   };
 }
 
-// ----------------------------------------------------------------------------
+// ────────────────────────────────────────────────────────────────────────────
 
 export function maxLength(textarea) {
   return function () {
@@ -100,7 +100,7 @@ export function setMaxLength(maxLength) {
   };
 }
 
-// ----------------------------------------------------------------------------
+// ────────────────────────────────────────────────────────────────────────────
 
 export function minLength(textarea) {
   return function () {
@@ -116,7 +116,7 @@ export function setMinLength(minLength) {
   };
 }
 
-// ----------------------------------------------------------------------------
+// ────────────────────────────────────────────────────────────────────────────
 
 export function name(textarea) {
   return function () {
@@ -132,7 +132,7 @@ export function setName(name) {
   };
 }
 
-// ----------------------------------------------------------------------------
+// ────────────────────────────────────────────────────────────────────────────
 
 export function placeholder(textarea) {
   return function () {
@@ -148,7 +148,7 @@ export function setPlaceholder(placeholder) {
   };
 }
 
-// ----------------------------------------------------------------------------
+// ────────────────────────────────────────────────────────────────────────────
 
 export function readOnly(textarea) {
   return function () {
@@ -164,7 +164,7 @@ export function setReadOnly(readOnly) {
   };
 }
 
-// ----------------------------------------------------------------------------
+// ────────────────────────────────────────────────────────────────────────────
 
 export function required(textarea) {
   return function () {
@@ -180,7 +180,7 @@ export function setRequired(required) {
   };
 }
 
-// ----------------------------------------------------------------------------
+// ────────────────────────────────────────────────────────────────────────────
 
 export function rows(textarea) {
   return function () {
@@ -196,7 +196,7 @@ export function setRows(rows) {
   };
 }
 
-// ----------------------------------------------------------------------------
+// ────────────────────────────────────────────────────────────────────────────
 
 export function wrap(textarea) {
   return function () {
@@ -212,7 +212,7 @@ export function setWrap(wrap) {
   };
 }
 
-// ----------------------------------------------------------------------------
+// ────────────────────────────────────────────────────────────────────────────
 
 export function type_(textarea) {
   return function () {
@@ -220,7 +220,7 @@ export function type_(textarea) {
   };
 }
 
-// ----------------------------------------------------------------------------
+// ────────────────────────────────────────────────────────────────────────────
 
 export function defaultValue(textarea) {
   return function () {
@@ -236,7 +236,7 @@ export function setDefaultValue(defaultValue) {
   };
 }
 
-// ----------------------------------------------------------------------------
+// ────────────────────────────────────────────────────────────────────────────
 
 export function value(textarea) {
   return function () {
@@ -252,7 +252,7 @@ export function setValue(value) {
   };
 }
 
-// ----------------------------------------------------------------------------
+// ────────────────────────────────────────────────────────────────────────────
 
 export function textLength(textarea) {
   return function () {
@@ -260,7 +260,7 @@ export function textLength(textarea) {
   };
 }
 
-// ----------------------------------------------------------------------------
+// ────────────────────────────────────────────────────────────────────────────
 
 export function willValidate(textarea) {
   return function () {
@@ -268,7 +268,7 @@ export function willValidate(textarea) {
   };
 }
 
-// ----------------------------------------------------------------------------
+// ────────────────────────────────────────────────────────────────────────────
 
 export function validity(textarea) {
   return function () {
@@ -276,7 +276,7 @@ export function validity(textarea) {
   };
 }
 
-// ----------------------------------------------------------------------------
+// ────────────────────────────────────────────────────────────────────────────
 
 export function validationMessage(textarea) {
   return function () {
@@ -284,7 +284,7 @@ export function validationMessage(textarea) {
   };
 }
 
-// ----------------------------------------------------------------------------
+// ────────────────────────────────────────────────────────────────────────────
 
 export function checkValidity(textarea) {
   return function () {
@@ -292,7 +292,7 @@ export function checkValidity(textarea) {
   };
 }
 
-// ----------------------------------------------------------------------------
+// ────────────────────────────────────────────────────────────────────────────
 
 export function reportValidity(textarea) {
   return function () {
@@ -300,7 +300,7 @@ export function reportValidity(textarea) {
   };
 }
 
-// ----------------------------------------------------------------------------
+// ────────────────────────────────────────────────────────────────────────────
 
 export function setCustomValidity(value) {
   return function (textarea) {
@@ -310,7 +310,7 @@ export function setCustomValidity(value) {
   };
 }
 
-// ----------------------------------------------------------------------------
+// ────────────────────────────────────────────────────────────────────────────
 
 export function labels(textarea) {
   return function () {
@@ -318,7 +318,7 @@ export function labels(textarea) {
   };
 }
 
-// ----------------------------------------------------------------------------
+// ────────────────────────────────────────────────────────────────────────────
 
 export function select(textarea) {
   return function () {
@@ -326,7 +326,7 @@ export function select(textarea) {
   };
 }
 
-// ----------------------------------------------------------------------------
+// ────────────────────────────────────────────────────────────────────────────
 
 export function selectionStart(textarea) {
   return function () {
@@ -342,7 +342,7 @@ export function setSelectionStart(selectionStart) {
   };
 }
 
-// ----------------------------------------------------------------------------
+// ────────────────────────────────────────────────────────────────────────────
 
 export function selectionEnd(textarea) {
   return function () {
@@ -358,7 +358,7 @@ export function setSelectionEnd(selectionEnd) {
   };
 }
 
-// ----------------------------------------------------------------------------
+// ────────────────────────────────────────────────────────────────────────────
 
 export function selectionDirection(textarea) {
   return function () {
@@ -374,7 +374,7 @@ export function setSelectionDirection(selectionDirection) {
   };
 }
 
-// ----------------------------------------------------------------------------
+// ────────────────────────────────────────────────────────────────────────────
 
 export function setRangeText(replacement) {
   return function (textarea) {
@@ -388,7 +388,7 @@ export function _setRangeText(replacement, start, end, selectionMode, textarea) 
   textarea.setRangeText(replacement, start, end, selectionMode);
 }
 
-// ----------------------------------------------------------------------------
+// ────────────────────────────────────────────────────────────────────────────
 
 export function setSelectionRange(start) {
   return function (end) {

@@ -9,9 +9,9 @@ import Halogen.HTML.Properties as HP
 
 import Straylight.UI (cls, sectionHeader)
 
--- ============================================================
--- COMPONENT
--- ============================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                                 // component
+-- ════════════════════════════════════════════════════════════════════════════
 
 discordPage :: forall q i o m. H.Component q i o m
 discordPage = H.mkComponent

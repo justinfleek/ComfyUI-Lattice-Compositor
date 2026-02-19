@@ -11,7 +11,7 @@
 # Deploy to Fly.io for cheap always-on RE, or vast.ai for GPU burst.
 # Images pushed via skopeo to ghcr.io - no Docker daemon required.
 #
-# NOTE: This module requires inputs.nix2gpu.flakeModule to be imported
+#                                                                      // note
 # separately (in _main.nix) to avoid infinite recursion.
 #
 { inputs }:
@@ -61,7 +61,7 @@ in
 
     # ──────────────────────────────────────────────────────────────────────────
     # Builder: dedicated nix build machine on Fly
-    # SSH in, run nix build, push images. Your laptop stays cool.
+    #                                                                       // ssh
     # ──────────────────────────────────────────────────────────────────────────
     builder = {
       enable = mk-option {
@@ -114,7 +114,7 @@ in
     };
 
     # ──────────────────────────────────────────────────────────────────────────
-    # CAS: content-addressed storage with LZ4 compression
+    #                                                                       // cas
     # Hot path for all blob transfers - size aggressively
     #
     # With R2 backend enabled, uses fast_slow store:
@@ -159,7 +159,7 @@ in
       };
 
       # ────────────────────────────────────────────────────────────────────────
-      # R2 Backend: Cloudflare R2 as slow tier for persistent global storage
+      #                                                                   // r2 // b
       # ────────────────────────────────────────────────────────────────────────
       r2 = {
         enable = mk-option {
@@ -187,8 +187,8 @@ in
         };
 
         # Credentials loaded from environment:
-        #   AWS_ACCESS_KEY_ID
-        #   AWS_SECRET_ACCESS_KEY
+        #                                                // aws // access // key // id
+        #                                            // aws // secret // access // key
         # Set via Fly secrets or local env
       };
     };
@@ -313,7 +313,7 @@ in
         with-packages = pkgs.python312."withPackages";
 
         # Get nativelink binary from flake input
-        # NOTE: Use inputs.*.packages.${system} directly, NOT inputs'
+        #                                                                      // note
         # inputs' causes infinite recursion in flake-parts
         nativelink =
           inputs.nativelink.packages.${system}.default or inputs.nativelink.packages.${system}.nativelink
@@ -410,7 +410,7 @@ in
           ];
         });
 
-        # CAS configuration - uses fast_slow store when R2 is enabled
+        #                                                                       // cas
         # Fast tier: local filesystem with LRU eviction
         # Slow tier: Cloudflare R2 (S3-compatible) for persistent global storage
         cas-config = write-text "cas.json" (to-json {
@@ -429,7 +429,7 @@ in
                     };
                   };
                 }
-                # R2 as slow tier (persistent S3-compatible storage)
+                #                                                                        // r2
                 {
                   name = "R2_STORE";
                   "experimental_s3_store" = {
@@ -992,7 +992,7 @@ in
             echo "╚══════════════════════════════════════════════════════════════════╝"
             echo ""
 
-            # ── Auth check ──────────────────────────────────────────────────────
+            # ── Auth check ─────────────────────────────────────────────────
             echo "Checking authentication..."
             if ! gh auth status &>/dev/null; then
               echo "Error: GitHub CLI not authenticated. Run 'gh auth login'"
@@ -1009,7 +1009,7 @@ in
             echo "  ✓ Fly.io: $(flyctl auth whoami)"
             echo ""
 
-            # ── Create apps if needed ───────────────────────────────────────────
+            # ── Create apps if needed ──────────────────────────────────────
             echo "Ensuring Fly apps exist..."
             for APP in "$PREFIX-scheduler" "$PREFIX-cas" "$PREFIX-worker"; do
               if ! flyctl apps list --json | jq -e ".[] | select(.Name == \"$APP\")" &>/dev/null; then
@@ -1021,7 +1021,7 @@ in
             done
             echo ""
 
-            # ── Allocate IPs if needed ──────────────────────────────────────────
+            # ── Allocate IPs if needed ─────────────────────────────────────
             echo "Ensuring public IPs allocated..."
             for APP in "$PREFIX-scheduler" "$PREFIX-cas"; do
               if ! flyctl ips list -a "$APP" --json | jq -e '.[] | select(.Type == "shared_v4" or .Type == "v4")' &>/dev/null; then
@@ -1036,7 +1036,7 @@ in
             echo "  ✓ IPs allocated"
             echo ""
 
-            # ── Create volumes if needed ────────────────────────────────────────
+            # ── Create volumes if needed ───────────────────────────────────
             echo "Ensuring volumes exist..."
             if ! flyctl volumes list -a "$PREFIX-cas" --json | jq -e '.[] | select(.Name == "cas_data")' &>/dev/null; then
               echo "  Creating CAS volume (${cfg.cas.volume-size})..."
@@ -1055,7 +1055,7 @@ in
             echo ""
 
             if [ "$BUILD_IMAGES" = "true" ]; then
-            # ── Ensure builder exists ───────────────────────────────────────────
+            # ── Ensure builder exists ──────────────────────────────────────
             BUILDER_APP="$PREFIX-builder"
             if ! flyctl apps list --json | jq -e ".[] | select(.Name == \"$BUILDER_APP\")" &>/dev/null; then
               echo "Creating builder app..."
@@ -1093,7 +1093,7 @@ in
             echo "  ✓ Builder ready"
             echo ""
 
-            # ── Build images on remote builder ──────────────────────────────────
+            # ── Build images on remote builder ─────────────────────────────
             echo "Building containers on Fly builder (your laptop stays cool)..."
             REPO_URL="https://github.com/straylight-software/aleph.git"
 
@@ -1127,7 +1127,7 @@ in
               echo ""
             fi
 
-            # ── Deploy services ─────────────────────────────────────────────────
+            # ── Deploy services ────────────────────────────────────────────
             echo "Deploying services..."
             flyctl deploy -c ${scheduler-fly-toml} -a "$PREFIX-scheduler" -y 2>&1 | tail -2
             flyctl deploy -c ${cas-fly-toml} -a "$PREFIX-cas" -y 2>&1 | tail -2
@@ -1135,13 +1135,13 @@ in
             echo "  ✓ Services deployed"
             echo ""
 
-            # ── Scale workers ───────────────────────────────────────────────────
+            # ── Scale workers ──────────────────────────────────────────────
             echo "Scaling workers to $WORKER_COUNT..."
             flyctl scale count $WORKER_COUNT -a "$PREFIX-worker" -y 2>&1 | tail -2
             echo "  ✓ Workers scaled"
             echo ""
 
-            # ── Status ──────────────────────────────────────────────────────────
+            # ── Status ─────────────────────────────────────────────────────
             echo "╔══════════════════════════════════════════════════════════════════╗"
             echo "║                      Deployment Complete                          ║"
             echo "╚══════════════════════════════════════════════════════════════════╝"
@@ -1258,7 +1258,7 @@ in
             };
           };
 
-          # CAS container (content-addressed storage with LZ4 compression)
+          #                                                                       // cas
           nativelink-cas = {
             "systemPackages" = [
               nativelink
@@ -1355,7 +1355,7 @@ in
           nativelink-worker-setup = worker-setup-script;
           nativelink-toolchain-manifest = toolchain-manifest;
 
-          # THE deploy script - does everything
+          #                                                                       // the
           # nix run .#nativelink-deploy
           nativelink-deploy = deploy-all;
 

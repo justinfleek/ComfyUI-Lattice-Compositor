@@ -59,8 +59,8 @@ export class PropertyEvaluator {
 
     // Use the existing interpolation engine which handles:
     // - Non-animated properties (returns static value)
-    //                            — Linear, bezier, easing, and hold interpolation
-    //                                                     — Expression evaluation
+    // - Linear, bezier, easing, and hold interpolation
+    // - Expression evaluation
     // - Before/after keyframe clamping
     return interpolateProperty(
       property,

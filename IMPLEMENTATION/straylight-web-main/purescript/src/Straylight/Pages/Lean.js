@@ -1,4 +1,4 @@
-// FFI for fetching the Lean file
+//                                                                       // ffi
 // Returns an Aff-compatible thunk
 export const fetchLeanFile = function() {
   return function(onError, onSuccess) {

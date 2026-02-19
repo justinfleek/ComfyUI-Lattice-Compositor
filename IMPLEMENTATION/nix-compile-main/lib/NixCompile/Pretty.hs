@@ -39,9 +39,9 @@ import Prettyprinter
 import Prettyprinter.Render.Terminal
 import System.IO (stdout, stderr)
 
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 -- Styles
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Types (e.g. Int, Path)
 styleType :: Doc AnsiStyle -> Doc AnsiStyle
@@ -83,9 +83,9 @@ styleSuccess = annotate (color Green <> bold)
 styleMuted :: Doc AnsiStyle -> Doc AnsiStyle
 styleMuted = annotate (color Black <> bold) -- often looks gray on terminals
 
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 -- Helpers
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Render a document to stdout with ANSI codes
 renderStdOut :: Doc AnsiStyle -> IO ()
@@ -99,9 +99,9 @@ renderStdErr = renderIO stderr . layoutSmart defaultLayoutOptions . annotate (co
 toText :: Doc AnsiStyle -> Text
 toText = renderStrict . layoutSmart defaultLayoutOptions
 
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 -- Layout Helpers
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | A standard indented block
 -- header {

@@ -9,9 +9,9 @@ import { isFiniteNumber } from "@/utils/typeGuards";
 import { safeDivide } from "@/utils/numericSafety";
 import type { ExpressionContext } from "./types";
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-//                                        // coordinate // conversion // types
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================
+// COORDINATE CONVERSION TYPES
+// ============================================================
 
 /**
  * Transform matrix interface for coordinate conversion
@@ -24,9 +24,9 @@ export interface LayerTransform {
   parent?: LayerTransform | null;
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================
 // 3D ORIENTATION FUNCTIONS
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================
 
 /**
  * lookAt - Calculate rotation to face a target point
@@ -98,9 +98,9 @@ export function orientToPath(
   return [0, 0, 0];
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-//                                    // coordinate // conversion // functions
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================
+// COORDINATE CONVERSION FUNCTIONS
+// ============================================================
 
 // Maximum recursion depth for parent traversal (prevents stack overflow)
 const MAX_PARENT_DEPTH = 50;
@@ -306,9 +306,9 @@ export function fromWorld(
   return fromComp(point3D, layerTransform);
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-//                                    // coordinate // conversion // namespace
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================
+// COORDINATE CONVERSION NAMESPACE
+// ============================================================
 
 /**
  * Coordinate conversion namespace

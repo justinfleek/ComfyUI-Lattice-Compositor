@@ -198,9 +198,9 @@ usage = do
   putStrLn "  nix-compile graph [--dot] [dir] Module dependency graph"
   putStrLn "  nix-compile scope <file.nix>    Show scope graph"
 
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 -- Pretty-printing for bash policy violations
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 
 formatBareCommand :: T.Text -> (T.Text, Span) -> T.Text
 formatBareCommand src (cmd, sp) =
@@ -539,7 +539,7 @@ cmdTypeCheck path = do
           -- with expression
           NWith _ _ -> Just "with expression"
           -- Dynamic imports (NImport removed in hnix 0.17.0)
-          -- NImport path -> case path of
+          --                                                                        // ni
           --   Fix (Compose (AnnUnit _ (NStr _))) -> Just "dynamic import"
           --   _ -> Nothing
           -- Recursively check sub-expressions

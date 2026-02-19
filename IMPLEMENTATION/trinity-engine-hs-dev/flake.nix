@@ -30,7 +30,7 @@
       perSystem =
         { pkgs, system, ... }:
         let
-          # GHC 9.12 with sensenet's haskell overlay
+          #                                                                  // ghc // 9
           inherit (pkgs.haskell.packages) ghc912;
         in
         {

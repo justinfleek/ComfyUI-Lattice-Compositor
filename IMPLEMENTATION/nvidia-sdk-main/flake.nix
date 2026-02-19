@@ -12,7 +12,7 @@
     agenix.url = "github:ryantm/agenix";
     agenix.inputs.nixpkgs.follows = "nixpkgs";
 
-    # LLVM pinned to known-good SM120 support
+    #                                                                      // llvm
     llvm-project = {
       url = "github:llvm/llvm-project/bb1f220d534b0f6d80bea36662f5188ff11c2e54";
       flake = false;
@@ -37,7 +37,7 @@
           };
 
           # ════════════════════════════════════════════════════════════════════
-          # PLATFORM (shared via nix/lib/platform.nix)
+          #                                                                  // platform
           # ════════════════════════════════════════════════════════════════════
 
           inherit (pkgs) lib stdenv;
@@ -47,7 +47,7 @@
           };
 
           # ════════════════════════════════════════════════════════════════════
-          # LLVM-GIT (SM120 support)
+          #                                                                      // llvm
           # ════════════════════════════════════════════════════════════════════
 
           llvm-git = pkgs.callPackage ./nix/pkgs/llvm-git.nix {
@@ -55,7 +55,7 @@
           };
 
           # ════════════════════════════════════════════════════════════════════
-          # CUDA STDENV — The One True Toolchain
+          #                                                            // cuda // stdenv
           # ════════════════════════════════════════════════════════════════════
 
           cudaStdenv = platform.mkCudaStdenv {
@@ -67,13 +67,13 @@
           };
 
           # ════════════════════════════════════════════════════════════════════
-          # MODERN PRIMITIVES
+          #                                                      // modern // primitives
           # ════════════════════════════════════════════════════════════════════
 
           modern = (import ./nix/modern.nix pkgs pkgs).modern;
 
           # ════════════════════════════════════════════════════════════════════
-          # CUDA COMPONENTS
+          #                                                        // cuda // components
           # ════════════════════════════════════════════════════════════════════
 
           cuda = pkgs.callPackage ./nix/pkgs/cuda.nix { inherit versions; };
@@ -120,7 +120,7 @@
           };
 
           # ════════════════════════════════════════════════════════════════════
-          # NGC CONTAINER — Single Source of Truth
+          #                                                          // ngc // container
           # ════════════════════════════════════════════════════════════════════
 
           ngcContainer = modern.container-to-nix {
@@ -136,7 +136,7 @@
           };
 
           # ════════════════════════════════════════════════════════════════════
-          # PYTHON 3.12 — Complete NGC environment
+          #                                                               // python // 3
           # ════════════════════════════════════════════════════════════════════
           #
           # All Python packages (torch, triton, tensorrt_llm, numpy, etc.)
@@ -149,7 +149,7 @@
           };
 
           # ════════════════════════════════════════════════════════════════════
-          # VALIDATION & SAMPLES
+          #                                                                // validation
           # ════════════════════════════════════════════════════════════════════
 
           cuda-samples = pkgs.callPackage ./nix/pkgs/cuda-samples.nix {
@@ -167,7 +167,7 @@
           };
 
           # ════════════════════════════════════════════════════════════════════
-          # MONITORING & PROFILING
+          #                                                                // monitoring
           # ════════════════════════════════════════════════════════════════════
 
           monitoring = pkgs.callPackage ./nix/pkgs/monitoring-tools.nix {
@@ -301,7 +301,7 @@
                 echo "=== Version consistency: PASS ===" > $out
               '';
 
-            # ── LLVM NVPTX target ─────────────────────────────────────────
+            # ── LLVM NVPTX target ──────────────────────────────────────────
             # Verifies the custom LLVM build supports the NVPTX backend
             # (required for CUDA compilation via clang).
             llvm-nvptx = pkgs.runCommand "check-llvm-nvptx" { } ''
@@ -310,7 +310,7 @@
               echo "ok: LLVM has NVPTX target" > $out
             '';
 
-            # ── Individual package structure ──────────────────────────────
+            # ── Individual package structure ───────────────────────────────
             # Spot-checks that individual component packages have the
             # expected directories/files (catches broken extractions).
             component-structure = pkgs.runCommand "check-component-structure" { } ''
@@ -323,7 +323,7 @@
                 || (echo "FAIL: cudnn headers missing" && exit 1)
               echo "ok: cudnn"
 
-              # NCCL
+              #                                                                      // nccl
               test -f "${nccl}/lib/libnccl.so" \
                 || (echo "FAIL: nccl lib missing" && exit 1)
               test -f "${nccl}/include/nccl.h" \
@@ -342,7 +342,7 @@
                 || (echo "FAIL: cutensor lib missing" && exit 1)
               echo "ok: cutensor"
 
-              # CUTLASS (header-only)
+              #                                                                   // cutlass
               test -d "${cutlass}/include/cutlass" \
                 || (echo "FAIL: cutlass headers missing" && exit 1)
               echo "ok: cutlass"
@@ -364,7 +364,7 @@
                 echo "=== Setup-hook: PASS ===" > $out
               '';
 
-            # ── Nsight tools ──────────────────────────────────────────────
+            # ── Nsight tools ───────────────────────────────────────────────
             # Verifies Nsight Compute and Systems directories exist in
             # the SDK, and that the CLI wrappers (ncu, nsys) are present.
             nsight-tools = pkgs.runCommand "check-nsight-tools"
@@ -383,7 +383,7 @@
                 test -d "$nsysDir" || (echo "FAIL: $nsysDir missing" && exit 1)
                 echo "ok: nsight-systems directory exists"
 
-                # CLI wrappers
+                #                                                                       // cli
                 test -x "$CUDA_PATH/bin/ncu"  || (echo "FAIL: ncu binary missing" && exit 1)
                 echo "ok: ncu binary present"
 
@@ -402,7 +402,7 @@
                 echo "=== Nsight tools: PASS ===" > $out
               '';
 
-            # ── Platform arch consistency ─────────────────────────────────
+            # ── Platform arch consistency ──────────────────────────────────
             # Verifies that the platform helper produces a valid cudaArch
             # for the current system.
             platform-arch = pkgs.runCommand "check-platform-arch" { } ''
@@ -420,7 +420,7 @@
               echo "=== Platform arch: PASS ===" > $out
             '';
 
-            # ── Python imports (NGC packages) ─────────────────────────────
+            # ── Python imports (NGC packages) ──────────────────────────────
             python-imports = pkgs.runCommand "check-python-imports"
               {
                 nativeBuildInputs = [ python ];

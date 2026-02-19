@@ -1,5 +1,5 @@
 # Copyright 2025 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-# SPDX-License-Identifier: Apache-2.0
+#                                                                      // spdx
 """Tests for guest-side operations on /balloon resources."""
 
 import concurrent
@@ -227,7 +227,7 @@ def test_size_reduction(uvm_plain_any, method, huge_pages):
 
     # We take the initial reading of the RSS, then calculate the amount
     # we need to inflate the balloon with by subtracting it from the
-    # VM size and adding an offset of 10 MiB in order to make sure we
+    #                                                                        // vm
     # get a lower reading than the initial one.
     inflate_size = 256 - int(first_reading / 1024) + 10
 

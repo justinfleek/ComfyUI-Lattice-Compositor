@@ -1,6 +1,6 @@
 # nix/versions/cudnn/default.nix — cuDNN Versions
 #
-# NVIDIA Deep Neural Network library versions.
+#                                                               // nvidia // d
 
 { lib }:
 

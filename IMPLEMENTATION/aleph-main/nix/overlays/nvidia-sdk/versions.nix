@@ -5,14 +5,14 @@
 #   2. Official tarballs - redistribution issues
 #   3. NGC containers - redistribution issues
 #
-# NGC 25.11 blessed for Blackwell (sm_120)
+#                                                                 // ngc // 25
 rec {
   # ════════════════════════════════════════════════════════════════════════════
   # PyPI wheels from pypi.nvidia.com (preferred - no redistribution issues)
   # ════════════════════════════════════════════════════════════════════════════
 
   wheels = {
-    # NCCL - Multi-GPU communication
+    #                                                                      // nccl
     nccl = {
       version = "2.28.9";
       "x86_64-linux" = {
@@ -122,7 +122,7 @@ rec {
       };
     };
 
-    # CUDA devel has full toolkit but no ML libs
+    #                                                                      // cuda
     cuda-devel = {
       version = "13.0.1";
       "x86_64-linux" = {
@@ -137,7 +137,7 @@ rec {
   };
 
   # ════════════════════════════════════════════════════════════════════════════
-  # CUTLASS (header-only, from GitHub)
+  #                                                                   // cutlass
   # ════════════════════════════════════════════════════════════════════════════
 
   cutlass = {
@@ -156,7 +156,7 @@ rec {
   tensorrt-version = "10.14.1";
   cutensor-version = "2.4.1";
 
-  # SM architectures
+  #                                                                        // sm
   sm = {
     volta = "sm_70";
     turing = "sm_75";

@@ -72,7 +72,7 @@ runReceiver reactor ctx = do
     -- Or just liftIO the logic.
     return ()
     
-  -- REFACTOR to liftIO around withSocket? No, withSocket expects IO.
+  --                                                                  // refactor
   
   -- I'll use `le` capture from closure?
   -- runReceiver :: Reactor -> Context -> KatipContextT IO ()

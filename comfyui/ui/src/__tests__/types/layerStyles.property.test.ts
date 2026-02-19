@@ -28,9 +28,9 @@ import {
   createDefaultGlobalLight,
 } from "@/types/layerStyles";
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ============================================================
 // createStyleProperty TESTS
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================
 
 describe("PROPERTY: createStyleProperty", () => {
   it("returns AnimatableProperty with correct structure", () => {
@@ -107,9 +107,9 @@ describe("PROPERTY: createStyleProperty", () => {
   });
 });
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================
 // createRGBA TESTS
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================
 
 describe("PROPERTY: createRGBA", () => {
   it("returns RGBA with correct values", () => {
@@ -145,9 +145,9 @@ describe("PROPERTY: createRGBA", () => {
   });
 });
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================
 // createDefaultLayerStyles TESTS
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================
 
 describe("PROPERTY: createDefaultLayerStyles", () => {
   it("returns LayerStyles with enabled false", () => {
@@ -162,9 +162,9 @@ describe("PROPERTY: createDefaultLayerStyles", () => {
   });
 });
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================
 // createDefaultDropShadow TESTS
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================
 
 describe("PROPERTY: createDefaultDropShadow", () => {
   it("returns DropShadowStyle with all properties", () => {
@@ -200,9 +200,9 @@ describe("PROPERTY: createDefaultDropShadow", () => {
   });
 });
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================
 // createDefaultInnerShadow TESTS
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================
 
 describe("PROPERTY: createDefaultInnerShadow", () => {
   it("returns InnerShadowStyle with all properties", () => {
@@ -226,9 +226,9 @@ describe("PROPERTY: createDefaultInnerShadow", () => {
   });
 });
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================
 // createDefaultOuterGlow TESTS
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================
 
 describe("PROPERTY: createDefaultOuterGlow", () => {
   it("returns OuterGlowStyle with all properties", () => {
@@ -257,9 +257,9 @@ describe("PROPERTY: createDefaultOuterGlow", () => {
   });
 });
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================
 // createDefaultInnerGlow TESTS
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================
 
 describe("PROPERTY: createDefaultInnerGlow", () => {
   it("returns InnerGlowStyle with source property", () => {
@@ -274,9 +274,9 @@ describe("PROPERTY: createDefaultInnerGlow", () => {
   });
 });
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================
 // createDefaultBevelEmboss TESTS
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================
 
 describe("PROPERTY: createDefaultBevelEmboss", () => {
   it("returns BevelEmbossStyle with all properties", () => {
@@ -313,9 +313,9 @@ describe("PROPERTY: createDefaultBevelEmboss", () => {
   });
 });
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================
 // createDefaultSatin TESTS
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================
 
 describe("PROPERTY: createDefaultSatin", () => {
   it("returns SatinStyle with all properties", () => {
@@ -341,9 +341,9 @@ describe("PROPERTY: createDefaultSatin", () => {
   });
 });
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================
 // createDefaultColorOverlay TESTS
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================
 
 describe("PROPERTY: createDefaultColorOverlay", () => {
   it("returns ColorOverlayStyle with all properties", () => {
@@ -367,9 +367,9 @@ describe("PROPERTY: createDefaultColorOverlay", () => {
   });
 });
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================
 // createDefaultGradientOverlay TESTS
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================
 
 describe("PROPERTY: createDefaultGradientOverlay", () => {
   it("returns GradientOverlayStyle with all properties", () => {
@@ -404,9 +404,9 @@ describe("PROPERTY: createDefaultGradientOverlay", () => {
   });
 });
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================
 // createDefaultStroke TESTS
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================
 
 describe("PROPERTY: createDefaultStroke", () => {
   it("returns StrokeStyle with all properties", () => {
@@ -437,9 +437,9 @@ describe("PROPERTY: createDefaultStroke", () => {
   });
 });
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================
 // createDefaultBlendingOptions TESTS
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================
 
 describe("PROPERTY: createDefaultBlendingOptions", () => {
   it("returns StyleBlendingOptions with all properties", () => {
@@ -465,9 +465,9 @@ describe("PROPERTY: createDefaultBlendingOptions", () => {
   });
 });
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================
 // createDefaultGlobalLight TESTS
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================
 
 describe("PROPERTY: createDefaultGlobalLight", () => {
   it("returns GlobalLightSettings with angle and altitude", () => {

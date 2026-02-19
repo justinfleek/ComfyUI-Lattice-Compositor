@@ -9,9 +9,9 @@ import Halogen.HTML.Properties as HP
 
 import Straylight.UI (cls, sectionHeader, codeBlock, inlineCode)
 
--- ============================================================
--- COMPONENT
--- ============================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                                 // component
+-- ════════════════════════════════════════════════════════════════════════════
 
 webchatUrl :: String
 webchatUrl = "https://web.libera.chat/#straylight"

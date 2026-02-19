@@ -13,9 +13,9 @@ import Halogen.HTML.Properties as HP
 import Straylight.UI (cls)
 import Straylight.Pages.Lean.Highlight (highlightLean)
 
--- ============================================================
--- COMPONENT
--- ============================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                                 // component
+-- ════════════════════════════════════════════════════════════════════════════
 
 type State = 
   { content :: String

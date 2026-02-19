@@ -44,7 +44,7 @@ import Web.UIEvent.KeyboardEvent as KE
 import Web.UIEvent.KeyboardEvent.EventTypes as KET
 
 -- ═══════════════════════════════════════════════════════════════════════════════
--- TYPES
+--                                                                     // types
 -- ═══════════════════════════════════════════════════════════════════════════════
 
 -- | Dialog input props
@@ -110,7 +110,7 @@ data Action
 type Slot id = H.Slot Query Output id
 
 -- ═══════════════════════════════════════════════════════════════════════════════
--- COMPONENT
+--                                                                 // component
 -- ═══════════════════════════════════════════════════════════════════════════════
 
 component :: forall m. MonadAff m => H.Component Query Input Output m
@@ -142,7 +142,7 @@ initialState input =
   }
 
 -- ═══════════════════════════════════════════════════════════════════════════════
--- RENDER
+--                                                                    // render
 -- ═══════════════════════════════════════════════════════════════════════════════
 
 render :: forall m. State -> H.ComponentHTML Action () m
@@ -219,7 +219,7 @@ renderContent state =
     ]
 
 -- ═══════════════════════════════════════════════════════════════════════════════
--- ACTIONS
+--                                                                   // actions
 -- ═══════════════════════════════════════════════════════════════════════════════
 
 handleAction :: forall m. MonadAff m => Action -> H.HalogenM State Action () Output m Unit
@@ -307,7 +307,7 @@ handleAction = case _ of
   SetContentRef ref -> H.modify_ _ { contentRef = ref }
 
 -- ═══════════════════════════════════════════════════════════════════════════════
--- STATE TRANSITIONS
+--                                                      // state // transitions
 -- ═══════════════════════════════════════════════════════════════════════════════
 
 openDialog :: forall m. MonadAff m => H.HalogenM State Action () Output m Unit
@@ -375,7 +375,7 @@ closeDialog = do
   H.raise (OpenChanged false)
 
 -- ═══════════════════════════════════════════════════════════════════════════════
--- QUERIES
+--                                                                   // queries
 -- ═══════════════════════════════════════════════════════════════════════════════
 
 handleQuery :: forall m a. MonadAff m => Query a -> H.HalogenM State Action () Output m (Maybe a)
@@ -398,7 +398,7 @@ handleQuery = case _ of
     pure (Just (reply state.isOpen))
 
 -- ═══════════════════════════════════════════════════════════════════════════════
--- SIDE EFFECTS (FFI)
+--                                                           // side // effects
 -- ═══════════════════════════════════════════════════════════════════════════════
 
 foreign import lockBodyScroll :: Effect Unit

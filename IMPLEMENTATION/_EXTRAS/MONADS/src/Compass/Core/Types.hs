@@ -95,9 +95,9 @@ import           Data.UUID (UUID)
 import           Data.Word (Word64)
 import           GHC.Generics (Generic)
 
--------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Content Addressing
--------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | A content-addressed identifier. Wraps UUID5 which is deterministic:
 -- same (namespace, content) always yields the same address.
@@ -134,9 +134,9 @@ agentNS = Namespace $ error "Compass.Core.Types.agentNS: configure at init"
 widgetNS :: Namespace
 widgetNS = Namespace $ error "Compass.Core.Types.widgetNS: configure at init"
 
--------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Join-Semilattice
--------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | A join-semilattice with the following laws (verified in Lean4):
 --
@@ -184,9 +184,9 @@ bumpVersion :: AgentId -> VersionVec -> VersionVec
 bumpVersion aid (VersionVec m) =
   VersionVec $ Map.insertWith (\_ old -> old + 1) aid 1 m
 
--------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Merkle DAG
--------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | A node in the content-addressed Merkle DAG.
 -- The address of an Interior node is derived FROM its children's addresses,
@@ -230,9 +230,9 @@ merkleHash (MerkleInterior _ children) =
   where
     serializedChildren = error "serialize child addrs" -- foldMap (serialize . mnAddr) children
 
--------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Reactive Cells
--------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | A reactive cell in the COMPASS data plane.
 -- Combines STM-managed current value with CAS identity
@@ -276,9 +276,9 @@ isFresh _threshold maxAge freshness now =
 staleness :: Freshness -> UTCTime -> NominalDiffTime
 staleness freshness now = diffUTCTime now (freshnessLastUpdate freshness)
 
--------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Agent System
--------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 newtype AgentId = AgentId { unAgentId :: Text }
   deriving stock (Eq, Ord, Show, Generic)
@@ -325,9 +325,9 @@ data Provenance
   | ProvenanceDerived ContentAddr UTCTime AgentId [Provenance]
   deriving stock (Eq, Show, Generic)
 
--------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Widget System
--------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 newtype WidgetId = WidgetId { unWidgetId :: Text }
   deriving stock (Eq, Ord, Show, Generic)
@@ -377,9 +377,9 @@ instance Ord RenderPriority where
              <> compare (rpLatticeHeight b) (rpLatticeHeight a)  -- higher = better
              <> compare (rpStaleness a) (rpStaleness b)          -- less stale = better
 
--------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Epoch Snapshots
--------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 newtype EpochId = EpochId { unEpochId :: Word64 }
   deriving stock (Eq, Ord, Show, Generic)
@@ -394,9 +394,9 @@ data Epoch = Epoch
   , epochTime   :: UTCTime
   } deriving stock (Show, Generic)
 
--------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Brand Domain
--------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 newtype BrandId = BrandId { unBrandId :: UUID }
   deriving stock (Eq, Ord, Show, Generic)

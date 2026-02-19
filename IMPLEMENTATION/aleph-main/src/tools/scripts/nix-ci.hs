@@ -19,7 +19,7 @@ main :: IO ()
 main = do
     args <- getArgs
 
-    -- CI: use cache, but verbose logging
+    --                                                                        // ci
     let opts = ["--show-trace", "--print-build-logs", "--log-format", "raw"]
 
     executeFile "nix" True (args ++ opts) Nothing

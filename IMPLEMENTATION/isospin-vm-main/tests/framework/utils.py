@@ -1,5 +1,5 @@
 # Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-# SPDX-License-Identifier: Apache-2.0
+#                                                                      // spdx
 """Generic utility functions that are used in the framework."""
 import errno
 import json
@@ -530,7 +530,7 @@ def start_screen_process(screen_log, session_name, binary_path, binary_params):
 
     # Run 'screen -ls' in a retry loop, 30 times with a 1s delay between calls.
     # If the output of 'screen -ls' matches the regex object, it will return the
-    # PID. Otherwise, a RuntimeError will be raised.
+    #                                                                       // pid
     for attempt in Retrying(
         retry=retry_if_exception_type(RuntimeError),
         stop=stop_after_attempt(30),

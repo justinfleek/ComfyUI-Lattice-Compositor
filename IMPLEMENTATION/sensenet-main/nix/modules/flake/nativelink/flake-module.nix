@@ -11,7 +11,7 @@
 # Deploy to Fly.io for cheap always-on RE, or vast.ai for GPU burst.
 # Images pushed via skopeo to ghcr.io - no Docker daemon required.
 #
-# NOTE: This module requires inputs.nix2gpu.flakeModule to be imported
+#                                                                      // note
 # separately (in _main.nix) to avoid infinite recursion.
 #
 { inputs }:
@@ -22,7 +22,7 @@
 }:
 let
 
-  # TODO[b7r6]: !! clean this shit up !!
+  #                                                                      // todo
   mk-option = lib."mkOption";
   mk-enable-option = lib."mkEnableOption";
   mk-if = lib."mkIf";
@@ -66,7 +66,7 @@ in
 
     # ──────────────────────────────────────────────────────────────────────────
     # Builder: dedicated nix build machine on Fly
-    # SSH in, run nix build, push images. Your laptop stays cool.
+    #                                                                       // ssh
     # ──────────────────────────────────────────────────────────────────────────
     builder = {
       enable = mk-option {
@@ -119,7 +119,7 @@ in
     };
 
     # ──────────────────────────────────────────────────────────────────────────
-    # CAS: content-addressed storage with LZ4 compression
+    #                                                                       // cas
     # Hot path for all blob transfers - size aggressively
     #
     # With R2 backend enabled, uses fast_slow store:
@@ -164,7 +164,7 @@ in
       };
 
       # ────────────────────────────────────────────────────────────────────────
-      # R2 Backend: Cloudflare R2 as slow tier for persistent global storage
+      #                                                                   // r2 // b
       # ────────────────────────────────────────────────────────────────────────
       r2 = {
         enable = mk-option {
@@ -192,8 +192,8 @@ in
         };
 
         # Credentials loaded from environment:
-        #   AWS_ACCESS_KEY_ID
-        #   AWS_SECRET_ACCESS_KEY
+        #                                                // aws // access // key // id
+        #                                            // aws // secret // access // key
         # Set via Fly secrets or local env
       };
     };
@@ -389,7 +389,7 @@ in
         bool-to-string = b: if b then "true" else "false";
 
         # Get nativelink binary from flake input
-        # NOTE: Use inputs.*.packages.${system} directly, NOT inputs'
+        #                                                                      // note
         # inputs' causes infinite recursion in flake-parts
         nativelink =
           inputs.nativelink.packages.${system}.default or inputs.nativelink.packages.${system}.nativelink;
@@ -482,7 +482,7 @@ in
           ];
         });
 
-        # CAS configuration - uses fast_slow store when R2 is enabled
+        #                                                                       // cas
         # Fast tier: local filesystem with LRU eviction
         # Slow tier: Cloudflare R2 (S3-compatible) for persistent global storage
         cas-config = write-text "cas.json" (to-json {
@@ -501,7 +501,7 @@ in
                     };
                   };
                 }
-                # R2 as slow tier (persistent S3-compatible storage)
+                #                                                                        // r2
                 {
                   name = "R2_STORE";
                   "experimental_s3_store" = {
@@ -598,7 +598,7 @@ in
             }
             # FastSlow store: inline filesystem for fast, ref_store for slow
             # NativeLink 0.7.10 requires inline store defs in fast, ref_store in slow
-            # IMPORTANT: content_path must be on same filesystem as work_directory
+            #                                                                 // important
             # to allow hardlinks (avoids EXDEV "Cross-device link" errors)
             {
               name = "CAS_FAST_SLOW";
@@ -976,7 +976,7 @@ in
             };
           };
 
-          # CAS container (content-addressed storage with LZ4 compression)
+          #                                                                       // cas
           nativelink-cas = {
             "systemPackages" = [
               nativelink
@@ -1073,7 +1073,7 @@ in
           nativelink-worker-setup = worker-setup-script;
           nativelink-toolchain-manifest = toolchain-manifest;
 
-          # THE deploy script - does everything
+          #                                                                       // the
           # nix run .#nativelink-deploy
           nativelink-deploy = deploy-all;
 

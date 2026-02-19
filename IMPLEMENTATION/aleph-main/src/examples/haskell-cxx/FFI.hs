@@ -35,9 +35,9 @@ import Foreign.Marshal.Array
 import Control.Exception (bracket)
 import System.IO.Unsafe (unsafePerformIO)
 
--- =============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 -- Simple arithmetic
--- =============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 
 foreign import ccall unsafe "ffi_add"
   c_add :: CInt -> CInt -> CInt
@@ -53,9 +53,9 @@ add a b = fromIntegral $ c_add (fromIntegral a) (fromIntegral b)
 multiply :: Int -> Int -> Int
 multiply a b = fromIntegral $ c_multiply (fromIntegral a) (fromIntegral b)
 
--- =============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 -- Vector operations
--- =============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 
 foreign import ccall unsafe "ffi_dot_product"
   c_dot_product :: Ptr CDouble -> Ptr CDouble -> CSize -> CDouble
@@ -94,9 +94,9 @@ scaleVector scalar xs = unsafePerformIO $
     c_scale pxs (fromIntegral $ length xs) (realToFrac scalar)
     map realToFrac <$> peekArray (length xs) pxs
 
--- =============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 -- String operations
--- =============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 
 foreign import ccall unsafe "ffi_greet"
   c_greet :: CString -> IO CString
@@ -112,9 +112,9 @@ greet name = withCString name $ \cname -> do
   c_free_string cresult
   return result
 
--- =============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 -- Counter (opaque handle pattern)
--- =============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Opaque handle to a C++ Counter object.
 newtype Counter = Counter (Ptr Counter)

@@ -10,9 +10,9 @@
 import { describe, expect, test } from "vitest";
 import type { ExportTarget, DepthMapFormat } from "@/types/export";
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ============================================================================
 // Mock ComfyUI Workflow Types
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 
 interface ComfyUIWorkflowNode {
   class_type: string;
@@ -24,9 +24,9 @@ interface ComfyUIWorkflow {
   links: Array<[string, number, string, number, string]>;
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 // Export Target → ComfyUI Node Mapping
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 
 const TARGET_NODE_MAPPING: Record<ExportTarget, string[]> = {
   "wan22-i2v": ["LoadImage", "WanVideo", "WanImageToVideo"],
@@ -55,9 +55,9 @@ const TARGET_NODE_MAPPING: Record<ExportTarget, string[]> = {
   "camera-comfyui": ["LoadCamera", "ApplyCamera"],
 };
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 // Export Depth → ComfyUI Spec
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 
 interface DepthNodeSpec {
   expectedBitDepth: 8 | 16 | 32;
@@ -75,9 +75,9 @@ const DEPTH_FORMAT_NODE_SPEC: Record<DepthMapFormat, DepthNodeSpec> = {
   normalized: { expectedBitDepth: 8, expectedFormat: "PNG", invertRequired: false },
 };
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 // Mock Workflow Generator
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 
 function generateMockWorkflow(target: ExportTarget): ComfyUIWorkflow {
   const nodes: Record<string, ComfyUIWorkflowNode> = {};
@@ -96,9 +96,9 @@ function generateMockWorkflow(target: ExportTarget): ComfyUIWorkflow {
   };
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 // Integration Tests
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 
 describe("Export Target → ComfyUI Node Mapping", () => {
   const allTargets: ExportTarget[] = [

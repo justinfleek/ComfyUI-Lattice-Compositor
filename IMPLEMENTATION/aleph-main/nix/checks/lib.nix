@@ -35,7 +35,7 @@ let
       '';
 
   # ══════════════════════════════════════════════════════════════════════════
-  # TEST: lib-nv-utils
+  #                                                                      // test
   # ══════════════════════════════════════════════════════════════════════════
   # Test NVIDIA GPU utility functions for capability/arch conversion and feature detection
 
@@ -65,7 +65,7 @@ let
     '';
 
   # ══════════════════════════════════════════════════════════════════════════
-  # TEST: lib-stdenv-utils
+  #                                                                      // test
   # ══════════════════════════════════════════════════════════════════════════
   # Test stdenv utility functions for aleph-cflags and alephify wrapper
 

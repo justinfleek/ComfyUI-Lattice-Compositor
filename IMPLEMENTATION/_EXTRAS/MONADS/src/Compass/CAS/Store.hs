@@ -17,9 +17,9 @@
 --
 -- Three-tier CAS architecture:
 --
---   L1: In-memory HAMT (Hash Array Mapped Trie) — ~50-200ns lookups
---   L2: PostgreSQL — Merkle DAG structure, node metadata, UUID5→blob — ~0.5-2ms
---   L3: DuckDB — Analytical scans over brand metrics — ~5-50ms
+--                                                                        // l1
+--                                                                        // l2
+--                                                                        // l3
 --
 -- All tiers share the same ContentAddr (UUID5) key space.
 -- Reads cascade: L1 miss → L2 miss → L3 miss → not found.
@@ -27,7 +27,7 @@
 --
 -- The lattice-CAS merge operation (join on concurrent writes) happens
 -- at the IORef level for L1 and at the SQL level for L2 via
--- INSERT ... ON CONFLICT DO UPDATE SET value = lattice_join(existing, new).
+--                                                                    // insert
 
 module Compass.CAS.Store
   ( -- * CAS Store
@@ -111,9 +111,9 @@ import           GHC.Generics (Generic)
 
 import           Compass.Core.Types
 
--------------------------------------------------------------------------------
--- UUID5 Content Addressing (resolving the first stub)
--------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
+--                                                                // uuid5 // c
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Compute UUID5 content address. This is the core CAS primitive.
 --
@@ -142,9 +142,9 @@ compassEpochNS :: Namespace
 compassEpochNS = Namespace $ UUID5.generateNamed UUID5.namespaceURL
   (BS.unpack "https://compass.weyl.ai/ns/epoch")
 
--------------------------------------------------------------------------------
--- CAS Store (Unified)
--------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
+--                                                                  // cas // s
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Unified CAS store with three-tier read cascade.
 data CASStore = CASStore
@@ -211,7 +211,7 @@ closeCASStore store = do
 -- On L2/L3 hit, promotes to L1 for future access.
 casGet :: CASStore -> ContentAddr -> IO (Maybe (Latticed WidgetData))
 casGet store addr = do
-  -- L1: HAMT (~50-200ns)
+  --                                                                        // l1
   l1Result <- hamtGet (cssL1 store) addr
   case l1Result of
     Just val -> do
@@ -226,7 +226,7 @@ casGet store addr = do
       if not inBloom
         then pure Nothing
         else do
-          -- L2: PostgreSQL (~0.5-2ms)
+          --                                                                        // l2
           l2Result <- pgGet (cssL2 store) addr
           case l2Result of
             Just val -> do
@@ -239,7 +239,7 @@ casGet store addr = do
 
               if cscReadCascade (cssConfig store)
                 then do
-                  -- L3: DuckDB (~5-50ms, analytical path)
+                  --                                                                        // l3
                   l3Result <- duckGet (cssL3 store) addr
                   case l3Result of
                     Just val -> do
@@ -304,9 +304,9 @@ casLatticeMerge store addr incoming = do
   incrMetric store (\m -> m { cmMerges = cmMerges m + 1 })
   pure merged
 
--------------------------------------------------------------------------------
--- L1: HAMT (Hash Array Mapped Trie)
--------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
+--                                                                        // l1
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | In-memory HAMT with LRU eviction.
 -- O(log32 n) lookups ≈ O(1) for n < 10^9.
@@ -354,15 +354,15 @@ hamtEvict cache = do
     sortByTime = map (\(k, (v, t)) -> (k, (v, t)))
     -- In production: use a proper LRU eviction structure (e.g., psqueues)
 
--------------------------------------------------------------------------------
--- L2: PostgreSQL
--------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
+--                                                                        // l2
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | PostgreSQL connection pool for durable CAS storage.
 --
 -- Schema:
 -- @
--- CREATE TABLE cas_nodes (
+--                                                           // create // table
 --   addr        UUID PRIMARY KEY,           -- ContentAddr (UUID5)
 --   media_type  TEXT NOT NULL,
 --   payload     BYTEA NOT NULL,
@@ -371,35 +371,35 @@ hamtEvict cache = do
 --   updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 -- );
 --
--- CREATE TABLE merkle_dag (
+--                                                           // create // table
 --   parent_addr UUID NOT NULL REFERENCES cas_nodes(addr),
 --   child_key   TEXT NOT NULL,
 --   child_addr  UUID NOT NULL REFERENCES cas_nodes(addr),
---   PRIMARY KEY (parent_addr, child_key)
+--                                                            // primary // key
 -- );
 --
--- CREATE TABLE merkle_roots (
+--                                                           // create // table
 --   brand_id    UUID NOT NULL,
 --   epoch_id    BIGINT NOT NULL,
 --   root_addr   UUID NOT NULL REFERENCES cas_nodes(addr),
 --   created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
---   PRIMARY KEY (brand_id, epoch_id)
+--                                                            // primary // key
 -- );
 --
 -- -- Lattice merge as a SQL function:
--- CREATE OR REPLACE FUNCTION lattice_join(existing JSONB, incoming JSONB)
--- RETURNS JSONB AS $$
---   SELECT jsonb_object_agg(
+--                                       // create // or // replace // function
+--                                                    // returns // jsonb // as
+--                                                                    // select
 --     key,
---     GREATEST(
---       COALESCE((existing->>key)::bigint, 0),
---       COALESCE((incoming->>key)::bigint, 0)
+--                                                                  // greatest
+--                                                                  // coalesce
+--                                                                  // coalesce
 --     )
 --   )
---   FROM (
---     SELECT key FROM jsonb_object_keys(existing) AS key
---     UNION
---     SELECT key FROM jsonb_object_keys(incoming) AS key
+--                                                                      // from
+--                                                                    // select
+--                                                                     // union
+--                                                                    // select
 --   ) keys;
 -- $$ LANGUAGE SQL IMMUTABLE;
 -- @
@@ -459,9 +459,9 @@ pgGet pool addr = do
 pgPut :: PGPool -> ContentAddr -> Latticed WidgetData -> IO ()
 pgPut pool addr val = do
   -- Production:
-  -- INSERT INTO cas_nodes (addr, media_type, payload, version_vec, updated_at)
-  -- VALUES ($1, $2, $3, $4, now())
-  -- ON CONFLICT (addr) DO UPDATE SET
+  --                                                            // insert // into
+  --                                                                    // values
+  --                                                            // on // conflict
   --   version_vec = lattice_join(cas_nodes.version_vec, EXCLUDED.version_vec),
   --   updated_at = now()
   pure ()  -- STUB
@@ -472,54 +472,54 @@ pgPut pool addr val = do
 pgLatticeMerge :: PGPool -> ContentAddr -> Latticed WidgetData -> IO (Latticed WidgetData)
 pgLatticeMerge pool addr incoming = do
   -- Production:
-  -- INSERT INTO cas_nodes (addr, media_type, payload, version_vec, updated_at)
-  -- VALUES ($1, $2, $3, $4, now())
-  -- ON CONFLICT (addr) DO UPDATE SET
+  --                                                            // insert // into
+  --                                                                    // values
+  --                                                            // on // conflict
   --   payload = EXCLUDED.payload,  -- or merge payloads if needed
   --   version_vec = lattice_join(cas_nodes.version_vec, EXCLUDED.version_vec),
   --   updated_at = now()
-  -- RETURNING payload, version_vec, updated_at
+  --                                                                 // returning
   pure incoming  -- STUB: return merged value from RETURNING clause
 
 -- | Check existence without fetching payload (cheaper than full get)
 pgExists :: PGPool -> ContentAddr -> IO Bool
 pgExists pool addr = do
-  -- SELECT EXISTS(SELECT 1 FROM cas_nodes WHERE addr = $1)
+  --                                                          // select // exists
   pure False  -- STUB
 
 -- | Batch get — uses ANY($1) for single round-trip
 pgGetBatch :: PGPool -> [ContentAddr] -> IO (HashMap ContentAddr (Latticed WidgetData))
 pgGetBatch pool addrs = do
-  -- SELECT addr, payload, version_vec, updated_at
-  -- FROM cas_nodes
-  -- WHERE addr = ANY($1::uuid[])
+  --                                                                    // select
+  --                                                                      // from
+  --                                                                     // where
   pure HM.empty  -- STUB
 
 -- | Atomic Merkle root swap
 pgSwapMerkleRoot :: PGPool -> BrandId -> EpochId -> ContentAddr -> IO ()
 pgSwapMerkleRoot pool brandId epochId rootAddr = do
-  -- INSERT INTO merkle_roots (brand_id, epoch_id, root_addr)
-  -- VALUES ($1, $2, $3)
+  --                                                            // insert // into
+  --                                                                    // values
   pure ()  -- STUB
 
 -- | Get current Merkle root for a brand
 pgGetMerkleRoot :: PGPool -> BrandId -> IO (Maybe MerkleRoot)
 pgGetMerkleRoot pool brandId = do
-  -- SELECT root_addr, epoch_id FROM merkle_roots
-  -- WHERE brand_id = $1
-  -- ORDER BY epoch_id DESC LIMIT 1
+  --                                                                    // select
+  --                                                                     // where
+  --                                                               // order // by
   pure Nothing  -- STUB
 
--------------------------------------------------------------------------------
--- L3: DuckDB
--------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
+--                                                                        // l3
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | DuckDB connection for analytical queries.
 -- Append-only fact tables — new content = new row (CAS), never update.
 --
 -- Schema:
 -- @
--- CREATE TABLE brand_metrics (
+--                                                           // create // table
 --   addr           UUID,            -- ContentAddr
 --   brand_id       UUID,
 --   campaign_id    UUID,
@@ -531,7 +531,7 @@ pgGetMerkleRoot pool brandId = do
 --   ingested_at    TIMESTAMP DEFAULT current_timestamp
 -- );
 --
--- CREATE TABLE social_events (
+--                                                           // create // table
 --   addr           UUID,
 --   brand_id       UUID,
 --   platform       VARCHAR,
@@ -573,25 +573,25 @@ duckGet _conn _addr = pure Nothing  -- STUB
 -- Returns aggregated metrics for widget display.
 duckScan :: DuckDBConn -> BrandId -> CampaignId -> DateRange -> IO (Vector (Text, Double))
 duckScan _conn _brandId _campaignId _dateRange = do
-  -- SELECT metric_name, SUM(metric_value)
-  -- FROM brand_metrics
-  -- WHERE brand_id = $1 AND campaign_id = $2
-  --   AND period_start >= $3 AND period_end <= $4
-  -- GROUP BY metric_name
+  --                                                                    // select
+  --                                                                      // from
+  --                                                                     // where
+  --                                                                       // and
+  --                                                               // group // by
   pure V.empty  -- STUB
 
 -- | Append new metrics (CAS-addressed, so duplicates are naturally excluded)
 duckAppend :: DuckDBConn -> ContentAddr -> BrandId -> CampaignId
            -> [(Text, Double)] -> UTCTime -> UTCTime -> IO ()
 duckAppend _conn _addr _brandId _campaignId _metrics _periodStart _periodEnd = do
-  -- INSERT INTO brand_metrics (addr, brand_id, campaign_id, metric_name, metric_value, period_start, period_end)
-  -- VALUES ($1, $2, $3, $4, $5, $6, $7)
-  -- ON CONFLICT DO NOTHING  -- CAS: same addr = same content, skip
+  --                                                            // insert // into
+  --                                                                    // values
+  --                                           // on // conflict // do // nothing
   pure ()  -- STUB
 
--------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Bloom Filter
--------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Bloom filter for probabilistic CAS membership check.
 -- Avoids L2/L3 round-trips on definite misses.
@@ -642,9 +642,9 @@ computeHashes k uuid numBits =
       h2 = hash (UUID.toText uuid <> "salt")
   in [ abs (h1 + i * h2) `mod` max 1 numBits | i <- [0..k-1] ]
 
--------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Epoch Snapshots
--------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Take an immutable snapshot of the current CAS state.
 -- Widgets read from epochs — zero contention with writers.
@@ -674,9 +674,9 @@ takeEpochSnapshot store brandId = do
 readEpochSnapshot :: Epoch -> ContentAddr -> Maybe (Latticed WidgetData)
 readEpochSnapshot epoch addr = HM.lookup addr (epochFrozen epoch)
 
--------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Helpers
--------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 incrMetric :: CASStore -> (CASMetrics -> CASMetrics) -> IO ()
 incrMetric store f = modifyIORef' (cssMetrics store) f

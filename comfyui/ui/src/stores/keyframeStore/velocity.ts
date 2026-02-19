@@ -11,9 +11,9 @@ import type { VelocitySettings } from "./types";
 import { useProjectStore } from "../projectStore";
 import { useLayerStore } from "../layerStore";
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-//                                                     // keyframe // velocity
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
+// KEYFRAME VELOCITY
+// ============================================================================
 
 /**
  * Apply velocity settings to a keyframe.

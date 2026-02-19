@@ -7,9 +7,9 @@
 import type { AnimatableProperty, Layer } from "@/types/project";
 import type { PropertyValue } from "@/types/animation";
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-//                                                      // frame // validation
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
+// FRAME VALIDATION
+// ============================================================================
 
 /**
  * Validate and sanitize frame number, returning fallback if invalid.
@@ -23,9 +23,9 @@ export function safeFrame(frame: number | undefined | null, fallback = 0): numbe
   return fallback;
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-//                                                       // property // lookup
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
+// PROPERTY LOOKUP
+// ============================================================================
 
 /**
  * Find a property by its path on a layer.

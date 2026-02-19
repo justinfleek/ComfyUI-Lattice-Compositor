@@ -1,5 +1,5 @@
 # Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-# SPDX-License-Identifier: Apache-2.0
+#                                                                      // spdx
 """Tests for ensuring correctness of CPU and cache topology in the guest."""
 
 import platform
@@ -201,7 +201,7 @@ def test_cpu_topology(uvm_plain_any, num_vcpus, htt):
     if htt and PLATFORM == "aarch64":
         pytest.skip("SMT is configurable only on x86.")
 
-    # TODO:Remove (or adapt) this once we unify the way we expose the CPU cache hierarchy on
+    #                                                                      // todo
     # Aarch64 systems.
     if version.parse(get_kernel_version()) >= version.parse("6.14"):
         pytest.skip("Starting on 6.14 KVM exposes a different CPU cache hierarchy")

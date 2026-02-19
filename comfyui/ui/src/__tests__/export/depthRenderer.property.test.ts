@@ -19,9 +19,9 @@ import {
 import type { DepthMapFormat } from "@/types/export";
 import { DEPTH_FORMAT_SPECS } from "@/config/exportPresets";
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-//                                                         // test // fixtures
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================
+// TEST FIXTURES
+// ============================================================
 
 function createDepthRenderResult(
   width: number,
@@ -47,9 +47,9 @@ function createDepthRenderResult(
   };
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-//                                                              // arbitraries
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================
+// ARBITRARIES
+// ============================================================
 
 const validDepthFormats: DepthMapFormat[] = Object.keys(DEPTH_FORMAT_SPECS) as DepthMapFormat[];
 
@@ -64,9 +64,9 @@ const depthRenderResultArb = fc.record({
   createDepthRenderResult(width, height, minDepth, maxDepth)
 );
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================
 // convertDepthToFormat TESTS - CRITICAL FOR ML MODEL COMPATIBILITY
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================
 
 describe("PROPERTY: convertDepthToFormat", () => {
   it("returns Float32Array for 'raw' format", () => {
@@ -215,9 +215,9 @@ describe("PROPERTY: convertDepthToFormat", () => {
   });
 });
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================
 // generateDepthMetadata TESTS
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================
 
 describe("PROPERTY: generateDepthMetadata", () => {
   it("includes all required fields", () => {
@@ -320,9 +320,9 @@ describe("PROPERTY: generateDepthMetadata", () => {
   });
 });
 
-// ═══════════════════════════════════════════════════════════════════════════
-//                                                 // browser // only // tests
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================
+// BROWSER-ONLY TESTS
+// ============================================================
 //
 // The following browser-dependent functionality is tested in E2E:
 //

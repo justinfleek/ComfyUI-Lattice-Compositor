@@ -1,5 +1,5 @@
 # Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-# SPDX-License-Identifier: Apache-2.0
+#                                                                      // spdx
 """Tests the format of human readable logs.
 
 It checks the response of the API configuration calls and the logs that show
@@ -136,7 +136,7 @@ def test_api_requests_logs(uvm_plain):
     microvm.check_log_message('The API server received a Get request on "/mmds".')
 
     # Check that the fault message return by the client is also logged in the
-    # FIFO.
+    #                                                                      // fifo
     fault_msg = "Boot source error: The kernel file cannot be opened: No such file or directory (os error 2)"
     with pytest.raises(RuntimeError, match=re.escape(fault_msg)):
         microvm.api.boot.put(kernel_image_path="inexistent_path")

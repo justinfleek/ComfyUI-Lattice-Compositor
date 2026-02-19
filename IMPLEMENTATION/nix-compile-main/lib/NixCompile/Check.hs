@@ -439,7 +439,7 @@ checkWithConfig cfg paths = do
   -- Native analysis (lint, parse errors)
   native <- concat <$> mapM (analyzeFile cfg) files
 
-  -- AST-grep rules
+  --                                                                       // ast
   ast <- runAstGrep cfg paths
 
   -- Layout validation (requires parsing + kind detection)

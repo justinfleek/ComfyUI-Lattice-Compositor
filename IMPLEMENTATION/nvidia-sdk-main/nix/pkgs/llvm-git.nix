@@ -48,7 +48,7 @@ stdenv.mkDerivation {
     # Can add later if needed - CUDA doesn't require it
   ];
 
-  # LLVM is huge, enable parallel building
+  #                                                                      // llvm
   enableParallelBuilding = true;
 
   meta = {

@@ -44,10 +44,10 @@ import { isBezierPath, morphPaths, prepareMorphPaths } from "./pathMorphing";
 import { safeLerp } from "@/utils/numericSafety";
 import type { JSONValue } from "@/types/dataAsset";
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-//                                                // bezier // handle // cache
+// ============================================================================
+// BEZIER HANDLE CACHE
 // Caches normalized bezier control points to avoid repeated computation
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 
 interface NormalizedBezier {
   x1: number;
@@ -156,9 +156,9 @@ export function getBezierCacheStats(): { size: number; maxSize: number } {
   return bezierCache.getStats();
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-//                                                       // keyframe // search
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
+// KEYFRAME SEARCH
+// ============================================================================
 
 /**
  * Binary search to find the keyframe index where frame falls between [i] and [i+1]

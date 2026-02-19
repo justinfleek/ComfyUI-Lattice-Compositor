@@ -8,7 +8,7 @@
 #
 #                                                         — Neuromancer
 #
-# VM kernel configurations for Firecracker and Cloud Hypervisor.
+#                                                                        // vm
 # Type-checked via lib.evalModules pattern.
 #
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -74,7 +74,7 @@ let
     };
 
     config = {
-      # AWS Firecracker kernel - tested, virtio baked in
+      #                                                                  // aws // f
       fc-kernel = {
         version = "5.10.225";
         x86_64-linux = {

@@ -1,5 +1,5 @@
 # Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-# SPDX-License-Identifier: Apache-2.0
+#                                                                      // spdx
 """Tests that ensure the boot time to init process is within spec."""
 
 import datetime

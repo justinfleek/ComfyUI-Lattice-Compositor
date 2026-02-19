@@ -69,7 +69,7 @@ prettyExprF = \case
   NAbs params body ->
     prettyParams params <> styleMuted ":" <+> body
   NApp fun arg ->
-    -- TODO: handle precedence paren logic
+    --                                                                      // todo
     fun <+> arg
   NSelect alt base path ->
     let pBase = base -- TODO: parens

@@ -8,7 +8,7 @@
 -- Module      : NixCompile.Nix.Types
 -- Description : Type system for Nix expressions
 --
--- A Hindley-Milner style type system for a subset of Nix.
+--                                                                    // a // h
 -- We infer types from:
 --   - Default values in function parameters
 --   - Builtin function signatures
@@ -58,9 +58,9 @@ import qualified Data.Text as T
 import GHC.Generics (Generic)
 import NixCompile.Pretty
 
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 -- Types
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Type variables for unification
 newtype TypeVar = TypeVar { unTypeVar :: Int }
@@ -97,9 +97,9 @@ data Scheme = Forall ![TypeVar] !NixType
 instance FromJSON Scheme
 instance ToJSON Scheme
 
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 -- Constraints
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Type constraint
 data Constraint
@@ -108,9 +108,9 @@ data Constraint
 
 infix 4 :~:
 
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 -- Substitution
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Substitution from type variables to types
 type Subst = Map TypeVar NixType
@@ -143,9 +143,9 @@ applySubstScheme :: Subst -> Scheme -> Scheme
 applySubstScheme s (Forall vars t) = 
   Forall vars (applySubst (foldr Map.delete s vars) t)
 
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 -- Free type variables
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Get free type variables in a type
 freeTypeVars :: NixType -> Set TypeVar
@@ -163,9 +163,9 @@ freeTypeVarsScheme :: Scheme -> Set TypeVar
 freeTypeVarsScheme (Forall vars t) = 
   freeTypeVars t `Set.difference` Set.fromList vars
 
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 -- Pretty Printing
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Pretty print a type using normalized variable names (a, b, c...)
 prettyType :: NixType -> Text

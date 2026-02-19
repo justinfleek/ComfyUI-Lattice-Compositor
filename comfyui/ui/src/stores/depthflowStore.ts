@@ -18,9 +18,9 @@ import type { JSONValue } from "@/types/dataAsset";
  */
 type RuntimeValue = string | number | boolean | object | null | undefined | bigint | symbol;
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-//                                             // store // access // interface
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
+// STORE ACCESS INTERFACE
+// ============================================================================
 
 export interface DepthflowStoreAccess {
   project: {
@@ -30,9 +30,9 @@ export interface DepthflowStoreAccess {
   createLayer(type: Layer["type"], name?: string): Layer;
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-//                                                      // helper // functions
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
+// HELPER FUNCTIONS
+// ============================================================================
 
 /**
  * Sanitize numeric config value, returning default if invalid.
@@ -45,9 +45,9 @@ function sanitizeNumber(value: RuntimeValue, defaultValue: number): number {
   return value;
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-//                                                           // pinia // store
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
+// PINIA STORE
+// ============================================================================
 
 export const useDepthflowStore = defineStore("depthflow", {
   state: () => ({}),

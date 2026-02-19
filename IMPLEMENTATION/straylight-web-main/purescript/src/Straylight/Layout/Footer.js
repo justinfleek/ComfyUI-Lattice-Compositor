@@ -1,4 +1,4 @@
-// FFI for Footer.purs
+//                                                                       // ffi
 
 export const setIntervalImpl = function(ms) {
   return function(callback) {

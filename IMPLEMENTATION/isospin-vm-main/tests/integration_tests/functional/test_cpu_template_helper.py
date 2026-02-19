@@ -1,5 +1,5 @@
 # Copyright 2023 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-# SPDX-License-Identifier: Apache-2.0
+#                                                                      // spdx
 """Tests that verify the cpu-template-helper's behavior."""
 
 import json
@@ -81,7 +81,7 @@ def build_cpu_config_dict(cpu_config_path):
     }
 
     cpu_config_json = json.loads(cpu_config_path.read_text(encoding="utf-8"))
-    # CPUID
+    #                                                                     // cpuid
     for leaf_modifier in cpu_config_json["cpuid_modifiers"]:
         for register_modifier in leaf_modifier["modifiers"]:
             cpu_config_dict["cpuid"][
@@ -91,7 +91,7 @@ def build_cpu_config_dict(cpu_config_path):
                     register_modifier["register"],
                 )
             ] = int(register_modifier["bitmap"], 2)
-    # MSR
+    #                                                                       // msr
     for msr_modifier in cpu_config_json["msr_modifiers"]:
         cpu_config_dict["msrs"][int(msr_modifier["addr"], 16)] = int(
             msr_modifier["bitmap"], 2
@@ -101,10 +101,10 @@ def build_cpu_config_dict(cpu_config_path):
 
 
 # List of CPUID leaves / subleaves that are not enumerated in
-# KVM_GET_SUPPORTED_CPUID on Intel and AMD.
+#                                          // kvm // get // supported // cpuid
 UNAVAILABLE_CPUID_ON_DUMP_LIST = [
-    # KVM changed to not return the host's processor topology information on
-    # CPUID.Bh in the following commit (backported into kernel 5.10 and 6.1,
+    #                                                                       // kvm
+    #                                                                     // cpuid
     # but not into kernel 4.14 due to merge conflict), since it's confusing
     # and the userspace VMM has to populate it with meaningful values.
     # https://github.com/torvalds/linux/commit/45e966fcca03ecdcccac7cb236e16eea38cc18af
@@ -115,44 +115,44 @@ UNAVAILABLE_CPUID_ON_DUMP_LIST = [
     (0xB, 0x2),
     # On CPUID.12h, the subleaves 0 and 1 enumerate Intel SGX capability and
     # attributes respectively, and subleaves 2 or higher enumerate Intel SGX
-    # EPC that is listed only when CPUID.07h:EBX[2] is 1, meaning that SGX is
+    #                                                                       // epc
     # supported. However, as seen in CPU config baseline files, CPUID.07h:EBX[2]
     # is 0 on all tested platforms. On the other hand, the userspace cpuid
     # command enumerates subleaves up to 2 regardless of CPUID.07h:EBX[2].
-    # KVM_GET_SUPPORTED_CPUID returns 0 in CPUID.12h.0 and firecracker passes
+    #                                          // kvm // get // supported // cpuid
     # it as it is, so here we ignore subleaves 1 and 2.
     (0x12, 0x1),
     (0x12, 0x2),
-    # CPUID.18h enumerates deterministic address translation parameters and the
+    #                                                                     // cpuid
     # subleaf 0 reports the maximum supported subleaf in EAX, and all the tested
     # platforms reports 0 in EAX. However, the userspace cpuid command in ubuntu
     # 22 also lists the subleaf 1.
     (0x18, 0x1),
-    # CPUID.1Bh enumerates PCONFIG information. The availability of PCONFIG is
+    #                                                                     // cpuid
     # enumerated in CPUID.7h.0:EDX[18]. While all the supported platforms don't
     # support it, the userspace cpuid command in ubuntu 22 reports not only
     # the subleaf 0 but also the subleaf 1.
     (0x1B, 0x1),
-    # CPUID.1Fh is a preferred superset to CPUID.0Bh. For the same reason as
-    # CPUID.Bh, the subleaf 2 should be skipped when the guest userspace cpuid
+    #                                                                     // cpuid
+    #                                                                     // cpuid
     # enumerates it.
     (0x1F, 0x2),
-    # CPUID.20000000h is not documented in Intel SDM and AMD APM. KVM doesn't
+    #                                                                     // cpuid
     # report it, but the userspace cpuid command in ubuntu 22 does.
     (0x20000000, 0x0),
-    # CPUID.40000100h is Xen-specific leaf.
+    #                                                                     // cpuid
     # https://xenbits.xen.org/docs/4.6-testing/hypercall/x86_64/include,public,arch-x86,cpuid.h.html
     (0x40000100, 0x0),
-    # CPUID.8000001Bh or later are not supported on kernel 4.14 with an
+    #                                                                     // cpuid
     # exception CPUID.8000001Dh and CPUID.8000001Eh normalized by firecracker.
     # https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git/tree/arch/x86/kvm/cpuid.c?h=v4.14.313#n637
     # On kernel 4.16 or later, these leaves are supported.
     # https://github.com/torvalds/linux/commit/8765d75329a386dd7742f94a1ea5fdcdea8d93d0
     (0x8000001B, 0x0),
     (0x8000001C, 0x0),
-    # CPUID.80860000h is a Transmeta-specific leaf.
+    #                                                                     // cpuid
     (0x80860000, 0x0),
-    # CPUID.C0000000h is a Centaur-specific leaf.
+    #                                                                     // cpuid
     (0xC0000000, 0x0),
 ]
 
@@ -161,16 +161,16 @@ UNAVAILABLE_CPUID_UPPER_RANGE = range(0x8000001F, 0x80000029)
 
 # Dictionary of CPUID bitmasks that should not be tested due to its mutability.
 CPUID_EXCEPTION_LIST = {
-    # CPUID.01h:ECX[OSXSAVE (bit 27)] is linked to CR4[OSXSAVE (bit 18)] that
+    #                                                                     // cpuid
     # can be updated by guest OS.
     # https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git/tree/arch/x86/kvm/x86.c?h=v5.10.176#n9872
     (0x1, 0x0, "ecx"): 1 << 27,
-    # CPUID.07h:ECX[OSPKE (bit 4)] is linked to CR4[PKE (bit 22)] that can be
+    #                                                                     // cpuid
     # updated by guest OS.
     # https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git/tree/arch/x86/kvm/x86.c?h=v5.10.176#n9872
     (0x7, 0x0, "ecx"): 1 << 4,
-    # CPUID.0Dh:EBX is variable depending on XCR0 that can be updated by guest
-    # OS with XSETBV instruction.
+    #                                                                     // cpuid
+    #                                                                        // os
     # https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git/tree/arch/x86/kvm/x86.c?h=v5.10.176#n973
     (0xD, 0x0, "ebx"): 0xFFFF_FFFF,
     (0xD, 0x1, "ebx"): 0xFFFF_FFFF,
@@ -180,63 +180,63 @@ CPUID_EXCEPTION_LIST = {
 # List of MSR indices that should not be tested due to its mutability or inavailablility
 # in the guest.
 MSR_EXCEPTION_LIST = [
-    # MSR_KVM_WALL_CLOCK and MSR_KVM_SYSTEM_TIME depend on the elapsed time.
+    #                                               // msr // kvm // wall // clock
     0x11,
     0x12,
-    # MSR_IA32_FEAT_CTL and MSR_IA32_SPEC_CTRL are R/W MSRs that can be
+    #                                                // msr // ia32 // feat // ctl
     # modified by OS to control features.
     0x3A,
     0x48,
-    # MSR_IA32_SMBASE is not accessible outside of System Management Mode.
+    #                                                     // msr // ia32 // smbase
     0x9E,
-    # MSR_IA32_UMWAIT_CONTROL is R/W MSR that guest OS modifies after boot to
+    #                                          // msr // ia32 // umwait // control
     # control UMWAIT feature.
     0xE1,
-    # MSR_IA32_TSX_CTRL is R/W MSR to disable Intel TSX feature as a mitigation
+    #                                                // msr // ia32 // tsx // ctrl
     # against TAA vulnerability.
     0x122,
-    # MSR_IA32_SYSENTER_CS, MSR_IA32_SYSENTER_ESP and MSR_IA32_SYSENTER_EIP are
+    #                                             // msr // ia32 // sysenter // cs
     # R/W MSRs that will be set up by OS to call fast system calls with
-    # SYSENTER.
+    #                                                                  // sysenter
     0x174,
     0x175,
     0x176,
-    # MSR_IA32_XFD is R/W MSR for guest OS to control which XSAVE-enabled
+    #                                                        // msr // ia32 // xfd
     # features are temporarily disabled. Guest OS disables TILEDATA by default
     # using the MSR.
     0x1C4,
-    # IA32_PAT_MSR is R/W MSR for guest OS to control memory page attributes.
+    #                                                        // ia32 // pat // msr
     0x277,
-    # MSR_IA32_TSC_DEADLINE specifies the time at which a timer interrupt
+    #                                            // msr // ia32 // tsc // deadline
     # should occur and depends on the elapsed time.
     0x6E0,
-    # MSR_KVM_SYSTEM_TIME_NEW and MSR_KVM_WALL_CLOCK_NEW depend on the elapsed
+    #                                       // msr // kvm // system // time // new
     # time.
     0x4B564D00,
     0x4B564D01,
-    # MSR_KVM_ASYNC_PF_EN is an asynchronous page fault (APF) control MSR and
+    #                                           // msr // kvm // async // pf // en
     # is intialized in VM setup process.
     0x4B564D02,
-    # MSR_KVM_STEAL_TIME indicates CPU steal time filled in by the hypervisor
+    #                                               // msr // kvm // steal // time
     # periodically.
     0x4B564D03,
-    # MSR_KVM_PV_EOI_EN is PV End Of Interrupt (EOI) MSR and is initialized in
-    # VM setup process.
+    #                                             // msr // kvm // pv // eoi // en
+    #                                                                        // vm
     0x4B564D04,
-    # MSR_KVM_ASYNC_PF_INT is an interrupt vector for delivery of 'page ready'
-    # APF events and is initialized just before MSR_KVM_ASYNC_PF_EN.
+    #                                          // msr // kvm // async // pf // int
+    #                                                                       // apf
     0x4B564D06,
-    # MSR_STAR, MSR_LSTAR, MSR_CSTAR and MSR_SYSCALL_MASK are R/W MSRs that
+    #                                                               // msr // star
     # will be set up by OS to call fast system calls with SYSCALL.
     0xC0000081,
     0xC0000082,
     0xC0000083,
     0xC0000084,
-    # MSR_AMD64_VIRT_SPEC_CTRL is R/W and can be modified by OS to control
+    #                                      // msr // amd64 // virt // spec // ctrl
     # security features for speculative attacks.
     0xC001011F,
     # Not available in the guest
-    # MSR_TSC_RATE is a Time Stamp Counter Ratio which allows the hypervisor
+    #                                                        // msr // tsc // rate
     # to control the guest's view of the Time Stamp Counter.
     0xC0000104,
 ]

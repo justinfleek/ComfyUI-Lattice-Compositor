@@ -1,6 +1,6 @@
 # nvidia-sdk packages
 #
-# NVIDIA libraries extracted via typed Haskell scripts.
+#                                                                    // nvidia
 # Wheels from PyPI (preferred, no redistribution), containers for CUDA toolkit.
 #
 # Architecture:
@@ -70,7 +70,7 @@ let
     });
 
   # Comprehensive runtime deps for tritonserver (mirrors libmodern-nvidia-sdk)
-  # NOTE: Package names like libcap_ng, cyrus_sasl are nixpkgs names (external API)
+  #                                                                      // note
   triton-runtime-deps = with final; [
     # Core
     stdenv.cc.cc.lib
@@ -90,7 +90,7 @@ let
     bzip2
     xz
     lz4
-    # RDMA
+    #                                                                      // rdma
     rdma-core
     # Triton framework deps
     abseil-cpp
@@ -107,9 +107,9 @@ let
     libarchive
     # Unicode
     icu
-    # FFI
+    #                                                                       // ffi
     libffi
-    # GLib ecosystem
+    #                                                                        // gl
     glib
     pcre2
     # System libs (from working libmodern-nvidia-sdk)
@@ -150,7 +150,7 @@ let
   common-ignored-deps = [
     "libcuda.so.1"
     "libnvidia-ml.so.1"
-    # CUDA runtime libs (cross-references between packages)
+    #                                                                      // cuda
     "libcudart.so.13"
     "libcublas.so.13"
     "libcublasLt.so.13"
@@ -164,7 +164,7 @@ let
 
   # ════════════════════════════════════════════════════════════════════════════
   # Wheel definitions (from Aleph.Script.Nvidia.Wheel, mirrored here for FOD)
-  # NOTE: libPath/includePath are wheel-internal paths, quoted as external schema
+  #                                                                      // note
   # ════════════════════════════════════════════════════════════════════════════
 
   wheels = {
@@ -292,7 +292,7 @@ let
         inherit meta;
       }
       // {
-        # NOTE: autoPatchelfIgnoreMissingDeps is nixpkgs API, quoted
+        #                                                                      // note
         "autoPatchelfIgnoreMissingDeps" = common-ignored-deps ++ ignore-missing-deps;
       }
     );
@@ -392,7 +392,7 @@ let
         inherit meta;
       }
       // {
-        # NOTE: autoPatchelfIgnoreMissingDeps is nixpkgs API, quoted
+        #                                                                      // note
         "autoPatchelfIgnoreMissingDeps" =
           common-ignored-deps
           ++ [
@@ -470,7 +470,7 @@ optional-attrs (system == "x86_64-linux") {
 }
 
 # ══════════════════════════════════════════════════════════════════════════════
-# CUTLASS (header-only from GitHub)
+#                                                                   // cutlass
 # ══════════════════════════════════════════════════════════════════════════════
 
 // {
@@ -535,9 +535,9 @@ optional-attrs (system == "x86_64-linux") {
     extract-mode = "triton";
     runtime-inputs = triton-runtime-deps;
     ignore-missing-deps = [
-      # LLVM/Clang
+      #                                                                      // llvm
       "libLLVM.so.18.1"
-      # GC/ObjC
+      #                                                                        // gc
       "libgc.so.1"
       "libobjc_gc.so.4.0.0"
       # Misc utilities
@@ -548,11 +548,11 @@ optional-attrs (system == "x86_64-linux") {
       "libsasl2.so.2"
       "libapt-pkg.so.6.0"
       "libapt-private.so.0.0"
-      # CUDA libs (provided at runtime via LD_LIBRARY_PATH)
+      #                                                                      // cuda
       "libcaffe2_nvrtc.so"
       "libcufile.so.0"
       "libOpenCL.so.1"
-      # CUDA 12.x compat (backends compiled against older CUDA)
+      #                                                                // cuda // 12
       "libcusolver.so.12"
       "libcusparse.so.12"
       "libcufft.so.12"

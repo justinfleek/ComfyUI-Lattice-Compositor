@@ -35,9 +35,9 @@ import type { Layer, LayerType, AnimatableProperty, Keyframe } from "@/types/pro
 import { createAnimatableProperty } from "@/types/project";
 import { generateKeyframeId } from "@/utils/uuid5";
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ============================================================================
 // ARBITRARIES (Generators)
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 
 const finiteNumber = fc.double({ noNaN: true, noDefaultInfinity: true, min: -10000, max: 10000 });
 const positiveFrame = fc.integer({ min: 0, max: 1000 });
@@ -94,9 +94,9 @@ const universalPropertyPathArb = fc.constantFrom(
   | "opacity"
 >;
 
-// ═══════════════════════════════════════════════════════════════════════════
-//                                                          // test // helpers
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
+// TEST HELPERS
+// ============================================================================
 
 function createTestLayer(type: LayerType): Layer {
   const projectStore = useProjectStore();
@@ -142,9 +142,9 @@ function propertyExists(layer: Layer, propertyPath: string): boolean {
   return false;
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 // PROPERTY TESTS: All Layer Types
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 
 describe("Keyframe Store Property Tests - All Layer Types", () => {
   beforeEach(() => {
@@ -257,9 +257,9 @@ describe("Keyframe Store Property Tests - All Layer Types", () => {
   });
 });
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 // PROPERTY TESTS: Custom Properties
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 
 describe("Keyframe Store Property Tests - Custom Properties", () => {
   beforeEach(() => {
@@ -300,9 +300,9 @@ describe("Keyframe Store Property Tests - Custom Properties", () => {
   });
 });
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 // PROPERTY TESTS: Effects
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 
 describe("Keyframe Store Property Tests - Effects", () => {
   beforeEach(() => {

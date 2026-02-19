@@ -14,9 +14,9 @@ import type { ParticleBuffer } from "./VerifiedParticleBuffer";
 import type { ForceField } from "./VerifiedForces";
 import { pos, type Positive } from "./VerifiedTypes";
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ============================================================================
 // WebGPU Availability Check
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 
 let _webgpuAvailable: boolean | null = null;
 let _gpuDevice: GPUDevice | null = null;
@@ -79,9 +79,9 @@ export function getGPUDevice(): GPUDevice | null {
   return _gpuDevice;
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 // WebGPU Compute Manager
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 
 export interface VerifiedWebGPUConfig {
   maxParticles: number;

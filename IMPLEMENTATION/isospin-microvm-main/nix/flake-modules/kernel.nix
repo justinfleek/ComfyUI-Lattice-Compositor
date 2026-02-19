@@ -42,7 +42,7 @@
         CONFIG_UNIX=y
         CONFIG_PACKET=y
 
-        # PCI and IOMMU for GPU passthrough
+        #                                                                       // pci
         CONFIG_PCI=y
         CONFIG_PCI_HOST_GENERIC=y
         CONFIG_PCIEPORTBUS=y
@@ -51,14 +51,14 @@
         CONFIG_HOTPLUG_PCI=y
         CONFIG_HOTPLUG_PCI_PCIE=y
 
-        # IOMMU
+        #                                                                     // iommu
         CONFIG_IOMMU_SUPPORT=y
         CONFIG_IOMMU_API=y
         CONFIG_AMD_IOMMU=y
         CONFIG_INTEL_IOMMU=y
         CONFIG_INTEL_IOMMU_SVM=y
 
-        # VFIO
+        #                                                                      // vfio
         CONFIG_VFIO=y
         CONFIG_VFIO_PCI=y
         CONFIG_VFIO_IOMMU_TYPE1=y

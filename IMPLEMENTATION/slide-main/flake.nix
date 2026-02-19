@@ -52,7 +52,7 @@
             secrets.OPENROUTER_API_KEY.file = ./secrets/openrouter-api-key.age;
           };
 
-          # GHC with all required packages
+          #                                                                       // ghc
           ghcWithPackages = ghc912.ghcWithPackages (hp: [
             hp.aeson
             hp.async

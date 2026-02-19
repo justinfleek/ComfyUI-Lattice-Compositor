@@ -762,7 +762,7 @@ var Aff = function () {
 
         // The tree has already been computed, so we shouldn't try to do it
         // again. This should never happen.
-        // TODO: Remove this?
+        //                                                                      // todo
         if (head._3 !== EMPTY) {
           return;
         }

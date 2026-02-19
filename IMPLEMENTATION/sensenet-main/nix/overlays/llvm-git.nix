@@ -1,6 +1,6 @@
 # nix/overlays/llvm-git.nix
 #
-# LLVM 22 from git with SM120 Blackwell support
+#                                                                // llvm // 22
 #
 # Why build from source?
 #   - nixpkgs clang's __clang_cuda_runtime_wrapper.h redefines uint3/dim3

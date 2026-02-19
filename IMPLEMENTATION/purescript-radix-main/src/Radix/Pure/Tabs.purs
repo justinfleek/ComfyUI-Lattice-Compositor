@@ -42,7 +42,7 @@ import Web.HTML.Window as Window
 import Web.UIEvent.KeyboardEvent as KE
 
 -- ═══════════════════════════════════════════════════════════════════════════════
--- TYPES
+--                                                                     // types
 -- ═══════════════════════════════════════════════════════════════════════════════
 
 -- | A single tab definition
@@ -107,7 +107,7 @@ data Action
 type Slot id = H.Slot Query Output id
 
 -- ═══════════════════════════════════════════════════════════════════════════════
--- COMPONENT
+--                                                                 // component
 -- ═══════════════════════════════════════════════════════════════════════════════
 
 component :: forall m. MonadAff m => H.Component Query Input Output m
@@ -140,7 +140,7 @@ initialState input =
           Nothing -> ""
 
 -- ═══════════════════════════════════════════════════════════════════════════════
--- RENDER
+--                                                                    // render
 -- ═══════════════════════════════════════════════════════════════════════════════
 
 render :: forall m. State -> H.ComponentHTML Action () m
@@ -225,7 +225,7 @@ orientationStr Horizontal = "horizontal"
 orientationStr Vertical = "vertical"
 
 -- ═══════════════════════════════════════════════════════════════════════════════
--- ACTIONS
+--                                                                   // actions
 -- ═══════════════════════════════════════════════════════════════════════════════
 
 handleAction :: forall m. MonadAff m => Action -> H.HalogenM State Action () Output m Unit
@@ -308,14 +308,14 @@ prevEnabledTab indices mCurrent loop =
          then if loop then Array.last indices else Nothing
          else Array.index indices prev
 
--- FFI for getElementById
+--                                                                       // ffi
 foreign import getElementByIdImpl :: String -> HTMLDocument.HTMLDocument -> Effect (Nullable HTMLElement.HTMLElement)
 
 getElementById :: String -> HTMLDocument.HTMLDocument -> Effect (Maybe HTMLElement.HTMLElement)
 getElementById id doc = toMaybe <$> getElementByIdImpl id doc
 
 -- ═══════════════════════════════════════════════════════════════════════════════
--- QUERIES
+--                                                                   // queries
 -- ═══════════════════════════════════════════════════════════════════════════════
 
 handleQuery :: forall m a. MonadAff m => Query a -> H.HalogenM State Action () Output m (Maybe a)

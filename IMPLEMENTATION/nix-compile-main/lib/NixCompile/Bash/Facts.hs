@@ -315,8 +315,8 @@ isIgnoredCommand :: Text -> Bool
 isIgnoredCommand cmd = cmd `elem` shellBuiltins
 
 -- | TRUE shell builtins only (per POSIX + bash)
--- NOTE: This is intentionally restrictive. External tools like curl, grep, etc.
--- MUST use store paths. See SPECIFICATION.md §2.4
+--                                                                      // note
+--                                                                      // must
 shellBuiltins :: [Text]
 shellBuiltins =
   [ -- Flow control
@@ -349,7 +349,7 @@ shellBuiltins =
   , "eval"  -- Builtin (but also forbidden construct - caught by lint)
   ]
 
--- NOTE: The previous commonUtilities list has been REMOVED.
+--                                                                      // note
 -- External tools like cat, grep, curl, etc. MUST use store paths.
 -- This requires reproducibility and makes dependencies explicit.
 

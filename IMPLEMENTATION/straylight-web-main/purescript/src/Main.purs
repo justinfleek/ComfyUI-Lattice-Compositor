@@ -36,9 +36,9 @@ import Straylight.Pages.Software as Software
 import Straylight.Pages.Irc as Irc
 import Straylight.Pages.Discord as Discord
 
--- ============================================================
--- MAIN ENTRY
--- ============================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                             // main // entry
+-- ════════════════════════════════════════════════════════════════════════════
 
 main :: Effect Unit
 main = launchAff_ do
@@ -50,9 +50,9 @@ main = launchAff_ do
     Nothing -> pure unit
     Just container -> void $ runUI appComponent unit container
 
--- ============================================================
--- APP COMPONENT
--- ============================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                          // app // component
+-- ════════════════════════════════════════════════════════════════════════════
 
 type AppState = { route :: Route }
 
@@ -161,9 +161,9 @@ renderPage = case _ of
   Irc -> HH.slot_ _irc unit Irc.ircPage unit
   Discord -> HH.slot_ _discord unit Discord.discordPage unit
 
--- ============================================================
--- HEADER (inline for nav actions)
--- ============================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                                    // header
+-- ════════════════════════════════════════════════════════════════════════════
 
 renderHeader :: forall m. MonadAff m => AppState -> H.ComponentHTML AppAction AppSlots m
 renderHeader state =

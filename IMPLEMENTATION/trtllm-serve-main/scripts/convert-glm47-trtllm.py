@@ -61,7 +61,7 @@ def create_trtllm_config(
     Maps GLM-4.7 MoE architecture to TRT-LLM's internal format.
     """
     
-    # GLM-4.7 specific fields
+    #                                                                       // glm
     hidden_size = hf_config["hidden_size"]
     num_layers = hf_config["num_hidden_layers"]
     num_heads = hf_config["num_attention_heads"]
@@ -112,7 +112,7 @@ def create_trtllm_config(
         },
         "moe_intermediate_size": moe_intermediate_size,
         "moe_shared_expert_intermediate_size": shared_expert_intermediate_size if n_shared_experts > 0 else None,
-        # GLM-4.7 specific
+        #                                                                       // glm
         "first_k_dense_replace": first_k_dense_replace,
         "n_shared_experts": n_shared_experts,
         # Attention
@@ -177,7 +177,7 @@ def get_weight_mapping(hf_config: Dict[str, Any]) -> Dict[str, str]:
         
         # Routed experts
         # These need special handling - HF stores as experts.{j}.{gate,up,down}_proj
-        # TRT-LLM wants them packed differently
+        #                                                                       // trt
     
     return mapping
 
@@ -281,7 +281,7 @@ def shard_weight(
     # Column parallel: shard output dim (dim 0 for most weights)
     # Row parallel: shard input dim (dim 1 for output projections)
     
-    # QKV projections - column parallel
+    #                                                                       // qkv
     if any(x in name for x in ["q_proj.weight", "k_proj.weight", "v_proj.weight"]):
         dim = 0
         size = tensor.shape[dim]
@@ -295,14 +295,14 @@ def shard_weight(
         shard_size = size // tp_size
         return tensor.narrow(dim, tp_rank * shard_size, shard_size).clone()
     
-    # MLP gate/up - column parallel
+    #                                                                       // mlp
     if any(x in name for x in ["gate_proj.weight", "up_proj.weight"]):
         dim = 0
         size = tensor.shape[dim]
         shard_size = size // tp_size
         return tensor.narrow(dim, tp_rank * shard_size, shard_size).clone()
     
-    # MLP down - row parallel
+    #                                                                       // mlp
     if "down_proj.weight" in name:
         dim = 1
         size = tensor.shape[dim]

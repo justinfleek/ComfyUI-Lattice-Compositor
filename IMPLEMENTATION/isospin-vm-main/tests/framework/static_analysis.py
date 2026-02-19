@@ -1,5 +1,5 @@
 # Copyright 2024 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-# SPDX-License-Identifier: Apache-2.0
+#                                                                      // spdx
 
 """Module to perform a static analysis of a binary to determine all
 actually invoked syscalls. Compares these against seccomp filters, and lists
@@ -595,7 +595,7 @@ def determine_unneeded_seccomp_rules(seccomp_rules, found_syscalls):
     given seccomp rules are redundant. By 'redundant' we here mean that no syscall that would match
     it is actually present in the given list of syscalls."""
 
-    # TODO: We could also determine "too broad" rules here: If all actual invocations of a syscall specific a parameter,
+    #                                                                      // todo
     # but the rule does not restrict that parameter, we could recommend to strengthen the rule to specify the parameter!
 
     redundant_rules = []

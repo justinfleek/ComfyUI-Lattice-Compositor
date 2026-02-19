@@ -1,5 +1,5 @@
 # Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-# SPDX-License-Identifier: Apache-2.0
+#                                                                      // spdx
 
 """
 Script used to check if bindgen-generated code creates structs that differ from previously created

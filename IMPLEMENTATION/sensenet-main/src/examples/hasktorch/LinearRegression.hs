@@ -83,7 +83,7 @@ trainLoop w b x y lr n = do
     -- Forward: yHat = w*x + b
     let yHat = w * x + b
 
-        -- MSE loss
+        --                                                                       // mse
         loss = mse' yHat y
 
         -- Analytical gradients for MSE:

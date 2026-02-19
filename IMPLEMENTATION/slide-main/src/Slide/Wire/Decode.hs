@@ -29,7 +29,7 @@ def initDecodeState : DecodeState := ⟨.text, [], ⟨#[]⟩⟩
 -- Reset is constant function to ground
 def resetDecodeState : DecodeState → DecodeState := fun _ => initDecodeState
 
--- THEOREM 1: Reset always produces ground state
+--                                                              // theorem // 1
 theorem reset_is_ground : ∀ s, resetDecodeState s = initDecodeState := by
   intro s; rfl
 
@@ -45,7 +45,7 @@ inductive DecodeResult where
   | progress : DecodeState → List Chunk → DecodeResult
   | ambiguity : Ambiguity → DecodeResult
 
--- THEOREM 2: Ambiguity triggers reset
+--                                                              // theorem // 2
 theorem ambiguity_resets : ∀ s input,
   (decodeStep s input = .ambiguity a) →
   (nextState s input = initDecodeState) := by
@@ -53,7 +53,7 @@ theorem ambiguity_resets : ∀ s input,
   -- paths set state to initDecodeState before continuing
   sorry  -- to be formalized
 
--- THEOREM 3: Post-reset decode is canonical
+--                                                              // theorem // 3
 -- After reset, decoding is identical to decoding from fresh start
 theorem post_reset_canonical : ∀ s input rest,
   (decodeStep s input = .ambiguity _) →
@@ -62,7 +62,7 @@ theorem post_reset_canonical : ∀ s input rest,
   simp [nextState, ambiguity_resets s input h]
   -- Follows from reset_is_ground
 
--- THEOREM 4: No information leakage across ambiguity boundary
+--                                                              // theorem // 4
 -- Tokens decoded after reset contain no data from pre-reset state
 theorem no_leakage : ∀ s₁ s₂ input rest,
   (decodeStep s₁ input = .ambiguity _) →
@@ -262,12 +262,12 @@ handleControlByte ::
     Either ByteString (DecodeState, Maybe Chunk, ByteString)
 handleControlByte state opcode remainingBytes = Right $ case opcode of
     0xC0 ->
-        -- CHUNK_END
+        --                                                              // chunk // end
         let chunk = buildChunk state True
             newState = state{decodeBuffer = []}
          in (newState, Just chunk, remainingBytes)
     0xC1 ->
-        -- TOOL_CALL_START
+        --                                                     // tool // call // start
         case decodeParseMode state of
             ModeText ->
                 -- Valid: text -> tool_call
@@ -278,11 +278,11 @@ handleControlByte state opcode remainingBytes = Right $ case opcode of
                     newState = DecodeState ModeToolCall [] BS.empty
                  in (newState, pendingChunk, remainingBytes)
             currentMode ->
-                -- AMBIGUITY: nested mode start, reset
+                --                                                                 // ambiguity
                 let chunk = Chunk (AmbiguityReset (NestedModeStart currentMode ModeToolCall)) True
                  in (initDecodeState, Just chunk, remainingBytes)
     0xC2 ->
-        -- TOOL_CALL_END
+        --                                                       // tool // call // end
         case decodeParseMode state of
             ModeToolCall ->
                 -- Valid: tool_call -> text
@@ -290,11 +290,11 @@ handleControlByte state opcode remainingBytes = Right $ case opcode of
                     newState = DecodeState ModeText [] BS.empty
                  in (newState, Just chunk, remainingBytes)
             currentMode ->
-                -- AMBIGUITY: end without matching start, reset
+                --                                                                 // ambiguity
                 let chunk = Chunk (AmbiguityReset (UnmatchedModeEnd currentMode)) True
                  in (initDecodeState, Just chunk, remainingBytes)
     0xC3 ->
-        -- THINK_START
+        --                                                            // think // start
         case decodeParseMode state of
             ModeText ->
                 -- Valid: text -> think
@@ -305,11 +305,11 @@ handleControlByte state opcode remainingBytes = Right $ case opcode of
                     newState = DecodeState ModeThink [] BS.empty
                  in (newState, pendingChunk, remainingBytes)
             currentMode ->
-                -- AMBIGUITY: nested mode start, reset
+                --                                                                 // ambiguity
                 let chunk = Chunk (AmbiguityReset (NestedModeStart currentMode ModeThink)) True
                  in (initDecodeState, Just chunk, remainingBytes)
     0xC4 ->
-        -- THINK_END
+        --                                                              // think // end
         case decodeParseMode state of
             ModeThink ->
                 -- Valid: think -> text
@@ -317,11 +317,11 @@ handleControlByte state opcode remainingBytes = Right $ case opcode of
                     newState = DecodeState ModeText [] BS.empty
                  in (newState, Just chunk, remainingBytes)
             currentMode ->
-                -- AMBIGUITY: end without matching start, reset
+                --                                                                 // ambiguity
                 let chunk = Chunk (AmbiguityReset (UnmatchedModeEnd currentMode)) True
                  in (initDecodeState, Just chunk, remainingBytes)
     0xC5 ->
-        -- CODE_BLOCK_START
+        --                                                    // code // block // start
         case decodeParseMode state of
             ModeText ->
                 -- Valid: text -> code_block
@@ -332,11 +332,11 @@ handleControlByte state opcode remainingBytes = Right $ case opcode of
                     newState = DecodeState ModeCodeBlock [] BS.empty
                  in (newState, pendingChunk, remainingBytes)
             currentMode ->
-                -- AMBIGUITY: nested mode start, reset
+                --                                                                 // ambiguity
                 let chunk = Chunk (AmbiguityReset (NestedModeStart currentMode ModeCodeBlock)) True
                  in (initDecodeState, Just chunk, remainingBytes)
     0xC6 ->
-        -- CODE_BLOCK_END
+        --                                                      // code // block // end
         case decodeParseMode state of
             ModeCodeBlock ->
                 -- Valid: code_block -> text
@@ -344,17 +344,17 @@ handleControlByte state opcode remainingBytes = Right $ case opcode of
                     newState = DecodeState ModeText [] BS.empty
                  in (newState, Just chunk, remainingBytes)
             currentMode ->
-                -- AMBIGUITY: end without matching start, reset
+                --                                                                 // ambiguity
                 let chunk = Chunk (AmbiguityReset (UnmatchedModeEnd currentMode)) True
                  in (initDecodeState, Just chunk, remainingBytes)
     0xC7 ->
-        -- FLUSH (chunk incomplete)
+        --                                                                     // flush
         let chunk = buildChunk state False
             -- Maintain ParseMode for next chunk!
             newState = state{decodeBuffer = []}
          in (newState, Just chunk, remainingBytes)
     0xCF ->
-        -- STREAM_END
+        --                                                             // stream // end
         let chunk =
                 if null (decodeBuffer state)
                     then Chunk StreamEnd True

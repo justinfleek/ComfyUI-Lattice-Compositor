@@ -49,9 +49,9 @@ import qualified NixCompile.Nix.Types as NT
 import System.Exit (exitFailure, exitSuccess)
 import Test.QuickCheck
 
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 -- Generators
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Generate valid bash variable names
 genVarName :: Gen Text
@@ -223,9 +223,9 @@ genComment = do
   text <- genStringLiteral
   return $ "# " <> text
 
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 -- Arbitrary instances
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 
 instance Arbitrary Text where
   arbitrary = genStringLiteral
@@ -329,9 +329,9 @@ instance Arbitrary Effect where
 instance Arbitrary OverlaySignature where
   arbitrary = OverlaySignature <$> arbitrary <*> arbitrary
 
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 -- Properties: Unification
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Unification is reflexive: t ~ t always succeeds
 prop_unify_reflexive :: Type -> Bool
@@ -392,9 +392,9 @@ prop_subst_single :: TypeVar -> Type -> Bool
 prop_subst_single v t =
   applySubst (singleSubst v t) (TVar v) == t
 
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 -- Properties: Constraint solving
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Solving empty constraints succeeds with empty substitution
 prop_solve_empty :: Bool
@@ -458,9 +458,9 @@ prop_solve_deterministic :: [Constraint] -> Bool
 prop_solve_deterministic constraints =
   solve constraints == solve constraints
 
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 -- Properties: Fact -> Constraint
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Constraint generation is deterministic
 prop_constraints_deterministic :: [Fact] -> Bool
@@ -482,9 +482,9 @@ prop_config_no_constraint :: ConfigPath -> Text -> Quoted -> Span -> Bool
 prop_config_no_constraint path var quoted sp =
   null (factToConstraints (ConfigAssign path var quoted sp))
 
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 -- Properties: Schema building
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Schema building is deterministic
 prop_schema_deterministic :: [Fact] -> Property
@@ -551,9 +551,9 @@ prop_schema_required_marked facts =
         Nothing -> False
     requiredMarked _ _ = True
 
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 -- Properties: Parser
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Parser doesn't crash on generated bash
 prop_parser_no_crash :: Property
@@ -577,9 +577,9 @@ prop_parser_comments :: Property
 prop_parser_comments = forAll genComment $ \comment ->
   isRight (parseBash comment)
 
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 -- Properties: Pattern matching
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | parseParamExpansion recognizes ${VAR:-default}
 prop_pattern_default :: Text -> Text -> Bool
@@ -612,9 +612,9 @@ prop_numeric_rejects_alpha = forAll genStringLiteral $ \s ->
   not (T.all (\c -> c >= '0' && c <= '9' || c == '-') s) ==>
     not (isNumericLiteral s)
 
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 -- Properties: Builtins
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | All builtin commands have schemas
 prop_builtins_nonempty :: Bool
@@ -645,9 +645,9 @@ prop_builtins_unknown_cmd = forAll genStringLiteral $ \cmd ->
   let weirdCmd = "xyz-" <> cmd <> "-unknown"
    in lookupArgType weirdCmd "--timeout" == Nothing
 
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 -- Properties: Config tree
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Config tree preserves all non-empty paths
 -- Note: Empty paths [] are not meaningful in config.x.y syntax
@@ -676,9 +676,9 @@ prop_config_tree_deterministic :: Map ConfigPath ConfigSpec -> Bool
 prop_config_tree_deterministic m =
   buildConfigTree m == buildConfigTree m
 
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 -- Properties: Literal parsing
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Integer literals roundtrip
 prop_literal_int_roundtrip :: Int64 -> Bool
@@ -704,9 +704,9 @@ prop_literal_type_consistent lit =
     LitBool _ -> literalType lit == TBool
     LitPath _ -> literalType lit == TPath
 
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 -- Properties: End-to-end
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Full pipeline doesn't crash on generated scripts
 prop_e2e_no_crash :: Property
@@ -731,9 +731,9 @@ prop_e2e_concrete_types = forAll genBashFragment $ \script ->
       TVar _ -> False
       _ -> True
 
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 -- Properties: Stress tests
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Large scripts don't crash
 prop_stress_large_script :: Property
@@ -881,9 +881,9 @@ prop_overlay_propagation n1 n2 =
         m = mergeSignatures p c
      in Set.member (RequireUpstream n2 t) (osCoeffects m)
 
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 -- Main
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 
 main :: IO ()
 main = do

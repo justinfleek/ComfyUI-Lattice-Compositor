@@ -1,4 +1,4 @@
-// FFI for Router.purs
+//                                                                       // ffi
 
 export const getPathname = function() {
   return window.location.pathname;

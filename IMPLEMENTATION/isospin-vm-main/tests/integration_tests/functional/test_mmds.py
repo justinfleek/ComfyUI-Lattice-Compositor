@@ -1,5 +1,5 @@
 # Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-# SPDX-License-Identifier: Apache-2.0
+#                                                                      // spdx
 """Tests that verify MMDS related functionality."""
 
 # pylint: disable=too-many-lines
@@ -25,7 +25,7 @@ MIN_TOKEN_TTL_SECONDS = 1
 MAX_TOKEN_TTL_SECONDS = 21600
 # Default IPv4 value for MMDS.
 DEFAULT_IPV4 = "169.254.169.254"
-# MMDS versions supported.
+#                                                                      // mmds
 MMDS_VERSIONS = ["V2", "V1"]
 
 
@@ -49,13 +49,13 @@ def test_mmds_token(uvm_plain, version, imds_compat):
     cmd = "ip route add {} dev eth0".format(DEFAULT_IPV4)
     run_guest_cmd(ssh_connection, cmd, "")
 
-    # GET request with no token
+    #                                                                       // get
     cmd = generate_mmds_get_request(DEFAULT_IPV4, None, False, imds_compat) + "foo"
     if version == "V1":
-        # V1 accepts no token
+        #                                                                        // v1
         run_guest_cmd(ssh_connection, cmd, "bar")
     elif version == "V2":
-        # V2 denies no token
+        #                                                                        // v2
         run_guest_cmd(
             ssh_connection,
             cmd,
@@ -68,16 +68,16 @@ def test_mmds_token(uvm_plain, version, imds_compat):
     assert metrics["mmds"]["rx_invalid_token"] == 0
     assert metrics["mmds"]["rx_no_token"] == 1
 
-    # GET request with invalid token
+    #                                                                       // get
     cmd = (
         generate_mmds_get_request(DEFAULT_IPV4, "INVALID_TOKEN", False, imds_compat)
         + "foo"
     )
     if version == "V1":
-        # V1 accepts invalid token
+        #                                                                        // v1
         run_guest_cmd(ssh_connection, cmd, "bar")
     elif version == "V2":
-        # V2 denies invalid token
+        #                                                                        // v2
         run_guest_cmd(ssh_connection, cmd, "MMDS token not valid.")
     metrics = test_microvm.flush_metrics()
     assert metrics["mmds"]["rx_invalid_token"] == 1
@@ -453,7 +453,7 @@ def test_mmds_limit_scenario(uvm_plain, version):
     """
     test_microvm = uvm_plain
     # Set a large enough limit for the API so that requests actually reach the
-    # MMDS server.
+    #                                                                      // mmds
     test_microvm.jailer.extra_args.update(
         {"http-api-max-payload-size": "512000", "mmds-size-limit": "51200"}
     )
@@ -752,7 +752,7 @@ def _configure_with_aws_credentials(microvm, version, imds_compat):
     microvm.spawn()
     microvm.basic_config()
     microvm.add_net_iface()
-    # V2 requires session tokens for GET requests
+    #                                                                        // v2
     configure_mmds(
         microvm, iface_ids=["eth0"], version=version, imds_compat=imds_compat
     )

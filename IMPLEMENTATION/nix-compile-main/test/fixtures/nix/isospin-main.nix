@@ -11,7 +11,7 @@
 { inputs, ... }:
 let
   # ══════════════════════════════════════════════════════════════════════════════
-  # RUST TOOLCHAIN MODULE
+  #                                               // rust // toolchain // module
   # ══════════════════════════════════════════════════════════════════════════════
   rustToolchainModule =
     {
@@ -63,7 +63,7 @@ let
     };
 
   # ══════════════════════════════════════════════════════════════════════════════
-  # VENDOR MODULE
+  #                                                          // vendor // module
   # Rust crate vendoring with patches for vm-memory 0.18 compatibility
   # ══════════════════════════════════════════════════════════════════════════════
   vendorModule =
@@ -475,7 +475,7 @@ let
     };
 
   # ══════════════════════════════════════════════════════════════════════════════
-  # STATIC LIBS MODULE
+  #                                                  // static // libs // module
   # aws-lc and libseccomp static builds
   # ══════════════════════════════════════════════════════════════════════════════
   staticLibsModule =
@@ -534,7 +534,7 @@ let
     };
 
   # ══════════════════════════════════════════════════════════════════════════════
-  # DEVSHELL MODULE
+  #                                                        // devshell // module
   # ══════════════════════════════════════════════════════════════════════════════
   devshellModule =
     { lib, config, ... }:
@@ -602,7 +602,7 @@ let
                 iperf3
                 netcat
 
-                # VM
+                #                                                                        // vm
                 qemu
 
                 # Build deps
@@ -646,7 +646,7 @@ let
     };
 
   # ══════════════════════════════════════════════════════════════════════════════
-  # SCRIPTS MODULE
+  #                                                         // scripts // module
   # nix run .#<script> commands
   # ══════════════════════════════════════════════════════════════════════════════
   scriptsModule =
@@ -795,7 +795,7 @@ let
             '';
 
             # ─────────────────────────────────────────────────────────────────
-            # VM assets and boot
+            #                                                                        // vm
             # ─────────────────────────────────────────────────────────────────
             fetch-vm-assets = pkgs.writeShellApplication {
               name = "fetch-vm-assets";
@@ -929,10 +929,10 @@ let
             # Networking
             # ─────────────────────────────────────────────────────────────────
             # Multi-VM networking scheme:
-            #   VM 0: tap0, 172.16.0.1/30 (host) -> 172.16.0.2 (guest), MAC 06:00:AC:10:00:02
-            #   VM 1: tap1, 172.16.0.5/30 (host) -> 172.16.0.6 (guest), MAC 06:00:AC:10:00:06
-            #   VM 2: tap2, 172.16.0.9/30 (host) -> 172.16.0.10 (guest), MAC 06:00:AC:10:00:0A
-            #   VM N: tapN, 172.16.0.(4N+1)/30 -> 172.16.0.(4N+2), MAC 06:00:AC:10:00:XX
+            #                                                                   // vm // 0
+            #                                                                   // vm // 1
+            #                                                                   // vm // 2
+            #                                                                   // vm // n
 
             setup-network = pkgs.writeShellApplication {
               name = "setup-network";
@@ -945,7 +945,7 @@ let
               text = ''
                 set -euo pipefail
 
-                # VM index (0, 1, 2, ...)
+                #                                                                        // vm
                 VM_INDEX="''${1:-0}"
                 TAP_DEV="tap$VM_INDEX"
 
@@ -1182,7 +1182,7 @@ let
                                   ln -sf "${rustVendor}" third-party/rust/vendor
                                 fi
 
-                                # VM index (0, 1, 2, ...)
+                                #                                                                        // vm
                                 VM_INDEX="''${1:-0}"
                                 TAP_DEV="tap$VM_INDEX"
                                 
@@ -1368,7 +1368,7 @@ let
             };
 
             # ─────────────────────────────────────────────────────────────────
-            # FC-GPU: Complete GPU passthrough VM launcher
+            #                                                                        // fc
             # This is the main entry point for GPU passthrough testing
             # Usage: nix run .#fc-gpu [-- --pci 0000:01:00.0 --mem 32768 --cpus 8]
             # ─────────────────────────────────────────────────────────────────

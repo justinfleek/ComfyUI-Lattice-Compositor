@@ -25,19 +25,19 @@ factsToLocatedConstraints = concatMap factToLocatedConstraints
 -- | Convert a single fact to located constraints
 factToLocatedConstraints :: Fact -> [LocatedConstraint]
 factToLocatedConstraints = \case
-  -- VAR has a literal default: VAR ~ type(literal)
+  --                                                                       // var
   DefaultIs var lit sp ->
     [LocatedConstraint (TVar (TypeVar var) :~: literalType lit) sp]
-  -- VAR defaults to OTHER: VAR ~ OTHER
+  --                                                                       // var
   DefaultFrom var other sp ->
     [LocatedConstraint (TVar (TypeVar var) :~: TVar (TypeVar other)) sp]
-  -- VAR is required: no type constraint, just existence
+  --                                                                       // var
   Required _ _ ->
     []
-  -- VAR = OTHER: VAR ~ OTHER
+  --                                                                       // var
   AssignFrom var other sp ->
     [LocatedConstraint (TVar (TypeVar var) :~: TVar (TypeVar other)) sp]
-  -- VAR = literal: VAR ~ type(literal)
+  --                                                                       // var
   AssignLit var lit sp ->
     [LocatedConstraint (TVar (TypeVar var) :~: literalType lit) sp]
   -- config.x.y = $VAR or "$VAR": no type constraint on VAR

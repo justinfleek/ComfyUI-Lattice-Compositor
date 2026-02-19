@@ -35,10 +35,10 @@
 -- cacheable in their own right.
 --
 -- Latency distribution after tiering:
---   P50:  ~4ms   (cache hits + Tier 0)
---   P90:  ~50ms  (Tier 2 small model)
---   P95:  ~250ms (Tier 3 medium model)
---   P99:  ~1000ms (Tier 4 polyhedral-optimized)
+--                                                                       // p50
+--                                                                       // p90
+--                                                                       // p95
+--                                                                       // p99
 
 module Compass.Inference.TieredRouter
   ( -- * Tier Classification
@@ -103,9 +103,9 @@ import           GHC.Generics (Generic)
 
 import           Compass.Core.Types
 
--------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Tier Classification
--------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | The five inference tiers, ordered by computational cost.
 -- Classification is a pure function — no IO, no side effects.
@@ -253,9 +253,9 @@ classifyTier cfg intent casState =
   where
     ft = tcFreshnessThresholds cfg
 
--------------------------------------------------------------------------------
--- CAS State Queries (used by classifier)
--------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
+--                                                                  // cas // s
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Opaque CAS state representation for tier classification.
 -- This captures what the classifier needs to know without
@@ -294,9 +294,9 @@ hasCachedAnalysis st bid = HS.member (AnalysisKey bid) (cassCached st)
 hasCachedBrief :: CASState -> BrandId -> [Text] -> Bool
 hasCachedBrief st bid comps = HS.member (CompetitorKey bid comps) (cassCached st)
 
--------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Inference Backends
--------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Typeclass for inference backends at each tier.
 -- Each backend knows how to produce WidgetData from a query intent
@@ -350,9 +350,9 @@ data FullModelBackend = FullModelBackend
   , fmbTimeout         :: NominalDiffTime
   }
 
--------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Streaming
--------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | A stream of inference chunks for progressive widget rendering.
 -- First chunk arrives at time-to-first-token (~15-80ms depending on tier).
@@ -379,9 +379,9 @@ drainStream (StreamDone a prov conf)  = pure $ Right (a, prov, conf)
 drainStream (StreamError err)         = pure $ Left err
 drainStream (StreamChunk _ continue)  = continue >>= drainStream
 
--------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Router
--------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | The tiered inference router. Holds backend connections
 -- and routes queries to the appropriate tier.
@@ -514,9 +514,9 @@ routeQueryStreaming router intent casState root = do
       stream <- dispatchTierStreaming router tier intent casState
       pure (tier, stream)
 
--------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Tier Dispatch (internal)
--------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Dispatch a query to its classified tier's backend.
 -- Each tier has a hard timeout. On timeout, Left is returned.
@@ -594,9 +594,9 @@ dispatchTierStreaming router tier intent casState =
       -- Backend-specific streaming (implementation depends on model server protocol)
       pure $ StreamError "TODO: wire to model server streaming endpoint"
 
--------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Agent Cache
--------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Content-addressed agent result cache.
 -- Key = hash(QueryIntent, MerkleRoot) — same query against same data = same result.
@@ -662,9 +662,9 @@ evictOldest entries
             entries
       in HM.delete oldest entries
 
--------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Selective Prefetch Integration
--------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | A prefetch plan generated by Selective static analysis.
 -- Contains ALL content addresses that MIGHT be needed by a query,
@@ -751,9 +751,9 @@ executePrefetch cas plan = do
   pure $ HM.fromList
     [ (addr, val) | (addr, Just val) <- results ]
 
--------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Internal Helpers
--------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Map a query intent to its required CAS addresses
 intentToAddrs :: QueryIntent -> CASState -> Set ContentAddr

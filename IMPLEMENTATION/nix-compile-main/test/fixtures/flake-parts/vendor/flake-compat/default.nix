@@ -95,7 +95,7 @@ let
           shortRev = builtins.substring 0 7 info.rev;
         }
       else
-      # FIXME: add Mercurial, tarball inputs.
+      #                                                                     // fixme
         throw "flake input has unsupported input type '${info.type}'"
     );
 
@@ -161,7 +161,7 @@ let
               else
                 src;
           };
-      # NB git worktrees have a file for .git, so we don't check the type of .git
+      #                                                                        // nb
       isGit = builtins.pathExists (src + "/.git");
       isShallow = builtins.pathExists (src + "/.git/shallow");
 

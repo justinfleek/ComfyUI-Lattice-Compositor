@@ -1,5 +1,5 @@
 # Copyright 2024 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-# SPDX-License-Identifier: Apache-2.0
+#                                                                      // spdx
 """Integration tests for Firecracker's huge pages support"""
 import signal
 import time
@@ -26,7 +26,7 @@ def check_hugetlbfs_in_use(pid: int, allocation_name: str):
     #   7fc2bc400000-7fc2cc400000 rw-s 00000000 00:10 25488401                   /anon_hugepage
     #   Size:             262144 kB
     #   KernelPageSize:     2048 kB
-    #   MMUPageSize:        2048 kB
+    #                                                                      // mmup
     #   Rss:                   0 kB
     #   Pss:                   0 kB
     #   Pss_Dirty:             0 kB
@@ -45,7 +45,7 @@ def check_hugetlbfs_in_use(pid: int, allocation_name: str):
     #   Swap:                  0 kB
     #   SwapPss:               0 kB
     #   Locked:                0 kB
-    #   THPeligible:           0
+    #                                                                       // thp
     #   ProtectionKey:         0
     cmd = f"cat /proc/{pid}/smaps | grep {allocation_name} -A 23 | grep KernelPageSize"
     _, stdout, _ = utils.check_output(cmd)

@@ -1,5 +1,5 @@
 # Copyright 2025 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-# SPDX-License-Identifier: Apache-2.0
+#                                                                      // spdx
 """File containing utility methods for fio-based performance tests"""
 
 import json
@@ -24,15 +24,15 @@ class Mode(str, Enum):
     WRITE = "write"
     # Sequential trims (Linux block devices and SCSI character devices only).
     TRIM = "trim"
-    # RANDOM reads.
+    #                                                                    // random
     RANDREAD = "randread"
-    # RANDOM writes.
+    #                                                                    // random
     RANDWRITE = "randwrite"
-    # RANDOM trims (Linux block devices and SCSI character devices only).
+    #                                                                    // random
     RANDTRIM = "randtrim"
-    # SEQUENTial mixed reads and writes.
+    #                                                                   // sequent
     READWRITE = "readwrite"
-    # RANDOM mixed reads and writes.
+    #                                                                    // random
     RANDRW = "randrw"
 
 

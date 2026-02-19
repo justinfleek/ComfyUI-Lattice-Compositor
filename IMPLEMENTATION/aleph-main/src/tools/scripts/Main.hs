@@ -160,9 +160,9 @@ foreign export ccall "abseil_cpp" abseilCppExport :: Value -> IO Value
 abseilCppExport :: Value -> IO Value
 abseilCppExport _args = drvToNixAttrs abseilCpp
 
--- ============================================================================
--- NVIDIA SDK Packages
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                        // nvidia // sdk // p
+-- ════════════════════════════════════════════════════════════════════════════
 
 {- | Export NVIDIA NCCL package specification.
 
@@ -231,9 +231,9 @@ foreign export ccall "nvidia_cutlass" nvidiaCutlassExport :: Value -> IO Value
 nvidiaCutlassExport :: Value -> IO Value
 nvidiaCutlassExport _args = drvToNixAttrs Nvidia.cutlass
 
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 -- Test packages for typed actions
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 
 {- | Export jq package specification.
 

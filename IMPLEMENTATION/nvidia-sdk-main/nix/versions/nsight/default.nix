@@ -1,6 +1,6 @@
 # nix/versions/nsight/default.nix — Nsight Profiling Tools Versions
 #
-# NVIDIA Nsight Compute and Systems profiling tool versions.
+#                                                               // nvidia // n
 
 { lib }:
 

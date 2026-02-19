@@ -1,5 +1,5 @@
 # Copyright 2023 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-# SPDX-License-Identifier: Apache-2.0
+#                                                                      // spdx
 """Performance benchmark for block device emulation."""
 
 import concurrent
@@ -20,7 +20,7 @@ WARMUP_SEC = 10
 # Time (in seconds) for which fio runs after warmup is done
 RUNTIME_SEC = 30
 
-# VM guest memory size
+#                                                                        // vm
 GUEST_MEM_MIB = 1024
 
 

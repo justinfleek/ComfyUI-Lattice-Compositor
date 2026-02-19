@@ -46,9 +46,9 @@ import qualified Armitage.Dhall as Dhall
 import qualified Armitage.DICE as DICE
 import qualified Armitage.Trace as Trace
 
--- -----------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Main
--- -----------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 main :: IO ()
 main = do
@@ -71,9 +71,9 @@ main = do
       usage
       exitFailure
 
--- -----------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Commands
--- -----------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Build command (from .drv file)
 cmdBuild :: [String] -> IO ()
@@ -189,9 +189,9 @@ cmdCAS args = case args of
     hPutStrLn stderr $ "Unknown CAS command: " <> cmd
     exitFailure
 
--- -----------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Helpers
--- -----------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 parsePort :: [String] -> Int
 parsePort = go 8080
@@ -486,10 +486,10 @@ getDrvInfoFromPath drvPath = do
     ExitSuccess -> pure $ parseDrvJson drvPath out
 
 -- | Parse derivation JSON (simplified)
--- JSON format: {"derivations":{"<hash>-<name>.drv":{"inputs":{"drvs":{"<hash>-<name>.drv":{...}}}}}}
+--                                                                      // json
 parseDrvJson :: String -> String -> Either String DrvInfo
 parseDrvJson drvPath json = 
-  -- TODO: proper JSON parsing with Aeson
+  --                                                                      // todo
   -- For now, extract info with string matching
   Right DrvInfo
     { diDrvPath = drvPath
@@ -547,7 +547,7 @@ unrollRec outDir maxDepth depth seen dryRun info
         else do
           putStrLn $ indent <> name
           unless dryRun $ do
-            -- TODO: Actually build and trace
+            --                                                                      // todo
             -- 1. nix-store --realise <drv>
             -- 2. armitage trace -- <builder> <args>
             -- 3. Write Dhall to outDir/<name>.dhall

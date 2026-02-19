@@ -14,9 +14,9 @@ import {
   MAX_NAME_LENGTH,
 } from "../shared-validation";
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ============================================================================
 // Primitives
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 
 const finiteNumber = z.number().finite();
 const positiveInt = z.number().int().positive();
@@ -24,9 +24,9 @@ const nonNegativeInt = z.number().int().nonnegative();
 const positiveFinite = z.number().finite().positive();
 const normalized01 = z.number().finite().min(0).max(1);
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 // Path Follower Shape Schema
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 
 export const PathFollowerShapeSchema = z.enum([
   "circle",
@@ -39,9 +39,9 @@ export const PathFollowerShapeSchema = z.enum([
 
 export type PathFollowerShape = z.infer<typeof PathFollowerShapeSchema>;
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 // Path Follower Easing Schema
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 
 export const PathFollowerEasingSchema = z.enum([
   "linear",
@@ -54,9 +54,9 @@ export const PathFollowerEasingSchema = z.enum([
 
 export type PathFollowerEasing = z.infer<typeof PathFollowerEasingSchema>;
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 // Spline Control Point Schema
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 
 export const SplineControlPointSchema = z.object({
   x: finiteNumber.max(16384), // Max reasonable coordinate
@@ -84,9 +84,9 @@ export const SplineControlPointSchema = z.object({
 
 export type SplineControlPoint = z.infer<typeof SplineControlPointSchema>;
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 // Path Follower Config Schema
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 
 export const PathFollowerConfigSchema = z.object({
   id: entityId,
@@ -121,9 +121,9 @@ export const PathFollowerConfigSchema = z.object({
 
 export type PathFollowerConfig = z.infer<typeof PathFollowerConfigSchema>;
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 // VACE Export Config Schema
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 
 export const VACEExportConfigSchema = z.object({
   width: positiveInt.max(16384), // Max reasonable dimension
@@ -145,9 +145,9 @@ export const VACEExportConfigSchema = z.object({
 
 export type VACEExportConfig = z.infer<typeof VACEExportConfigSchema>;
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 // Path Follower State Schema
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 
 export const PathFollowerStateSchema = z.object({
   position: z.object({
@@ -163,9 +163,9 @@ export const PathFollowerStateSchema = z.object({
 
 export type PathFollowerState = z.infer<typeof PathFollowerStateSchema>;
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 // VACE Frame Schema
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 
 /**
  * VACE frame export.
@@ -181,9 +181,9 @@ export const VACEFrameMetadataSchema = z.object({
 
 export type VACEFrameMetadata = z.infer<typeof VACEFrameMetadataSchema>;
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 // Validation Helpers
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 
 export function validateVACEExportConfig(data: unknown): VACEExportConfig {
   return VACEExportConfigSchema.parse(data);

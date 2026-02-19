@@ -885,9 +885,9 @@ function ensureProperty(propName: string, dataKey: string) {
   }
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-//                                                          // path // effects
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
+// PATH EFFECTS
+// ============================================================================
 
 const pathEffects = computed<SplinePathEffectInstance[]>(() => {
   // System F/Omega: Use safeArrayDefault instead of lazy || [] fallback

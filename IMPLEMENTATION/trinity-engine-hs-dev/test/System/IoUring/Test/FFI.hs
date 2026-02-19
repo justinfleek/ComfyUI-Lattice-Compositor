@@ -1,4 +1,4 @@
--- FFI binding tests
+--                                                                       // ffi
 module System.IoUring.Test.FFI where
 
 import Foreign (Ptr)

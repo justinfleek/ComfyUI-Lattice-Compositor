@@ -1,6 +1,6 @@
 # nix/versions/tensorrt/default.nix — TensorRT Versions
 #
-# NVIDIA TensorRT inference optimization library versions.
+#                                                               // nvidia // t
 
 { lib }:
 

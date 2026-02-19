@@ -3,7 +3,7 @@
 #
 # This test uses lib.evalModules with mock NixOS options to verify that
 # the nvidia-sdk module declares its options and wires config correctly,
-# WITHOUT requiring a full NixOS evaluation.
+#                                                                   // without
 
 { pkgs ? import <nixpkgs> { }
 , lib ? pkgs.lib

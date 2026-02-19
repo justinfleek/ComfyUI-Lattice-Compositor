@@ -42,7 +42,7 @@ let
           description = "Path to prelude (defaults to inputs.buck2-prelude)";
         };
 
-        # ── Toolchain options ──────────────────────────────────────────────
+        # ── Toolchain options ──────────────────────────────────────────
         toolchain = {
           # C++
           cxx = {
@@ -91,7 +91,7 @@ let
             };
           };
 
-          # CUDA/nv
+          #                                                                      // cuda
           nv = {
             enable = lib.mkEnableOption "NVIDIA CUDA toolchain";
           };
@@ -102,7 +102,7 @@ let
           };
         };
 
-        # ── Remote Execution ────────────────────────────────────────────────
+        # ── Remote Execution ───────────────────────────────────────────
         remoteexecution = {
           enable = lib.mkEnableOption "NativeLink remote execution";
 
@@ -143,7 +143,7 @@ let
           };
         };
 
-        # ── Extra buckconfig sections ──────────────────────────────────────
+        # ── Extra buckconfig sections ──────────────────────────────────
         extrabuckconfigsections = lib.mkOption {
           type = lib.types.lines;
           default = "";
@@ -160,7 +160,7 @@ let
           '';
         };
 
-        # ── Extra packages ─────────────────────────────────────────────────
+        # ── Extra packages ─────────────────────────────────────────────
         extrapackages = lib.mkOption {
           type = lib.types.listOf lib.types.package;
           default = [ ];
@@ -179,7 +179,7 @@ let
           description = "Additional shell hook for development";
         };
 
-        # ── Output options ─────────────────────────────────────────────────
+        # ── Output options ─────────────────────────────────────────────
         installbinaries = lib.mkOption {
           type = lib.types.bool;
           default = true;
@@ -198,7 +198,7 @@ in
   options.perSystem = flake-parts-lib.mkPerSystemOption (
     { pkgs, config, ... }:
     {
-      # ── Primary: sensenet.projects ─────────────────────────────────────────
+      # ── Primary: sensenet.projects ─────────────────────────────────
       options.sensenet = {
         projects = lib.mkOption {
           type = lib.types.attrsOf (projectsubmodule {
@@ -215,7 +215,7 @@ in
         };
       };
 
-      # ── Backward compat: buck2.projects (deprecated) ───────────────────────
+      # ── Backward compat: buck2.projects (deprecated) ───────────────
       options.buck2 = {
         projects = lib.mkOption {
           type = lib.types.attrsOf (projectsubmodule {
@@ -226,7 +226,7 @@ in
         };
       };
 
-      # ── Merge buck2.projects into sensenet.projects ────────────────────────
+      # ── Merge buck2.projects into sensenet.projects ────────────────
       config.sensenet.projects = config.buck2.projects;
     }
   );

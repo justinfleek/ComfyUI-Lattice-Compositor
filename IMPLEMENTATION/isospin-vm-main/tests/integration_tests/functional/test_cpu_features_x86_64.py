@@ -1,5 +1,5 @@
 # Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-# SPDX-License-Identifier: Apache-2.0
+#                                                                      // spdx
 """Tests for the CPU topology emulation feature."""
 
 # pylint: disable=too-many-lines
@@ -230,7 +230,7 @@ MSR_EXCEPTION_LIST = [
     "0xc0000083",  # MSR_CSTAR
     "0xc0000100",  # MSR_FS_BASE
     "0xc0000101",  # MSR_GS_BASE
-    # MSRs below are required only on T2A, however,
+    #                                                                       // msr
     # we are adding them to the common exception list to keep things simple
     "0x834"     ,  # LVT Performance Monitor Interrupt Register
     "0xc0010007",  # MSR_K7_PERFCTR3

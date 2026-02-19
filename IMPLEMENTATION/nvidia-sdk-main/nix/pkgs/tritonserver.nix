@@ -254,7 +254,7 @@ stdenv.mkDerivation {
     # libcaffe2_nvrtc
     find $src -name "libcaffe2_nvrtc.so*" -type f 2>/dev/null -exec cp -a {} $out/lib/ \;
 
-    # ICU 74 from container
+    #                                                                 // icu // 74
     find $src -name "libicu*.so.74*" -type f 2>/dev/null | while read -r f; do
       echo "Copying ICU lib from $f"
       cp -a "$f" $out/lib/
@@ -290,7 +290,7 @@ stdenv.mkDerivation {
       [ -d "$pydir" ] && cp -a "$pydir"/* $out/python/ 2>/dev/null || true
     done
 
-    # NCCL from nvidia-sdk (if present)
+    #                                                                      // nccl
     if [ -d ${nvidia-sdk}/lib64 ]; then
       for lib in ${nvidia-sdk}/lib64/libnccl*.so*; do
         [ -f "$lib" ] || continue
@@ -359,7 +359,7 @@ stdenv.mkDerivation {
   meta = {
     description = "NVIDIA Triton Inference Server with TensorRT-LLM ${version}";
     homepage = "https://developer.nvidia.com/nvidia-triton-inference-server";
-    # NGC container extraction includes proprietary components (TensorRT-LLM, cuDNN, etc.)
+    #                                                                       // ngc
     license = lib.licenses.unfree;
     platforms = [ "x86_64-linux" "aarch64-linux" ];
     mainProgram = "tritonserver";

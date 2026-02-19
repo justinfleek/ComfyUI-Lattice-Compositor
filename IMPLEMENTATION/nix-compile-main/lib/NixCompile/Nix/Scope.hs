@@ -23,7 +23,7 @@
 -- (hover info, completions, diagnostics) derives from it.
 --
 -- Reference: Néron, Tolmach, Visser, Wachsmuth. "A Theory of Name Resolution"
--- ESOP 2015. https://doi.org/10.1007/978-3-662-46669-8_9
+--                                                              // esop // 2015
 module NixCompile.Nix.Scope
   ( -- * Core Types
     ScopeGraph (..),
@@ -87,9 +87,9 @@ import Nix.Expr.Types.Annotated
 import Nix.Utils (Path(..))
 import Numeric.Natural (Natural)
 
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 -- Core Types
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | A scope graph for Nix code.
 --
@@ -176,9 +176,9 @@ data EdgeLabel
   deriving stock (Eq, Ord, Show, Generic)
   deriving anyclass (ToDhall)
 
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 -- Source Locations
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 
 data SourceSpan = SourceSpan
   { spanStart :: SourcePos
@@ -193,9 +193,9 @@ data SourcePos = SourcePos
   }
   deriving stock (Eq, Show, Generic)
 
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 -- Construction State
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 
 data BuildState = BuildState
   { bsGraph :: ScopeGraph
@@ -261,9 +261,9 @@ withScope sid action = do
   modify $ \st -> st { bsCurrentScope = old }
   pure result
 
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 -- Construction from Nix
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Create an empty scope graph.
 empty :: ScopeGraph
@@ -291,7 +291,7 @@ fromNixFile = fromNixExpr . Just
 -- | Build scope graph from an already-built module graph.
 fromModuleGraph :: Map FilePath NExprLoc -> ScopeGraph
 fromModuleGraph modules =
-  -- TODO: Build a unified scope graph with import edges between files
+  --                                                                      // todo
   -- For now, just process each file independently
   let graphs = Map.mapWithKey fromNixFile modules
   in case Map.elems graphs of
@@ -499,9 +499,9 @@ addParamDecls scope = \case
         Just expr -> buildExpr expr
         Nothing -> pure ()
 
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 -- Resolution
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 
 data ResolutionError
   = Unresolved Reference
@@ -549,9 +549,9 @@ findPaths sg startScope name = go Set.empty startScope
     -- Sort edges by priority (Parent > Import > With)
     sortEdges = Prelude.id  -- TODO: implement proper ordering
 
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 -- Queries
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Get all declarations visible in a scope.
 declarationsInScope :: ScopeGraph -> ScopeId -> [Declaration]
@@ -588,12 +588,12 @@ findReferences sg decl =
   | scope <- Map.elems (sgScopes sg)
   , r <- scopeReferences scope
   , refName r == declName decl
-  -- TODO: actually resolve to check it points to this decl
+  --                                                                      // todo
   ]
 
--- ============================================================================
--- JSON Export (for zeitschrift)
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                                 // json // e
+-- ════════════════════════════════════════════════════════════════════════════
 
 instance ToJSON ScopeGraph where
   toJSON sg = Aeson.object
@@ -649,9 +649,9 @@ instance ToJSON SourcePos where
     , "col" .= posCol p
     ]
 
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 -- Dhall Export (for zeitschrift)
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 --
 -- We define separate "export" types that match the Dhall schema exactly.
 -- This allows us to use Dhall's generic ToDhall derivation for proper
@@ -794,9 +794,9 @@ toExport sg = ScopeGraphExport
 toDhall :: ScopeGraph -> Text
 toDhall sg = Dhall.pretty (Dhall.embed Dhall.inject (toExport sg))
 
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 -- Utilities
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 
 toSourceSpan :: SrcSpan -> SourceSpan
 toSourceSpan srcSpan =

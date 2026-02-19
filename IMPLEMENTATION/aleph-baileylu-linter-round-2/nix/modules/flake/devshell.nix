@@ -117,7 +117,7 @@ in
         # Single source of truth: build.toolchain.haskell.packages from _main.nix
         # Devshell adds testing/dev packages on top via extra-haskell-packages.
         #
-        # HLS go-to-definition:
+        #                                                                       // hls
         # - For YOUR code: works via hie.yaml (generated in shellHook)
         # - For library code: HLS uses Haddock docs for type info, but source
         #   navigation requires packages built with -fwrite-ide-info (not default).
@@ -158,7 +158,7 @@ in
               ghc-with-all-deps
 
               # ════════════════════════════════════════════════════════════════
-              # LSP servers - go-to-definition works out of the box
+              #                                                                       // lsp
               # ════════════════════════════════════════════════════════════════
 
               # Haskell: HLS with matching GHC version
@@ -184,7 +184,7 @@ in
             ++ optionals (cfg.nv.enable && pkgs ? nvidia-sdk) [
               pkgs.nvidia-sdk
             ]
-            # GHC WASM toolchain for builtins.wasm plugin development
+            #                                                               // ghc // wasm
             ++ optionals (cfg.ghc-wasm.enable && pkgs ? aleph && pkgs.aleph ? ghc-wasm) (
               let
                 inherit (pkgs.aleph) ghc-wasm;
@@ -206,7 +206,7 @@ in
             # Buck2 build system packages (excludes GHC since devshell has its own ghc-with-all-deps)
             # This includes llvm-git, nvidia-sdk, rustc, lean4, python, etc.
             ++ filter (p: !(has-prefix "ghc-" (p.name or ""))) (config.aleph.build.packages or [ ])
-            # LRE packages (nativelink, lre-start)
+            #                                                                       // lre
             ++ (config.aleph.lre.packages or [ ]);
 
             shellHook =

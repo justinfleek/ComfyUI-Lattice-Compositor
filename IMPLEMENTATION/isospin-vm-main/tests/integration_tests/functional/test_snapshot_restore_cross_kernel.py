@@ -1,5 +1,5 @@
 # Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-# SPDX-License-Identifier: Apache-2.0
+#                                                                      // spdx
 
 """Test to restore snapshots across kernel versions."""
 
@@ -125,7 +125,7 @@ def test_snap_restore_from_artifacts(
     check_vsock_device(vm, bin_vsock_path, test_fc_session_root_path, vm.ssh)
 
     # Run fio on the guest.
-    # TODO: check the result of FIO or use fsck to check that the root device is
+    #                                                                      // todo
     # not corrupted. No obvious errors will be returned here.
     guest_run_fio_iteration(vm.ssh, 0)
 

@@ -1,6 +1,6 @@
 # nix/overlays/container/oci.nix
 #
-# OCI image extraction and runners
+#                                                                       // oci
 #
 { final, lib }:
 let

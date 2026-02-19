@@ -1,5 +1,5 @@
 # Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-# SPDX-License-Identifier: Apache-2.0
+#                                                                      // spdx
 """Tests scenarios for Firecracker kvm exit handling."""
 
 import platform

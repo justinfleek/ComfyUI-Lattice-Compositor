@@ -8,9 +8,9 @@
 
 import { ref, computed } from "vue";
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ============================================================================
 // Default Limits (Security-Safe Defaults)
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 
 export interface ValidationLimits {
   // Dimensions
@@ -41,7 +41,7 @@ export interface ValidationLimits {
   maxStringLength: number; // Max string length (default: 100000)
   maxStringLengthAbsolute: number; // Absolute max, never configurable (1000000)
 
-  //                                                                      // fps
+  // FPS
   maxFPS: number; // Max frame rate (default: 120)
   maxFPSAbsolute: number; // Absolute max, never configurable (240)
 }
@@ -80,9 +80,9 @@ const DEFAULT_LIMITS: ValidationLimits = {
   maxFPSAbsolute: 240,
 };
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 // Store
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 
 const STORAGE_KEY = "lattice-validation-limits";
 

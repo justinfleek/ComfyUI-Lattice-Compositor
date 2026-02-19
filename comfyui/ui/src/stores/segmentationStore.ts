@@ -27,9 +27,9 @@ import { storeLogger } from "@/utils/logger";
 import { useLayerStore } from "@/stores/layerStore";
 import { useProjectStore } from "@/stores/projectStore";
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-//                                             // store // access // interface
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
+// STORE ACCESS INTERFACE
+// ============================================================================
 
 export interface SegmentationStoreAccess {
   sourceImage: string | null;
@@ -42,9 +42,9 @@ export interface SegmentationStoreAccess {
   pushHistory(): void;
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-//                                                    // options // interfaces
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
+// OPTIONS INTERFACES
+// ============================================================================
 
 export interface SegmentationOptions {
   model?: "sam2" | "matseg";
@@ -58,9 +58,9 @@ export interface AutoSegmentOptions extends SegmentationOptions {
   namePrefix?: string;
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-//                                                           // pinia // store
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
+// PINIA STORE
+// ============================================================================
 
 export const useSegmentationStore = defineStore("segmentation", {
   state: () => ({

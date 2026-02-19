@@ -16,9 +16,9 @@ import { generateLayerId } from "@/utils/uuid5";
 import { deleteLayer, regenerateKeyframeIds } from "./crud";
 import type { LayerState } from "./types";
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-//                                            // clipboard // state // helpers
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
+// CLIPBOARD STATE HELPERS
+// ============================================================================
 
 /**
  * Set clipboard contents
@@ -51,9 +51,9 @@ export function getClipboardLayers(state: LayerState): Layer[] {
   return JSON.parse(JSON.stringify(state.clipboard.layers));
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-//                                         // layer // clipboard // operations
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
+// LAYER CLIPBOARD OPERATIONS
+// ============================================================================
 
 /**
  * Copy selected layers to clipboard

@@ -19,7 +19,7 @@
 #   2. Logs all fetches (attestation)
 #   3. Enforces domain allowlist policy
 #
-# USAGE:
+#                                                                     // usage
 #
 #   services.nix-proxy = {
 #     enable = true;
@@ -59,7 +59,7 @@ let
   proxy-url = "http://${cfg.listen-address}:${to-string cfg.port}";
 
   # Wrapper script to start mitmproxy with our addon
-  # NOTE: writeShellApplication attrs are quoted - external API
+  #                                                                      // note
   proxy-script = pkgs.writeShellApplication {
     name = "nix-proxy";
     "runtimeInputs" = [ pkgs.mitmproxy ];
@@ -143,7 +143,7 @@ in
       description = "Suppress mitmproxy output (logs still written to log-dir)";
     };
 
-    # R2 cache sync (optional)
+    #                                                                        // r2
     cache.r2 = {
       enable = mk-option {
         type = lib.types.bool;
@@ -171,7 +171,7 @@ in
     };
   };
 
-  # NOTE: NixOS module config attributes are quoted - external API
+  #                                                                      // note
   config = mk-if cfg.enable {
     # Enable the experimental feature required for impure-env
     nix.settings = {

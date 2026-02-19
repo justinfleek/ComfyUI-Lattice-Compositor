@@ -24,7 +24,7 @@ let
   P = prelude;
 
   # ════════════════════════════════════════════════════════════════════════════
-  # TRIVIAL - Core combinators and primitives
+  #                                                                   // trivial
   # ════════════════════════════════════════════════════════════════════════════
   trivial = {
     # The Aleph Prelude provides these directly
@@ -82,7 +82,7 @@ let
     pathExists = P.path-exists;
     readFile = P.read-file;
 
-    # JSON/TOML
+    #                                                                      // json
     importJSON = path: P.from-json (P.read-file path);
     importTOML = path: builtins.fromTOML (P.read-file path);
 
@@ -163,7 +163,7 @@ let
   };
 
   # ════════════════════════════════════════════════════════════════════════════
-  # LISTS - All list operations via Prelude
+  #                                                                     // lists
   # ════════════════════════════════════════════════════════════════════════════
   lists = {
     # Direct mappings from Prelude
@@ -342,7 +342,7 @@ let
   };
 
   # ════════════════════════════════════════════════════════════════════════════
-  # ATTRSETS - All attribute set operations via Prelude
+  #                                                                  // attrsets
   # ════════════════════════════════════════════════════════════════════════════
   attrsets = {
     # Direct mappings
@@ -408,7 +408,7 @@ let
       );
 
     # catAttrs :: String -> [Attrs] -> [a]
-    # NOTE: `or null` here is intentional - this IS the safe accessor pattern.
+    #                                                                      // note
     # We extract the attribute from each attrset (null if missing), then
     # cat-maybes filters out the nulls. This matches nixpkgs lib.catAttrs.
     catAttrs = name: xs: P.cat-maybes (P.map (x: x.${name} or null) xs);
@@ -473,7 +473,7 @@ let
     optionalAttrs = P.when-attr;
 
     # zipAttrsWithNames :: [String] -> (String -> [a] -> b) -> [Attrs] -> Attrs
-    # NOTE: `or null` here is intentional - not every set has every attribute.
+    #                                                                      // note
     # The function f receives the list of values (with nulls for missing attrs)
     # and decides how to combine them. This matches nixpkgs lib.zipAttrsWithNames.
     zipAttrsWithNames =
@@ -577,7 +577,7 @@ let
   };
 
   # ════════════════════════════════════════════════════════════════════════════
-  # STRINGS - All string operations via Prelude
+  #                                                                   // strings
   # ════════════════════════════════════════════════════════════════════════════
   strings = {
     # Direct mappings
@@ -818,7 +818,7 @@ let
   };
 
   # ════════════════════════════════════════════════════════════════════════════
-  # FIXED POINTS
+  #                                                           // fixed // points
   # ════════════════════════════════════════════════════════════════════════════
   fixedPoints = {
     inherit (P) fix;
@@ -881,7 +881,7 @@ let
   };
 
   # ════════════════════════════════════════════════════════════════════════════
-  # DEBUG
+  #                                                                     // debug
   # ════════════════════════════════════════════════════════════════════════════
   debug = {
     inherit (P) trace;
@@ -925,7 +925,7 @@ let
   };
 
   # ════════════════════════════════════════════════════════════════════════════
-  # ASSERTS
+  #                                                                   // asserts
   # ════════════════════════════════════════════════════════════════════════════
   asserts = {
     assertMsg = P.assert-msg;
@@ -935,7 +935,7 @@ let
   };
 
   # ════════════════════════════════════════════════════════════════════════════
-  # THE UNIFIED LIB
+  #                                                     // the // unified // lib
   # ════════════════════════════════════════════════════════════════════════════
   lib =
     trivial

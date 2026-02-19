@@ -8,10 +8,10 @@
 #
 #                                                         — Neuromancer
 #
-# VM init scripts for Isospin (Firecracker) and Cloud Hypervisor.
+#                                                                        // vm
 # Scripts are in ./scripts/ and loaded via builtins.readFile.
 #
-# TODO: Replace with Nimi (github:weyl-ai/nimi) service definitions.
+#                                                                      // todo
 #
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 {

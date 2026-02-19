@@ -1,5 +1,5 @@
 # Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-# SPDX-License-Identifier: Apache-2.0
+#                                                                      // spdx
 """Tests that the seccomp filters don't let denied syscalls through."""
 
 import json
@@ -210,7 +210,7 @@ def test_seccomp_rust_panic(bin_seccomp_paths, seccompiler):
         # The demo panic binary should have terminated with SIGABRT
         # and not with a seccomp violation.
         # On a seccomp violation, the program exits with code -31 for
-        # SIGSYS. Here, we make sure the program exits with -6, which
+        #                                                                    // sigsys
         # is for SIGABRT.
         assert (
             code == -6

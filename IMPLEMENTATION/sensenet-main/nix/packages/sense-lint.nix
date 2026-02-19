@@ -1,6 +1,6 @@
 # nix/packages/sense-lint.nix
 #
-# AST-grep wrapper for Nix linting with sense rules.
+#                                                                       // ast
 #
 { pkgs, lib }:
 let

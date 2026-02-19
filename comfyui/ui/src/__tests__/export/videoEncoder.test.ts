@@ -19,9 +19,9 @@ import {
   type EncodedVideo,
 } from "@/services/export/videoEncoder";
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ============================================================
 // PURE FUNCTION TESTS (Node.js compatible)
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================
 
 describe("videoEncoder: isWebCodecsSupported", () => {
   it("returns false in Node.js environment (no WebCodecs)", () => {
@@ -39,9 +39,9 @@ describe("videoEncoder: getSupportedCodecs", () => {
   });
 });
 
-// ═══════════════════════════════════════════════════════════════════════════
-//                                               // type // structure // tests
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================
+// TYPE STRUCTURE TESTS
+// ============================================================
 
 describe("videoEncoder: Type Structures", () => {
   it("VideoEncoderConfig has correct structure", () => {
@@ -116,9 +116,9 @@ describe("videoEncoder: Type Structures", () => {
   });
 });
 
-// ═══════════════════════════════════════════════════════════════════════════
-//                                            // browser // dependent // tests
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================
+// BROWSER-DEPENDENT TESTS
+// ============================================================
 //
 // The following browser-dependent functionality is tested in E2E:
 //

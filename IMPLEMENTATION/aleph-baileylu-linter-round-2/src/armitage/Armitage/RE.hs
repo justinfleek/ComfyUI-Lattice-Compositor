@@ -85,9 +85,9 @@ import Network.GRPC.Common (def)
 
 import qualified Armitage.CAS as CAS
 
--- -----------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Configuration
--- -----------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | RE client configuration
 data REConfig = REConfig
@@ -126,9 +126,9 @@ nativeLinkConfig =
         , reCASConfig = CAS.flyConfig
         }
 
--- -----------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Types (matching REAPI protos)
--- -----------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Platform requirements for execution
 data Platform = Platform
@@ -240,9 +240,9 @@ data ExecuteResponse = ExecuteResponse
     }
     deriving (Show, Eq, Generic)
 
--- -----------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Directory tree types
--- -----------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | A directory in the Merkle tree
 data Directory = Directory
@@ -278,9 +278,9 @@ data SymlinkNode = SymlinkNode
     }
     deriving (Show, Eq, Generic)
 
--- -----------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Client
--- -----------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Opaque RE client handle
 data REClient = REClient
@@ -314,14 +314,14 @@ withREClient config action = do
                     , recCAS = casClient
                     }
 
--- -----------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Execution
--- -----------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Execute an action (non-blocking, returns operation)
 execute :: REClient -> ExecuteRequest -> IO ExecuteResponse
 execute client req = do
-    -- TODO: actual gRPC call to Execution.Execute
+    --                                                                      // todo
     -- This is a streaming RPC that returns Operation updates
     putStrLn $ "RE: execute action " <> T.unpack (CAS.digestHash $ actionCommandDigest $ erAction req)
     pure
@@ -343,7 +343,7 @@ executeAndWait client req = do
     -- 2. Poll until done
     let poll opName = do
             threadDelay 100000 -- 100ms
-            -- TODO: call Operations.GetOperation
+            --                                                                      // todo
             -- For now, simulate completion
             pure $
                 Right
@@ -380,18 +380,18 @@ executeAndWait client req = do
 -- | Get cached action result (if exists)
 getActionResult :: REClient -> CAS.Digest -> IO (Maybe ActionResult)
 getActionResult client actionDigest = do
-    -- TODO: call ActionCache.GetActionResult
+    --                                                                      // todo
     putStrLn $ "RE: getActionResult " <> T.unpack (CAS.digestHash actionDigest)
     pure Nothing
 
--- -----------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Directory operations
--- -----------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Upload a directory tree to CAS, return root digest
 uploadDirectory :: REClient -> FilePath -> IO CAS.Digest
 uploadDirectory client path = do
-    -- TODO: walk directory, build Merkle tree, upload all blobs
+    --                                                                      // todo
     putStrLn $ "RE: uploadDirectory " <> path
     pure $ CAS.Digest "stubhash" 0
 
@@ -427,5 +427,5 @@ computeInputRoot client files = do
 -- | Serialize a Directory (stub - would use protobuf)
 serializeDirectory :: Directory -> ByteString
 serializeDirectory dir =
-    -- TODO: proper protobuf serialization
+    --                                                                      // todo
     BC.pack $ show dir

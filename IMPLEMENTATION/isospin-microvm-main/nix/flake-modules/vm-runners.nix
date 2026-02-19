@@ -1,6 +1,6 @@
 # nix/flake-modules/vm-runners.nix
 #
-# GPU Broker Demo Stack - Runnable applications for demonstrating GPU multiplexing
+#                                                                  // gpu // b
 #
 # ════════════════════════════════════════════════════════════════════════════════
 # Architecture Overview
@@ -503,10 +503,10 @@
           # Sys filesystem (needed for GPU detection)
           --ro-bind /sys /sys
           
-          # DNS resolution
+          #                                                                       // dns
           --ro-bind /etc/resolv.conf /etc/resolv.conf
           
-          # NVIDIA devices (if they exist)
+          #                                                                    // nvidia
         )
 
         # Add NVIDIA device nodes
@@ -525,7 +525,7 @@
           done
         fi
 
-        # NVIDIA driver libraries from host (if container doesn't have them)
+        #                                                                    // nvidia
         # This handles the case where the container expects host-mounted drivers
         for lib_path in /usr/lib/x86_64-linux-gnu /usr/lib64; do
           if [ -d "$lib_path" ]; then

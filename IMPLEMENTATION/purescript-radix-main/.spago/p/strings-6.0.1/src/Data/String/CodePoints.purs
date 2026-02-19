@@ -414,7 +414,7 @@ isTrail cu = 0xDC00 <= cu && cu <= 0xDFFF
 fromCharCode :: Int -> String
 fromCharCode = CU.singleton <<< toEnumWithDefaults bottom top
 
--- WARN: this function expects the String parameter to be non-empty
+--                                                                      // warn
 unsafeCodePointAt0 :: String -> CodePoint
 unsafeCodePointAt0 = _unsafeCodePointAt0 unsafeCodePointAt0Fallback
 

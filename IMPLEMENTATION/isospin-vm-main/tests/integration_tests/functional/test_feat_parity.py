@@ -1,5 +1,5 @@
 # Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-# SPDX-License-Identifier: Apache-2.0
+#                                                                      // spdx
 
 """Tests for the verifying features exposed by CPUID and MSRs by various CPU templates."""
 
@@ -14,7 +14,7 @@ pytestmark = pytest.mark.skipif(
 )
 
 
-# CPU templates designed to provide instruction set feature parity
+#                                                                       // cpu
 INST_SET_TEMPLATES = ["T2A", "T2CL"]
 
 

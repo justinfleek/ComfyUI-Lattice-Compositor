@@ -14,9 +14,9 @@ import { useSelectionStore } from "../selectionStore";
 import { useProjectStore } from "../projectStore";
 import { createLayer, deleteLayer } from "./crud";
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-//                                       // text // to // spline // conversion
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
+// TEXT TO SPLINE CONVERSION
+// ============================================================================
 
 export interface ConvertTextToSplinesOptions {
   /** Create separate layer per character */
@@ -228,9 +228,9 @@ export async function convertTextLayerToSplines(
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-//                                                      // helper // functions
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
+// HELPER FUNCTIONS
+// ============================================================================
 
 /**
  * Convert BezierPath vertices to ControlPoint format

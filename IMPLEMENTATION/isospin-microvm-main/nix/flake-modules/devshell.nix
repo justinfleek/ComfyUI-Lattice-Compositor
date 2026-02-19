@@ -89,7 +89,7 @@
             cargo-watch
             rust-analyzer
 
-            # CLI Tools
+            #                                                                  // cli // t
             ripgrep
             fd
             jq

@@ -11,7 +11,7 @@ let
   # Import the canonical flat versions file (no args needed)
   versions = import ../nix/versions.nix;
 
-  # CUDA-Driver compatibility (mirrors nix/lib/validators.nix)
+  #                                                                      // cuda
   compatMatrix = {
     "13.0.0" = { minDriver = "580.65.06"; status = "legacy"; };
     "13.0.1" = { minDriver = "580.82.07"; status = "legacy"; };
@@ -21,7 +21,7 @@ let
 
   # Generate compatibility matrix
   compatibilityMatrix = pkgs.writeText "compatibility-matrix.md" ''
-    # CUDA Version Compatibility Matrix
+    #                                                                 // cuda // v
 
     Automatically generated from nix/versions.nix
 
@@ -41,7 +41,7 @@ let
     ## Checking Your Versions
 
     ```bash
-    # CUDA version
+    #                                                                      // cuda
     nvcc --version
 
     # Driver version

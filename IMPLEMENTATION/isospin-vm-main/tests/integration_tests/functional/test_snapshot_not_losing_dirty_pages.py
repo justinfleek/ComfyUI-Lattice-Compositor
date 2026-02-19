@@ -1,5 +1,5 @@
 # Copyright 2024 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-# SPDX-License-Identifier: Apache-2.0
+#                                                                      // spdx
 """Test that the no dirty pages lost in case of error during snapshot creation."""
 
 import subprocess

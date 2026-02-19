@@ -142,7 +142,7 @@ lastDayOfMonth y m = case m of
   where
     unsafeDay = unsafePartial fromJust <<< toEnum
 
--- TODO: these could (and probably should) be implemented in PS
+--                                                                      // todo
 foreign import canonicalDateImpl :: Fn4 (Year -> Int -> Day -> Date) Year Int Day Date
 foreign import calcWeekday :: Fn3 Year Int Day Int
 foreign import calcDiff :: Fn6 Year Int Day Year Int Day Milliseconds

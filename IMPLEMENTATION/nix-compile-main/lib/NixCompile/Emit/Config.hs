@@ -18,7 +18,7 @@
 --     "host": "${HOST}"
 --   }
 -- }
--- EOF
+--                                                                       // eof
 -- @
 --
 -- You write:
@@ -190,7 +190,7 @@ detectCollisions paths = go paths
 
 -- | Build a config tree from flat config specs
 -- [["server", "port"]] -> { server: { port: ... } }
--- NOTE: Use buildConfigTreeSafe to detect collisions first
+--                                                                      // note
 buildConfigTree :: Map ConfigPath ConfigSpec -> ConfigTree
 buildConfigTree specs = foldr insertPath (ConfigBranch Map.empty) (Map.toList specs)
   where
@@ -209,7 +209,7 @@ buildConfigTree specs = foldr insertPath (ConfigBranch Map.empty) (Map.toList sp
 
 -- | Generate the emit-config bash function
 -- This function will be injected into the script at build time
--- NOTE: Does NOT use heredocs (that would violate our own policy)
+--                                                                      // note
 emitConfigFunction :: Schema -> Doc AnsiStyle
 emitConfigFunction schema =
   vsep
@@ -348,7 +348,7 @@ renderYamlValue ConfigSpec {..} =
             TVar _ -> True
             _ -> False
        in if asString
-             -- YAML strings should be quoted for safety (may contain special chars)
+             --                                                                      // yaml
              then [LitSegment "\"", EscapedVarSegment var, LitSegment "\""]
              else [VarSegment var]
     _ ->
@@ -415,7 +415,7 @@ renderTomlValue ConfigSpec {..} =
             TVar _ -> True
             _ -> False
        in if asString
-             -- TOML strings need surrounding quotes
+             --                                                                      // toml
              then [LitSegment "\"", EscapedVarSegment var, LitSegment "\""]
              else [VarSegment var]
     _ ->

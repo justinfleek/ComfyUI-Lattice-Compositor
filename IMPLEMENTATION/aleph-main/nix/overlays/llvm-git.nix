@@ -50,7 +50,7 @@ let
         # Skip compiler-rt - CUDA doesn't require it and avoids i386 issues
       ];
 
-      # LLVM is huge, enable parallel building
+      #                                                                      // llvm
       enable-parallel-building = true;
 
       meta = {

@@ -82,4 +82,4 @@ foreign import setType :: String -> HTMLLinkElement -> Effect Unit
 
 --   [PutForwards=value] readonly attribute DOMSettableTokenList sizes;
 
--- HTMLLinkElement implements LinkStyle;
+--                                                                     // htmll

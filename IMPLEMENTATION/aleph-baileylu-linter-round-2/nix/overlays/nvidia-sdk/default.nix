@@ -44,7 +44,7 @@ let
           final.gzip
         ];
 
-        # SSL certs for HTTPS
+        #                                                                       // ssl
         SSL_CERT_FILE = "${final.cacert}/etc/ssl/certs/ca-bundle.crt";
 
         meta = {
@@ -52,7 +52,7 @@ let
         };
       }
       // {
-        # NOTE: FOD attrs are nixpkgs API, quoted
+        #                                                                      // note
         "outputHashAlgo" = "sha256";
         "outputHashMode" = "recursive";
         "outputHash" = hash;

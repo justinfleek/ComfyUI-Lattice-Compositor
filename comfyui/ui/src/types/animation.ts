@@ -1,8 +1,8 @@
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ============================================================
 // ANIMATION TYPES - Keyframes, Properties, Interpolation
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================
 // Extracted from project.ts for better modularity
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================
 
 /**
  * Animatable property with optional keyframes and expressions
@@ -102,9 +102,9 @@ export type EasingType =
 // Combined interpolation type (base types + easing functions)
 export type InterpolationType = BaseInterpolationType | EasingType;
 
-// ═══════════════════════════════════════════════════════════════════════════
-//                                               // property // value // types
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================
+// PROPERTY VALUE TYPES
+// ============================================================
 
 /**
  * All possible values that can be stored in keyframes.
@@ -128,9 +128,9 @@ export interface ClipboardKeyframe {
   keyframes: Keyframe<PropertyValue>[];
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-//                                                      // helper // functions
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================
+// HELPER FUNCTIONS
+// ============================================================
 
 /**
  * Create a new animatable property with default values

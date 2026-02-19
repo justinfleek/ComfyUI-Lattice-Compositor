@@ -12,9 +12,9 @@ from hypothesis import given, settings, assume
 from hypothesis import strategies as st
 
 
-# ============================================================================
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 # Reference implementations
-# ============================================================================
+# ════════════════════════════════════════════════════════════════════════════
 
 def reference_key_centering(
     key: np.ndarray,  # [batch, heads, seq, dim]
@@ -72,9 +72,9 @@ def reference_score_correction(
     return np.matmul(query_group_mean, key_t)
 
 
-# ============================================================================
+# ════════════════════════════════════════════════════════════════════════════
 # Hypothesis strategies
-# ============================================================================
+# ════════════════════════════════════════════════════════════════════════════
 
 @st.composite
 def attention_dims(draw, max_batch=4, max_heads=8, max_seq=64, max_dim=32):
@@ -100,9 +100,9 @@ def random_tensor(shape, scale=0.1):
     return np.random.randn(*shape).astype(np.float32) * scale
 
 
-# ============================================================================
+# ════════════════════════════════════════════════════════════════════════════
 # Property tests: Key centering
-# ============================================================================
+# ════════════════════════════════════════════════════════════════════════════
 
 class TestKeyCentering:
     """Property tests for key centering operation."""
@@ -176,9 +176,9 @@ class TestKeyCentering:
         assert np.allclose(centered1, centered2, atol=1e-5)
 
 
-# ============================================================================
+# ════════════════════════════════════════════════════════════════════════════
 # Property tests: Query group mean
-# ============================================================================
+# ════════════════════════════════════════════════════════════════════════════
 
 class TestQueryGroupMean:
     """Property tests for query group mean operation."""
@@ -269,9 +269,9 @@ class TestQueryGroupMean:
         assert np.allclose(group_means, expected_mean, atol=1e-5)
 
 
-# ============================================================================
+# ════════════════════════════════════════════════════════════════════════════
 # Property tests: Score correction identity
-# ============================================================================
+# ════════════════════════════════════════════════════════════════════════════
 
 class TestScoreCorrection:
     """Property tests for the score correction mathematical identity."""
@@ -358,9 +358,9 @@ class TestScoreCorrection:
         assert np.allclose(original, reconstructed, atol=1e-4)
 
 
-# ============================================================================
+# ════════════════════════════════════════════════════════════════════════════
 # Property tests: Workspace requirements
-# ============================================================================
+# ════════════════════════════════════════════════════════════════════════════
 
 class TestWorkspaceRequirements:
     """Property tests for workspace size computation."""

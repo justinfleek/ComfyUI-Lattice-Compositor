@@ -20,9 +20,9 @@ import type { ExportConfig, ExportProgress } from "@/types/export";
 import type { CameraKeyframe } from "@/types/camera";
 import type { Layer } from "@/types/project";
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-//                                               // type // structure // tests
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================
+// TYPE STRUCTURE TESTS
+// ============================================================
 
 describe("exportPipeline: Type Structures", () => {
   it("ExportConfig has correct structure", () => {
@@ -140,9 +140,9 @@ describe("exportPipeline: Type Structures", () => {
   });
 });
 
-// ═══════════════════════════════════════════════════════════════════════════
-//                                     // configuration // validation // tests
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================
+// CONFIGURATION VALIDATION TESTS
+// ============================================================
 
 describe("exportPipeline: Configuration Validation", () => {
   it("valid targets are accepted", () => {
@@ -229,9 +229,9 @@ describe("exportPipeline: Configuration Validation", () => {
   });
 });
 
-// ═══════════════════════════════════════════════════════════════════════════
-//                                            // browser // dependent // tests
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================
+// BROWSER-DEPENDENT TESTS
+// ============================================================
 //
 // The following browser-dependent functionality is tested in E2E:
 //

@@ -1,6 +1,6 @@
 # Run with:
-#   NIX_SHOW_STATS=1 nix eval --expr 'import ./measure-bytes-per-char.nix { control = false; size = 10; }' --impure
-#   NIX_SHOW_STATS=1 nix eval --expr 'import ./measure-bytes-per-char.nix { control = true; size = 10; }' --impure
+#                                                      // nix // show // stats
+#                                                      // nix // show // stats
 
 { control ? false, size ? 10 }:
 

@@ -1,5 +1,5 @@
 # Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-# SPDX-License-Identifier: Apache-2.0
+#                                                                      // spdx
 """Basic tests scenarios for snapshot save/restore."""
 
 import platform

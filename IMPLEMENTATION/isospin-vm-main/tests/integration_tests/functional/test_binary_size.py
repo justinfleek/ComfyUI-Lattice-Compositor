@@ -1,5 +1,5 @@
 # Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-# SPDX-License-Identifier: Apache-2.0
+#                                                                      // spdx
 """Tests that check if the release binary sizes fall within expected size.
 
 This is not representative of the actual memory overhead of Firecracker.

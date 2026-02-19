@@ -32,9 +32,9 @@ import qualified Nix.Utils as Nix
 import NixCompile.Nix.Infer (inferExpr, InferResult(..))
 import NixCompile.Nix.Annotate (annotateSource)
 
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 -- Formatting
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Format a Nix file with type annotations
 formatFile :: FilePath -> IO (Either Text Text)

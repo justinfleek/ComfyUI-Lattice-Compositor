@@ -101,7 +101,7 @@ writeShellApplication {
     export CUDA_HOME="${cuda}"
     export CUDA_VISIBLE_DEVICES="${cudaDevices}"
     
-    # NCCL configuration for multi-GPU
+    #                                                                      // nccl
     export NCCL_DEBUG=''${NCCL_DEBUG:-WARN}
     export NCCL_IB_DISABLE=1
     export NCCL_P2P_LEVEL=PHB

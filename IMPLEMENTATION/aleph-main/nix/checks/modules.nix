@@ -1,11 +1,11 @@
-# ==============================================================================
-#                         ALEPH MODULE COMPILATION TESTS
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+#                                   // aleph // module // compilation // tests
 #
 #  Verifies that all Aleph.* modules compile successfully.
 #  This catches import errors, type errors, and missing dependencies.
 #
 #  We use GHC's --make mode which handles dependency ordering automatically.
-# ==============================================================================
+# ════════════════════════════════════════════════════════════════════════════
 {
   pkgs,
   system,
@@ -52,9 +52,9 @@ let
         dhall text --file ${src} > $out
       '';
 
-  # ==============================================================================
-  # TEST: aleph-modules
-  # ==============================================================================
+  # ════════════════════════════════════════════════════════════════════════════
+  #                                                                      // test
+  # ════════════════════════════════════════════════════════════════════════════
   # Compile all Aleph.* modules using GHC's --make mode.
   # This automatically handles dependency ordering and verifies everything compiles.
 
@@ -82,9 +82,9 @@ let
     };
   };
 
-  # ==============================================================================
-  # TEST: aleph-compiled-scripts
-  # ==============================================================================
+  # ════════════════════════════════════════════════════════════════════════════
+  #                                                                      // test
+  # ════════════════════════════════════════════════════════════════════════════
   # Verify all compiled scripts in aleph.script.compiled build successfully
 
   script-names = [

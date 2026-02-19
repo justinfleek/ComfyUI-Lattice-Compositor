@@ -21,7 +21,7 @@ let
       # https://github.com/hercules-ci/flake-parts/issues/326
       { ... }:
       {
-        # TODO: set key?
+        #                                                                      // todo
         _class = class;
         _file = "${toString moduleLocation}#modules.${escapeNixIdentifier class}.${escapeNixIdentifier moduleName}";
         imports = [ module ];

@@ -180,9 +180,9 @@ buildArgs Options{..} =
     mkExtra :: (Text, Text) -> Text
     mkExtra (name, val) = "-D" <> name <> "=" <> val
 
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 -- Tests - compare against known-good flags from libmodern-cpp
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 
 {- | Test: zlib-ng flags match libmodern-cpp/nix/packages/zlib-ng/default.nix
 

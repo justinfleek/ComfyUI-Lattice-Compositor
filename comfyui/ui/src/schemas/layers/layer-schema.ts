@@ -35,9 +35,9 @@ import {
   MAX_NAME_LENGTH,
 } from "../shared-validation";
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ============================================================================
 // Layer Type
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 
 /**
  * All layer types supported by the compositor.
@@ -73,41 +73,41 @@ export const LayerTypeSchema = z.enum([
 
 export type LayerType = z.infer<typeof LayerTypeSchema>;
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 // Matte Types
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 
 import { MatteTypeSchema as MatteTypeSchemaFull } from "../masks/masks-schema";
 export { MatteTypeSchemaFull as MatteTypeSchema };
 export type { MatteType } from "../masks/masks-schema";
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 // Effect Instance
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 
 import { EffectInstanceSchema as EffectInstanceSchemaFull } from "../effects/effects-schema";
 export { EffectInstanceSchemaFull as EffectInstanceSchema };
 export type { EffectInstance } from "../effects/effects-schema";
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 // Layer Mask
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 
 import { LayerMaskSchema as LayerMaskSchemaFull, MaskModeSchema as MaskModeSchemaFull } from "../masks/masks-schema";
 export { LayerMaskSchemaFull as LayerMaskSchema, MaskModeSchemaFull as MaskModeSchema };
 export type { LayerMask, MaskMode } from "../masks/masks-schema";
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 // Layer Styles
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 
 import { LayerStylesSchema as LayerStylesSchemaFull } from "../layerStyles/layerStyles-schema";
 export { LayerStylesSchemaFull as LayerStylesSchema };
 export type { LayerStyles } from "../layerStyles/layerStyles-schema";
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 // Audio Settings
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 
 export const LayerAudioSchema = z.object({
   level: AnimatableNumberSchema,
@@ -115,9 +115,9 @@ export const LayerAudioSchema = z.object({
 
 export type LayerAudio = z.infer<typeof LayerAudioSchema>;
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 // Main Layer Schema
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 
 /**
  * Complete Layer schema for validation.
@@ -204,9 +204,9 @@ export const LayerSchema = z.object({
 
 export type Layer = z.infer<typeof LayerSchema>;
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 // Validation Helpers
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 
 /**
  * Validate a layer object.

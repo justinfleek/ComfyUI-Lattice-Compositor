@@ -161,7 +161,7 @@ let
         rest
         // {
           inherit name;
-          # FOD configuration
+          #                                                                       // fod
           output-hash-algo = hash-algo;
           output-hash-mode = hash-mode;
           output-hash = hash;

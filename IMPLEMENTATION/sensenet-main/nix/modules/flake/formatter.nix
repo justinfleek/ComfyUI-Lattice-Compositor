@@ -81,7 +81,7 @@ in
     cpp = {
       enable-clang-tidy = lib.mkOption {
         type = lib.types.bool;
-        # TODO: Re-enable once clang-tidy is integrated into Buck2 build.
+        #                                                                      // todo
         # Disabled - compile_commands.json has absolute paths that don't exist
         # in Nix sandbox. Will run as part of buck2 build //src:lint instead.
         default = false;
@@ -311,7 +311,7 @@ in
               includes = cpp-includes;
             };
 
-            # ── cpp // cppcheck ──────────────────────────────────────────────────
+            # ── cpp // cppcheck ────────────────────────────────────────────
 
             cppcheck = lib.mkIf cfg.cpp.enable-cppcheck {
               command = cppcheck-wrapper;

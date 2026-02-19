@@ -19,9 +19,9 @@ import {
   type EffectInstance,
 } from "@/types/effects";
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-//                                              // constants // for // testing
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================
+// CONSTANTS FOR TESTING
+// ============================================================
 
 // All valid effect parameter types
 const PARAM_TYPES: EffectParameterType[] = [
@@ -41,9 +41,9 @@ const PARAM_TYPES: EffectParameterType[] = [
 // Get all valid effect definition keys
 const EFFECT_KEYS = Object.keys(EFFECT_DEFINITIONS);
 
-// ═══════════════════════════════════════════════════════════════════════════
-//                                                              // arbitraries
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================
+// ARBITRARIES
+// ============================================================
 
 const paramTypeArb = fc.constantFrom(...PARAM_TYPES);
 const effectKeyArb = fc.constantFrom(...EFFECT_KEYS);
@@ -52,9 +52,9 @@ const invalidKeyArb = fc.string({ minLength: 1, maxLength: 50 }).map(
   (s) => `__invalid__${s}__`
 );
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================
 // getAnimatableType TESTS
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================
 
 describe("PROPERTY: getAnimatableType", () => {
   it("returns valid animatable type for all parameter types", () => {
@@ -104,9 +104,9 @@ describe("PROPERTY: getAnimatableType", () => {
   });
 });
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================
 // createEffect TESTS
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================
 
 describe("PROPERTY: createEffect", () => {
   it("returns null for invalid definition keys", () => {
@@ -200,9 +200,9 @@ describe("PROPERTY: createEffect", () => {
   });
 });
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================
 // createEffectInstance TESTS
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================
 
 describe("PROPERTY: createEffectInstance", () => {
   it("returns null for invalid definition keys", () => {
@@ -304,9 +304,9 @@ describe("PROPERTY: createEffectInstance", () => {
   });
 });
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================
 // createMeshDeformEffectInstance TESTS
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================
 
 describe("PROPERTY: createMeshDeformEffectInstance", () => {
   it("returns MeshDeformEffectInstance or null", () => {
@@ -364,9 +364,9 @@ describe("PROPERTY: createMeshDeformEffectInstance", () => {
   });
 });
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================
 // isMeshDeformEffect TESTS
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================
 
 describe("PROPERTY: isMeshDeformEffect", () => {
   it("returns true for MeshDeformEffectInstance", () => {
@@ -414,9 +414,9 @@ describe("PROPERTY: isMeshDeformEffect", () => {
   });
 });
 
-// ═══════════════════════════════════════════════════════════════════════════
-//                                           // effect // definitions // tests
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================
+// EFFECT_DEFINITIONS TESTS
+// ============================================================
 
 describe("PROPERTY: EFFECT_DEFINITIONS", () => {
   it("has at least one effect defined", () => {

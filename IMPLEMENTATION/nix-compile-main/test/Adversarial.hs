@@ -48,9 +48,9 @@ import NixCompile.Pretty (toText)
 -- import NixCompile.Types hiding (TypeVar)
 -- import qualified NixCompile.Types as T
 
--- ============================================================================
--- GENERATORS: Adversarial Input Generation
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                                // generators
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Generate valid variable names (conforming to POSIX)
 genValidVarName :: Gen Text
@@ -317,9 +317,9 @@ genCommand = oneof
   , do cmd <- elements ["echo", "printf", "test"]; pure (cmd <> " hello")
   ]
 
--- ============================================================================
--- ARBITRARY INSTANCES
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                    // arbitrary // instances
+-- ════════════════════════════════════════════════════════════════════════════
 
 instance Arbitrary Text where
   arbitrary = genArbitraryText
@@ -355,9 +355,9 @@ instance Arbitrary ConfigSpec where
     <*> oneof [Just <$> genLiteral, pure Nothing]
     <*> genSpan
 
--- ============================================================================
--- ALGEBRAIC PROPERTIES
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                   // algebraic // properties
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | PROP-1: Unification is reflexive
 prop_unify_reflexive :: Type -> Bool
@@ -412,9 +412,9 @@ prop_schema_deterministic facts =
   let s = emptySubst
   in buildSchema facts s == buildSchema facts s
 
--- ============================================================================
--- PARSER SAFETY PROPERTIES
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                            // parser // safety // properties
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | PROP-9: parseLiteral never crashes on any input
 prop_literal_no_crash :: Text -> Bool
@@ -460,9 +460,9 @@ prop_bash_no_crash t = monadicIO $ do
     Left _ -> True   -- Exception is a bug, but don't crash the test
     Right _ -> True
 
--- ============================================================================
--- SPECIFICATION CONFORMANCE
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                              // specification // conformance
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Test vector: parameter expansion parsing
 prop_expansion_test_vectors :: Property
@@ -517,9 +517,9 @@ prop_overflow_becomes_string = conjoin
       _ -> False
   ]
 
--- ============================================================================
--- SECURITY PROPERTIES
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                    // security // properties
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | SEC-1: Variable names must be valid
 prop_varname_valid :: Property
@@ -558,9 +558,9 @@ prop_store_path_no_traversal :: Property
 prop_store_path_no_traversal = forAll genTraversalPath $ \path ->
   ".." `T.isInfixOf` path ==> not (isStorePath path)
 
--- ============================================================================
--- EMIT-CONFIG PROPERTIES
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                                      // emit
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | emitConfigFunction produces valid bash (no heredocs)
 prop_emit_no_heredoc :: [Fact] -> Bool
@@ -582,9 +582,9 @@ prop_emit_escaped = forAll genLiteral $ \lit ->
          || "\\\"" `T.isInfixOf` output || "\\n" `T.isInfixOf` output
        _ -> True
 
--- ============================================================================
--- STRESS TESTS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                           // stress // tests
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Large script doesn't crash
 prop_stress_large_script :: Property
@@ -639,9 +639,9 @@ prop_stress_chain =
                 let facts = extractFacts ast
                 in property $ length facts >= n
 
--- ============================================================================
--- BOUNDED RESOURCE TESTS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                              // bounded // resource // tests
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Parsing completes in bounded time (1 second)
 prop_bounded_time :: Property
@@ -657,9 +657,9 @@ prop_no_memory_bomb = forAll genMalformedExpansion $ \expansion ->
   let bomb = T.replicate 100 expansion
   in parseBash bomb `seq` True
 
--- ============================================================================
--- ROUNDTRIP PROPERTIES
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                   // roundtrip // properties
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Literal type is preserved through parsing
 prop_literal_type_preserved :: Literal -> Bool
@@ -672,9 +672,9 @@ prop_literal_type_preserved lit =
     renderLiteral (LitString s) = s
     renderLiteral (LitPath (StorePath p)) = p
 
--- ============================================================================
--- MAIN TEST RUNNER
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                    // main // test // runner
+-- ════════════════════════════════════════════════════════════════════════════
 
 main :: IO ()
 main = do

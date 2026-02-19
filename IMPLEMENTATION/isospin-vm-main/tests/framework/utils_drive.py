@@ -1,5 +1,5 @@
 # Copyright 2023 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-# SPDX-License-Identifier: Apache-2.0
+#                                                                      // spdx
 
 """Utilities for vhost-user-blk backend."""
 
@@ -35,7 +35,7 @@ def partuuid_and_disk_path(rootfs, disk_path):
     ptuuid = check_output(
         f"blkid -s PTUUID -o value {disk_path}", shell=True, encoding="ascii"
     ).strip()
-    # PARTUUID for an msdos partition table is PTUUID-<PART NUMBER>
+    #                                                                  // partuuid
     partuuid = ptuuid + "-01"
 
     return (partuuid, disk_path)

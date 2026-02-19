@@ -1,5 +1,5 @@
 # Copyright 2024 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-# SPDX-License-Identifier: Apache-2.0
+#                                                                      // spdx
 
 """
 Creates snapshots for other tests like test_snapshot_restore_cross_kernel.py
@@ -73,7 +73,7 @@ def test_snapshot_phase1(
         }
     }
 
-    # MMDS should be empty.
+    #                                                                      // mmds
     assert vm.api.mmds.get().json() == {}
     # Populate MMDS with data.
     vm.api.mmds.put(**data_store)

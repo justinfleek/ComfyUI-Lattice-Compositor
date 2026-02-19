@@ -24,9 +24,9 @@ import type { Layer } from "@/types/project";
 import { layerLogger } from "@/utils/logger";
 import { BaseLayer } from "./BaseLayer";
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-//                                                                    // types
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
+// TYPES
+// ============================================================================
 
 export interface EffectLayerRenderContext {
   /** Function to render layers below this one to a texture */
@@ -43,9 +43,9 @@ export interface EffectLayerRenderContext {
 // Legacy alias for backwards compatibility
 export type AdjustmentRenderContext = EffectLayerRenderContext;
 
-// ═══════════════════════════════════════════════════════════════════════════
-//                                                          // effect // layer
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
+// EFFECT LAYER
+// ============================================================================
 
 export class EffectLayer extends BaseLayer {
   // Render context (provided by LayerManager)
@@ -81,9 +81,9 @@ export class EffectLayer extends BaseLayer {
     layerLogger.debug(`EffectLayer created: ${this.id}`);
   }
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  //                                                           // initialization
-  // ═══════════════════════════════════════════════════════════════════════════
+  // ============================================================================
+  // INITIALIZATION
+  // ============================================================================
 
   /**
    * Create display mesh (full-screen quad for effect result)
@@ -126,9 +126,9 @@ export class EffectLayer extends BaseLayer {
     this.effectCtx = this.effectCanvas.getContext("2d");
   }
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  //                                                        // render // context
-  // ═══════════════════════════════════════════════════════════════════════════
+  // ============================================================================
+  // RENDER CONTEXT
+  // ============================================================================
 
   /**
    * Set the render context (required for effect layer rendering)
@@ -156,9 +156,9 @@ export class EffectLayer extends BaseLayer {
     return [...this.affectedLayerIds];
   }
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  //                                                      // frame // evaluation
-  // ═══════════════════════════════════════════════════════════════════════════
+  // ============================================================================
+  // FRAME EVALUATION
+  // ============================================================================
 
   protected onEvaluateFrame(frame: number): void {
     if (!this.renderContext || !this.mesh || !this.material) {
@@ -257,9 +257,9 @@ export class EffectLayer extends BaseLayer {
     this.material.needsUpdate = true;
   }
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  //                                                 // effect // layer // state
-  // ═══════════════════════════════════════════════════════════════════════════
+  // ============================================================================
+  // EFFECT LAYER STATE
+  // ============================================================================
 
   /**
    * Check if this layer is currently acting as an effect layer
@@ -295,9 +295,9 @@ export class EffectLayer extends BaseLayer {
     this.setEffectLayerMode(enabled);
   }
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  //                                                          // layer // update
-  // ═══════════════════════════════════════════════════════════════════════════
+  // ============================================================================
+  // LAYER UPDATE
+  // ============================================================================
 
   protected onUpdate(properties: Partial<Layer>): void {
     if (properties.effectLayer !== undefined) {
@@ -309,9 +309,9 @@ export class EffectLayer extends BaseLayer {
     }
   }
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  //                                                                 // disposal
-  // ═══════════════════════════════════════════════════════════════════════════
+  // ============================================================================
+  // DISPOSAL
+  // ============================================================================
 
   protected onDispose(): void {
     if (this.resultTexture) {

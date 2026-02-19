@@ -1,5 +1,5 @@
 # Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-# SPDX-License-Identifier: Apache-2.0
+#                                                                      // spdx
 """Tests scenario for adding the maximum number of devices to a microVM."""
 
 import platform
@@ -22,7 +22,7 @@ def max_devices(uvm):
             # supported at the same time is 92.
             return 92
         case "x86_64":
-            # IRQs are available from 5 to 23. We always use one IRQ for VMGenID and VMClock
+            #                                                                       // irq
             # devices, so the maximum number of devices supported at the same time is 17.
             return 17
         case _:

@@ -1,4 +1,4 @@
-// FFI for Header.purs
+//                                                                       // ffi
 
 export const setThemeImpl = function(theme) {
   return function() {

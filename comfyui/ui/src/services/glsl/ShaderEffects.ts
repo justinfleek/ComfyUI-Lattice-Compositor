@@ -7,9 +7,9 @@
 
 import { getGLSLEngine, type ShaderUniforms } from "./GLSLEngine";
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-//                                          // shader // effect // definitions
-// ═══════════════════════════════════════════════════════════════════════════
+// =============================================================================
+// SHADER EFFECT DEFINITIONS
+// =============================================================================
 
 export interface ShaderEffectDefinition {
   name: string;
@@ -34,9 +34,9 @@ export interface ShaderEffectDefinition {
   >;
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-//                                                          // blur // effects
-// ═══════════════════════════════════════════════════════════════════════════
+// =============================================================================
+// BLUR EFFECTS
+// =============================================================================
 
 export const BLUR_EFFECTS: Record<string, ShaderEffectDefinition> = {
   "glsl-gaussian-blur": {
@@ -166,9 +166,9 @@ export const BLUR_EFFECTS: Record<string, ShaderEffectDefinition> = {
   },
 };
 
-// ═══════════════════════════════════════════════════════════════════════════
-//                                                    // distortion // effects
-// ═══════════════════════════════════════════════════════════════════════════
+// =============================================================================
+// DISTORTION EFFECTS
+// =============================================================================
 
 export const DISTORT_EFFECTS: Record<string, ShaderEffectDefinition> = {
   "glsl-wave": {
@@ -408,9 +408,9 @@ export const DISTORT_EFFECTS: Record<string, ShaderEffectDefinition> = {
   },
 };
 
-// ═══════════════════════════════════════════════════════════════════════════
-//                                                         // color // effects
-// ═══════════════════════════════════════════════════════════════════════════
+// =============================================================================
+// COLOR EFFECTS
+// =============================================================================
 
 export const COLOR_EFFECTS: Record<string, ShaderEffectDefinition> = {
   "glsl-chromatic-aberration": {
@@ -578,9 +578,9 @@ export const COLOR_EFFECTS: Record<string, ShaderEffectDefinition> = {
   },
 };
 
-// ═══════════════════════════════════════════════════════════════════════════
-//                                                      // generate // effects
-// ═══════════════════════════════════════════════════════════════════════════
+// =============================================================================
+// GENERATE EFFECTS
+// =============================================================================
 
 export const GENERATE_EFFECTS: Record<string, ShaderEffectDefinition> = {
   "glsl-noise": {
@@ -717,9 +717,9 @@ export const GENERATE_EFFECTS: Record<string, ShaderEffectDefinition> = {
   },
 };
 
-// ═══════════════════════════════════════════════════════════════════════════
-//                                                       // stylize // effects
-// ═══════════════════════════════════════════════════════════════════════════
+// =============================================================================
+// STYLIZE EFFECTS
+// =============================================================================
 
 export const STYLIZE_EFFECTS: Record<string, ShaderEffectDefinition> = {
   "glsl-edge-detect": {
@@ -942,9 +942,9 @@ export const STYLIZE_EFFECTS: Record<string, ShaderEffectDefinition> = {
   },
 };
 
-// ═══════════════════════════════════════════════════════════════════════════
-//                                                    // transition // effects
-// ═══════════════════════════════════════════════════════════════════════════
+// =============================================================================
+// TRANSITION EFFECTS
+// =============================================================================
 
 export const TRANSITION_EFFECTS: Record<string, ShaderEffectDefinition> = {
   "glsl-dissolve": {
@@ -1037,9 +1037,9 @@ export const TRANSITION_EFFECTS: Record<string, ShaderEffectDefinition> = {
   },
 };
 
-// ═══════════════════════════════════════════════════════════════════════════
-//                                          // combined // effects // registry
-// ═══════════════════════════════════════════════════════════════════════════
+// =============================================================================
+// COMBINED EFFECTS REGISTRY
+// =============================================================================
 
 export const ALL_SHADER_EFFECTS: Record<string, ShaderEffectDefinition> = {
   ...BLUR_EFFECTS,
@@ -1050,9 +1050,9 @@ export const ALL_SHADER_EFFECTS: Record<string, ShaderEffectDefinition> = {
   ...TRANSITION_EFFECTS,
 };
 
-// ═══════════════════════════════════════════════════════════════════════════
-//                                            // shader // effect // processor
-// ═══════════════════════════════════════════════════════════════════════════
+// =============================================================================
+// SHADER EFFECT PROCESSOR
+// =============================================================================
 
 export class ShaderEffectProcessor {
   private engine: ReturnType<typeof getGLSLEngine>;
@@ -1129,9 +1129,9 @@ export class ShaderEffectProcessor {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-//                                                      // singleton // export
-// ═══════════════════════════════════════════════════════════════════════════
+// =============================================================================
+// SINGLETON EXPORT
+// =============================================================================
 
 let processorInstance: ShaderEffectProcessor | null = null;
 

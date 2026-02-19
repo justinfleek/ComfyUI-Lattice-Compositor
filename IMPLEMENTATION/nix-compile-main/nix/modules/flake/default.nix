@@ -90,7 +90,7 @@ in
         path-args = lib.escapeShellArgs cfg.paths;
         layout-arg = if cfg.layout == "none" then "" else "-l ${cfg.layout}";
 
-        # ── check derivation ──────────────────────────────────────────────
+        # ── check derivation ───────────────────────────────────────────
         check = pkgs.runCommand "nix-compile" {
           nativeBuildInputs = [ nix-compile ];
         } ''
@@ -128,7 +128,7 @@ in
           '';
         };
 
-        # ── shell hook ────────────────────────────────────────────────────
+        # ── shell hook ─────────────────────────────────────────────────
         shellHook = ''
           if [ -d .git ]; then
             mkdir -p .git/hooks

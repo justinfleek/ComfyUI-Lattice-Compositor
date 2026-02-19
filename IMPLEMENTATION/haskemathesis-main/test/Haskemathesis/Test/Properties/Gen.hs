@@ -245,7 +245,7 @@ prop_format_uuid =
         value <- forAll genUUID
         case value of
             String txt -> do
-                -- UUID format: 8-4-4-4-12 hex chars
+                --                                                                      // uuid
                 case T.splitOn "-" txt of
                     [p1, p2, p3, p4, p5] ->
                         assert (map (BS.length . encodeUtf8) [p1, p2, p3, p4, p5] == [8, 4, 4, 4, 12])

@@ -7,7 +7,7 @@
     flake-parts.url = "github:hercules-ci/flake-parts";
     treefmt-nix.url = "github:numtide/treefmt-nix";
 
-    # LLVM 22 from git - required for nv toolchain
+    #                                                                // llvm // 22
     llvm-project = {
       url = "github:llvm/llvm-project/bb1f220d534b0f6d80bea36662f5188ff11c2e54";
       flake = false;
@@ -29,7 +29,7 @@
       flake = false;
     };
 
-    # NVIDIA SDK - CUDA 13.0 runtime libraries for libtorch
+    #                                                             // nvidia // sdk
     nvidia-sdk = {
       url = "github:weyl-ai/nvidia-sdk";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -100,7 +100,7 @@
       perSystem =
         { pkgs, ... }:
         let
-          # GHC 9.12 with haskell overlay applied (via std.nix)
+          #                                                                  // ghc // 9
           inherit (pkgs.haskell.packages) ghc912;
 
         in

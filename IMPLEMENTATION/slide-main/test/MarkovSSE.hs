@@ -51,7 +51,7 @@ import Slide.Wire.Frame (
  )
 
 -- ════════════════════════════════════════════════════════════════════════════════
--- CLI Options
+--                                                                  // cli // o
 -- ════════════════════════════════════════════════════════════════════════════════
 
 data MarkovOptions = MarkovOptions
@@ -310,7 +310,7 @@ defaultChain :: MarkovChain
 defaultChain = buildChain trainingCorpus
 
 -- ════════════════════════════════════════════════════════════════════════════════
--- SIGIL Frame Emission
+--                                                                // sigil // f
 -- ════════════════════════════════════════════════════════════════════════════════
 
 -- | Emit a single frame containing tokens, using hot table compression

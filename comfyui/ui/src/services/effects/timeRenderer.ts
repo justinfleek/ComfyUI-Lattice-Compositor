@@ -15,10 +15,10 @@ import {
 } from "../effectProcessor";
 import { isFiniteNumber } from "@/utils/typeGuards";
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-//                                // frame // buffer // for // time // effects
+// ============================================================================
+// FRAME BUFFER FOR TIME EFFECTS
 // Stores previous frames for echo/trail effects
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 
 interface FrameBufferEntry {
   imageData: ImageData;
@@ -204,10 +204,10 @@ export function clearAllFrameBuffers(): void {
   frameBuffers.clear();
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-//                                                           // echo // effect
+// ============================================================================
+// ECHO EFFECT
 // Creates motion trails by compositing previous frames
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 
 /**
  * Echo Operator types - how echoes are composited
@@ -387,10 +387,10 @@ export function echoRenderer(
   return output;
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-//                                              // posterize // time // effect
+// ============================================================================
+// POSTERIZE TIME EFFECT
 // Reduces temporal resolution (frame rate reduction look)
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 
 /**
  * Posterize Time effect renderer
@@ -448,10 +448,10 @@ export function posterizeTimeRenderer(
   return input;
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-//                                           // time // displacement // effect
+// ============================================================================
+// TIME DISPLACEMENT EFFECT
 // Offsets different parts of the image in time
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 
 /**
  * Generate procedural time displacement map
@@ -609,10 +609,10 @@ export function timeDisplacementRenderer(
   return output;
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-//                                                // freeze // frame // effect
+// ============================================================================
+// FREEZE FRAME EFFECT
 // Freezes the layer at a specific source frame
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 
 // Store frozen frames by layer ID
 const frozenFrames = new Map<string, { frame: number; imageData: ImageData }>();
@@ -721,11 +721,11 @@ export function clearTimeEffectStateOnSeek(): void {
   clearAllFrozenFrames();
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-//                                            // timewarp // frame // blending
+// ============================================================================
+// TIMEWARP FRAME BLENDING
 // Frame interpolation methods for Timewarp layer property
 // These are called by the layer renderer when Timewarp is enabled
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 
 /**
  * Timewarp interpolation methods
@@ -1039,10 +1039,10 @@ function bilinearInterpolate(
   return v0 * (1 - fy) + v1 * fy;
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 // PIXEL MOTION (OPTICAL FLOW) STANDALONE
 // For frame blending in video layers
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 
 /**
  * Apply optical flow-based frame interpolation for video frame blending
@@ -1075,9 +1075,9 @@ export function pixelMotionBlend(
   return output;
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-//                                                             // registration
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
+// REGISTRATION
+// ============================================================================
 
 /**
  * Register all time effect renderers

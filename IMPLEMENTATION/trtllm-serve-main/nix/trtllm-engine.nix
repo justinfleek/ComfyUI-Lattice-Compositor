@@ -66,7 +66,7 @@ let
     export TLLM_LOG_LEVEL="WARNING"
     mkdir -p "$HOME" "$HF_HOME"
     
-    # NCCL configuration for multi-GPU (PCIe topology)
+    #                                                                      // nccl
     export NCCL_DEBUG=INFO
     export NCCL_IB_DISABLE=1          # No InfiniBand on this system
     export NCCL_P2P_LEVEL=PHB         # PCIe peer-to-peer via host bridge
@@ -77,9 +77,9 @@ in
 rec {
   inherit python openmpi triton cuda envSetup;
 
-  # ============================================================================
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   # mkHfModel: Download a HuggingFace model (Fixed Output Derivation)
-  # ============================================================================
+  # ════════════════════════════════════════════════════════════════════════════
   mkHfModel =
     {
       name,           # e.g. "qwen3-32b-nvfp4"
@@ -113,9 +113,9 @@ rec {
       };
     };
 
-  # ============================================================================
+  # ════════════════════════════════════════════════════════════════════════════
   # mkEngine: Build TensorRT engine from HuggingFace model
-  # ============================================================================
+  # ════════════════════════════════════════════════════════════════════════════
   #
   # Uses the LLM API (same as trtllm-bench build) which handles:
   #   - Pre-quantized models (NVFP4, FP8)
@@ -302,9 +302,9 @@ rec {
       meta.description = "TensorRT-LLM engine for ${name} (TP=${toString tensorParallelSize}, PP=${toString pipelineParallelSize})";
     };
 
-  # ============================================================================
+  # ════════════════════════════════════════════════════════════════════════════
   # mkTritonRepo: Generate Triton model repository with tensorrtllm backend
-  # ============================================================================
+  # ════════════════════════════════════════════════════════════════════════════
   mkTritonRepo =
     {
       name,           # e.g. "qwen3-32b"
@@ -382,9 +382,9 @@ rec {
       echo "  Tokenizer: ${tokenizer}"
     '';
 
-  # ============================================================================
+  # ════════════════════════════════════════════════════════════════════════════
   # mkTritonServer: Create a wrapper script to run Triton with the model repo
-  # ============================================================================
+  # ════════════════════════════════════════════════════════════════════════════
   mkTritonServer =
     {
       name,
@@ -424,9 +424,9 @@ rec {
       };
     };
 
-  # ============================================================================
+  # ════════════════════════════════════════════════════════════════════════════
   # mkTritonServerRuntime: Triton server with full ensemble (preprocessing + tensorrt_llm + postprocessing)
-  # ============================================================================
+  # ════════════════════════════════════════════════════════════════════════════
   # Use this when the engine is built manually (not via Nix derivation).
   # Looks for engine in $TRTLLM_ENGINE_PATH or ~/.cache/trtllm-engines/<name>/
   #
@@ -790,7 +790,7 @@ PBTXT
         export LD_LIBRARY_PATH="/run/opengl-driver/lib:${triton}/lib:${triton}/tensorrt_llm/lib:${cuda}/lib64:${openmpi}/lib''${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 
         ${if worldSize > 1 then ''
-        # NCCL configuration for multi-GPU (PCIe topology)
+        #                                                                      // nccl
         export NCCL_DEBUG=''${NCCL_DEBUG:-WARN}
         export NCCL_IB_DISABLE=1          # No InfiniBand
         export NCCL_P2P_LEVEL=PHB         # PCIe peer-to-peer via host bridge
@@ -826,9 +826,9 @@ PBTXT
       };
     };
 
-  # ============================================================================
+  # ════════════════════════════════════════════════════════════════════════════
   # Convenience: buildNVFP4 - build engine for pre-quantized NVFP4 models
-  # ============================================================================
+  # ════════════════════════════════════════════════════════════════════════════
   # Use this for nvidia/* NVFP4 models like nvidia/Qwen3-32B-NVFP4
   buildNVFP4 =
     {

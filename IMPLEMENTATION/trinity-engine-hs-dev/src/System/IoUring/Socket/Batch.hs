@@ -41,7 +41,7 @@ initSockCtx _ = return SockCtx
 closeSockCtx :: SockCtx -> IO ()
 closeSockCtx _ = return ()
 
--- GADT for socket operations
+--                                                                      // gadt
 data SockOp a where
   SockRecv :: !Fd -> Ptr Word8 -> ByteCount -> Word32 -> SockOp ByteCount
   SockSend :: !Fd -> Ptr Word8 -> ByteCount -> Word32 -> SockOp ByteCount

@@ -10,16 +10,16 @@ import {
   MAX_NAME_LENGTH,
 } from "../shared-validation";
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ============================================================================
 // Primitives
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 
 const positiveFinite = z.number().finite().positive();
 const nonNegativeFinite = z.number().finite().nonnegative();
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 // Rendering Backend Schema
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 
 export const RenderingBackendSchema = z.enum([
   "auto",
@@ -30,9 +30,9 @@ export const RenderingBackendSchema = z.enum([
 
 export type RenderingBackend = z.infer<typeof RenderingBackendSchema>;
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 // Simulation Mode Schema
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 
 export const SimulationModeSchema = z.enum([
   "realtime",
@@ -42,9 +42,9 @@ export const SimulationModeSchema = z.enum([
 
 export type SimulationMode = z.infer<typeof SimulationModeSchema>;
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 // Particle Preferences Schema
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 
 export const ParticlePreferencesSchema = z.object({
   renderingBackend: RenderingBackendSchema,
@@ -62,9 +62,9 @@ export const ParticlePreferencesSchema = z.object({
 
 export type ParticlePreferences = z.infer<typeof ParticlePreferencesSchema>;
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 // Validation Helpers
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 
 export function validateParticlePreferences(data: unknown): ParticlePreferences {
   return ParticlePreferencesSchema.parse(data);

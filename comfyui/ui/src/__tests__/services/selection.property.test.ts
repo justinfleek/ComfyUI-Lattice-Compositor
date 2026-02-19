@@ -16,17 +16,17 @@ import { test, fc } from '@fast-check/vitest';
 import { setActivePinia, createPinia } from 'pinia';
 import { useSelectionStore } from '@/stores/selectionStore';
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-//                                                            // test // setup
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
+// TEST SETUP
+// ============================================================================
 
 beforeEach(() => {
   setActivePinia(createPinia());
 });
 
-// ═══════════════════════════════════════════════════════════════════════════
-//                                               // test // data // generators
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
+// TEST DATA GENERATORS
+// ============================================================================
 
 const arbitraryLayerId = (): fc.Arbitrary<string> =>
   fc.uuid();
@@ -34,9 +34,9 @@ const arbitraryLayerId = (): fc.Arbitrary<string> =>
 const arbitraryLayerIds = (minLength = 1, maxLength = 10): fc.Arbitrary<string[]> =>
   fc.array(arbitraryLayerId(), { minLength, maxLength });
 
-// ═══════════════════════════════════════════════════════════════════════════
-//                                   // strict // single // selection // tests
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
+// STRICT SINGLE SELECTION TESTS
+// ============================================================================
 
 describe('STRICT: Single Selection', () => {
   test.prop([arbitraryLayerId()])('selectLayer replaces existing selection', (layerId) => {
@@ -74,9 +74,9 @@ describe('STRICT: Single Selection', () => {
   });
 });
 
-// ═══════════════════════════════════════════════════════════════════════════
-//                                    // strict // multi // selection // tests
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
+// STRICT MULTI SELECTION TESTS
+// ============================================================================
 
 describe('STRICT: Multi Selection', () => {
   test.prop([arbitraryLayerIds(2, 5)])('selectLayers replaces existing selection', (layerIds) => {
@@ -129,9 +129,9 @@ describe('STRICT: Multi Selection', () => {
   });
 });
 
-// ═══════════════════════════════════════════════════════════════════════════
-//                                           // strict // deselection // tests
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
+// STRICT DESELECTION TESTS
+// ============================================================================
 
 describe('STRICT: Deselection', () => {
   test.prop([arbitraryLayerIds(3, 5)])('removeFromSelection removes specific layer', (layerIds) => {
@@ -166,9 +166,9 @@ describe('STRICT: Deselection', () => {
   });
 });
 
-// ═══════════════════════════════════════════════════════════════════════════
-//                                                // strict // toggle // tests
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
+// STRICT TOGGLE TESTS
+// ============================================================================
 
 describe('STRICT: Toggle Selection', () => {
   test.prop([arbitraryLayerId()])('toggleSelection adds if not selected', (layerId) => {
@@ -200,9 +200,9 @@ describe('STRICT: Toggle Selection', () => {
   });
 });
 
-// ═══════════════════════════════════════════════════════════════════════════
-//                                                // strict // getter // tests
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
+// STRICT GETTER TESTS
+// ============================================================================
 
 describe('STRICT: Selection Getters', () => {
   test.prop([arbitraryLayerIds(0, 5)])('hasSelection reflects state', (layerIds) => {
@@ -241,9 +241,9 @@ describe('STRICT: Selection Getters', () => {
   });
 });
 
-// ═══════════════════════════════════════════════════════════════════════════
-//                                 // strict // keyframe // selection // tests
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
+// STRICT KEYFRAME SELECTION TESTS
+// ============================================================================
 
 describe('STRICT: Keyframe Selection', () => {
   test.prop([fc.array(fc.uuid(), { minLength: 1, maxLength: 5 })])('selectKeyframes replaces selection', (keyframeIds) => {
@@ -287,9 +287,9 @@ describe('STRICT: Keyframe Selection', () => {
   });
 });
 
-// ═══════════════════════════════════════════════════════════════════════════
-//                                         // strict // tool // state // tests
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
+// STRICT TOOL STATE TESTS
+// ============================================================================
 
 describe('STRICT: Tool State', () => {
   const validTools = ['select', 'pen', 'text', 'hand', 'zoom'] as const;
@@ -311,9 +311,9 @@ describe('STRICT: Tool State', () => {
   });
 });
 
-// ═══════════════════════════════════════════════════════════════════════════
-//                                                          // stress // tests
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
+// STRESS TESTS
+// ============================================================================
 
 describe('STRESS: Selection Under Load', () => {
   test.prop([arbitraryLayerIds(50, 100)])('handles large selections', (layerIds) => {

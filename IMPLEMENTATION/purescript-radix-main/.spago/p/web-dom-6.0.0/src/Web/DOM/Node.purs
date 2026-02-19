@@ -155,7 +155,7 @@ foreign import deepClone :: Node -> Effect Node
 -- | Checks whether two nodes are equivalent.
 foreign import isEqualNode :: Node -> Node -> Effect Boolean
 
--- TODO: compareDocumentPosition that returns a semigroup or something instead of the bitmask value
+--                                                                      // todo
 
 -- | Compares the position of two nodes in the document.
 foreign import compareDocumentPositionBits :: Node -> Node -> Effect Int

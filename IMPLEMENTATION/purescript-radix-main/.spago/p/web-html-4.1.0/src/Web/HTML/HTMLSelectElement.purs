@@ -134,7 +134,7 @@ foreign import length :: HTMLSelectElement -> Effect Int
 foreign import setLength :: Int -> HTMLSelectElement -> Effect Unit
 
 --   getter Element? item(unsigned long index);
---   HTMLOptionElement? namedItem(DOMString name);
+--                                                                     // htmlo
 --   void add((HTMLOptionElement or HTMLOptGroupElement) element, optional (HTMLElement or long)? before = null);
 --   void remove(); // ChildNode overload
 --   void remove(long index);

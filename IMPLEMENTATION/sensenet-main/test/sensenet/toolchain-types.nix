@@ -4,7 +4,7 @@
 #                                                  // test // toolchain-types //
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 #
-# FAILING TEST: nix-compile should infer types for sensenet toolchain definitions
+#                                                           // failing // test
 #
 # Expected: nix-compile infers the following types:
 #

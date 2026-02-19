@@ -68,9 +68,9 @@ import           GHC.Generics (Generic)
 
 import           Compass.Core.Types
 
--------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Core Serialization Typeclass
--------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Typeclass for types that can be serialized for CAS storage.
 -- The serialization MUST be:
@@ -106,9 +106,9 @@ deserializeFromCAS ns expectedAddr bytes =
               <> " but content hashes to " <> T.pack (show computedAddr)
      else casDeserialize bytes
 
--------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Version Vector Encoding
--------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Encode a VersionVec as deterministic bytes.
 -- Format: [count:u32] [agentId_len:u16 agentId_bytes:* version:u64]*
@@ -130,9 +130,9 @@ encodeVersionVec (VersionVec m) =
 decodeVersionVec :: ByteString -> Either Text VersionVec
 decodeVersionVec _bs = Right $ VersionVec Map.empty  -- STUB: implement parser
 
--------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Widget Data Encoding
--------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Encode WidgetData deterministically.
 -- Format:
@@ -175,9 +175,9 @@ encodeWidgetData wd =
 decodeWidgetData :: ByteString -> Either Text WidgetData
 decodeWidgetData _bs = Left "STUB: implement parser"
 
--------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Provenance Encoding
--------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Encode Provenance (Cofree comonad over Merkle deps) deterministically.
 -- Format:
@@ -204,9 +204,9 @@ encodeProvenance (ProvenanceDerived addr time agentId children) =
 decodeProvenance :: ByteString -> Either Text Provenance
 decodeProvenance _bs = Left "STUB: implement parser"
 
--------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Wire Protocol
--------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Messages exchanged between COMPASS components.
 -- Content-addressed: the message ID is UUID5(serialize(message body)).
@@ -238,9 +238,9 @@ encodeWireMessage = error "Compass.Serialization.Binary.encodeWireMessage: imple
 decodeWireMessage :: ByteString -> Either Text WireMessage
 decodeWireMessage = error "Compass.Serialization.Binary.decodeWireMessage: implement"
 
--------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Cache Key Derivation
--------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Derive a content-addressed cache key from a query intent + Merkle root.
 -- This is the key function that makes agent caching work:
@@ -262,9 +262,9 @@ deriveCompositeCacheKey parts =
                    (BS.unpack "https://compass.weyl.ai/ns/composite")
   in ContentAddr $ UUID5.generateNamed (unNamespace ns) (BS.unpack combined)
 
--------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Internal Helpers
--------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 encodeText :: Text -> BB.Builder
 encodeText t =

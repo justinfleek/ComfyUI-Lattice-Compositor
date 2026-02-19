@@ -1,5 +1,5 @@
 # Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-# SPDX-License-Identifier: Apache-2.0
+#                                                                      // spdx
 
 """Classes for working with microVMs.
 
@@ -133,7 +133,7 @@ class Snapshot:
         )
 
     @classmethod
-    # TBD when Python 3.11: -> Self
+    #                                                                       // tbd
     def load_from(cls, src: Path) -> "Snapshot":
         """Load a snapshot saved with `save_to`"""
         snap_json = src / "snapshot.json"
@@ -283,7 +283,7 @@ class Microvm:
             node_str = str(numa_node)
             self.add_pre_cmd([["numactl", "-N", node_str, "-m", node_str]])
 
-        # MMDS content from file
+        #                                                                      // mmds
         self.metadata_file = None
 
         self.help = MicrovmHelpers(self)

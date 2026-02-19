@@ -366,7 +366,7 @@ findShellScriptCalls = go
       in hasShebang || hasSet
 
     -- Check if a function takes positional args: writeShellScript "name" ''body''
-    -- HEURISTIC: match function names that imply shell script generation or execution.
+    --                                                                 // heuristic
     -- This is "bulletproofed" to catch common wrapper patterns in large codebases.
     isPositionalShellFunc :: Text -> Bool
     isPositionalShellFunc name =

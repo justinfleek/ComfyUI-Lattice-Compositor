@@ -1,6 +1,6 @@
 # nix/versions/cutlass/default.nix — CUTLASS Versions
 #
-# NVIDIA CUTLASS CUDA Templates for Linear Algebra Subroutines and Solvers.
+#                                            // nvidia // cutlass // cuda // t
 
 { lib }:
 

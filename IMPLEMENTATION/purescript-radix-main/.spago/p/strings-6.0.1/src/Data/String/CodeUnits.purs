@@ -30,11 +30,11 @@ import Data.Maybe (Maybe(..), isJust)
 import Data.String.Pattern (Pattern(..))
 import Data.String.Unsafe as U
 
--------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- `stripPrefix`, `stripSuffix`, and `contains` are CodeUnit/CodePoint agnostic
 -- as they are based on patterns rather than lengths/indices, but they need to
 -- be defined in here to avoid a circular module dependency
--------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | If the string starts with the given prefix, return the portion of the
 -- | string left after removing it, as a `Just` value. Otherwise, return `Nothing`.
@@ -70,9 +70,9 @@ stripSuffix (Pattern suffix) str =
 contains :: Pattern -> String -> Boolean
 contains pat = isJust <<< indexOf pat
 
--------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- all functions past this point are CodeUnit specific
--------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Returns a string of length `1` containing the given character.
 -- |

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright 2025 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-# SPDX-License-Identifier: Apache-2.0
+#                                                                      // spdx
 
 """
 Buildkite pipeline for release QA
@@ -10,7 +10,7 @@ from common import BKPipeline
 
 pipeline = BKPipeline(with_build_step=False)
 
-# NOTE: we need to escape $ using $$ otherwise buildkite tries to replace it instead of the shell
+#                                                                      // note
 
 pipeline.add_step(
     {

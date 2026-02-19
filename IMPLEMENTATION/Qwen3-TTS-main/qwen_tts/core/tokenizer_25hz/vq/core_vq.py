@@ -2,12 +2,12 @@
 # All rights reserved.
 #
 # This source code is licensed under the license found in the
-# LICENSE file in the root directory of this source tree.
+#                                                                   // license
 #
 # This implementation is inspired from
 # https://github.com/lucidrains/vector-quantize-pytorch
 # which is released under MIT License. Hereafter, the original license:
-# MIT License
+#                                                                  // mit // l
 #
 # Copyright (c) 2020 Phil Wang
 #
@@ -21,13 +21,13 @@
 # The above copyright notice and this permission notice shall be included in all
 # copies or substantial portions of the Software.
 #
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-# SOFTWARE.
+#                                         // the // software // is // provided
+#                                                                   // implied
+#    // fitness // for // a // particular // purpose // and // noninfringement
+# // authors // or // copyright // holders // be // liable // for // any // claim
+#                                                                 // liability
+# // out // of // or // in // connection // with // the // software // or // the // use // or // other // dealings // in // the
+#                                                                  // software
 
 """Core vector quantization implementation."""
 import random

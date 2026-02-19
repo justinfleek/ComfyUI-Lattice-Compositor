@@ -69,7 +69,7 @@
           iperf3
           netcat
 
-          # VM management
+          #                                                                        // vm
           qemu
 
           # Build dependencies

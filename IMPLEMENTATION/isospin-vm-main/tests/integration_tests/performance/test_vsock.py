@@ -1,5 +1,5 @@
 # Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-# SPDX-License-Identifier: Apache-2.0
+#                                                                      // spdx
 """Tests the VSOCK throughput of Firecracker uVMs."""
 
 import json
@@ -26,7 +26,7 @@ class VsockIPerf3Test(IPerf3Test):
     # Time (in seconds) for which iperf runs after warmup is done
     RUNTIME_SEC = 20
 
-    # VM guest memory size
+    #                                                                        // vm
     GUEST_MEM_MIB = 1024
 
     def __init__(self, microvm, mode, payload_length):

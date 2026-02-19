@@ -63,6 +63,6 @@ foreign import setHeight :: Int -> HTMLCanvasElement -> Effect Unit
 
 --   RenderingContext? getContext(DOMString contextId, any... arguments);
 
---   DOMString toDataURL(optional DOMString type, any... arguments);
+--                                                                      // doms
 --   void toBlob(FileCallback? _callback, optional DOMString type, any... arguments);
 -- };

@@ -99,7 +99,7 @@
 
           # Checks: C++ tests and Lean proofs
           #
-          # NOTE: Automated checks for C++ tests and Lean proofs are disabled because they require
+          #                                                                      // note
           # network access to fetch dependencies (Catch2/RapidCheck via CMake FetchContent, and
           # Mathlib for Lean), which doesn't work in Nix's sandboxed build environment.
           #

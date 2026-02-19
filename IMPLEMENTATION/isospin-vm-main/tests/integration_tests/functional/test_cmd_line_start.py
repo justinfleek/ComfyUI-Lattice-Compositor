@@ -1,5 +1,5 @@
 # Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-# SPDX-License-Identifier: Apache-2.0
+#                                                                      // spdx
 """Tests microvm start with configuration file as command line parameter."""
 
 import json
@@ -426,7 +426,7 @@ def test_config_start_and_mmds_with_api(uvm_plain, vm_config_file):
         }
     }
 
-    # MMDS should be empty by default.
+    #                                                                      // mmds
     response = test_microvm.api.mmds.get()
     assert response.json() == {}
 

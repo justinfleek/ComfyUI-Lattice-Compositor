@@ -19,9 +19,9 @@ import type { AudioMapping } from "./audioReactiveMapping";
 import { interpolateProperty } from "./interpolation";
 import { storeLogger } from "@/utils/logger";
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-//                                                                    // types
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
+// TYPES
+// ============================================================================
 
 /**
  * Minimal store access interface to avoid circular dependencies.
@@ -60,9 +60,9 @@ export interface AudioAnalysisData {
  */
 export type PropertyValueResult = number | number[];
 
-// ═══════════════════════════════════════════════════════════════════════════
-//                                          // main // evaluation // functions
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
+// MAIN EVALUATION FUNCTIONS
+// ============================================================================
 
 /**
  * Evaluate a property at a specific frame with all modifiers applied.
@@ -172,9 +172,9 @@ export function getScalarPropertyValue(
   throw new Error(`[PropertyEvaluator] Cannot get scalar property value: Property "${propertyPath}" at frame ${frame} for layer "${layerId}" is not a scalar or vector property`);
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-//                                                // keyframe // interpolation
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
+// KEYFRAME INTERPOLATION
+// ============================================================================
 
 /**
  * Get interpolated keyframe value for a property.
@@ -290,9 +290,9 @@ function getKeyframeValue(
   throw new Error(`[PropertyEvaluator] Cannot get keyframe value: Property "${propertyPath}" not found on layer "${layerId}"`);
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-//                                             // audio // reactive // mapping
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
+// AUDIO REACTIVE MAPPING
+// ============================================================================
 
 /**
  * Apply audio reactive mapping to a property value.
@@ -458,9 +458,9 @@ function applyAudioMapping(
   throw new Error(`[PropertyEvaluator] Cannot apply audio mapping: Base value is invalid type for layer "${layerId}" at frame ${frame}`);
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-//                                                     // utility // functions
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
+// UTILITY FUNCTIONS
+// ============================================================================
 
 /**
  * Check if a property has keyframes

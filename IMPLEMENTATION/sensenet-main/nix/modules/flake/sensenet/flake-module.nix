@@ -45,7 +45,7 @@
           ...
         }:
         let
-          # ── Resolve toolchain packages ─────────────────────────────────────────
+          # ── Resolve toolchain packages ─────────────────────────────────
           cxxenabled = toolchain.cxx.enable or true;
           haskellenabled = toolchain.haskell.enable or false;
           rustenabled = toolchain.rust.enable or false;
@@ -54,7 +54,7 @@
           nvenabled = toolchain.nv.enable or false;
           purescriptenabled = toolchain.purescript.enable or false;
 
-          # ── Remote execution config ────────────────────────────────────────────
+          # ── Remote execution config ────────────────────────────────────
           reenabled = remoteexecution.enable or false;
           rescheduler = remoteexecution.scheduler or "localhost";
           reschedulerport = remoteexecution.schedulerport or 50051;
@@ -74,7 +74,7 @@
           inherit (pkgs.python3Packages) pybind11;
           nvidia-sdk = pkgs.nvidia-sdk or null;
 
-          # ── Generate buckconfig.local ──────────────────────────────────────────
+          # ── Generate buckconfig.local ──────────────────────────────────
           buckconfiglocal = toolchainlib.mkbuckconfiglocal {
             cxx = lib.optionalString cxxenabled (toolchainlib.mkcxxsection { llvmpackages = llvmpackages; });
             haskell = lib.optionalString haskellenabled (
@@ -113,10 +113,10 @@
 
           buckconfiglocalfile = pkgs.writeText "buckconfig.local" buckconfiglocal;
 
-          # ── Prelude path ───────────────────────────────────────────────────────
+          # ── Prelude path ───────────────────────────────────────────────
           preludepath = if prelude != null then prelude else inputs.buck2-prelude;
 
-          # ── Toolchain packages ─────────────────────────────────────────────────
+          # ── Toolchain packages ─────────────────────────────────────────
           toolchainpackages = [
             pkgs.buck2
           ]
@@ -146,10 +146,10 @@
           ]
           ++ extrapackages;
 
-          # ── Configs path (from inputs.self) ──────────────────────────────────
+          # ── Configs path (from inputs.self) ────────────────────────────
           configspath = inputs.self + "/nix/configs";
 
-          # ── Shell hook ─────────────────────────────────────────────────────────
+          # ── Shell hook ─────────────────────────────────────────────────
           shellhooktemplate = builtins.readFile ./shell-hook.bash;
 
           shellhook =
@@ -188,7 +188,7 @@
               ]
               shellhooktemplate;
 
-          # ── Package derivation ─────────────────────────────────────────────────
+          # ── Package derivation ─────────────────────────────────────────
           package = pkgs.stdenvNoCC.mkDerivation {
             inherit name;
             inherit src;
@@ -238,7 +238,7 @@
             "dontFixup" = true;
           };
 
-          # ── Development shell ──────────────────────────────────────────────────
+          # ── Development shell ──────────────────────────────────────────
           devshell = pkgs.mkShellNoCC {
             name = "${name}-dev";
 
@@ -256,14 +256,14 @@
           inherit package devshell buckconfiglocalfile;
         };
 
-      # ── Build all declared projects ──────────────────────────────────────────
+      # ── Build all declared projects ────────────────────────────────
       # sensenet.projects is the primary source (includes merged buck2.projects)
       sensenetprojects = lib.mapAttrs (
         name: proj: mkproject (proj // { inherit name; })
       ) config.sensenet.projects;
     in
     {
-      # ── Primary: sensenet.mkproject ──────────────────────────────────────────
+      # ── Primary: sensenet.mkproject ────────────────────────────────
       sensenet.mkproject = mkproject;
 
       # ── Primary outputs: sensenet-<name> ─────────────────────────────────────

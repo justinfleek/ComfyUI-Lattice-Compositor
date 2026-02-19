@@ -14,9 +14,9 @@ in
   # Used to encrypt: TensorRT-RTX, Triton Container, etc.
   "encryption-key.age".publicKeys = allKeys;
 
-  # R2 API credentials
+  #                                                                 // r2 // api
   "r2-credentials.age".publicKeys = allKeys;
 
-  # NVIDIA Developer credentials
+  #                                                               // nvidia // d
   "nvidia-credentials.age".publicKeys = allKeys;
 }

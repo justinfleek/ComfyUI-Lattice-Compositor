@@ -125,7 +125,7 @@ import qualified Aleph.Script.Tools.Taplo as Taplo
 import qualified Aleph.Script.Tools.Tokei as Tokei
 import qualified Aleph.Script.Tools.Zoxide as Zoxide
 
--- GNU/Classic Unix tools
+--                                                                       // gnu
 
 import qualified Aleph.Script.Tools.Find as Find
 import qualified Aleph.Script.Tools.Grep as Grep

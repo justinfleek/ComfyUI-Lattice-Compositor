@@ -1,6 +1,6 @@
 # nix/versions/sm/default.nix — SM Architecture Targets
 #
-# NVIDIA GPU Streaming Multiprocessor architecture targets (compute capabilities).
+#                                                        // nvidia // gpu // s
 # Source: https://developer.nvidia.com/cuda-gpus
 #         https://en.wikipedia.org/wiki/CUDA
 

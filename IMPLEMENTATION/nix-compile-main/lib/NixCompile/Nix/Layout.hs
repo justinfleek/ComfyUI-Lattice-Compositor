@@ -49,9 +49,9 @@ import NixCompile.Types (Span (..), Loc (..))
 import System.Directory (doesDirectoryExist, doesFileExist, listDirectory)
 import System.FilePath ((</>), takeFileName, splitPath, normalise)
 
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 -- Types
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Layout violation codes
 data LayoutCode
@@ -71,9 +71,9 @@ data LayoutViolation = LayoutViolation
   }
   deriving (Show, Eq)
 
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 -- File Classification
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Check if a file is an index file (banned)
 isIndexFile :: FilePath -> Bool
@@ -110,9 +110,9 @@ getModuleKind path =
       dropTrailingSlash s = if "/" `isSuffixOf` s then init s else s
   in findKind parts
 
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 -- Validation
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Find layout violations in a single file
 findLayoutViolations :: FilePath -> NExprLoc -> [LayoutViolation]
@@ -231,9 +231,9 @@ findClassAttr = go
     sourceLine (NSourcePos _ (NPos l) _) = fromIntegral (unPos l)
     sourceCol (NSourcePos _ _ (NPos c)) = fromIntegral (unPos c)
 
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 -- Directory Scanning
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Find all layout violations in a directory tree
 findLayoutViolationsInDir :: FilePath -> IO [LayoutViolation]

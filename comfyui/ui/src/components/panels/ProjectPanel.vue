@@ -713,9 +713,9 @@ function onVectorized(layerIds: string[]) {
   console.log("[ProjectPanel] Created", layerIds.length, "vectorized layers");
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-//                                              // fps // mismatch // handlers
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================
+// FPS MISMATCH HANDLERS
+// ============================================================
 
 async function handleFpsMismatchMatch() {
   if (!pendingFpsMismatch.value) return;
@@ -802,9 +802,9 @@ function handleFpsMismatchCancel() {
   pendingFpsMismatch.value = null;
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================
 // FPS SELECT HANDLERS (for unknown fps)
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================
 
 async function handleFpsSelected(fps: number) {
   if (!pendingFpsUnknown.value) return;
@@ -909,9 +909,9 @@ function cleanupUnusedAssets() {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-//                                               // svg // export // functions
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================
+// SVG EXPORT FUNCTIONS
+// ============================================================
 
 // System F/Omega EXCEPTION: Returning null here is valid - this is a query function
 // Callers check for null and handle gracefully (console.warn) - this is not an error condition but a "no selection" state

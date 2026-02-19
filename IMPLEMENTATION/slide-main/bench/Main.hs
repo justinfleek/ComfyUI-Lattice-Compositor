@@ -51,7 +51,7 @@ import Slide.Wire.Frame (
 import Slide.Wire.Varint (decodeVarint, encodeVarint)
 
 -- ════════════════════════════════════════════════════════════════════════════════
--- CLI Options
+--                                                                  // cli // o
 -- ════════════════════════════════════════════════════════════════════════════════
 
 data BenchOptions = BenchOptions
@@ -440,7 +440,7 @@ benchLatency = do
         (formatTime decMax)
 
 -- ════════════════════════════════════════════════════════════════════════════════
--- ZMQ Pub/Sub Benchmarks
+--                                                                  // zmq // p
 -- ════════════════════════════════════════════════════════════════════════════════
 
 benchZMQ :: Int -> IO ()

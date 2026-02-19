@@ -1,6 +1,6 @@
 # nix/overlays/container/pep503.nix
 #
-# PEP 503 simple index generation
+#                                                                // pep // 503
 #
 { final }:
 {
@@ -23,7 +23,7 @@
         [ -f "$whl" ] || continue
 
         filename=$(basename "$whl")
-        # PEP 503 normalization: lowercase, underscores/dots -> hyphens
+        #                                                                // pep // 503
         pkg=$(echo "$filename" | sed 's/-[0-9].*//' | tr '[:upper:]_.' '[:lower:]--')
 
         mkdir -p "$out/simple/$pkg"

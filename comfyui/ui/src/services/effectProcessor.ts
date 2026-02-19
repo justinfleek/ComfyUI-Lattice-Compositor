@@ -20,10 +20,10 @@ import type { AudioReactiveModifiers } from "./audioReactiveMapping";
 import { type GPURenderPath, gpuEffectDispatcher } from "./gpuEffectDispatcher";
 import { interpolateProperty } from "./interpolation";
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-//                                         // audio // modifier // application
+// ============================================================================
+// AUDIO MODIFIER APPLICATION
 // Audio-reactive modifiers for effect parameters (glow intensity, glitch amount, etc.)
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 
 /**
  * Apply audio-reactive modifiers to effect parameters
@@ -106,14 +106,14 @@ function applyAudioModifiersToEffect(
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 // CANVAS BUFFER POOL (imported from @/utils/canvasPool)
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 
-// ═══════════════════════════════════════════════════════════════════════════
-//                                                // effect // result // cache
+// ============================================================================
+// EFFECT RESULT CACHE
 // Caches effect output when parameters haven't changed
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 
 interface EffectCacheEntry {
   result: ImageData;
@@ -326,9 +326,9 @@ export function cleanupEffectResources(): void {
   canvasPool.cleanup();
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-//                                                          // effect // types
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
+// EFFECT TYPES
+// ============================================================================
 
 /**
  * Evaluated effect parameters at a specific frame

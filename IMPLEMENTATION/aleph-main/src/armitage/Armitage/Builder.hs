@@ -82,9 +82,9 @@ import System.Process
 import qualified Armitage.CAS as CAS
 import qualified Armitage.Store as Store
 
--- -----------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Configuration
--- -----------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Build configuration
 data BuildConfig = BuildConfig
@@ -115,9 +115,9 @@ defaultBuildConfig =
     , bcVerbose = True
     }
 
--- -----------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Derivation
--- -----------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Parsed derivation
 --
@@ -159,7 +159,7 @@ data DrvOutput = DrvOutput
 -- | Parse derivation from .drv file
 --
 -- Uses nix show-derivation for now.
--- TODO: Parse ATerm format directly or use hnix-store
+--                                                                      // todo
 parseDerivation :: FilePath -> IO (Either String Derivation)
 parseDerivation drvPath = do
   -- Shell out to nix show-derivation
@@ -184,9 +184,9 @@ derivationHash drv =
   let content = T.pack $ show drv -- Simplified
    in T.pack $ show $ hashWith SHA256 (TE.encodeUtf8 content)
 
--- -----------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Build Result
--- -----------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Build result
 data BuildResult = BuildResult
@@ -212,9 +212,9 @@ data BuildError
 
 instance Exception BuildError
 
--- -----------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Coeffects
--- -----------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Coeffect (what a build requires)
 --
@@ -333,9 +333,9 @@ checkCoeffects config coeffects = do
   isLeft (Left _) = True
   isLeft _ = False
 
--- -----------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Build Environment
--- -----------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Build environment
 data BuildEnv = BuildEnv
@@ -409,9 +409,9 @@ createTempDirectory base prefix = do
   createDirectoryIfMissing True path
   pure path
 
--- -----------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Isolation
--- -----------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Isolation level
 data IsolationLevel
@@ -436,14 +436,14 @@ withIsolation level env action = case level of
 -- | Namespace isolation
 withNamespaceIsolation :: BuildEnv -> IO a -> IO a
 withNamespaceIsolation env action = do
-  -- TODO: Use unshare(2) to create user + mount namespace
+  --                                                                      // todo
   -- For now, just run directly
   action
 
 -- | Bubblewrap isolation
 withBubblewrapIsolation :: BuildEnv -> IO a -> IO a
 withBubblewrapIsolation env action = do
-  -- TODO: Shell out to bwrap with appropriate flags
+  --                                                                      // todo
   -- --ro-bind /nix/store /nix/store
   -- --bind <workdir> /build
   -- --unshare-all
@@ -453,13 +453,13 @@ withBubblewrapIsolation env action = do
 -- | MicroVM isolation (isospin)
 withMicroVMIsolation :: BuildEnv -> IO a -> IO a
 withMicroVMIsolation env action = do
-  -- TODO: Launch firecracker VM, run build inside
+  --                                                                      // todo
   -- This is the full isolation mode for GPU workloads
   action
 
--- -----------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Build Execution
--- -----------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Run a build
 --
@@ -504,7 +504,7 @@ runBuild config drvPath = do
               teardownBuildEnv config env True
 
               -- Create discharge proof
-              -- TODO: Read network/filesystem access from proxy/sandbox logs
+              --                                                                      // todo
               let proof =
                     DischargeProof
                       { dpCoeffects = coeffects

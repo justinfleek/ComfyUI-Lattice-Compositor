@@ -952,9 +952,9 @@ function duplicateAnimator(animatorId: string) {
   emit("update");
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ============================================================================
 // HELPER: Regenerate keyframe IDs for text animator properties
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 
 /**
  * Regenerate all keyframe IDs in a text animator to avoid conflicts when duplicating

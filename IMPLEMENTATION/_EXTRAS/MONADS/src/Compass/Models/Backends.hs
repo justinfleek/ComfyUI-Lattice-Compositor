@@ -88,9 +88,9 @@ import           GHC.Generics (Generic)
 import           Compass.Core.Types
 import           Compass.Inference.TieredRouter (InferenceStream (..), StreamChunk (..))
 
--------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Prompt Construction
--------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Structured prompt for inference backends
 data InferencePrompt = InferencePrompt
@@ -247,9 +247,9 @@ promptToRequestBody prompt model =
         ]
   in Aeson.encode body
 
--------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Tier 2: llama.cpp (Local Quantized Model)
--------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Configuration for llama.cpp backend
 data LlamaCppConfig = LlamaCppConfig
@@ -321,12 +321,12 @@ streamLocalInference backend prompt = do
 
 checkLocalHealth :: LlamaCppBackend -> IO Bool
 checkLocalHealth _backend = do
-  -- GET /health → 200 OK
+  --                                                                       // get
   pure False  -- STUB
 
--------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Tier 3: vLLM / TGI (Medium Model)
--------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 data VLLMConfig = VLLMConfig
   { vlcEndpoint      :: Text       -- e.g., "http://localhost:8000"
@@ -377,9 +377,9 @@ streamEdgeInference backend prompt = do
 checkEdgeHealth :: VLLMBackend -> IO Bool
 checkEdgeHealth _backend = pure False  -- STUB
 
--------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Tier 4: DeepSeek API (Full Model + Polyhedral Optimization)
--------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 data DeepSeekConfig = DeepSeekConfig
   { dscEndpoint      :: Text          -- e.g., "https://api.deepseek.com"
@@ -456,7 +456,7 @@ runFullInference backend prompt = do
 streamFullInference :: DeepSeekBackend -> InferencePrompt
                     -> IO (InferenceStream WidgetData)
 streamFullInference backend prompt = do
-  -- SSE stream from DeepSeek API
+  --                                                                       // sse
   -- Time to first token: ~80-150ms (standard), ~50-100ms (polyhedral-optimized)
   --
   -- The polyhedral optimization primarily affects:
@@ -473,9 +473,9 @@ streamFullInference backend prompt = do
 checkFullHealth :: DeepSeekBackend -> IO Bool
 checkFullHealth _backend = pure False  -- STUB
 
--------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Polyhedral Optimization (Weyl Integration)
--------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Configuration for Weyl's polyhedral kernel optimization.
 -- This connects to the nvfuser-based kernel compiler that produces
@@ -565,13 +565,13 @@ applyPolyhedralOptimization cfg requestBody =
   --   Speedup: 1.8x (measured), optimal (proven in Lean4)
   requestBody  -- STUB: inject optimization headers
 
--------------------------------------------------------------------------------
--- SSE Parsing (shared across all backends)
--------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
+--                                                                  // sse // p
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Parse a Server-Sent Events stream into InferenceStream.
 -- All three backends (llama.cpp, vLLM, DeepSeek) use OpenAI-compatible
--- SSE format for streaming completions.
+--                                                                       // sse
 --
 -- Protocol:
 --   data: {"choices": [{"delta": {"content": "token"}}]}

@@ -76,7 +76,7 @@ stdenv.mkDerivation {
   autoPatchelfIgnoreMissingDeps = [
     "libcuda.so.1"
     "libnvidia-ml.so.1"
-    # NVIDIA bundled proprietary libraries
+    #                                                                    // nvidia
     "libAppLib.so"
     "libCore.so"
     "libAppLibInterfaces.so"
@@ -151,7 +151,7 @@ stdenv.mkDerivation {
   '';
 
   # lib needs libtiff.so.5, but nixpkgs provides libtiff.so.6
-  # NOTE: Path checks must be done at build time, not eval time (builtins.pathExists
+  #                                                                      // note
   # on store paths derived from derivations causes eval failures on foreign systems).
   preFixup = ''
     if [ -f "${nvidia-sdk}/nsight-compute-${ncuVersion}/${ncuPath}/Plugins/imageformats/libqtiff.so" ]; then

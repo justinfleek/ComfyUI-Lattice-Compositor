@@ -21,7 +21,7 @@
 #   3. Cross-language dependency tracking (Nix → Dhall → buck2)
 #   4. Proof obligation validation via DischargeProof.dhall
 #
-# USAGE:
+#                                                                     // usage
 #
 #   {
 #     inputs.nix-compile.url = "github:straylight-software/nix-compile";
@@ -149,7 +149,7 @@ in
           touch $out
         '';
 
-        # ── dhall type check ────────────────────────────────────────────────
+        # ── dhall type check ───────────────────────────────────────────
         check-dhall = pkgs.runCommand "sense-dhall-typecheck" {
           nativeBuildInputs = [
             dhall
@@ -192,12 +192,12 @@ in
 
           # Verify consistency between Nix and Dhall
           echo "  verifying Nix ↔ Dhall consistency..."
-          # TODO: nix-compile --cross-lang-report
+          #                                                                      // todo
 
           touch $out
         '';
 
-        # ── buck2 graph check ───────────────────────────────────────────────
+        # ── buck2 graph check ──────────────────────────────────────────
         check-buck2-graph = pkgs.runCommand "sense-buck2-graph" {
           nativeBuildInputs = [
             pkgs.buck2
@@ -218,7 +218,7 @@ in
           touch $out
         '';
 
-        # ── proof verification ──────────────────────────────────────────────
+        # ── proof verification ─────────────────────────────────────────
         check-proofs = pkgs.runCommand "sense-proof-verify" {
           nativeBuildInputs = [
             pkgs.lean4
@@ -232,13 +232,13 @@ in
           # Extract proof structure from Dhall
           dhall-to-json --file dhall/DischargeProof.dhall > /tmp/proofs.json
 
-          # TODO: lake build Continuity.DischargeProof
-          # TODO: verify that Dhall proof structure matches Lean4 formalization
+          #                                                                      // todo
+          #                                                                      // todo
 
           touch $out
         '';
 
-        # ── combined check ──────────────────────────────────────────────────
+        # ── combined check ─────────────────────────────────────────────
         all-checks = pkgs.runCommand "sense-all-checks" {
           nativeBuildInputs = [ ];
         } ''

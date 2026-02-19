@@ -24,18 +24,18 @@ import {
   MAX_NAME_LENGTH,
 } from "../shared-validation";
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ============================================================================
 // Primitives
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 
 const finiteNumber = z.number().finite();
 const positiveInt = z.number().int().positive();
 const nonNegativeInt = z.number().int().nonnegative();
 const positiveFinite = z.number().finite().positive();
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 // ControlNet Type Schema
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 
 export const ControlNetTypeSchema = z.enum([
   "depth",
@@ -50,9 +50,9 @@ export const ControlNetTypeSchema = z.enum([
 
 export type ControlNetType = z.infer<typeof ControlNetTypeSchema>;
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 // ControlNet Export Config Schema
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 
 export const ControlNetExportConfigSchema = z.object({
   type: ControlNetTypeSchema,
@@ -73,9 +73,9 @@ export const ControlNetExportConfigSchema = z.object({
 
 export type ControlNetExportConfig = z.infer<typeof ControlNetExportConfigSchema>;
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 // OpenPose JSON Schema (ControlNet Pose)
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 
 /**
  * OpenPose JSON format for pose export.
@@ -102,9 +102,9 @@ export const OpenPoseJSONSchema = z.object({
 
 export type OpenPoseJSON = z.infer<typeof OpenPoseJSONSchema>;
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 // Pose Export Config Schema
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 
 export const PoseExportConfigSchema = z.object({
   width: positiveInt.max(16384), // Max reasonable dimension
@@ -129,9 +129,9 @@ export const PoseExportConfigSchema = z.object({
 
 export type PoseExportConfig = z.infer<typeof PoseExportConfigSchema>;
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 // Pose Export Result Schema
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 
 export const PoseSequenceMetadataSchema = z.object({
   frameCount: positiveInt.max(100000), // Max 100k frames
@@ -157,9 +157,9 @@ export const PoseExportResultSchema = z.object({
 
 export type PoseExportResult = z.infer<typeof PoseExportResultSchema>;
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 // ControlNet Export Result Schema (Generic)
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 
 /**
  * Generic ControlNet export result.
@@ -182,9 +182,9 @@ export const ControlNetExportResultSchema = z.object({
 
 export type ControlNetExportResult = z.infer<typeof ControlNetExportResultSchema>;
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 // Validation Helpers
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 
 export function validateOpenPoseJSON(data: unknown): OpenPoseJSON {
   return OpenPoseJSONSchema.parse(data);

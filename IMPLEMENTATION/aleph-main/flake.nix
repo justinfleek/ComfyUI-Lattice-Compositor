@@ -14,10 +14,10 @@
     };
 
     # Determinate Nix with WASM support (builtins.wasm + wasm32-wasip1)
-    # NOTE: Don't follow nixpkgs - needs specific rust version for wasmtime
+    #                                                                      // note
     nix.url = "github:straylight-software/nix";
 
-    # GHC WASM backend toolchain (ghc-wasm-meta)
+    #                                                               // ghc // wasm
     # Provides wasm32-wasi-ghc, wasm32-wasi-cabal, wasi-sdk, wasmtime, etc.
     # Using GitHub mirror since gitlab.haskell.org has different flake URL format
     ghc-wasm-meta = {

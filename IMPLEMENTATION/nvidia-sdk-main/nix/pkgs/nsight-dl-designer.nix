@@ -1,4 +1,4 @@
-# NOTE: This package is NOT wired into flake.nix and requires a
+#                                                                      // note
 # `versions.nsight-dl-designer` entry in nix/versions.nix that does
 # not yet exist.  It will fail at eval time if imported as-is.
 # Add the version data before enabling.

@@ -8,9 +8,9 @@ import Data.Array (filter, intercalate)
 import Halogen.HTML as HH
 import Halogen.HTML.Properties as HP
 
--- ============================================================
--- UTILITY
--- ============================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                                   // utility
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Combine class names, filtering empty strings
 classes :: Array String -> String
@@ -20,16 +20,16 @@ classes = intercalate " " <<< filter (_ /= "")
 cls :: forall r i. Array String -> HH.IProp (class :: String | r) i
 cls = HP.class_ <<< HH.ClassName <<< classes
 
--- ============================================================
--- SVG NAMESPACE
--- ============================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                          // svg // namespace
+-- ════════════════════════════════════════════════════════════════════════════
 
 svgNS :: HH.Namespace
 svgNS = HH.Namespace "http://www.w3.org/2000/svg"
 
--- ============================================================
--- LAYOUT COMPONENTS
--- ============================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                      // layout // components
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Flex container
 flex :: forall w i. 
@@ -84,9 +84,9 @@ container className = HH.div [ cls [ "max-w-[900px] mx-auto px-8", className ] ]
 section :: forall w i. String -> Array (HH.HTML w i) -> HH.HTML w i
 section className = HH.section [ cls [ className ] ]
 
--- ============================================================
--- TYPOGRAPHY
--- ============================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                                // typography
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Section header with code formatting
 sectionHeader :: forall w i. String -> HH.HTML w i
@@ -114,9 +114,9 @@ keyword n content =
     [ cls [ "text-text keyword keyword-" <> show n ] ]
     [ HH.text content ]
 
--- ============================================================
--- DECORATIVE ELEMENTS
--- ============================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                    // decorative // elements
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Horizontal rail with shimmer effect
 rail :: forall w i. HH.HTML w i
@@ -135,9 +135,9 @@ statusIndicator label =
 scanlineOverlay :: forall w i. HH.HTML w i
 scanlineOverlay = HH.div [ cls [ "scanline-overlay" ] ] []
 
--- ============================================================
--- LINKS
--- ============================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                                     // links
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Navigation link with trace animation
 navLink :: forall w i. String -> String -> HH.HTML w i
@@ -170,9 +170,9 @@ footerLink href label =
     ]
     [ HH.text label ]
 
--- ============================================================
--- CODE BLOCKS
--- ============================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                            // code // blocks
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Terminal-style code block
 codeBlock :: forall w i. Array (HH.HTML w i) -> HH.HTML w i

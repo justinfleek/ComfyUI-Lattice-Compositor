@@ -17,18 +17,18 @@
 # This runs NativeLink as a systemd service for build caching and
 # remote execution with Buck2, Bazel, or other RE-compatible clients.
 #
-# SIMPLE USAGE (cache only):
+#                                                           // simple // usage
 #
 #   services.lre.enable = true;
 #
-# FULL USAGE (cache + remote execution):
+#                                                             // full // usage
 #
 #   services.lre = {
 #     enable = true;
 #     worker.enable = true;  # Enable local worker for execution
 #   };
 #
-# BUCK2 CONFIGURATION (.buckconfig.local):
+#                                                    // buck2 // configuration
 #
 #   [buck2_re_client]
 #   engine_address = grpc://127.0.0.1:50051
@@ -61,7 +61,7 @@ let
   cfg = config.services.lre;
 
   # Scheduler configuration (CAS + AC + Scheduler + optional Worker API)
-  # NOTE: Attribute names are quoted because they're NativeLink's JSON schema
+  #                                                                      // note
   #
   # When R2 is enabled, uses fast_slow store:
   #   - fast: local filesystem (LRU eviction cache)
@@ -82,7 +82,7 @@ let
               };
             };
           }
-          # R2 as slow tier
+          #                                                                        // r2
           {
             name = "CAS_R2_STORE";
             "experimental_s3_store" = {
@@ -107,7 +107,7 @@ let
               slow."ref_store".name = "CAS_R2_STORE";
             };
           }
-          # AC store (local only - action cache doesn't need global persistence)
+          #                                                                        // ac
           {
             name = "AC_MAIN_STORE";
             filesystem = {
@@ -205,7 +205,7 @@ let
   };
 
   # Worker configuration
-  # NOTE: Attribute names are quoted because they're NativeLink's JSON schema
+  #                                                                      // note
   worker-config = {
     stores = [
       {
@@ -345,7 +345,7 @@ in
       };
     };
 
-    # R2 backend for global persistent storage
+    #                                                                        // r2
     r2 = {
       enable = mk-option {
         type = lib.types.bool;
@@ -440,7 +440,7 @@ in
     };
   };
 
-  # NOTE: NixOS module attributes are quoted because they're external API
+  #                                                                      // note
   config = mk-if cfg.enable {
     users.users.${cfg.user} = mk-if (cfg.user == "nativelink") {
       "isSystemUser" = true;
@@ -498,7 +498,7 @@ in
         "ReadWritePaths" = mk-if cfg.persistence.enable [ cfg.persistence.directory ];
         "LimitNOFILE" = cfg.max-open-files;
       }
-      # R2 credentials from file (if configured)
+      #                                                                        // r2
       // lib.optionalAttrs (cfg.r2.enable && cfg.r2.credentials-file != null) {
         "EnvironmentFile" = cfg.r2.credentials-file;
       };

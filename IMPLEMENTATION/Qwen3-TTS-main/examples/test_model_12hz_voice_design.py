@@ -1,6 +1,6 @@
 # coding=utf-8
 # Copyright 2026 The Alibaba Qwen team.
-# SPDX-License-Identifier: Apache-2.0
+#                                                                      // spdx
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -10,7 +10,7 @@
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#            // without // warranties // or // conditions // of // any // kind
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import time
@@ -31,7 +31,7 @@ def main():
         attn_implementation="flash_attention_2",
     )
 
-    # -------- Single --------
+    # ── Single ─────────────────────────────────────────────────────
     torch.cuda.synchronize()
     t0 = time.time()
 
@@ -47,7 +47,7 @@ def main():
 
     sf.write("qwen3_tts_test_voice_design_single.wav", wavs[0], sr)
 
-    # -------- Batch --------
+    # ── Batch ──────────────────────────────────────────────────────
     texts = [
         "哥哥，你回来啦，人家等了你好久好久了，要抱抱！",
         "It's in the top drawer... wait, it's empty? No way, that's impossible! I'm sure I put it there!"

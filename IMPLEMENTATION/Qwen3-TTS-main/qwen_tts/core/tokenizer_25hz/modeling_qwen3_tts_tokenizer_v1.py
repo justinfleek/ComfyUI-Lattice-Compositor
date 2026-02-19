@@ -9,7 +9,7 @@
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#            // without // warranties // or // conditions // of // any // kind
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """PyTorch Qwen3TTSTokenizerV1 model."""
@@ -364,7 +364,7 @@ class ECAPA_TimeDelayNet(torch.nn.Module):
             )
         )
 
-        # SE-Res2Net layers
+        #                                                                        // se
         for i in range(1, len(config.enc_channels) - 1):
             self.blocks.append(
                 SqueezeExcitationRes2NetBlock(

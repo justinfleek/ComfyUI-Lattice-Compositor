@@ -60,7 +60,7 @@ newBufferPool ctx count size = do
     }
 
 -- | Free the buffer pool and unregister buffers.
--- CAUTION: Ensure all buffers are returned before calling this!
+--                                                                   // caution
 freeBufferPool :: BufferPool -> IO ()
 freeBufferPool BufferPool{..} = do
   when bpRegistered $ do

@@ -23,7 +23,7 @@ import qualified Aleph.Script.Tools.Rg as Rg
 import qualified Aleph.Script.Tools.Stylua as Stylua
 import qualified Aleph.Script.Tools.Tokei as Tokei
 
--- GNU tools
+--                                                                       // gnu
 
 import qualified Aleph.Script.Tools.Grep as Grep
 import qualified Aleph.Script.Tools.Ls as Ls
@@ -120,9 +120,9 @@ main = shelly $ verbosely $ do
     echo $ "Deadnix output: " <> tshow (length (T.lines dnOut)) <> " lines"
     echo ""
 
-    -- ========================================
-    -- GNU Tools
-    -- ========================================
+    -- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    --                                                                  // gnu // t
+    -- ════════════════════════════════════════════════════════════════════════════
 
     echo "=== Testing GNU Tools ==="
     echo ""

@@ -107,7 +107,7 @@ bearerAuth = AuthBearer "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
 basicAuth :: AuthValue
 basicAuth = AuthBasic "username" "password"
 
--- API key
+--                                                                       // api
 apiKeyAuth :: AuthValue
 apiKeyAuth = AuthApiKey "my-secret-api-key"
 @

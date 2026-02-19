@@ -20,7 +20,7 @@
 #   - lre-start script for easy startup
 #   - Shell hook to append RE config
 #
-# USAGE:
+#                                                                     // usage
 #
 #   imports = [ aleph.modules.flake.lre ];
 #

@@ -4,7 +4,7 @@
 #                                                     // test // cross-language //
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 #
-# FAILING TEST: Cross-language dependency tracking between Nix, Dhall, and buck2
+#                                                           // failing // test
 #
 # This test exercises the data flow:
 #   Nix toolchain config → Dhall Build.dhall → Starlark .bzl → buck2 build
@@ -45,7 +45,7 @@ let
   # This generates a Dhall file from Nix toolchain config
   # ────────────────────────────────────────────────────────────────────────────
 
-  # FAILING: nix-compile should verify this generates valid Dhall
+  #                                                                   // failing
   toolchain-dhall = pkgs.writeText "toolchain-generated.dhall" ''
     -- Auto-generated from Nix toolchain configuration
     -- DO NOT EDIT - regenerate with `nix run .#gen-toolchain-dhall`
@@ -66,7 +66,7 @@ let
   # The Dhall toolchain compiles to .buckconfig.local entries
   # ────────────────────────────────────────────────────────────────────────────
 
-  # FAILING: Should verify Starlark output is consistent with Dhall input
+  #                                                                   // failing
   buckconfig-local = pkgs.writeText "buckconfig.local" ''
     [cxx]
     cc = ${cxx-toolchain.cc}
@@ -84,7 +84,7 @@ let
   # Test: Type consistency across layers
   # ────────────────────────────────────────────────────────────────────────────
 
-  # FAILING: nix-compile should detect this type mismatch
+  #                                                                   // failing
   # We're passing a string where a path is expected
   broken-toolchain = {
     cc = "clang";  # ERROR: should be Path, not String
@@ -93,7 +93,7 @@ let
     ld = "${pkgs.llvmPackages_18.lld}/bin/ld.lld";
   };
 
-  # FAILING: nix-compile should detect this inconsistency
+  #                                                                   // failing
   # The buckconfig references a different clang than the Nix derivation
   inconsistent-buckconfig = pkgs.writeText "buckconfig-inconsistent.local" ''
     [cxx]
@@ -107,7 +107,7 @@ let
   # ────────────────────────────────────────────────────────────────────────────
 
   # A derivation that needs network access
-  # FAILING: Should propagate coeffect requirement to Dhall layer
+  #                                                                   // failing
   fetched-source = pkgs.fetchFromGitHub {
     owner = "example";
     repo = "example";
@@ -116,7 +116,7 @@ let
   };
 
   # Build that uses fetched source
-  # FAILING: nix-compile should infer this needs Resource.network
+  #                                                                   // failing
   build-with-fetch = pkgs.stdenv.mkDerivation {
     name = "build-with-fetch";
     src = fetched-source;

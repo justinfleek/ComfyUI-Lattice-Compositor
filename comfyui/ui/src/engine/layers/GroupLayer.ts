@@ -97,9 +97,9 @@ export class GroupLayer extends BaseLayer {
     return 0x888888; // Default gray
   }
 
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  //                                              // abstract // implementations
-  // ═══════════════════════════════════════════════════════════════════════════
+  // ============================================================================
+  // ABSTRACT IMPLEMENTATIONS
+  // ============================================================================
 
   protected onEvaluateFrame(_frame: number): void {
     // Group layer's transform is applied to the container,
@@ -137,9 +137,9 @@ export class GroupLayer extends BaseLayer {
     }
   }
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  //                                             // group // specific // methods
-  // ═══════════════════════════════════════════════════════════════════════════
+  // ============================================================================
+  // GROUP-SPECIFIC METHODS
+  // ============================================================================
 
   /**
    * Update the group's bounding box based on child layer bounds

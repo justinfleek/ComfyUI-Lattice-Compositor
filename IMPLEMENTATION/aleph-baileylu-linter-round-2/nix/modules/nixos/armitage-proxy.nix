@@ -17,7 +17,7 @@
 # graded monad proof system. Each fetch is a witnessed operation that can
 # be replayed and verified.
 #
-# USAGE:
+#                                                                     // usage
 #
 #   services.armitage-proxy = {
 #     enable = true;
@@ -121,7 +121,7 @@ in
       description = "Group to run the proxy as";
     };
 
-    # R2 attestation sync
+    #                                                                        // r2
     r2 = {
       enable = mk-option {
         type = lib.types.bool;
@@ -213,7 +213,7 @@ in
       };
     };
 
-    # R2 sync service (attestations)
+    #                                                                        // r2
     systemd.services.armitage-proxy-sync = mk-if cfg.r2.enable {
       description = "Sync Armitage attestations to R2";
       after = [ "network-online.target" ];

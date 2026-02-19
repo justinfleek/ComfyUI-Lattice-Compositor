@@ -119,17 +119,17 @@ duration of the WASM function call but should not be persisted across calls.
 newtype Value = Value {unValue :: ValueId}
     deriving newtype (Eq, Show, Storable)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Type inspection
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Get the type of a Nix value.
 getType :: Value -> IO NixType
 getType (Value v) = fromTypeId <$> c_get_type v
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Panic and warnings
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 {- | Abort evaluation with an error message.
 This function does not return.
@@ -149,9 +149,9 @@ warn msg = do
     BS.unsafeUseAsCStringLen bs $ \(ptr, len) ->
         c_warn (castPtr ptr) (fromIntegral len)
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Constructing values
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Create a Nix integer.
 mkInt :: Int64 -> IO Value
@@ -208,7 +208,7 @@ mkAttrs attrs = do
                 let bs = T.encodeUtf8 name
                     offset = idx * entrySize
                 BS.unsafeUseAsCStringLen bs $ \(namePtr, nameLen) -> do
-                    -- NOTE: This is tricky - we're storing the pointer which may become
+                    --                                                                      // note
                     -- invalid. The host must copy the string immediately.
                     -- In WASM32, pointers are 32-bit.
                     pokeByteOff basePtr offset (fromIntegral (ptrToWord32 namePtr) :: Word32)
@@ -221,9 +221,9 @@ mkAttrs attrs = do
     ptrToWord32 :: Ptr a -> Word32
     ptrToWord32 = fromIntegral . ptrToWordPtr
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Inspecting values
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Extract an integer from a Nix value.
 getInt :: Value -> IO Int64
@@ -367,9 +367,9 @@ lookupAttr v name = do
         Just val -> pure val
         Nothing -> panic $ T.concat ["attribute '", name, "' not found"]
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Calling Nix functions
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Call a Nix function with a list of arguments.
 call :: Value -> [Value] -> IO Value
@@ -385,9 +385,9 @@ call1 fun arg = call fun [arg]
 call2 :: Value -> Value -> Value -> IO Value
 call2 fun arg1 arg2 = call fun [arg1, arg2]
 
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Module initialization
---------------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 {- | Initialize the WASM module.
 

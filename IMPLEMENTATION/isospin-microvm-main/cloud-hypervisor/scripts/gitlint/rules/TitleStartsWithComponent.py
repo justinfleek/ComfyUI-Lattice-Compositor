@@ -1,4 +1,4 @@
-# SPDX-License-Identifier: Apache-2.0
+#                                                                      // spdx
 
 from gitlint.rules import LineRule, RuleViolation, CommitMessageTitle
 import re

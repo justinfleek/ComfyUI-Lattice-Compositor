@@ -11,9 +11,9 @@ import { storeLogger } from "@/utils/logger";
 import { useProjectStore } from "../projectStore";
 import { generateKeyframeId } from "@/utils/uuid5";
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-//                                           // copy // path // to // position
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
+// COPY PATH TO POSITION
+// ============================================================================
 
 export interface CopyPathToPositionOptions {
   /** Use the full composition duration for the motion (default: true) */
@@ -216,9 +216,9 @@ export function copyPathToPosition(
   return keyframes.length;
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-//                                                      // helper // functions
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
+// HELPER FUNCTIONS
+// ============================================================================
 
 interface SampledPoint {
   x: number;

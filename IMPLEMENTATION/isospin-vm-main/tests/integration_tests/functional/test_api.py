@@ -1,5 +1,5 @@
 # Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-# SPDX-License-Identifier: Apache-2.0
+#                                                                      // spdx
 """Tests that ensure the correctness of the Firecracker API."""
 
 # Disable pylint C0302: Too many lines in module
@@ -502,7 +502,7 @@ def test_api_put_update_post_boot(uvm_plain, io_engine):
             io_engine=io_engine,
         )
 
-    # MMDS config is not allowed post-boot.
+    #                                                                      // mmds
     mmds_config = {
         "version": "V2",
         "ipv4_address": "169.254.169.250",
@@ -1461,21 +1461,21 @@ def test_negative_snapshot_load_api(microvm_factory):
             mem_file_path="bar",
         )
 
-    # API request with `mem_backend` but no `backend_type` should fail.
+    #                                                                       // api
     with pytest.raises(RuntimeError, match="missing field `backend_type`"):
         vm.api.snapshot_load.put(
             snapshot_path="foo",
             mem_backend={"backend_path": "bar"},
         )
 
-    # API request with `mem_backend` but no `backend_path` should fail.
+    #                                                                       // api
     with pytest.raises(RuntimeError, match="missing field `backend_path`"):
         vm.api.snapshot_load.put(
             snapshot_path="foo",
             mem_backend={"backend_type": "File"},
         )
 
-    # API request with invalid `backend_type` should fail.
+    #                                                                       // api
     with pytest.raises(
         RuntimeError, match="unknown variant `foo`, expected `File` or `Uffd`"
     ):
@@ -1484,13 +1484,13 @@ def test_negative_snapshot_load_api(microvm_factory):
             mem_backend={"backend_type": "foo", "backend_path": "bar"},
         )
 
-    # API request without `snapshot_path` should fail.
+    #                                                                       // api
     with pytest.raises(RuntimeError, match="missing field `snapshot_path`"):
         vm.api.snapshot_load.put(
             mem_backend={"backend_type": "File", "backend_path": "bar"},
         )
 
-    # API request without `mem_backend` or `mem_file_path` should fail.
+    #                                                                       // api
     err_msg = "missing field: either `mem_backend` or " "`mem_file_path` is required"
     with pytest.raises(RuntimeError, match=err_msg):
         vm.api.snapshot_load.put(snapshot_path="foo")

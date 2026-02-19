@@ -16,17 +16,17 @@ import {
   MAX_NAME_LENGTH,
 } from "../shared-validation";
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ============================================================================
 // Primitives
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 
 const finiteNumber = z.number().finite();
 const positiveInt = z.number().int().positive();
 const positiveFinite = z.number().finite().positive();
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 // Composition Info Schema
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 
 export const CompositionInfoSchema = z.object({
   width: positiveInt.max(16384), // Max reasonable dimension
@@ -36,9 +36,9 @@ export const CompositionInfoSchema = z.object({
 
 export type CompositionInfo = z.infer<typeof CompositionInfoSchema>;
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 // Pin Metadata Schema
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 
 export const PinMetadataSchema = z.object({
   id: entityId,
@@ -48,9 +48,9 @@ export const PinMetadataSchema = z.object({
 
 export type PinMetadata = z.infer<typeof PinMetadataSchema>;
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 // Pin Trajectory Export Schema
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 
 /**
  * Pin trajectory export with metadata.
@@ -82,9 +82,9 @@ export const PinTrajectoryExportSchema = WanMoveTrajectoryBaseSchema.extend({
 
 export type PinTrajectoryExport = z.infer<typeof PinTrajectoryExportSchema>;
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 // Depth Format Schema
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 
 export const MeshDeformDepthFormatSchema = z.enum([
   "uint8",
@@ -96,9 +96,9 @@ export type MeshDeformDepthFormat = z.infer<
   typeof MeshDeformDepthFormatSchema
 >;
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 // Mesh Mask Export Schema
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 
 /**
  * Mesh mask export result.
@@ -114,9 +114,9 @@ export type MeshMaskExportMetadata = z.infer<
   typeof MeshMaskExportMetadataSchema
 >;
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 // Overlap Depth Export Schema
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 
 /**
  * Overlap depth export result.
@@ -140,9 +140,9 @@ export type OverlapDepthExportMetadata = z.infer<
   typeof OverlapDepthExportMetadataSchema
 >;
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 // Mesh Mask Sequence Export Schema
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 
 export const MeshMaskSequenceExportSchema = z.object({
   frames: boundedArray(
@@ -163,9 +163,9 @@ export type MeshMaskSequenceExport = z.infer<
   typeof MeshMaskSequenceExportSchema
 >;
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 // Overlap Depth Sequence Export Schema
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 
 export const OverlapDepthSequenceExportSchema = z.object({
   frames: boundedArray(
@@ -194,9 +194,9 @@ export type OverlapDepthSequenceExport = z.infer<
   typeof OverlapDepthSequenceExportSchema
 >;
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 // Validation Helpers
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 
 export function validatePinTrajectoryExport(data: unknown): PinTrajectoryExport {
   return PinTrajectoryExportSchema.parse(data);

@@ -8,7 +8,7 @@
 #
 #                                                         — Neuromancer
 #
-# VM init using Nimi (github:weyl-ai/nimi) as PID 1.
+#                                                                        // vm
 #
 # Nimi provides proper PID 1 behavior: signal handling, zombie reaping,
 # and clean shutdown. The startup script does all VM setup and then execs

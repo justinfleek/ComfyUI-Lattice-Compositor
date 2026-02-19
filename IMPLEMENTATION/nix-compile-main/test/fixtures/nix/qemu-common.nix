@@ -1,4 +1,4 @@
-# QEMU-related utilities shared between various Nix expressions.
+#                                                                      // qemu
 { lib, pkgs }:
 
 let

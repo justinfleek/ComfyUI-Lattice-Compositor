@@ -1,6 +1,6 @@
 # nix/flake-modules/vm-images.nix
 #
-# VM images for GPU broker testing
+#                                                                        // vm
 #
 # Provides:
 #   packages.fc-initramfs    - Minimal initramfs for Firecracker (kernel 6.12.10)
@@ -205,7 +205,7 @@
       };
 
       # ════════════════════════════════════════════════════════════════════════
-      # GPU VM Initramfs - For Cloud Hypervisor with VFIO GPU passthrough
+      #                                                            // gpu // vm // i
       # ════════════════════════════════════════════════════════════════════════
       #
       # This initramfs is for the GPU VM running Cloud Hypervisor with:
@@ -218,7 +218,7 @@
       #
       gpu-vm-initramfs =
         let
-          # IMPORTANT: This must match the kernel version in .vm-assets/vmlinux-6.12.63.bin
+          #                                                                 // important
           # and the NVIDIA modules compiled in gpu-rootfs.ext4
           linuxKernel = pkgs.linuxPackages_6_12.kernel;
           linuxModules = linuxKernel.modules;
@@ -338,7 +338,7 @@
           '';
         };
 
-      # GPU VM kernel - must match initramfs modules
+      #                                                                 // gpu // vm
       gpu-vm-kernel = pkgs.linuxPackages_6_12.kernel;
 
     in

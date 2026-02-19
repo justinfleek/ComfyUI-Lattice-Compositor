@@ -83,7 +83,7 @@ in
           ghc-wasm-meta = inputs.ghc-wasm-meta or null;
         };
 
-        # GHC WASM toolchain (if available)
+        #                                                               // ghc // wasm
         ghc-wasm =
           if inputs ? ghc-wasm-meta then inputs.ghc-wasm-meta.packages.${system}.all_9_12 else null;
 
@@ -92,7 +92,7 @@ in
         # ──────────────────────────────────────────────────────────────────────
 
         # Haskell package set - using GHC 9.12 from nixpkgs (stable, well-tested)
-        # GHC 9.12 is the latest stable before 9.14's doctest/HLS breakage.
+        #                                                                  // ghc // 9
         # This replaces the Mercury GHC approach which had package.cache.lock bugs.
         hs-pkgs = pkgs.haskell.packages.ghc912;
 
@@ -164,7 +164,7 @@ in
                 # Combined Haskell dependencies
                 all-hs-deps = p: base-deps p ++ hs-deps p;
 
-                # GHC with turtle and user's Haskell deps (using ghc912 from nixpkgs)
+                #                                                                       // ghc
                 ghc-with-deps = hs-pkgs.ghcWithPackages all-hs-deps;
               in
               pkgs.stdenv.mkDerivation {
@@ -295,18 +295,18 @@ in
         # ──────────────────────────────────────────────────────────────────────
 
         render = {
-          # JSON: use builtin serialization
+          #                                                                      // json
           json =
             name: value:
             pkgs.writeTextFile {
               inherit name;
               text = builtins.toJSON value;
             };
-          # TOML/YAML/INI: pkgs.formats.*.generate already returns a derivation
+          #                                                                      // toml
           toml = name: value: (pkgs.formats.toml { }).generate name value;
           yaml = name: value: (pkgs.formats.yaml { }).generate name value;
           ini = name: value: (pkgs.formats.ini { }).generate name value;
-          # ENV: simple key=value format
+          #                                                                       // env
           env =
             name: attrs:
             pkgs.writeTextFile {
@@ -358,8 +358,8 @@ in
           #
           # Example:
           #   render.dhall-with-vars "script.sh" ./script.dhall {
-          #     PATH = "${pkgs.coreutils}/bin";
-          #     VERSION = "1.0";
+          #                                                                      // path
+          #                                                                   // version
           #   }
           dhall-with-vars =
             name: src: vars:
@@ -822,7 +822,7 @@ in
             inherit (lib.types) either;
             one-of = lib.types.oneOf;
 
-            # GPU capability type
+            #                                                                       // gpu
             cuda-capability = lib.types.enum [
               "7.0"
               "7.5"
@@ -836,7 +836,7 @@ in
               "12.1"
             ];
 
-            # GPU architecture type
+            #                                                                       // gpu
             cuda-arch = lib.types.enum [
               "volta"
               "turing"
@@ -904,7 +904,7 @@ in
           run-command = pkgs.runCommand;
           run-command-local = pkgs.runCommandLocal;
 
-          # DEPRECATED: Use render.dhall-with-vars instead of substitute patterns
+          #                                                                // deprecated
           # These are kept temporarily for backward compatibility
           inherit (pkgs) substitute;
           substitute-all = pkgs.substituteAll;

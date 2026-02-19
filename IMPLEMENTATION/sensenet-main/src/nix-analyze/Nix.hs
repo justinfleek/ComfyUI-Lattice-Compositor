@@ -77,9 +77,9 @@ import System.Environment (getEnvironment, setEnv)
 import System.Exit (ExitCode (..))
 import System.Process (readProcessWithExitCode)
 
--- -----------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Analysis Modes
--- -----------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 data AnalysisMode
     = -- | Resolve flake refs to compiler flags
@@ -100,9 +100,9 @@ runAnalysis = \case
     ModeUnroll ref -> encode <$> unrollFlakeRef ref
     ModeDeps ref -> encode <$> getDepsForRef ref
 
--- -----------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Resolve: Output compiler flags directly (preferred mode)
--- -----------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 {- | Resolve multiple flake refs to compiler/linker flags
 Output format (one flag per line):
@@ -246,10 +246,10 @@ findPkgConfigNames pkgConfigPath = do
                 pure [T.pack f | f <- contents, ".pc" `isSuffixOf` f]
             else pure []
 
--- -----------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Unroll: Convert nix derivation to concrete build commands
--- TODO[b7r6]: Replace JSON with typed output
--- -----------------------------------------------------------------------------
+--                                                                      // todo
+-- ────────────────────────────────────────────────────────────────────────────
 
 data UnrollResult = UnrollResult
     { urFlakeRef :: Text
@@ -390,10 +390,10 @@ getPropagatedPaths ref = do
             Left _ -> pure Nothing
     pure $ catMaybes paths
 
--- -----------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Deps: Get dependency graph
--- TODO[b7r6]: Replace JSON with typed output
--- -----------------------------------------------------------------------------
+--                                                                      // todo
+-- ────────────────────────────────────────────────────────────────────────────
 
 data DepsResult = DepsResult
     { drFlakeRef :: Text
@@ -447,9 +447,9 @@ extractName ref =
     let afterHash = T.takeWhileEnd (/= '#') ref
      in T.takeWhile (/= '.') afterHash
 
--- -----------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Nix Commands
--- -----------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 resolveFlakeRef :: Text -> IO (Text, Map Text Text)
 resolveFlakeRef ref = do
@@ -519,9 +519,9 @@ getBuildInputs ref = do
                 Left _ -> pure []
         ExitFailure _ -> pure []
 
--- -----------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Helpers
--- -----------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 getTextAttr :: Text -> Map Text Aeson.Value -> Maybe Text
 getTextAttr key attrs = case Map.lookup key attrs of

@@ -14,9 +14,9 @@ import { ParticleConnectionSystem } from "@/engine/particles/ParticleConnectionS
 import type { ConnectionConfig } from "@/engine/particles/types";
 import { PARTICLE_STRIDE } from "@/engine/particles/types";
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-//                                                                  // helpers
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
+// HELPERS
+// ============================================================================
 
 function createParticleBuffer(count: number): Float32Array {
   return new Float32Array(count * PARTICLE_STRIDE);
@@ -59,9 +59,9 @@ function createDefaultConfig(): ConnectionConfig {
   };
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-//                                                              // arbitraries
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
+// ARBITRARIES
+// ============================================================================
 
 const arbConnectionConfig: fc.Arbitrary<ConnectionConfig> = fc.record({
   enabled: fc.boolean(),
@@ -84,9 +84,9 @@ const arbConnectionConfig: fc.Arbitrary<ConnectionConfig> = fc.record({
   fadeByDistance: fc.boolean(),
 });
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 // TESTS: Construction
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 
 describe("ParticleConnectionSystem construction", () => {
   it("should handle any maxParticles value", () => {
@@ -109,9 +109,9 @@ describe("ParticleConnectionSystem construction", () => {
   });
 });
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 // TESTS: Initialization
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 
 describe("ParticleConnectionSystem initialization", () => {
   it("should initialize with any config", () => {
@@ -126,9 +126,9 @@ describe("ParticleConnectionSystem initialization", () => {
   });
 });
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 // TESTS: Update
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 
 describe("ParticleConnectionSystem.update", () => {
   let system: ParticleConnectionSystem;
@@ -249,9 +249,9 @@ describe("ParticleConnectionSystem.update", () => {
   });
 });
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 // TESTS: Distance-based fading
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 
 describe("ParticleConnectionSystem distance fading", () => {
   it("should fade opacity with distance when enabled", () => {
@@ -302,9 +302,9 @@ describe("ParticleConnectionSystem distance fading", () => {
   });
 });
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 // TESTS: Accessors
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 
 describe("ParticleConnectionSystem accessors", () => {
   it("should return mesh after initialization", () => {
@@ -336,9 +336,9 @@ describe("ParticleConnectionSystem accessors", () => {
   });
 });
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 // TESTS: Reset and Dispose
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 
 describe("ParticleConnectionSystem reset and dispose", () => {
   it("should clear connections on reset", () => {

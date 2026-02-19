@@ -11,7 +11,7 @@
 #   - buck2.build :: target -> derivation
 #   - remote execution via NativeLink CAS
 #
-# USAGE:
+#                                                                     // usage
 #
 #   {
 #     inputs.sense.url = "github:straylight-software/sensenet";

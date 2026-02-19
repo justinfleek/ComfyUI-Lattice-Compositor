@@ -17,11 +17,11 @@
 #
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 #
-# FEATURE REQUIREMENTS:
+#                                                   // feature // requirements
 #   - Building WASM plugins: ghc-wasm-meta input (available)
 #   - Loading WASM plugins: builtins.wasm (requires straylight-nix)
 #
-# USAGE:
+#                                                                     // usage
 #   # From Nix, evaluate typed expressions:
 #   aleph.eval "Aleph.Packages.Nvidia.nccl" {}
 #   aleph.eval "Aleph.Build.withFlags" { pkg = myPkg; flags = ["-O3"]; }
@@ -88,7 +88,7 @@ let
       module-files = map module-to-path all-modules;
 
       # Generate linker flags to export each function
-      # GHC WASM doesn't automatically export foreign export ccall symbols,
+      #                                                               // ghc // wasm
       # so we need to explicitly tell the linker to export them.
       export-flags = map (e: "'-optl-Wl,--export=${e}'") exports;
     in
@@ -117,7 +117,7 @@ let
         # -optl-Wl,--export=<name>: Export our foreign export ccall functions
         # -O2: Optimize
         # 
-        # NOTE: We do NOT use -no-hs-main because:
+        #                                                                      // note
         # 1. GHC WASM reactor modules need the RTS initialization code that -no-hs-main excludes
         # 2. The _initialize export will call hs_init() when properly linked
         # 3. We export hs_init for explicit initialization by the host
@@ -169,7 +169,7 @@ let
       "Aleph.Nix.Packages.Spdlog"
       "Aleph.Nix.Packages.Catch2"
       "Aleph.Nix.Packages.AbseilCpp"
-      # NVIDIA SDK
+      #                                                             // nvidia // sdk
       "Aleph.Nix.Packages.Nvidia"
       # Test packages for typed actions
       "Aleph.Nix.Packages.Jq"
@@ -187,7 +187,7 @@ let
       "spdlog"
       "catch2"
       "abseil_cpp"
-      # NVIDIA SDK
+      #                                                             // nvidia // sdk
       "nvidia_nccl"
       "nvidia_cudnn"
       "nvidia_tensorrt"
@@ -510,7 +510,7 @@ let
   # 3. Resolves dependency names to actual packages
   # 4. Calls the appropriate builder (cmake, autotools, etc.)
   #
-  # FEATURE REQUIREMENT: builtins.wasm (straylight-nix)
+  #                                                    // feature // requirement
   #
   load-wasm-packages =
     {
@@ -583,13 +583,13 @@ in
     # Feature detection
     features
 
-    # WASM plugin building (requires ghc-wasm-meta)
+    #                                                                      // wasm
     build-wasm-plugin
 
     # The compiled aleph WASM module (internal)
     aleph-wasm
 
-    # WASM plugin loading (requires straylight-nix with builtins.wasm)
+    #                                                                      // wasm
     build-from-spec
     load-wasm-packages
 
@@ -598,7 +598,7 @@ in
     actions-to-shell
     ;
 
-  # NOTE: The aleph interface (aleph.eval, aleph.import) is in ./aleph.nix
+  #                                                                      // note
   # Import it directly:
   #   aleph = import ./prelude/aleph.nix { inherit lib pkgs; wasmFile = ...; };
 }

@@ -6,7 +6,7 @@
 # Abseil produces ~130 separate static libraries. We combine them into
 # a single libabseil.a with a clean pkg-config file.
 #
-# NOTE: mk-static-cpp already accepts lisp-case attrs and handles translation.
+#                                                                      // note
 #
 {
   final,

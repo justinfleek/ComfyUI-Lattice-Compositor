@@ -48,7 +48,7 @@ import Text.Megaparsec.Char (char, digitChar, hexDigitChar, newline, space, stri
 type Parser = Parsec Void Text
 
 -- ════════════════════════════════════════════════════════════════════════════════
--- SSE Types
+--                                                                  // sse // t
 -- ════════════════════════════════════════════════════════════════════════════════
 
 -- | Parsed SSE event
@@ -77,7 +77,7 @@ data ToolCallDelta = ToolCallDelta
     deriving stock (Show, Eq)
 
 -- ════════════════════════════════════════════════════════════════════════════════
--- SSE Parsing
+--                                                                  // sse // p
 -- ════════════════════════════════════════════════════════════════════════════════
 
 -- | Parse SSE text into events
@@ -109,7 +109,7 @@ parseSingleSSELine =
 -- ════════════════════════════════════════════════════════════════════════════════
 -- Incremental SSE Parsing
 --
--- SSE events are separated by blank lines (\n\n). We parse complete events
+--                                                                       // sse
 -- and return any incomplete trailing data for buffering.
 -- ════════════════════════════════════════════════════════════════════════════════
 
@@ -133,7 +133,7 @@ Example:
 -}
 parseSSEIncremental :: Text -> ([SSEEvent], Text)
 parseSSEIncremental buffer =
-    -- SSE events are separated by blank lines (double newline)
+    --                                                                       // sse
     -- Split on \n\n and parse each complete segment
     let segments = T.splitOn "\n\n" buffer
     in case segments of
@@ -186,7 +186,7 @@ parseCommentLine = do
     pure $ SSEComment content
 
 -- ════════════════════════════════════════════════════════════════════════════════
--- JSON Content Extraction
+--                                                                 // json // c
 --
 -- We DON'T use aeson for streaming. We use Megaparsec to surgically extract
 -- just the "content" field from OpenAI-format JSON. This avoids parsing 650
@@ -318,7 +318,7 @@ parseArguments = do
     parseJSONString
 
 -- ════════════════════════════════════════════════════════════════════════════════
--- JSON String Parser
+--                                                                 // json // s
 -- ════════════════════════════════════════════════════════════════════════════════
 
 parseJSONString :: Parser Text

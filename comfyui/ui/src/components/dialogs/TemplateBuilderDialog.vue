@@ -632,9 +632,9 @@ function isExposedProperty(
   return checkIsExposedProperty(item);
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-//                                                      // drag // and // drop
-// ═══════════════════════════════════════════════════════════════════════════
+// ===========================================
+// DRAG AND DROP
+// ===========================================
 
 function handleDragStart(
   event: DragEvent,
@@ -721,9 +721,9 @@ function handleDropToGroup(event: DragEvent, groupId: string) {
   handleDragEnd();
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-//                                                   // template // operations
-// ═══════════════════════════════════════════════════════════════════════════
+// ===========================================
+// TEMPLATE OPERATIONS
+// ===========================================
 
 function selectTemplate(template: SavedTemplate) {
   selectedTemplateId.value = template.id;
@@ -889,9 +889,9 @@ async function handleFileImport(event: Event) {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-//                                               // poster // frame // capture
-// ═══════════════════════════════════════════════════════════════════════════
+// ===========================================
+// POSTER FRAME CAPTURE
+// ===========================================
 
 async function capturePosterFrame() {
   if (!captureFrame) {
@@ -931,9 +931,9 @@ async function capturePosterFrame() {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-//                                                       // template // export
-// ═══════════════════════════════════════════════════════════════════════════
+// ===========================================
+// TEMPLATE EXPORT
+// ===========================================
 
 async function exportTemplate() {
   if (!activeComposition.value || !templateConfig.value) return;

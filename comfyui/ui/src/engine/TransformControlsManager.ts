@@ -19,9 +19,9 @@ import type { LayerManager } from "./core/LayerManager";
 import type { RenderPipeline } from "./core/RenderPipeline";
 import type { SceneManager } from "./core/SceneManager";
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ============================================================================
 // TYPE EXTENSIONS FOR THREE.JS COMPATIBILITY
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 
 /**
  * Extended Object3D interface for compatibility with objects from different Three.js instances

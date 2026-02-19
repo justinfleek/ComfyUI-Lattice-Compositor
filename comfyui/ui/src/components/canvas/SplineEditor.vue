@@ -320,9 +320,9 @@ const projectStore = useProjectStore();
 const smoothTolerance = ref(10);
 const strokeColor = "#00ff00";
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-//                                                       // layer // transform
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
+// LAYER TRANSFORM
+// ============================================================================
 
 const layerTransform = computed(() => {
   if (!props.layerId) {
@@ -421,9 +421,9 @@ function inverseTransformPoint(p: { x: number; y: number }): {
   return { x: x + anchorPoint.x, y: y + anchorPoint.y };
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-//                                                   // computed // properties
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
+// COMPUTED PROPERTIES
+// ============================================================================
 
 // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??/?.
 const isClosed = computed(() => {
@@ -549,9 +549,9 @@ const overlayStyle = computed(() => {
   };
 });
 
-// ═══════════════════════════════════════════════════════════════════════════
-//                               // use // spline // interaction // composable
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
+// USE SPLINE INTERACTION COMPOSABLE
+// ============================================================================
 
 const interaction = useSplineInteraction({
   layerId: toRef(props, "layerId"),
@@ -613,9 +613,9 @@ const {
   clearSelection,
 } = interaction;
 
-// ═══════════════════════════════════════════════════════════════════════════
-//                                       // component // specific // functions
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
+// COMPONENT-SPECIFIC FUNCTIONS
+// ============================================================================
 
 // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
 function getDragTargetType(): string | undefined {

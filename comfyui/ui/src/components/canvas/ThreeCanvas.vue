@@ -478,9 +478,9 @@ const {
   viewportTransform,
 });
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ============================================================
 // MARQUEE SELECTION (Phase 8 Integration)
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================
 
 // Enable marquee selection only when using select tool
 const marqueeEnabled = computed(() => selectionStore.currentTool === "select");

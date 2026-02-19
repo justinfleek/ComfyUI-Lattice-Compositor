@@ -1,6 +1,6 @@
 # nix/flake-modules/gpu-broker.nix
 #
-# GPU Broker package for Isospin
+#                                                                  // gpu // b
 #
 # Provides:
 #   packages.gpu-broker - GPU broker binary (dynamically linked)

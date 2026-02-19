@@ -1,6 +1,6 @@
 # nix/versions/cutensor/default.nix — cuTENSOR Versions
 #
-# NVIDIA cuTENSOR high-performance tensor library versions.
+#                                                                    // nvidia
 
 { lib }:
 

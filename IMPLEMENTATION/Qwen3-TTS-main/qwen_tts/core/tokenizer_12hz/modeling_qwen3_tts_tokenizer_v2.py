@@ -9,7 +9,7 @@
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#            // without // warranties // or // conditions // of // any // kind
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """PyTorch Qwen3TTSTokenizerV2 model."""
@@ -247,7 +247,7 @@ class Qwen3TTSTokenizerV2DecoderRotatoryEmbedding(nn.Module):
 
     def __init__(self, config: Qwen3TTSTokenizerV2DecoderConfig, device=None):
         super().__init__()
-        # BC: "rope_type" was originally "type"
+        #                                                                        // bc
         if hasattr(config, "rope_scaling") and isinstance(config.rope_scaling, dict):
             self.rope_type = config.rope_scaling.get("rope_type", config.rope_scaling.get("type"))
         else:

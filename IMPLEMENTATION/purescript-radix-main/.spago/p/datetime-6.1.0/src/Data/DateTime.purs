@@ -87,7 +87,7 @@ toRecord (DateTime d t) =
   , millisecond: fromEnum (millisecond t)
   }
 
--- TODO: these could (and probably should) be implemented in PS
+--                                                                      // todo
 
 foreign import calcDiff :: Fn2 DateRec DateRec Milliseconds
 

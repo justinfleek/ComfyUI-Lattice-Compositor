@@ -96,7 +96,7 @@ withOpenAIConnection config action = do
         action connection
 
 -- ════════════════════════════════════════════════════════════════════════════════
--- URL Parsing
+--                                                                  // url // p
 -- ════════════════════════════════════════════════════════════════════════════════
 
 type URLParser = Parsec Void Text
@@ -310,7 +310,7 @@ buildRequestPayload connection messages config =
             ]
 
 -- ════════════════════════════════════════════════════════════════════════════════
--- SSE Processing
+--                                                                  // sse // p
 -- ════════════════════════════════════════════════════════════════════════════════
 
 -- | Split buffer into complete SSE events and remainder

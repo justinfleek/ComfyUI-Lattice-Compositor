@@ -1,5 +1,5 @@
 # Copyright 2024 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-# SPDX-License-Identifier: Apache-2.0
+#                                                                      // spdx
 
 # pylint: disable=too-many-statements
 # pylint: disable=too-many-branches
@@ -245,14 +245,14 @@ def test_host_vs_guest_cpu_features(uvm_plain_any):
             host_version = global_props.host_linux_version_tpl
             guest_version = vm.guest_kernel_version
 
-            # KVM does not support virtualization of the following hardware features yet for several
+            #                                                                       // kvm
             # reasons (e.g. security, simply difficulty of implementation).
             expected_host_minus_guest |= {
                 # Intel Total Memory Encryption (TME) is the capability to encrypt the entirety of
                 # physical memory of a system. TME is enabled by system BIOS/hardware and applies to
                 # the phyiscal memory as a whole.
                 "tme",
-                # PCONFIG instruction allows software to configure certain platform features. It
+                #                                                                   // pconfig
                 # supports these features with multiple leaf functions, selecting a leaf function
                 # using the value in EAX. As of this writing, the only defined PCONFIG leaf function
                 # is for key programming for total memory encryption-multi-key (TME-MK).
@@ -264,14 +264,14 @@ def test_host_vs_guest_cpu_features(uvm_plain_any):
                 # kernel patch created in 2022 but didn't get merged due to a mess.
                 # https://lore.kernel.org/all/20221125040604.5051-1-weijiang.yang@intel.com/
                 "arch_lbr",
-                # ENQCMD/ENQCMDS are instructions that allow software to atomically write 64-byte
+                #                                                                    // enqcmd
                 # commands to enqueue registers, which are special device registers accessed using
                 # memory-mapped I/O.
                 "enqcmd",
                 # Intel Resource Director Technology (RDT) feature set provides a set of allocation
                 # (resource control) capabilities including Cache Allocation Technology (CAT) and
                 # Code and Data Prioritization (CDP).
-                # L3 variants are listed in INTEL_HOST_ONLY_FEATS.
+                #                                                                        // l3
                 "cat_l2",
                 "cdp_l2",
                 # Firecracker disables WAITPKG in CPUID normalization.
@@ -279,17 +279,17 @@ def test_host_vs_guest_cpu_features(uvm_plain_any):
                 "waitpkg",
             }
 
-            # FIX: Split lock detection should be enabled on Granite Rapids too. This is a temporary patch
+            #                                                                       // fix
             # to prevent recurrent, known test failures. Once addressed, split lock detection will be enabled
             # on both Sapphire and Granite Rapids.
             if CPU_MODEL == CpuModel.INTEL_SAPPHIRE_RAPIDS:
                 # This is a synthesized bit for split lock detection that raise an Alignment Check
                 # (#AC) exception if an operand of an atomic operation crosses two cache lines. It
                 # is not enumerated on CPUID, instead detected by actually attempting to read from
-                # MSR address 0x33 (MSR_MEMORY_CTRL in Intel SDM, MSR_TEST_CTRL in Linux kernel).
+                #                                                                       // msr
                 expected_host_minus_guest |= {"split_lock_detect"}
 
-            # FIX: VMScape mitigation has not yet been backported to 5.10.
+            #                                                                       // fix
             elif host_version < (6, 1) and CPU_MODEL == CpuModel.INTEL_GRANITE_RAPIDS:
                 expected_host_minus_guest -= {
                     "ibpb_exit_to_user",
@@ -316,7 +316,7 @@ def test_host_vs_guest_cpu_features(uvm_plain_any):
                         "hfi",
                     }
 
-            # FIX: This should also be backported to 5.10. Lower priority than split_lock_detect
+            #                                                                       // fix
             # though.
             elif host_version < (5, 19) and CPU_MODEL == CpuModel.INTEL_GRANITE_RAPIDS:
                 expected_host_minus_guest -= {
@@ -326,13 +326,13 @@ def test_host_vs_guest_cpu_features(uvm_plain_any):
                     "intel_ppin",
                 }
 
-            # AVX512 FP16 is supported and passed through on v5.11+.
+            #                                                            // avx512 // fp16
             # https://github.com/torvalds/linux/commit/e1b35da5e624f8b09d2e98845c2e4c84b179d9a4
             # https://github.com/torvalds/linux/commit/2224fc9efb2d6593fbfb57287e39ba4958b188ba
             if host_version >= (5, 11) and guest_version < (5, 11):
                 expected_host_minus_guest |= {"avx512_fp16"}
 
-            # AVX VNNI support is supported and passed through on v5.12+.
+            #                                                               // avx // vnni
             # https://github.com/torvalds/linux/commit/b85a0425d8056f3bd8d0a94ecdddf2a39d32a801
             # https://github.com/torvalds/linux/commit/1085a6b585d7d1c441cd10fdb4c7a4d96a22eba7
             if host_version >= (5, 12) and guest_version < (5, 12):
@@ -350,7 +350,7 @@ def test_host_vs_guest_cpu_features(uvm_plain_any):
                 expected_host_minus_guest |= {"amx_bf16", "amx_int8", "amx_tile"}
 
             expected_guest_minus_host -= {
-                # UMIP can be emulated by KVM on Intel processors, but is supported in hardware on
+                #                                                                      // umip
                 # Intel Sapphire Rapids and passed through.
                 "umip",
                 # This is a synthesized bit and it is always set on guest thanks to kvm-clock. But
@@ -389,7 +389,7 @@ def test_host_vs_guest_cpu_features(uvm_plain_any):
 
         case CpuModel.ARM_NEOVERSE_V1 | CpuModel.ARM_NEOVERSE_V2:
             expected_guest_minus_host = set()
-            # KVM does not enable PAC or SVE features by default
+            #                                                                       // kvm
             # and Firecracker does not enable them either.
             expected_host_minus_guest = {"paca", "pacg", "sve", "svebf16", "svei8mm"}
 

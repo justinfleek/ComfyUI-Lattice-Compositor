@@ -9,9 +9,9 @@ import type { Keyframe, PropertyValue } from "@/types/project";
 import { findPropertyByPath } from "./helpers";
 import { useProjectStore } from "../projectStore";
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-//                                 // auto // bezier // tangent // calculation
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
+// AUTO BEZIER TANGENT CALCULATION
+// ============================================================================
 
 /**
  * Auto-calculate bezier tangents for a keyframe based on surrounding keyframes.

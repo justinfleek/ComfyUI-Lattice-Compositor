@@ -16,9 +16,9 @@ import {
   zoomOut,
 } from "./useCurveEditorView";
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-//                                                   // keyframe // navigation
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================
+// KEYFRAME NAVIGATION
+// ============================================================
 
 /**
  * Navigate to previous keyframe
@@ -70,9 +70,9 @@ export function goToNextKeyframe(
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-//                                                             // easy // ease
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================
+// EASY EASE
+// ============================================================
 
 export interface EasyEaseParams {
   selectedKeyframes: SelectedKeyframe[];
@@ -128,9 +128,9 @@ export function applyEasyEase(params: EasyEaseParams): void {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-//                                                      // keyboard // handler
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================
+// KEYBOARD HANDLER
+// ============================================================
 
 export interface CurveEditorKeyboardOptions {
   viewState: CurveViewState;
@@ -230,9 +230,9 @@ export function createKeyboardHandler(options: CurveEditorKeyboardOptions) {
   };
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-//                                                     // composable // export
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================
+// COMPOSABLE EXPORT
+// ============================================================
 
 export function useCurveEditorKeyboard(options: CurveEditorKeyboardOptions) {
   const handleKeyDown = createKeyboardHandler(options);

@@ -71,7 +71,7 @@ toDateTime = toDateTimeImpl mkDateTime
   mkDateTime = unsafePartial \y mo d h mi s ms ->
     DateTime (canonicalDate y (fromJust (toEnum mo)) d) (Time h mi s ms)
 
--- TODO: these could (and probably should) be implemented in PS
+--                                                                      // todo
 foreign import fromDateTimeImpl :: Fn7 Year Int Day Hour Minute Second Millisecond Instant
 foreign import toDateTimeImpl :: (Year -> Int -> Day -> Hour -> Minute -> Second -> Millisecond -> DateTime) -> Instant -> DateTime
 

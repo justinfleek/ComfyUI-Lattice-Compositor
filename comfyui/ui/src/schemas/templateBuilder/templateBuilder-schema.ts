@@ -12,9 +12,9 @@ import { AnimatablePropertySchema } from "../layers/animation-schema";
 import { RGBAColorSchema } from "../layers/primitives-schema";
 import { CompositionSchema } from "../project-schema";
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ============================================================================
 // Validation Constants
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 
 const MAX_NAME_LENGTH = 200;
 const MAX_DESCRIPTION_LENGTH = 2000;
@@ -32,9 +32,9 @@ const MAX_BASE64_LENGTH = 50 * 1024 * 1024; // 50MB max base64 data
 // Supported template format versions
 const SUPPORTED_FORMAT_VERSIONS = ["1.0.0", "1.0"];
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 // Helper Schemas
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 
 /** Non-empty string with max length */
 const nonEmptyString = (maxLength: number) =>
@@ -92,9 +92,9 @@ const propertyPath = z.string()
     { message: "Must be valid property path (e.g., 'data.text', 'transform.position.x')" }
   );
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 // Expression Control Types
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 
 export const ExpressionControlTypeSchema = z.enum([
   "slider",
@@ -153,9 +153,9 @@ export const ExpressionControlSchema = z.object({
 
 export type ExpressionControl = z.infer<typeof ExpressionControlSchema>;
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 // Exposed Property Types
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 
 export const ExposedPropertyTypeSchema = z.enum([
   "sourceText",
@@ -243,9 +243,9 @@ export const ExposedPropertySchema = z.object({
 
 export type ExposedProperty = z.infer<typeof ExposedPropertySchema>;
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 // Property Group
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 
 export const PropertyGroupSchema = z.object({
   id: templateId,
@@ -257,9 +257,9 @@ export const PropertyGroupSchema = z.object({
 
 export type PropertyGroup = z.infer<typeof PropertyGroupSchema>;
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 // Template Configuration
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 
 export const TemplateCommentSchema = z.object({
   id: templateId,
@@ -340,9 +340,9 @@ export const TemplateConfigSchema = z.object({
 
 export type TemplateConfig = z.infer<typeof TemplateConfigSchema>;
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 // Template Export Types
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 
 export const TemplateAssetSchema = z.object({
   id: z.string().max(MAX_ID_LENGTH),
@@ -425,9 +425,9 @@ export const LatticeTemplateSchema = z.object({
 
 export type LatticeTemplate = z.infer<typeof LatticeTemplateSchema>;
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 // Panel State Types
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 
 export const TemplateBuilderStateSchema = z.object({
   activeTab: z.enum(["browse", "edit"]),

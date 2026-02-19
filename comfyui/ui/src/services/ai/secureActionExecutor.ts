@@ -40,9 +40,9 @@ import type { ToolCall } from "./toolDefinitions";
 // Re-export for backwards compatibility
 export { hardenedScopeManager } from "./security/hardenedScopeManager";
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-//                                                                    // types
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
+// TYPES
+// ============================================================================
 
 export interface SecureExecutionResult {
   success: boolean;
@@ -64,9 +64,9 @@ export interface SecureExecutorOptions {
   confirmationId?: string;
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-//                                                       // secure // executor
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
+// SECURE EXECUTOR
+// ============================================================================
 
 /**
  * Execute a tool call with full security checks
@@ -322,9 +322,9 @@ export async function confirmPendingToolCall(
   return executeToolCallSecure(toolCall, { confirmed: true, bypassScopeCheck: true });
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 // SCOPE MANAGEMENT (using hardened manager)
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 
 /**
  * Get current scope level

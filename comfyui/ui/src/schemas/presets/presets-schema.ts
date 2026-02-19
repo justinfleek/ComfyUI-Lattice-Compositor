@@ -22,9 +22,9 @@ import {
   MAX_TAGS_COUNT,
 } from "../shared-validation";
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ============================================================================
 // Preset Category
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 
 export const PresetCategorySchema = z.enum([
   "particle",
@@ -39,9 +39,9 @@ export const PresetCategorySchema = z.enum([
 
 export type PresetCategory = z.infer<typeof PresetCategorySchema>;
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 // Preset Metadata
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 
 // Base schema without refinements (for extend)
 const PresetMetadataBaseSchema = z.object({
@@ -65,9 +65,9 @@ export const PresetMetadataSchema = PresetMetadataBaseSchema.strict().refine(
 
 export type PresetMetadata = z.infer<typeof PresetMetadataSchema>;
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 // Particle Preset Config
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 
 export const ParticlePresetConfigSchema = z.object({
   maxParticles: positiveFinite.max(10000000).optional(), // Max 10M particles
@@ -103,9 +103,9 @@ export const ParticlePresetSchema = PresetMetadataBaseSchema.extend({
 
 export type ParticlePreset = z.infer<typeof ParticlePresetSchema>;
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 // Effect Preset
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 
 export const EffectPresetSchema = PresetMetadataBaseSchema.extend({
   category: z.literal("effect"),
@@ -126,9 +126,9 @@ export const EffectPresetSchema = PresetMetadataBaseSchema.extend({
 
 export type EffectPreset = z.infer<typeof EffectPresetSchema>;
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 // Path Effect Preset
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 
 export const PathEffectPresetSchema = PresetMetadataBaseSchema.extend({
   category: z.literal("path-effect"),
@@ -140,9 +140,9 @@ export const PathEffectPresetSchema = PresetMetadataBaseSchema.extend({
 
 export type PathEffectPreset = z.infer<typeof PathEffectPresetSchema>;
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 // Camera Shake Config Schema
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 
 export const CameraShakeConfigSchema = z.object({
   enabled: z.boolean(),
@@ -159,9 +159,9 @@ export const CameraShakeConfigSchema = z.object({
 
 export type CameraShakeConfig = z.infer<typeof CameraShakeConfigSchema>;
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 // Camera Trajectory Config Schema
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 
 export const CameraTrajectoryConfigSchema = z.object({
   position: boundedArray(
@@ -189,9 +189,9 @@ export const CameraTrajectoryConfigSchema = z.object({
 
 export type CameraTrajectoryConfig = z.infer<typeof CameraTrajectoryConfigSchema>;
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 // Camera Shake Preset
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 
 export const CameraShakePresetSchema = PresetMetadataBaseSchema.extend({
   category: z.literal("camera-shake"),
@@ -203,9 +203,9 @@ export const CameraShakePresetSchema = PresetMetadataBaseSchema.extend({
 
 export type CameraShakePreset = z.infer<typeof CameraShakePresetSchema>;
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 // Camera Trajectory Preset
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 
 export const CameraTrajectoryPresetSchema = PresetMetadataBaseSchema.extend({
   category: z.literal("camera-trajectory"),
@@ -217,9 +217,9 @@ export const CameraTrajectoryPresetSchema = PresetMetadataBaseSchema.extend({
 
 export type CameraTrajectoryPreset = z.infer<typeof CameraTrajectoryPresetSchema>;
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 // Text Style Preset
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 
 export const TextStylePresetSchema = PresetMetadataBaseSchema.extend({
   category: z.literal("text-style"),
@@ -244,9 +244,9 @@ export const TextStylePresetSchema = PresetMetadataBaseSchema.extend({
 
 export type TextStylePreset = z.infer<typeof TextStylePresetSchema>;
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 // Color Palette Preset
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 
 export const ColorPalettePresetSchema = PresetMetadataBaseSchema.extend({
   category: z.literal("color-palette"),
@@ -261,9 +261,9 @@ export const ColorPalettePresetSchema = PresetMetadataBaseSchema.extend({
 
 export type ColorPalettePreset = z.infer<typeof ColorPalettePresetSchema>;
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 // Animation Preset
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 
 export const AnimationPresetSchema = PresetMetadataBaseSchema.extend({
   category: z.literal("animation"),
@@ -275,9 +275,9 @@ export const AnimationPresetSchema = PresetMetadataBaseSchema.extend({
 
 export type AnimationPreset = z.infer<typeof AnimationPresetSchema>;
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 // Union Preset Type
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 
 // Base schemas without refinements for discriminated union
 const ParticlePresetBaseSchema = PresetMetadataBaseSchema.extend({
@@ -361,9 +361,9 @@ export const PresetSchema = z.discriminatedUnion("category", [
 
 export type Preset = z.infer<typeof PresetSchema>;
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 // Preset Collection Schema
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 
 /**
  * Preset Collection

@@ -9,7 +9,7 @@
 #
 #                                                         — Neuromancer
 #
-# GHC WASM backend toolchain from ghc-wasm-meta.
+#                                                               // ghc // wasm
 # Provides wasm32-wasi-ghc, wasm32-wasi-cabal, and related tools.
 #
 # This enables:
@@ -40,7 +40,7 @@ let
       inherit (ghc-wasm-pkgs) wasi-sdk;
     }
     # Alternative GHC versions (optional)
-    # NOTE: Package names are from ghc-wasm-meta (external API), accessed via string
+    #                                                                      // note
     // optional-pkg "wasm32-wasi-ghc-9_14"
     // optional-pkg "wasm32-wasi-ghc-9_10"
     // optional-pkg "wasm32-wasi-ghc-9_8"

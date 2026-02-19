@@ -8,9 +8,9 @@
 import { describe, it, expect } from "vitest";
 import { createDefaultTextData } from "@/types/text";
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ============================================================
 // createDefaultTextData TESTS
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================
 
 describe("PROPERTY: createDefaultTextData", () => {
   it("returns TextData with all required properties", () => {

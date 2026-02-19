@@ -46,9 +46,9 @@ import qualified Nix.Utils as Nix
 import NixCompile.Nix.Types
 import NixCompile.Types (Loc (..), Span (..))
 
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 -- Environment
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Type environment: maps variable names to their type schemes
 newtype TypeEnv = TypeEnv { unTypeEnv :: Map Text Scheme }
@@ -136,9 +136,9 @@ builtinEnv = TypeEnv $ Map.union (Map.singleton "builtins" (mono $ TAttrs builti
       , ("tryEval", TFun TAny (TAttrs (Map.fromList [("success", (TBool, False)), ("value", (TAny, False))])))
       ]
 
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 -- Inference State
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Inference state
 data InferState = InferState
@@ -198,9 +198,9 @@ addSubst :: TypeVar -> NixType -> Infer ()
 addSubst v t = modify $ \s ->
   s { inferSubst = composeSubst (singleSubst v t) (inferSubst s) }
 
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 -- Unification
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Unify two types
 unify :: NixType -> NixType -> Infer ()
@@ -224,7 +224,7 @@ unify' t1 t2 = case (t1, t2) of
   (TStrLit s1, TStrLit s2)
     | s1 == s2 -> pure ()
     | otherwise -> throwTypeError $ "string literal mismatch: \"" <> s1 <> "\" vs \"" <> s2 <> "\""
-  -- TString subsumes any TStrLit
+  --                                                                        // ts
   (TString, TStrLit _) -> pure ()
   (TStrLit _, TString) -> pure ()
   (TPath, TPath) -> pure ()
@@ -339,9 +339,9 @@ mergeAttrs m1 m2 = do
       _ -> error "impossible"
   pure $ TAttrs (Map.fromList fields)
 
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 -- Instantiation
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Instantiate a type scheme with fresh variables
 instantiate :: Scheme -> Infer NixType
@@ -350,9 +350,9 @@ instantiate (Forall vars t) = do
   let subst = Map.fromList (zip vars freshVars)
   pure $ applySubst subst t
 
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 -- Inference
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Infer the type of an expression
 infer :: TypeEnv -> NExprLoc -> Infer NixType
@@ -717,9 +717,9 @@ atomType = \case
 varNameText :: VarName -> Text
 varNameText = coerce
 
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 -- Results
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | A typed binding
 data Binding = Binding

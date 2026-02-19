@@ -1,5 +1,5 @@
 # Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-# SPDX-License-Identifier: Apache-2.0
+#                                                                      // spdx
 """Tests that ensure the correctness of the command line parameters."""
 
 import subprocess

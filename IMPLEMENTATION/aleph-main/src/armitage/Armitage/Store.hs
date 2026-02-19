@@ -71,9 +71,9 @@ import System.FilePath
 import System.Posix.Files (createSymbolicLink, getFileStatus, isDirectory, isRegularFile)
 import System.Process (callProcess, readProcess)
 
--- -----------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Store Configuration
--- -----------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Store configuration
 data StoreConfig = StoreConfig
@@ -114,9 +114,9 @@ userStoreConfig = do
       , readOnly = False
       }
 
--- -----------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Store Handle
--- -----------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Store handle
 data Store = Store
@@ -134,9 +134,9 @@ withStore config action = do
   let store = Store {storeConfig = config}
   action store
 
--- -----------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Store Paths
--- -----------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | A store path
 --
@@ -181,9 +181,9 @@ renderStorePath :: Store -> StorePath -> FilePath
 renderStorePath store StorePath {..} =
   storeDir (storeConfig store) </> T.unpack (spHash <> "-" <> spName)
 
--- -----------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Store Operations
--- -----------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Add content to store
 --
@@ -251,9 +251,9 @@ data PathInfo = PathInfo
   }
   deriving (Show, Eq, Generic)
 
--- -----------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Content Addressing
--- -----------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Compute store hash from content
 --
@@ -282,13 +282,13 @@ hashPath path = do
   content <- BS.readFile path
   pure $ hashBytes content
 
--- -----------------------------------------------------------------------------
--- NAR Serialization
--- -----------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
+--                                                                  // nar // s
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Dump path to NAR format
 --
--- NAR (Nix ARchive) is a deterministic archive format:
+--                                                                       // nar
 --   - No timestamps
 --   - No permissions (except executable bit)
 --   - No ownership
@@ -312,9 +312,9 @@ restoreNar destPath narContent = do
   callProcess "nix-store" ["--restore", destPath]
   removeFile narFile
 
--- -----------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- User Namespace Operations
--- -----------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Run action in user namespace with store access
 --
@@ -328,7 +328,7 @@ restoreNar destPath narContent = do
 -- root or the daemon because we have our own namespace.
 withUserNamespace :: Store -> IO a -> IO a
 withUserNamespace store action = do
-  -- TODO: Implement using System.Posix.Unistd.unshare
+  --                                                                      // todo
   -- or shell out to unshare(1)
   --
   -- For now, just run the action directly

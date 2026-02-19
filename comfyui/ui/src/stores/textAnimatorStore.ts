@@ -36,9 +36,9 @@ import type { Composition, ControlPoint, Layer, TextData } from "@/types/project
 import type { TextAnimator, TextAnimatorProperties } from "@/types/text";
 import { hexToRgba, rgbToHex } from "@/utils/colorUtils";
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-//                                                                    // types
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
+// TYPES
+// ============================================================================
 
 export interface TextAnimatorStoreAccess {
   project: { meta: { modified: string } };
@@ -107,9 +107,9 @@ interface TextDataWithPath extends TextData {
   pathConfig?: TextPathConfig;
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-//                                                                  // helpers
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
+// HELPERS
+// ============================================================================
 
 function getTextLayer(store: TextAnimatorStoreAccess, layerId: string): Layer | undefined {
   const layer = store.getActiveCompLayers().find((l) => l.id === layerId);
@@ -187,9 +187,9 @@ function getPathService(layerId: string): TextOnPathService {
   return service;
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-//                                                           // pinia // store
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
+// PINIA STORE
+// ============================================================================
 
 export const useTextAnimatorStore = defineStore("textAnimator", {
   state: () => ({}),
@@ -197,9 +197,9 @@ export const useTextAnimatorStore = defineStore("textAnimator", {
   getters: {},
 
   actions: {
-    // ═══════════════════════════════════════════════════════════════════════════
-    //                                                       // crud // operations
-    // ═══════════════════════════════════════════════════════════════════════════
+    // ========================================================================
+    // CRUD OPERATIONS
+    // ========================================================================
 
     addTextAnimator(store: TextAnimatorStoreAccess, layerId: string, config: AddTextAnimatorConfig = {}): TextAnimator {
       const layer = getTextLayer(store, layerId);
@@ -303,9 +303,9 @@ export const useTextAnimatorStore = defineStore("textAnimator", {
       return Array.isArray(animators) ? animators : [];
     },
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    //                                                   // selector // operations
-    // ═══════════════════════════════════════════════════════════════════════════
+    // ========================================================================
+    // SELECTOR OPERATIONS
+    // ========================================================================
 
     configureRangeSelector(store: TextAnimatorStoreAccess, layerId: string, animatorId: string, config: RangeSelectorConfig): boolean {
       const layer = getTextLayer(store, layerId);
@@ -424,9 +424,9 @@ export const useTextAnimatorStore = defineStore("textAnimator", {
       return true;
     },
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    //                                                       // computed // values
-    // ═══════════════════════════════════════════════════════════════════════════
+    // ========================================================================
+    // COMPUTED VALUES
+    // ========================================================================
 
     getCharacterTransforms(store: TextAnimatorStoreAccess, layerId: string, frame: number): CharacterTransform[] {
       const layer = getTextLayer(store, layerId);
@@ -578,9 +578,9 @@ export const useTextAnimatorStore = defineStore("textAnimator", {
       return calculateCharacterInfluence(charIndex, totalChars, animator.rangeSelector, frame) * 100;
     },
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    //                                                     // utility // functions
-    // ═══════════════════════════════════════════════════════════════════════════
+    // ========================================================================
+    // UTILITY FUNCTIONS
+    // ========================================================================
 
     setAnimatorPropertyValue(store: TextAnimatorStoreAccess, layerId: string, animatorId: string, propertyName: keyof TextAnimatorProperties, value: PropertyValue | JSONValue): boolean {
       const layer = getTextLayer(store, layerId);
@@ -659,9 +659,9 @@ export const useTextAnimatorStore = defineStore("textAnimator", {
       return true;
     },
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    //                                         // text // on // path // operations
-    // ═══════════════════════════════════════════════════════════════════════════
+    // ========================================================================
+    // TEXT ON PATH OPERATIONS
+    // ========================================================================
 
     setTextPath(store: TextAnimatorStoreAccess, layerId: string, config: TextPathConfig): boolean {
       const layer = getTextLayer(store, layerId);

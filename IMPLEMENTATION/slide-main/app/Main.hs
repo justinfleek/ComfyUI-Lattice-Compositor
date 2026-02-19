@@ -1319,7 +1319,7 @@ handleRawTokens _options meta tokenizer publisherSocket metrics logger content =
     -- We need a temporary builder to pack these tokens into frames
     -- Since we're inside a tool call block (delimited by control frames), 
     -- we can just emit extended/hot tokens directly.
-    -- BUT they need to be inside a Frame.
+    --                                                                       // but
     
     -- Use a fresh builder for this batch
     builder <- newFrameBuilder (64 * 1024)

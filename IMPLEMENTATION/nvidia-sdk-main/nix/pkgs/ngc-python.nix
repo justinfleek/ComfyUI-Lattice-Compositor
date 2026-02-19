@@ -109,7 +109,7 @@ let
       "libcuda.so*"
       "libnvidia-ml.so*"
       "libnvidia-*.so*"
-      # CUDA libs (from nvidia-sdk, linked at runtime)
+      #                                                                      // cuda
       "libcudart.so*"
       "libcublas.so*"
       "libcublasLt.so*"
@@ -123,7 +123,7 @@ let
       "libnvinfer.so*"
       "libnvrtc.so*"
       # "libcupti.so.*" # Provided by nvidia-sdk
-      # MPI/HPC libs (from container, optional HPC features)
+      #                                                                       // mpi
       "libmpi.so*"
       "libmpi_cxx.so*"
       "libopen-pal.so*"
@@ -133,24 +133,24 @@ let
       "libhcoll.so*"
       "liboshmem.so*"
       "libmca_*.so*"
-      # NVSHMEM (from container)
+      #                                                                   // nvshmem
       "libnvshmem*.so*"
-      # NVPL (ARM performance libs, from container)
+      #                                                                      // nvpl
       "libnvpl_lapack_lp64_gomp.so*"
       "libnvpl_blas_lp64_gomp.so*"
       # Tritonserver (from tritonserver package, loaded at runtime)
       "libtritonserver.so*"
-      # GDRCopy (optional, for GPU direct)
+      #                                                                      // gdrc
       "libgdrapi.so*"
       # Mellanox/EFA (optional networking)
       "libmlx5.so*"
       "libefa.so*"
-      # LLVM (bundled in container, optional for JIT)
+      #                                                                      // llvm
       "libLLVM.so*"
       "libLLVM-*.so*"
       # Triton frontend dependencies (optional)
       "libb64.so*"
-      # CUTLASS/MLIR (JIT compilation support)
+      #                                                                   // cutlass
       "libmlir_cuda_runtime.so*"
       # Intel OneAPI/SYCL libs (not needed for NVIDIA GPUs)
       "libsycl.so*"
@@ -165,7 +165,7 @@ let
       "libffi.so.6*"
       # Hardware locality (TBB binding, optional)
       "libhwloc.so*"
-      # TBB binding (optional threading optimization)
+      #                                                                       // tbb
       "libtbbbind*.so*"
     ];
 
@@ -339,9 +339,9 @@ stdenv.mkDerivation {
     fi
 
     # Create wrapped python (using nixpkgs python)
-    # OPAL_PREFIX points OMPI to its data files
-    # CUDA_HOME is needed by tensorrt_llm deep_gemm JIT compilation
-    # TRITON_LIBCUDA_PATH tells Triton where libcuda.so is (avoids /sbin/ldconfig)
+    #                                                            // opal // prefix
+    #                                                              // cuda // home
+    #                                                 // triton // libcuda // path
     makeWrapper ${python}/bin/python3 $out/bin/python3 \
       --prefix PYTHONPATH : "$out/lib/python3.12/site-packages" \
       --prefix LD_LIBRARY_PATH : "${python}/lib:${ngcPythonPackages}/lib:$out/lib/python3.12/site-packages/torch/lib:$out/lib/python3.12/site-packages/tensorrt_llm/libs:${nvidia-sdk}/lib64:${nvidia-sdk}/lib:/run/opengl-driver/lib" \
@@ -386,7 +386,7 @@ stdenv.mkDerivation {
   meta = {
     description = "Python ${python.version} with NGC container packages (torch, triton, tensorrt_llm)";
     homepage = "https://catalog.ngc.nvidia.com";
-    # NGC container extraction includes proprietary components (TensorRT-LLM, cuDNN, etc.)
+    #                                                                       // ngc
     license = lib.licenses.unfree;
     platforms = [ "x86_64-linux" "aarch64-linux" ];
     mainProgram = "python3";

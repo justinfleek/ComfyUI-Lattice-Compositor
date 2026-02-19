@@ -10,7 +10,7 @@
 # For projects needing mathlib, we use lake with elan to handle
 # toolchain version requirements automatically.
 #
-# NOTE: This overlay must be applied after the prelude overlay.
+#                                                                      // note
 #
 final: prev:
 let
@@ -18,12 +18,12 @@ let
 
   # Lisp-case wrappers for nixpkgs functions
   # Uses get' (from prelude) to avoid camelCase identifiers in code
-  # TODO: need a aleph.build-rust-package wrapper
+  #                                                                      // todo
 in
 {
   # Elan - Lean version manager (like rustup for Rust)
   # This allows lake to download the correct Lean version for each project
-  # NOTE: Using prev.elan from nixpkgs (no custom build needed)
+  #                                                                      // note
   inherit (prev) elan;
 
   # lean4-mathlib-env - Lean 4 environment with mathlib cache

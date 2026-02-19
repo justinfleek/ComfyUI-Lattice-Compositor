@@ -136,7 +136,7 @@ streamCompletion connection prompt streamConfig onEvent onFinish onWireLog = do
     lenientDecoder _ _ = Just '\xFFFD'
 
 -- ════════════════════════════════════════════════════════════════════════════════
--- SSE Parsing (Anthropic Specific)
+--                                                                  // sse // p
 -- ════════════════════════════════════════════════════════════════════════════════
 
 splitIntoSSEEvents :: Text -> ([SSEEvent], Text)

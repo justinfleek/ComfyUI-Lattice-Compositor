@@ -1,6 +1,6 @@
 # nix/versions/ngc/default.nix — NGC Container Versions
 #
-# NVIDIA GPU Cloud (NGC) container versions for Triton + TensorRT-LLM.
+#                                                        // nvidia // gpu // c
 
 { lib }:
 

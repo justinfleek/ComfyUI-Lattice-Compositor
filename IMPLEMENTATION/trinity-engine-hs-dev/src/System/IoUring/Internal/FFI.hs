@@ -79,10 +79,10 @@ import Data.Int (Int64)
 newtype IoUring = IoUring { unIoUring :: Ptr () }
 newtype IoUringParams = IoUringParams { unIoUringParams :: Ptr () }
 
--- FFI pointer types  
+--                                                                       // ffi
 newtype URingPtr = URingPtr (Ptr IoUring)
 
--- IOVec structure
+--                                                                       // iov
 data IOVec = IOVec
   { iovBase :: !(Ptr ())
   , iovLen  :: !CSize
@@ -177,7 +177,7 @@ opcode OpUringCmd = 44
 opcode OpSendZC = 45
 opcode OpSendMsgZC = 46
 
--- FFI bindings using Ptr () for opaque types
+--                                                                       // ffi
 foreign import ccall unsafe "io_uring_queue_init"
   c_io_uring_queue_init :: CInt -> Ptr () -> Word32 -> IO CInt
 

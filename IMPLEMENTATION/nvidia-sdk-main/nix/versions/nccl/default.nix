@@ -1,6 +1,6 @@
 # nix/versions/nccl/default.nix — NCCL Versions
 #
-# NVIDIA Collective Communications Library versions.
+#                                                               // nvidia // c
 
 { lib }:
 

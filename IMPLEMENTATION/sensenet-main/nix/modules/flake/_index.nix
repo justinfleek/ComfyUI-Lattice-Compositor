@@ -16,7 +16,7 @@
   ];
 
   # Enable devshell for this repo
-  # NOTE: sense.build.enable requires scripts/ directory which is missing
+  #                                                                      // note
   sense.devshell.enable = true;
   sense.devshell.nv.enable = true;
 

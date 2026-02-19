@@ -18,9 +18,9 @@ import { layerLogger } from "@/utils/logger";
 import type { ResourceManager } from "../core/ResourceManager";
 import { BaseLayer } from "./BaseLayer";
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-//                                                                  // shaders
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
+// SHADERS
+// ============================================================================
 
 const depthflowVertexShader = `
   varying vec2 vUv;
@@ -101,9 +101,9 @@ const depthflowFragmentShader = `
   }
 `;
 
-// ═══════════════════════════════════════════════════════════════════════════
-//                                                       // depthflow // layer
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
+// DEPTHFLOW LAYER
+// ============================================================================
 
 export class DepthflowLayer extends BaseLayer {
   private readonly resources: ResourceManager;
@@ -505,9 +505,9 @@ export class DepthflowLayer extends BaseLayer {
     return { zoom, offsetX, offsetY, rotation };
   }
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  //                                              // abstract // implementations
-  // ═══════════════════════════════════════════════════════════════════════════
+  // ============================================================================
+  // ABSTRACT IMPLEMENTATIONS
+  // ============================================================================
 
   protected onEvaluateFrame(frame: number): void {
     const _config = this.depthflowData.config;

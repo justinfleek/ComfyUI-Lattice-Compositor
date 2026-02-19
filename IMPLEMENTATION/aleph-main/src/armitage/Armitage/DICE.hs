@@ -98,9 +98,9 @@ import System.Environment (getEnvironment)
 import System.FilePath ((</>))
 import System.Process (readCreateProcessWithExitCode, proc, CreateProcess(..))
 
--- -----------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Action Keys
--- -----------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Content-addressed action key
 newtype ActionKey = ActionKey { unActionKey :: Text }
@@ -113,9 +113,9 @@ actionKey action =
       hash = hashWith SHA256 (TE.encodeUtf8 content)
   in ActionKey $ T.pack $ show hash
 
--- -----------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Actions
--- -----------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | What kind of action
 data ActionCategory
@@ -156,9 +156,9 @@ data Action = Action
   }
   deriving stock (Show, Eq, Generic)
 
--- -----------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Action Graph
--- -----------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | The full build graph
 data ActionGraph = ActionGraph
@@ -188,9 +188,9 @@ topoSort ActionGraph {..} = reverse $ go Set.empty [] (Map.keys agActions)
               (v', s') = foldl visitDep (Set.insert dep v, s) deps
           in (v', dep : s')
 
--- -----------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Flake Resolution
--- -----------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Resolved flake reference
 data ResolvedFlake = ResolvedFlake
@@ -240,9 +240,9 @@ resolveFlakeBatch refs = do
   results <- mapConcurrently resolveFlake refs
   pure $ Map.fromList $ zip refs results
 
--- -----------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Analysis (Target -> ActionGraph)
--- -----------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Result of analyzing a target
 data AnalysisResult = AnalysisResult
@@ -345,7 +345,7 @@ targetToAction Dhall.Target {..} flakes = Action
     
     -- Use nixpkgs clang wrapper for proper stdlib support
     -- The wrapper knows about glibc headers
-    -- TODO: resolve this from toolchain.compiler flake ref
+    --                                                                      // todo
     compilerCmd = case Dhall.compiler toolchain of
       Dhall.Compiler_Clang {} -> 
         -- Use nixpkgs clang wrapper - resolve at analysis time ideally
@@ -397,9 +397,9 @@ targetToAction Dhall.Target {..} flakes = Action
 flagsToArgs :: [Dhall.CFlag] -> [Text]
 flagsToArgs = map Dhall.renderCFlag
 
--- -----------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 -- Execution
--- -----------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
 
 -- | Execution mode - local or remote
 data ExecutionMode
@@ -812,9 +812,9 @@ resourceToCoeffect = \case
 checkCoeffects :: [Dhall.Resource] -> IO (Either Dhall.Resource ())
 checkCoeffects _ = pure $ Right ()  -- TODO: actually check
 
--- -----------------------------------------------------------------------------
--- CAS Stubs (would use Armitage.CAS)
--- -----------------------------------------------------------------------------
+-- ────────────────────────────────────────────────────────────────────────────
+--                                                                  // cas // s
+-- ────────────────────────────────────────────────────────────────────────────
 
 checkCAS :: ActionKey -> IO (Maybe [Text])
 checkCAS _ = pure Nothing  -- TODO: implement

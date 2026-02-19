@@ -12,7 +12,7 @@
 # Single nixpkgs instantiation with proper config.
 #
 # ────────────────────────────────────────────────────────────────────────────────
-# WHY `import inputs.nixpkgs` AND NOT `inputs.nixpkgs.legacyPackages.*.extend`?
+#                                                                       // why
 # ────────────────────────────────────────────────────────────────────────────────
 #
 # You might think: "use `inputs.nixpkgs.legacyPackages.${system}.appendOverlays`
@@ -52,7 +52,7 @@ in
   # ────────────────────────────────────────────────────────────────────────────
 
   options.aleph.nixpkgs = {
-    # NVIDIA GPU support - we say "nv" not "cuda"
+    #                                                             // nvidia // gpu
     nv = {
       enable = lib.mkEnableOption "NVIDIA GPU support";
 

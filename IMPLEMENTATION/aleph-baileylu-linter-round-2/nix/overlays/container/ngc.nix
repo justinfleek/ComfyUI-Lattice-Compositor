@@ -1,6 +1,6 @@
 # nix/overlays/container/ngc.nix
 #
-# NGC (NVIDIA GPU Cloud) container Python extraction
+#                                                                       // ngc
 #
 {
   final,

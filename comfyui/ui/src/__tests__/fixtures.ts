@@ -24,10 +24,10 @@
  * - All fixtures produce type-safe, complete objects matching production patterns
  */
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-//                               // reuse // existing // production // helpers
+// ============================================================================
+// REUSE EXISTING PRODUCTION HELPERS
 // These are the authoritative sources - do NOT duplicate their logic
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 import {
   createAnimatableProperty,
   createKeyframe,
@@ -50,9 +50,9 @@ import type {
 
 import { getDefaultLayerData } from '@/stores/actions/layer/layerDefaults';
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 // ID GENERATION (for test isolation)
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 
 let idCounter = 0;
 
@@ -74,10 +74,10 @@ export function resetTestIdCounter(): void {
   idCounter = 0;
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-//                                                  // composition // settings
+// ============================================================================
+// COMPOSITION SETTINGS
 // Based on: @/stores/actions/compositionActions.ts createComposition()
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 
 /**
  * Create a complete CompositionSettings object for testing.
@@ -118,10 +118,10 @@ export function createTestCompositionSettings(
   };
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-//                                                   // animatable // property
+// ============================================================================
+// ANIMATABLE PROPERTY
 // REUSE: createAnimatableProperty from @/types/animation
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 
 /**
  * Create an AnimatableProperty for testing.
@@ -177,10 +177,10 @@ export function createTestAnimatedProperty<T>(
   };
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-//                                                                 // keyframe
+// ============================================================================
+// KEYFRAME
 // REUSE: createKeyframe from @/types/animation
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 
 /**
  * Create a complete Keyframe for testing.
@@ -206,10 +206,10 @@ export function createTestKeyframe<T>(
   return createKeyframe(testLayerId, testPropertyPath, frame, value, interpolation);
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-//                                                       // layer // transform
+// ============================================================================
+// LAYER TRANSFORM
 // REUSE: createDefaultTransform from @/types/transform
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 
 /**
  * Create a complete LayerTransform for testing.
@@ -235,9 +235,9 @@ export function createTestTransform(
   };
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-//                                                       // effect // instance
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
+// EFFECT INSTANCE
+// ============================================================================
 
 /**
  * Create a complete EffectInstance for testing.
@@ -266,10 +266,10 @@ export function createTestEffectInstance(
   };
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-//                                                                    // layer
+// ============================================================================
+// LAYER
 // Based on: @/stores/actions/layerActions.ts createLayer()
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 
 /**
  * Create a complete Layer for testing.
@@ -339,10 +339,10 @@ export function createTestLayer(
   };
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-//                                                              // composition
+// ============================================================================
+// COMPOSITION
 // Based on: @/stores/actions/compositionActions.ts createComposition()
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 
 /**
  * Create a complete Composition for testing.
@@ -381,10 +381,10 @@ export function createTestComposition(
   };
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-//                                                                  // project
+// ============================================================================
+// PROJECT
 // Based on: @/types/project.ts LatticeProject interface
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 
 /**
  * Create a complete LatticeProject for testing.

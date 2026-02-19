@@ -58,9 +58,9 @@ describe('Tutorial 09: Massive Particle Simulation - Particle Storm', () => {
     vi.clearAllMocks();
   });
 
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // ============================================================================
   // PHASE 1: MEMORY BUDGET CALCULATION (Steps 1-50)
-  // ═══════════════════════════════════════════════════════════════════════════
+  // ============================================================================
 
   describe('Phase 1: Memory Budget Calculation (Steps 1-50)', () => {
     test('Step 1-25: Calculate maximum particles for 1GB VRAM budget', async () => {
@@ -160,9 +160,9 @@ describe('Tutorial 09: Massive Particle Simulation - Particle Storm', () => {
     });
   });
 
-  // ═══════════════════════════════════════════════════════════════════════════
+  // ============================================================================
   // PHASE 2: WEBGPU PERFORMANCE TESTING (Steps 51-100)
-  // ═══════════════════════════════════════════════════════════════════════════
+  // ============================================================================
 
   describe('Phase 2: WebGPU Performance Testing (Steps 51-100)', () => {
     test('Step 51-75: Benchmark WebGPU compute shader performance', async () => {
@@ -277,9 +277,9 @@ describe('Tutorial 09: Massive Particle Simulation - Particle Storm', () => {
     });
   });
 
-  // ═══════════════════════════════════════════════════════════════════════════
+  // ============================================================================
   // PHASE 3: SCALING TO MILLIONS (Steps 101-150)
-  // ═══════════════════════════════════════════════════════════════════════════
+  // ============================================================================
 
   describe('Phase 3: Scaling to Millions (Steps 101-150)', () => {
     test('Step 101-125: Test with 500K particles', async () => {
@@ -365,9 +365,9 @@ describe('Tutorial 09: Massive Particle Simulation - Particle Storm', () => {
     });
   });
 
-  // ═══════════════════════════════════════════════════════════════════════════
+  // ============================================================================
   // PHASE 4: SOA LAYOUT EFFICIENCY (Steps 151-200)
-  // ═══════════════════════════════════════════════════════════════════════════
+  // ============================================================================
 
   describe('Phase 4: SOA Layout Efficiency (Steps 151-200)', () => {
     test('Step 151-175: Verify SOA layout provides performance benefits', async () => {
@@ -449,9 +449,9 @@ describe('Tutorial 09: Massive Particle Simulation - Particle Storm', () => {
     });
   });
 
-  // ═══════════════════════════════════════════════════════════════════════════
+  // ============================================================================
   // PHASE 5: DETERMINISM AT SCALE (Steps 201-250)
-  // ═══════════════════════════════════════════════════════════════════════════
+  // ============================================================================
 
   describe('Phase 5: Determinism at Scale (Steps 201-250)', () => {
     test('Step 201-225: Verify deterministic behavior with 100K particles', async () => {
@@ -548,9 +548,9 @@ describe('Tutorial 09: Massive Particle Simulation - Particle Storm', () => {
     });
   });
 
-  // ═══════════════════════════════════════════════════════════════════════════
+  // ============================================================================
   // PHASE 6: COMPLEX SIMULATIONS AT SCALE (Steps 251-300)
-  // ═══════════════════════════════════════════════════════════════════════════
+  // ============================================================================
 
   describe('Phase 6: Complex Simulations at Scale (Steps 251-300)', () => {
     test('Step 251-275: Test multiple force fields with 100K particles', async () => {
@@ -681,9 +681,9 @@ describe('Tutorial 09: Massive Particle Simulation - Particle Storm', () => {
     });
   });
 
-  // ═══════════════════════════════════════════════════════════════════════════
+  // ============================================================================
   // PHASE 7: COMPLETE PARTICLE STORM EFFECT (Steps 301-350)
-  // ═══════════════════════════════════════════════════════════════════════════
+  // ============================================================================
 
   describe('Phase 7: Complete Particle Storm Effect (Steps 301-350)', () => {
     test('Step 301-350: Create massive particle storm visualization', async () => {

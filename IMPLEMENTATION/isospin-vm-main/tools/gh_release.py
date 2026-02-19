@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright 2023 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-# SPDX-License-Identifier: Apache-2.0
+#                                                                      // spdx
 
 """
 Draft a release in GitHub by calling into its API.

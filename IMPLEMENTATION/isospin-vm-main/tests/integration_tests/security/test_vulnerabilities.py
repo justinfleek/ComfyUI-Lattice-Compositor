@@ -1,9 +1,9 @@
 # Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-# SPDX-License-Identifier: Apache-2.0
+#                                                                      // spdx
 #
 # N.B.: Although this repository is released under the Apache-2.0, part of its test requires a
 # script from the third party "Spectre & Meltdown Checker" project. This script is under the
-# GPL-3.0-only license.
+#                                                                       // gpl
 """Tests vulnerabilities mitigations."""
 
 import json
@@ -135,17 +135,17 @@ def get_vuln_files_exception_dict(template):
     exception_dict = {}
 
     # Exception for mmio_stale_data
-    # =============================
+    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     #
     # Guests with T2S template
-    # --------------------------------------------
+    # ────────────────────────────────────────────────────────────────────────────
     # Whether mmio_stale_data is marked as "Vulnerable" or not is determined by the code here.
     # https://elixir.bootlin.com/linux/v6.1.46/source/arch/x86/kernel/cpu/bugs.c#L431
     # Virtualization of FLUSH_L1D has been available and CPUID.(EAX=0x7,ECX=0):EDX[28 (FLUSH_L1D)]
     # has been passed through to guests only since kernel v6.4.
     # https://github.com/torvalds/linux/commit/da3db168fb671f15e393b227f5c312c698ecb6ea
     # Thus, since the FLUSH_L1D bit is masked off prior to kernel v6.4, guests with
-    # IA32_ARCH_CAPABILITIES.FB_CLEAR (bit 17) = 0 (like guests with T2S template which presents
+    #                                              // ia32 // arch // capabilities
     # an Intel Skylake CPU) fall into the MMIO_MITIGATION_UCODE_NEEDED branch, marking the
     # system as vulnerable to MMIO Stale Data.
     # The value is "Vulnerable: Clear CPU buffers attempted, no microcode" on guests on Intel

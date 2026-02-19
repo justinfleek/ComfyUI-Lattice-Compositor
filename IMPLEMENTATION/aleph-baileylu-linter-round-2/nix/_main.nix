@@ -1,13 +1,13 @@
 # nix/_main.nix
 #
-# FREESIDEフリーサイド — WHY WAIT?
+#                                                                  // freeside
 #
 # The directory is the kind signature.
 #
 { inputs, lib, ... }:
 let
   # ════════════════════════════════════════════════════════════════════════════
-  # LISP-CASE ALIASES
+  #                                                                      // lisp
   #
   # Local aliases for lib.* and builtins.* functions to satisfy ALEPH-E003.
   # External API names (nixpkgs attributes, flake outputs) remain unchanged.
@@ -33,7 +33,7 @@ in
   systems = import inputs.systems;
 
   # ════════════════════════════════════════════════════════════════════════════
-  # MODULES BY KIND
+  #                                                     // modules // by // kind
   #
   # flake.modules.<kind>.<name> for automatic _class validation
   # ════════════════════════════════════════════════════════════════════════════
@@ -72,7 +72,7 @@ in
   };
 
   # ════════════════════════════════════════════════════════════════════════════
-  # OVERLAYS
+  #                                                                  // overlays
   #
   # A pure function from the world as it is to the world as it ought to be.
   # ════════════════════════════════════════════════════════════════════════════
@@ -80,7 +80,7 @@ in
   flake.overlays = (import ./overlays inputs).flake.overlays;
 
   # ════════════════════════════════════════════════════════════════════════════
-  # LIB
+  #                                                                       // lib
   #
   # Pure functions. No pkgs, no system.
   # ════════════════════════════════════════════════════════════════════════════
@@ -92,7 +92,7 @@ in
   };
 
   # ════════════════════════════════════════════════════════════════════════════
-  # TEMPLATES
+  #                                                                 // templates
   # ════════════════════════════════════════════════════════════════════════════
 
   flake.templates = {
@@ -128,7 +128,7 @@ in
   };
 
   # ════════════════════════════════════════════════════════════════════════════
-  # INTERNAL: aleph's own development
+  #                                                                  // internal
   # ════════════════════════════════════════════════════════════════════════════
 
   imports = [
@@ -162,14 +162,14 @@ in
       ...
     }:
     let
-      # WASM infrastructure (internal)
+      #                                                                      // wasm
       wasm-infra = import ./prelude/wasm-plugin.nix {
         inherit lib;
         inherit (pkgs) stdenv runCommand writeText;
         inherit (inputs) ghc-wasm-meta;
       };
 
-      # GHC WASM toolchain for compiling .hs packages
+      #                                                               // ghc // wasm
       ghc-wasm = inputs.ghc-wasm-meta.packages.${system}.all_9_12;
 
       # The aleph interface
@@ -192,7 +192,7 @@ in
       #
       # The FFI boilerplate is generated automatically.
       #
-      # IFD AVOIDANCE: If a pre-built .wasm file exists alongside the .hs file,
+      #                                                          // ifd // avoidance
       # we use it directly instead of building at evaluation time. This avoids
       # the "import from derivation" warning in `nix flake show`.
       #

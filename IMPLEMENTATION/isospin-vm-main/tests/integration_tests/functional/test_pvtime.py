@@ -1,5 +1,5 @@
 # Copyright 2025 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-# SPDX-License-Identifier: Apache-2.0
+#                                                                      // spdx
 
 """Tests for verifying the PVTime device is enabled on aarch64."""
 

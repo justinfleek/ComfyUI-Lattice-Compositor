@@ -1,5 +1,5 @@
 # Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-# SPDX-License-Identifier: Apache-2.0
+#                                                                      // spdx
 """Tests for guest-side operations on /balloon resources."""
 
 import logging
@@ -180,7 +180,7 @@ def test_deflate_on_oom(uvm_plain_any, deflate_on_oom):
 
     # We get an initial reading of the RSS, then calculate the amount
     # we need to inflate the balloon with by subtracting it from the
-    # VM size and adding an offset of 50 MiB in order to make sure we
+    #                                                                        // vm
     # get a lower reading than the initial one.
     initial_rss = get_stable_rss_mem(test_microvm)
     inflate_size = 256 - (int(initial_rss / 1024) + 50)

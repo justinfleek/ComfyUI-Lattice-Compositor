@@ -80,7 +80,7 @@ spec = do
 
                 it "encodes multiple words" $ \tok -> do
                     ids <- encode tok "hello world"
-                    -- BPE tokenizer may produce different output, just check it works
+                    --                                                                       // bpe
                     length ids `shouldSatisfy` (> 0)
 
                 it "handles unknown tokens gracefully" $ \tok -> do

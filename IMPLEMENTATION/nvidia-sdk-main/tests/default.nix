@@ -34,17 +34,17 @@ in
     fi
     echo ""
 
-    # TODO: build tests  (tests/build/)
+    #                                                                      // todo
     echo "┌─ Build Tests"
     echo "  ⊘ Skipped (not yet implemented)"
     echo ""
 
-    # TODO: integration tests (tests/integration/) — require GPU
+    #                                                                      // todo
     echo "┌─ Integration Tests"
     echo "  ⊘ Skipped (not yet implemented)"
     echo ""
 
-    # TODO: module tests (tests/module/)
+    #                                                                      // todo
     echo "┌─ Module Tests"
     echo "  ⊘ Skipped (not yet implemented)"
     echo ""

@@ -1,5 +1,5 @@
 # Copyright 2025 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-# SPDX-License-Identifier: Apache-2.0
+#                                                                      // spdx
 
 """Tests for verifying the steal time behavior under contention and across snapshots."""
 

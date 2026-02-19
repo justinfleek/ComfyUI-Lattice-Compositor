@@ -17,7 +17,7 @@ import Radix.Pure.Dialog as Dialog
 import Radix.Pure.Tabs as Tabs
 
 -- ═══════════════════════════════════════════════════════════════════════════════
--- TYPES
+--                                                                     // types
 -- ═══════════════════════════════════════════════════════════════════════════════
 
 data Action
@@ -41,7 +41,7 @@ _tabs :: Proxy "tabs"
 _tabs = Proxy
 
 -- ═══════════════════════════════════════════════════════════════════════════════
--- COMPONENT
+--                                                                 // component
 -- ═══════════════════════════════════════════════════════════════════════════════
 
 component :: forall query input output m. MonadAff m => H.Component query input output m
@@ -128,7 +128,7 @@ handleAction = case _ of
   HandleTabsOutput (Tabs.ValueChanged v) -> H.modify_ _ { tabsValue = v }
 
 -- ═══════════════════════════════════════════════════════════════════════════════
--- MAIN
+--                                                                      // main
 -- ═══════════════════════════════════════════════════════════════════════════════
 
 main :: Effect Unit

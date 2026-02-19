@@ -50,7 +50,7 @@ let
       '';
 
   # Generate .buckconfig.local file using Dhall templates
-  # NOTE: Dhall template expects UPPER_SNAKE_CASE env vars, so we use snake_case keys
+  #                                                                      // note
   # that get uppercased by render-dhall
   mk-buckconfig-file =
     pkgs:

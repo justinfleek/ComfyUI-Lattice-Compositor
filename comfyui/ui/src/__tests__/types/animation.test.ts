@@ -25,12 +25,12 @@ import {
   type ClipboardKeyframe,
 } from '@/types/animation';
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ============================================================
 // createAnimatableProperty TESTS
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================
 
 describe('createAnimatableProperty', () => {
-  //                                                   // basic // functionality
+  // BASIC FUNCTIONALITY
   describe('basic functionality', () => {
     test('creates property with required fields', () => {
       const prop = createAnimatableProperty('testProp', 42);
@@ -63,7 +63,7 @@ describe('createAnimatableProperty', () => {
     });
   });
 
-  //                                                // all // supported // types
+  // ALL SUPPORTED TYPES
   describe('type parameter variations', () => {
     test('type: number (default)', () => {
       const prop = createAnimatableProperty('opacity', 100);
@@ -96,7 +96,7 @@ describe('createAnimatableProperty', () => {
     });
   });
 
-  //                                                           // value // types
+  // VALUE TYPES
   describe('value type variations', () => {
     test('number value', () => {
       const prop = createAnimatableProperty<number>('opacity', 50);
@@ -126,7 +126,7 @@ describe('createAnimatableProperty', () => {
     });
   });
 
-  //                                      // edge // cases // boundary // values
+  // EDGE CASES - BOUNDARY VALUES
   describe('boundary values', () => {
     test('value: 0', () => {
       const prop = createAnimatableProperty('zero', 0);
@@ -177,7 +177,7 @@ describe('createAnimatableProperty', () => {
     });
   });
 
-  //                                       // edge // cases // special // floats
+  // EDGE CASES - SPECIAL FLOATS
   describe('special float values', () => {
     test('value: NaN (preserves NaN)', () => {
       const prop = createAnimatableProperty('nan', NaN);
@@ -244,7 +244,7 @@ describe('createAnimatableProperty', () => {
     });
   });
 
-  //                                                         // id // uniqueness
+  // ID UNIQUENESS
   describe('ID generation', () => {
     test('creates unique IDs for same inputs', () => {
       const ids = new Set<string>();
@@ -263,7 +263,7 @@ describe('createAnimatableProperty', () => {
     });
   });
 
-  //                                               // return // type // contract
+  // RETURN TYPE CONTRACT
   describe('return type contract', () => {
     test('returns object with all required fields', () => {
       const prop = createAnimatableProperty('test', 42);
@@ -294,7 +294,7 @@ describe('createAnimatableProperty', () => {
     });
   });
 
-  //                                                       // group // parameter
+  // GROUP PARAMETER
   describe('group parameter', () => {
     test('undefined group when not provided', () => {
       const prop = createAnimatableProperty('test', 0);
@@ -323,12 +323,12 @@ describe('createAnimatableProperty', () => {
   });
 });
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================
 // createKeyframe TESTS
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================
 
 describe('createKeyframe', () => {
-  //                                                   // basic // functionality
+  // BASIC FUNCTIONALITY
   describe('basic functionality', () => {
     test('creates keyframe with required fields', () => {
       const kf = createKeyframe(0, 100);
@@ -357,7 +357,7 @@ describe('createKeyframe', () => {
     });
   });
 
-  //                                                   // interpolation // types
+  // INTERPOLATION TYPES
   describe('interpolation types', () => {
     // Base types
     test('interpolation: linear (default)', () => {
@@ -400,7 +400,7 @@ describe('createKeyframe', () => {
     });
   });
 
-  //                                             // default // bezier // handles
+  // DEFAULT BEZIER HANDLES
   describe('default bezier handles', () => {
     test('inHandle has correct defaults', () => {
       const kf = createKeyframe(0, 0);
@@ -464,7 +464,7 @@ describe('createKeyframe', () => {
     });
   });
 
-  //                                                           // value // types
+  // VALUE TYPES
   describe('value type variations', () => {
     test('number value', () => {
       const kf = createKeyframe<number>(0, 42);
@@ -492,7 +492,7 @@ describe('createKeyframe', () => {
     });
   });
 
-  //                                 // special // float // values // validation
+  // SPECIAL FLOAT VALUES - VALIDATION
   describe('special float values - validation', () => {
     test('frame: NaN throws error (prevents silent interpolation failure)', () => {
       expect(() => createKeyframe(NaN, 0)).toThrow('Invalid keyframe frame');
@@ -525,7 +525,7 @@ describe('createKeyframe', () => {
     });
   });
 
-  //                                                         // id // uniqueness
+  // ID UNIQUENESS
   describe('ID generation', () => {
     test('creates unique IDs for same inputs', () => {
       const ids = new Set<string>();
@@ -542,7 +542,7 @@ describe('createKeyframe', () => {
     });
   });
 
-  //                                               // return // type // contract
+  // RETURN TYPE CONTRACT
   describe('return type contract', () => {
     test('returns object with all required fields', () => {
       const kf = createKeyframe(0, 0);
@@ -587,9 +587,9 @@ describe('createKeyframe', () => {
   });
 });
 
-// ═══════════════════════════════════════════════════════════════════════════
-//                                        // type // definitions // validation
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================
+// TYPE DEFINITIONS VALIDATION
+// ============================================================
 
 describe('Type definitions (compile-time validation)', () => {
   // These tests verify the types exist and can be used

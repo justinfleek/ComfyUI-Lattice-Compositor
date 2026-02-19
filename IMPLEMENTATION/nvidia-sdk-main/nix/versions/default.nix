@@ -39,7 +39,7 @@ let
   # Validate all versions
   validation = validators.validateVersions allVersions;
 
-  # CUDA-Driver compatibility matrix
+  #                                                                      // cuda
   compatibilityMatrix = {
     "13.0.0" = { minDriver = "580.65.06"; maxDriver = null; status = "legacy"; };
     "13.0.1" = { minDriver = "580.82.07"; maxDriver = null; status = "legacy"; };

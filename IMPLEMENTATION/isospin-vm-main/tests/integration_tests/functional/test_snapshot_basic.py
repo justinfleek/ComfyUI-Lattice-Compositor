@@ -1,5 +1,5 @@
 # Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-# SPDX-License-Identifier: Apache-2.0
+#                                                                      // spdx
 """Basic tests scenarios for snapshot save/restore."""
 
 import dataclasses
@@ -110,7 +110,7 @@ def test_snapshot_current_version(uvm_nano):
 # - Guest kernel: All supported ones
 # - Rootfs: Ubuntu 18.04
 # - Microvm: 2vCPU with 512 MB RAM
-# TODO: Multiple microvm sizes must be tested in the async pipeline.
+#                                                                      // todo
 @pytest.mark.parametrize("use_snapshot_editor", [False, True])
 def test_cycled_snapshot_restore(
     bin_vsock_path,
@@ -158,7 +158,7 @@ def test_cycled_snapshot_restore(
     for microvm in microvm_factory.build_n_from_snapshot(
         snapshot, cycles, incremental=True, use_snapshot_editor=use_snapshot_editor
     ):
-        # FIXME: This and the sleep below reduce the rate of vsock/ssh connection
+        #                                                                     // fixme
         # related spurious test failures, although we do not know why this is the case.
         time.sleep(2)
         # Test vsock guest-initiated connections.

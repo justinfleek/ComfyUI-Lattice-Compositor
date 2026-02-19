@@ -9,7 +9,7 @@
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#            // without // warranties // or // conditions // of // any // kind
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """PyTorch Qwen3TTS model."""
@@ -334,7 +334,7 @@ class Qwen3TTSSpeakerEncoder(torch.nn.Module):
             )
         )
 
-        # SE-Res2Net layers
+        #                                                                        // se
         for i in range(1, len(config.enc_channels) - 1):
             self.blocks.append(
                 SqueezeExcitationRes2NetBlock(
@@ -526,7 +526,7 @@ class Qwen3TTSTalkerTextPreTrainedModel(PreTrainedModel):
 class Qwen3TTSTalkerRotaryEmbedding(nn.Module):
     def __init__(self, config: Qwen3TTSTalkerConfig, device=None):
         super().__init__()
-        # BC: "rope_type" was originally "type"
+        #                                                                        // bc
         if hasattr(config, "rope_scaling") and config.rope_scaling is not None:
             self.rope_type = config.rope_scaling.get("rope_type", config.rope_scaling.get("type"))
         else:
@@ -561,7 +561,7 @@ class Qwen3TTSTalkerRotaryEmbedding(nn.Module):
 class Qwen3TTSRotaryEmbedding(nn.Module):
     def __init__(self, config: Qwen3TTSConfig, device=None):
         super().__init__()
-        # BC: "rope_type" was originally "type"
+        #                                                                        // bc
         if hasattr(config, "rope_scaling") and config.rope_scaling is not None:
             self.rope_type = config.rope_scaling.get("rope_type", config.rope_scaling.get("type"))
         else:
@@ -1072,7 +1072,7 @@ class Qwen3TTSTalkerCodePredictorModel(Qwen3TTSPreTrainedModel):
             )
             use_cache = False
 
-        # TODO (joao): remove this exception in v4.56 -- it exists for users that try to pass a legacy cache
+        #                                                                      // todo
         if not isinstance(past_key_values, (type(None), Cache)):
             raise ValueError("The `past_key_values` should be either a `Cache` object or `None`.")
 
@@ -1586,7 +1586,7 @@ class Qwen3TTSTalkerForConditionalGeneration(Qwen3TTSTalkerTextPreTrainedModel, 
         # Initialize weights and apply final processing
         self.post_init()
 
-        # TODO: hack, modular cannot inherit multiple classes
+        #                                                                      // todo
 
     def get_input_embeddings(self):
         return self.model.get_input_embeddings()

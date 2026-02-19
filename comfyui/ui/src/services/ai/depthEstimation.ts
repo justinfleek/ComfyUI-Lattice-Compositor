@@ -10,9 +10,9 @@ import { createLogger } from "@/utils/logger";
 
 const logger = createLogger("DepthEstimation");
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ============================================================================
 // Types
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 
 export interface LayerDepthEstimate {
   layerIndex: number;
@@ -68,9 +68,9 @@ interface ParsedDepthResponse {
   layers?: ParsedDepthLayer[];
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 // System Prompts
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 
 const DEPTH_ESTIMATION_SYSTEM_PROMPT = `You are an expert depth estimation system for VFX compositing. Your task is to analyze decomposed image layers and estimate their relative depths in a scene.
 
@@ -121,9 +121,9 @@ You MUST respond with valid JSON in this exact format:
 
 Be precise and consistent. Your estimates directly control 3D layer placement in a compositor.`;
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 // LLM Depth Estimation Class
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 
 export class LLMDepthEstimator {
   private baseUrl: string;
@@ -429,9 +429,9 @@ Respond with JSON only.`;
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 // Singleton Instance
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 
 let defaultEstimator: LLMDepthEstimator | null = null;
 
@@ -444,9 +444,9 @@ export function getLLMDepthEstimator(
   return defaultEstimator;
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 // Utility Functions
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================================
 
 /**
  * Quick depth estimation without LLM (uses heuristics only)
