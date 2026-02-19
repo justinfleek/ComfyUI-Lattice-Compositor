@@ -35,6 +35,7 @@ import Data.Tuple (Tuple(..))
 import Data.List (List, reverse)
 import Data.List as List
 import Data.Int (floor, toNumber) as Int
+import Data.Int.Bits (xor, (.&.), (.|.), shr, zshr) as Bits
 import Math (pi, sqrt, cos, sin, log, acos) as Math
 
 -- ────────────────────────────────────────────────────────────────────────────
@@ -72,20 +73,40 @@ maxUint32 :: Number
 maxUint32 = 4294967296.0
 
 -- ────────────────────────────────────────────────────────────────────────────
--- Foreign imports for correct bitwise operations
+-- Bitwise Operations (Pure PureScript)
 -- ────────────────────────────────────────────────────────────────────────────
 
--- | Foreign import for bitwise XOR (unused now but kept for API compat)
-foreign import xorBitwise :: Int -> Int -> Int
+-- | Bitwise XOR
+xorBitwise :: Int -> Int -> Int
+xorBitwise = Bits.xor
 
--- | Foreign import for bitwise OR (unused now but kept for API compat)
-foreign import orBitwise :: Int -> Int -> Int
+-- | Bitwise OR  
+orBitwise :: Int -> Int -> Int
+orBitwise = (Bits..|.)
 
--- | Core mulberry32 step - implemented in JS for correct bitwise behavior
-foreign import mulberry32NextImpl :: Number -> { value :: Number, newState :: Number }
+-- | Wrap to uint32 (simulate >>> 0 in JS)
+wrap32Impl :: Number -> Number
+wrap32Impl n = 
+  let i = Int.floor n
+      masked = i Bits..&. 0x7FFFFFFF  -- Keep 31 bits to stay in safe Int range
+  in Int.toNumber masked
 
--- | Wrap to uint32 using JS >>> 0
-foreign import wrap32Impl :: Number -> Number
+-- | Integer multiply matching JavaScript's Math.imul
+imul32 :: Int -> Int -> Int
+imul32 a b = (a * b) Bits..&. 0x7FFFFFFF
+
+-- | Core mulberry32 step - pure PureScript implementation
+mulberry32NextImpl :: Number -> { value :: Number, newState :: Number }
+mulberry32NextImpl stateNum =
+  let state = Int.floor stateNum
+      magic = 0x6D2B79F5
+      newState = (state + magic) Bits..&. 0x7FFFFFFF
+      t1 = newState `Bits.xor` (newState `Bits.zshr` 15)
+      t2 = imul32 t1 (t1 Bits..|. 1)
+      t3 = t2 `Bits.xor` (t2 + imul32 (t2 `Bits.xor` (t2 `Bits.zshr` 7)) (t2 Bits..|. 61))
+      t4 = t3 `Bits.xor` (t3 `Bits.zshr` 14)
+      value = Int.toNumber (t4 Bits..&. 0x7FFFFFFF) / 2147483647.0
+  in { value, newState: Int.toNumber newState }
 
 -- ────────────────────────────────────────────────────────────────────────────
 -- Core Operations

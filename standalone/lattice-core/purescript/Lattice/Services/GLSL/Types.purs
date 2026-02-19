@@ -25,6 +25,7 @@ module Lattice.Services.GLSL.Types
   ) where
 
 import Prelude
+import Data.Int (toNumber) as Int
 import Data.Maybe (Maybe(..))
 import Data.Generic.Rep (class Generic)
 import Data.Show.Generic (genericShow)
@@ -107,9 +108,7 @@ defaultUniforms width height frame time =
   }
   where
     toNum :: Int -> Number
-    toNum n = toNumber n
-
-foreign import toNumber :: Int -> Number
+    toNum = Int.toNumber
 
 -- | Default engine options
 defaultOptions :: GLSLEngineOptions

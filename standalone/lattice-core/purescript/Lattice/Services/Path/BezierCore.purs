@@ -24,6 +24,7 @@ module Lattice.Services.Path.BezierCore
 
 import Prelude
 import Data.Array (length, index, (!!))
+import Data.Int (toNumber) as Int
 import Data.Maybe (Maybe(..), fromMaybe)
 import Math (sqrt) as Math
 
@@ -190,14 +191,10 @@ estimateSegmentLength p0 p1 p2 p3 samples
     go i prev acc
       | i > samples = acc
       | otherwise =
-          let t = toNumber i / toNumber samples
+          let t = Int.toNumber i / Int.toNumber samples
               curr = cubicBezierPoint p0 p1 p2 p3 t
               dist = pointDistance prev curr
           in go (i + 1) curr (acc + dist)
-    toNumber = toNumberImpl
-
--- | Foreign import for Int to Number conversion
-foreign import toNumberImpl :: Int -> Number
 
 -- | Get segment control points from a path.
 getSegmentControlPoints :: BezierPath -> Int

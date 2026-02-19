@@ -25,6 +25,7 @@ import Prelude
 
 import Data.Int (floor, toNumber)
 import Data.Maybe (Maybe(..))
+import Data.Number (isNaN, isFinite) as Number
 import Data.Tuple (Tuple(..))
 import Math (max)
 
@@ -91,13 +92,7 @@ effectiveEmissionRate baseRate audioValue =
     Just v | isValidPositive v -> v
     _ -> max 0.0 baseRate
   where
-    isValidPositive x = not (isNaN x) && isFinite x && x >= 0.0
-
--- | Foreign function check for NaN
-foreign import isNaN :: Number -> Boolean
-
--- | Foreign function check for finite
-foreign import isFinite :: Number -> Boolean
+    isValidPositive x = not (Number.isNaN x) && Number.isFinite x && x >= 0.0
 
 -- | Calculate burst particle count.
 -- |

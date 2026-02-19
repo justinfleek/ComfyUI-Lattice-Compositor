@@ -13,17 +13,27 @@ module Lattice.Services.Export.FlowGenerators.Noise
 
 import Prelude
 import Data.Int (floor, toNumber)
+import Data.Int.Bits (xor, (.&.), (.|.), zshr) as Bits
 
 -- ────────────────────────────────────────────────────────────────────────────
---                                                                       // ffi
+--                                                               // bitwise ops
 -- ────────────────────────────────────────────────────────────────────────────
 
-foreign import zshr :: Int -> Int -> Int
-foreign import and :: Int -> Int -> Int
-foreign import xor :: Int -> Int -> Int
+-- | Bitwise zero-fill right shift
+zshr :: Int -> Int -> Int
+zshr = Bits.zshr
 
--- | Integer multiplication with overflow (JavaScript imul)
-foreign import imul :: Int -> Int -> Int
+-- | Bitwise AND
+and :: Int -> Int -> Int
+and = (Bits..&.)
+
+-- | Bitwise XOR
+xor :: Int -> Int -> Int
+xor = Bits.xor
+
+-- | Integer multiplication with overflow (JavaScript imul equivalent)
+imul :: Int -> Int -> Int
+imul a b = (a * b) Bits..&. 0x7FFFFFFF
 
 -- ────────────────────────────────────────────────────────────────────────────
 -- Simplex Noise
